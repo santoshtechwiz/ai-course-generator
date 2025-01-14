@@ -1,0 +1,39 @@
+import pLimit from 'p-limit';
+import { MultipleChoiceQuestion } from '@/app/types';
+import { generateMultipeChoiceQuestionForVideo } from '@/lib/chatgpt/videoQuiz';
+import { getTranscript, searchYoutube } from './youtubeService';
+
+
+const limit = pLimit(1); // Limit concurrency to 1
+
+export async function getQuestionsFromTranscript(
+  transcript: string,
+  courseTitle: string
+): Promise<MultipleChoiceQuestion[]> {
+  try {
+    return await limit(() => generateMultipeChoiceQuestionForVideo(courseTitle, transcript, 5));
+  } catch (error) {
+    console.error('Error generating questions:', error);
+    return [];
+  }
+}
+
+export async function processVideoAndGenerateQuestions(
+  searchQuery: string,
+  courseTitle: string
+): Promise<MultipleChoiceQuestion[] | null> {
+  const videoId = await searchYoutube(searchQuery);
+  if (!videoId) {
+    console.log('No suitable video found');
+    return null;
+  }
+
+  const transcriptResponse = await getTranscript(videoId);
+  if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
+    console.log(`Failed to get transcript: ${transcriptResponse.message}`);
+    return null;
+  }
+
+  return getQuestionsFromTranscript(transcriptResponse.transcript, courseTitle);
+}
+

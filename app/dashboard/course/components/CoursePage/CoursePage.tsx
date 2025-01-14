@@ -1,0 +1,271 @@
+'use client'
+
+import React, { useReducer, useEffect, useMemo, useCallback, useRef } from "react"
+import { useSession } from "next-auth/react"
+import { useToast } from "@/hooks/use-toast"
+import MainContent from "./MainContent"
+import RightSidebar from "./RightSidebar"
+import useProgress from "@/hooks/useProgress"
+import { FullChapterType, FullCourseType } from "@/app/types"
+
+interface State {
+  selectedVideoId: string | undefined
+  currentChapter: FullChapterType | undefined
+  nextVideoId: string | undefined
+  prevVideoId: string | undefined
+}
+
+type Action =
+  | { type: "SET_VIDEO"; payload: { videoId: string; chapter: FullChapterType } }
+  | { type: "SET_NAVIGATION"; payload: { next?: string; prev?: string } }
+  | { type: "RESET" }
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "SET_VIDEO":
+      return {
+        ...state,
+        selectedVideoId: action.payload.videoId,
+        currentChapter: action.payload.chapter,
+      }
+    case "SET_NAVIGATION":
+      return {
+        ...state,
+        nextVideoId: action.payload.next,
+        prevVideoId: action.payload.prev,
+      }
+    case "RESET":
+      return {
+        selectedVideoId: undefined,
+        currentChapter: undefined,
+        nextVideoId: undefined,
+        prevVideoId: undefined,
+      }
+    default:
+      return state
+  }
+}
+
+interface CoursePageProps {
+  course: FullCourseType
+}
+
+const MemoizedMainContent = React.memo(MainContent)
+const MemoizedRightSidebar = React.memo(RightSidebar)
+
+export default function CoursePage({ course }: CoursePageProps) {
+  const [state, dispatch] = useReducer(reducer, {
+    selectedVideoId: undefined,
+    currentChapter: undefined,
+    nextVideoId: undefined,
+    prevVideoId: undefined,
+  })
+
+  const { data: session } = useSession()
+  const { toast } = useToast()
+  const isInitialMount = useRef(true)
+  const hasSetInitialVideo = useRef(false)
+
+  const videoQueue = useMemo(() => {
+    return course.courseUnits.flatMap((unit) =>
+      unit.chapters
+        .filter((chapter): chapter is FullChapterType & { videoId: string } => 
+          Boolean(chapter.videoId))
+        .map((chapter) => ({
+          videoId: chapter.videoId,
+          chapterId: chapter.id,
+          unitId: unit.id,
+          chapter,
+        }))
+    )
+  }, [course.courseUnits])
+
+  const findChapterByVideoId = useCallback(
+    (videoId: string): FullChapterType | undefined => {
+      return videoQueue.find((entry) => entry.videoId === videoId)?.chapter
+    },
+    [videoQueue]
+  )
+
+  useEffect(() => {
+    if (videoQueue.length > 0 && !state.selectedVideoId && !hasSetInitialVideo.current) {
+      const initialVideo = videoQueue[0]
+      dispatch({
+        type: "SET_VIDEO",
+        payload: { videoId: initialVideo.videoId, chapter: initialVideo.chapter },
+      })
+      hasSetInitialVideo.current = true
+    }
+  }, [videoQueue, state.selectedVideoId])
+
+  useEffect(() => {
+    if (!isInitialMount.current && state.selectedVideoId) {
+      const currentIndex = videoQueue.findIndex(
+        (entry) => entry.videoId === state.selectedVideoId
+      )
+      dispatch({
+        type: "SET_NAVIGATION",
+        payload: {
+          next: currentIndex < videoQueue.length - 1 ? videoQueue[currentIndex + 1].videoId : undefined,
+          prev: currentIndex > 0 ? videoQueue[currentIndex - 1].videoId : undefined,
+        },
+      })
+    } else {
+      isInitialMount.current = false
+    }
+  }, [state.selectedVideoId, videoQueue])
+
+  const {
+    progress,
+    isLoading,
+    updateProgress,
+  } = useProgress({
+    courseId: +course.id,
+    initialProgress: undefined,
+    currentChapterId: state.currentChapter?.id?.toString(),
+  })
+
+  const markChapterAsCompleted = useCallback(() => {
+    if (!state.currentChapter || !progress) return
+
+    const updatedCompletedChapters = Array.isArray(progress.completedChapters) 
+      ? [...progress.completedChapters] 
+      : []
+
+    if (!updatedCompletedChapters.includes(+state.currentChapter.id)) {
+      updatedCompletedChapters.push(+state.currentChapter.id)
+      const totalChapters = videoQueue.length
+      const newProgress = Math.round((updatedCompletedChapters.length / totalChapters) * 100)
+
+      updateProgress({
+        currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
+        completedChapters: updatedCompletedChapters,
+        progress: newProgress,
+      })
+    }
+  }, [state.currentChapter, progress, updateProgress, videoQueue.length])
+
+  const handleVideoEnd = useCallback(() => {
+    markChapterAsCompleted()
+
+    if (state.nextVideoId) {
+      const nextChapter = findChapterByVideoId(state.nextVideoId)
+      if (nextChapter) {
+        const nextVideoEntry = videoQueue.find(entry => entry.videoId === state.nextVideoId)
+        if (nextVideoEntry) {
+          dispatch({
+            type: "SET_VIDEO",
+            payload: { videoId: state.nextVideoId, chapter: nextChapter },
+          })
+          updateProgress({
+            currentChapterId: Number(nextChapter.id),
+            currentUnitId: Number(nextVideoEntry.unitId),
+          })
+        }
+      }
+    } else {
+      updateProgress({
+        currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
+        isCompleted: true,
+        progress: 100,
+      })
+      toast({
+        title: "Course Completed",
+        description: "Congratulations! You've completed all videos in this course.",
+        variant: "default",
+      })
+    }
+  }, [
+    state.nextVideoId,
+    state.currentChapter,
+    videoQueue,
+    findChapterByVideoId,
+    updateProgress,
+    toast,
+    markChapterAsCompleted,
+  ])
+
+  const handleVideoSelect = useCallback((videoId: string) => {
+    if (state.currentChapter) {
+      markChapterAsCompleted()
+    }
+
+    const selectedChapter = findChapterByVideoId(videoId)
+    if (selectedChapter) {
+      const selectedVideoEntry = videoQueue.find(entry => entry.videoId === videoId)
+      if (selectedVideoEntry) {
+        dispatch({
+          type: "SET_VIDEO",
+          payload: { videoId, chapter: selectedChapter },
+        })
+        updateProgress({
+          currentChapterId: Number(selectedChapter.id),
+          currentUnitId: Number(selectedVideoEntry.unitId),
+          lastAccessedAt: new Date(),
+        })
+      }
+    }
+  }, [
+    state.currentChapter,
+    findChapterByVideoId,
+    updateProgress,
+    videoQueue,
+    markChapterAsCompleted,
+  ])
+
+  useEffect(() => {
+    return () => {
+      dispatch({ type: "RESET" })
+    }
+  }, [])
+
+  const isSubscribed = session?.user?.userType !== "Free"
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] bg-background pt-4">
+      <div className="flex-grow lg:w-3/4 p-4 space-y-4">
+        <MemoizedMainContent
+          course={course}
+          initialVideoId={state.selectedVideoId}
+          nextVideoId={state.nextVideoId}
+          prevVideoId={state.prevVideoId}
+          onVideoEnd={handleVideoEnd}
+          onVideoSelect={handleVideoSelect}
+          currentChapter={state.currentChapter}
+          currentTime={0}
+          onTimeUpdate={(time: number) => {
+            if (state.currentChapter) {
+              updateProgress({
+                currentChapterId: Number(state.currentChapter.id),
+              })
+            }
+          }}
+          progress={progress}
+          onChapterComplete={markChapterAsCompleted}
+        />
+      </div>
+      <div className="w-full lg:w-1/4 lg:min-w-[350px] p-4 lg:border-l-0 mt-4 lg:mt-0">
+        <MemoizedRightSidebar
+          course={course}
+          currentChapter={state.currentChapter}
+          courseId={course.id.toString()}
+          onVideoSelect={handleVideoSelect}
+          currentVideoId={state.selectedVideoId || ""}
+          isAuthenticated={!!session}
+          courseOwnerId={course.userId}
+          isSubscribed={isSubscribed}
+          progress={progress}
+        />
+      </div>
+    </div>
+  )
+}
+
