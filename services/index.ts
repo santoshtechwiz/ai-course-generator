@@ -1,4 +1,4 @@
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/authOptions";
 import { prisma } from "@/lib/db";
 import { chatGptRequest } from "@/lib/chatgpt/strict_output";
 import { Course } from "@prisma/client";

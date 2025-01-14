@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import axios from "axios";
 import { MCQQuestion, OpenEndedQuestion, QuizType } from "@/app/types";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/authOptions";
 import { quizCreationSchema } from "@/schema/schema";
 import { generateSlug } from "@/lib/utils";
 import NodeCache from 'node-cache';

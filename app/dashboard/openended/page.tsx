@@ -1,4 +1,4 @@
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/authOptions";
 import TopicForm from "./components/TopicForm";
 import RandomQuestions from "./components/RandomQuestions";
 import { getRandomQuestions } from "@/lib/db";

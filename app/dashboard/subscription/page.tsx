@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/authOptions";
 import { SubscriptionService } from "@/services/subscriptionService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SUBSCRIPTION_PLANS, SubscriptionPlanType } from '@/config/subscriptionPlans';

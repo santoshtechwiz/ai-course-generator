@@ -2,7 +2,7 @@ import { getProviders } from "next-auth/react"
 import { AuthButtonGroup } from "@/components/AuthButtonGroup"
 import { BenefitsCarousel } from "@/components/BenefitsCarousel"
 import Link from "next/link"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/authOptions"
 import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
 

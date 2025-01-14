@@ -1,7 +1,7 @@
 
 import CourseCreationVideo from "@/app/components/CourseCreationVideo";
 import ConfirmChapters from "../../course/components/ConfirmChapters";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/authOptions";
 import { getCourses, prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import React from "react";

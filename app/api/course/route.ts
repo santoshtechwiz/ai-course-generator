@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUnsplashImage } from "@/lib/unsplash";
 import { prisma } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/authOptions";
 import { generateCourseContent } from "@/lib/chatgpt/video";
 import { createChaptersSchema } from "@/schema/schema";
 import { generateSlug } from "@/lib/utils";

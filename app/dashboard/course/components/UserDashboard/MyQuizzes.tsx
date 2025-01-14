@@ -45,7 +45,7 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
             <h3 className="mt-2 text-sm font-semibold text-muted-foreground">No quizzes created yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">Start creating your first quiz.</p>
             <div className="mt-6">
-              <Link href="/create-quiz" passHref>
+              <Link href="/dashboard/quiz" passHref>
                 <Button>Create a Quiz</Button>
               </Link>
             </div>
