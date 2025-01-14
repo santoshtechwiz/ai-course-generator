@@ -24,7 +24,7 @@ export default function NotificationsMenu({ initialCount =0}: NotificationsMenuC
       return response.json()
     },
     initialData: { count: initialCount },
-    refetchInterval: 5000 * 10, // Refetch every 15 seconds
+    refetchInterval: 5000 * 100, // Refetch every 15 seconds
   })
 
   React.useEffect(() => {
