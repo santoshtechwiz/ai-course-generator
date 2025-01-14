@@ -6,7 +6,7 @@ import GithubProvider from "next-auth/providers/github";
 import FacebookProvider from "next-auth/providers/facebook";
 import { NextResponse } from "next/server";
 import { JWT } from "next-auth/jwt";
-import { LRUCache } from "lru-cache";
+import { LRUCache } from 'lru-cache'
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -28,12 +28,27 @@ declare module "next-auth/jwt" {
   }
 }
 
-const CACHE_TTL = 3600; // 1 hour in seconds
+const options = {
+  max: 500,
 
-const userCache = new LRUCache({
-  max: 500, // Maximum number of items to store in the cache
-  ttl: CACHE_TTL * 1000, // TTL in milliseconds
-});
+  // for use with tracking overall storage size
+  maxSize: 5000,
+
+  // how long to live in ms
+  ttl: 1000 * 60 * 5,
+
+  // return stale items before removing from cache?
+  allowStale: false,
+
+  updateAgeOnGet: false,
+  updateAgeOnHas: false,
+
+  // async method to use for cache.fetch(), for
+  // stale-while-revalidate type of behavior
+
+}
+
+const userCache = new LRUCache(options)
 
 async function getUserFromCache(userId: string) {
   return userCache.get(userId) || null;
