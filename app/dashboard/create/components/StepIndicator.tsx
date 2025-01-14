@@ -1,4 +1,3 @@
-
 import { Check, ChevronRight } from 'lucide-react'
 
 interface StepIndicatorProps {
@@ -14,7 +13,7 @@ export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
   ]
 
   return (
-    <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center justify-between mb-6">
       {steps.map((s, i) => (
         <div key={i} className="flex items-center">
           <div className={`flex items-center justify-center w-10 h-10 rounded-full 
@@ -26,9 +25,9 @@ export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
               <span className="text-primary-foreground font-semibold">{i + 1}</span>
             )}
           </div>
-          <span className="ml-3 font-medium">{s.title}</span>
+          <span className="ml-3 font-medium text-gray-700">{s.title}</span>
           {i < steps.length - 1 && (
-            <ChevronRight className="w-5 h-5 mx-4 text-muted-foreground" />
+            <ChevronRight className="w-5 h-5 mx-4 text-gray-500" />
           )}
         </div>
       ))}

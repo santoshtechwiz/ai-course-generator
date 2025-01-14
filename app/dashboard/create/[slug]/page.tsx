@@ -1,4 +1,3 @@
-
 import CourseCreationVideo from "@/app/components/CourseCreationVideo";
 import ConfirmChapters from "../../course/components/ConfirmChapters";
 import { getAuthSession } from "@/lib/authOptions";
@@ -35,13 +34,13 @@ const CreateChapters = async (props: Props) => {
    
 
       {/* Main content area */}
-      <div className="flex flex-col flex-grow">
+      <div className="flex flex-col flex-grow bg-gray-50">
         {/* Header taking full width */}
       
 
         {/* Main content and RightSidebar aligned next to each other */}
         <div className="flex flex-grow">
-          <div className="flex-grow p-4">
+          <div className="flex-grow p-4 bg-white rounded-lg shadow-md">
             <ConfirmChapters course={{ ...course, units: course.courseUnits }} />
           </div>
           {/* RightSidebar with fixed width */}

@@ -20,18 +20,18 @@ export default async function LoginPage({
   const providers = await getProviders()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 p-6">
       <div className="flex flex-col lg:flex-row bg-white shadow-2xl rounded-2xl overflow-hidden w-full max-w-6xl">
-        <div className="flex-1 p-8 md:p-12">
-          <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">
+        <div className="flex-1 p-10 md:p-14">
+          <h1 className="text-4xl font-bold text-center mb-10 text-gray-800">
             Log in to Course AI
           </h1>
 
-          <div className="flex flex-col space-y-4 items-center">
+          <div className="flex flex-col space-y-6 items-center">
             {providers && <AuthButtonGroup providers={providers} callbackUrl={callbackUrl || "/"} />}
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-10 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
               <Link href="/auth/signup" className="text-indigo-600 hover:underline font-medium">
@@ -40,7 +40,7 @@ export default async function LoginPage({
             </p>
           </div>
 
-          <p className="mt-6 text-xs text-gray-500 text-center">
+          <p className="mt-8 text-xs text-gray-500 text-center">
             By logging in, you agree to Course AI's{" "}
             <Link href="/terms" className="text-indigo-600 hover:underline">
               Terms of Service
@@ -53,7 +53,7 @@ export default async function LoginPage({
           </p>
         </div>
 
-        <div className="hidden lg:flex flex-1 bg-indigo-600 text-white">
+        <div className="hidden lg:flex flex-1 bg-indigo-700 text-white">
           <BenefitsCarousel />
         </div>
       </div>

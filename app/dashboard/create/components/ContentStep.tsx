@@ -46,14 +46,14 @@ export function ContentStep({ control, errors, watch, setValue }: ContentStepPro
                 <Input
                   id={`unit-${index}`}
                   placeholder="Enter unit title"
-                  className="h-12 text-lg"
+                  className="h-12 text-lg text-gray-900"
                   {...field}
                   spellCheck="true"
                 />
               )}
             />
             {errors.units?.[index] && (
-              <p className="text-sm text-destructive mt-1">{errors.units[index]?.message}</p>
+              <p className="text-sm text-red-500 mt-1">{errors.units[index]?.message}</p>
             )}
           </div>
           <Button

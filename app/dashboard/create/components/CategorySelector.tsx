@@ -35,7 +35,7 @@ export function CategorySelector({
               "hover:scale-105 active:scale-100",
               category.color,
               isSelected ? "border-current ring-2 ring-primary/10" : "border-transparent",
-              error ? "border-destructive" : "",
+              error ? "border-red-500" : "",
               disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
             )}
           >
@@ -48,9 +48,9 @@ export function CategorySelector({
                 exit={{ opacity: 0 }}
               />
             )}
-            <Icon className="w-8 h-8" />
-            <div className="text-sm font-medium z-10">{category.label}</div>
-            <div className="text-xs text-muted-foreground text-center z-10">
+            <Icon className="w-8 h-8 text-gray-900" />
+            <div className="text-sm font-medium z-10 text-gray-900">{category.label}</div>
+            <div className="text-xs text-gray-500 text-center z-10">
               {category.description}
             </div>
           </button>

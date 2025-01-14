@@ -129,26 +129,26 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-    <div className="flex flex-col lg:flex-row w-full px-4 lg:px-8 py-8 space-y-8 lg:space-y-0 gap-8">
-      <div className="flex-1 lg:flex-[3] w-full">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-4">{result.topic} Quiz</h1>
-          {isOwner && (
-            <QuizActions
-              quizId={result.id.toString()}
-              quizSlug={result.slug}
-              initialIsPublic={result.isPublic || false}
-              initialIsFavorite={result.isFavorite || false}
-            />
-          )}
+      <div className="flex flex-col lg:flex-row w-full px-4 lg:px-8 py-8 space-y-8 lg:space-y-0 gap-8">
+        <div className="flex-1 lg:flex-[3] w-full">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-4">{result.topic} Quiz</h1>
+            {isOwner && (
+              <QuizActions
+                quizId={result.id.toString()}
+                quizSlug={result.slug}
+                initialIsPublic={result.isPublic || false}
+                initialIsFavorite={result.isFavorite || false}
+              />
+            )}
+          </div>
+          <PlayQuiz questions={questions} quizId={result.id} />
         </div>
-        <PlayQuiz questions={questions} quizId={result.id} />
+        <div className="flex-1 overflow-hidden lg:flex-[1] w-full">
+          <CourseCreationVideo />
+        </div>
       </div>
-      <div className="flex-1 lg:flex-[1] w-full">
-        <CourseCreationVideo />
-      </div>
-    </div>
-  </Suspense>
+    </Suspense>
   );
 };
 

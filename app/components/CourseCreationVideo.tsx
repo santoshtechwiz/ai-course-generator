@@ -76,25 +76,25 @@ const CourseCreationVideo = () => {
   }
 
   return (
-    <aside className="w-full lg:w-96 p-4 space-y-4 bg-background border-l h-[calc(100vh-4rem)] overflow-y-auto">
+    <aside className="w-full lg:w-96 p-6 space-y-6 bg-background border-l h-[calc(100vh-4rem)] overflow-y-auto">
       <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-center">Create Your Course</CardTitle>
+          <CardTitle className="text-center text-lg font-semibold">Create Your Course</CardTitle>
         </CardHeader>
         <CardContent>
-          <Progress value={(step + 1) * (100 / steps.length)} className="mb-4" />
-          <div className="flex justify-between mb-6">
+          <Progress value={(step + 1) * (100 / steps.length)} className="mb-6" />
+          <div className="flex justify-between mb-8">
             {steps.map((s, index) => (
               <div key={index} className="flex flex-col items-center">
                 <motion.div
-                  className={`rounded-full p-2 ${step >= index ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+                  className={`rounded-full p-3 ${step >= index ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: index * 0.2 }}
                 >
                   {s.icon}
                 </motion.div>
-                <span className="text-xs mt-1 text-center hidden sm:inline-block">{s.title}</span>
+                <span className="text-xs mt-2 text-center hidden sm:inline-block">{s.title}</span>
               </div>
             ))}
           </div>
@@ -115,9 +115,9 @@ const CourseCreationVideo = () => {
                 className="absolute w-full"
               >
                 {step === 0 && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="courseTitle">Course Title</Label>
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="courseTitle" className="font-medium">Course Title</Label>
                       <Input
                         id="courseTitle"
                         placeholder="Enter your course title"
@@ -133,8 +133,8 @@ const CourseCreationVideo = () => {
                         />
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="courseDescription">Course Description</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="courseDescription" className="font-medium">Course Description</Label>
                       <Textarea
                         id="courseDescription"
                         placeholder="Briefly describe your course"
@@ -153,7 +153,7 @@ const CourseCreationVideo = () => {
                   </div>
                 )}
                 {step === 1 && (
-                  <div className="text-center space-y-4">
+                  <div className="text-center space-y-6">
                     <motion.div
                       animate={{
                         scale: [1, 1.2, 1],
@@ -167,11 +167,11 @@ const CourseCreationVideo = () => {
                     >
                       <Sparkles className="w-16 h-16 mx-auto text-primary" />
                     </motion.div>
-                    <p>Our AI is generating engaging content for your course...</p>
+                    <p className="text-sm">Our AI is generating engaging content for your course...</p>
                   </div>
                 )}
                 {step === 2 && (
-                  <div className="text-center space-y-4">
+                  <div className="text-center space-y-6">
                     <motion.div
                       animate={{
                         y: [0, -10, 0],
@@ -184,7 +184,7 @@ const CourseCreationVideo = () => {
                     >
                       <Play className="w-16 h-16 mx-auto text-primary" />
                     </motion.div>
-                    <p>Your course is ready! Click 'Finish' to publish.</p>
+                    <p className="text-sm">Your course is ready! Click 'Finish' to publish.</p>
                   </div>
                 )}
               </motion.div>
@@ -193,7 +193,7 @@ const CourseCreationVideo = () => {
 
           <Button
             onClick={() => {}}
-            className="w-full mt-6"
+            className="w-full mt-8"
             disabled={step !== steps.length - 1}
           >
             {step === steps.length - 1 ? "Finish" : "Next"}
@@ -204,14 +204,14 @@ const CourseCreationVideo = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Course Creation Tips</CardTitle>
+          <CardTitle className="text-lg font-semibold">Course Creation Tips</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {["Keep your title concise and catchy", "Use AI to generate engaging content", "Include interactive quizzes for better learning"].map((tip, index) => (
               <motion.li
                 key={index}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-3"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.2 }}

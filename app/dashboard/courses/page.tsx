@@ -4,10 +4,9 @@ import SearchBar from "./components/SearchBar"
 import CourseListSkeleton from "./components/CourseListSkeleton"
 import { fetchCourses } from "@/lib/db"
 import CoursesList from "./components/CourseList"
-
+export const dynamic = 'force-dynamic'
 export default async function CoursesPage() {
   const courses = await fetchCourses();
-
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
@@ -23,4 +22,3 @@ export default async function CoursesPage() {
     </div>
   )
 }
-
