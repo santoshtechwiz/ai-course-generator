@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserProfile from "./components/UserProfile";
 import QuizHistory from "./components/QuizHistory";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/authOptions";
 import SubscriptionStatus from "./course/components/UserDashboard/SubscriptionStatus";
 import FavoriteCourses from "./components/FavoriteCourses";
 import UserNotFound from "@/components/UserNotFound";

@@ -1,6 +1,6 @@
 import { getPublicQuizzes } from "@/lib/db";
 import { Metadata } from "next";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/authOptions";
 import RandomQuiz from "../mcq/components/RandomQuiz";
 import CreateQuizForm from "./components/CreateQuizForm";
 

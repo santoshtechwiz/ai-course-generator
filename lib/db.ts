@@ -1,6 +1,8 @@
 
-import { CourseDetails, CourseProgress, FullCourseType } from '@/app/types';
+import { CourseDetails, FullCourseType } from '@/app/types';
 import { PrismaClient, Prisma } from '@prisma/client';
+import { getAuthSession } from './authOptions';
+
 
 
 

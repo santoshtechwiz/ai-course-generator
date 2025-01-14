@@ -3,73 +3,68 @@
 import * as React from "react"
 import { Weight } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { useMemo } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { useQuery } from '@tanstack/react-query'
 
-// Utility function for debouncing
-const debounce = (func: (...args: any[]) => void, delay: number) => {
-  let timeoutId: NodeJS.Timeout
-  return (...args: any[]) => {
-    clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => func(...args), delay)
-  }
+interface NotificationsMenuClientProps {
+  initialCount: number;
 }
 
-export default function NotificationsMenu() {
-  const [count, setCount] = React.useState(0)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
-  const [isSignedIn, setIsSignedIn] = React.useState(true)
+export default function NotificationsMenu({ initialCount =0}: NotificationsMenuClientProps) {
+  const [hasNewNotifications, setHasNewNotifications] = React.useState(false)
+  const { toast } = useToast()
 
-  const fetchNotificationCount = React.useCallback(async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const response = await fetch('/api/get-token-balance')
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['creditCount'],
+    queryFn: async () => {
+      const response = await fetch('/api/token-notifications')
       if (!response.ok) {
-        if (response.status === 401) {
-          setIsSignedIn(false)
-          setCount(0)
-          return
-        }
-        throw new Error('Network response was not ok')
+        throw new Error('Failed to fetch credit count')
       }
-      const data = await response.json()
-      setCount(data.tokens !== undefined ? data.tokens : 0)
-      setIsSignedIn(true)
-    } catch (error) {
-      console.error('Error fetching token balance:', error)
-      setError('Failed to load notifications')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  // Debounced version of fetchNotificationCount
-  const debouncedFetchNotificationCount = React.useMemo(
-    () => debounce(fetchNotificationCount, 300),
-    [fetchNotificationCount]
-  )
+      return response.json()
+    },
+    initialData: { count: initialCount },
+    refetchInterval: 5000 * 10, // Refetch every 15 seconds
+  })
 
   React.useEffect(() => {
-    debouncedFetchNotificationCount()
-
-    const intervalId = setInterval(debouncedFetchNotificationCount, 5 * 60 * 1000)
-
-    return () => {
-      clearInterval(intervalId)
+    if (data.count > initialCount) {
+      setHasNewNotifications(true)
+      toast({
+        title: "Credits Updated",
+        description: `Your credit count has been updated to ${data.count}.`,
+      })
     }
-  }, [debouncedFetchNotificationCount])
+  }, [data.count, initialCount, toast])
 
-  const displayCount = useMemo(() => {
-    if (!isSignedIn || isLoading) return 0
-    return count > 99 ? '99+' : count
-  }, [count, isSignedIn, isLoading])
+  const handleClick = () => {
+    setHasNewNotifications(false)
+    // Implement logic to open notifications panel or navigate to notifications page
+  }
+
+  const displayCount = React.useMemo(() => {
+    return data.count > 99 ? '99+' : data.count.toString()
+  }, [data.count])
 
   return (
-    <Button variant="ghost" size="icon" className="relative">
+    <Button 
+      variant="ghost" 
+      size="icon" 
+      className="relative" 
+      onClick={handleClick}
+      disabled={isLoading || !!error}
+    >
       <Weight className="h-5 w-5" />
       {!error && (
-        <span className={`absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 text-xs font-bold text-white rounded-full ${displayCount > 0 ? 'bg-red-500' : 'bg-gray-400'}`}>
+        <span 
+          className={`absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 text-xs font-bold text-white rounded-full transition-all duration-300 ${
+            parseInt(displayCount) > 0 
+              ? hasNewNotifications 
+                ? 'bg-red-500 animate-pulse' 
+                : 'bg-red-500' 
+              : 'bg-gray-400'
+          }`}
+        >
           {displayCount}
         </span>
       )}
@@ -82,3 +77,4 @@ export default function NotificationsMenu() {
     </Button>
   )
 }
+

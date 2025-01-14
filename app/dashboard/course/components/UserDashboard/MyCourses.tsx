@@ -75,7 +75,7 @@ export function MyCourses({ courses }: MyCoursesProps) {
             <h3 className="mt-2 text-sm font-semibold text-muted-foreground">No courses created yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">Start creating your first course.</p>
             <div className="mt-6">
-              <Link href="/dashboard/create-course" passHref>
+              <Link href="/dashboard/create" passHref>
                 <Button>Create a Course</Button>
               </Link>
             </div>

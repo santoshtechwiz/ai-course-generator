@@ -1,4 +1,4 @@
-import { isAdmin, unauthorized } from "@/lib/auth"
+import { isAdmin, unauthorized } from "@/lib/authOptions"
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
 

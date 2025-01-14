@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { generateOpenEndedQuiz } from '@/lib/chatgpt/quizGenerator'
-import { getAuthSession } from '@/lib/auth'
+import { getAuthSession } from '@/lib/authOptions'
 import { prisma } from '@/lib/db';
 import { generateSlug } from '@/lib/utils';
 

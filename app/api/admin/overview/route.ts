@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { isAdmin, unauthorized } from "@/lib/auth"
+import { isAdmin, unauthorized } from "@/lib/authOptions"
 import { prisma } from "@/lib/db"
 
 

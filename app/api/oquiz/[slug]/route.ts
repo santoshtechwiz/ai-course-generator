@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthSession } from '@/lib/auth'
+import { getAuthSession } from '@/lib/authOptions'
 import { prisma } from '@/lib/db'
 
 export async function GET(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
