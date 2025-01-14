@@ -47,8 +47,7 @@ export function ChapterButton({
             isCurrentlyPlaying
               ? "text-primary"
               : "text-muted-foreground"
-          )}
-        >
+          )}>
           Chapter {unitIndex + 1}.{chapterIndex + 1}
         </span>
         <span
@@ -59,8 +58,7 @@ export function ChapterButton({
               : isSelected
               ? "text-accent-foreground"
               : "text-foreground"
-          )}
-        >
+          )}>
           {chapter.name}
         </span>
       </div>

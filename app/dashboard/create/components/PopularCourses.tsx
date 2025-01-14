@@ -27,16 +27,16 @@ const PopularCourses: React.FC<RandomCoursesProps> = ({ courseDetails }) => {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full lg:w-96 p-4 space-y-4 bg-background border-l h-[calc(100vh-4rem)] overflow-y-auto"
+        className="w-full lg:w-96 p-4 space-y-4 bg-gray-50 border-l h-[calc(100vh-4rem)] overflow-y-auto"
       >
         <div className="sticky top-6 space-y-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
               <Sparkles className="h-5 w-5 text-rose-500" />
-              <h2 className="text-lg font-semibold">Popular Courses</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Popular Courses</h2>
             </div>
             <Button variant="ghost" size="icon">
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4 text-gray-500" />
             </Button>
           </div>
 
@@ -49,7 +49,7 @@ const PopularCourses: React.FC<RandomCoursesProps> = ({ courseDetails }) => {
             >
               <Card className="group hover:shadow-lg transition-shadow duration-200">
                 <CardHeader>
-                  <CardTitle className="flex justify-between items-center">
+                  <CardTitle className="flex justify-between items-center text-gray-900">
                     <span>{course.courseName}</span>
                     <motion.div
                       whileHover={{ scale: 1.1 }}
@@ -58,18 +58,17 @@ const PopularCourses: React.FC<RandomCoursesProps> = ({ courseDetails }) => {
                       <Book className="h-4 w-4 text-rose-500" />
                     </motion.div>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-700">
                     {`Learn about ${course.category || "various topics"}`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center text-gray-500">
+                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                    <div className="flex items-center">
                       <Users className="h-4 w-4 mr-2" />
-                      {/* {Math.floor(Math.random() * 1000) + 500} students */}
                       {course.totalChapters} chapters
                     </div>
-                    <div className="flex items-center text-gray-500">
+                    <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2" />
                       {`${course.totalUnits} units`}
                     </div>

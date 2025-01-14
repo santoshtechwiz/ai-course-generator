@@ -44,7 +44,7 @@ export default function CoursesList({ initialCourses }: CoursesListProps) {
           exit={{ opacity: 0 }}
           className="flex justify-center items-center py-20"
         >
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-muted-foreground"></div>
         </motion.div>
       ) : courses.length === 0 ? (
         <motion.div
@@ -56,7 +56,7 @@ export default function CoursesList({ initialCourses }: CoursesListProps) {
           className="text-center py-20"
         >
           <NoCoursesIllustration />
-          <p className="text-xl text-gray-600">No courses found. Try a different search term.</p>
+          <p className="text-xl text-muted-foreground">No courses found. Try a different search term.</p>
         </motion.div>
       ) : (
         <motion.div

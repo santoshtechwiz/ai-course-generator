@@ -24,8 +24,8 @@ export function ConfirmationDialog({ open, onOpenChange, onConfirm, formData, is
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Confirm Course Creation</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-gray-900">Confirm Course Creation</DialogTitle>
+          <DialogDescription className="text-gray-700">
             Are you sure you want to create this course? Please review the details below:
           </DialogDescription>
         </DialogHeader>
@@ -34,7 +34,7 @@ export function ConfirmationDialog({ open, onOpenChange, onConfirm, formData, is
           <p><strong>Description:</strong> {formData.description}</p>
           <p><strong>Category:</strong> {formData.category}</p>
           <p><strong>Units:</strong></p>
-          <ul className="list-disc pl-5">
+          <ul className="list-disc pl-5 text-gray-700">
             {formData.units.map((unit, index) => (
               <li key={index}>{unit}</li>
             ))}

@@ -76,7 +76,7 @@ const NavItem = React.memo(({ item, isActive, hoveredItem, setHoveredItem, route
                   <DropdownMenuItem asChild>
                     <Link
                       href={subItem.href}
-                      className={`w-full ${
+                      className={`w-full px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${
                         isActive(subItem.href) ? 'bg-primary/10 text-primary' : ''
                       }`}
                     >
@@ -196,20 +196,20 @@ const UserMenu = React.memo(({ status, session, handleSignOut }) => {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/dashboard" className="flex items-center">
+            <Link href="/dashboard" className="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground">
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/subscriptions" className="flex items-center">
+            <Link href="/subscriptions" className="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground">
               <CreditCard className="mr-2 h-4 w-4" />
               <span>Subscriptions</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleSignOut}
-            className="flex items-center"
+            className="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>

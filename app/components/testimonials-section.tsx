@@ -45,9 +45,9 @@ export function TestimonialsSection() {
   }
 
   return (
-    <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-white to-gray-50">
-      <div className="container px-4 md:px-6">
-        <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12">
+    <section className="w-full py-12 px-4 md:py-24 lg:py-32 bg-gradient-to-b from-white to-gray-50">
+      <div className="container mx-auto">
+        <h2 className="text-2xl font-semibold tracking-tighter text-center mb-8 sm:text-3xl md:text-4xl lg:text-5xl">
           Empowering Self-Learners & Professionals
         </h2>
         <div className="relative max-w-4xl mx-auto">

@@ -134,7 +134,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
   ]
 
   return (
-    <div className="py-12 px-4 md:px-6">
+    <div className="py-12 px-4 md:px-6 bg-gray-50">
       <div className="max-w-4xl mx-auto">
         <Card>
           <SignInBanner isAuthenticated={authStatus === 'authenticated'} />
@@ -148,8 +148,8 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                 <BookOpen className="w-8 h-8 text-primary" />
               </motion.div>
             </div>
-            <CardTitle className="text-3xl font-bold">Create a New Course</CardTitle>
-            <CardDescription className="text-lg">
+            <CardTitle className="text-3xl font-bold text-gray-900">Create a New Course</CardTitle>
+            <CardDescription className="text-lg text-gray-700">
               Fill in the details for your new course. Progress is automatically saved.
             </CardDescription>
           </CardHeader>
@@ -158,7 +158,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
             <StepIndicator currentStep={step} totalSteps={totalSteps} />
             <div className="flex justify-between mt-4 md:hidden">
               {stepIcons.map((icon, index) => (
-                <div key={index} className={`flex items-center justify-center ${step === index + 1 ? 'text-primary' : 'text-muted-foreground'}`}>
+                <div key={index} className={`flex items-center justify-center ${step === index + 1 ? 'text-primary' : 'text-gray-500'}`}>
                   {icon}
                 </div>
               ))}
@@ -213,7 +213,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                 )}
 
                 {(!status?.isSubscribed && (availableCredits ?? 0) > 0) && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-500">
                     Available credits: {availableCredits} (This action will deduct 1 credit)
                   </p>
                 )}

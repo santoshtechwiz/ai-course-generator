@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Search } from 'lucide-react'
 import { CreateQuizCard, QuizCardListing } from './components/QuizCardListing'
 import { Quiz } from '@/app/types'
-
-
-
+export const dynamic = 'force-dynamic'
 export default function QuizzesPage() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,7 +27,7 @@ export default function QuizzesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8 text-center">Explore Quizzes</h1>
+      <h1 className="text-4xl font-bold mb-8 text-center text-primary">Explore Quizzes</h1>
       <div className="relative mb-8">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
         <Input

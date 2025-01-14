@@ -13,10 +13,10 @@ import AIRecommendations from "./components/Recommendations";
 import CourseProgress from "./course/components/CoursePage/CourseProgress";
 import { MyCourses } from "./course/components/UserDashboard/MyCourses";
 import { MyQuizzes } from "./course/components/UserDashboard/MyQuizzes";
-
+export const dynamic = 'force-dynamic'
 function LoadingCard() {
   return (
-    <Card className="p-4">
+    <Card className="p-4 bg-white shadow-sm rounded-lg">
       <CardHeader>
         <Skeleton className="h-6 w-2/3" />
       </CardHeader>
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 text-gray-900">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-0">Welcome back, {userData.name}!</h1>
         <div className="flex items-center space-x-4">
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
           </Suspense>
         </div>
 
-        <Card className="p-4 transition-shadow hover:shadow-md">
+        <Card className="p-4 bg-white shadow-sm rounded-lg transition-shadow hover:shadow-md">
           <CardHeader>
             <CardTitle className="text-lg sm:text-xl font-semibold text-primary">Credits</CardTitle>
           </CardHeader>
