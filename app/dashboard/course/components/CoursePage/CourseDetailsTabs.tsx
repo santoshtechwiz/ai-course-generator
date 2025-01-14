@@ -1,68 +1,24 @@
-"use client"
+'use client'
 
-import React, { useState, useEffect } from "react"
-import {  AnimatePresence } from "framer-motion"
+import React, { useState, useEffect, useCallback } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import dynamic from "next/dynamic"
 import ConfettiExplosion from "react-confetti-explosion"
+import { Chapter, Course } from "@/app/types"
+
 export interface CourseDetailsTabsProps {
   chapterId: number
   name: string
   course: Course
   chapter: Chapter
 }
-export function LoadingFallback() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[300px] space-y-4">
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-      >
-        <Loader2 className="w-8 h-8 text-primary" />
-      </motion.div>
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="text-sm text-muted-foreground"
-      >
-        Loading content...
-      </motion.p>
-    </div>
-  )
-}
-import { motion } from "framer-motion"
-import { Chapter, Course } from "@/app/types"
 
-export function ProgressBar() {
-  return (
-    <div className="w-full h-1 bg-secondary/30 rounded-full overflow-hidden">
-      <motion.div
-        className="h-full bg-primary"
-        initial={{ x: "-100%" }}
-        animate={{ x: "0%" }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-      />
-    </div>
-  )
-}
-
-
-
-
-const CourseAISummary = dynamic(() => import("./CourseAISummary"), {
-  loading: () => <LoadingFallback />,
-})
-
-const CourseDetailsQuiz = dynamic(() => import("./CourseDetailsQuiz"), {
-  loading: () => <LoadingFallback />,
-})
+const CourseAISummary = dynamic(() => import("./CourseAISummary"), { ssr: false })
+const CourseDetailsQuiz = dynamic(() => import("./CourseDetailsQuiz"), { ssr: false })
 
 type Tab = "summary" | "quiz"
 
@@ -83,13 +39,17 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
   const [isExploding, setIsExploding] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSummaryReady = (isReady: boolean) => {
+  const handleSummaryReady = useCallback((isReady: boolean) => {
     setIsSummaryReady(isReady)
     if (isReady) {
       setIsExploding(true)
       setTimeout(() => setIsExploding(false), 3000)
     }
-  }
+  }, [])
+
+  const handleError = useCallback((msg: string) => {
+    setError(msg)
+  }, [])
 
   useEffect(() => {
     setIsSummaryReady(false)
@@ -118,15 +78,6 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
             >
               <span className="flex items-center gap-2">
                 Summary
-                {activeTab === "summary" && !isSummaryReady && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute -bottom-4 left-0 right-0"
-                  >
-                    <ProgressBar />
-                  </motion.span>
-                )}
                 {isSummaryReady && activeTab === "summary" && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -143,21 +94,7 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
               disabled={!isSummaryReady}
               className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="flex items-center gap-2">
-                Quiz
-                {!isSummaryReady && (
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  >
-                    <Loader2 className="w-4 h-4" />
-                  </motion.span>
-                )}
-              </span>
+              Quiz
             </TabsTrigger>
           </TabsList>
 
@@ -178,17 +115,18 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
               >
                 <TabsContent value="summary" className="mt-0">
                   <CourseAISummary
+                    key={chapterId}
                     chapterId={chapterId}
                     name={name}
                     onSummaryReady={handleSummaryReady}
-                    onError={(msg) => setError(msg)}
+                    onError={handleError}
                   />
                 </TabsContent>
                 <TabsContent value="quiz" className="mt-0">
                   <CourseDetailsQuiz
                     chapter={chapter}
                     course={course}
-                    onError={(msg) => setError(msg)}
+                    onError={handleError}
                   />
                 </TabsContent>
               </motion.div>

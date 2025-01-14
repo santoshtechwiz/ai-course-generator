@@ -6,7 +6,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ data: [] }, { status: 200 });
   }
 
   const { courseId } = await params;
