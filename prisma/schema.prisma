@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                       Int     @id @default(autoincrement())
+  userId                   String  @map("user_id")
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  refresh_token_expires_in Int?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       String   @map("user_id")
+  expires      DateTime
+  isAdmin      Boolean  @default(false)
+  lastUsed     DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+model User {
+  id                    String            @id @default(cuid())
+  name                  String?
+  email                 String?           @unique
+  emailVerified         DateTime?
+  image                 String?
+  credits               Int               @default(3)
+  isAdmin               Boolean           @default(false)
+  userType              String?
+  totalCoursesWatched   Int               @default(0)
+  totalQuizzesAttempted Int               @default(0)
+  totalTimeSpent        Int               @default(0)
+  courses               Course[]
+  courseProgress        CourseProgress[]
+  ratings               CourseRating[]
+  favorites             Favorite[]
+  userQuizzes           UserQuiz[]
+  sessions              Session[]
+  subscriptions         UserSubscription?
+  accounts              Account[]
+  userBehavior          UserBehavior[]
+  quizAttempts          QuizAttempt[]
+  createdAt             DateTime          @default(now())
+  lastLogin            DateTime          @default(now())
+  @@index([email])
+}
+model Favorite {
+  id       Int    @id @default(autoincrement())
+  userId   String @map("user_id")
+  courseId Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId], name: "unique_user_course")
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Course {
+  id             Int              @id @default(autoincrement())
+  name           String
+  description    String?
+  image          String
+  viewCount      Int              @default(0)
+  totalRatings   Int              @default(0)
+  averageRating  Float            @default(0)
+  userId         String           @map("user_id")
+  categoryId     Int?
+  isCompleted    Boolean?         @default(false)
+  isPublic       Boolean          @default(false)
+  slug           String?          @unique
+  category       Category?        @relation(fields: [categoryId], references: [id])
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ratings        CourseRating[]
+  courseUnits    CourseUnit[]
+  favorites      Favorite[]
+  courseProgress CourseProgress[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([userId])
+}
+
+model CourseUnit {
+  id          Int       @id @default(autoincrement())
+  courseId    Int
+  name        String
+  chapters    Chapter[]
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  isCompleted Boolean?  @default(false)
+  duration    Int?
+
+  @@index([courseId])
+  @@map("CourseUnit")
+}
+
+model Chapter {
+  id                 Int          @id @default(autoincrement())
+  unitId             Int
+  name               String
+  youtubeSearchQuery String
+  videoId            String?
+  summary            String?
+  isCompleted        Boolean      @default(false)
+  unit               CourseUnit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  questions          CourseQuiz[]
+  summaryStatus      String       @default("PENDING")
+  videoStatus        String       @default("PENDING")
+
+  @@index([unitId])
+  @@map("Chapter")
+}
+
+model CourseQuiz {
+  id        Int           @id @default(autoincrement())
+  chapterId Int
+  question  String
+  answer    String
+  options   String
+  chapter   Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  attempts  QuizAttempt[]
+
+  @@index([chapterId])
+  @@map("CourseQuiz")
+}
+
+model CourseRating {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  userId    String   @map("user_id")
+  rating    Int
+  createdAt DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("Course_Rating")
+}
+
+model Category {
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
+  courses Course[]
+}
+
+model CourseProgress {
+  id                Int      @id @default(autoincrement())
+  userId            String   @map("user_id")
+  courseId          Int
+  currentChapterId  Int
+  currentUnitId     Int?     
+  completedChapters String   
+  progress          Int      @default(0)
+  lastAccessedAt    DateTime @default(now())
+  timeSpent         Int      @default(0)
+  isCompleted       Boolean  @default(false)
+
+  quizScores        String?    // Added to store quiz scores
+  notes             String?  // Added for user notes
+  bookmarks         String?    // Added to store bookmarks
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId], name: "unique_user_course_progress")
+  @@index([userId, lastAccessedAt])
+  @@index([courseId])
+}
+
+
+
+
+
+model UserQuiz {
+  id          Int       @id @default(autoincrement())
+  userId      String    @map("user_id")
+  timeStarted DateTime
+  topic       String
+  timeEnded   DateTime?
+  gameType    String
+  isPublic    Boolean?  @default(false)
+  score       Int?
+  duration    Int?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions   Quiz[]
+  slug        String    @unique
+  isFavorite  Boolean?  @default(false)
+
+  @@index([userId])
+  @@index([topic])
+  @@map("UserQuiz")
+}
+
+model UserSubscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique @map("user_id")
+  user                 User     @relation(fields: [userId], references: [id])
+  planId               String
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  stripeSubscriptionId String?  @unique
+  stripeCustomerId     String?
+}
+
+model TopicCount {
+  id    Int    @id @default(autoincrement())
+  topic String @unique
+  count Int
+
+  @@map("TopicCount")
+}
+
+model Quiz {
+  id                Int                @id @default(autoincrement())
+  question          String
+  answer            String
+  gameId            Int
+  options           String?
+  percentageCorrect Float?
+  isCorrect         Boolean?
+  questionType      String
+  userAnswer        String?
+  game              UserQuiz           @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  openEndedQuestion OpenEndedQuestion?
+
+  @@index([gameId])
+  @@index([questionType])
+}
+
+model OpenEndedQuestion {
+  id         Int    @id @default(autoincrement())
+  quizId     Int    @unique
+  quiz       Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  hints      String
+  difficulty String
+  tags       String
+
+  @@index([difficulty])
+}
+
+model UserBehavior {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  action     String
+  entityType String // e.g., 'course', 'quiz', 'chapter'
+  entityId   String // ID of the related entity
+  metadata   String? // Flexible field for additional data
+  timestamp  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, action, timestamp])
+  @@index([entityType, entityId])
+}
+
+model QuizAttempt {
+  id        Int        @id @default(autoincrement())
+  userId    String
+  quizId    Int
+  score     Int
+  timeSpent Int
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz      CourseQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+}

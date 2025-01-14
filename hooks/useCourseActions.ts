@@ -1,0 +1,100 @@
+import { useState, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "@/hooks/use-toast"
+
+interface CourseStatus {
+  isPublic: boolean
+  isFavorite: boolean
+}
+
+interface UseCourseActionsProps {
+  slug: string
+}
+
+export default function useCourseActions({ slug }: UseCourseActionsProps) {
+  const [loading, setLoading] = useState<string | null>(null)
+  const [status, setStatus] = useState<CourseStatus>({ isPublic: false, isFavorite: false })
+  const router = useRouter()
+
+  const fetchCourseStatus = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/course/${slug}`)
+      if (!response.ok) throw new Error('Failed to fetch course status')
+      const data = await response.json()
+      setStatus({ isPublic: data.isPublic, isFavorite: data.isFavorite })
+    } catch (error) {
+      console.error("Error fetching course status:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch course status. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }, [slug])
+
+  useEffect(() => {
+    fetchCourseStatus()
+  }, [fetchCourseStatus])
+
+  const handleAction = useCallback(async (action: 'privacy' | 'favorite' | 'delete') => {
+    setLoading(action)
+    try {
+      let response;
+      if (action === 'privacy' || action === 'favorite') {
+        const updateData = action === 'privacy'
+          ? { isPublic: !status.isPublic }
+          : { isFavorite: !status.isFavorite };
+        
+        response = await fetch(`/api/course/${slug}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        });
+      } else if (action === 'delete') {
+        response = await fetch(`/api/courses/${slug}`, {
+          method: 'DELETE',
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to perform action');
+      }
+
+      const result = await response.json();
+
+      if (action === 'privacy') {
+        setStatus((prev) => ({ ...prev, isPublic: result.course.isPublic }))
+        toast({
+          title: "Course Privacy Updated",
+          description: `Course is now ${result.course.isPublic ? 'public' : 'private'}.`,
+        })
+      } else if (action === 'delete') {
+        toast({
+          title: "Course Deleted",
+          description: "The course has been successfully deleted.",
+        })
+        router.push('/courses')
+      } else if (action === 'favorite') {
+        setStatus((prev) => ({ ...prev, isFavorite: result.course.isFavorite }))
+        toast({
+          title: "Favorite Status Updated",
+          description: `Course ${result.course.isFavorite ? 'added to' : 'removed from'} favorites.`,
+        })
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error("Error handling action:", error)
+      toast({
+        title: "Error",
+        description: `Failed to ${action} course. Please try again.`,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(null)
+    }
+  }, [slug, status, router])
+
+  return { status, loading, handleAction }
+}
+
