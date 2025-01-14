@@ -7,7 +7,7 @@ import rehypeSanitize from 'rehype-sanitize';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import CourseAILoader from '../CourseAILoader';
+import ComponentLoader from '../ComponentLoader';
 
 interface CourseAISummaryProps {
   chapterId: number;
@@ -52,7 +52,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name ,onSu
     } finally {
       setIsLoading(false);
     }
-  }, [chapterId, retryCount]);
+  }, [chapterId, onSummaryReady]);
 
   useEffect(() => {
     fetchSummary();
@@ -61,15 +61,9 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name ,onSu
   const content = useMemo(() => {
     if (isLoading || (!data?.success && retryCount < MAX_RETRIES)) {
       return (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="space-y-4 flex items-center justify-center"
-        >
-          <CourseAILoader size="sm" />
-        </motion.div>
+       
+          <ComponentLoader size="sm" />
+
       );
     }
 
