@@ -11,7 +11,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { NavItem } from "../types"
 
-
 interface MobileMenuProps {
   session: Session | null
   navItems: NavItem[]
@@ -30,11 +29,11 @@ export function MobileMenu({
   return (
     <SheetContent side="left" className="w-full sm:max-w-md p-0">
       <div className="flex flex-col h-full bg-background text-foreground">
-        <SheetHeader className="px-4 py-6 border-b">
-          <SheetTitle className="text-2xl font-bold">Menu</SheetTitle>
+        <SheetHeader className="px-4 py-4 border-b">
+          <SheetTitle className="text-xl font-bold">Menu</SheetTitle>
         </SheetHeader>
-        <ScrollArea className="flex-grow px-4">
-          <div className="py-6 space-y-6">
+        <ScrollArea className="flex-grow">
+          <div className="py-4 px-4 space-y-4">
             <form onSubmit={handleSearch} className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -43,28 +42,28 @@ export function MobileMenu({
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-full"
+                  className="pl-9 w-full h-10"
                 />
               </div>
-              <Button type="submit" size="sm">
-                <Search className="h-4 w-4 mr-2" />
-                Search
+              <Button type="submit" size="sm" className="h-10 px-3">
+                <Search className="h-4 w-4" />
+                <span className="sr-only">Search</span>
               </Button>
             </form>
             <nav>
-              <ul className="space-y-2">
+              <ul className="space-y-1">
                 {navItems.map((item, index) => (
                   <motion.li
                     key={item.name}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.05 }}
                   >
                     <Link
                       href={item.href}
                       className="flex items-center rounded-md p-2 hover:bg-accent hover:text-accent-foreground transition-colors"
                     >
-                      <item.icon className="mr-3 h-5 w-5" />
+                      <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span className="text-sm font-medium">{item.name}</span>
                     </Link>
                   </motion.li>
@@ -78,15 +77,15 @@ export function MobileMenu({
             <Button
               variant="outline"
               onClick={() => signOut()}
-              className="w-full"
+              className="w-full h-10"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              <span className="text-sm">Sign Out</span>
             </Button>
           ) : (
-            <Button onClick={() => signIn()} className="w-full">
+            <Button onClick={() => signIn()} className="w-full h-10">
               <LogIn className="mr-2 h-4 w-4" />
-              Sign In
+              <span className="text-sm">Sign In</span>
             </Button>
           )}
         </div>
