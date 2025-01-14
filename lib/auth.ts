@@ -30,7 +30,7 @@ declare module "next-auth/jwt" {
 
 const CACHE_TTL = 3600; // 1 hour in seconds
 
-const userCache = new LRUCache<string, any>({
+const userCache = new LRUCache({
   max: 500, // Maximum number of items to store in the cache
   ttl: CACHE_TTL * 1000, // TTL in milliseconds
 });
