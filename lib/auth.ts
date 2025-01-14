@@ -6,7 +6,7 @@ import GithubProvider from "next-auth/providers/github";
 import FacebookProvider from "next-auth/providers/facebook";
 import { NextResponse } from "next/server";
 import { JWT } from "next-auth/jwt";
-import { LRUCache } from 'lru-cache'
+const LRUCache = require('lru-cache')
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
