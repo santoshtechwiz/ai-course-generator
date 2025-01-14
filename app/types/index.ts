@@ -340,3 +340,16 @@ export class CourseAIErrors{
 
   message: string
 }
+
+export interface SearchResult {
+  id: string;
+  name: string;
+  type: 'course' | 'quiz';
+  slug: string;
+}
+
+export interface SearchResponse {
+  courses: SearchResult[];
+  quizzes: SearchResult[];
+}
+

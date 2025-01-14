@@ -1,246 +1,286 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { Menu, Search, LogOut, LogIn, User, ChevronDown, Cpu, Brain, Sparkles, Zap, CreditCard, Bell } from 'lucide-react'
-import { AnimatePresence, motion } from "framer-motion"
+import { Menu, Search, LogOut, LogIn, User, ChevronDown, Bell, X, Settings, ChevronRight } from 'lucide-react'
+import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { CreateSection } from "./create-section"
-import { NavItem } from "../types"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { cn } from "@/lib/utils"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@radix-ui/react-dropdown-menu"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+
+import { navItems } from "@/constants/navItems"
+import { CreateSection } from "./create-section"
+
 import SearchModal from "./SearchModal"
-import { SearchBar } from "./SearchBar"
+import Logo from "./Logo"
 
+const MobileMenu = () => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
 
-const navItems: NavItem[] = [
-  { 
-    name: "Dashboard", 
-    href: "/dashboard",
-    icon: Cpu,
-    subItems: []
-  },
-  { 
-    name: "Courses", 
-    href: "/dashboard/courses",
-    icon: Brain,
-    subItems: []
-  },
-  { 
-    name: "Quizzes", 
-    href: "/dashboard/quizzes",
-    icon: Sparkles,
-    subItems: []
-  },
-  { 
-    name: "Create", 
-    href: "/dashboard/create",
-    icon: Zap,
-    subItems: [
-      { name: "New Course", href: "/dashboard/create", icon: Zap, subItems: [] },
-      { name: "New MCQ Quiz", href: "/dashboard/quiz", icon: Zap, subItems: [] },
-      { name: "New Open Quiz", href: "/dashboard/openended", icon: Zap, subItems: [] },
-    ]
-  },
-  { 
-    name: "Subscriptions", 
-    href: "/dashboard/subscription",
-    icon: CreditCard,
-    subItems: []
-  },
-]
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+  
+  return (
+    <>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-full sm:w-[400px] p-0">
+          <motion.div 
+            className="flex flex-col h-full"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <Logo />
+              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close menu</span>
+              </Button>
+            </div>
+            <nav className="flex flex-col gap-4 p-4 flex-grow">
+              {navItems.map((item, index) => (
+                <motion.div
+                  key={item.name}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  {item.name === "Create" ? (
+                    <div>
+                      <Button
+                        variant={pathname === item.href ? "secondary" : "ghost"}
+                        className="justify-between w-full"
+                        onClick={() => setIsCreateOpen(!isCreateOpen)}
+                      >
+                        {item.name}
+                        <ChevronRight className={`h-4 w-4 transition-transform ${isCreateOpen ? 'rotate-90' : ''}`} />
+                      </Button>
+                      <AnimatePresence>
+                        {isCreateOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="ml-4 mt-2"
+                          >
+                            <CreateSection />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <Button
+                      variant={pathname === item.href ? "secondary" : "ghost"}
+                      className="justify-start w-full"
+                      onClick={() => {
+                        router.push(item.href)
+                        setIsOpen(false)
+                      }}
+                    >
+                      {item.name}
+                    </Button>
+                  )}
+                </motion.div>
+              ))}
+            </nav>
+          </motion.div>
+        </SheetContent>
+      </Sheet>
+    </>
+  )
+}
+
+const NavItems = () => {
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+
+  return (
+    <>
+      {navItems.map((item, index) => (
+        <motion.div
+          key={item.name}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+        >
+          {item.name === "Create" ? (
+            <DropdownMenu open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "flex items-center gap-2",
+                    pathname === item.href && "bg-accent"
+                  )}
+                >
+                  {item.name}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[800px] p-0">
+                <CreateSection />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              variant={pathname === item.href ? "secondary" : "ghost"}
+              className="flex items-center gap-2"
+              onClick={() => router.push(item.href)}
+            >
+              {item.name}
+            </Button>
+          )}
+        </motion.div>
+      ))}
+    </>
+  )
+}
+
+const EnhancedSearchBar = ({ onSearch }: { onSearch: () => void }) => (
+  <motion.div 
+    className="relative w-full max-w-sm"
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.3 }}
+  >
+    <Input
+      type="search"
+      placeholder="Search..."
+      className="w-full rounded-full pl-10 pr-4 py-2 bg-background/50 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300"
+      onClick={onSearch}
+    />
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+  </motion.div>
+)
 
 export default function Navbar() {
   const { data: session, status } = useSession()
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
   const router = useRouter()
-  const pathname = usePathname()
 
-  const isActive = useCallback((href: string) => {
-    return pathname === href
-  }, [pathname])
+  const handleSignIn = () => signIn()
+  const handleSignOut = () => signOut()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-8">
-        <div className="flex items-center gap-4">
-          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-              <nav className="flex flex-col gap-4">
-                {navItems.map((item) => (
-                  <Button
-                    key={item.name}
-                    variant={isActive(item.href) ? "secondary" : "ghost"}
-                    className="justify-start"
-                    onClick={() => {
-                      router.push(item.href)
-                      setIsMobileMenuOpen(false)
-                    }}
-                  >
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {item.name}
-                  </Button>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
-
-          <Link href="/" className="flex items-center space-x-2">
-            <motion.span 
-              className="font-bold inline-block"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              CourseAI
-            </motion.span>
-          </Link>
+    <motion.header 
+      className="sticky top-0 z-50 w-full border-b bg-background/70 backdrop-blur-lg shadow-sm"
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="container flex h-16 max-w-screen-2xl items-center px-4 md:px-8">
+        <div className="flex items-center gap-4 flex-1">
+          <MobileMenu />
+          <Logo />
         </div>
 
-        <nav className="hidden md:flex items-center gap-4">
-          <AnimatePresence>
-            {navItems.map((item) => (
-              <motion.div
-                key={item.name}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {item.name === "Create" ? (
-                  <DropdownMenu open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost"
-                        className={cn(
-                          "flex items-center gap-2",
-                          isActive(item.href) && "bg-accent"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {item.name}
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent 
-                      align="start"
-                      className="w-[800px] p-0"
-                    >
-                      <CreateSection />
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Button
-                    variant={isActive(item.href) ? "secondary" : "ghost"}
-                    className="flex items-center gap-2"
-                    onClick={() => router.push(item.href)}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.name}
-                  </Button>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+        <nav className="hidden md:flex items-center gap-6 flex-1 justify-center" aria-label="Main Navigation">
+          <NavItems />
         </nav>
 
-        <div className="flex items-center gap-4">
-          <SearchBar onSearch={(term) => {
-            setSearchTerm(term)
-            setIsSearchModalOpen(true)
-          }} />
+        <div className="flex items-center gap-4 flex-1 justify-end">
+          <div className="hidden md:block">
+            <EnhancedSearchBar onSearch={() => setIsSearchModalOpen(true)} />
+          </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            onClick={() => {
-              // Handle notifications
-            }}
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-            <span className="sr-only">Notifications</span>
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => {
+                // Handle notifications
+              }}
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+              <span className="sr-only">Notifications</span>
+            </Button>
+          </motion.div>
 
           <ThemeToggle />
 
           {status === "authenticated" && session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="relative h-8 w-8 rounded-full"
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage 
-                      src={session.user?.image ?? undefined} 
-                      alt={session.user?.name ?? "User"} 
-                    />
-                    <AvatarFallback>
-                      {session.user?.name?.[0] ?? "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={session.user?.image ?? undefined} alt={session.user?.name ?? "User"} />
+                      <AvatarFallback>{session.user?.name?.[0] ?? "U"}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </motion.div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
-                    {session.user?.name && (
-                      <p className="font-medium">{session.user.name}</p>
-                    )}
-                    {session.user?.email && (
-                      <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        {session.user.email}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="flex items-center"
-                  onClick={() => signOut()}
+              <DropdownMenuContent align="end" className="w-56 mt-1 p-2">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </DropdownMenuItem>
+                  <div className="flex flex-col space-y-1 leading-none mb-2">
+                    {session.user?.name && <p className="font-medium">{session.user.name}</p>}
+                    {session.user?.email && <p className="w-[200px] truncate text-sm text-muted-foreground">{session.user.email}</p>}
+                  </div>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center text-red-500 hover:text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </motion.div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button 
-              variant="default" 
-              size="sm"
-              onClick={() => signIn()}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In
-            </Button>
+              <Button variant="default" size="sm" onClick={handleSignIn}>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+            </motion.div>
           )}
         </div>
       </div>
@@ -252,10 +292,8 @@ export default function Navbar() {
           router.push(url)
           setIsSearchModalOpen(false)
         }}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
       />
-    </header>
+    </motion.header>
   )
 }
 
