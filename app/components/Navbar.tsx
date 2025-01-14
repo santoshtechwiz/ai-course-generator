@@ -1,388 +1,261 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { Menu, Search, LogOut, LogIn, X, User, ChevronDown, Lightbulb, CreditCard, Bell } from 'lucide-react'
-import { motion, AnimatePresence } from "framer-motion"
+import { Menu, Search, LogOut, LogIn, User, ChevronDown, Cpu, Brain, Sparkles, Zap, CreditCard, Bell } from 'lucide-react'
+import { AnimatePresence, motion } from "framer-motion"
 
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Sheet, SheetTrigger } from "@/components/ui/sheet"
 
-import SearchModal from "./SearchModal"
-import { Loader } from "@/components/ui/loader"
-import { MobileMenu } from "./MobileMenu"
-import Logo from "./Logo"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { CreateSection } from "./create-section"
+import { NavItem } from "../types"
 import { ThemeToggle } from "@/components/ThemeToggle"
-import { navItems } from "@/constants/navItems"
-import NotificationsMenu from "./NotificationsMenu"
+import { cn } from "@/lib/utils"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@radix-ui/react-dropdown-menu"
+import SearchModal from "./SearchModal"
+import { SearchBar } from "./SearchBar"
 
-const MotionLink = motion(Link)
 
-const NavItem = React.memo(({ item, isActive, hoveredItem, setHoveredItem, router }) => {
-  return (
-    <motion.div
-      key={item.name}
-      className="relative group"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: item.index * 0.1 }}
-    >
-      {item.subItems.length > 0 ? (
-        <DropdownMenu onOpenChange={(open) => open && setHoveredItem(item.name)}>
-          <DropdownMenuTrigger asChild>
-            <motion.button
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground inline-flex items-center ${
-                isActive(item.href) ? 'bg-primary/10 text-primary' : ''
-              }`}
-              onHoverStart={() => setHoveredItem(item.name)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.name}
-              <motion.div
-                animate={{ rotate: hoveredItem === item.name ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </motion.div>
-            </motion.button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            onMouseLeave={() => setHoveredItem(null)}
-            className="w-56"
-          >
-            <AnimatePresence>
-              {item.subItems.map((subItem, idx) => (
-                <motion.div
-                  key={subItem.name}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ delay: idx * 0.05 }}
-                >
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={subItem.href}
-                      className={`w-full px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${
-                        isActive(subItem.href) ? 'bg-primary/10 text-primary' : ''
-                      }`}
-                    >
-                      {subItem.name}
-                    </Link>
-                  </DropdownMenuItem>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Button
-            variant={isActive(item.href) ? "secondary" : "ghost"}
-            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${
-              isActive(item.href) ? 'bg-primary/10 text-primary' : ''
-            }`}
-            onClick={() => router.push(item.href)}
-          >
-            <item.icon className="mr-2 h-4 w-4" />
-            {item.name}
-          </Button>
-        </motion.div>
-      )}
-    </motion.div>
-  )
-})
+const navItems: NavItem[] = [
+  { 
+    name: "Dashboard", 
+    href: "/dashboard",
+    icon: Cpu,
+    subItems: []
+  },
+  { 
+    name: "Courses", 
+    href: "/dashboard/courses",
+    icon: Brain,
+    subItems: []
+  },
+  { 
+    name: "Quizzes", 
+    href: "/dashboard/quizzes",
+    icon: Sparkles,
+    subItems: []
+  },
+  { 
+    name: "Create", 
+    href: "/dashboard/create",
+    icon: Zap,
+    subItems: [
+      { name: "New Course", href: "/dashboard/create", icon: Zap, subItems: [] },
+      { name: "New MCQ Quiz", href: "/dashboard/quiz", icon: Zap, subItems: [] },
+      { name: "New Open Quiz", href: "/dashboard/openended", icon: Zap, subItems: [] },
+    ]
+  },
+  { 
+    name: "Subscriptions", 
+    href: "/dashboard/subscription",
+    icon: CreditCard,
+    subItems: []
+  },
+]
 
-NavItem.displayName = "NavItem";
-
-const SearchBar = React.memo(({ searchTerm, setSearchTerm, handleSearch }) => {
-  return (
-    <motion.form
-      onSubmit={handleSearch}
-      className="relative hidden md:block w-full max-w-sm xl:max-w-md flex items-center"
-      initial={false}
-      animate={searchTerm ? "expanded" : "collapsed"}
-      variants={{
-        expanded: { width: "100%" },
-        collapsed: { width: "100%" }
-      }}
-    >
-      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      <Input
-        type="search"
-        placeholder="Search or ask AI..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="pl-8 pr-10 w-full rounded-full bg-muted transition-all duration-300 focus:ring-2 focus:ring-primary"
-        aria-label="Search"
-      />
-      <AnimatePresence>
-        {searchTerm && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            type="button"
-            onClick={() => setSearchTerm("")}
-            className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            aria-label="Clear search"
-          >
-            <X className="h-4 w-4" />
-          </motion.button>
-        )}
-      </AnimatePresence>
-    </motion.form>
-  )
-})
-
-SearchBar.displayName = "SearchBar";
-
-const UserMenu = React.memo(({ status, session, handleSignOut }) => {
-  if (status === "authenticating") {
-    return (
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      >
-        <Loader size={20} />
-      </motion.div>
-    )
-  }
-
-  if (status === "authenticated" && session) {
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative h-8 w-8 rounded-full"
-          >
-            <Avatar className="h-8 w-8">
-              <AvatarImage
-                src={session.user.image ?? undefined}
-                alt={session.user.name ?? "User"}
-              />
-              <AvatarFallback>{session.user.name?.[0]}</AvatarFallback>
-            </Avatar>
-          </motion.button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">
-                {session.user.name}
-              </p>
-              <p className="text-xs leading-none text-muted-foreground">
-                {session.user.email}
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard" className="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground">
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/subscriptions" className="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground">
-              <CreditCard className="mr-2 h-4 w-4" />
-              <span>Subscriptions</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleSignOut}
-            className="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    )
-  }
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      <Button onClick={() => signIn()} variant="default" size="sm">
-        <LogIn className="mr-2 h-4 w-4" />
-        Sign In
-      </Button>
-    </motion.div>
-  )
-})
-
-UserMenu.displayName = "UserMenu";
-
-export default function ResponsiveHeader() {
+export default function Navbar() {
   const { data: session, status } = useSession()
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
-
   const router = useRouter()
   const pathname = usePathname()
 
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchTerm.trim()) {
-      setIsModalOpen(true)
-    }
-  }, [searchTerm])
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  const handleSignOut = useCallback(async () => {
-    await signOut({ redirect: false })
-    router.push('/')
-  }, [router])
-
   const isActive = useCallback((href: string) => {
-    if (href === '/dashboard' && pathname === '/dashboard') {
-      return true
-    }
-    return pathname.startsWith(href) && href !== '/dashboard'
+    return pathname === href
   }, [pathname])
 
   return (
-    <motion.header
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ 
-        y: 0, 
-        opacity: 1,
-        transition: {
-          type: "spring",
-          stiffness: 300,
-          damping: 30,
-        }
-      }}
-      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ${
-        isScrolled ? 'shadow-md' : ''
-      }`}
-    >
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
-        <div className="flex items-center space-x-4">
-          <Sheet>
-  <SheetTrigger asChild>
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className="px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-2 focus-visible:ring-offset-0 lg:hidden"
-      aria-label="Toggle Menu"
-    >
-      <Menu className="h-5 w-5" />
-    </motion.button>
-  </SheetTrigger>
-  <MobileMenu
-    session={session}
-    navItems={navItems}
-    searchTerm={searchTerm}
-    setSearchTerm={setSearchTerm}
-    handleSearch={handleSearch}
-  />
-</Sheet>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-8">
+        <div className="flex items-center gap-4">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+              <nav className="flex flex-col gap-4">
+                {navItems.map((item) => (
+                  <Button
+                    key={item.name}
+                    variant={isActive(item.href) ? "secondary" : "ghost"}
+                    className="justify-start"
+                    onClick={() => {
+                      router.push(item.href)
+                      setIsMobileMenuOpen(false)
+                    }}
+                  >
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Button>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
 
-          <MotionLink
-            href="/"
-            className="flex items-center space-x-2"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Logo
-              size="small"
-              variant="default"
-              textColor="currentColor"
-              iconColor="currentColor"
-            />
-            <Lightbulb className="h-6 w-6 text-primary" />
-          </MotionLink>
+          <Link href="/" className="flex items-center space-x-2">
+            <motion.span 
+              className="font-bold inline-block"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              CourseAI
+            </motion.span>
+          </Link>
         </div>
 
-        <nav className="hidden lg:flex items-center space-x-1">
-          {navItems.map((item, index) => (
-            <NavItem
-              key={item.name}
-              item={{...item, index}}
-              isActive={isActive}
-              hoveredItem={hoveredItem}
-              setHoveredItem={setHoveredItem}
-              router={router}
-            />
-          ))}
+        <nav className="hidden md:flex items-center gap-4">
+          <AnimatePresence>
+            {navItems.map((item) => (
+              <motion.div
+                key={item.name}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {item.name === "Create" ? (
+                  <DropdownMenu open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost"
+                        className={cn(
+                          "flex items-center gap-2",
+                          isActive(item.href) && "bg-accent"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.name}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent 
+                      align="start"
+                      className="w-[800px] p-0"
+                    >
+                      <CreateSection />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    variant={isActive(item.href) ? "secondary" : "ghost"}
+                    className="flex items-center gap-2"
+                    onClick={() => router.push(item.href)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.name}
+                  </Button>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </nav>
 
-        <div className="flex items-center space-x-4">
-          <SearchBar
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            handleSearch={handleSearch}
-          />
+        <div className="flex items-center gap-4">
+          <SearchBar onSearch={(term) => {
+            setSearchTerm(term)
+            setIsSearchModalOpen(true)
+          }} />
 
-          <NotificationsMenu />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={() => {
+              // Handle notifications
+            }}
+          >
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+            <span className="sr-only">Notifications</span>
+          </Button>
 
           <ThemeToggle />
 
-          <UserMenu
-            status={status}
-            session={session}
-            handleSignOut={handleSignOut}
-          />
-
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden flex items-center justify-center w-10 h-10"
-              onClick={() => setIsModalOpen(true)}
-              aria-label="Search"
+          {status === "authenticated" && session ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="relative h-8 w-8 rounded-full"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage 
+                      src={session.user?.image ?? undefined} 
+                      alt={session.user?.name ?? "User"} 
+                    />
+                    <AvatarFallback>
+                      {session.user?.name?.[0] ?? "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    {session.user?.name && (
+                      <p className="font-medium">{session.user.name}</p>
+                    )}
+                    {session.user?.email && (
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {session.user.email}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex items-center"
+                  onClick={() => signOut()}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={() => signIn()}
             >
-              <Search className="h-5 w-5" />
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
             </Button>
-          </motion.div>
+          )}
         </div>
       </div>
 
       <SearchModal
-        isOpen={isModalOpen}
-        setIsOpen={setIsModalOpen}
-        searchTerm={searchTerm}
-        onResultClick={(url: string) => {
-          setIsModalOpen(false)
+        isOpen={isSearchModalOpen}
+        setIsOpen={setIsSearchModalOpen}
+        onResultClick={(url) => {
           router.push(url)
+          setIsSearchModalOpen(false)
         }}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
       />
-    </motion.header>
+    </header>
   )
 }
 
