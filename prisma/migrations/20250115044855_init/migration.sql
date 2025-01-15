@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "Account" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "user_id" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "provider" TEXT NOT NULL,
@@ -13,26 +13,28 @@ CREATE TABLE "Account" (
     "scope" TEXT,
     "id_token" TEXT,
     "session_state" TEXT,
-    CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Session" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "sessionToken" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
-    "expires" DATETIME NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
     "isAdmin" BOOLEAN NOT NULL DEFAULT false,
-    "lastUsed" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Session_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "lastUsed" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT,
     "email" TEXT,
-    "emailVerified" DATETIME,
+    "emailVerified" TIMESTAMP(3),
     "image" TEXT,
     "credits" INTEGER NOT NULL DEFAULT 3,
     "isAdmin" BOOLEAN NOT NULL DEFAULT false,
@@ -40,52 +42,55 @@ CREATE TABLE "User" (
     "totalCoursesWatched" INTEGER NOT NULL DEFAULT 0,
     "totalQuizzesAttempted" INTEGER NOT NULL DEFAULT 0,
     "totalTimeSpent" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "lastLogin" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastLogin" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Favorite" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "user_id" TEXT NOT NULL,
     "courseId" INTEGER NOT NULL,
-    CONSTRAINT "Favorite_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Favorite_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "Favorite_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Course" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "image" TEXT NOT NULL,
     "viewCount" INTEGER NOT NULL DEFAULT 0,
     "totalRatings" INTEGER NOT NULL DEFAULT 0,
-    "averageRating" REAL NOT NULL DEFAULT 0,
+    "averageRating" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "user_id" TEXT NOT NULL,
     "categoryId" INTEGER,
     "isCompleted" BOOLEAN DEFAULT false,
     "isPublic" BOOLEAN NOT NULL DEFAULT false,
     "slug" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Course_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Course_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Course_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "CourseUnit" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "courseId" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "isCompleted" BOOLEAN DEFAULT false,
     "duration" INTEGER,
-    CONSTRAINT "CourseUnit_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "CourseUnit_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Chapter" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "unitId" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "youtubeSearchQuery" TEXT NOT NULL,
@@ -94,135 +99,149 @@ CREATE TABLE "Chapter" (
     "isCompleted" BOOLEAN NOT NULL DEFAULT false,
     "summaryStatus" TEXT NOT NULL DEFAULT 'PENDING',
     "videoStatus" TEXT NOT NULL DEFAULT 'PENDING',
-    CONSTRAINT "Chapter_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "CourseUnit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "Chapter_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "CourseQuiz" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "chapterId" INTEGER NOT NULL,
     "question" TEXT NOT NULL,
     "answer" TEXT NOT NULL,
     "options" TEXT NOT NULL,
-    CONSTRAINT "CourseQuiz_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "CourseQuiz_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Course_Rating" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "courseId" INTEGER NOT NULL,
     "user_id" TEXT NOT NULL,
     "rating" INTEGER NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Course_Rating_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Course_Rating_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Course_Rating_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Category" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "name" TEXT NOT NULL
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+
+    CONSTRAINT "Category_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "CourseProgress" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "user_id" TEXT NOT NULL,
     "courseId" INTEGER NOT NULL,
     "currentChapterId" INTEGER NOT NULL,
     "currentUnitId" INTEGER,
     "completedChapters" TEXT NOT NULL,
     "progress" INTEGER NOT NULL DEFAULT 0,
-    "lastAccessedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastAccessedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "timeSpent" INTEGER NOT NULL DEFAULT 0,
     "isCompleted" BOOLEAN NOT NULL DEFAULT false,
-    CONSTRAINT "CourseProgress_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "CourseProgress_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "quizScores" TEXT,
+    "notes" TEXT,
+    "bookmarks" TEXT,
+
+    CONSTRAINT "CourseProgress_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "UserQuiz" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "user_id" TEXT NOT NULL,
-    "timeStarted" DATETIME NOT NULL,
+    "timeStarted" TIMESTAMP(3) NOT NULL,
     "topic" TEXT NOT NULL,
-    "timeEnded" DATETIME,
+    "timeEnded" TIMESTAMP(3),
     "gameType" TEXT NOT NULL,
     "isPublic" BOOLEAN DEFAULT false,
     "score" INTEGER,
     "duration" INTEGER,
     "slug" TEXT NOT NULL,
     "isFavorite" BOOLEAN DEFAULT false,
-    CONSTRAINT "UserQuiz_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "UserQuiz_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "UserSubscription" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "planId" TEXT NOT NULL,
     "status" TEXT NOT NULL,
-    "currentPeriodStart" DATETIME NOT NULL,
-    "currentPeriodEnd" DATETIME NOT NULL,
+    "currentPeriodStart" TIMESTAMP(3) NOT NULL,
+    "currentPeriodEnd" TIMESTAMP(3) NOT NULL,
     "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false,
     "stripeSubscriptionId" TEXT,
     "stripeCustomerId" TEXT,
-    CONSTRAINT "UserSubscription_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "UserSubscription_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TopicCount" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "topic" TEXT NOT NULL,
-    "count" INTEGER NOT NULL
+    "count" INTEGER NOT NULL,
+
+    CONSTRAINT "TopicCount_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Quiz" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "question" TEXT NOT NULL,
     "answer" TEXT NOT NULL,
     "gameId" INTEGER NOT NULL,
     "options" TEXT,
-    "percentageCorrect" REAL,
+    "percentageCorrect" DOUBLE PRECISION,
     "isCorrect" BOOLEAN,
     "questionType" TEXT NOT NULL,
     "userAnswer" TEXT,
-    CONSTRAINT "Quiz_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "UserQuiz" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "Quiz_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "OpenEndedQuestion" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "quizId" INTEGER NOT NULL,
     "hints" TEXT NOT NULL,
     "difficulty" TEXT NOT NULL,
     "tags" TEXT NOT NULL,
-    CONSTRAINT "OpenEndedQuestion_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES "Quiz" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "OpenEndedQuestion_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "UserBehavior" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "action" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
     "entityId" TEXT NOT NULL,
     "metadata" TEXT,
-    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "UserBehavior_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "UserBehavior_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "QuizAttempt" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "quizId" INTEGER NOT NULL,
     "score" INTEGER NOT NULL,
     "timeSpent" INTEGER NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "QuizAttempt_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "QuizAttempt_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES "CourseQuiz" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QuizAttempt_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -332,3 +351,63 @@ CREATE INDEX "QuizAttempt_userId_idx" ON "QuizAttempt"("userId");
 
 -- CreateIndex
 CREATE INDEX "QuizAttempt_quizId_idx" ON "QuizAttempt"("quizId");
+
+-- AddForeignKey
+ALTER TABLE "Account" ADD CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Course" ADD CONSTRAINT "Course_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Course" ADD CONSTRAINT "Course_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CourseUnit" ADD CONSTRAINT "CourseUnit_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Chapter" ADD CONSTRAINT "Chapter_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "CourseUnit"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CourseQuiz" ADD CONSTRAINT "CourseQuiz_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Course_Rating" ADD CONSTRAINT "Course_Rating_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Course_Rating" ADD CONSTRAINT "Course_Rating_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CourseProgress" ADD CONSTRAINT "CourseProgress_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CourseProgress" ADD CONSTRAINT "CourseProgress_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserQuiz" ADD CONSTRAINT "UserQuiz_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Quiz" ADD CONSTRAINT "Quiz_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OpenEndedQuestion" ADD CONSTRAINT "OpenEndedQuestion_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES "Quiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserBehavior" ADD CONSTRAINT "UserBehavior_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QuizAttempt" ADD CONSTRAINT "QuizAttempt_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QuizAttempt" ADD CONSTRAINT "QuizAttempt_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES "CourseQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;

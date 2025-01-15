@@ -23,6 +23,7 @@ import { CreateSection } from "./create-section"
 
 import SearchModal from "./SearchModal"
 import Logo from "./Logo"
+import NotificationsMenu from "./NotificationsMenu"
 
 const MobileMenu = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -87,6 +88,7 @@ const MobileMenu = () => {
                 className="pl-9 w-full"
               />
             </div>
+            <NotificationsMenu />
           </div>
 
           {/* Navigation */}
