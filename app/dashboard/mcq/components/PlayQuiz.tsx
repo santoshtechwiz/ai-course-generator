@@ -167,7 +167,7 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
 
   if (hasError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl shadow-xl border-0">
           <CardContent className="p-6 text-center">
             <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
@@ -183,7 +183,7 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen   flex items-center justify-center p-4">
       <Card className="w-full max-w-[95%] md:max-w-3xl shadow-xl border-0">
         <CardHeader className="space-y-4 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
