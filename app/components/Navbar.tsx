@@ -14,6 +14,9 @@ import { ThemeToggle } from "@/components/ThemeToggle"
 import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { VisuallyHidden } from "@/components/ui/visually-hidden"
 
 import { navItems } from "@/constants/navItems"
 import { CreateSection } from "./create-section"
@@ -24,70 +27,96 @@ import Logo from "./Logo"
 const MobileMenu = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
+  const { data: session } = useSession()
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const offset = window.scrollY
+      setIsScrolled(offset > 20)
+    }
+
+    // Call handleScroll on initial render
+    handleScroll()
+
+    window.addEventListener("scroll", handleScroll)
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [])
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden'
+      document.body.style.overflow = "hidden"
     } else {
-      document.body.style.overflow = 'unset'
+      document.body.style.overflow = "unset"
     }
     return () => {
-      document.body.style.overflow = 'unset'
+      document.body.style.overflow = "unset"
     }
   }, [isOpen])
-  
+
   return (
-    <>
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-full sm:w-[400px] p-0">
-          <motion.div 
-            className="flex flex-col h-full"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="flex items-center justify-between p-4 border-b">
-              <Logo />
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                <X className="h-5 w-5" />
-                <span className="sr-only">Close menu</span>
-              </Button>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="md:hidden">
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="p-0 w-full sm:w-[350px]">
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <Logo />
+            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+              <X className="h-5 w-5" />
+              <span className="sr-only">Close menu</span>
+            </Button>
+          </div>
+
+          {/* Search */}
+          <div className="p-4 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="pl-9 w-full"
+              />
             </div>
-            <nav className="flex flex-col gap-4 p-4 flex-grow">
+          </div>
+
+          {/* Navigation */}
+          <ScrollArea className="flex-1 p-4">
+            <nav className="space-y-2">
               {navItems.map((item, index) => (
                 <motion.div
                   key={item.name}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
                 >
                   {item.name === "Create" ? (
-                    <div>
+                    <div className="space-y-2">
                       <Button
                         variant={pathname === item.href ? "secondary" : "ghost"}
-                        className="justify-between w-full"
+                        className="w-full justify-start"
                         onClick={() => setIsCreateOpen(!isCreateOpen)}
                       >
-                        {item.name}
-                        <ChevronRight className={`h-4 w-4 transition-transform ${isCreateOpen ? 'rotate-90' : ''}`} />
+                        {item.icon && <item.icon className="mr-2 h-5 w-5" />}
+                        <span className="flex-1 text-left">{item.name}</span>
+                        <ChevronRight className={cn("h-4 w-4 transition-transform ml-2", isCreateOpen && "rotate-90")} />
                       </Button>
                       <AnimatePresence>
                         {isCreateOpen && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
+                            animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="ml-4 mt-2"
+                            className="pl-4 space-y-2"
                           >
                             <CreateSection />
                           </motion.div>
@@ -97,24 +126,60 @@ const MobileMenu = () => {
                   ) : (
                     <Button
                       variant={pathname === item.href ? "secondary" : "ghost"}
-                      className="justify-start w-full"
+                      className="w-full justify-start"
                       onClick={() => {
                         router.push(item.href)
                         setIsOpen(false)
                       }}
                     >
+                      {item.icon && <item.icon className="mr-2 h-5 w-5" />}
                       {item.name}
                     </Button>
                   )}
                 </motion.div>
               ))}
             </nav>
-          </motion.div>
-        </SheetContent>
-      </Sheet>
-    </>
+          </ScrollArea>
+
+          {/* Footer */}
+          <div className="p-4 border-t">
+            {session ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Avatar>
+                    <AvatarImage src={session.user?.image ?? undefined} />
+                    <AvatarFallback>{session.user?.name?.[0] ?? "U"}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{session.user?.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {session.user?.email}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => signOut()}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </Button>
+              </div>
+            ) : (
+              <Button className="w-full" onClick={() => signIn()}>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign in
+              </Button>
+            )}
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }
+
+
 
 const NavItems = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -165,7 +230,7 @@ const NavItems = () => {
 
 const EnhancedSearchBar = ({ onSearch }: { onSearch: () => void }) => (
   <motion.div 
-    className="relative w-full max-w-sm"
+    className="relative w-full max-w-[200px] md:max-w-sm"
     initial={{ opacity: 0, scale: 0.8 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.3 }}
@@ -195,21 +260,29 @@ export default function Navbar() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="container flex h-16 max-w-screen-2xl items-center px-4 md:px-8">
+      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-4 flex-1">
           <MobileMenu />
           <Logo />
         </div>
 
-        <nav className="hidden md:flex items-center gap-6 flex-1 justify-center" aria-label="Main Navigation">
+        <nav className="hidden md:flex items-center space-x-4 flex-1 justify-center" aria-label="Main Navigation">
           <NavItems />
         </nav>
 
         <div className="flex items-center gap-4 flex-1 justify-end">
-          <div className="hidden md:block">
+          <div className="hidden sm:block">
             <EnhancedSearchBar onSearch={() => setIsSearchModalOpen(true)} />
           </div>
-
+          <Button
+            variant="ghost"
+            size="icon"
+            className="sm:hidden"
+            onClick={() => setIsSearchModalOpen(true)}
+          >
+            <Search className="h-5 w-5" />
+            <span className="sr-only">Search</span>
+          </Button>
           <motion.div
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -242,7 +315,7 @@ export default function Navbar() {
                   </Button>
                 </motion.div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 mt-1 p-2">
+              <DropdownMenuContent align="end" className="w-56 mt-1 p-2" forceMount>
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -250,23 +323,27 @@ export default function Navbar() {
                 >
                   <div className="flex flex-col space-y-1 leading-none mb-2">
                     {session.user?.name && <p className="font-medium">{session.user.name}</p>}
-                    {session.user?.email && <p className="w-[200px] truncate text-sm text-muted-foreground">{session.user.email}</p>}
+                    {session.user?.email && (
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {session.user.email}
+                      </p>
+                    )}
                   </div>
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
-                      Profile
+                      <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="flex items-center">
                       <Settings className="mr-2 h-4 w-4" />
-                      Settings
+                      <span>Settings</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="flex items-center text-red-500 hover:text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Log out
+                    <span>Log out</span>
                   </DropdownMenuItem>
                 </motion.div>
               </DropdownMenuContent>

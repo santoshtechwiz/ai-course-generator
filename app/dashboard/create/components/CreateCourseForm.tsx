@@ -18,7 +18,7 @@ import { ConfirmationDialog } from "./ConfirmationDialog"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Loader2, Save, BookOpen, Info, FileText, Eye } from "lucide-react"
+import { Loader2, Save, BookOpen, Info, FileText, Eye } from 'lucide-react'
 
 import { SubscriptionStatus, useSubscriptionStatus } from "@/hooks/useSubscroption"
 import { CreateCourseInput, createCourseSchema } from "@/schema/schema"
@@ -134,11 +134,11 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
   ]
 
   return (
-    <div className="py-12 px-4 md:px-6 bg-gray-50">
+    <div className="py-6 px-4 md:py-12 md:px-6 bg-gray-50">
       <div className="max-w-4xl mx-auto">
-        <Card>
+        <Card className="w-full">
           <SignInBanner isAuthenticated={authStatus === 'authenticated'} />
-          <CardHeader className="text-center space-y-2">
+          <CardHeader className="text-center space-y-2 p-4 md:p-6">
             <div className="flex justify-center mb-4">
               <motion.div 
                 className="p-3 bg-primary/10 rounded-xl"
@@ -148,18 +148,21 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                 <BookOpen className="w-8 h-8 text-primary" />
               </motion.div>
             </div>
-            <CardTitle className="text-3xl font-bold text-gray-900">Create a New Course</CardTitle>
-            <CardDescription className="text-lg text-gray-700">
+            <CardTitle className="text-2xl md:text-3xl font-bold text-gray-900">Create a New Course</CardTitle>
+            <CardDescription className="text-base md:text-lg text-gray-700">
               Fill in the details for your new course. Progress is automatically saved.
             </CardDescription>
           </CardHeader>
 
-          <div className="px-6 mb-8">
-            <StepIndicator currentStep={step} totalSteps={totalSteps} />
-            <div className="flex justify-between mt-4 md:hidden">
+          <div className="px-4 md:px-6 mb-6 md:mb-8">
+            <div className="hidden md:block">
+              <StepIndicator currentStep={step} totalSteps={totalSteps} />
+            </div>
+            <div className="flex justify-between items-center md:hidden">
               {stepIcons.map((icon, index) => (
-                <div key={index} className={`flex items-center justify-center ${step === index + 1 ? 'text-primary' : 'text-gray-500'}`}>
+                <div key={index} className={`flex flex-col items-center justify-center ${step === index + 1 ? 'text-primary' : 'text-gray-500'}`}>
                   {icon}
+                  <span className="text-xs mt-1">{`Step ${index + 1}`}</span>
                 </div>
               ))}
             </div>
@@ -167,28 +170,30 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)}>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6">
               {step === 1 && <BasicInfoStep control={control} errors={errors} />}
               {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
               {step === 3 && <PreviewStep watch={watch} />}
             </CardContent>
 
-            <CardFooter className="flex justify-between pt-6 pb-8 px-6 border-t">
+            <CardFooter className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 pt-4 pb-4 md:pt-6 md:pb-8 px-4 md:px-6 border-t">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={handleBack}
                 disabled={step === 1}
+                className="w-full md:w-auto"
               >
                 Back
               </Button>
 
-              <div className="flex flex-col items-end space-y-4">
+              <div className="flex flex-col items-center md:items-end space-y-4 w-full md:w-auto">
                 {step < totalSteps ? (
                   <Button 
                     type="button"
                     onClick={handleNext}
                     disabled={!isStepValid()}
+                    className="w-full md:w-auto"
                   >
                     Continue
                   </Button>
@@ -196,7 +201,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                   <Button
                     type="submit"
                     disabled={isCreateDisabled}
-                    className="disabled:opacity-50"
+                    className="w-full md:w-auto disabled:opacity-50"
                   >
                     {(isSubmitting || createCourseMutation.status === 'pending') ? (
                       <>
@@ -213,8 +218,8 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                 )}
 
                 {(!status?.isSubscribed && (availableCredits ?? 0) > 0) && (
-                  <p className="text-sm text-gray-500">
-                    Available credits: {availableCredits} (This action will deduct 1 credit)
+                  <p className="text-sm text-gray-500 text-center md:text-right">
+                    Available credits: {availableCredits} <br className="md:hidden" />(This action will deduct 1 credit)
                   </p>
                 )}
               </div>
@@ -233,3 +238,4 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
     </div>
   )
 }
+

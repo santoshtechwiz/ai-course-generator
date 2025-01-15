@@ -5,7 +5,7 @@ import { getCourses, prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import React from "react";
 
-export const fetchCache = 'force-no-store';
+export const fetchCache = "force-no-store";
 type Props = {
   params: Promise<{
     slug: string;
@@ -21,33 +21,25 @@ const CreateChapters = async (props: Props) => {
     return redirect("/gallery");
   }
 
-
-  const course=await getCourses(slug);
+  const course = await getCourses(slug);
 
   if (!course) {
     return redirect("/create");
   }
 
   return (
-    <>
-      {/* Sidebar with fixed width and full height */}
-   
-
-      {/* Main content area */}
-      <div className="flex flex-col flex-grow bg-gray-50">
-        {/* Header taking full width */}
-      
-
-        {/* Main content and RightSidebar aligned next to each other */}
-        <div className="flex flex-grow">
-          <div className="flex-grow p-4 bg-white rounded-lg shadow-md">
-            <ConfirmChapters course={{ ...course, units: course.courseUnits }} />
-          </div>
-          {/* RightSidebar with fixed width */}
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="flex flex-col flex-grow p-4 md:flex-row md:space-x-4">
+        <div className="w-full md:w-2/3 bg-white rounded-lg shadow-md p-4 mb-4 md:mb-0">
+          <ConfirmChapters
+            course={{ ...course, units: course.courseUnits }}
+          />
+        </div>
+        <div className="w-full md:w-1/3">
           <CourseCreationVideo />
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
