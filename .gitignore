@@ -42,3 +42,4 @@ next-env.d.ts
 dev.db
 /prisma/dev.db
 y.js
+docker-compose.yaml
