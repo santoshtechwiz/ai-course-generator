@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { Menu, Search, LogOut, LogIn, User, ChevronDown, Bell, X, Settings, ChevronRight } from 'lucide-react'
+import { Menu, Search, LogOut, LogIn, User, ChevronDown, X, Settings, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -15,8 +15,6 @@ import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { VisuallyHidden } from "@/components/ui/visually-hidden"
 
 import { navItems } from "@/constants/navItems"
 import { CreateSection } from "./create-section"
@@ -28,25 +26,9 @@ import NotificationsMenu from "./NotificationsMenu"
 const MobileMenu = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { data: session } = useSession()
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const offset = window.scrollY
-      setIsScrolled(offset > 20)
-    }
-
-    // Call handleScroll on initial render
-    handleScroll()
-
-    window.addEventListener("scroll", handleScroll)
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-    }
-  }, [])
 
   useEffect(() => {
     if (isOpen) {
@@ -88,7 +70,6 @@ const MobileMenu = () => {
                 className="pl-9 w-full"
               />
             </div>
-            <NotificationsMenu />
           </div>
 
           {/* Navigation */}
@@ -180,8 +161,6 @@ const MobileMenu = () => {
     </Sheet>
   )
 }
-
-
 
 const NavItems = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -289,18 +268,7 @@ export default function Navbar() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={() => {
-                // Handle notifications
-              }}
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-              <span className="sr-only">Notifications</span>
-            </Button>
+            <NotificationsMenu initialCount={0} />
           </motion.div>
 
           <ThemeToggle />

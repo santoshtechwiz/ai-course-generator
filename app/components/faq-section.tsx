@@ -1,11 +1,14 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import AnimatedBackground from './RevealAnimation';
+
 
 const faqData = [
   {
@@ -60,24 +63,37 @@ const faqData = [
 
 export function FAQSection() {
   return (
-    <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50">
-      <div className="container px-4 md:px-6">
-        <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
+    <AnimatedBackground>
+      <section className="container px-4 md:px-6">
+        <motion.h2 
+          className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           Explore Frequently Asked Questions
-        </h2>
-        <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto text-justify">
-          {faqData.map((item, index) => (
-            <AccordionItem key={index} value={`item-${index}`}>
-              <AccordionTrigger className="text-lg font-semibold text-gray-800 hover:text-primary transition-colors duration-200">
-                {item.question}
-              </AccordionTrigger>
-              <AccordionContent className="text-base text-gray-600 mt-2">
-                {item.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
-    </section>
+        </motion.h2>
+        <motion.div 
+          className="w-full max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Accordion type="single" collapsible className="w-full bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
+            {faqData.map((item, index) => (
+              <AccordionItem key={index} value={`item-${index}`}>
+                <AccordionTrigger className="text-lg font-semibold text-gray-800 hover:text-primary transition-colors duration-200">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-base text-gray-600 mt-2">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </motion.div>
+      </section>
+    </AnimatedBackground>
   );
 }
+
