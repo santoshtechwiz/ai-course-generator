@@ -26,7 +26,11 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
         {quizzes.length > 0 ? (
           <div className="space-y-4">
             {quizzes.map((quiz) => (
-              <Link href={`/dashboard/mcq/${quiz.slug}`} key={quiz.id} className="block">
+              <Link 
+                href={`/dashboard/${quiz.gameType === 'open-ended' ? 'openended' : 'mcq'}/${quiz.slug}`} 
+                key={quiz.id} 
+                className="block"
+              >
                 <div className="flex items-center justify-between hover:bg-muted p-2 rounded-md transition-colors">
                   <div>
                     <p className="font-medium">{quiz.topic}</p>
