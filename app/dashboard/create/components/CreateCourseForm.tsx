@@ -4,7 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useMutation } from "@tanstack/react-query"
-import { useForm } from "react-hook-form"
+import { useForm, SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 import { signIn, useSession } from "next-auth/react"
@@ -25,6 +25,7 @@ import { SubscriptionStatus, useSubscriptionStatus } from "@/hooks/useSubscropti
 import { CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
 import { useTheme } from "next-themes"
+import { CreditButton } from '@/app/components/CreditButton';
 
 interface CourseCreationFormProps {
   topic: string;
@@ -80,7 +81,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
     },
   })
 
-  const onSubmit = async (data: CreateCourseInput) => {
+  const onSubmit: SubmitHandler<CreateCourseInput> = async (data) => {
     if (!session) {
       toast({
         title: "Authentication Required",
@@ -113,7 +114,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
       router.push('dashboard/subscription')
       return
     }
-    createCourseMutation.mutate(watch())
+    await createCourseMutation.mutateAsync(watch())
   }
 
   const handleNext = () => setStep(step + 1)
@@ -128,7 +129,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
     return true
   }
 
-  const isCreateDisabled = step !== 3 || !session || (!status?.isSubscribed && (availableCredits ?? 0) === 0) || isSubmitting || createCourseMutation.status === 'loading'
+  const isCreateDisabled = step !== 3 || !session || (!status?.isSubscribed && (availableCredits ?? 0) === 0) || isSubmitting || createCourseMutation.status === 'loading' || showConfirmDialog
 
   const stepIcons = [
     <Info key="1" className="w-6 h-6 text-primary" />,
@@ -210,12 +211,9 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                     Continue
                   </Button>
                 ) : (
-                  <Button
+                  <CreditButton
                     type="submit"
-                    disabled={isCreateDisabled}
-                    className="w-full md:w-auto disabled:opacity-50"
-                  >
-                    {(isSubmitting || createCourseMutation.status === 'pending') ? (
+                    label={isSubmitting || createCourseMutation.status === 'pending' ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Creating Course...
@@ -226,7 +224,11 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                         Create Course
                       </>
                     )}
-                  </Button>
+                    onClick={handleSubmit(onSubmit)}
+                    requiredCredits={1}
+                    disabled={isCreateDisabled || showConfirmDialog}
+                    className="w-full md:w-auto disabled:opacity-50"
+                  />
                 )}
 
                 {(!status?.isSubscribed && (availableCredits ?? 0) > 0) && (

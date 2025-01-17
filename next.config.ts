@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
   },
 
   compress: true, // Ensures Gzip compression for faster performance
-  output: 'standalone', // Optimizes build for container environments
+
 
 };
 

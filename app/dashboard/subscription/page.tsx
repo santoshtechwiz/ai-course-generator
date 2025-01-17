@@ -4,6 +4,7 @@ import { SubscriptionService } from "@/services/subscriptionService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SUBSCRIPTION_PLANS, SubscriptionPlanType } from '@/config/subscriptionPlans';
 import SubscriptionPlans from '@/app/dashboard/subscription/components/SubscriptionPlans';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function SubscribePage() {
   const session = await getAuthSession();
@@ -38,14 +39,29 @@ export default async function SubscribePage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <Suspense fallback={<div>Loading subscription data...</div>}>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl font-bold text-center mb-8">Subscription Plans</h1>
+      <Suspense fallback={<SubscriptionPlansSkeleton />}>
         <SubscriptionPlansWrapper 
           userId={userId} 
           getSubscriptionData={getSubscriptionData}
           isProd={isProd}
         />
       </Suspense>
+    </div>
+  );
+}
+
+function SubscriptionPlansSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-[400px] w-full" />
+        ))}
+      </div>
+      <Skeleton className="h-[200px] w-full" />
+      <Skeleton className="h-[300px] w-full" />
     </div>
   );
 }
@@ -83,4 +99,3 @@ async function SubscriptionPlansWrapper({
     />
   );
 }
-

@@ -2,13 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { InfoIcon, CreditCard } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { InfoIcon, CreditCard, Loader2 } from 'lucide-react'
+import { CreditButton } from '@/app/components/CreditButton'
+
 
 interface TopicFormProps {
   credits: number;
@@ -21,7 +23,7 @@ export default function TopicForm({ credits }: TopicFormProps) {
   const [error, setError] = useState('')
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -58,9 +60,9 @@ export default function TopicForm({ credits }: TopicFormProps) {
       transition={{ duration: 0.5 }}
       className="h-full"
     >
-      <Card className="h-full flex flex-col">
+      <Card className="h-full flex flex-col bg-card text-card-foreground">
         <CardHeader>
-          <CardTitle className="text-2xl">Generate Open-Ended Quiz</CardTitle>
+          <CardTitle className="text-2xl text-primary">Generate Open-Ended Quiz</CardTitle>
           <CardDescription>Create a custom quiz on any topic</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow">
@@ -74,7 +76,7 @@ export default function TopicForm({ credits }: TopicFormProps) {
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="Enter quiz topic"
                 required
-                className="h-12"
+                className="h-12 bg-input text-input-foreground"
               />
             </div>
             <div className="space-y-2">
@@ -86,39 +88,61 @@ export default function TopicForm({ credits }: TopicFormProps) {
                 step={1}
                 value={[questionCount]}
                 onValueChange={(value) => setQuestionCount(value[0])}
+                className="py-2"
               />
             </div>
-            <Alert>
-              <InfoIcon className="h-4 w-4" />
-              <AlertTitle>About Open-Ended Questions</AlertTitle>
-              <AlertDescription>
-                Open-ended questions encourage critical thinking and detailed responses. They are great for assessing understanding and promoting discussion.
-              </AlertDescription>
-            </Alert>
-            <Alert variant="default" className="bg-blue-50">
-              <CreditCard className="h-4 w-4" />
-              <AlertTitle>Available Credits</AlertTitle>
-              <AlertDescription>
-                You have {credits} credits. Each question costs 1 credit.
-              </AlertDescription>
-            </Alert>
-            {error && (
-              <Alert variant="destructive">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Alert>
+                <InfoIcon className="h-4 w-4" />
+                <AlertTitle>About Open-Ended Questions</AlertTitle>
+                <AlertDescription>
+                  Open-ended questions encourage critical thinking and detailed responses. They are great for assessing understanding and promoting discussion.
+                </AlertDescription>
               </Alert>
-            )}
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Alert variant="default" className="bg-primary/10 border-primary/20">
+                <CreditCard className="h-4 w-4 text-primary" />
+                <AlertTitle className="text-primary">Available Credits</AlertTitle>
+                <AlertDescription>
+                  You have {credits} credits. Each question costs 1 credit.
+                </AlertDescription>
+              </Alert>
+            </motion.div>
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <Alert variant="destructive">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </form>
         </CardContent>
         <CardFooter>
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isDisabled} 
+        <CreditButton
+            type="submit"
+            label={loading ? "Generating Quiz..." : "Generate Quiz"}
             onClick={handleSubmit}
-          >
-            {loading ? 'Generating Quiz...' : isDisabled ? 'Not Enough Credits' : 'Generate Quiz'}
-          </Button>
+            requiredCredits={questionCount}
+            loadingLabel="Generating Quiz..."
+            disabled={isDisabled}
+            className="w-full md:w-auto disabled:opacity-50"
+          />
         </CardFooter>
       </Card>
     </motion.div>
