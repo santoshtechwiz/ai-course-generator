@@ -4,9 +4,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-
-import { CheckCircle, ChevronRight, AlertCircle } from "lucide-react";
-
+import { CheckCircle, ChevronRight, AlertCircle, ChevronLeft } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { Course, Chapter, CourseQuiz } from "@prisma/client";
-
 import QuizBackground from "./QuizBackground";
 import ComponentLoader from "../ComponentLoader";
 
@@ -30,17 +27,20 @@ type Props = {
     questions: CourseQuiz[];
   };
 };
+
 const loadingSteps = [
   "Analyzing content",
   "Generating Quiz",
   "Preparing response",
   "Finalizing results"
-]
+];
+
 export default function CourseDetailsQuiz({ chapter }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [score, setScore] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   const {
     data: questions,
@@ -68,21 +68,15 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
   });
 
   const currentQuestion = useMemo(
-    () =>
-      questions && questions.length > 0
-        ? questions[currentQuestionIndex]
-        : null,
+    () => questions && questions.length > 0 ? questions[currentQuestionIndex] : null,
     [questions, currentQuestionIndex]
   );
 
-  const handleAnswer = useCallback(
-    (value: string) => {
-      if (currentQuestion) {
-        setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
-      }
-    },
-    [currentQuestion]
-  );
+  const handleAnswer = useCallback((value: string) => {
+    if (currentQuestion) {
+      setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
+    }
+  }, [currentQuestion]);
 
   const checkAnswer = useCallback(() => {
     if (currentQuestion) {
@@ -106,6 +100,11 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
     setCurrentQuestionIndex(0);
     setQuizCompleted(false);
     setScore(0);
+    setShowResults(false);
+  }, []);
+
+  const handleShowResults = useCallback(() => {
+    setShowResults(true);
   }, []);
 
   if (isError) {
@@ -115,8 +114,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
           <div className="flex items-center space-x-2 text-destructive">
             <AlertCircle className="w-6 h-6" />
             <p className="text-lg">
-              Error loading quiz:{" "}
-              {(error as Error).message || "Please try again later."}
+              Error loading quiz: {(error as Error).message || "Please try again later."}
             </p>
           </div>
         </CardContent>
@@ -125,7 +123,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
   }
 
   if (isQuizLoading) {
-    return <ComponentLoader size="sm"  loadingSteps={loadingSteps}/>;
+    return <ComponentLoader size="sm" loadingSteps={loadingSteps} />;
   }
 
   if (!questions || questions.length === 0) {
@@ -211,28 +209,55 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
                   {score} / {questions.length}
                 </span>
               </p>
-              <Button
-                onClick={retakeQuiz}
-                size="lg"
-                className="text-xl px-10 py-6"
-              >
-                Retake Quiz
-              </Button>
+              <div className="space-x-4">
+                <Button
+                  onClick={handleShowResults}
+                  size="lg"
+                  className="text-xl px-10 py-6"
+                  variant="outline"
+                >
+                  Show Results
+                </Button>
+                <Button
+                  onClick={retakeQuiz}
+                  size="lg"
+                  className="text-xl px-10 py-6"
+                >
+                  Retake Quiz
+                </Button>
+              </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
+        {showResults && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8"
+          >
+            <h3 className="text-2xl font-bold mb-4">Quiz Results</h3>
+            {questions.map((question, index) => (
+              <div key={question.id} className="mb-6 p-4 bg-muted rounded-lg">
+                <p className="font-semibold mb-2">
+                  {index + 1}. {question.question}
+                </p>
+                <p className="text-sm mb-1">Your answer: {answers[question.id]}</p>
+                <p className="text-sm text-primary">Correct answer: {question.answer}</p>
+              </div>
+            ))}
+          </motion.div>
+        )}
       </CardContent>
       {!quizCompleted && currentQuestion && (
         <CardFooter className="flex justify-between p-8 bg-muted/50 border-t border-border relative z-10">
           <Button
             variant="outline"
-            onClick={() =>
-              setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))
-            }
+            onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
             disabled={currentQuestionIndex === 0}
             size="lg"
             className="text-lg px-6 py-3"
           >
+            <ChevronLeft className="w-6 h-6 mr-2" />
             Previous
           </Button>
           <Button
@@ -251,3 +276,4 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
     </Card>
   );
 }
+

@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import  openai  from "./chatgpt/openAI";
+import openai from "./chatgpt/openAI";
 
 // Initialize Google Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
@@ -28,10 +28,10 @@ function sampleTranscript(transcript: string): string {
 // Function to summarize using Google Gemini with retry logic
 async function summarizeWithGemini(text: string): Promise<string> {
   const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-  
+
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const prompt = `Summarize the following text concisely, focusing on main points:\n\n${text}`;
+      const prompt = `Summarize the following text concisely, focusing on the main points, and format the summary in Markdown:\n\n${text}`;
       const result = await model.generateContent(prompt);
       const response = await result.response;
       return response.text();
@@ -55,7 +55,9 @@ async function summarizeWithOpenAI(text: string): Promise<string> {
         messages: [
           {
             role: "system",
-            content: "Summarize the following text concisely, focusing on main points."
+            content: "Summarize the following text concisely, focusing on main points, and provide the output in Markdown format."
+
+
           },
           { role: "user", content: text }
         ],
@@ -84,13 +86,13 @@ export async function generateVideoSummary(transcript: string): Promise<string> 
     return await summarizeWithGemini(sampledTranscript);
   } catch (geminiError: any) {
     console.error("Error generating summary with Google Gemini:", geminiError.message);
-    
+
     try {
       // Fallback to OpenAI
       return await summarizeWithOpenAI(sampledTranscript);
     } catch (openAIError: any) {
       console.error("Error generating summary with OpenAI:", openAIError.message);
-      
+
       // If both fail, return a generic error message
       return "Unable to generate summary due to API errors. Please try again later.";
     }

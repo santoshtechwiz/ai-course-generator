@@ -1,7 +1,8 @@
 import pLimit from 'p-limit';
 import { MultipleChoiceQuestion } from '@/app/types';
-import { generateMultipeChoiceQuestionForVideo } from '@/lib/chatgpt/videoQuiz';
+
 import { getTranscript, searchYoutube } from './youtubeService';
+import generateMultipleChoiceQuestions from '@/lib/chatgpt/videoQuiz';
 
 
 const limit = pLimit(1); // Limit concurrency to 1
@@ -11,7 +12,7 @@ export async function getQuestionsFromTranscript(
   courseTitle: string
 ): Promise<MultipleChoiceQuestion[]> {
   try {
-    return await limit(() => generateMultipeChoiceQuestionForVideo(courseTitle, transcript, 5));
+    return await limit(() => generateMultipleChoiceQuestions(courseTitle, transcript, 5));
   } catch (error) {
     console.error('Error generating questions:', error);
     return [];

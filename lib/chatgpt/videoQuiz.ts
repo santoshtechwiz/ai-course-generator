@@ -1,8 +1,6 @@
 import { MultipleChoiceQuestion } from "@/app/types";
 import { openai } from "./gpt";
 
-
-
 interface FunctionDefinition {
   name: string;
   description: string;
@@ -29,7 +27,7 @@ interface FunctionDefinition {
   };
 }
 
-export async function generateMultipeChoiceQuestionForVideo(
+export default async function generateMultipleChoiceQuestions(
   courseTitle: string,
   transcript: string,
   numQuestions: number = 5
@@ -41,7 +39,7 @@ export async function generateMultipeChoiceQuestionForVideo(
   const functions: FunctionDefinition[] = [
     {
       name: "formatMCQs",
-      description: "Formats multiple-choice questions with answers and options for a course.",
+      description: "Generates multiple-choice questions for a course transcript, each with 4 options (1 correct, 3 incorrect).",
       parameters: {
         type: "object",
         properties: {
@@ -73,7 +71,7 @@ export async function generateMultipeChoiceQuestionForVideo(
         { role: "system", content: "You are an expert in creating multiple-choice questions." },
         {
           role: "user",
-          content: `Generate ${numQuestions} multiple-choice questions for the course titled "${courseTitle}" based on the following transcript: ${transcript}. Each question should have one correct answer and three incorrect options.`,
+          content: `Generate a maximum of ${numQuestions} multiple-choice questions based on the course titled "${courseTitle}" using the following transcript: ${transcript}. Each question must have one correct answer and three incorrect options. Please avoid generating questions on the author's introduction or irrelevant content and stick strictly to the main topic of the course.`,
         },
       ],
       functions,
