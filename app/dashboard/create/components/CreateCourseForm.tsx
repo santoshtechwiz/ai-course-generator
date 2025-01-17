@@ -19,10 +19,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Loader2, Save, BookOpen, Info, FileText, Eye } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { SubscriptionStatus, useSubscriptionStatus } from "@/hooks/useSubscroption"
 import { CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
+import { useTheme } from "next-themes"
 
 interface CourseCreationFormProps {
   topic: string;
@@ -38,6 +40,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [availableCredits, setAvailableCredits] = React.useState(status?.credits)
+  const { theme } = useTheme()
 
   React.useEffect(() => {
     if (status) {
@@ -134,9 +137,9 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
   ]
 
   return (
-    <div className="py-6 px-4 md:py-12 md:px-6 bg-gray-50">
+    <div className={`py-6 px-4 md:py-12 md:px-6 ${theme === 'dark' ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-100 to-white'}`}>
       <div className="max-w-4xl mx-auto">
-        <Card className="w-full">
+        <Card className={`w-full ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white'}`}>
           <SignInBanner isAuthenticated={authStatus === 'authenticated'} />
           <CardHeader className="text-center space-y-2 p-4 md:p-6">
             <div className="flex justify-center mb-4">
@@ -148,8 +151,8 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                 <BookOpen className="w-8 h-8 text-primary" />
               </motion.div>
             </div>
-            <CardTitle className="text-2xl md:text-3xl font-bold text-gray-900">Create a New Course</CardTitle>
-            <CardDescription className="text-base md:text-lg text-gray-700">
+            <CardTitle className="text-2xl md:text-3xl font-bold">Create a New Course</CardTitle>
+            <CardDescription className="text-base md:text-lg">
               Fill in the details for your new course. Progress is automatically saved.
             </CardDescription>
           </CardHeader>
@@ -160,10 +163,19 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
             </div>
             <div className="flex justify-between items-center md:hidden">
               {stepIcons.map((icon, index) => (
-                <div key={index} className={`flex flex-col items-center justify-center ${step === index + 1 ? 'text-primary' : 'text-gray-500'}`}>
-                  {icon}
-                  <span className="text-xs mt-1">{`Step ${index + 1}`}</span>
-                </div>
+                <TooltipProvider key={index}>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className={`flex flex-col items-center justify-center ${step === index + 1 ? 'text-primary' : 'text-gray-500'}`}>
+                        {icon}
+                        <span className="text-xs mt-1">{`Step ${index + 1}`}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {index === 0 ? 'Basic Info' : index === 1 ? 'Content' : 'Preview'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ))}
             </div>
             <Progress value={(step / totalSteps) * 100} className="h-2 mt-4" />
@@ -179,7 +191,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
             <CardFooter className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 pt-4 pb-4 md:pt-6 md:pb-8 px-4 md:px-6 border-t">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 onClick={handleBack}
                 disabled={step === 1}
                 className="w-full md:w-auto"

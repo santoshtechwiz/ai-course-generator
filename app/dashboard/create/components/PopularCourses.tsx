@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import React from "react";
-import { motion } from "framer-motion";
-import { Book, Clock, Users, ChevronRight, Sparkles, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from "react"
+import { motion } from "framer-motion"
+import { Book, Clock, Users, ChevronRight, Sparkles, X } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -11,35 +11,29 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
+import Link from "next/link"
+import { CourseDetails } from "@/app/types"
 
-import Link from "next/link";
-import { CourseDetails } from "@/app/types";
-
-interface RandomCoursesProps {
-  courseDetails: CourseDetails[];
+interface PopularCoursesProps {
+  courseDetails: CourseDetails[]
 }
 
-const PopularCourses: React.FC<RandomCoursesProps> = ({ courseDetails }) => {
+const PopularCourses: React.FC<PopularCoursesProps> = ({ courseDetails }) => {
   return (
-    <>
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full lg:w-96 p-4 space-y-4 bg-gray-50 border-l h-[calc(100vh-4rem)] overflow-y-auto"
-      >
-        <div className="sticky top-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-rose-500" />
-              <h2 className="text-lg font-semibold text-gray-900">Popular Courses</h2>
-            </div>
-            <Button variant="ghost" size="icon">
-              <X className="h-4 w-4 text-gray-500" />
-            </Button>
+    <div className="h-full p-4 space-y-4">
+      <div className="sticky top-0 space-y-6">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-5 w-5 text-yellow-500" />
+            <h2 className="text-lg font-semibold">Popular Courses</h2>
           </div>
+          <Button variant="ghost" size="icon">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
 
+        <div className="space-y-4">
           {courseDetails.map((course, index) => (
             <motion.div
               key={course.id}
@@ -47,23 +41,23 @@ const PopularCourses: React.FC<RandomCoursesProps> = ({ courseDetails }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="group hover:shadow-lg transition-shadow duration-200">
+              <Card className="group bg-card hover:bg-accent transition-colors">
                 <CardHeader>
-                  <CardTitle className="flex justify-between items-center text-gray-900">
+                  <CardTitle className="flex justify-between items-center">
                     <span>{course.courseName}</span>
                     <motion.div
                       whileHover={{ scale: 1.1 }}
-                      className="h-8 w-8 rounded-full bg-rose-100 flex items-center justify-center"
+                      className="h-8 w-8 rounded-full bg-yellow-500/10 flex items-center justify-center"
                     >
-                      <Book className="h-4 w-4 text-rose-500" />
+                      <Book className="h-4 w-4 text-yellow-500" />
                     </motion.div>
                   </CardTitle>
-                  <CardDescription className="text-gray-700">
+                  <CardDescription>
                     {`Learn about ${course.category || "various topics"}`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center">
                       <Users className="h-4 w-4 mr-2" />
                       {course.totalChapters} chapters
@@ -75,8 +69,11 @@ const PopularCourses: React.FC<RandomCoursesProps> = ({ courseDetails }) => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Link href={`/dashboard/course/${course.slug}`}>
-                    <Button className="w-full group-hover:bg-rose-500 group-hover:text-white transition-colors">
+                  <Link href={`/dashboard/course/${course.slug}`} className="w-full">
+                    <Button 
+                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-black"
+                      size="lg"
+                    >
                       View Course
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -86,9 +83,10 @@ const PopularCourses: React.FC<RandomCoursesProps> = ({ courseDetails }) => {
             </motion.div>
           ))}
         </div>
-      </motion.div>
-    </>
-  );
-};
+      </div>
+    </div>
+  )
+}
 
-export default PopularCourses;
+export default PopularCourses
+

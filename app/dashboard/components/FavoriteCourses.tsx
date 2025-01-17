@@ -61,7 +61,7 @@ export default function FavoriteCourses({ favorites }: FavoriteCoursesProps) {
                 <div className="flex items-center space-x-4 rounded-lg border p-4 transition-colors hover:bg-muted">
                   <div className="relative h-16 w-16 overflow-hidden rounded-md">
                     <Image
-                      src={course.image}
+                      src={course.image || "/placeholder.svg"}
                       alt={course.name}
                       fill
                       className="object-cover transition-transform group-hover:scale-105"

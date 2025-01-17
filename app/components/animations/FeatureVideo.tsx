@@ -57,8 +57,7 @@ const FeatureShowcase: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1400px] min-h-screen mx-auto">
-      {/* Feature Showcase */}
-      <div className="relative bg-white min-h-[600px] overflow-hidden">
+      <div className="relative bg-background min-h-[600px] overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentFeature}
@@ -81,16 +80,15 @@ const FeatureShowcase: React.FC = () => {
                 ),
               })}
             </motion.div>
-            <h2 className="text-[64px] font-bold mb-8 text-gray-900 tracking-tight">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-8 text-foreground tracking-tight">
               {features[currentFeature].title}
             </h2>
-            <p className="text-3xl text-gray-500 max-w-4xl leading-relaxed">
+            <p className="text-xl sm:text-2xl md:text-3xl text-muted-foreground max-w-4xl leading-relaxed">
               {features[currentFeature].description}
             </p>
           </motion.div>
         </AnimatePresence>
 
-        {/* Moving Icon Bar */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-0 w-full h-40 -translate-y-1/2 overflow-hidden">
             <motion.div
@@ -124,9 +122,8 @@ const FeatureShowcase: React.FC = () => {
           </div>
         </div>
 
-        {/* Progress Bar */}
         <div className="absolute bottom-0 left-0 w-full p-6">
-          <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
             <motion.div
               className={cn("h-full", `bg-gradient-to-r ${features[currentFeature].gradient}`)}
               style={{ width: `${progress}%` }}
@@ -140,4 +137,3 @@ const FeatureShowcase: React.FC = () => {
 };
 
 export default FeatureShowcase;
-

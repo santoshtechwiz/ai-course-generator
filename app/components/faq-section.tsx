@@ -1,14 +1,15 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, ChevronDown, HelpCircle } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import AnimatedBackground from './RevealAnimation';
-
+import { Input } from "@/components/ui/input";
 
 const faqData = [
   {
@@ -62,38 +63,80 @@ const faqData = [
 ];
 
 export function FAQSection() {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredFAQs = faqData.filter(
+    (faq) =>
+      faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <AnimatedBackground>
-      <section className="container px-4 md:px-6">
+    <section className="container px-4 md:px-6 py-12 md:py-20">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-3xl mx-auto space-y-8"
+      >
         <motion.h2 
-          className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary"
+          className="text-3xl font-bold tracking-tighter sm:text-4xl text-center text-primary"
           initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          Explore Frequently Asked Questions
-        </motion.h2>
-        <motion.div 
-          className="w-full max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Accordion type="single" collapsible className="w-full bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
-            {faqData.map((item, index) => (
-              <AccordionItem key={index} value={`item-${index}`}>
-                <AccordionTrigger className="text-lg font-semibold text-gray-800 hover:text-primary transition-colors duration-200">
-                  {item.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-base text-gray-600 mt-2">
-                  {item.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </motion.div>
-      </section>
-    </AnimatedBackground>
+          Explore Frequently Asked Questions
+        </motion.h2>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search FAQs..."
+            className="pl-10 w-full"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <AnimatePresence>
+          {filteredFAQs.length > 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Accordion type="single" collapsible className="w-full space-y-4">
+                {filteredFAQs.map((item, index) => (
+                  <AccordionItem key={index} value={`item-${index}`} className="border rounded-lg overflow-hidden">
+                    <AccordionTrigger className="px-4 py-3 flex items-center justify-between text-left bg-card hover:bg-muted/50 transition-colors duration-200">
+                      <div className="flex items-center space-x-3">
+                        <HelpCircle className="flex-shrink-0 w-5 h-5 text-primary" />
+                        <span className="text-base font-medium text-foreground">{item.question}</span>
+                      </div>
+                      <ChevronDown className="flex-shrink-0 w-5 h-5 text-muted-foreground transition-transform duration-200" />
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 py-3 text-sm text-muted-foreground bg-background">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </motion.div>
+          ) : (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="text-center text-muted-foreground"
+            >
+              No matching FAQs found. Please try a different search term.
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </section>
   );
 }
-

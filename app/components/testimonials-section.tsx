@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-
 const testimonials = [
   {
     name: "Alex Chen",
@@ -73,14 +72,14 @@ export function TestimonialsSection() {
   }
 
   return (
-    <section className="w-full py-12 px-4 md:py-24 lg:py-32 bg-gradient-to-b from-white to-gray-50 overflow-hidden">
+    <section className="w-full py-12 px-4 md:py-24 lg:py-32 bg-gradient-to-b from-background to-background/50 overflow-hidden">
       <motion.div 
         className="container mx-auto"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
       >
-        <h2 className="text-2xl font-semibold tracking-tighter text-center mb-8 sm:text-3xl md:text-4xl lg:text-5xl">
+        <h2 className="text-2xl font-semibold tracking-tighter text-center mb-8 sm:text-3xl md:text-4xl lg:text-5xl text-foreground">
           Empowering Self-Learners & Professionals
         </h2>
         <div className="relative max-w-4xl mx-auto">
@@ -96,7 +95,7 @@ export function TestimonialsSection() {
               repeatType: "reverse",
             }}
           >
-            <BlobSVG className="w-full h-full text-blue-100" />
+            <BlobSVG className="w-full h-full text-primary/10" />
           </motion.div>
           <motion.div
             className="absolute bottom-0 right-0 w-64 h-64 -z-10"
@@ -110,11 +109,11 @@ export function TestimonialsSection() {
               repeatType: "reverse",
             }}
           >
-            <BlobSVG className="w-full h-full text-green-100" />
+            <BlobSVG className="w-full h-full text-secondary/10" />
           </motion.div>
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+          <Card className="bg-card/80 backdrop-blur-sm">
             <CardContent className="p-6 sm:p-10">
-              <QuoteSVG className="w-12 h-12 text-blue-500 mb-4" />
+              <QuoteSVG className="w-12 h-12 text-primary mb-4" />
               <AnimatePresence initial={false} custom={direction}>
                 <motion.div
                   key={currentIndex}
@@ -125,23 +124,23 @@ export function TestimonialsSection() {
                   exit="exit"
                   transition={{ duration: 0.5, type: "spring", stiffness: 300, damping: 30 }}
                 >
-                  <blockquote className="text-lg sm:text-xl font-medium mb-4 italic">
+                  <blockquote className="text-lg sm:text-xl font-medium mb-4 italic text-foreground">
                     "{testimonials[currentIndex].quote}"
                   </blockquote>
                   <cite className="block text-right not-italic">
-                    <span className="font-semibold">{testimonials[currentIndex].name}</span>
-                    <span className="block text-sm text-gray-500">{testimonials[currentIndex].role}</span>
+                    <span className="font-semibold text-foreground">{testimonials[currentIndex].name}</span>
+                    <span className="block text-sm text-muted-foreground">{testimonials[currentIndex].role}</span>
                   </cite>
                 </motion.div>
               </AnimatePresence>
             </CardContent>
           </Card>
           <div className="flex justify-between mt-6">
-            <Button variant="outline" size="icon" onClick={prevTestimonial} className="bg-white hover:bg-gray-100">
+            <Button variant="outline" size="icon" onClick={prevTestimonial}>
               <ChevronLeft className="h-4 w-4" />
               <span className="sr-only">Previous testimonial</span>
             </Button>
-            <Button variant="outline" size="icon" onClick={nextTestimonial} className="bg-white hover:bg-gray-100">
+            <Button variant="outline" size="icon" onClick={nextTestimonial}>
               <ChevronRight className="h-4 w-4" />
               <span className="sr-only">Next testimonial</span>
             </Button>
