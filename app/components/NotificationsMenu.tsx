@@ -21,16 +21,12 @@ export default function NotificationsMenu({ initialCount = 0 }: NotificationsMen
         throw new Error('Failed to fetch credit count')
       }
       return response.json()
-    },
-    initialData: { count: initialCount },
-    refetchInterval: 30000, // Refetch every 30 seconds
-    staleTime: 25000, // Consider data stale after 25 seconds
+    }
   })
 
-
   const displayCount = React.useMemo(() => {
-    return data.count > 99 ? '99+' : data.count.toString()
-  }, [data.count])
+    return data?.count > 99 ? '99+' : data?.count.toString() || '0'
+  }, [data?.count])
 
   return (
     <Button 

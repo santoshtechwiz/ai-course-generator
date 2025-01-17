@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm';
@@ -8,6 +6,13 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import ComponentLoader from '../ComponentLoader';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface CourseAISummaryProps {
   chapterId: number;
@@ -29,7 +34,7 @@ const fetchChapterSummary = async (chapterId: number): Promise<SummaryResponse> 
   return response.data;
 };
 
-const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name ,onSummaryReady }) => {
+const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSummaryReady }) => {
   const [data, setData] = useState<SummaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
@@ -58,13 +63,32 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name ,onSu
     fetchSummary();
   }, [fetchSummary]);
 
+  const enhancedMarkdownRenderer = useCallback(({ children }: { children: React.ReactNode }) => {
+    const processedContent = React.Children.map(children, (child) => {
+      if (typeof child === 'string') {
+        // Highlight key terms by wrapping them with a highlight span
+        let modifiedText = child.replace(
+          /\*\*(.*?)\*\*/g,
+          '<span class="bg-primary/10 text-primary font-semibold px-1 rounded">$1</span>'
+        );
+        
+        // Add links to Wikipedia for key terms (example format)
+        modifiedText = modifiedText.replace(
+          /\[([^\]]+)\]/g,
+          '<a href="https://en.wikipedia.org/wiki/$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">$1</a>'
+        );
+
+        return <span dangerouslySetInnerHTML={{ __html: modifiedText }} />;
+      }
+      return child;
+    });
+
+    return <>{processedContent}</>;
+  }, []);
+
   const content = useMemo(() => {
     if (isLoading || (!data?.success && retryCount < MAX_RETRIES)) {
-      return (
-       
-          <ComponentLoader size="sm" />
-
-      );
+      return <ComponentLoader size="sm" />;
     }
 
     if (error || (retryCount >= MAX_RETRIES && (!data?.success || !data?.data))) {
@@ -92,16 +116,45 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name ,onSu
           transition={{ duration: 0.5 }}
           className="space-y-4"
         >
-          <h2 className="text-2xl font-bold">{name}</h2>
-          <div className="text-muted-foreground">
-            <ReactMarkdown
-              className="prose lg:prose-xl dark:prose-invert"
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeSanitize]}
-            >
-              {data.data}
-            </ReactMarkdown>
-          </div>
+          <h2 className="text-3xl font-bold mb-6">{name}</h2>
+          <Card>
+            <CardContent className="p-6">
+              <ReactMarkdown
+                className="prose lg:prose-xl dark:prose-invert"
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeSanitize]}
+                components={{
+                  p: ({ children }) => (
+                    <div className="mb-4 leading-relaxed">{children}</div> // Using <div> instead of <p> to avoid nesting issues
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-xl font-semibold mb-2 text-primary">{children}</h3>
+                  ),
+                  strong: ({ children }) => {
+                    // Check if the content inside the strong tag is "Main Points:" and don't render it if so
+                    if (typeof children === 'string' && children === "Main Points:") {
+                      return null;
+                    }
+
+                    return (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <strong className="font-bold text-primary cursor-help">{children}</strong>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Important point</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  },
+                }}
+              >
+                {data.data}
+              </ReactMarkdown>
+            </CardContent>
+          </Card>
         </motion.div>
       );
     }
@@ -118,7 +171,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name ,onSu
         <Button onClick={fetchSummary}>Retry</Button>
       </motion.div>
     );
-  }, [isLoading, error, data, retryCount, name, fetchSummary]);
+  }, [isLoading, error, data, retryCount, name, fetchSummary, enhancedMarkdownRenderer]);
 
   return (
     <div className="relative">
@@ -138,4 +191,3 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name ,onSu
 };
 
 export default CourseAISummary;
-
