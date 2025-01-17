@@ -1,8 +1,9 @@
+// File: hooks/useSubscriptionStatus.ts
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 
 export interface SubscriptionStatus {
-  credits: number | null,
+  credits: number
   isSubscribed: boolean
 }
 
@@ -11,19 +12,14 @@ export function useSubscriptionStatus(): SubscriptionStatus | null {
   const [status, setStatus] = useState<SubscriptionStatus | null>(null)
 
   useEffect(() => {
-    if (sessionStatus === 'authenticated') {
-      const user = session?.user
-      if (user) {
-        const isSubscribed = (user.credits ?? 0) > 0
-        setStatus({
-          credits: user.credits || null, // Assuming `user.subscription` contains subscription info
-          isSubscribed,
-        })
-      } else {
-        setStatus({ credits: 0, isSubscribed: false })
-      }
+    if (sessionStatus === 'authenticated' && session?.user) {
+      const credits = session.user.credits ?? 0
+      setStatus({
+        credits,
+        isSubscribed: credits > 0,
+      })
     } else if (sessionStatus === 'unauthenticated') {
-      setStatus({ credits: null, isSubscribed: false })
+      setStatus({ credits: 0, isSubscribed: false })
     }
   }, [session, sessionStatus])
 

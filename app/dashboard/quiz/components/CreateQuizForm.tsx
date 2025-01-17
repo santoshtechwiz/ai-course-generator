@@ -36,6 +36,8 @@ import { signIn, useSession } from 'next-auth/react'
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { motion } from "framer-motion"
 import { SignInBanner } from "./SignInBanner"
+import { CreditButton } from "@/app/components/CreditButton"
+
 
 type QuizFormData = z.infer<typeof quizSchema>
 
@@ -51,7 +53,6 @@ export default function CreateQuizForm({ isLoggedIn}: Props) {
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
 
-  const isDisabled= session?.user.credits<1;
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     topic: "",
@@ -245,13 +246,14 @@ export default function CreateQuizForm({ isLoggedIn}: Props) {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Button
+              <CreditButton
                 type="submit"
-                disabled={isDisabled || isLoading}
+                disabled={isLoading}
                 className="w-full"
-              >
-                {isLoading ? "Creating..." : (isLoggedIn ? "Create Quiz" : "Sign In to Create")}
-              </Button>
+                label={isLoading ? "Creating..." : (isLoggedIn ? "Create Quiz" : "Sign In to Create")}
+                onClick={handleSubmit(onSubmit)}
+                requiredCredits={amount}
+              />
             </motion.div>
             {status !== 'authenticated' && (
               <motion.div

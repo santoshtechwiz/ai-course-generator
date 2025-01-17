@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from 'next/link'
@@ -14,24 +16,46 @@ interface RandomQuestionsProps {
 }
 
 export default function RandomQuestions({ questions }: RandomQuestionsProps) {
-  console.log(questions)
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-card text-card-foreground">
       <CardHeader>
-        <CardTitle className="text-lg">Random Open-Ended Quizzes</CardTitle>
+        <CardTitle className="text-lg text-primary">Random Open-Ended Quizzes</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 overflow-auto max-h-[calc(100vh-200px)]">
-        {questions.map((question) => (
-          <Link href={`/openended/${question.slug}`} key={question.slug}>
-            <div className="p-4 bg-muted rounded-lg hover:bg-muted/80 transition-colors cursor-pointer">
-              <p className="text-sm mb-2 font-medium">{question.topic}</p>
-              <Link href={`/dashboard/openended/${question.slug}`} 
-                className="text-sm text-primary underline hover:text-primary/80">
-                Start Quiz
+      <CardContent className="space-y-4 overflow-auto max-h-[calc(100vh-200px)] custom-scrollbar">
+        <AnimatePresence>
+          {questions.map((question, index) => (
+            <motion.div
+              key={question.slug}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <Link href={`/dashboard/openended/${question.slug}`}>
+                <motion.div
+                  className="p-4 bg-muted rounded-lg transition-colors cursor-pointer relative overflow-hidden"
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <p className="text-sm mb-2 font-medium">{question.topic}</p>
+                  <Badge variant="secondary" className="text-xs">
+                    Start Quiz
+                  </Badge>
+                  <motion.div
+                    className="absolute inset-0 bg-primary/10"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: hoveredIndex === index ? 1 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </motion.div>
               </Link>
-            </div>
-          </Link>
-        ))}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </CardContent>
     </Card>
   )

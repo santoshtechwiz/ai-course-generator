@@ -55,6 +55,24 @@ export default async function DashboardPage() {
       }
     },
   });
+  const courses = await prisma.course.findMany({
+    where: { userId: session.user.id },
+    include: {
+      courseUnits: {
+        include: {
+          chapters: {
+            include: {
+              questions: {
+                include: {
+                  attempts: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
   const quizAttempts = await prisma.quizAttempt.findMany({
     where: { userId: session.user.id },
     include: { quiz: { select: { chapterId: true } } },
@@ -136,7 +154,11 @@ export default async function DashboardPage() {
           </Suspense>
 
           <Suspense fallback={<LoadingCard />}>
-          <AIRecommendations courseProgress={courseProgress} quizAttempts={quizAttempts} />
+            <AIRecommendations 
+              courses={courses}
+              courseProgress={courseProgress} 
+              quizAttempts={quizAttempts} 
+            />
           </Suspense>
         </div>
       </div>

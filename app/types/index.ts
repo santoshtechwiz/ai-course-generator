@@ -172,11 +172,11 @@ export interface CourseProgress extends BaseEntity {
 }
 
 // Subscription Types
-export type SubscriptionStatus = 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | null
+export type UserSubscriptionStatus = 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | null
 
 export interface Subscription {
   id: string
-  status: SubscriptionStatus
+  status: UserSubscriptionStatus
   currentPeriodStart: Date
   currentPeriodEnd: Date
   planId: string

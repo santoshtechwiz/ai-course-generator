@@ -7,6 +7,7 @@ import MainContent from "./MainContent"
 import RightSidebar from "./RightSidebar"
 import useProgress from "@/hooks/useProgress"
 import { FullChapterType, FullCourseType } from "@/app/types"
+import { useSearchParams } from "next/navigation"
 
 interface State {
   selectedVideoId: string | undefined
@@ -60,7 +61,7 @@ export default function CoursePage({ course }: CoursePageProps) {
     nextVideoId: undefined,
     prevVideoId: undefined,
   })
-
+  const searchParams = useSearchParams();
   const { data: session } = useSession()
   const { toast } = useToast()
   const isInitialMount = useRef(true)
@@ -89,14 +90,28 @@ export default function CoursePage({ course }: CoursePageProps) {
 
   useEffect(() => {
     if (videoQueue.length > 0 && !state.selectedVideoId && !hasSetInitialVideo.current) {
-      const initialVideo = videoQueue[0]
-      dispatch({
-        type: "SET_VIDEO",
-        payload: { videoId: initialVideo.videoId, chapter: initialVideo.chapter },
-      })
-      hasSetInitialVideo.current = true
+      const chapterId = searchParams.get("chapter");
+      let initialVideo;
+
+      if (chapterId) {
+        initialVideo = videoQueue.find(
+          (entry) => String(entry.chapterId) === chapterId
+        );
+      }
+
+      if (!initialVideo) {
+        initialVideo = videoQueue[0];
+      }
+
+      if (initialVideo) {
+        dispatch({
+          type: "SET_VIDEO",
+          payload: { videoId: initialVideo.videoId, chapter: initialVideo.chapter },
+        });
+        hasSetInitialVideo.current = true;
+      }
     }
-  }, [videoQueue, state.selectedVideoId])
+  }, [videoQueue, state.selectedVideoId, searchParams]);
 
   useEffect(() => {
     if (!isInitialMount.current && state.selectedVideoId) {
