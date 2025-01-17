@@ -4,6 +4,7 @@ import './globals.css'
 
 import { Metadata } from 'next';
 import { Providers } from './providers/provider';
+import Head from 'next/head';
 
 
 
@@ -64,6 +65,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
+      <Head>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lora:wght@400;700&display=swap" rel="stylesheet">
+      </link>
+
+      </Head>
       <body>
         <Providers>{children}</Providers>
       </body>
