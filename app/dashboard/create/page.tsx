@@ -1,28 +1,28 @@
-import CreateCourseForm from "./components/CreateCourseForm";
-import PopularCourses from "./components/PopularCourses";
-import { getCourseDetails } from "@/lib/db";
+import CreateCourseForm from "./components/CreateCourseForm"
+import { getCourseDetails } from "@/lib/db"
+import PopularCourses from "./components/PopularCourses"
 
-export const fetchCache = "force-no-store";
+export const fetchCache = "force-no-store"
 
-const Page = async ({ searchParams }: { searchParams:Promise< { topic?: string }> }) => {
-  const topic = (await searchParams)?.topic || "";
- 
-  const courseData = await getCourseDetails();
+const Page = async ({ searchParams }: { searchParams: Promise<{ topic?: string }> }) => {
+  const topic = (await searchParams)?.topic || ""
+  const courseData = await getCourseDetails()
 
   return (
-    <div className="flex flex-col md:flex-row w-full gap-6 p-4 bg-gray-50 text-gray-900">
-      {/* Left Section */}
-      <div className="w-full md:flex-[3] p-4 bg-white rounded-lg shadow-md">
-        <CreateCourseForm  topic={topic}/>
+    <div className="flex flex-col md:flex-row w-full min-h-screen bg-background">
+      {/* Main Content */}
+      <div className="flex-grow p-4 md:p-6">
+        <div className="w-full max-w-4xl mx-auto">
+          <CreateCourseForm topic={topic} />
+        </div>
       </div>
-  
-      {/* Right Section */}
-      <div className="w-full md:flex-[1] p-4 bg-white rounded-lg shadow-md">
+
+      {/* Sidebar */}
+      <div className="md:w-[400px] border-l border-border bg-card">
         <PopularCourses courseDetails={courseData} />
       </div>
     </div>
-  );
-  
-};
+  )
+}
 
-export default Page;
+export default Page

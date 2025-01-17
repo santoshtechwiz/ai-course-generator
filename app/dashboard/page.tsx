@@ -13,10 +13,14 @@ import AIRecommendations from "./components/Recommendations";
 import CourseProgress from "./course/components/CoursePage/CourseProgress";
 import { MyCourses } from "./course/components/UserDashboard/MyCourses";
 import { MyQuizzes } from "./course/components/UserDashboard/MyQuizzes";
+import { CreditCard, Zap } from 'lucide-react';
+import { prisma } from "@/lib/db";
+
 export const dynamic = 'force-dynamic'
+
 function LoadingCard() {
   return (
-    <Card className="p-4 bg-white shadow-sm rounded-lg">
+    <Card className="p-4 bg-card text-card-foreground shadow-sm rounded-lg">
       <CardHeader>
         <Skeleton className="h-6 w-2/3" />
       </CardHeader>
@@ -34,6 +38,27 @@ export default async function DashboardPage() {
     redirect("/dashboard/courses");
   }
 
+  
+  if (!session || !session.user) {
+    return <div>Please log in to view your dashboard.</div>
+  }
+
+  const courseProgress = await prisma.courseProgress.findMany({
+    where: { userId: session.user.id },
+    include: {
+      course: {
+        select: {
+          id: true,
+          name: true,
+          slug: true
+        }
+      }
+    },
+  });
+  const quizAttempts = await prisma.quizAttempt.findMany({
+    where: { userId: session.user.id },
+    include: { quiz: { select: { chapterId: true } } },
+  })
   const userData = await getUserData(session.user.id);
   const userStats = await getUserStats(session.user.id);
   
@@ -41,73 +66,77 @@ export default async function DashboardPage() {
     return <UserNotFound />;
   }
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const getMotivationalMessage = () => {
+    const messages = [
+      "Ready to learn something new today?",
+      "Your journey to knowledge continues!",
+      "Every quiz brings you closer to mastery.",
+      "Embrace the challenge of learning!",
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+  };
+
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 text-gray-900">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-0">Welcome back, {userData.name}!</h1>
-        <div className="flex items-center space-x-4">
-          {/* Add any additional header actions here */}
+    <div className="container mx-auto p-6 lg:p-8 bg-background text-foreground">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-bold mb-2">{getGreeting()}, {userData.name}!</h1>
+          <p className="text-muted-foreground">{getMotivationalMessage()}</p>
         </div>
+        <Card className="w-full sm:w-auto bg-primary text-primary-foreground p-4 shadow-md">
+          <div className="flex items-center justify-between space-x-4">
+            <div className="flex items-center space-x-2">
+              <CreditCard className="h-5 w-5" />
+              <span className="font-semibold">Credits: {userData.credits}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Zap className="h-5 w-5" />
+              <span className="font-semibold">{userData.subscriptions ? "Pro" : "Free"}</span>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-        <div className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
           <Suspense fallback={<LoadingCard />}>
             <UserProfile user={userData} />
           </Suspense>
-        </div>
 
-        <Card className="p-4 bg-white shadow-sm rounded-lg transition-shadow hover:shadow-md">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl font-semibold text-primary">Credits</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div aria-live="polite" aria-atomic="true">
-              <div className="text-3xl sm:text-4xl font-bold">{userData.credits}</div>
-              <p className="text-sm font-medium text-muted-foreground mt-2">Available credits</p>
-            </div>
-          </CardContent>
-        </Card>
+          <Suspense fallback={<LoadingCard />}>
+            <CourseProgress
+              courses={userData?.courseProgress}
+              stats={userStats}
+            />
+          </Suspense>
 
-        <Suspense fallback={<LoadingCard />}>
-          <SubscriptionStatus subscription={userData.subscriptions} />
-        </Suspense>
-
-        <Suspense fallback={<LoadingCard />}>
-          <CourseProgress
-            courses={userData?.courseProgress}
-            stats={userStats}
-          />
-        </Suspense>
-
-        <Suspense fallback={<LoadingCard />}>
-          <QuizHistory quizzes={userData.userQuizzes} />
-        </Suspense>
-
-        <div className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-2">
           <Suspense fallback={<LoadingCard />}>
             <MyCourses courses={userData.courses} />
           </Suspense>
-        </div>
 
-        <div className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-2">
           <Suspense fallback={<LoadingCard />}>
             <MyQuizzes quizzes={userData.userQuizzes} />
           </Suspense>
         </div>
 
-        <div className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-2">
+        <div className="space-y-6">
+          <Suspense fallback={<LoadingCard />}>
+            <QuizHistory quizzes={userData.userQuizzes} />
+          </Suspense>
+
           <Suspense fallback={<LoadingCard />}>
             <FavoriteCourses favorites={userData.favorites} />
           </Suspense>
-        </div>
 
-        <div className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-2">
           <Suspense fallback={<LoadingCard />}>
-            <AIRecommendations
-              courseProgress={userData.courseProgress}
-              quizScores={userData.userQuizzes}
-            />
+          <AIRecommendations courseProgress={courseProgress} quizAttempts={quizAttempts} />
           </Suspense>
         </div>
       </div>

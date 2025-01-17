@@ -22,7 +22,7 @@ const createOptions: CreateOption[] = [
     icon: HelpCircle
   },
   {
-    title: "Open Quiz",
+    title: "Open Ended Quiz",
     description: "Create an open-ended quiz to allow for more detailed responses.",
     href: "/dashboard/openended",
     buttonText: "Begin Quiz",

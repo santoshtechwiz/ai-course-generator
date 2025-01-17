@@ -1,15 +1,15 @@
 import React, { useCallback, useMemo } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { Lock, User, Info } from 'lucide-react';
+import { Lock, User, Info, ArrowRight, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import ChapterList from "./ChapterList";
-import EnrollCard from "./EnrollCard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FullCourseType, FullChapterType } from "@/app/types";
 import { CourseProgress } from "@prisma/client";
+import router from "next/router";
 
 interface RightSidebarProps {
   course: FullCourseType;
@@ -21,6 +21,11 @@ interface RightSidebarProps {
   courseOwnerId: string;
   isSubscribed: boolean;
   progress: CourseProgress | null;
+}
+
+interface ProgressCardProps {
+  progress: CourseProgress;
+  totalChapters: number;
 }
 
 function RightSidebar({
@@ -54,20 +59,20 @@ function RightSidebar({
 
   return (
     <TooltipProvider>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 20 }}
         transition={{ duration: 0.3 }}
         className="h-full space-y-6 relative w-full lg:w-[350px] lg:max-w-md mx-auto p-4"
       >
-        {!isSubscribed && <EnrollmentCard />}
-        
+        {isAuthenticated && !isSubscribed && <EnrollmentCard />}
+
         {progress && <ProgressCard progress={progress} totalChapters={totalChapters} />}
 
         <AnimatePresence>
           {(!isOwner && !isSubscribed) ? (
-            <LockedContentOverlay />
+            <LockedContentOverlay isAuthenticated={isAuthenticated} />
           ) : (
             <motion.div
               initial={{ opacity: 0 }}
@@ -93,24 +98,38 @@ function RightSidebar({
 
 function EnrollmentCard() {
   return (
-    <Card className="mb-6">
-      <CardContent>
-        <EnrollCard />
+    <Card className="mb-6 border-2 border-primary">
+      <CardContent className="p-6">
+        <h3 className="text-2xl font-bold mb-4 text-center">Unlock Premium Features</h3>
+        <ul className="list-disc list-inside mb-6 text-sm space-y-2">
+          <li>Create your own quizzes</li>
+          <li>Access exclusive playlists</li>
+          <li>Customize your learning experience</li>
+          <li>Track your progress across all courses</li>
+        </ul>
+        <Button 
+          onClick={() => router.push('/dashboard/subscription')}
+          className="w-full text-lg py-6 relative overflow-hidden group"
+        >
+          <span className="relative z-10">Subscribe Now</span>
+          <motion.div
+            className="absolute inset-0 bg-primary-foreground opacity-20"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: [0, 1, 1], opacity: [0, 1, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          />
+          <ArrowRight className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </Button>
       </CardContent>
     </Card>
   );
-}
-
-interface ProgressCardProps {
-  progress: CourseProgress;
-  totalChapters: number;
 }
 
 function ProgressCard({ progress, totalChapters }: ProgressCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between text-xl">
           Course Progress
           <Tooltip>
             <TooltipTrigger>
@@ -123,17 +142,17 @@ function ProgressCard({ progress, totalChapters }: ProgressCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Progress value={progress.progress} className="w-full h-2 bg-gray-200" />
-        <p className="text-sm text-muted-foreground mt-2 flex justify-between items-center">
+        <Progress value={progress.progress} className="w-full h-3 bg-gray-200" />
+        <p className="text-sm text-muted-foreground mt-4 flex justify-between items-center">
           <span>{progress.completedChapters.length} / {totalChapters} chapters completed</span>
-          <span className="font-semibold">{Math.round(progress.progress)}%</span>
+          <span className="text-lg font-semibold">{Math.round(progress.progress)}%</span>
         </p>
       </CardContent>
     </Card>
   );
 }
 
-function LockedContentOverlay() {
+function LockedContentOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -141,22 +160,36 @@ function LockedContentOverlay() {
       exit={{ opacity: 0 }}
       className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50"
     >
-      <Card className="w-full max-w-sm mx-4">
+      <Card className="w-full max-w-sm mx-4 border-2 border-primary">
         <CardHeader>
           <CardTitle className="flex items-center justify-center text-2xl">
             <Lock className="mr-2" />
-            Content Locked
+            {isAuthenticated ? "Premium Content" : "Sign In Required"}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-center mb-4">
-            Sign in to access the full course content and track your progress.
+          <p className="text-center mb-6 text-lg">
+            {isAuthenticated 
+              ? "Subscribe to access the full course content and track your progress."
+              : "Sign in to explore all playlists and quizzes."}
           </p>
           <Button
-            className="w-full bg-primary text-primary-foreground"
-            onClick={() => signIn(undefined, { callbackUrl: window.location.href })}
+            className="w-full bg-primary text-primary-foreground text-lg py-6 relative overflow-hidden group"
+            onClick={() => isAuthenticated 
+              ? router.push('/dashboard/subscription')
+              : signIn(undefined, { callbackUrl: window.location.href })
+            }
           >
-            <User className="mr-2 h-4 w-4" /> Sign In
+            <span className="relative z-10">
+              {isAuthenticated ? "Subscribe Now" : "Sign In"}
+            </span>
+            <motion.div
+              className="absolute inset-0 bg-primary-foreground opacity-20"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [0, 1, 1], opacity: [0, 1, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            />
+            <ArrowRight className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Button>
         </CardContent>
       </Card>
@@ -164,4 +197,5 @@ function LockedContentOverlay() {
   );
 }
 
-export default React.memo(RightSidebar);
+export default RightSidebar;
+

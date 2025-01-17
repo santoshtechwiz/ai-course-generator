@@ -1,4 +1,4 @@
-import { Course } from "@prisma/client"
+import { Course } from "@/app/types";
 
 
 const BASE_URL = process.env.NEXTAUTH_URL;
@@ -28,7 +28,7 @@ export function generateSitemapXml(courses: Course[]): string {
   ${courses.map(course => `
   <url>
     <loc>${BASE_URL}/courses/${course.slug}</loc>
-    <lastmod>${course.updatedAt.toISOString()}</lastmod>
+    <lastmod>${course?.createdAt?.toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>

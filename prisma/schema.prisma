@@ -288,4 +288,5 @@ model QuizAttempt {
 
   @@index([userId])
   @@index([quizId])
+  @@unique([userId, quizId]) // Add this unique constraint
 }

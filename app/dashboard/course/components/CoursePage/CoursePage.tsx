@@ -230,8 +230,8 @@ export default function CoursePage({ course }: CoursePageProps) {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] bg-background pt-4">
-      <div className="flex-grow lg:w-3/4 p-4 space-y-4">
+    <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] bg-background">
+      <div className="flex-grow lg:w-3/4 p-4">
         <MemoizedMainContent
           course={course}
           initialVideoId={state.selectedVideoId}
@@ -252,7 +252,7 @@ export default function CoursePage({ course }: CoursePageProps) {
           onChapterComplete={markChapterAsCompleted}
         />
       </div>
-      <div className="w-full lg:w-1/4 lg:min-w-[350px] p-4 lg:border-l-0 mt-4 lg:mt-0">
+      <div className="w-full lg:w-1/4 lg:min-w-[350px] p-4 mt-4 lg:mt-0">
         <MemoizedRightSidebar
           course={course}
           currentChapter={state.currentChapter}
@@ -262,7 +262,8 @@ export default function CoursePage({ course }: CoursePageProps) {
           isAuthenticated={!!session}
           courseOwnerId={course.userId}
           isSubscribed={isSubscribed}
-          progress={progress}
+          showSubscribe={!isSubscribed}
+          progress={progress||null}
         />
       </div>
     </div>

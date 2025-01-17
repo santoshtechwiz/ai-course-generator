@@ -27,14 +27,6 @@ export default function NotificationsMenu({ initialCount = 0 }: NotificationsMen
     staleTime: 25000, // Consider data stale after 25 seconds
   })
 
-  React.useEffect(() => {
-    if (data.count > initialCount) {
-      toast({
-        title: "Credits Updated",
-        description: `Your credit count has been updated to ${data.count}.`,
-      })
-    }
-  }, [data.count, initialCount, toast])
 
   const displayCount = React.useMemo(() => {
     return data.count > 99 ? '99+' : data.count.toString()
