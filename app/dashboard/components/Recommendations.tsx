@@ -72,7 +72,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
         latest.createdAt > current.createdAt ? latest : current
       )
       const relevantCourse = courses.find(c => 
-        c.courseUnits.some(unit => 
+        c.courseUnits?.some(unit => 
           unit.chapters.some(chapter => 
             chapter.questions.some(question => question.id === latestLowScoreQuiz.quizId)
           )

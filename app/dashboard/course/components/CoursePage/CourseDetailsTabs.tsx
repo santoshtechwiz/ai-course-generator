@@ -14,7 +14,8 @@ export interface CourseDetailsTabsProps {
   chapterId: number
   name: string
   course: Course
-  chapter: Chapter
+  chapter: Chapter,
+  planId?: string
 }
 
 const CourseAISummary = dynamic(() => import("./CourseAISummary"), { ssr: false })
@@ -33,6 +34,7 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
   name,
   course,
   chapter,
+  planId
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>("summary")
   const [isSummaryReady, setIsSummaryReady] = useState(false)
@@ -123,11 +125,20 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
                   />
                 </TabsContent>
                 <TabsContent value="quiz" className="mt-0">
+                  {planId === "PREMIUM" ? (
                   <CourseDetailsQuiz
                     chapter={chapter}
                     course={course}
                     onError={handleError}
                   />
+                  ) : (
+                  <Alert variant="warning" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                    This feature is available for premium users only.
+                    </AlertDescription>
+                  </Alert>
+                  )}
                 </TabsContent>
               </motion.div>
             </AnimatePresence>

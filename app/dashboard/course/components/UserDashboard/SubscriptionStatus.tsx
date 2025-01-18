@@ -9,7 +9,7 @@ import Link from "next/link"
 import { Subscription } from "@/app/types"
 
 
-export default function SubscriptionStatus({ subscription }: { subscription: Subscription | null }) {
+export default function SubscriptionStatus({ subscription }: { subscription: Subscription}) {
   if (!subscription) {
     return (
       <Card>

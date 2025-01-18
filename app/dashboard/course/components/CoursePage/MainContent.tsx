@@ -29,6 +29,7 @@ interface MainContentProps {
   onTimeUpdate: (time: number) => void
   progress?: CourseProgress | null
   onChapterComplete?: (chapterId: number) => void
+  planId?: string
 }
 
 interface ErrorFallbackProps {
@@ -116,9 +117,10 @@ const VideoPlayer = ({
 interface QuizSectionTabsProps {
   course: FullCourseType
   currentChapter?: FullChapterType
+  planId?: string
 }
 
-const QuizSectionTabs = ({ course, currentChapter }: QuizSectionTabsProps) => {
+const QuizSectionTabs = ({ course, currentChapter,planId }: QuizSectionTabsProps) => {
   return (
     <Card className="mt-8">
       <CardContent className="p-0">
@@ -127,6 +129,7 @@ const QuizSectionTabs = ({ course, currentChapter }: QuizSectionTabsProps) => {
           name={currentChapter?.name || "Chapter Details"}
           course={course}
           chapter={currentChapter}
+          planId={planId}
         />
       </CardContent>
     </Card>
@@ -176,7 +179,7 @@ export default function MainContent(props: MainContentProps) {
         </div>
 
         <div className="rounded-lg bg-card text-card-foreground shadow-sm w-full">
-          <QuizSectionTabs course={props.course} currentChapter={props.currentChapter} />
+          <QuizSectionTabs course={props.course} currentChapter={props.currentChapter} planId={props.planId} />
         </div>
       </main>
     </div>

@@ -153,12 +153,10 @@ export interface Progress {
   progress: number
 }
 
-
 export interface CourseProgress extends BaseEntity {
   userId: number
   courseId: number
-  completedChapters: number[];
-
+  completedChapters: number[]
   quizScores: Record<string, number>
   bookmarks: string[]
   currentChapterId?: number
@@ -238,20 +236,6 @@ export interface UserData extends User {
   favorites: UserFavorite[]
 }
 
-
-
-export interface DashboardUser extends User {
-  totalCoursesWatched: number
-  totalQuizzesAttempted: number
-  totalTimeSpent: number
-  courses: PrismaCourse[]
-  subscriptions: PrismaSubscription 
-  userQuizzes: PrismaUserQuiz[]
-  courseProgress: PrismaCourseProgress[]
-  favorites: PrismaUserFavorite[]
-}
-
-// Category Types
 export interface Category {
   id: string
   name: string
@@ -335,7 +319,7 @@ export type FullCourseType = Course & {
   })[]
 }
 
-export class CourseAIErrors{
+export class CourseAIErrors {
   constructor(message: string) {
     this.message = message
   }
@@ -343,49 +327,114 @@ export class CourseAIErrors{
   message: string
 }
 
+// Search Types
 export interface SearchResult {
-  id: string;
-  name: string;
-  type: 'course' | 'quiz';
-  slug: string;
+  id: string
+  name: string
+  type: 'course' | 'quiz'
+  slug: string
 }
 
 export interface SearchResponse {
-  courses: SearchResult[];
-  quizzes: SearchResult[];
+  courses: SearchResult[]
+  quizzes: SearchResult[]
 }
 
-export type PrismaUser = Prisma.UserGetPayload<{
-  include: {
-    courses: true
-    courseProgress: true
-    userQuizzes: true
-    subscriptions: true
-    favorites: true
-  }
-}>
 
-export type PrismaCourseProgress = Prisma.CourseProgressGetPayload<{
-  include: {
-    course: {
-      include: {
-        category: true
-      }
-    }
-  }
-}>
 
-export type PrismaUserQuiz = Prisma.UserQuizGetPayload<{}>
 
-export type PrismaSubscription = Prisma.UserSubscriptionGetPayload<{}>
+export interface PrismaUser {
+  id: string;
+  name?: string;
+  email?: string;
+  image?: string;
+  credits: number;
+  isAdmin: boolean;
+  courses: Array<PrismaCourse>;
+  courseProgress: Array<PrismaCourseProgress>;
+  userQuizzes: Array<PrismaUserQuiz>;
+  subscriptions: PrismaSubscription | null;
+  favorites: Array<PrismaUserFavorite>;
+  quizAttempts: Array<PrismaQuizAttempt>;
+}
 
-export type PrismaUserFavorite = Prisma.FavoriteGetPayload<{
-  include: {
-    course: {
-      include: {
-        category: true
-      }
-    }
-  }
-}>
+export interface PrismaCourse {
+  id: number;
+  name: string;
+  description?: string;
+  image: string;
+  slug: string;
+  category: { id: number; name: string };
+}
 
+export interface PrismaCourseProgress {
+  id: number;
+  progress: number;
+  currentChapterId: number;
+  completedChapters: string;
+  timeSpent: number;
+  isCompleted: boolean;
+  course: PrismaCourse;
+}
+
+export interface PrismaUserQuiz {
+  id: number;
+  topic: string;
+  slug: string;
+  timeStarted: Date;
+  timeEnded?: Date;
+  gameType: string;
+  score?: number;
+  duration?: number;
+  questions: Array<{ id: number }>;
+}
+
+export interface PrismaSubscription {
+  id: string;
+  planId: string;
+  status: string;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+}
+
+export interface PrismaUserFavorite {
+  id: number;
+  course: PrismaCourse;
+}
+
+export interface PrismaQuizAttempt {
+  id: number;
+  quizId: number;
+  score: number;
+  timeSpent: number;
+  createdAt: Date;
+  improvement?: number;
+  accuracy?: number;
+  QuizAttemptQuestion: Array<{
+    id: number;
+    questionId: number;
+    userAnswer?: string;
+    isCorrect?: boolean;
+    timeSpent: number;
+  }>;
+  quiz: {
+    id: number;
+    chapterId: number;
+    question: string;
+    answer: string;
+  };
+}
+
+export interface DashboardUser extends PrismaUser {
+  userQuizzes: Array<PrismaUserQuiz & { percentageCorrect: number }>;
+  courseProgress: Array<PrismaCourseProgress & { courseId: number }>;
+  favorites: Array<PrismaUserFavorite & { courseId: number }>;
+}
+
+export interface UserStats {
+  totalQuizzes: number;
+  averageScore: number;
+  highestScore: number;
+  completedCourses: number;
+  totalTimeSpent: number;
+}

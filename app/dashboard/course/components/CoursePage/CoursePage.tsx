@@ -8,6 +8,7 @@ import RightSidebar from "./RightSidebar"
 import useProgress from "@/hooks/useProgress"
 import { FullChapterType, FullCourseType } from "@/app/types"
 import { useSearchParams } from "next/navigation"
+import { useUser } from "@/app/providers/userContext"
 
 interface State {
   selectedVideoId: string | undefined
@@ -55,6 +56,7 @@ const MemoizedMainContent = React.memo(MainContent)
 const MemoizedRightSidebar = React.memo(RightSidebar)
 
 export default function CoursePage({ course }: CoursePageProps) {
+  const { user, loading: isProfileLoading, error } = useUser();
   const [state, dispatch] = useReducer(reducer, {
     selectedVideoId: undefined,
     currentChapter: undefined,
@@ -265,6 +267,7 @@ export default function CoursePage({ course }: CoursePageProps) {
           }}
           progress={progress}
           onChapterComplete={markChapterAsCompleted}
+          planId={user?.planId}
         />
       </div>
       <div className="w-full lg:w-1/4 lg:min-w-[350px] p-4 mt-4 lg:mt-0">
