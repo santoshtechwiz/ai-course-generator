@@ -17,12 +17,12 @@ export function generateSitemapXml(courses: Course[], quizzes: Quiz[]): string {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${BASE_URL}/about</loc>
+    <loc>${BASE_URL}/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>${BASE_URL}/contact</loc>
+    <loc>${BASE_URL}/terms</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
