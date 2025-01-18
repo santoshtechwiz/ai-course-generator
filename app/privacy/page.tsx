@@ -5,7 +5,7 @@ export default function PrivacyPolicy() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-foreground">Privacy Policy</h1>
       
-      <p className="mb-4 text-muted-foreground">Last updated: [Current Date]</p>
+      <p className="mb-4 text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
       
       <p className="mb-4 text-foreground">
         CourseAI ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website [https://courseai.dev] (the "Site") or use our services.

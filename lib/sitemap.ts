@@ -29,7 +29,7 @@ export function generateSitemapXml(courses: Course[], quizzes: Quiz[]): string {
   ${courses.map(course => `
   <url>
     <loc>${BASE_URL}/dashboard/course/${course.slug}</loc>
-    <lastmod>${course?.createdAt?.toISOString()}</lastmod>
+    <lastmod>${course?.createdAt ? course.createdAt.toISOString() : ''}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -37,7 +37,7 @@ export function generateSitemapXml(courses: Course[], quizzes: Quiz[]): string {
   ${quizzes.map(quiz => `
   <url>
     <loc>${BASE_URL}/dashboard/${quiz.gameType==='open_ended'?'openended':'mcq'}/${quiz.slug}</loc>
-    <lastmod>${quiz?.createdAt?.toISOString()}</lastmod>
+    <lastmod>${quiz?.createdAt ? quiz.createdAt.toISOString() : ''}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
