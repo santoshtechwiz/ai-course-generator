@@ -120,6 +120,7 @@ CREATE TABLE "Course_Rating" (
     "courseId" INTEGER NOT NULL,
     "user_id" TEXT NOT NULL,
     "rating" INTEGER NOT NULL,
+    "reviewText" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Course_Rating_pkey" PRIMARY KEY ("id")
@@ -145,7 +146,8 @@ CREATE TABLE "CourseProgress" (
     "lastAccessedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "timeSpent" INTEGER NOT NULL DEFAULT 0,
     "isCompleted" BOOLEAN NOT NULL DEFAULT false,
-    "quizScores" TEXT,
+    "completionDate" TIMESTAMP(3),
+    "quizProgress" TEXT,
     "notes" TEXT,
     "bookmarks" TEXT,
 
@@ -165,6 +167,8 @@ CREATE TABLE "UserQuiz" (
     "duration" INTEGER,
     "slug" TEXT NOT NULL,
     "isFavorite" BOOLEAN DEFAULT false,
+    "lastAttempted" TIMESTAMP(3),
+    "bestScore" INTEGER,
 
     CONSTRAINT "UserQuiz_pkey" PRIMARY KEY ("id")
 );
@@ -220,16 +224,15 @@ CREATE TABLE "OpenEndedQuestion" (
 );
 
 -- CreateTable
-CREATE TABLE "UserBehavior" (
+CREATE TABLE "QuizAttemptQuestion" (
     "id" SERIAL NOT NULL,
-    "userId" TEXT NOT NULL,
-    "action" TEXT NOT NULL,
-    "entityType" TEXT NOT NULL,
-    "entityId" TEXT NOT NULL,
-    "metadata" TEXT,
-    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "attemptId" INTEGER NOT NULL,
+    "questionId" INTEGER NOT NULL,
+    "userAnswer" TEXT,
+    "isCorrect" BOOLEAN,
+    "timeSpent" INTEGER NOT NULL,
 
-    CONSTRAINT "UserBehavior_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "QuizAttemptQuestion_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -240,6 +243,8 @@ CREATE TABLE "QuizAttempt" (
     "score" INTEGER NOT NULL,
     "timeSpent" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "improvement" DOUBLE PRECISION,
+    "accuracy" DOUBLE PRECISION,
 
     CONSTRAINT "QuizAttempt_pkey" PRIMARY KEY ("id")
 );
@@ -341,16 +346,19 @@ CREATE UNIQUE INDEX "OpenEndedQuestion_quizId_key" ON "OpenEndedQuestion"("quizI
 CREATE INDEX "OpenEndedQuestion_difficulty_idx" ON "OpenEndedQuestion"("difficulty");
 
 -- CreateIndex
-CREATE INDEX "UserBehavior_userId_action_timestamp_idx" ON "UserBehavior"("userId", "action", "timestamp");
+CREATE INDEX "QuizAttemptQuestion_attemptId_idx" ON "QuizAttemptQuestion"("attemptId");
 
 -- CreateIndex
-CREATE INDEX "UserBehavior_entityType_entityId_idx" ON "UserBehavior"("entityType", "entityId");
+CREATE INDEX "QuizAttemptQuestion_questionId_idx" ON "QuizAttemptQuestion"("questionId");
 
 -- CreateIndex
 CREATE INDEX "QuizAttempt_userId_idx" ON "QuizAttempt"("userId");
 
 -- CreateIndex
 CREATE INDEX "QuizAttempt_quizId_idx" ON "QuizAttempt"("quizId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QuizAttempt_userId_quizId_key" ON "QuizAttempt"("userId", "quizId");
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -404,7 +412,10 @@ ALTER TABLE "Quiz" ADD CONSTRAINT "Quiz_gameId_fkey" FOREIGN KEY ("gameId") REFE
 ALTER TABLE "OpenEndedQuestion" ADD CONSTRAINT "OpenEndedQuestion_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES "Quiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserBehavior" ADD CONSTRAINT "UserBehavior_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "QuizAttemptQuestion" ADD CONSTRAINT "QuizAttemptQuestion_attemptId_fkey" FOREIGN KEY ("attemptId") REFERENCES "QuizAttempt"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QuizAttemptQuestion" ADD CONSTRAINT "QuizAttemptQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "CourseQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "QuizAttempt" ADD CONSTRAINT "QuizAttempt_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
