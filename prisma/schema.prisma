@@ -38,6 +38,7 @@ model Session {
 
   @@index([userId])
 }
+
 model User {
   id                    String            @id @default(cuid())
   name                  String?
@@ -58,12 +59,13 @@ model User {
   sessions              Session[]
   subscriptions         UserSubscription?
   accounts              Account[]
-  userBehavior          UserBehavior[]
+
   quizAttempts          QuizAttempt[]
   createdAt             DateTime          @default(now())
-  lastLogin            DateTime          @default(now())
+  lastLogin             DateTime          @default(now())
   @@index([email])
 }
+
 model Favorite {
   id       Int    @id @default(autoincrement())
   userId   String @map("user_id")
@@ -144,6 +146,7 @@ model CourseQuiz {
 
   @@index([chapterId])
   @@map("CourseQuiz")
+  QuizAttemptQuestion QuizAttemptQuestion[]
 }
 
 model CourseRating {
@@ -151,6 +154,7 @@ model CourseRating {
   courseId  Int
   userId    String   @map("user_id")
   rating    Int
+  reviewText String?
   createdAt DateTime @default(now())
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
@@ -177,10 +181,11 @@ model CourseProgress {
   lastAccessedAt    DateTime @default(now())
   timeSpent         Int      @default(0)
   isCompleted       Boolean  @default(false)
-
-  quizScores        String?    // Added to store quiz scores
+  completionDate    DateTime?
+  quizProgress      String?  // JSON field to store quiz progress
   notes             String?  // Added for user notes
-  bookmarks         String?    // Added to store bookmarks
+  bookmarks         String?  // Added to store bookmarks
+
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
@@ -188,10 +193,6 @@ model CourseProgress {
   @@index([userId, lastAccessedAt])
   @@index([courseId])
 }
-
-
-
-
 
 model UserQuiz {
   id          Int       @id @default(autoincrement())
@@ -207,7 +208,8 @@ model UserQuiz {
   questions   Quiz[]
   slug        String    @unique
   isFavorite  Boolean?  @default(false)
-
+  lastAttempted DateTime? // Last time the user attempted this quiz
+  bestScore     Int?      // The highest score achieved
   @@index([userId])
   @@index([topic])
   @@map("UserQuiz")
@@ -262,31 +264,36 @@ model OpenEndedQuestion {
   @@index([difficulty])
 }
 
-model UserBehavior {
-  id         Int      @id @default(autoincrement())
-  userId     String
-  action     String
-  entityType String // e.g., 'course', 'quiz', 'chapter'
-  entityId   String // ID of the related entity
-  metadata   String? // Flexible field for additional data
-  timestamp  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, action, timestamp])
-  @@index([entityType, entityId])
+model QuizAttemptQuestion {
+  id          Int        @id @default(autoincrement())
+  attemptId   Int        // Links to QuizAttempt
+  questionId  Int        // Links to CourseQuiz
+  userAnswer  String?    // The user's answer
+  isCorrect   Boolean?   // Whether the answer was correct
+  timeSpent   Int        // Time spent on this question (in seconds)
+  quizAttempt QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question    CourseQuiz  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([questionId])
 }
 
 model QuizAttempt {
-  id        Int        @id @default(autoincrement())
-  userId    String
-  quizId    Int
-  score     Int
-  timeSpent Int
-  createdAt DateTime   @default(now())
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz      CourseQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id          Int      @id @default(autoincrement())
+  userId      String   // Links to User
+  quizId      Int      // Links to CourseQuiz
+  score       Int      // Total score for the attempt
+  timeSpent   Int      // Time spent on the quiz
+  createdAt   DateTime @default(now()) // Timestamp for the attempt
+  improvement Float?   // Tracks improvement since the last attempt
+  accuracy    Float?   // Percentage of correct answers
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz        CourseQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([quizId])
-  @@unique([userId, quizId]) // Add this unique constraint
+   // Define composite unique key on userId and quizId
+  @@unique([userId, quizId])
+  QuizAttemptQuestion QuizAttemptQuestion[]
 }

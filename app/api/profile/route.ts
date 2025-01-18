@@ -37,6 +37,7 @@ export async function GET(request: Request) {
         subscriptions: {
           select: {
             status: true,
+            planId: true,
             currentPeriodEnd: true,
           },
         },
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
       isAdmin: user.isAdmin,
       subscriptionStatus: user.subscriptions?.status || 'none',
       subscriptionEnd: user.subscriptions?.currentPeriodEnd || null,
+      planId: user.subscriptions?.planId || null,
     };
 
     // Store in cache

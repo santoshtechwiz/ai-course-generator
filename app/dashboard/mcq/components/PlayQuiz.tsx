@@ -11,14 +11,15 @@ import { CheckCircle2, XCircle, ArrowRight, RefreshCcw, AlertTriangle, Trophy, T
 import { cn } from '@/lib/utils'
 import confetti from 'canvas-confetti'
 import { toast } from '@/hooks/use-toast'
-import { useGlobalActivity } from '@/lib/useGlobalActivity'
+
 
 type Question = {
-  question: string
-  answer: string
-  option1: string
-  option2: string
-  option3: string
+  id: number;
+  question: string;
+  answer: string;
+  option1: string;
+  option2: string;
+  option3: string;
 }
 
 interface PlayQuizProps {
@@ -35,52 +36,55 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
   const [uniqueOptions, setUniqueOptions] = useState<string[]>([])
   const [hasError, setHasError] = useState(false)
   const [timeSpent, setTimeSpent] = useState(0)
+  const [userAnswers, setUserAnswers] = useState<string[]>([])
+  const [questionTimes, setQuestionTimes] = useState<number[]>([])
 
   const currentQuestion = questions[currentQuestionIndex]
   const [startTime] = useState<number>(Date.now());
-  const { logActivity } = useGlobalActivity();
-  const handleQuizCompletion = async () => {
-    const duration = Math.floor((Date.now() - startTime) / 1000); // duration in seconds
 
-    await logActivity({
-      action: 'COMPLETE_QUIZ',
-      entityType: 'quiz',
-      entityId: quizId.toString(),
-      metadata: JSON.stringify({ score, duration }),
-    });
-    setQuizCompleted(true)
+  const handleQuizCompletion = async () => {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+
+    setQuizCompleted(true);
     confetti({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 }
-    })
+    });
 
     try {
+      const answers = questions.map((q, index) => ({
+        questionId: q.id,
+        userAnswer: userAnswers[index] || '',
+        isCorrect: userAnswers[index] === q.answer,
+        timeSpent: questionTimes[index] || 0,
+      }));
+
       const response = await fetch('/api/quiz/score', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ quizId, score, duration: timeSpent }),
+        body: JSON.stringify({ quizId, score, duration: timeSpent, answers }),
       });
-      const result = await response.json()
+      const result = await response.json();
       if (result.success) {
         toast({
           title: "Quiz score updated",
           description: "Your quiz score has been successfully recorded.",
-        })
+        });
       } else {
-        throw new Error(result.error)
+        throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Failed to update quiz score:', error)
+      console.error('Failed to update quiz score:', error);
       toast({
         title: "Error",
         description: "Failed to update quiz score. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -100,32 +104,32 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
         currentQuestion.option2,
         currentQuestion.option3
       ]
-      
+
       const uniqueOptionsSet = new Set(allOptions)
-      
+
       if (uniqueOptionsSet.size < 2) {
         setHasError(true)
         return
       }
-      
+
       if (uniqueOptionsSet.size < 4) {
         const fallbackOptions = [
           "None of the above",
           "All of the above",
         ]
-        
+
         let i = 0
         while (uniqueOptionsSet.size < 4 && i < fallbackOptions.length) {
           uniqueOptionsSet.add(fallbackOptions[i])
           i++
         }
       }
-      
+
       const shuffledOptions = [...uniqueOptionsSet].sort(() => Math.random() - 0.5)
       setUniqueOptions(shuffledOptions)
       setHasError(false)
     }
-    
+
     setSelectedAnswer(null)
     setIsCorrect(null)
   }, [currentQuestionIndex, currentQuestion])
@@ -140,10 +144,13 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
   }
 
   const nextQuestion = () => {
+    setUserAnswers(prev => [...prev, selectedAnswer || '']);
+    setQuestionTimes(prev => [...prev, timeSpent - prev.reduce((a, b) => a + b, 0)]);
+
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prevIndex => prevIndex + 1)
+      setCurrentQuestionIndex(prevIndex => prevIndex + 1);
     } else {
-      handleQuizCompletion()
+      handleQuizCompletion();
     }
   }
 
@@ -155,6 +162,8 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
     setQuizCompleted(false)
     setHasError(false)
     setTimeSpent(0)
+    setUserAnswers([])
+    setQuestionTimes([])
   }
 
   const formatTime = (seconds: number) => {
@@ -268,13 +277,13 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
                     >
                       {isCorrect ? (
                         <p className="text-green-600 dark:text-green-400 flex items-center font-medium">
-                          <CheckCircle2 className="mr-2" /> 
+                          <CheckCircle2 className="mr-2" />
                           Excellent! That's the correct answer.
                         </p>
                       ) : (
                         <div className="space-y-2">
                           <p className="text-red-600 dark:text-red-400 flex items-center font-medium">
-                            <XCircle className="mr-2" /> 
+                            <XCircle className="mr-2" />
                             Not quite right.
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -309,11 +318,11 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
                     You got {score} out of {questions.length} questions correct
                   </p>
                 </div>
-                <Button 
-                  onClick={resetQuiz} 
+                <Button
+                  onClick={resetQuiz}
                   className="w-full sm:w-auto"
                 >
-                  <RefreshCcw className="mr-2 h-4 w-4" /> 
+                  <RefreshCcw className="mr-2 h-4 w-4" />
                   Retake Quiz
                 </Button>
               </motion.div>

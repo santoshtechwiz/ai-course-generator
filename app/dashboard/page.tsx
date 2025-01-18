@@ -13,8 +13,10 @@ import AIRecommendations from "./components/Recommendations";
 import CourseProgress from "./course/components/CoursePage/CourseProgress";
 import { MyCourses } from "./course/components/UserDashboard/MyCourses";
 import { MyQuizzes } from "./course/components/UserDashboard/MyQuizzes";
+
 import { CreditCard, Zap } from 'lucide-react';
-import { prisma } from "@/lib/db";
+import { QuizAttempts } from "./course/components/UserDashboard/QuizAttempts";
+import { DashboardUser, UserStats } from "../types";
 
 export const dynamic = 'force-dynamic'
 
@@ -38,44 +40,6 @@ export default async function DashboardPage() {
     redirect("/dashboard/courses");
   }
 
-  if (!session || !session.user) {
-    return <div>Please log in to view your dashboard.</div>
-  }
-
-  const courseProgress = await prisma.courseProgress.findMany({
-    where: { userId: session.user.id },
-    include: {
-      course: {
-        select: {
-          id: true,
-          name: true,
-          slug: true
-        }
-      }
-    },
-  });
-  const courses = await prisma.course.findMany({
-    where: { userId: session.user.id },
-    include: {
-      courseUnits: {
-        include: {
-          chapters: {
-            include: {
-              questions: {
-                include: {
-                  attempts: true
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  });
-  const quizAttempts = await prisma.quizAttempt.findMany({
-    where: { userId: session.user.id },
-    include: { quiz: { select: { chapterId: true } } },
-  })
   const userData = await getUserData(session.user.id);
   const userStats = await getUserStats(session.user.id);
 
@@ -104,7 +68,7 @@ export default async function DashboardPage() {
     <div className="container mx-auto p-6 lg:p-8 bg-background text-foreground">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold mb-2">{getGreeting()}, {userData.name}!</h1>
+          <h1 className="text-3xl lg:text-4xl font-bold mb-2">{getGreeting()}, {userData.name || 'User'}!</h1>
           <p className="text-muted-foreground">{getMotivationalMessage()}</p>
         </div>
         <Card className="w-full sm:w-auto bg-primary text-primary-foreground p-4 shadow-md">
@@ -116,15 +80,8 @@ export default async function DashboardPage() {
             <div className="flex items-center space-x-2">
               <Zap className="h-5 w-5" />
               <span className="font-semibold">
-                {userData.subscriptions.planId === "FREE"
-                  ? "FREE"
-                  : userData.subscriptions.planId === "BASIC"
-                    ? "BASIC"
-                    : userData.subscriptions.planId === "PREMIUM"
-                      ? "PREMIUM"
-                      : "Unknown"}
+                {userData.subscriptions?.planId || "FREE"}
               </span>
-
             </div>
           </div>
         </Card>
@@ -138,7 +95,7 @@ export default async function DashboardPage() {
 
           <Suspense fallback={<LoadingCard />}>
             <CourseProgress
-              courses={userData?.courseProgress}
+              courses={userData.courseProgress}
               stats={userStats}
             />
           </Suspense>
@@ -149,6 +106,10 @@ export default async function DashboardPage() {
 
           <Suspense fallback={<LoadingCard />}>
             <MyQuizzes quizzes={userData.userQuizzes} />
+          </Suspense>
+
+          <Suspense fallback={<LoadingCard />}>
+            <QuizAttempts quizAttempts={userData.quizAttempts} />
           </Suspense>
         </div>
 
@@ -163,13 +124,18 @@ export default async function DashboardPage() {
 
           <Suspense fallback={<LoadingCard />}>
             <AIRecommendations
-              courses={courses}
-              courseProgress={courseProgress}
-              quizAttempts={quizAttempts}
+              courses={userData.courses}
+              courseProgress={userData.courseProgress}
+              quizAttempts={userData.quizAttempts}
             />
+          </Suspense>
+
+          <Suspense fallback={<LoadingCard />}>
+            <SubscriptionStatus subscription={userData.subscriptions} />
           </Suspense>
         </div>
       </div>
     </div>
   );
 }
+

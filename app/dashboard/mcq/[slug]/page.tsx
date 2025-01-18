@@ -117,6 +117,7 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
     const [option1, option2, option3] = options;
 
     return {
+      id: question.id,
       question: question.question,
       answer: question.answer,
       option1: option1 || "",
