@@ -3,7 +3,7 @@
 import { ActivityProvider } from "@/app/providers/activityContext";
 import { Toaster } from "@/components/ui/toaster";
 import Navbar from "../components/Navbar";
-
+import { UserProvider } from "@/app/providers/userContext";
 import { GlobalLoading } from "../components/global-loading";
 import { ThemeProvider } from "../providers/theme-provider";
 import Footer from "../components/Footer";
@@ -14,15 +14,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    
     <ThemeProvider
       attribute="class"
       defaultTheme="light"
       enableSystem={true}
       disableTransitionOnChange
     >
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
+      <UserProvider>
+        <div className="flex min-h-screen flex-col">
+          <Navbar />
           <ActivityProvider>
             <GlobalLoading />
             <main className="flex-1">
@@ -31,8 +31,8 @@ export default function DashboardLayout({
             <Footer />
             <Toaster />
           </ActivityProvider>
-      
-      </div>
+        </div>
+      </UserProvider>
     </ThemeProvider>
   );
 }

@@ -4,7 +4,7 @@ import React, { MouseEvent } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Lock, CheckCircle, User } from 'lucide-react';
 import { useSubscriptionStatus } from '@/hooks/useSubscroption';
 import {
   Tooltip,
@@ -16,14 +16,14 @@ import {
 interface CreditButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
   label: string;
   onClick?: (e: MouseEvent<HTMLButtonElement>) => Promise<void> | void;
-  requiredCredits: number;
+  requiredCredits?: number;
   loadingLabel?: string;
 }
 
 export function CreditButton({
   label,
   onClick,
-  requiredCredits,
+  requiredCredits = 0,
   loadingLabel = 'Processing...',
   ...props
 }: CreditButtonProps) {
@@ -45,7 +45,7 @@ export function CreditButton({
     }
 
     if (!subscriptionStatus || subscriptionStatus.credits < requiredCredits) {
-      router.push('/dahboard/subscription');
+      router.push('/dashboard/subscription');
       setIsLoading(false);
       return;
     }
@@ -64,19 +64,21 @@ export function CreditButton({
   };
 
   const isAuthenticated = status === 'authenticated';
-  const hasEnoughCredits = subscriptionStatus && subscriptionStatus.credits >= requiredCredits;
+  const hasEnoughCredits = (subscriptionStatus?.credits ?? 0) >= requiredCredits;
   const isDisabled = isLoading || !isAuthenticated || !hasEnoughCredits;
 
-  let buttonText = label;
-  let tooltipContent = '';
+  const getButtonIcon = () => {
+    if (isLoading) return <Loader2 className="h-4 w-4 animate-spin" />;
+    if (!isAuthenticated) return <User className="h-4 w-4" />;
+    if (!hasEnoughCredits) return <Lock className="h-4 w-4" />;
+    return <CheckCircle className="h-4 w-4" />;
+  };
 
-  if (!isAuthenticated) {
-    buttonText = 'Sign in to Create';
-    tooltipContent = 'You need to sign in to create this item';
-  } else if (!hasEnoughCredits) {
-    buttonText = 'Subscribe for Credits';
-    tooltipContent = `You need ${requiredCredits} credit${requiredCredits > 1 ? 's' : ''} to create this item`;
-  }
+  const tooltipContent = !isAuthenticated
+    ? 'Sign in to proceed.'
+    : !hasEnoughCredits
+    ? `You need ${requiredCredits} credit${requiredCredits > 1 ? 's' : ''} to proceed.`
+    : '';
 
   return (
     <TooltipProvider>
@@ -87,17 +89,13 @@ export function CreditButton({
             disabled={isDisabled}
             {...props}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {loadingLabel}
-              </>
-            ) : (
-              buttonText
+            {isDisabled ? getButtonIcon() : label}
+            {isLoading && (
+              <span className="ml-2">{loadingLabel}</span>
             )}
           </Button>
         </TooltipTrigger>
-        {isDisabled && (
+        {isDisabled && tooltipContent && (
           <TooltipContent>
             <p>{tooltipContent}</p>
           </TooltipContent>
@@ -106,4 +104,3 @@ export function CreditButton({
     </TooltipProvider>
   );
 }
-
