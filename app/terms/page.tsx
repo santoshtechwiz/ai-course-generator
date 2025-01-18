@@ -5,7 +5,7 @@ export default function TermsAndConditions() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Terms and Conditions</h1>
       
-      <p className="mb-4">Last updated: {new Date().toLocaleDateString()}</p>
+      <p className="mb-4">Last updated: {new Date().toLocaleDateString('en-US')}</p>
       
       <p className="mb-4">
         Please read these Terms and Conditions ("Terms", "Terms and Conditions") carefully before using the [Your Website URL] website (the "Service") operated by CourseAI ("us", "we", or "our").
@@ -98,7 +98,7 @@ export default function TermsAndConditions() {
       </p>
       
       <p className="mt-8">
-        <Link href="/privacy-policy" className="text-blue-600 hover:underline">
+        <Link href="/privacy" className="text-blue-600 hover:underline">
           View our Privacy Policy
         </Link>
       </p>
