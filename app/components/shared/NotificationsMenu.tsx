@@ -5,7 +5,8 @@ import { Weight } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useQuery } from '@tanstack/react-query'
-import { useUser } from "../providers/userContext"
+import { useUser } from "@/app/providers/userContext"
+
 
 interface NotificationsMenuProps {
   initialCount: number;

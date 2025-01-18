@@ -25,7 +25,7 @@ import { SubscriptionStatus, useSubscriptionStatus } from "@/hooks/useSubscropti
 import { CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
 import { useTheme } from "next-themes"
-import { CreditButton } from '@/app/components/CreditButton';
+import { CreditButton } from '@/app/components/shared/CreditButton';
 
 interface CourseCreationFormProps {
   topic: string;

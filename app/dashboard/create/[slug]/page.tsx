@@ -1,4 +1,4 @@
-import CourseCreationVideo from "@/app/components/CourseCreationVideo";
+import CourseCreationVideo from "@/app/components/landing/CourseCreationVideo";
 import ConfirmChapters from "../../course/components/ConfirmChapters";
 import { getAuthSession } from "@/lib/authOptions";
 import { getCourses, prisma } from "@/lib/db";

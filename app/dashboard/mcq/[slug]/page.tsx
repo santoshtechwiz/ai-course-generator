@@ -1,4 +1,4 @@
-import CourseCreationVideo from "@/app/components/CourseCreationVideo";
+import CourseCreationVideo from "@/app/components/landing/CourseCreationVideo";
 import { prisma } from "@/lib/db";
 
 import { Metadata } from 'next';

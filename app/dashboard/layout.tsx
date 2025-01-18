@@ -2,11 +2,13 @@
 
 import { ActivityProvider } from "@/app/providers/activityContext";
 import { Toaster } from "@/components/ui/toaster";
-import Navbar from "../components/Navbar";
+
 import { UserProvider } from "@/app/providers/userContext";
-import { GlobalLoading } from "../components/global-loading";
+
 import { ThemeProvider } from "../providers/theme-provider";
-import Footer from "../components/Footer";
+import Footer from "../components/shared/Footer";
+import { GlobalLoading } from "../components/shared/GlobalLoading";
+import Navbar from "../components/shared/Navbar";
 
 export default function DashboardLayout({
   children,

@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { InfoIcon, CreditCard, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
-import { CreditButton } from '@/app/components/CreditButton'
+import { CreditButton } from '@/app/components/shared/CreditButton'
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"

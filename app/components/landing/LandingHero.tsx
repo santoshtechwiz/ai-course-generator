@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import FeatureVideo from "@/app/components/animations/FeatureVideo";
-import RevealAnimation from './RevealAnimation';
+import RevealAnimation from '../shared/RevealAnimation';
+
 
 const stagger = {
   visible: {
