@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { motion, useSpring, AnimatePresence } from "framer-motion";
 
 import { cn } from "@/lib/utils";
-import CourseAILoader from "../dashboard/course/components/CourseAILoader";
+import CourseAILoader from "@/app/dashboard/course/components/CourseAILoader";
+
 
 interface RouteMessages {
   [key: string]: string;

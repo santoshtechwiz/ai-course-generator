@@ -1,15 +1,23 @@
 import { prisma } from "./db";
 
 // 1. Get all courses
-export const getCourses = async () => {
+export const getCoursesAndQuizzes = async () => {
     try {
-        const courses = await prisma.course.findMany();
-        return courses;
+        const courses = await prisma.course.findMany({
+            where: {
+                isPublic: true,
+            }
+        });
+        const quizzes = await prisma.userQuiz.findMany({
+            where: {
+                isPublic: true,
+            }
+        });
+        return { courses, quizzes };
     } catch (error) {
-        console.error("Error fetching courses:", error);
+        console.error("Error fetching courses and quizzes:", error);
     }
 };
-
 
 // 2. Get a specific course by ID
 export const getCourse = async (id: string) => {

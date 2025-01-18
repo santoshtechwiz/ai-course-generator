@@ -36,7 +36,7 @@ import { signIn, useSession } from 'next-auth/react'
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { motion } from "framer-motion"
 import { SignInBanner } from "./SignInBanner"
-import { CreditButton } from "@/app/components/CreditButton"
+import { CreditButton } from "@/app/components/shared/CreditButton"
 
 
 type QuizFormData = z.infer<typeof quizSchema>

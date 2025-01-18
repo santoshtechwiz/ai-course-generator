@@ -17,11 +17,11 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import { navItems } from "@/constants/navItems"
-import { CreateSection } from "./create-section"
-
-import SearchModal from "./SearchModal"
+import { CreateSection } from "../landing/CreateSection"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
+import SearchModal from "./SearchModal"
+
 
 const MobileMenu = () => {
   const [isOpen, setIsOpen] = useState(false)

@@ -1,6 +1,6 @@
 import React from 'react';
+import LandingComponent from './components/landing/LandingComponent';
 
-import LandingComponent from '@/components/ui/LandingComponent';
 
 const Dashboard = () => {
   return (

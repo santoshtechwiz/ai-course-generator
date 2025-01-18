@@ -1,12 +1,12 @@
 import { generateSitemapXml } from '@/lib/sitemap';
-import { getCourses } from '@/lib/sitemapquery';
+import { getCoursesAndQuizzes } from '@/lib/sitemapquery';
 import { NextResponse } from 'next/server'
 
 
 
 export async function GET() {
-  const courses = await getCourses();
-  const sitemap = generateSitemapXml(courses)
+  const { courses, quizzes } = await getCoursesAndQuizzes();
+  const sitemap = generateSitemapXml(courses, quizzes);
 
   return new NextResponse(sitemap, {
     headers: {
