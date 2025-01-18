@@ -1,6 +1,11 @@
+export enum PlanType {
+  FREE = 'FREE',
+  BASIC = 'BASIC',
+  PREMIUM = 'PREMIUM'
+}
 export const SUBSCRIPTION_PLANS = [
   {
-    name: 'FREE',
+    name: PlanType.FREE,
     options: [
       { duration: 1, price: 0 }
     ],
@@ -8,7 +13,7 @@ export const SUBSCRIPTION_PLANS = [
     features: ['3 credits per month', 'Basic access', 'Community support']
   },
   {
-    name: 'BASIC',
+    name: PlanType.BASIC,
     options: [
       { duration: 1, price: 5 }
     ],
@@ -16,7 +21,7 @@ export const SUBSCRIPTION_PLANS = [
     features: ['10 credits per month', 'Basic support', 'Access to standard features']
   },
   {
-    name: 'PREMIUM',
+    name: PlanType.PREMIUM,
     options: [
       { duration: 6, price: 25 }
     ],

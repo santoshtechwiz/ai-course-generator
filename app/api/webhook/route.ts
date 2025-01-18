@@ -9,109 +9,85 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.text()
-    const headersList = headers()
-    const signature = (await headersList).get('stripe-signature')
+    const body = await req.text();
+    const headersList = headers();
+    const signature = headersList.get('stripe-signature');
 
     if (!signature) {
-      console.error('No stripe-signature header found')
       return NextResponse.json(
-        { error: 'No signature header found' },
+        { error: 'No stripe-signature header found' },
         { status: 400 }
-      )
+      );
     }
 
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      console.error('Stripe webhook secret is not configured')
       return NextResponse.json(
-        { error: 'Webhook secret not configured' },
+        { error: 'Stripe webhook secret is not configured' },
         { status: 500 }
-      )
+      );
     }
 
-    console.log('Verifying webhook signature...')
-    console.log('Signature:', signature)
-    console.log('Body length:', body.length)
-
-    let event: Stripe.Event
+    let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        signature,
-        webhookSecret
-      )
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err) {
-      console.error('Webhook signature verification failed:', err)
-      // Log more details about the verification failure
-      if (err instanceof Error) {
-        console.error('Error message:', err.message)
-        console.error('Error name:', err.name)
-      }
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
-        { error: `Webhook Error: ${(err as Error).message}` },
+        { error: `Webhook signature verification failed: ${errorMessage}` },
         { status: 400 }
-      )
+      );
     }
 
-    console.log('Processing event:', event.type)
-
     try {
-      switch (event.type) {
-        case 'customer.subscription.created':
-        case 'customer.subscription.updated': {
-          const subscription = event.data.object as Stripe.Subscription
-          await handleSubscriptionChange(subscription)
-          break
-        }
-        case 'checkout.session.completed': {
-          const session = event.data.object as Stripe.Checkout.Session
-          await handleCheckoutCompleted(session)
-          break
-        }
-        case 'invoice.payment_failed': {
-          const invoice = event.data.object as Stripe.Invoice
-          await handleFailedPayment(invoice)
-          break
-        }
-        default:
-          console.log(`Unhandled event type ${event.type}`)
-      }
-
-      return NextResponse.json({ received: true })
+      await processStripeEvent(event);
+      return NextResponse.json({ received: true });
     } catch (error) {
-      // console.error('Error processing webhook:', error)
+      console.error('Error processing webhook:', error);
       // Return 200 to acknowledge receipt of the webhook
       return NextResponse.json(
         { error: 'Internal server error' },
         { status: 200 }
-      )
+      );
     }
   } catch (error) {
-    console.error('Fatal error processing webhook:', error)
+    console.error('Fatal error processing webhook:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
 
-async function handleSubscriptionChange(subscription: Stripe.Subscription) {
-  if (!subscription.id) {
-    console.error('Subscription ID is missing');
-    return;
+async function processStripeEvent(event: Stripe.Event): Promise<void> {
+  switch (event.type) {
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+      await handleSubscriptionChange(event.data.object as Stripe.Subscription);
+      break;
+    case 'checkout.session.completed':
+      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+      break;
+    case 'invoice.payment_failed':
+      await handleFailedPayment(event.data.object as Stripe.Invoice);
+      break;
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+}
+
+async function handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
+  if (!subscription.id || typeof subscription.customer !== 'string') {
+    throw new Error('Invalid subscription data');
   }
 
-  const customerId = subscription.customer as string;
-
   const userSubscription = await prisma.userSubscription.findFirst({
-    where: { stripeCustomerId: customerId },
-    include: { user: true },
+    where: { stripeCustomerId: subscription.customer },
+    select: { userId: true },
   });
 
   if (!userSubscription) {
-    console.error('User subscription not found for customer:', customerId);
-    return;
+    throw new Error(`User subscription not found for customer: ${subscription.customer}`);
   }
 
   await prisma.userSubscription.update({
@@ -125,61 +101,58 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   });
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
   if (!session.customer || !session.metadata?.userId || !session.metadata?.tokens) {
-    console.error('Missing required session data');
-    return;
+    throw new Error('Missing required session data');
   }
 
-  const tokens = parseInt(session.metadata.tokens);
+  const tokens = parseInt(session.metadata.tokens, 10);
+  if (isNaN(tokens)) {
+    throw new Error('Invalid tokens value');
+  }
 
-  await prisma.$transaction(async (prisma) => {
-    // Update user credits
-    await prisma.user.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
       where: { id: session.metadata!.userId },
-      data: {
-        credits: { increment: tokens },
-      },
+      data: { credits: { increment: tokens } },
     });
 
-    // Update subscription status if it exists
-    if (session.subscription) {
-      await prisma.userSubscription.updateMany({
+    if (session.subscription && typeof session.customer === 'string') {
+      await tx.userSubscription.updateMany({
         where: {
           userId: session.metadata!.userId,
-          stripeCustomerId: session.customer as string,
+          stripeCustomerId: session.customer,
         },
-        data: {
-          status: 'ACTIVE',
-        },
+        data: { status: 'ACTIVE' },
       });
     }
   });
 }
 
-async function handleFailedPayment(invoice: Stripe.Invoice) {
-  if (!invoice.subscription) return;
+async function handleFailedPayment(invoice: Stripe.Invoice): Promise<void> {
+  if (!invoice.subscription || typeof invoice.subscription !== 'string') {
+    return;
+  }
 
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
-
+  const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
   const userSubscription = await prisma.userSubscription.findFirst({
     where: { stripeSubscriptionId: subscription.id },
+    select: { userId: true },
   });
 
   if (!userSubscription) {
-    console.error('User subscription not found for:', subscription.id);
-    return;
+    throw new Error(`User subscription not found for: ${subscription.id}`);
   }
 
   await prisma.userSubscription.update({
     where: { userId: userSubscription.userId },
-    data: {
-      status: 'PAST_DUE',
-    },
+    data: { status: 'PAST_DUE' },
   });
 }
+
 export const config = {
   api: {
     bodyParser: false,
   },
-}
+};
+

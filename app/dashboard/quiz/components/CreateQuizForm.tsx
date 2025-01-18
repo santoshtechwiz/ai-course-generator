@@ -252,7 +252,7 @@ export default function CreateQuizForm({ isLoggedIn}: Props) {
                 className="w-full"
                 label={isLoading ? "Creating..." : (isLoggedIn ? "Create Quiz" : "Sign In to Create")}
                 onClick={handleSubmit(onSubmit)}
-                requiredCredits={amount}
+                requiredCredits={session?.user?.credits ?? 0}
               />
             </motion.div>
             {status !== 'authenticated' && (

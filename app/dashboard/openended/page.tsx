@@ -3,6 +3,8 @@ import TopicForm from "./components/TopicForm";
 import RandomQuestions from "./components/RandomQuestions";
 import { getRandomQuestions } from "@/lib/db";
 
+export const revalidate = 0;
+
 export default async function OpenEndedQuizPage() {
   const session = await getAuthSession();
   const credits = session?.user.credits ?? 0;
