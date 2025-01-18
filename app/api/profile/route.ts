@@ -1,14 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+
+import { prisma } from '@/lib/db';
 import { getToken } from 'next-auth/jwt';
-import {LRUCache} from 'lru-cache';
+import NodeCache from 'node-cache';
 
-const prisma = new PrismaClient();
 
-// Initialize a simple in-memory cache
-const cache = new LRUCache({
-  max: 500, // Maximum items in cache
-  ttl: 1000 * 60 * 5, // Cache lifetime: 5 minutes
-});
+
+// Initialize a simple in-memory cache using NodeCache
+const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // 5 minutes TTL with periodic check
 
 export async function GET(request: Request) {
   const token = await getToken({ req: request as any });

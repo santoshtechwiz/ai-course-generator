@@ -1,5 +1,5 @@
 import { IconType } from "react-icons"
-import { Course as PrismaCourse, UserQuiz } from "@prisma/client"
+import { Prisma, Course as PrismaCourse, UserQuiz } from "@prisma/client"
 
 // Base Types
 export interface BaseEntity {
@@ -238,15 +238,17 @@ export interface UserData extends User {
   favorites: UserFavorite[]
 }
 
+
+
 export interface DashboardUser extends User {
   totalCoursesWatched: number
   totalQuizzesAttempted: number
   totalTimeSpent: number
   courses: PrismaCourse[]
-  subscriptions: Subscription | null
-  userQuizzes: UserQuiz[]
-  courseProgress: CourseProgress[]
-  favorites: UserFavorite[]
+  subscriptions: PrismaSubscription 
+  userQuizzes: PrismaUserQuiz[]
+  courseProgress: PrismaCourseProgress[]
+  favorites: PrismaUserFavorite[]
 }
 
 // Category Types
@@ -352,4 +354,38 @@ export interface SearchResponse {
   courses: SearchResult[];
   quizzes: SearchResult[];
 }
+
+export type PrismaUser = Prisma.UserGetPayload<{
+  include: {
+    courses: true
+    courseProgress: true
+    userQuizzes: true
+    subscriptions: true
+    favorites: true
+  }
+}>
+
+export type PrismaCourseProgress = Prisma.CourseProgressGetPayload<{
+  include: {
+    course: {
+      include: {
+        category: true
+      }
+    }
+  }
+}>
+
+export type PrismaUserQuiz = Prisma.UserQuizGetPayload<{}>
+
+export type PrismaSubscription = Prisma.UserSubscriptionGetPayload<{}>
+
+export type PrismaUserFavorite = Prisma.FavoriteGetPayload<{
+  include: {
+    course: {
+      include: {
+        category: true
+      }
+    }
+  }
+}>
 

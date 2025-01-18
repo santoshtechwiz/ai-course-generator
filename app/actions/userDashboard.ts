@@ -1,43 +1,20 @@
 import { prisma } from "@/lib/db"
-import { DashboardUser } from "../types"
-
-
+import { 
+  DashboardUser, 
+  PrismaUser, 
+  PrismaCourseProgress, 
+  PrismaUserQuiz, 
+  PrismaSubscription, 
+  PrismaUserFavorite 
+} from "../types"
 
 export async function getUserData(userId: string): Promise<DashboardUser | null> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        credits: true,
-        userType: true,
-        totalCoursesWatched: true,
-        totalQuizzesAttempted: true,
-        totalTimeSpent: true,
+      include: {
         courses: {
           select: {
-            id: true,
-            name: true,
-            description: true,
-            image: true,
-            slug: true,
-            category: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-          take: 5,
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
-        userQuizzes:{
-          select:{
             id: true,
             name: true,
             description: true,
@@ -129,13 +106,22 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
           },
         },
       },
-    })
+    }) as PrismaUser | null
 
     if (!user) {
       return null
     }
 
-    return user as unknown as DashboardUser
+    const dashboardUser: DashboardUser = {
+      ...user,
+      courses: user.courses,
+      subscriptions: (user.subscriptions ?? []) as PrismaSubscription[],
+      userQuizzes: user.userQuizzes as PrismaUserQuiz[],
+      courseProgress: user.courseProgress as PrismaCourseProgress[],
+      favorites: user.favorites as PrismaUserFavorite[],
+    }
+
+    return dashboardUser
   } catch (error) {
     console.error('Error fetching user data:', error)
     throw error

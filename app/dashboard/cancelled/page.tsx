@@ -28,7 +28,7 @@ export default function CanceledPage() {
         </p>
         <div className="space-y-4">
           <Button asChild className="w-full">
-            <Link href="dashboard/subscription">Try Again</Link>
+            <Link href="/subscription">Try Again</Link>
           </Button>
           <Button 
             variant="outline" 

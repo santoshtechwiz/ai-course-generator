@@ -38,7 +38,6 @@ export default async function DashboardPage() {
     redirect("/dashboard/courses");
   }
 
-  
   if (!session || !session.user) {
     return <div>Please log in to view your dashboard.</div>
   }
@@ -79,7 +78,7 @@ export default async function DashboardPage() {
   })
   const userData = await getUserData(session.user.id);
   const userStats = await getUserStats(session.user.id);
-  
+
   if (!userData) {
     return <UserNotFound />;
   }
@@ -116,7 +115,16 @@ export default async function DashboardPage() {
             </div>
             <div className="flex items-center space-x-2">
               <Zap className="h-5 w-5" />
-              <span className="font-semibold">{userData.subscriptions ? "Pro" : "Free"}</span>
+              <span className="font-semibold">
+                {userData.subscriptions.planId === "FREE"
+                  ? "FREE"
+                  : userData.subscriptions.planId === "BASIC"
+                    ? "BASIC"
+                    : userData.subscriptions.planId === "PREMIUM"
+                      ? "PREMIUM"
+                      : "Unknown"}
+              </span>
+
             </div>
           </div>
         </Card>
@@ -154,10 +162,10 @@ export default async function DashboardPage() {
           </Suspense>
 
           <Suspense fallback={<LoadingCard />}>
-            <AIRecommendations 
+            <AIRecommendations
               courses={courses}
-              courseProgress={courseProgress} 
-              quizAttempts={quizAttempts} 
+              courseProgress={courseProgress}
+              quizAttempts={quizAttempts}
             />
           </Suspense>
         </div>
