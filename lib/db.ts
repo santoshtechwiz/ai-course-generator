@@ -549,15 +549,22 @@ export async function fetchCourses(filters = {}, userId?: string) {
 }
 
 export async function getRandomQuestions(count: number = 5) {
-  const randomQuestions = await prisma.userQuizQuestion.findMany({
+  const randomQuestions = await prisma.userQuiz.findMany({
     where: {
-      questionType: "open-ended"
+      quizType: "open-ended"
     },
     select: {
-      question: true,
-      userQuiz: {
+      id: true,
+      slug: true,
+      topic: true,
+      _count: {
         select: {
-          slug: true,
+          questions: true,
+        },
+      },
+      questions: {
+        select: {
+          question: true,
         },
       },
     },
@@ -568,8 +575,10 @@ export async function getRandomQuestions(count: number = 5) {
   });
 
   return randomQuestions.map(q => ({
-    question: q.question,
-    slug: q.userQuiz.slug,
+    question: q.questions.map(question => question.question).join(', '),
+    slug: q.slug,
+    topic: q.topic,
+    count: q._count.questions,
   }));
 }
 
