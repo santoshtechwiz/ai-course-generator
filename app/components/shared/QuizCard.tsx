@@ -35,7 +35,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center">
             <Clock className="w-4 h-4 mr-1" />
-            <span>{quiz.gameType}</span>
+            <span>{quiz.quizType}</span>
           </div>
           <div className="flex items-center">
             {quiz.isPublic ? (
