@@ -33,6 +33,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             completedChapters: true,
             timeSpent: true,
             isCompleted: true,
+            lastAccessedAt: true,
             course: {
               select: {
                 id: true,
@@ -40,6 +41,18 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
                 description: true,
                 image: true,
                 slug: true,
+                courseUnits: {
+                  select: {
+                    id: true,
+                    name: true,
+                    chapters: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
                 category: {
                   select: {
                     id: true,
@@ -69,7 +82,16 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
                 id: true,
               },
             },
-            bestScore: true
+            bestScore: true,
+            attempts: {
+              select: {
+                score: true,
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+              take: 1,
+            },
           },
         },
         subscriptions: {
@@ -153,7 +175,8 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       subscriptions: user.subscriptions,
       userQuizzes: user.userQuizzes.map(quiz => ({
         ...quiz,
-        percentageCorrect: quiz.questions.length ? 0 : 0, // This needs to be calculated differently as we don't have a score field in UserQuiz
+        percentageCorrect: quiz.attempts[0]?.score !== undefined ? 
+          (quiz.attempts[0].score / quiz.questions.length) * 100 : 0,
       })),
       courseProgress: user.courseProgress,
       favorites: user.favorites,
@@ -212,7 +235,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         acc[score.topic].totalScore += score.percentageCorrect;
         acc[score.topic].attempts += 1;
         return acc;
-      }, {} as Record<string, { totalScore: number; attempts: number }>);
+      }, {});
 
       const topPerformingTopics = Object.entries(topicPerformance)
         .map(([topic, data]) => ({

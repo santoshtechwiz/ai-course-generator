@@ -72,18 +72,34 @@ export interface UserStats {
   totalTimeSpent: number;
 }
 
+// export interface Course {
+//   id: number;
+//   name: string;
+//   description: string | null;
+//   image: string;
+//   slug: string | null;
+//   category: {
+//     id: number;
+//     name: string;
+//   } | null;
+// }
 export interface Course {
-  id: number;
+  id: string;
   name: string;
-  description: string | null;
-  image: string;
-  slug: string | null;
+  slug: string;
   category: {
     id: number;
     name: string;
   } | null;
+  courseUnits: {
+    chapters: {
+      id: string;
+      questions: {
+        id: string;
+      }[];
+    }[];
+  }[];
 }
-
 export interface CourseProgress {
   id: number;
   progress: number;
@@ -140,4 +156,11 @@ export interface QuizAttempt {
     question: string;
     answer: string;
   };
+}
+export class CourseAIErrors{
+
+  constructor(public message: string, public code?: number) {}
+ 
+
+
 }
