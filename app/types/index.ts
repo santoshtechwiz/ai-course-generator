@@ -87,6 +87,8 @@ export interface Course {
   id: string;
   name: string;
   slug: string;
+  createdAt: Date,
+  updatedAt: Date,
   category: {
     id: number;
     name: string;
@@ -118,6 +120,8 @@ export interface UserQuiz {
   timeEnded: Date | null;
   quizType: string;
   questions: { id: number }[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface UserSubscription {
