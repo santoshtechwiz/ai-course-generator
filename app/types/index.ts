@@ -157,10 +157,24 @@ export interface QuizAttempt {
     answer: string;
   };
 }
-export class CourseAIErrors{
+export class CourseAIErrors {
 
-  constructor(public message: string, public code?: number) {}
- 
+  constructor(public message: string, public code?: number) { }
 
 
+
+}
+export interface QuizCardProps {
+  title: string;
+  description: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  questionCount: number;
+  isTrending?: boolean;
+  slug: string;
+  quizType: string;
+}
+
+export interface BadgeProps {
+  text: string;
+  type: 'difficulty' | 'questions' | 'trending';
 }

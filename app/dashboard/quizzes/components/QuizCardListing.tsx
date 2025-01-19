@@ -8,6 +8,7 @@ import { Clock, Users, BookOpen, PlusCircle, ArrowRight } from 'lucide-react';
 import Link from "next/link";
 import { useState } from "react";
 import { Quiz } from "@/app/types";
+import { QuizCardV2 } from "@/app/components/shared/QuizCardImproved";
 
 interface CardProps {
   quiz: Quiz;
@@ -24,7 +25,7 @@ const QuizCardListing = ({ quiz, index }: { quiz: Quiz; index: number }) => {
       transition={{ duration: 0.3, delay: index * 0.1 }}
       className="h-full"
     >
-      <Card
+      {/* <Card
         className="h-full flex flex-col hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 bg-gradient-to-br from-background to-background/80 border-2 border-primary/10"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -80,7 +81,17 @@ const QuizCardListing = ({ quiz, index }: { quiz: Quiz; index: number }) => {
         <div className="p-4">
           <QuizFooter quiz={quiz} />
         </div>
-      </Card>
+      </Card> */}
+      <QuizCardV2
+        title={quiz.topic}
+        description={quiz.description}
+        difficulty={quiz.quizType}
+        questionCount={quiz.questionCount}
+        isTrending={quiz.isPublic}
+        slug={quiz.slug}
+        quizType={quiz.quizType}
+      
+      />
     </motion.div>
   );
 };
@@ -131,31 +142,31 @@ const CreateQuizCard = () => {
   );
 };
 
-function QuizFooter({ quiz }: { quiz: CardProps["quiz"] }) {
-  return (
-    <Link
-      href={
-        quiz.gameType === "open-ended"
-          ? `/dashboard/openended/${quiz.slug}`
-          : `/dashboard/mcq/${quiz.slug}`
-      }
-      passHref
-      className="w-full"
-    >
-      <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground group">
-        Take Quiz
-        <motion.span
-          className="ml-2"
-          initial={{ x: 0 }}
-          whileHover={{ x: 5 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ArrowRight className="w-4 h-4" />
-        </motion.span>
-      </Button>
-    </Link>
-  );
-}
+// function QuizFooter({ quiz }: { quiz: CardProps["quiz"] }) {
+//   return (
+//     <Link
+//       href={
+//         quiz.gameType === "open-ended"
+//           ? `/dashboard/openended/${quiz.slug}`
+//           : `/dashboard/mcq/${quiz.slug}`
+//       }
+//       passHref
+//       className="w-full"
+//     >
+//       <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground group">
+//         Take Quiz
+//         <motion.span
+//           className="ml-2"
+//           initial={{ x: 0 }}
+//           whileHover={{ x: 5 }}
+//           transition={{ duration: 0.2 }}
+//         >
+//           <ArrowRight className="w-4 h-4" />
+//         </motion.span>
+//       </Button>
+//     </Link>
+//   );
+// }
 
 export { QuizCardListing, CreateQuizCard };
 
