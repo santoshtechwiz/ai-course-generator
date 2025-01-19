@@ -170,58 +170,89 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
 export async function getUserStats(userId: string): Promise<UserStats> {
   try {
     const stats = await prisma.$transaction(async (tx) => {
-      const [totalQuizzes, quizAttempts, completedCourses, totalTimeSpent] = await Promise.all([
-        tx.userQuiz.count({
-          where: { userId },
-        }),
-        tx.userQuizAttempt.findMany({
-          where: { userId },
-          select: {
-            score: true,
-            userQuiz: {
-              select: {
-                questions: {
-                  select: { id: true },
-                },
-              },
+      // Fetch all user quiz attempts with related quiz information
+      const quizAttempts = await tx.userQuizAttempt.findMany({
+        where: { userId },
+        include: {
+          userQuiz: {
+            select: {
+              topic: true,
+              questions: { select: { id: true } },
             },
           },
-        }),
-        tx.courseProgress.count({
-          where: {
-            userId,
-            isCompleted: true,
-          },
-        }),
-        tx.courseProgress.aggregate({
-          where: { userId },
-          _sum: { timeSpent: true },
-        }),
-      ]);
-
-      const scores = quizAttempts.map(attempt => {
-        const totalQuestions = attempt.userQuiz.questions.length;
-        return {
-          score: attempt.score || 0,
-          totalQuestions,
-          percentageCorrect: totalQuestions ? (attempt.score || 0) / totalQuestions * 100 : 0,
-        };
+        },
+        orderBy: { createdAt: 'asc' },
       });
 
-      const averageScore = scores.length
-        ? scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scores.length
-        : 0;
+      // Calculate basic stats
+      const totalQuizzes = new Set(quizAttempts.map(a => a.userQuizId)).size;
+      const totalAttempts = quizAttempts.length;
+      const totalTimeSpent = quizAttempts.reduce((sum, a) => sum + (a.timeSpent || 0), 0);
 
-      const highestScore = scores.length
-        ? Math.max(...scores.map(quiz => quiz.percentageCorrect))
-        : 0;
+      // Calculate scores and topic performance
+      const scores = quizAttempts.map(attempt => ({
+        score: attempt.score || 0,
+        totalQuestions: attempt.userQuiz.questions.length,
+        percentageCorrect: attempt.userQuiz.questions.length ? 
+          (attempt.score || 0) / attempt.userQuiz.questions.length * 100 : 0,
+        topic: attempt.userQuiz.topic,
+        timeSpent: attempt.timeSpent || 0,
+      }));
+
+      const averageScore = scores.length ? 
+        scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scores.length : 0;
+      const highestScore = scores.length ? 
+        Math.max(...scores.map(quiz => quiz.percentageCorrect)) : 0;
+
+      // Calculate topic performance
+      const topicPerformance = scores.reduce((acc, score) => {
+        if (!acc[score.topic]) {
+          acc[score.topic] = { totalScore: 0, attempts: 0 };
+        }
+        acc[score.topic].totalScore += score.percentageCorrect;
+        acc[score.topic].attempts += 1;
+        return acc;
+      }, {} as Record<string, { totalScore: number; attempts: number }>);
+
+      const topPerformingTopics = Object.entries(topicPerformance)
+        .map(([topic, data]) => ({
+          topic,
+          averageScore: data.totalScore / data.attempts,
+          attempts: data.attempts,
+        }))
+        .sort((a, b) => b.averageScore - a.averageScore)
+        .slice(0, 5);
+
+      // Calculate recent improvement (last 5 attempts vs previous 5)
+      const recentAttempts = quizAttempts.slice(-10);
+      const recentImprovement = recentAttempts.length >= 10 ?
+        (recentAttempts.slice(5).reduce((sum, a) => sum + (a.score || 0), 0) / 5) -
+        (recentAttempts.slice(0, 5).reduce((sum, a) => sum + (a.score || 0), 0) / 5) : 0;
+
+      // Calculate quizzes per month
+      const monthsSinceFirstQuiz = quizAttempts.length ?
+        (new Date().getTime() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000) : 1;
+      const quizzesPerMonth = totalQuizzes / monthsSinceFirstQuiz;
+
+      // Fetch completed courses
+      const completedCourses = await tx.courseProgress.count({
+        where: {
+          userId,
+          isCompleted: true,
+        },
+      });
 
       return {
         totalQuizzes,
+        totalAttempts,
         averageScore,
         highestScore,
         completedCourses,
-        totalTimeSpent: totalTimeSpent._sum.timeSpent || 0,
+        totalTimeSpent,
+        averageTimePerQuiz: totalAttempts ? totalTimeSpent / totalAttempts : 0,
+        topPerformingTopics,
+        recentImprovement,
+        quizzesPerMonth,
       };
     });
 

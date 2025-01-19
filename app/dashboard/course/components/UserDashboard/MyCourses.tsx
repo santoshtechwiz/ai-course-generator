@@ -4,26 +4,12 @@ import { ArrowRight, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Course } from "@/app/types"
 
-interface CourseType {
-  userId: string;
-  id: number;
-  isPublic: boolean;
-  slug: string | null;
-  name: string;
-  isCompleted: boolean | null;
-  image: string;
-  description: string | null;
-  viewCount: number;
-  totalRatings: number;
-  averageRating: number;
-  categoryId: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 
 interface MyCoursesProps {
-  courses: CourseType[]
+  courses: Course[]
 }
 
 export function MyCourses({ courses }: MyCoursesProps) {

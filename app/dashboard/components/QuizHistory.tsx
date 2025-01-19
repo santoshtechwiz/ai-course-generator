@@ -1,5 +1,6 @@
+import { UserQuiz } from "@/app/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserQuiz } from "@prisma/client";
+
 
 
 export default function QuizHistory({ quizzes }: { quizzes: UserQuiz[] }) {

@@ -11,7 +11,7 @@ import { CheckCircle2, XCircle, ArrowRight, RefreshCcw, AlertTriangle, Trophy, T
 import { cn } from '@/lib/utils'
 import confetti from 'canvas-confetti'
 import { toast } from '@/hooks/use-toast'
-
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 type Question = {
   id: number;
@@ -38,12 +38,18 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
   const [timeSpent, setTimeSpent] = useState(0)
   const [userAnswers, setUserAnswers] = useState<string[]>([])
   const [questionTimes, setQuestionTimes] = useState<number[]>([])
+  const [showSkipDialog, setShowSkipDialog] = useState(false)
 
   const currentQuestion = questions[currentQuestionIndex]
   const [startTime] = useState<number>(Date.now());
 
   const handleQuizCompletion = async () => {
     const duration = Math.floor((Date.now() - startTime) / 1000);
+
+    // Ensure the last answer is recorded
+    const currentTime = timeSpent - questionTimes.reduce((a, b) => a + b, 0);
+    const finalUserAnswers = [...userAnswers, selectedAnswer || ''];
+    const finalQuestionTimes = [...questionTimes, currentTime];
 
     setQuizCompleted(true);
     confetti({
@@ -55,9 +61,9 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
     try {
       const answers = questions.map((q, index) => ({
         questionId: q.id,
-        userAnswer: userAnswers[index] || '',
-        isCorrect: userAnswers[index] === q.answer,
-        timeSpent: questionTimes[index] || 0,
+        userAnswer: finalUserAnswers[index] || '',
+        isCorrect: finalUserAnswers[index] === q.answer,
+        timeSpent: finalQuestionTimes[index] || 0,
       }));
 
       const response = await fetch('/api/quiz/score', {
@@ -65,7 +71,7 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ quizId, score, duration: timeSpent, answers }),
+        body: JSON.stringify({ quizId, score, duration, answers }),
       });
       const result = await response.json();
       if (result.success) {
@@ -103,7 +109,7 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
         currentQuestion.option1,
         currentQuestion.option2,
         currentQuestion.option3
-      ]
+      ].filter(Boolean) // Remove any falsy values (empty strings, null, undefined)
 
       const uniqueOptionsSet = new Set(allOptions)
 
@@ -116,6 +122,8 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
         const fallbackOptions = [
           "None of the above",
           "All of the above",
+          "Not enough information",
+          "Cannot be determined"
         ]
 
         let i = 0
@@ -144,14 +152,22 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
   }
 
   const nextQuestion = () => {
+    const currentTime = timeSpent - questionTimes.reduce((a, b) => a + b, 0);
     setUserAnswers(prev => [...prev, selectedAnswer || '']);
-    setQuestionTimes(prev => [...prev, timeSpent - prev.reduce((a, b) => a + b, 0)]);
+    setQuestionTimes(prev => [...prev, currentTime]);
 
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prevIndex => prevIndex + 1);
+      setSelectedAnswer(null);
+      setIsCorrect(null);
     } else {
       handleQuizCompletion();
     }
+  }
+
+  const skipQuestion = () => {
+    setShowSkipDialog(false);
+    nextQuestion();
   }
 
   const resetQuiz = () => {
@@ -182,7 +198,7 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
             <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Question Error</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              This question needs review due to duplicate options.
+              This question needs review due to insufficient options.
             </p>
             <Button onClick={nextQuestion}>Skip to Next Question</Button>
           </CardContent>
@@ -192,7 +208,7 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
   }
 
   return (
-    <div className="min-h-screen   flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-[95%] md:max-w-3xl shadow-xl border-0">
         <CardHeader className="space-y-4 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -338,17 +354,39 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
             >
               Check Answer
             </Button>
-            <Button
-              onClick={nextQuestion}
-              disabled={isCorrect === null}
-              className="w-full sm:w-auto"
-            >
-              {currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                onClick={() => setShowSkipDialog(true)}
+                variant="outline"
+                className="w-full sm:w-auto"
+                disabled={isCorrect !== null}
+              >
+                Skip
+              </Button>
+              <Button
+                onClick={nextQuestion}
+                disabled={isCorrect === null}
+                className="w-full sm:w-auto"
+              >
+                {currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </CardFooter>
         )}
       </Card>
+      <Dialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Skip Question</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to skip this question? You won't be able to come back to it later.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSkipDialog(false)}>Cancel</Button>
+            <Button onClick={skipQuestion}>Skip Question</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
