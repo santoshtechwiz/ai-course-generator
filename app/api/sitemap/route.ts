@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 
 
 export async function GET() {
-  const { courses, quizzes } = await getCoursesAndQuizzes();
+  const { courses, quizzes } = await getCoursesAndQuizzes() as { courses: any[], quizzes: any[] };
   const sitemap = generateSitemapXml(courses, quizzes);
 
   return new NextResponse(sitemap, {
