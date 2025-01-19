@@ -26,7 +26,7 @@ export function generateSitemapXml(courses: Course[], quizzes: UserQuiz[]): stri
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  ${courses.map(course => `
+  ${courses?.map(course => `
   <url>
     <loc>${BASE_URL}/dashboard/course/${course.slug}</loc>
     <lastmod>${course?.createdAt ? course.createdAt.toISOString() : ''}</lastmod>
@@ -34,7 +34,7 @@ export function generateSitemapXml(courses: Course[], quizzes: UserQuiz[]): stri
     <priority>0.9</priority>
   </url>
   `).join('')}
-  ${quizzes.map(quiz => `
+  ${quizzes?.map(quiz => `
   <url>
     <loc>${BASE_URL}/dashboard/${quiz.quizType==='open_ended'?'openended':'mcq'}/${quiz.slug}</loc>
     <lastmod>${quiz?.createdAt ? quiz.createdAt.toISOString() : ''}</lastmod>
