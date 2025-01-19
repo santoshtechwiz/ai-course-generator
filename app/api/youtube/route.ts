@@ -63,7 +63,7 @@ async function generateQuizInternal(
 
     await prisma.courseQuiz.createMany({
       data: questions.map((question: Question) => {
-        const options = [question.answer, question.option1, question.option2, question.option3]
+        const options = [question.answer, ...question.options]
           .sort(() => Math.random() - 0.5);
         return {
           question: question.question,

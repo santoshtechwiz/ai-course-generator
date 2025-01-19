@@ -71,7 +71,7 @@ export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavori
           title: "Quiz deleted",
           description: "Your quiz has been successfully deleted.",
         })
-        router.push('/quizzes')
+        router.push('/dashboard/quizzes')
       } else {
         throw new Error('Failed to delete quiz')
       }

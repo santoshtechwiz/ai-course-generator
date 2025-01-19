@@ -23,7 +23,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
 
   const quiz = await prisma.userQuiz.findUnique({
     where: { slug },
-    select: { topic: true },
+    select: {id:true, topic: true, questions: true, user: { select: { name: true } } },
   });
 
   const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
@@ -35,8 +35,8 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     };
   }
 
-  const title = `${quiz.topic} Quiz`;
-  const description = `Test your knowledge with this ${quiz.topic} quiz!`;
+  const title = `${quiz.topic} Quiz | YourQuizApp`;
+  const description = quiz.topic || `Test your knowledge with this ${quiz.topic} quiz created by ${quiz.user.name}. Challenge yourself and learn something new!`;
 
   return {
     title,
@@ -60,6 +60,9 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       title,
       description,
       images: [`${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`],
+    },
+    alternates: {
+      canonical: `${websiteUrl}/quiz/${slug}`,
     },
   };
 }

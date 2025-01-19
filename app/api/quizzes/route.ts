@@ -11,7 +11,7 @@ export async function GET() {
       select: {
         id: true,
         topic: true,
-        gameType: true,
+        quizType: true,
         isPublic: true,
         timeStarted: true,
         

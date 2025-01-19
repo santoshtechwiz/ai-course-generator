@@ -106,9 +106,9 @@ export default function CreateQuizForm({ isLoggedIn}: Props) {
 
     try {
       const response = await createQuizMutation.mutateAsync(watch())
-      const gameId = response?.gameId
+      const userQuizId = response?.userQuizId;
 
-      if (!gameId) throw new Error("Game ID not found")
+       if (!userQuizId) throw new Error("userQuizId ID not found")
 
       toast({
         title: "Success!",

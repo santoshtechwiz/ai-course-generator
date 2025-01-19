@@ -7,8 +7,8 @@ import { BrainCircuit } from 'lucide-react'
 interface QuizType {
   id: number
   topic: string
-  score: number | null
-  gameType: string
+  bestScore: number | null
+  quizType: string
   slug: string
 }
 
@@ -17,6 +17,7 @@ interface MyQuizzesProps {
 }
 
 export function MyQuizzes({ quizzes }: MyQuizzesProps) {
+  console.log(quizzes);
   return (
     <Card>
       <CardHeader>
@@ -27,7 +28,7 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
           <div className="space-y-4">
             {quizzes.map((quiz) => (
               <Link 
-                href={`/dashboard/${quiz.gameType === 'open-ended' ? 'openended' : 'mcq'}/${quiz.slug}`} 
+                href={`/dashboard/${quiz.quizType === 'open-ended' ? 'openended' : 'mcq'}/${quiz.slug}`} 
                 key={quiz.id} 
                 className="block"
               >
@@ -35,10 +36,10 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
                   <div>
                     <p className="font-medium">{quiz.topic}</p>
                     <p className="text-sm text-muted-foreground">
-                      Score: {quiz.score !== null ? `${quiz.score}%` : 'N/A'}
+                      Score: {quiz.bestScore !== null ? `${quiz.bestScore}%` : 'N/A'}
                     </p>
                   </div>
-                  <Badge>{quiz.gameType}</Badge>
+                  <Badge>{quiz.quizType}</Badge>
                 </div>
               </Link>
             ))}

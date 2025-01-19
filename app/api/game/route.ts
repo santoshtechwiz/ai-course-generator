@@ -12,7 +12,7 @@ const cache = new NodeCache({ stdTTL: 600 }); // Cache for 10 minutes
 
 export const dynamic = "force-dynamic";
 
-async function createGame(userId: string, topic: string, type: string, slug: string, questionCount: number) {
+async function createUserQuiz(userId: string, topic: string, type: string, slug: string) {
   let uniqueSlug = slug;
   let counter = 1;
 
@@ -20,7 +20,7 @@ async function createGame(userId: string, topic: string, type: string, slug: str
     try {
       return await prisma.userQuiz.create({
         data: {
-          gameType: type,
+          quizType: type,
           timeStarted: new Date(),
           userId,
           isPublic: false,
@@ -39,16 +39,17 @@ async function createGame(userId: string, topic: string, type: string, slug: str
   }
 }
 
-async function createQuestions(questions: MCQQuestion[] | OpenEndedQuestion[], gameId: number, type: QuizType) {
+async function createQuestions(questions: MCQQuestion[] | OpenEndedQuestion[], userQuizId: number, type: QuizType) {
   const data = questions.map((question) => {
     if (type === 'mcq') {
       const mcqQuestion = question as MCQQuestion;
       const options = [mcqQuestion.answer, mcqQuestion.option1, mcqQuestion.option2, mcqQuestion.option3].sort(() => Math.random() - 0.5);
       return {
+        
         question: mcqQuestion.question,
         answer: mcqQuestion.answer,
         options: JSON.stringify(options),
-        gameId,
+        userQuizId,
         questionType: "mcq" as const,
       };
     } else {
@@ -56,13 +57,13 @@ async function createQuestions(questions: MCQQuestion[] | OpenEndedQuestion[], g
       return {
         question: openEndedQuestion.question,
         answer: openEndedQuestion.answer,
-        gameId,
+        userQuizId,
         questionType: "open-ended" as const,
       };
     }
   });
 
-  await prisma.quiz.createMany({ data });
+  await prisma.userQuizQuestion.createMany({ data });
 }
 
 async function updateTopicCount(topic: string) {
@@ -107,7 +108,7 @@ export async function POST(req: Request) {
     const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
-        { error: "You must be logged in to create a game." },
+        { error: "You must be logged in to create a quiz." },
         { status: 401 }
       );
     }
@@ -116,7 +117,7 @@ export async function POST(req: Request) {
     const { topic, type, amount, difficulty } = quizCreationSchema.parse(body);
     const slug = generateSlug(topic);
 
-    // 1. First fetch questions to ensure we can create a game
+    // 1. First fetch questions to ensure we can create a quiz
     const questions = await fetchQuizQuestions(amount, topic, type, difficulty);
     if (questions.length === 0) {
       return NextResponse.json(
@@ -125,12 +126,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Create the game
-    const game = await createGame(session.user.id, topic, type, slug, questions.length);
+    // 2. Create the user quiz
+    const userQuiz = await createUserQuiz(session.user.id, topic, type, slug);
 
     try {
-      // 3. Create questions for the game
-      await createQuestions(questions, game.id, type);
+      // 3. Create questions for the quiz
+      await createQuestions(questions, userQuiz.id, type);
 
       // 4. Update topic count
       await updateTopicCount(topic);
@@ -139,16 +140,16 @@ export async function POST(req: Request) {
       await updateUserCredits(session.user.id, type);
 
       return NextResponse.json({
-        gameId: game.id,
-        slug: game.slug
+        userQuizId: userQuiz.id,
+        slug: userQuiz.slug
       }, { status: 200 });
     } catch (error) {
-      // If anything fails after game creation, try to delete the game
+      // If anything fails after quiz creation, try to delete the quiz
       await prisma.userQuiz.delete({
-        where: { id: game.id }
+        where: { id: userQuiz.id }
       }).catch(() => {
         // Ignore deletion errors
-        console.error('Failed to cleanup game after error:', game.id);
+        console.error('Failed to cleanup quiz after error:', userQuiz.id);
       });
       throw error;
     }
@@ -169,62 +170,63 @@ export async function GET(req: Request) {
     const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
-        { error: "You must be logged in to view a game." },
+        { error: "You must be logged in to view a quiz." },
         { status: 401 }
       );
     }
 
     const url = new URL(req.url);
-    const gameId = url.searchParams.get("gameId");
+    const userQuizId = url.searchParams.get("userQuizId");
 
-    if (!gameId) {
+    if (!userQuizId) {
       return NextResponse.json(
-        { error: "You must provide a game ID." },
+        { error: "You must provide a user quiz ID." },
         { status: 400 }
       );
     }
 
-    const cacheKey = `game_${gameId}`;
-    const cachedGame = cache.get(cacheKey);
+    const cacheKey = `userQuiz_${userQuizId}`;
+    const cachedUserQuiz = cache.get(cacheKey);
 
-    if (cachedGame) {
-      return NextResponse.json({ game: cachedGame }, { status: 200 });
+    if (cachedUserQuiz) {
+      return NextResponse.json({ userQuiz: cachedUserQuiz }, { status: 200 });
     }
 
-    const game = await prisma.userQuiz.findUnique({
-      where: { id: Number(gameId) },
+    const userQuiz = await prisma.userQuiz.findUnique({
+      where: { id: Number(userQuizId) },
       select: {
         slug: true,
+        id: true,
         questions: {
           select: {
             id: true,
             question: true,
             answer: true,
             options: true,
-            gameId: true,
+            userQuizId: true,
           },
         },
       },
     });
 
-    if (!game) {
+    if (!userQuiz) {
       return NextResponse.json(
-        { error: "Game not found." },
+        { error: "User quiz not found." },
         { status: 404 }
       );
     }
 
-    const parsedQuestions = game.questions.map((question) => ({
+    const parsedQuestions = userQuiz.questions.map((question) => ({
       ...question,
       options: question.options ? JSON.parse(question.options) : null,
     }));
 
-    const gameData = { ...game, questions: parsedQuestions };
-    cache.set(cacheKey, gameData);
+    const userQuizData = { ...userQuiz, questions: parsedQuestions };
+    cache.set(cacheKey, userQuizData);
 
-    return NextResponse.json({ game: gameData }, { status: 200 });
+    return NextResponse.json({ userQuiz: userQuizData }, { status: 200 });
   } catch (error) {
-    console.error('Game retrieval error:', error);
+    console.error('User quiz retrieval error:', error);
     return NextResponse.json(
       { error: "An unexpected error occurred." },
       { status: 500 }

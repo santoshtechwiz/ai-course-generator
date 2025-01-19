@@ -53,8 +53,8 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     // Find courses with low progress
     const lowProgressCourses = courseProgress.filter(c => c.progress < 30 && !c.isCompleted)
     if (lowProgressCourses.length > 0) {
-      const course = courses.find(c => c.id === lowProgressCourses[0].courseId)
-      if (course && course.courseUnits.length > 0 && course.courseUnits[0].chapters.length > 0) {
+      const course = courses?.find(c => c.id === lowProgressCourses[0].courseId)
+      if (course && course?.courseUnits?.length > 0 && course?.courseUnits[0].chapters.length > 0) {
         recommendations.push({
           type: 'next',
           message: `Continue ${course.name} to maintain your learning momentum`,
@@ -66,7 +66,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     }
 
     // Find quizzes with low scores
-    const lowScoreQuizzes = quizAttempts.filter(q => q.score < 70)
+    const lowScoreQuizzes = quizAttempts?.filter(q => q.score < 70) || []
     if (lowScoreQuizzes.length > 0) {
       const latestLowScoreQuiz = lowScoreQuizzes.reduce((latest, current) => 
         latest.createdAt > current.createdAt ? latest : current
@@ -79,7 +79,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
         )
       )
       if (relevantCourse) {
-        const relevantChapter = relevantCourse.courseUnits
+        const relevantChapter = relevantCourse?.courseUnits
           .flatMap(unit => unit.chapters)
           .find(chapter => chapter.questions.some(question => question.id === latestLowScoreQuiz.quizId))
         if (relevantChapter) {
