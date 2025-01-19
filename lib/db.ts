@@ -1,4 +1,3 @@
-
 import { CourseDetails, FullCourseType } from '@/app/types';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { getAuthSession } from './authOptions';
@@ -64,7 +63,7 @@ export async function getPublicQuizzes() {
           },
         },
       },
-      where: { isPublic: false },
+      where: { isPublic: true },
       take: 10,
     });
 
@@ -483,62 +482,6 @@ export async function getCourse(slug: string): Promise<FullCourseType | null> {
 
 
 
-export async function getCourseData(slug: string): Promise<FullCourseType | null> {
-  const course = await prisma.course.findFirst({
-    where: { slug },
-    include: {
-      courseUnits: {
-        include: {
-          chapters: {
-            include: {
-              questions: true,
-            },
-          },
-        },
-      },
-      courseProgress: {
-        include: {
-          user: true,
-        },
-      },
-    },
-  });
-
-  if (!course) return null;
-
-  const quizAttempts = await prisma.quizAttempt.findMany({
-    where: {
-      quiz: {
-        chapter: {
-          unit: {
-            courseId: course.id,
-          },
-        },
-      },
-    },
-    include: {
-      user: true,
-      quiz: true,
-    },
-  });
-
-  const fullCourse: FullCourseType = {
-    ...course,
-    courseUnits: course.courseUnits.map(unit => ({
-      ...unit,
-      chapters: unit.chapters.map(chapter => ({
-        ...chapter,
-        questions: chapter.questions.map(question => ({
-          ...question,
-          attempts: quizAttempts.filter(attempt => attempt.quizId === question.id),
-        })),
-      })),
-    })),
-  };
-
-  return fullCourse;
-}
-
 
 export async function fetchCourses(filters = {}, userId?: string) {
   const baseQuery = {
@@ -572,7 +515,22 @@ export async function fetchCourses(filters = {}, userId?: string) {
     ? { ...baseQuery, where: { ...baseQuery.where, userId } }
     : { ...baseQuery, where: { ...baseQuery.where, isPublic: true } as Prisma.CourseWhereInput };
 
-  const courses = await prisma.course.findMany(query)
+  const courses = await prisma.course.findMany({
+    ...query,
+    select: {
+      ...query.select,
+      courseUnits: {
+        select: {
+          _count: true,
+          chapters: {
+            select: {
+              _count: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
   return courses.map((course) => ({
     id: course.id.toString(),
@@ -591,13 +549,17 @@ export async function fetchCourses(filters = {}, userId?: string) {
 }
 
 export async function getRandomQuestions(count: number = 5) {
-  const randomQuestions = await prisma.userQuiz.findMany({
+  const randomQuestions = await prisma.userQuizQuestion.findMany({
     where: {
-      gameType: "open-ended"
+      questionType: "open-ended"
     },
     select: {
-      topic: true,
-      slug: true,
+      question: true,
+      userQuiz: {
+        select: {
+          slug: true,
+        },
+      },
     },
     orderBy: {
       id: 'asc'
@@ -605,7 +567,10 @@ export async function getRandomQuestions(count: number = 5) {
     take: count
   });
 
-  return randomQuestions;
+  return randomQuestions.map(q => ({
+    question: q.question,
+    slug: q.userQuiz.slug,
+  }));
 }
 
 
@@ -621,3 +586,71 @@ export async function clearExpiredSessions() {
   })
 }
 
+
+
+export async function getCourseData(slug: string): Promise<FullCourseType | null> {
+  const course = await prisma.course.findFirst({
+    where: { slug },
+    include: {
+      courseUnits: {
+        include: {
+          chapters: {
+            include: {
+              courseQuizzes: true,
+            },
+          },
+        },
+      },
+      courseProgress: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
+
+  if (!course) return null;
+
+  // Fetch quiz attempts for all questions in the course
+  const quizAttempts = await prisma.userQuizAttempt.findMany({
+    where: {
+      userQuiz: {
+        questions: {
+          some: {
+            userQuizId: course.id,
+          },
+        },
+      },
+    },
+    include: {
+      user: true,
+      userQuiz: {
+        include: {
+          questions: true,
+        },
+      },
+      attemptQuestions: true,
+    },
+  });
+
+  const fullCourse: FullCourseType = {
+    ...course,
+    courseUnits: course.courseUnits.map(unit => ({
+      ...unit,
+      chapters: unit.chapters.map(chapter => ({
+        ...chapter,
+        questions: chapter.courseQuizzes.map(question => ({
+          ...question,
+          attempts: quizAttempts
+            .filter(attempt => attempt.userQuiz.questions.some(q => q.id === question.id))
+            .map(attempt => ({
+              ...attempt,
+              attemptQuestions: attempt.attemptQuestions.filter(aq => aq.questionId === question.id),
+            })),
+        })),
+      })),
+    })),
+  };
+
+  return fullCourse;
+}

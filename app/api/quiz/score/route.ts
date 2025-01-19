@@ -4,76 +4,110 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
-  const userId = (await getServerSession(authOptions))?.user.id;
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    return NextResponse.json({ success: false, error: 'User not authenticated' }, { status: 401 });
+  }
+
   try {
-    const { quizId, score, duration, answers } = await req.json();  // Assuming `answers` contains user answers for each question
+    const { quizId, score, duration, answers } = await req.json();
+
+    // Validate quizId
+    const quizExists = await prisma.userQuiz.findUnique({
+      where: { id: quizId },
+    });
+
+    if (!quizExists) {
+      throw new Error('Invalid quizId: UserQuiz does not exist');
+    }
 
     // Ensure duration is an integer
     const durationInSeconds = Math.round(duration);
 
-    // Step 1: Update userQuiz record
-    const updatedUserQuiz = await prisma.userQuiz.update({
-      where: { id: quizId },  // Ensure 'quizId' maps to a UserQuiz record
-      data: {
-        score,
-        duration: durationInSeconds, // Store duration as integer
-        timeEnded: new Date(),
-      },
-    });
-
-    // Step 2: Update the user's total quizzes attempted and total time spent
-    await prisma.user.update({
-      where: { id: updatedUserQuiz.userId },
-      data: {
-        totalQuizzesAttempted: { increment: 1 },
-        totalTimeSpent: { increment: durationInSeconds }, // Use the same integer value
-      },
-    });
-
-    // Step 3: Update or create a record for the quiz attempt
-    const existingAttempt = await prisma.quizAttempt.findFirst({
-      where: { userId, quizId },
-    });
-
-    let quizAttemptId;
-
-    if (existingAttempt) {
-      // Update existing quiz attempt
-      quizAttemptId = existingAttempt.id;
-      await prisma.quizAttempt.update({
-        where: { id: existingAttempt.id },
-        data: { score, timeSpent: durationInSeconds },
+    // Use a transaction for multiple database operations
+    const result = await prisma.$transaction(async (prisma) => {
+      // Step 1: Update userQuiz record
+      const updatedUserQuiz = await prisma.userQuiz.update({
+        where: { id: quizId },
+        data: {
+          timeEnded: new Date(),
+          lastAttempted: new Date(),
+          bestScore: {
+            set: Math.max(score, quizExists.bestScore ?? 0),
+          },
+        },
       });
-    } else {
-      if (!userId) {
-        throw new Error('User ID is undefined');
+
+      // Step 2: Update user stats
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          totalQuizzesAttempted: { increment: 1 },
+          totalTimeSpent: { increment: durationInSeconds },
+        },
+      });
+
+      // Step 3: Create or update quizAttempt
+      const existingAttempt = await prisma.userQuizAttempt.findUnique({
+        where: { userId_userQuizId: { userId, userQuizId: quizId } },
+      });
+
+      let quizAttempt;
+      if (existingAttempt) {
+        quizAttempt = await prisma.userQuizAttempt.update({
+          where: { id: existingAttempt.id },
+          data: {
+            score,
+            timeSpent: durationInSeconds,
+            improvement: score - (quizExists.bestScore ?? 0),
+            accuracy: answers
+              ? (answers.filter((a: any) => a.isCorrect).length / answers.length) * 100
+              : null,
+          },
+        });
+      } else {
+        quizAttempt = await prisma.userQuizAttempt.create({
+          data: {
+            userId,
+            userQuizId: quizId,
+            score,
+            timeSpent: durationInSeconds,
+            accuracy: answers
+              ? (answers.filter((a: any) => a.isCorrect).length / answers.length) * 100
+              : null,
+          },
+        });
       }
-      // Create a new quiz attempt record
-      const newQuizAttempt = await prisma.quizAttempt.create({
-        data: { userId, quizId, score, timeSpent: durationInSeconds },
-      });
-      quizAttemptId = newQuizAttempt.id;
-    }
 
-    // Step 4: Record the user answers at the question level
-    if (answers && Array.isArray(answers)) {
-      const attemptQuestionsData = answers.map((answer: any) => ({
-        attemptId: quizAttemptId,
-        questionId: answer.questionId, // assuming `answer` has `questionId` and `isCorrect`
-        userAnswer: answer.userAnswer,  // The user's answer
-        isCorrect: answer.isCorrect,  // Whether the answer was correct or not
-        timeSpent: answer.timeSpent,  // Time spent on the question
-      }));
+      // Step 4: Validate and save answers
+      if (answers && Array.isArray(answers)) {
+        const validAnswers = answers.map((answer: any) => ({
+          attemptId: quizAttempt.id,
+          questionId: answer.questionId,
+          userAnswer: answer.userAnswer,
+          isCorrect: answer.isCorrect,
+          timeSpent: Math.round(answer.timeSpent),
+        }));
 
-      // Create records for each question in the quiz attempt
-      await prisma.quizAttemptQuestion.createMany({
-        data: attemptQuestionsData,
-      });
-    }
+        if (validAnswers.length > 0) {
+          await prisma.userQuizAttemptQuestion.createMany({
+            data: validAnswers,
+          });
+        }
+      }
 
-    return NextResponse.json({ success: true, updatedUserQuiz });
+      return { updatedUserQuiz, quizAttempt };
+    });
+
+    return NextResponse.json({ success: true, result });
   } catch (error) {
     console.error('Error updating quiz score:', error);
-    return NextResponse.json({ success: false, error: 'Failed to update quiz score' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Failed to update quiz score' },
+      { status: 500 }
+    );
   }
 }
+

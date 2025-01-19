@@ -237,7 +237,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
           >
             <h3 className="text-2xl font-bold mb-4">Quiz Results</h3>
             {questions.map((question, index) => (
-              <div key={question.id} className="mb-6 p-4 bg-muted rounded-lg">
+              <div key={`${question.id}-${index}`} className="mb-6 p-4 bg-muted rounded-lg">
                 <p className="font-semibold mb-2">
                   {index + 1}. {question.question}
                 </p>

@@ -24,7 +24,7 @@ export async function POST(req: Request) {
         userId,
         topic,
         timeStarted: new Date(),
-        gameType: 'open-ended',
+        quizType: 'open-ended',
         slug: slug,
         questions: {
           create: quiz.questions.map((q: { question: string; correct_answer: string; hints: string[]; difficulty: string; tags: string[] }) => ({

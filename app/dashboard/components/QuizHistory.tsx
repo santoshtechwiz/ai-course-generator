@@ -16,7 +16,7 @@ export default function QuizHistory({ quizzes }: { quizzes: UserQuiz[] }) {
             {recentQuizzes.map((quiz, index) => (
               <li key={index} className="flex justify-between items-center">
                 <span className="truncate">{quiz.topic}</span>
-                <span className="font-semibold">{quiz.score}%</span>
+                <span className="font-semibold">{quiz.bestScore}%</span>
               </li>
             ))}
           </ul>
