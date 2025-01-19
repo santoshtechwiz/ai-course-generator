@@ -3,21 +3,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from 'next/link'
 import { BrainCircuit } from 'lucide-react'
+import { UserQuiz } from "@/app/types"
 
-interface QuizType {
-  id: number
-  topic: string
-  bestScore: number | null
-  quizType: string
-  slug: string
-}
 
 interface MyQuizzesProps {
-  quizzes: QuizType[]
+  quizzes: UserQuiz[]
 }
 
 export function MyQuizzes({ quizzes }: MyQuizzesProps) {
-  console.log(quizzes);
+
   return (
     <Card>
       <CardHeader>

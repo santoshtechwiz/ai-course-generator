@@ -6,23 +6,13 @@ import { Book, Heart, ArrowRight } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Favorite } from "@/app/types"
 
 interface FavoriteCoursesProps {
-  favorites: {
-    id: string
-    course: {
-      id: string
-      name: string
-      description: string
-      image: string
-      slug: string
-      category: {
-        id: string
-        name: string
-      }
-    }
-  }[]
-}
+  favorites: Favorite[]
+  }
+
+
 
 export default function FavoriteCourses({ favorites }: FavoriteCoursesProps) {
   if (!favorites?.length) {

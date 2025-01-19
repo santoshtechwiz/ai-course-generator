@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Brain, ArrowRight, Target, RotateCcw, BookOpen } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { FullCourseType, FullChapterType } from "@/app/types"
+import { Course } from '@/app/types'
+
 
 interface CourseProgress {
   id: number;
@@ -39,7 +40,7 @@ interface QuizAttempt {
 }
 
 interface AIRecommendationsProps {
-  courses: FullCourseType[];
+  courses: Course[];
   courseProgress: CourseProgress[];
   quizAttempts: QuizAttempt[];
 }

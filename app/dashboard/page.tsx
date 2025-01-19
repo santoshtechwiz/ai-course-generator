@@ -16,7 +16,7 @@ import { MyQuizzes } from "./course/components/UserDashboard/MyQuizzes";
 
 import { CreditCard, Zap } from 'lucide-react';
 import { QuizAttempts } from "./course/components/UserDashboard/QuizAttempts";
-import { DashboardUser, UserStats } from "../types";
+import { UserStatsOverview } from "./course/components/UserDashboard/UserStatsOverview";
 
 export const dynamic = 'force-dynamic'
 
@@ -129,7 +129,9 @@ export default async function DashboardPage() {
               quizAttempts={userData.quizAttempts}
             />
           </Suspense>
-
+          <Suspense fallback={<LoadingCard />}>
+            <UserStatsOverview stats={userStats} />
+          </Suspense>
           <Suspense fallback={<LoadingCard />}>
             <SubscriptionStatus subscription={userData.subscriptions} />
           </Suspense>
