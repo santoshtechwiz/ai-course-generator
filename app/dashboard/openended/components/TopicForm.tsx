@@ -1,30 +1,27 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { InfoIcon, CreditCard, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
-import { CreditButton } from '@/app/components/shared/CreditButton'
+import { ChevronDown, ChevronUp } from "lucide-react"
+import { CreditButton } from "@/app/components/shared/CreditButton"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Badge } from "@/components/ui/badge"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 
 interface TopicFormProps {
-  credits: number;
+  credits: number
 }
 
 export default function TopicForm({ credits }: TopicFormProps) {
-  const [topic, setTopic] = useState('')
+  const [topic, setTopic] = useState("")
   const [questionCount, setQuestionCount] = useState(5)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
   const [openInfo, setOpenInfo] = useState(false)
   const [open, setOpen] = useState(false)
   const router = useRouter()
@@ -32,13 +29,13 @@ export default function TopicForm({ credits }: TopicFormProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
+    setError("")
 
     try {
-      const response = await fetch('/api/generate-quiz', {
-        method: 'POST',
+      const response = await fetch("/api/generate-quiz", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ topic, questionCount }),
       })
@@ -47,25 +44,17 @@ export default function TopicForm({ credits }: TopicFormProps) {
         const { slug } = await response.json()
         router.push(`/dashboard/openended/${slug}`)
       } else {
-        throw new Error('Failed to generate quiz')
+        throw new Error("Failed to generate quiz")
       }
     } catch (error) {
-      console.error('Error generating quiz:', error)
-      setError('Failed to generate quiz. Please try again.')
+      console.error("Error generating quiz:", error)
+      setError("Failed to generate quiz. Please try again.")
     } finally {
       setLoading(false)
     }
   }
 
-  const isDisabled = loading || credits < 1 || !topic.trim();
-
-  const getCreditTier = (credits: number) => {
-    if (credits >= 10) return { name: 'Gold', color: 'bg-yellow-500' }
-    if (credits >= 5) return { name: 'Silver', color: 'bg-gray-400' }
-    return { name: 'Bronze', color: 'bg-amber-600' }
-  }
-
-  const tier = getCreditTier(credits)
+  const isDisabled = loading || credits < 1 || !topic.trim()
 
   return (
     <motion.div
@@ -82,7 +71,9 @@ export default function TopicForm({ credits }: TopicFormProps) {
         <CardContent className="flex-grow">
           <form onSubmit={handleSubmit} className="space-y-6 h-full flex flex-col">
             <div className="space-y-2 flex-grow">
-              <label htmlFor="topic" className="text-sm font-medium">Quiz Topic</label>
+              <label htmlFor="topic" className="text-sm font-medium">
+                Quiz Topic
+              </label>
               <Input
                 id="topic"
                 value={topic}
@@ -121,16 +112,11 @@ export default function TopicForm({ credits }: TopicFormProps) {
                 <span>10</span>
               </div>
             </div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <Card className="bg-primary/5 border-primary/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center justify-between">
+                  <CardTitle className="text-lg">
                     <span>Available Credits</span>
-                    <Badge className={`${tier.color} text-white`}>{tier.name} Tier</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -155,11 +141,7 @@ export default function TopicForm({ credits }: TopicFormProps) {
                 </CardContent>
               </Card>
             </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <Card className="bg-muted">
                 <CardHeader className="pb-2 cursor-pointer" onClick={() => setOpenInfo(!openInfo)}>
                   <CardTitle className="text-lg flex items-center justify-between">
@@ -171,13 +153,14 @@ export default function TopicForm({ credits }: TopicFormProps) {
                   {openInfo && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
+                      animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.3 }}
                     >
                       <CardContent>
                         <AlertDescription>
-                          Open-ended questions encourage critical thinking and detailed responses. They are great for assessing understanding and promoting discussion.
+                          Open-ended questions encourage critical thinking and detailed responses. They are great for
+                          assessing understanding and promoting discussion.
                         </AlertDescription>
                       </CardContent>
                     </motion.div>
@@ -201,15 +184,18 @@ export default function TopicForm({ credits }: TopicFormProps) {
             </AnimatePresence>
           </form>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="p-6">
           <CreditButton
             type="submit"
             label={loading ? "Generating Quiz..." : "Generate Quiz"}
-            onClick={(e) => { e.preventDefault(); handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>); }}
+            onClick={(e) => {
+              e.preventDefault()
+              handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
+            }}
             requiredCredits={credits}
             loadingLabel="Generating Quiz..."
             disabled={isDisabled}
-            className="w-full bg-gradient-to-r from-primary to-primary-foreground hover:from-primary-foreground hover:to-primary text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-12 text-lg"
           />
         </CardFooter>
       </Card>
