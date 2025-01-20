@@ -76,10 +76,10 @@ const CourseCreationVideo = () => {
   }
 
   return (
-    <aside className="w-full lg:w-96 p-6 space-y-6 bg-background border-l h-[calc(100vh-4rem)] overflow-y-auto">
+    <aside className="w-full lg:w-96  bg-background  ">
       <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-center text-lg font-semibold">Create Your Course</CardTitle>
+          <CardTitle className="text-center border-0 text-lg font-semibold">Create Your Course</CardTitle>
         </CardHeader>
         <CardContent>
           <Progress value={(step + 1) * (100 / steps.length)} className="mb-6" />

@@ -1,5 +1,4 @@
-// import { IconType } from "react-icons"
-// import { Prisma, Course as PrismaCourse, UserQuiz } from "@prisma/client"
+
 
 import { User } from "@prisma/client";
 
@@ -13,12 +12,6 @@ export interface BaseEntity {
 // Quiz Types
 export type QuizType = 'mcq' | 'open_ended'
 
-// export interface QuizCreationData {
-//   topic: string
-//   type: QuizType
-//   amount: number
-//   difficulty: string
-// }
 
 export interface MCQQuestion {
   question: string
@@ -72,17 +65,6 @@ export interface UserStats {
   totalTimeSpent: number;
 }
 
-// export interface Course {
-//   id: number;
-//   name: string;
-//   description: string | null;
-//   image: string;
-//   slug: string | null;
-//   category: {
-//     id: number;
-//     name: string;
-//   } | null;
-// }
 export interface Course {
   id: string;
   name: string;
@@ -176,6 +158,7 @@ export interface QuizCardProps {
   isTrending?: boolean;
   slug: string;
   quizType: string;
+  estimatedTime: string;
 }
 
 export interface BadgeProps {
@@ -185,4 +168,9 @@ export interface BadgeProps {
 
 export class FullCourseType{
   constructor(public course:Course, public courseProgress:CourseProgress[]){}
+}
+
+export interface RandomQuizProps{
+
+  
 }
