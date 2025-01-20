@@ -1,6 +1,7 @@
-import { CourseDetails, FullCourseType } from '@/app/types';
+
 import { PrismaClient, Prisma } from '@prisma/client';
 import { getAuthSession } from './authOptions';
+import { Course, FullCourseType } from '@/app/types';
 
 
 
@@ -80,7 +81,7 @@ export async function getPublicQuizzes() {
 }
 
 // Fetch course details
-export async function getCourseDetails(): Promise<CourseDetails[]> {
+export async function getCourseDetails(): Promise<any[]> {
   const courses = await prisma.course.findMany({
     orderBy: { id: "asc" },
     where: { isPublic: true },
@@ -202,42 +203,8 @@ export const getQuizById = async (id: number) => {
   }
 };
 
-// Update a quiz by ID
-export const updateQuiz = async (id: number, data: Prisma.QuizUpdateInput) => {
-  try {
-    return await prisma.quiz.update({
-      where: { id },
-      data,
-    });
-  } catch (error) {
-    console.error("Error updating quiz:", error);
-    throw error;
-  }
-};
 
-// Delete a quiz by ID
-export const deleteQuiz = async (id: number) => {
-  try {
-    return await prisma.quiz.delete({
-      where: { id },
-    });
-  } catch (error) {
-    console.error("Error deleting quiz:", error);
-    throw error;
-  }
-};
 
-// Get all quizzes for a specific course
-export const getQuizzesByCourseId = async (courseId: number) => {
-  try {
-    return await prisma.quiz.findMany({
-      where: { id: courseId },
-    });
-  } catch (error) {
-    console.error("Error fetching quizzes by course ID:", error);
-    throw error;
-  }
-};
 
 // Check if a course exists by slug
 export const courseExistsBySlug = async (slug: string) => {
@@ -314,64 +281,8 @@ export const deleteUser = async (id: string) => {
   }
 };
 
-// Create a new game
-export const createGame = async (data: Prisma.QuizCreateInput) => {
-  try {
-    return await prisma.quiz.create({
-      data,
-    });
-  } catch (error) {
-    console.error("Error creating game:", error);
-    throw error;
-  }
-};
 
-// Get all games
-export const getGames = async () => {
-  try {
-    return await prisma.quiz.findMany();
-  } catch (error) {
-    console.error("Error fetching games:", error);
-    throw error;
-  }
-};
 
-// Get a single game by ID
-export const getGameById = async (id: number) => {
-  try {
-    return await prisma.quiz.findUnique({
-      where: { id },
-    });
-  } catch (error) {
-    console.error("Error fetching game by ID:", error);
-    throw error;
-  }
-};
-
-// Update a game by ID
-export const updateGame = async (id: number, data: Prisma.QuizUpdateInput) => {
-  try {
-    return await prisma.quiz.update({
-      where: { id },
-      data,
-    });
-  } catch (error) {
-    console.error("Error updating game:", error);
-    throw error;
-  }
-};
-
-// Delete a game by ID
-export const deleteGame = async (id: number) => {
-  try {
-    return await prisma.quiz.delete({
-      where: { id },
-    });
-  } catch (error) {
-    console.error("Error deleting game:", error);
-    throw error;
-  }
-};
 
 export async function slugToId(slug: string): Promise<number | null> {
   try {
@@ -461,7 +372,7 @@ export async function getUserWithCourses(userId: string) {
 
 
 
-export async function getCourse(slug: string): Promise<FullCourseType | null> {
+export async function getCourse(slug: string): Promise<Course | null> {
   return await prisma.course.findFirst({
     where: { slug },
     include: {
@@ -542,7 +453,7 @@ export async function fetchCourses(filters = {}, userId?: string) {
     unitCount: course.courseUnits.length,
     lessonCount: course.courseUnits.reduce((acc, unit) => acc + unit._count.chapters, 0),
     quizCount: course.courseUnits.reduce((acc, unit) =>
-      acc + unit.chapters.reduce((chapterAcc, chapter) => chapterAcc + chapter._count.questions, 0), 0
+      acc + unit.chapters.reduce((chapterAcc, chapter) => chapterAcc + chapter._count.courseQuizzes, 0), 0
     ),
     userId: course.userId,
   }))
@@ -601,6 +512,7 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
   const course = await prisma.course.findFirst({
     where: { slug },
     include: {
+      category: true,
       courseUnits: {
         include: {
           chapters: {

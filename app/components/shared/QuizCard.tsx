@@ -1,57 +1,81 @@
+'use client';
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Clock, Globe, Lock } from 'lucide-react';
-import Link from "next/link";
-import { UserQuiz } from "@prisma/client";
+import { motion } from 'framer-motion';
+import { QuizIcon } from './QuizIcon';
+import { Badge } from './Badge';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { QuizCardProps } from '@/app/types';
+import Link from 'next/link';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-interface QuizCardProps {
-  quiz: UserQuiz;
-}
+const cardVariants = {
+  initial: { opacity: 0, y: 50 },
+  animate: { opacity: 1, y: 0 },
+  hover: { scale: 1.05, boxShadow: '0px 10px 20px rgba(0,0,0,0.1)' },
+};
 
-export function QuizCard({ quiz }: QuizCardProps) {
+export const QuizCard: React.FC<QuizCardProps> = ({
+  title,
+  description,
+  difficulty,
+  questionCount,
+  isTrending,
+  slug,
+  quizType,
+}) => {
+  const isDarkMode = useColorScheme();
+
+  const backgroundStyle = {
+    background: isDarkMode
+      ? 'linear-gradient(145deg, #2d3748, #1a202c)'
+      : 'linear-gradient(145deg, #ffffff, #f7fafc)',
+  };
+
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-bold truncate">{quiz.topic}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="aspect-w-16 aspect-h-9 mb-4">
-          <svg
-            className="w-full h-full text-muted-foreground"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
+    <motion.div
+      className="transition-transform duration-300 ease-in-out"
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      whileHover="hover"
+    >
+      <Card
+        className={`w-full max-w-sm rounded-lg shadow-lg ${
+          isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
+        }`}
+        style={backgroundStyle}
+      >
+        <CardHeader>
+          <QuizIcon className="mx-auto" />
+          <h2 className="text-2xl font-bold text-center mt-4">{title}</h2>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          <p className="text-center text-gray-600 dark:text-gray-300">{description}</p>
+          <div className="flex justify-center space-x-2">
+            <Badge text={difficulty} type="difficulty" />
+            <Badge text={`${questionCount} Questions`} type="questions" />
+            {isTrending && <Badge text="Trending" type="trending" />}
+          </div>
+        </CardContent>
+        <CardFooter className="p-6">
+          <Link
+            href={`/dashboard/${quizType === 'open-ended' ? 'openended' : 'mcq'}/${slug}`}
+            passHref
+            className="block w-full"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-            />
-          </svg>
-        </div>
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-1" />
-            <span>{quiz.quizType}</span>
-          </div>
-          <div className="flex items-center">
-            {quiz.isPublic ? (
-              <Globe className="w-4 h-4 mr-1" />
-            ) : (
-              <Lock className="w-4 h-4 mr-1" />
-            )}
-            <span>{quiz.isPublic ? 'Public' : 'Private'}</span>
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button asChild className="w-full">
-          <Link href={`/dashboard/quiz/${quiz.id}`}>Start Quiz</Link>
-        </Button>
-      </CardFooter>
-    </Card>
+            <Button
+              className="w-full"
+              variant="primary"
+              aria-label={`Start ${title} quiz`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Start Quiz
+            </Button>
+          </Link>
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
-}
+};

@@ -1,6 +1,10 @@
 import { motion } from 'framer-motion';
 
-export const QuizIcon = () => (
+interface QuizIconProps {
+  className?: string;
+}
+
+export const QuizIcon: React.FC<QuizIconProps> = ({ className }) => (
   <motion.svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -9,7 +13,7 @@ export const QuizIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="w-16 h-16 text-primary"
+    className={`w-16 h-16 text-primary ${className}`}
     whileHover={{ rotate: 360 }}
     transition={{ duration: 0.5 }}
   >
@@ -18,4 +22,3 @@ export const QuizIcon = () => (
     <line x1="12" y1="17" x2="12.01" y2="17" />
   </motion.svg>
 );
-
