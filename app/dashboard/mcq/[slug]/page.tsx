@@ -1,42 +1,44 @@
-import CourseCreationVideo from "@/app/components/landing/CourseCreationVideo";
-import { prisma } from "@/lib/db";
-
-import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { Suspense } from "react";
-import PlayQuiz from "../components/PlayQuiz";
-import { QuizActions } from "../components/QuizActions";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { Suspense } from "react"
+import { notFound } from "next/navigation"
+import { getServerSession } from "next-auth"
+import type { Metadata } from "next"
+import { prisma } from "@/lib/db"
+import { authOptions } from "@/lib/authOptions"
+import CourseCreationVideo from "@/app/components/landing/CourseCreationVideo"
+import PlayQuiz from "../components/PlayQuiz"
+import { QuizActions } from "../components/QuizActions"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type Question = {
-  question: string;
-  answer: string;
-  option1: string;
-  option2: string;
-  option3: string;
-};
+  id: string
+  question: string
+  answer: string
+  option1: string
+  option2: string
+  option3: string
+}
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const params = await props.params;
-  const { slug } = params;
+  const params = await props.params
+  const { slug } = params
 
   const quiz = await prisma.userQuiz.findUnique({
     where: { slug },
-    select: {id:true, topic: true, questions: true, user: { select: { name: true } } },
-  });
+    select: { id: true, topic: true, questions: true, user: { select: { name: true } } },
+  })
 
-  const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
+  const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000"
 
   if (!quiz) {
     return {
-      title: 'Quiz Not Found',
-      description: 'The requested quiz could not be found.',
-    };
+      title: "Quiz Not Found",
+      description: "The requested quiz could not be found.",
+    }
   }
 
-  const title = `${quiz.topic} Quiz | YourQuizApp`;
-  const description = quiz.topic || `Test your knowledge with this ${quiz.topic} quiz created by ${quiz.user.name}. Challenge yourself and learn something new!`;
+  const title = `${quiz.topic} Quiz | YourQuizApp`
+  const description = `Test your knowledge with this ${quiz.topic} quiz created by ${quiz.user.name}. Challenge yourself and learn something new!`
 
   return {
     title,
@@ -45,7 +47,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       title,
       description,
       url: `${websiteUrl}/quiz/${slug}`,
-      type: 'website',
+      type: "website",
       images: [
         {
           url: `${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`,
@@ -56,7 +58,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       ],
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
       title,
       description,
       images: [`${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`],
@@ -64,22 +66,20 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     alternates: {
       canonical: `${websiteUrl}/quiz/${slug}`,
     },
-  };
+  }
 }
 
 export async function generateStaticParams() {
   const quizzes = await prisma.userQuiz.findMany({
     select: { slug: true },
-  });
+  })
 
-  return quizzes
-    .filter((quiz) => quiz.slug)
-    .map((quiz) => ({ slug: quiz.slug }));
+  return quizzes.filter((quiz) => quiz.slug).map((quiz) => ({ slug: quiz.slug }))
 }
 
 const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
-  const params = await props.params;
-  const { slug } = params;
+  const params = await props.params
+  const { slug } = params
 
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
@@ -101,23 +101,23 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
         },
       },
     },
-  });
+  })
 
   if (!result) {
-    notFound();
+    notFound()
   }
 
   const questions: Question[] = result.questions.map((question) => {
-    let options: string[] = [];
+    let options: string[] = []
     if (question.options) {
       try {
-        options = JSON.parse(question.options);
+        options = JSON.parse(question.options)
       } catch (error) {
-        console.error("Error parsing options:", error);
-        options = ["Option 1", "Option 2", "Option 3"]; // Default fallback
+        console.error("Error parsing options:", error)
+        options = ["Option 1", "Option 2", "Option 3"] // Default fallback
       }
     }
-    const [option1, option2, option3] = options;
+    const [option1, option2, option3] = options
 
     return {
       id: question.id,
@@ -126,34 +126,57 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
       option1: option1 || "",
       option2: option2 || "",
       option3: option3 || "",
-    };
-  });
+    }
+  })
 
-  const isOwner = currentUserId === result.user.id;
+  const isOwner = currentUserId === result.user.id
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <div className="flex flex-col lg:flex-row w-full px-4 lg:px-8 py-8 space-y-8 lg:space-y-0 gap-8">
-        <div className="flex-1 lg:flex-[3] w-full">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-4">{result.topic} Quiz</h1>
-            {isOwner && (
-              <QuizActions
-                quizId={result.id.toString()}
-                quizSlug={result.slug}
-                initialIsPublic={result.isPublic || false}
-                initialIsFavorite={result.isFavorite || false}
-              />
-            )}
+    <div className="container mx-auto py-8 space-y-8">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl">{result.topic} Quiz</CardTitle>
+          {isOwner && (
+            <QuizActions
+              quizId={result.id.toString()}
+              quizSlug={result.slug}
+              initialIsPublic={result.isPublic || false}
+              initialIsFavorite={result.isFavorite || false}
+            />
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <Suspense fallback={<QuizSkeleton />}>
+                <PlayQuiz questions={questions} quizId={result.id} />
+              </Suspense>
+            </div>
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Course Creation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CourseCreationVideo />
+                </CardContent>
+              </Card>
+            </div>
           </div>
-          <PlayQuiz questions={questions} quizId={result.id} />
-        </div>
-        <div className="flex-1 overflow-hidden lg:flex-[1] w-full">
-          <CourseCreationVideo />
-        </div>
-      </div>
-    </Suspense>
-  );
-};
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
-export default QuizPage;
+const QuizSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-8 w-3/4" />
+    <Skeleton className="h-32 w-full" />
+    <Skeleton className="h-8 w-1/2" />
+    <Skeleton className="h-8 w-1/4" />
+  </div>
+)
+
+export default QuizPage
+

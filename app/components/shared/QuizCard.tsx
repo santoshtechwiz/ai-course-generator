@@ -1,95 +1,97 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
-import { QuizIcon } from "./QuizIcon"
-import { Badge } from "./Badge"
-import { useColorScheme } from "@/hooks/useColorScheme"
-import type { QuizCardProps } from "@/app/types"
 import Link from "next/link"
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
+import { Clock, Star, Zap, ArrowRight, HelpCircle } from "lucide-react"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import type { QuizCardProps } from "@/app/types"
+import { useRouter } from "next/navigation"
 
 const cardVariants = {
-  initial: { opacity: 0, y: 50 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
   hover: {
-    scale: 1.03,
-    boxShadow: "0px 10px 30px rgba(0,0,0,0.15)",
-    transition: { duration: 0.3 },
+    y: -4,
+    transition: { duration: 0.2 },
   },
+  tap: { scale: 0.98 },
 }
 
 const buttonVariants = {
-  initial: { scale: 1 },
+  rest: { scale: 1 },
   hover: {
     scale: 1.05,
-    boxShadow: "0px 0px 15px rgba(var(--primary-rgb), 0.5)",
     transition: { duration: 0.2 },
   },
   tap: { scale: 0.95 },
 }
 
+const QuizTypeIcon = ({ type }: { type: string }) => {
+  const icon = type === "mcq" ? <HelpCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />
+  return (
+    <Badge variant={type === "mcq" ? "default" : "secondary"} className="text-xs">
+      {icon}
+      <span className="ml-1">{type.toUpperCase()}</span>
+    </Badge>
+  )
+}
+
 export const QuizCard: React.FC<QuizCardProps> = ({
   title,
-  description,
-  difficulty,
   questionCount,
   isTrending,
   slug,
   quizType,
+  estimatedTime = "5 min",
+  description,
 }) => {
-  const isDarkMode = useColorScheme()
-
-  const backgroundStyle = {
-    background: isDarkMode
-      ? "linear-gradient(135deg, #2d3748 0%, #1a202c 100%)"
-      : "linear-gradient(135deg, #ffffff 0%, #f7fafc 100%)",
-    boxShadow: isDarkMode ? "0 4px 20px rgba(0, 0, 0, 0.3)" : "0 4px 20px rgba(0, 0, 0, 0.1)",
-  }
+  const router = useRouter()
 
   return (
     <motion.div
-      className="transition-all duration-300 ease-in-out"
       variants={cardVariants}
       initial="initial"
       animate="animate"
       whileHover="hover"
+      whileTap="tap"
+      className="max-w-sm mx-auto"
     >
-      <Card
-        className={`w-full max-w-sm rounded-xl overflow-hidden ${
-          isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"
-        }`}
-        style={backgroundStyle}
-      >
-        <CardHeader className="relative p-6">
-          <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-gradient-to-br from-primary to-transparent" />
-          <QuizIcon className="mx-auto text-primary w-16 h-16" />
-          <h2 className="text-3xl font-extrabold text-center mt-4 tracking-tight">{title}</h2>
-        </CardHeader>
-        <CardContent className="p-6 space-y-6">
-          <p className="text-center text-sm font-medium leading-relaxed">{description}</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Badge text={difficulty} type="difficulty" />
-            <Badge text={`${questionCount} Questions`} type="questions" />
-            {isTrending && <Badge text="Trending" type="trending" />}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-primary to-primary-foreground p-6 text-center">
+          <div className="text-primary-foreground mb-4">
+            <div className="inline-block bg-primary-foreground/30 p-3 rounded-full">
+              <Zap className="h-10 w-10" />
+            </div>
           </div>
+          <CardTitle className="text-primary-foreground text-2xl font-bold">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-center gap-2">
+            <QuizTypeIcon type={quizType} />
+            <Badge variant="outline" className="text-xs">
+              <HelpCircle className="h-3 w-3 mr-1" />
+              {questionCount} Questions
+            </Badge>
+            {isTrending && (
+              <Badge variant="destructive" className="text-xs">
+                <Star className="h-3 w-3 mr-1" />
+                Trending
+              </Badge>
+            )}
+          </div>
+          <CardDescription className="text-center">{description}</CardDescription>
         </CardContent>
-        <CardFooter className="p-6 pt-0">
-          <Link
-            href={`/dashboard/${quizType === "open-ended" ? "openended" : "mcq"}/${slug}`}
-            passHref
-            className="block w-full"
+        <CardFooter>
+          <Button
+            className="w-full"
+            onClick={() => router.push(`/dashboard/${quizType === "mcq" ? "mcq" : "openended"}/${slug}`)}
           >
-            <motion.div variants={buttonVariants} initial="initial" whileHover="hover" whileTap="tap">
-              <Button
-                className="w-full text-lg font-semibold py-6 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300"
-                variant="default"
-                aria-label={`Start ${title} quiz`}
-              >
-                Start Quiz
-              </Button>
-            </motion.div>
-          </Link>
+            Start Quiz
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </CardFooter>
       </Card>
     </motion.div>

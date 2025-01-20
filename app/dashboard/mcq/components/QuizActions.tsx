@@ -42,6 +42,7 @@ export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavori
         setIsFavorite(updatedQuiz.isFavorite)
         toast({
           title: "Quiz updated",
+          variant: "success",
           description: "Your quiz has been successfully updated.",
         })
       } else {
@@ -52,7 +53,7 @@ export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavori
       toast({
         title: "Error",
         description: "Failed to update quiz. Please try again.",
-        variant: "destructive",
+        variant: "danger",
       })
     }
   }
