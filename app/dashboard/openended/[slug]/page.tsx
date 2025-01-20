@@ -6,6 +6,7 @@ import QuizResults from '../components/QuizResults'
 import QuizQuestion from '../components/QuizQuestion'
 import { CourseAIErrors } from '@/app/types'
 import CourseAILoader from '../../course/components/CourseAILoader'
+import { QuizActions } from '../../mcq/components/QuizActions'
 
 interface Question {
   id: number
@@ -19,6 +20,7 @@ interface Question {
 }
 
 interface QuizData {
+  id: number,
   questions: Question[]
   topic: string
 }
@@ -115,6 +117,7 @@ const QuizPage = ({ params }: { params: Promise<{ slug: string }> }) => {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
+      <QuizActions quizId={quizData?.id.toString()} quizSlug={slug} initialIsPublic={false} initialIsFavorite={false}></QuizActions>
       <h1 className="text-3xl font-bold mb-4">Open-Ended Quiz: {quizData?.topic || 'Unknown'}</h1>
       {quizData && quizData.questions && quizData.questions.length > 0 ? (
         <QuizQuestion

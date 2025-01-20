@@ -66,6 +66,7 @@
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
     "node-html-parser": "^6.1.13",
+    "node-summarizer": "^1.0.7",
     "openai": "^4.71.1",
     "p-queue": "^8.0.1",
     "p-retry": "^6.2.1",
@@ -92,6 +93,7 @@
     "tailwind-merge": "^2.5.4",
     "tailwind-scrollbar-hide": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
+    "textrank": "^1.0.5",
     "ytdl-core": "npm:@distube/ytdl-core@^4.15.8",
     "zod": "^3.23.8"
   },
