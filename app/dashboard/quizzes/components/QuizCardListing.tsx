@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Users, BookOpen, PlusCircle, ArrowRight } from 'lucide-react';
 import Link from "next/link";
 import { useState } from "react";
-import { Quiz } from "@/app/types";
-import { QuizCardV2 } from "@/app/components/shared/QuizCardImproved";
+
+import { QuizCard } from "@/app/components/shared/QuizCard";
 
 interface CardProps {
   quiz: Quiz;
@@ -25,64 +25,8 @@ const QuizCardListing = ({ quiz, index }: { quiz: Quiz; index: number }) => {
       transition={{ duration: 0.3, delay: index * 0.1 }}
       className="h-full"
     >
-      {/* <Card
-        className="h-full flex flex-col hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 bg-gradient-to-br from-background to-background/80 border-2 border-primary/10"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold truncate text-primary">
-            {quiz.topic}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-grow flex flex-col justify-between">
-          <div>
-            <div className="w-full h-40 mb-4 relative overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-secondary/20">
-              <motion.svg
-                className="w-full h-full text-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-                initial={{ scale: 1, rotate: 0 }}
-                animate={{ 
-                  scale: isHovered ? 1.1 : 1,
-                  rotate: isHovered ? 5 : 0
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
-                />
-              </motion.svg>
-            </div>
-            <div className="flex items-center justify-between mb-4">
-              <Badge variant="secondary" className="flex items-center bg-primary/10 text-primary">
-                <Clock className="w-3 h-3 mr-1" />
-                {quiz.gameType}
-              </Badge>
-              <Badge
-                variant={quiz.isPublic ? "default" : "outline"}
-                className={`flex items-center ${quiz.isPublic ? 'bg-green-500/20 text-green-700' : 'bg-orange-500/20 text-orange-700'}`}
-              >
-                <Users className="w-3 h-3 mr-1" />
-                {quiz.isPublic ? "Public" : "Private"}
-              </Badge>
-            </div>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <BookOpen className="w-4 h-4 mr-1" />
-              {quiz.questionCount} questions
-            </div>
-          </div>
-        </CardContent>
-        <div className="p-4">
-          <QuizFooter quiz={quiz} />
-        </div>
-      </Card> */}
-      <QuizCardV2
+
+      <QuizCard
         title={quiz.topic}
         description={quiz.description}
         difficulty={quiz.quizType}
@@ -90,7 +34,7 @@ const QuizCardListing = ({ quiz, index }: { quiz: Quiz; index: number }) => {
         isTrending={quiz.isPublic}
         slug={quiz.slug}
         quizType={quiz.quizType}
-      
+
       />
     </motion.div>
   );
@@ -111,7 +55,7 @@ const CreateQuizCard = () => {
       <Card className="h-full flex flex-col justify-center items-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/20">
         <CardContent className="text-center p-6">
           <motion.div
-            animate={{ 
+            animate={{
               rotate: isHovered ? 90 : 0,
               scale: isHovered ? 1.1 : 1
             }}
@@ -142,31 +86,6 @@ const CreateQuizCard = () => {
   );
 };
 
-// function QuizFooter({ quiz }: { quiz: CardProps["quiz"] }) {
-//   return (
-//     <Link
-//       href={
-//         quiz.gameType === "open-ended"
-//           ? `/dashboard/openended/${quiz.slug}`
-//           : `/dashboard/mcq/${quiz.slug}`
-//       }
-//       passHref
-//       className="w-full"
-//     >
-//       <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground group">
-//         Take Quiz
-//         <motion.span
-//           className="ml-2"
-//           initial={{ x: 0 }}
-//           whileHover={{ x: 5 }}
-//           transition={{ duration: 0.2 }}
-//         >
-//           <ArrowRight className="w-4 h-4" />
-//         </motion.span>
-//       </Button>
-//     </Link>
-//   );
-// }
 
 export { QuizCardListing, CreateQuizCard };
 

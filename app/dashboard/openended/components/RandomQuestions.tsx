@@ -1,16 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import Link from 'next/link'
-import { Button } from "@/components/ui/button"
-import { ChevronRight } from 'lucide-react'
 
 import React from 'react'
+
 import { QuizCard } from '@/app/components/shared/QuizCard'
-import { QuizCardV2 } from '@/app/components/shared/QuizCardImproved'
 
 interface QuizTopicSVGProps {
   className?: string
@@ -23,7 +16,7 @@ interface RandomQuestion {
   slug: string
   description: string
   imageUrl?: string,
-  count:number,
+  count: number,
 }
 
 interface RandomQuestionsProps {
@@ -89,10 +82,10 @@ export default function RandomQuestions({ questions }: RandomQuestionsProps) {
     //   </CardContent>
     // </Card>
     <>
-    {questions.map((question) => (
-          
-          <QuizCardV2 
-          key={question.slug} 
+      {questions.map((question) => (
+
+        <QuizCard
+          key={question.slug}
           title={question.topic}
           description={question.description}
           difficulty="Easy"
@@ -100,8 +93,8 @@ export default function RandomQuestions({ questions }: RandomQuestionsProps) {
           isTrending={true}
           slug={question.slug}
           quizType="open-ended" />
-    ))}
-    
+      ))}
+
     </>
 
   )

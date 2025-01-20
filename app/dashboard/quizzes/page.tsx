@@ -5,10 +5,11 @@ import { useState, useEffect } from 'react'
 import { Input } from "@/components/ui/input"
 import { Search } from 'lucide-react'
 import { CreateQuizCard, QuizCardListing } from './components/QuizCardListing'
-import { Quiz } from '@/app/types'
+import { UserQuiz } from '@prisma/client'
+
 export const dynamic = 'force-dynamic'
 export default function QuizzesPage() {
-  const [quizzes, setQuizzes] = useState<Quiz[]>([])
+  const [quizzes, setQuizzes] = useState<UserQuiz[]>([])
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {

@@ -182,3 +182,7 @@ export interface BadgeProps {
   text: string;
   type: 'difficulty' | 'questions' | 'trending';
 }
+
+export class FullCourseType{
+  constructor(public course:Course, public courseProgress:CourseProgress[]){}
+}
