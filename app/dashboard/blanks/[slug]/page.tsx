@@ -4,9 +4,10 @@ import React, { useState, useEffect } from "react"
 import axios from "axios"
 import { Suspense } from "react"
 import { QuizActions } from "../../mcq/components/QuizActions"
-import { FillInTheBlanksQuiz } from "../components/FillInTheBlanksQuiz"
-import QuizResults from "../../openended/components/QuizResults"
+
 import CourseAILoader from "../../course/components/CourseAILoader"
+import QuizResults from "../../openended/components/QuizResults"
+import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
 
 interface Question {
   id: number
