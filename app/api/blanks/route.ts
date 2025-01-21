@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { generateOpenEndedQuiz } from '@/lib/chatgpt/quizGenerator'
+import { generateOpenEndedFillIntheBlanks } from '@/lib/chatgpt/quizGenerator'
 import { getAuthSession } from '@/lib/authOptions'
 import { prisma } from '@/lib/db';
 import { generateSlug } from '@/lib/utils';
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       return { error: 'Insufficient credits', status: 403 };
     }
 
-    const quiz = await generateOpenEndedQuiz(topic, questionCount)
+    const quiz = await generateOpenEndedFillIntheBlanks(topic, questionCount)
     const slug = generateSlug(topic)
 
     const userQuiz = await prisma.$transaction(async (tx) => {
@@ -33,13 +33,13 @@ export async function POST(req: Request) {
           userId,
           topic,
           timeStarted: new Date(),
-          quizType: 'open-ended',
+          quizType: 'fill-blanks',
           slug: slug,
           questions: {
             create: quiz.questions.map((q: { question: string; correct_answer: string; hints: string[]; difficulty: string; tags: string[] }) => ({
               question: q.question,
               answer: q.correct_answer,
-              questionType: 'open-ended',
+              questionType: 'fill-blanks',
               openEndedQuestion: {
                 create: {
                   hints: q.hints.join('|'),

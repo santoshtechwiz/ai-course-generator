@@ -43,3 +43,4 @@ dev.db
 /prisma/dev.db
 y.js
 docker-compose.yaml
+/app/dashboard/blanks/components
