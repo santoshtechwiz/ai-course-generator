@@ -9,7 +9,17 @@ import { UserQuiz } from "@/app/types"
 interface MyQuizzesProps {
   quizzes: UserQuiz[]
 }
+const buildQuizSlug = (quiz: UserQuiz) => {
+ //export type QuizType = 'mcq' | 'open_ended' | 'fill_in_the_blank'
 
+  if (quiz.quizType === 'mcq') {
+    return 'mcq'
+  } else if (quiz.quizType === 'open_ended') {
+    return 'openended'
+  } else {
+    return 'blanks'
+  }
+}
 export function MyQuizzes({ quizzes }: MyQuizzesProps) {
 
   return (
@@ -22,7 +32,7 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
           <div className="space-y-4">
             {quizzes.map((quiz) => (
               <Link 
-                href={`/dashboard/${quiz.quizType === 'open-ended' ? 'openended' : 'mcq'}/${quiz.slug}`} 
+                href={`/dashboard/${buildQuizSlug(quiz)}/${quiz.slug}`}
                 key={quiz.id} 
                 className="block"
               >
@@ -30,7 +40,7 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
                   <div>
                     <p className="font-medium">{quiz.topic}</p>
                     <p className="text-sm text-muted-foreground">
-                      Score: {quiz.bestScore !== null ? `${quiz.bestScore}%` : 'N/A'}
+                      Score: {quiz.timeEnded !== null ? `${quiz.timeEnded}%` : 'N/A'}
                     </p>
                   </div>
                   <Badge>{quiz.quizType}</Badge>

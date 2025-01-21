@@ -34,10 +34,13 @@ export default function Page({ params }: { params: { slug: string } }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Unwrapping the `params` object using `React.use()`
+  const { slug } = React.use(params)
+
   useEffect(() => {
     const fetchQuizData = async () => {
       try {
-        const response = await axios.get<QuizData>(`/api/oquiz/${params.slug}`)
+        const response = await axios.get<QuizData>(`/api/oquiz/${slug}`)
         const quizDataWithDefaults = {
           ...response.data,
           questions: response.data.questions.map((question: Question) => ({
@@ -59,7 +62,7 @@ export default function Page({ params }: { params: { slug: string } }) {
     }
 
     fetchQuizData()
-  }, [params.slug])
+  }, [slug])
 
   const handleAnswer = async (answer: string) => {
     if (!quizData) return
@@ -73,7 +76,7 @@ export default function Page({ params }: { params: { slug: string } }) {
     } else {
       setQuizCompleted(true)
       try {
-        await axios.post(`/api/quiz/${params.slug}/complete`, { answers: newAnswers })
+        await axios.post(`/api/quiz/${slug}/complete`, { answers: newAnswers })
       } catch (error) {
         console.error("Error saving quiz results:", error)
         setError("Failed to save quiz results. Your progress may not be recorded.")
@@ -128,14 +131,14 @@ export default function Page({ params }: { params: { slug: string } }) {
       <Suspense fallback={<CourseAILoader />}>
         <QuizActions
           quizId={quizData.id.toString()}
-          quizSlug={params.slug}
+          quizSlug={slug}
           initialIsPublic={false}
           initialIsFavorite={false}
         />
         <h1 className="text-3xl font-bold mb-4">Open-Ended Quiz: {quizData.topic || "Unknown"}</h1>
         {quizData.questions.length > 0 ? (
           <FillInTheBlanksQuiz
-            question={quizData.questions[currentQuestion]}
+            questions={quizData.questions[currentQuestion]}
             onAnswer={handleAnswer}
             questionNumber={currentQuestion + 1}
             totalQuestions={quizData.questions.length}
@@ -147,4 +150,3 @@ export default function Page({ params }: { params: { slug: string } }) {
     </div>
   )
 }
-
