@@ -16,6 +16,7 @@ interface Question {
     hints: string
     difficulty: string
     tags: string
+    inputType: string
   }
 }
 
@@ -39,7 +40,17 @@ const QuizPage = ({ params }: { params: Promise<{ slug: string }> }) => {
       setLoading(true)
       try {
         const response = await axios.get<QuizData>(`/api/oquiz/${slug}`)
-        setQuizData(response.data)
+        const quizDataWithDefaults = {
+          ...response.data,
+          questions: response.data.questions.map(question => ({
+            ...question,
+            openEndedQuestion: {
+              ...question.openEndedQuestion,
+              inputType: question.openEndedQuestion.inputType || 'fill-in-the-blanks'
+            }
+          }))
+        }
+        setQuizData(quizDataWithDefaults)
         setError(null)
       } catch (error: any) {
         if (axios.isAxiosError(error)) {

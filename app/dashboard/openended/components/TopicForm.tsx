@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { memo, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
 import { CreditButton } from "@/app/components/shared/CreditButton"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -17,18 +17,16 @@ interface TopicFormProps {
   credits: number
 }
 
-export default function TopicForm({ credits }: TopicFormProps) {
+function TopicFormComponent({ credits }: TopicFormProps) {
   const [topic, setTopic] = useState("")
   const [questionCount, setQuestionCount] = useState(5)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
   const [openInfo, setOpenInfo] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
+  const generateQuiz = useCallback(async () => {
+    setIsLoading(true)
     setError("")
 
     try {
@@ -40,21 +38,124 @@ export default function TopicForm({ credits }: TopicFormProps) {
         body: JSON.stringify({ topic, questionCount }),
       })
 
-      if (response.ok) {
-        const { slug } = await response.json()
-        router.push(`/dashboard/openended/${slug}`)
-      } else {
+      if (!response.ok) {
         throw new Error("Failed to generate quiz")
       }
-    } catch (error) {
-      console.error("Error generating quiz:", error)
+
+      const { slug } = await response.json()
+      router.push(`/dashboard/openended/${slug}`)
+    } catch (err) {
+      console.error("Error generating quiz:", err)
       setError("Failed to generate quiz. Please try again.")
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }
+  }, [topic, questionCount, router])
 
-  const isDisabled = loading || credits < 1 || !topic.trim()
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
+      await generateQuiz()
+    },
+    [generateQuiz],
+  )
+
+  const isDisabled = useMemo(() => isLoading || credits < 1 || !topic.trim(), [isLoading, credits, topic])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !isDisabled) {
+        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
+      }
+    },
+    [handleSubmit, isDisabled],
+  )
+
+  const renderQuestionCount = () => (
+    <div className="space-y-3">
+      <label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
+        <span>Number of Questions</span>
+        <span className="text-xl font-bold text-primary tabular-nums">{questionCount}</span>
+      </label>
+      <div className="flex items-center space-x-4">
+        <Slider
+          id="questionCount"
+          min={1}
+          max={10}
+          step={1}
+          value={[questionCount]}
+          onValueChange={(values) => setQuestionCount(values[0])}
+          className="flex-grow"
+          aria-label="Select number of questions"
+        />
+        <Input
+          type="number"
+          value={questionCount}
+          onChange={(e) => setQuestionCount(Number(e.target.value))}
+          min={1}
+          max={10}
+          className="w-20 h-10 text-center"
+          aria-label="Number of questions"
+        />
+      </div>
+    </div>
+  )
+
+  const renderCreditsCard = () => (
+    <Card className="bg-primary/5 border-primary/20">
+      <CardContent className="p-4 space-y-2">
+        <CardTitle className="text-base mb-2">Available Credits</CardTitle>
+        <Progress value={(credits / 10) * 100} className="h-2" />
+        <p className="text-xs text-muted-foreground">
+          You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+        </p>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="link" className="p-0 h-auto text-xs">
+                How to earn more credits?
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Complete quizzes, invite friends, or upgrade your account to earn more credits!</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </CardContent>
+    </Card>
+  )
+
+  const renderInfoCard = () => (
+    <Card
+      className="bg-muted cursor-pointer transition-colors hover:bg-muted/80"
+      onClick={() => setOpenInfo(!openInfo)}
+    >
+      <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
+        <CardTitle className="text-sm">About Open-Ended Questions</CardTitle>
+        {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </CardHeader>
+      <AnimatePresence>
+        {openInfo && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <CardContent className="text-sm px-4 pb-4 space-y-2">
+              <p>Open-ended questions encourage critical thinking and detailed responses. They are perfect for:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Assessing deep understanding</li>
+                <li>Promoting thoughtful discussion</li>
+                <li>Developing analytical skills</li>
+                <li>Encouraging creative thinking</li>
+              </ul>
+            </CardContent>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Card>
+  )
 
   return (
     <motion.div
@@ -63,111 +164,38 @@ export default function TopicForm({ credits }: TopicFormProps) {
       transition={{ duration: 0.5 }}
       className="h-full"
     >
-      <Card className="h-full flex flex-col bg-card text-card-foreground">
-        <CardHeader>
-          <CardTitle className="text-2xl text-primary">Generate Open-Ended Quiz</CardTitle>
-          <CardDescription>Create a custom quiz on any topic</CardDescription>
+      <Card className="h-full flex flex-col bg-card text-card-foreground shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold text-primary">Create Open-Ended Quiz</CardTitle>
+          <CardDescription className="text-base">
+            Choose a topic and customize your quiz settings below.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="flex-grow">
-          <form onSubmit={handleSubmit} className="space-y-6 h-full flex flex-col">
-            <div className="space-y-2 flex-grow">
-              <label htmlFor="topic" className="text-sm font-medium">
+
+        <CardContent className="space-y-6 flex-grow">
+          <form onSubmit={handleSubmit} className="space-y-6" onKeyDown={handleKeyDown}>
+            <div className="space-y-3">
+              <label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" />
                 Quiz Topic
               </label>
               <Input
                 id="topic"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="Enter topic..."
-                className="w-full h-12 bg-input text-input-foreground"
+                placeholder="E.g., Climate Change, AI in Education..."
+                className="w-full h-12 text-lg"
+                aria-label="Quiz topic"
+                autoFocus
+                required
+                minLength={3}
               />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
-                <span>Number of Questions</span>
-                <span className="text-2xl font-bold text-primary">{questionCount}</span>
-              </label>
-              <div className="flex items-center space-x-4">
-                <Slider
-                  id="questionCount"
-                  min={1}
-                  max={10}
-                  step={1}
-                  value={[questionCount]}
-                  onValueChange={(value) => setQuestionCount(value[0])}
-                  className="flex-grow"
-                />
-                <Input
-                  type="number"
-                  value={questionCount}
-                  onChange={(e) => setQuestionCount(Number(e.target.value))}
-                  min={1}
-                  max={10}
-                  className="w-20"
-                />
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>1</span>
-                <span>5</span>
-                <span>10</span>
-              </div>
-            </div>
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <Card className="bg-primary/5 border-primary/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">
-                    <span>Available Credits</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Progress value={(credits / 10) * 100} className="h-2" />
-                    <p className="text-sm text-muted-foreground">
-                      You have <span className="font-bold text-primary">{credits}</span> credits remaining
-                    </p>
-                  </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="link" className="p-0 h-auto text-xs text-muted-foreground mt-2">
-                          How to earn more credits?
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Complete quizzes, invite friends, or upgrade your account to earn more credits!</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </CardContent>
-              </Card>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <Card className="bg-muted">
-                <CardHeader className="pb-2 cursor-pointer" onClick={() => setOpenInfo(!openInfo)}>
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span>About Open-Ended Questions</span>
-                    {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-                <AnimatePresence>
-                  {openInfo && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <CardContent>
-                        <AlertDescription>
-                          Open-ended questions encourage critical thinking and detailed responses. They are great for
-                          assessing understanding and promoting discussion.
-                        </AlertDescription>
-                      </CardContent>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Card>
-            </motion.div>
+
+            {renderQuestionCount()}
+            {renderCreditsCard()}
+            {renderInfoCard()}
+
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -176,6 +204,7 @@ export default function TopicForm({ credits }: TopicFormProps) {
                   exit={{ opacity: 0, y: -10 }}
                 >
                   <Alert variant="destructive">
+                    <AlertCircle className="h-5 w-5" />
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
@@ -184,22 +213,34 @@ export default function TopicForm({ credits }: TopicFormProps) {
             </AnimatePresence>
           </form>
         </CardContent>
-        <CardFooter className="p-6">
+
+        <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
           <CreditButton
             type="submit"
-            label={loading ? "Generating Quiz..." : "Generate Quiz"}
+            label="Generate Quiz"
             onClick={(e) => {
               e.preventDefault()
               handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
             }}
             requiredCredits={credits}
             loadingLabel="Generating Quiz..."
+            
+         
             disabled={isDisabled}
-            className="w-full h-12 text-lg"
+            className="w-full h-14 text-lg font-medium rounded-lg transition-all
+              hover:scale-[1.02] active:scale-[0.98]
+              disabled:opacity-50 disabled:cursor-not-allowed
+              focus:ring-2 focus:ring-primary focus:ring-offset-2"
           />
         </CardFooter>
       </Card>
     </motion.div>
   )
 }
+
+export const TopicForm = memo(TopicFormComponent)
+
+
+
+ export default TopicForm
 

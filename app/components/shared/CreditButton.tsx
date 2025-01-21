@@ -25,6 +25,7 @@ export function CreditButton({
   onClick,
   requiredCredits = 0,
   loadingLabel = 'Processing...',
+
   ...props
 }: CreditButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false);

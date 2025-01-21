@@ -45,17 +45,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ slug:
         throw new Error('User not found');
       }
 
-      // const questionCount = quiz.questions.length;
-      // const creditDeduction = questionCount > 5 ? 2 : 1;
-
-      // if (user.credits < creditDeduction) {
-      //   return { error: 'Insufficient credits', status: 403 };
-      // }
-
-      // await tx.user.update({
-      //   where: { id: userId },
-      //   data: { credits: user.credits - creditDeduction },
-      // })
+    
 
       const transformedQuestions = quiz.questions.map((question) => ({
         id: question.id,

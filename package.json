@@ -16,6 +16,7 @@
     "prod:build": "npm run prod:migrate && npm run build"
   },
   "dependencies": {
+    "@adobe/parliament-markdown-cleaner": "^1.5.9",
     "@google/generative-ai": "^0.21.0",
     "@hookform/resolvers": "^3.9.1",
     "@next-auth/prisma-adapter": "^1.0.7",
