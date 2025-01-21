@@ -13,9 +13,9 @@ interface Question {
   question: string
   answer: string
   openEndedQuestion: {
-    hints: string
+    hints: string[]
     difficulty: string
-    tags: string
+    tags: string[]
     inputType: string
   }
 }
@@ -34,13 +34,10 @@ export default function Page({ params }: { params: { slug: string } }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Unwrapping the `params` object using `React.use()`
-  const { slug } = React.use(params)
-
   useEffect(() => {
     const fetchQuizData = async () => {
       try {
-        const response = await axios.get<QuizData>(`/api/oquiz/${slug}`)
+        const response = await axios.get<QuizData>(`/api/oquiz/${params.slug}`)
         const quizDataWithDefaults = {
           ...response.data,
           questions: response.data.questions.map((question: Question) => ({
@@ -48,6 +45,8 @@ export default function Page({ params }: { params: { slug: string } }) {
             openEndedQuestion: {
               ...question.openEndedQuestion,
               inputType: question.openEndedQuestion.inputType || "fill-in-the-blanks",
+              hints: question.openEndedQuestion.hints || [],
+              tags: question.openEndedQuestion.tags || [],
             },
           })),
         }
@@ -62,7 +61,7 @@ export default function Page({ params }: { params: { slug: string } }) {
     }
 
     fetchQuizData()
-  }, [slug])
+  }, [params.slug])
 
   const handleAnswer = async (answer: string) => {
     if (!quizData) return
@@ -76,7 +75,7 @@ export default function Page({ params }: { params: { slug: string } }) {
     } else {
       setQuizCompleted(true)
       try {
-        await axios.post(`/api/quiz/${slug}/complete`, { answers: newAnswers })
+        await axios.post(`/api/quiz/${params.slug}/complete`, { answers: newAnswers })
       } catch (error) {
         console.error("Error saving quiz results:", error)
         setError("Failed to save quiz results. Your progress may not be recorded.")
@@ -126,19 +125,21 @@ export default function Page({ params }: { params: { slug: string } }) {
     )
   }
 
+  const currentQuizQuestion = quizData.questions[currentQuestion]
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       <Suspense fallback={<CourseAILoader />}>
         <QuizActions
           quizId={quizData.id.toString()}
-          quizSlug={slug}
+          quizSlug={params.slug}
           initialIsPublic={false}
           initialIsFavorite={false}
         />
         <h1 className="text-3xl font-bold mb-4">Open-Ended Quiz: {quizData.topic || "Unknown"}</h1>
         {quizData.questions.length > 0 ? (
           <FillInTheBlanksQuiz
-            questions={quizData.questions[currentQuestion]}
+            question={currentQuizQuestion}
             onAnswer={handleAnswer}
             questionNumber={currentQuestion + 1}
             totalQuestions={quizData.questions.length}
