@@ -1,6 +1,8 @@
-import { prisma } from "@/lib/db";
-import { DashboardUser, UserStats } from "../types";
+import { prisma } from "@/lib/db"
+import { DashboardUser, UserStats, Course, CourseProgress, UserQuiz, UserSubscription, Favorite, QuizAttempt } from "../types"
+import { User } from "@prisma/client"
 
+// Fetch user data function
 export async function getUserData(userId: string): Promise<DashboardUser | null> {
   try {
     const user = await prisma.user.findUnique({
@@ -13,6 +15,8 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             description: true,
             image: true,
             slug: true,
+            createdAt: true,
+            updatedAt: true,
             category: {
               select: {
                 id: true,
@@ -22,7 +26,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
           },
           take: 5,
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
         },
         courseProgress: {
@@ -41,6 +45,8 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
                 description: true,
                 image: true,
                 slug: true,
+                createdAt: true,
+                updatedAt: true,
                 courseUnits: {
                   select: {
                     id: true,
@@ -63,12 +69,12 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             },
           },
           orderBy: {
-            lastAccessedAt: 'desc',
+            lastAccessedAt: "desc",
           },
           take: 5,
         },
         userQuizzes: {
-          orderBy: { timeStarted: 'desc' },
+          orderBy: { timeStarted: "desc" },
           take: 5,
           select: {
             id: true,
@@ -88,7 +94,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
                 score: true,
               },
               orderBy: {
-                createdAt: 'desc',
+                createdAt: "desc",
               },
               take: 1,
             },
@@ -158,42 +164,44 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             },
           },
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
           take: 10,
         },
       },
-    });
+    })
 
     if (!user) {
-      return null;
+      return null
     }
 
     const dashboardUser: DashboardUser = {
       ...user,
       courses: user.courses,
       subscriptions: user.subscriptions,
-      userQuizzes: user.userQuizzes.map(quiz => ({
+      userQuizzes: user.userQuizzes.map((quiz) => ({
         ...quiz,
-        percentageCorrect: quiz.attempts[0]?.score !== undefined ? 
-          (quiz.attempts[0].score / quiz.questions.length) * 100 : 0,
+        percentageCorrect:
+          quiz.attempts[0]?.score !== undefined
+            ? (quiz!.attempts[0]!.score / (quiz.questions?.length || 1)) * 100
+            : 0,
       })),
       courseProgress: user.courseProgress,
       favorites: user.favorites,
       quizAttempts: user.userQuizAttempts,
-    };
+    }
 
-    return dashboardUser;
+    return dashboardUser
   } catch (error) {
-    console.error('Error fetching user data:', error);
-    throw new Error('Failed to fetch user data');
+    console.error("Error fetching user data:", error)
+    throw new Error("Failed to fetch user data")
   }
 }
 
+// Fetch user stats function
 export async function getUserStats(userId: string): Promise<UserStats> {
   try {
     const stats = await prisma.$transaction(async (tx) => {
-      // Fetch all user quiz attempts with related quiz information
       const quizAttempts = await tx.userQuizAttempt.findMany({
         where: { userId },
         include: {
@@ -204,38 +212,38 @@ export async function getUserStats(userId: string): Promise<UserStats> {
             },
           },
         },
-        orderBy: { createdAt: 'asc' },
-      });
+        orderBy: { createdAt: "asc" },
+      })
 
-      // Calculate basic stats
-      const totalQuizzes = new Set(quizAttempts.map(a => a.userQuizId)).size;
-      const totalAttempts = quizAttempts.length;
-      const totalTimeSpent = quizAttempts.reduce((sum, a) => sum + (a.timeSpent || 0), 0);
+      const totalQuizzes = new Set(quizAttempts.map((a) => a.userQuizId)).size
+      const totalAttempts = quizAttempts.length
+      const totalTimeSpent = quizAttempts.reduce((sum, a) => sum + (a.timeSpent || 0), 0)
 
-      // Calculate scores and topic performance
-      const scores = quizAttempts.map(attempt => ({
+      const scores = quizAttempts.map((attempt) => ({
         score: attempt.score || 0,
         totalQuestions: attempt.userQuiz.questions.length,
-        percentageCorrect: attempt.userQuiz.questions.length ? 
-          (attempt.score || 0) / attempt.userQuiz.questions.length * 100 : 0,
+        percentageCorrect: attempt.userQuiz.questions.length
+          ? (attempt.score || 0) / attempt.userQuiz.questions.length * 100
+          : 0,
         topic: attempt.userQuiz.topic,
         timeSpent: attempt.timeSpent || 0,
-      }));
+      }))
 
-      const averageScore = scores.length ? 
-        scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scores.length : 0;
-      const highestScore = scores.length ? 
-        Math.max(...scores.map(quiz => quiz.percentageCorrect)) : 0;
+      const averageScore = scores.length
+        ? scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scores.length
+        : 0
+      const highestScore = scores.length
+        ? Math.max(...scores.map((quiz) => quiz.percentageCorrect))
+        : 0
 
-      // Calculate topic performance
       const topicPerformance = scores.reduce((acc, score) => {
         if (!acc[score.topic]) {
-          acc[score.topic] = { totalScore: 0, attempts: 0 };
+          acc[score.topic] = { totalScore: 0, attempts: 0 }
         }
-        acc[score.topic].totalScore += score.percentageCorrect;
-        acc[score.topic].attempts += 1;
-        return acc;
-      }, {});
+        acc[score.topic].totalScore += score.percentageCorrect
+        acc[score.topic].attempts += 1
+        return acc
+      }, {} as Record<string, { totalScore: number; attempts: number }>)
 
       const topPerformingTopics = Object.entries(topicPerformance)
         .map(([topic, data]) => ({
@@ -244,26 +252,26 @@ export async function getUserStats(userId: string): Promise<UserStats> {
           attempts: data.attempts,
         }))
         .sort((a, b) => b.averageScore - a.averageScore)
-        .slice(0, 5);
+        .slice(0, 5)
 
-      // Calculate recent improvement (last 5 attempts vs previous 5)
-      const recentAttempts = quizAttempts.slice(-10);
-      const recentImprovement = recentAttempts.length >= 10 ?
-        (recentAttempts.slice(5).reduce((sum, a) => sum + (a.score || 0), 0) / 5) -
-        (recentAttempts.slice(0, 5).reduce((sum, a) => sum + (a.score || 0), 0) / 5) : 0;
+      const recentAttempts = quizAttempts.slice(-10)
+      const recentImprovement = recentAttempts.length >= 10
+        ? (recentAttempts.slice(5).reduce((sum, a) => sum + (a.score || 0), 0) / 5) - 
+          (recentAttempts.slice(0, 5).reduce((sum, a) => sum + (a.score || 0), 0) / 5)
+        : 0
 
-      // Calculate quizzes per month
-      const monthsSinceFirstQuiz = quizAttempts.length ?
-        (new Date().getTime() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000) : 1;
-      const quizzesPerMonth = totalQuizzes / monthsSinceFirstQuiz;
+      const monthsSinceFirstQuiz = quizAttempts.length
+        ? (new Date().getTime() - new Date(quizAttempts[0].createdAt).getTime()) / 
+          (30 * 24 * 60 * 60 * 1000)
+        : 1
+      const quizzesPerMonth = totalQuizzes / monthsSinceFirstQuiz
 
-      // Fetch completed courses
       const completedCourses = await tx.courseProgress.count({
         where: {
           userId,
           isCompleted: true,
         },
-      });
+      })
 
       return {
         totalQuizzes,
@@ -276,12 +284,13 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         topPerformingTopics,
         recentImprovement,
         quizzesPerMonth,
-      };
-    });
+      }
+    })
 
-    return stats;
+    return stats
   } catch (error) {
-    console.error('Error fetching user stats:', error);
-    throw new Error('Failed to fetch user stats');
+    console.error("Error fetching user stats:", error)
+    throw new Error("Failed to fetch user stats")
   }
 }
+
