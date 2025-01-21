@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { Menu, Search, LogOut, LogIn, User, X, Settings } from 'lucide-react'
+import { Menu, Search, LogOut, LogIn, User, X, Settings } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -60,11 +60,7 @@ const MobileMenu = () => {
           <div className="p-4 border-b">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="pl-9 w-full"
-              />
+              <Input type="search" placeholder="Search..." className="pl-9 w-full" />
             </div>
           </div>
 
@@ -105,16 +101,10 @@ const MobileMenu = () => {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{session.user?.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {session.user?.email}
-                    </p>
+                    <p className="text-sm text-muted-foreground truncate">{session.user?.email}</p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => signOut()}
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => signOut()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </Button>
@@ -137,30 +127,25 @@ const NavItems = () => {
   const router = useRouter()
 
   return (
-    <>
+    <motion.div className="flex space-x-4">
       {navItems.map((item, index) => (
         <motion.div
           key={item.name}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
+          transition={{ delay: index * 0.1, type: "spring", stiffness: 300, damping: 20 }}
         >
           <Button
             variant={pathname === item.href ? "secondary" : "ghost"}
-            className="flex items-center gap-2 relative overflow-hidden group"
+            className="relative overflow-hidden group px-3"
             onClick={() => router.push(item.href)}
           >
             <span className="relative z-10">{item.name}</span>
-            <motion.div
-              className="absolute inset-0 bg-primary/10 rounded-md"
-              initial={{ scale: 0, opacity: 0 }}
-              whileHover={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.2 }}
-            />
+            <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary transform origin-left scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100" />
           </Button>
         </motion.div>
       ))}
-    </>
+    </motion.div>
   )
 }
 
@@ -218,9 +203,9 @@ export default function Navbar() {
       className={`sticky top-0 z-50 w-full border-b bg-background/70 backdrop-blur-lg transition-shadow duration-300 ${
         scrolled ? "shadow-md" : "shadow-sm"
       }`}
-      initial={{ opacity: 0, y: -50 }}
+      initial={{ opacity: 0, y: -100 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-4 flex-1">

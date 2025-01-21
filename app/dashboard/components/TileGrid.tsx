@@ -14,6 +14,7 @@ interface TileProps {
   color: string
   url: string
   index: number
+  quotes: string[]
 }
 
 const tiles = [
@@ -23,6 +24,11 @@ const tiles = [
     description: "Design multiple-choice questions with options, correct answers, and explanations.",
     color: "#FF9966",
     url: "/dashboard/quiz",
+    quotes: [
+      "Challenge minds with thought-provoking MCQs!",
+      "Craft questions that spark curiosity and learning.",
+      "Design a quiz that engages and educates simultaneously.",
+    ],
   },
   {
     icon: PenTool,
@@ -30,6 +36,11 @@ const tiles = [
     description: "Create questions that allow students to provide detailed written responses.",
     color: "#FF6B6B",
     url: "/dashboard/openended",
+    quotes: [
+      "Inspire deep thinking with open-ended questions!",
+      "Encourage students to express their ideas freely.",
+      "Foster critical thinking through thoughtful inquiries.",
+    ],
   },
   {
     icon: BookOpen,
@@ -37,6 +48,11 @@ const tiles = [
     description: "Build comprehensive courses with multiple lessons and content types.",
     color: "#4ECDC4",
     url: "/dashboard/create",
+    quotes: [
+      "Why not create your own course?",
+      "Share your expertise through an engaging course!",
+      "Design a learning journey that inspires and educates.",
+    ],
   },
   {
     icon: AlignLeft,
@@ -44,69 +60,127 @@ const tiles = [
     description: "Create exercises where students complete sentences by filling in missing words.",
     color: "#45B7D1",
     url: "/dashboard/blanks",
+    quotes: [
+      "Craft a fill-in-the-blanks activity to spark curiosity!",
+      "Challenge learners with engaging word puzzles.",
+      "Create exercises that make learning interactive and fun.",
+    ],
   },
 ]
 
-function Tile({ icon: Icon, title, description, color, url, index }: TileProps) {
-  const [isFlipped, setIsFlipped] = useState(false)
+function Tile({ icon: Icon, title, description, color, url, index, quotes }: TileProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [currentQuote, setCurrentQuote] = useState(0)
+
+  useEffect(() => {
+    if (isExpanded) {
+      const interval = setInterval(() => {
+        setCurrentQuote((prev) => (prev + 1) % quotes.length)
+      }, 3000)
+      return () => clearInterval(interval)
+    }
+  }, [isExpanded, quotes.length])
 
   return (
-    <motion.div
-      className="aspect-square cursor-pointer perspective"
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-      onHoverStart={() => setIsFlipped(true)}
-      onHoverEnd={() => setIsFlipped(false)}
-    >
-      <AnimatePresence initial={false} mode="wait">
-        {!isFlipped ? (
+    <>
+      <motion.div
+        className="aspect-square cursor-pointer"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: index * 0.1 }}
+        whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+        onClick={() => setIsExpanded(true)}
+      >
+        <div
+          className="w-full h-full rounded-xl bg-card shadow-lg flex flex-col items-center justify-center p-4"
+          style={{
+            background: `linear-gradient(135deg, ${color}15, ${color}30)`,
+            borderColor: `${color}40`,
+            borderWidth: "1px",
+          }}
+        >
+          <Icon size={40} color={color} className="mb-4" />
+          <h2 className="text-card-foreground text-lg font-semibold text-center">{title}</h2>
           <motion.div
-            key="front"
-            className="absolute w-full h-full rounded-xl bg-card shadow-lg flex flex-col items-center justify-center p-4"
-            initial={{ rotateY: 180 }}
-            animate={{ rotateY: 0 }}
-            exit={{ rotateY: 180 }}
-            transition={{ duration: 0.4 }}
-            style={{
-              background: `linear-gradient(135deg, ${color}15, ${color}30)`,
-              borderColor: `${color}40`,
-              borderWidth: "1px",
-            }}
+            className="absolute inset-0 rounded-xl"
+            animate={{ boxShadow: [`0 0 0px ${color}00`, `0 0 20px ${color}50`, `0 0 0px ${color}00`] }}
+            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+          />
+        </div>
+      </motion.div>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <Icon size={40} color={color} className="mb-4" />
-            <h2 className="text-card-foreground text-lg font-semibold text-center">{title}</h2>
             <motion.div
-              className="absolute inset-0 rounded-xl"
-              animate={{ boxShadow: [`0 0 0px ${color}00`, `0 0 20px ${color}50`, `0 0 0px ${color}00`] }}
-              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="back"
-            className="absolute w-full h-full rounded-xl shadow-lg bg-card flex flex-col items-start justify-between p-4"
-            initial={{ rotateY: -180 }}
-            animate={{ rotateY: 0 }}
-            exit={{ rotateY: -180 }}
-            transition={{ duration: 0.4 }}
-            style={{
-              background: `linear-gradient(135deg, ${color}15, ${color}30)`,
-              borderColor: `${color}40`,
-              borderWidth: "1px",
-            }}
-          >
-            <p className="text-card-foreground text-sm leading-relaxed mb-4">{description}</p>
-            <Link href={url} className="w-full">
-              <Button className="w-full text-white" style={{ backgroundColor: color }}>
-                Create
-              </Button>
-            </Link>
+              className="relative w-full max-w-4xl bg-card rounded-xl shadow-lg p-8"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              style={{
+                background: `linear-gradient(135deg, ${color}15, ${color}30)`,
+                borderColor: `${color}40`,
+                borderWidth: "2px",
+              }}
+            >
+              <button className="absolute top-4 right-4 text-card-foreground" onClick={() => setIsExpanded(false)}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+
+              <div className="flex items-center mb-6">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                >
+                  <Icon size={60} color={color} />
+                </motion.div>
+                <h2 className="text-3xl font-bold ml-4 text-card-foreground">{title}</h2>
+              </div>
+
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={currentQuote}
+                  className="text-xl font-medium mb-6 text-card-foreground"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  "{quotes[currentQuote]}"
+                </motion.p>
+              </AnimatePresence>
+
+              <p className="text-lg mb-8 text-card-foreground">{description}</p>
+
+              <Link href={url} className="w-full">
+                <Button className="w-full text-white text-lg py-6" style={{ backgroundColor: color }}>
+                  Start Creating
+                </Button>
+              </Link>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   )
 }
 
