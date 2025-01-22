@@ -1,10 +1,22 @@
-import { UserQuiz } from "@/app/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { UserQuiz } from "@/app/types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
 
-
+function getQuizTypeRoute(quizType: string): string {
+  switch (quizType) {
+    case "mcq":
+      return "mcq"
+    case "open-ended":
+      return "openended"
+    case "fill-blanks":
+      return "blanks"
+    default:
+      return "quiz"
+  }
+}
 
 export default function QuizHistory({ quizzes }: { quizzes: UserQuiz[] }) {
-  const recentQuizzes = quizzes.slice(0, 5);
+  const recentQuizzes = quizzes.slice(0, 5)
 
   return (
     <Card className="bg-card text-card-foreground">
@@ -16,7 +28,12 @@ export default function QuizHistory({ quizzes }: { quizzes: UserQuiz[] }) {
           <ul className="space-y-2">
             {recentQuizzes.map((quiz, index) => (
               <li key={index} className="flex justify-between items-center">
-                <span className="truncate">{quiz.topic}</span>
+                <Link
+                  href={`/dashboard/${getQuizTypeRoute(quiz.quizType)}/${quiz.slug}`}
+                  className="truncate hover:underline"
+                >
+                  {quiz.topic}
+                </Link>
                 <span className="font-semibold">{quiz.bestScore}%</span>
               </li>
             ))}
@@ -26,6 +43,6 @@ export default function QuizHistory({ quizzes }: { quizzes: UserQuiz[] }) {
         )}
       </CardContent>
     </Card>
-  );
+  )
 }
 

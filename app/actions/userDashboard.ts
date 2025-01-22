@@ -1,5 +1,15 @@
 import { prisma } from "@/lib/db"
-import { DashboardUser, UserStats, Course, CourseProgress, UserQuiz, UserSubscription, Favorite, QuizAttempt } from "../types"
+import type {
+  DashboardUser,
+  UserStats,
+  Course,
+  CourseProgress,
+  UserQuiz,
+  UserSubscription,
+  Favorite,
+  UserQuizAttempt,
+  TopicPerformance,
+} from "../types"
 import { User } from "@prisma/client"
 
 // Fetch user data function
@@ -177,18 +187,21 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
 
     const dashboardUser: DashboardUser = {
       ...user,
-      courses: user.courses,
-      subscriptions: user.subscriptions,
+      courses: user.courses as Course[],
+      subscriptions: user.subscriptions as unknown as UserSubscription[],
       userQuizzes: user.userQuizzes.map((quiz) => ({
         ...quiz,
         percentageCorrect:
-          quiz.attempts[0]?.score !== undefined
-            ? (quiz!.attempts[0]!.score / (quiz.questions?.length || 1)) * 100
+          quiz.attempts[0]?.score !== undefined && quiz.questions?.length
+            ? (quiz.attempts[0]?.score ?? 0) / (quiz.questions?.length ?? 1) * 100
             : 0,
-      })),
-      courseProgress: user.courseProgress,
-      favorites: user.favorites,
-      quizAttempts: user.userQuizAttempts,
+      })) as UserQuiz[],
+      courseProgress: user.courseProgress as CourseProgress[],
+      favorites: user.favorites as Favorite[],
+      quizAttempts: user.userQuizAttempts as unknown as UserQuizAttempt[],
+      engagementScore: 0,
+      streakDays: 0,
+      lastStreakDate: null,
     }
 
     return dashboardUser
@@ -223,7 +236,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         score: attempt.score || 0,
         totalQuestions: attempt.userQuiz.questions.length,
         percentageCorrect: attempt.userQuiz.questions.length
-          ? (attempt.score || 0) / attempt.userQuiz.questions.length * 100
+          ? ((attempt.score || 0) / attempt.userQuiz.questions.length) * 100
           : 0,
         topic: attempt.userQuiz.topic,
         timeSpent: attempt.timeSpent || 0,
@@ -232,37 +245,40 @@ export async function getUserStats(userId: string): Promise<UserStats> {
       const averageScore = scores.length
         ? scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scores.length
         : 0
-      const highestScore = scores.length
-        ? Math.max(...scores.map((quiz) => quiz.percentageCorrect))
-        : 0
+      const highestScore = scores.length ? Math.max(...scores.map((quiz) => quiz.percentageCorrect)) : 0
 
-      const topicPerformance = scores.reduce((acc, score) => {
-        if (!acc[score.topic]) {
-          acc[score.topic] = { totalScore: 0, attempts: 0 }
-        }
-        acc[score.topic].totalScore += score.percentageCorrect
-        acc[score.topic].attempts += 1
-        return acc
-      }, {} as Record<string, { totalScore: number; attempts: number }>)
+      const topicPerformance = scores.reduce(
+        (acc, score) => {
+          if (!acc[score.topic]) {
+            acc[score.topic] = { totalScore: 0, attempts: 0, totalTimeSpent: 0 }
+          }
+          acc[score.topic].totalScore += score.percentageCorrect
+          acc[score.topic].attempts += 1
+          acc[score.topic].totalTimeSpent += score.timeSpent
+          return acc
+        },
+        {} as Record<string, { totalScore: number; attempts: number; totalTimeSpent: number }>,
+      )
 
-      const topPerformingTopics = Object.entries(topicPerformance)
+      const topPerformingTopics: TopicPerformance[] = Object.entries(topicPerformance)
         .map(([topic, data]) => ({
           topic,
           averageScore: data.totalScore / data.attempts,
           attempts: data.attempts,
+          averageTimeSpent: data.totalTimeSpent / data.attempts,
         }))
         .sort((a, b) => b.averageScore - a.averageScore)
         .slice(0, 5)
 
       const recentAttempts = quizAttempts.slice(-10)
-      const recentImprovement = recentAttempts.length >= 10
-        ? (recentAttempts.slice(5).reduce((sum, a) => sum + (a.score || 0), 0) / 5) - 
-          (recentAttempts.slice(0, 5).reduce((sum, a) => sum + (a.score || 0), 0) / 5)
-        : 0
+      const recentImprovement =
+        recentAttempts.length >= 10
+          ? recentAttempts.slice(5).reduce((sum, a) => sum + (a.score || 0), 0) / 5 -
+            recentAttempts.slice(0, 5).reduce((sum, a) => sum + (a.score || 0), 0) / 5
+          : 0
 
       const monthsSinceFirstQuiz = quizAttempts.length
-        ? (new Date().getTime() - new Date(quizAttempts[0].createdAt).getTime()) / 
-          (30 * 24 * 60 * 60 * 1000)
+        ? (new Date().getTime() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)
         : 1
       const quizzesPerMonth = totalQuizzes / monthsSinceFirstQuiz
 
@@ -284,6 +300,10 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         topPerformingTopics,
         recentImprovement,
         quizzesPerMonth,
+        courseCompletionRate: 0, // Add calculation or default value
+        consistencyScore: 0, // Add calculation or default value
+        learningEfficiency: 0, // Add calculation or default value
+        difficultyProgression: 0, // Add calculation or default value
       }
     })
 

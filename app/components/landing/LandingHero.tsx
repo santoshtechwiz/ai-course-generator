@@ -1,14 +1,14 @@
-"use client";
+"use client"
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Element } from 'react-scroll';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
-import FeatureVideo from "@/app/components/animations/FeatureVideo";
-import RevealAnimation from '../shared/RevealAnimation';
-
+import type React from "react"
+import { useState } from "react"
+import { motion } from "framer-motion"
+import { Element } from "react-scroll"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
+import FeatureVideo from "@/app/components/animations/FeatureVideo"
+import RevealAnimation from "../shared/RevealAnimation"
 
 const stagger = {
   visible: {
@@ -16,35 +16,30 @@ const stagger = {
       staggerChildren: 0.1,
     },
   },
-};
+}
 
 interface LandingHeroProps {
-  onTopicSubmit: (topic: string) => void;
+  onTopicSubmit: (topic: string) => void
 }
 
 const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
-  const [topic, setTopic] = useState("");
-  const router = useRouter();
+  const [topic, setTopic] = useState("")
+  const router = useRouter()
 
   const handleTopicSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (topic) {
-      onTopicSubmit(topic);
+      onTopicSubmit(topic)
     } else {
-      router.push('/dashboard/create');
+      router.push("/dashboard/create")
     }
-  };
+  }
 
   return (
     <Element name="hero">
       <section className="pt-32 pb-20 px-4">
         <div className="container mx-auto max-w-6xl">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="space-y-12"
-          >
+          <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-12">
             <div className="text-center space-y-8">
               <RevealAnimation>
                 <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
@@ -58,17 +53,13 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
 
               <RevealAnimation delay={0.2}>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                  Transform your knowledge into engaging courses with
-                  AI-generated content, interactive quizzes, and personalized
-                  learning paths.
+                  Transform your knowledge into engaging courses with AI-generated content, interactive quizzes, and
+                  personalized learning paths.
                 </p>
               </RevealAnimation>
 
               <RevealAnimation delay={0.4}>
-                <form
-                  onSubmit={handleTopicSubmit}
-                  className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto"
-                >
+                <form onSubmit={handleTopicSubmit} className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
                   <Input
                     type="text"
                     placeholder="Enter a course topic..."
@@ -77,11 +68,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
                     className="h-12 text-lg flex-grow"
                     aria-label="Course topic"
                   />
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="h-12 px-8 w-full sm:w-auto"
-                  >
+                  <Button type="submit" size="lg" className="h-12 px-8 w-full sm:w-auto">
                     Generate Course
                   </Button>
                 </form>
@@ -101,7 +88,8 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
         </div>
       </section>
     </Element>
-  );
-};
+  )
+}
 
-export default LandingHero;
+export default LandingHero
+

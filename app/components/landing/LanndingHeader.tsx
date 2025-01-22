@@ -1,44 +1,41 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { Link as ScrollLink } from "react-scroll";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-
-import { cn } from "@/lib/utils";
-
-import { useRouter } from "next/navigation";
-
+import * as React from "react"
+import { Link as ScrollLink } from "react-scroll"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 const navItems = [
   { name: "Features", to: "features" },
   { name: "How It Works", to: "how-it-works" },
   { name: "Showcase", to: "showcase" },
-];
+]
 
 export default function LandingHeader() {
-  const [isScrolled, setIsScrolled] = React.useState(false);
-  const router = useRouter();
+  const [isScrolled, setIsScrolled] = React.useState(false)
+  const router = useRouter()
 
   React.useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-  const handleGetStarted=()=>{
-    router.push('/dashboard') 
+      setIsScrolled(window.scrollY > 10)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  const handleGetStarted = () => {
+    router.push("/dashboard")
   }
+
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        isScrolled
-          ? "bg-background/80 backdrop-blur-lg border-b border-border"
-          : "bg-transparent"
+        isScrolled ? "bg-background/80 backdrop-blur-lg border-b border-border" : "bg-transparent",
       )}
     >
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -71,9 +68,10 @@ export default function LandingHeader() {
         </div>
 
         <div className="flex items-center space-x-4">
-           <Button onClick={() => handleGetStarted()}>Get Started</Button>
+          <Button onClick={handleGetStarted}>Get Started</Button>
         </div>
       </nav>
     </motion.header>
-  );
+  )
 }
+
