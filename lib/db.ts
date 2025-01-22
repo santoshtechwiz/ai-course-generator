@@ -1,7 +1,7 @@
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import { getAuthSession } from './authOptions';
-import { Course, FullCourseType } from '@/app/types';
+import { Course,  } from '@/app/types';
 
 
 

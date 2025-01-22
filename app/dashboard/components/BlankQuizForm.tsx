@@ -35,7 +35,7 @@ function FillInTheBlankQuizFormComponent({ credits }: TopicFormProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ topic, questionCount }),
+        body: JSON.stringify({ topic, questionCount,difficulty: "easy" }),
       })
 
       if (!response.ok) {

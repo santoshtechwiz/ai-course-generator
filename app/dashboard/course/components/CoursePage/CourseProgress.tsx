@@ -1,22 +1,18 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Book, Clock, ArrowRight, Trophy, Target, Brain, BarChart } from 'lucide-react'
+import { Book, Clock, ArrowRight, Trophy, Target, Brain, BarChart } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { CourseProgress as CourseProgressType, UserStats } from "@/app/types"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import type { CourseProgress as CourseProgressType, UserStats } from "@/app/types"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useTrackingContext } from "@/app/providers/TrackingProvider"
 
 interface CourseProgressProps {
   courses: CourseProgressType[]
@@ -24,7 +20,15 @@ interface CourseProgressProps {
 }
 
 export default function CourseProgress({ courses, stats }: CourseProgressProps) {
-  const [selectedView, setSelectedView] = useState<'list' | 'stats'>('list')
+  const [selectedView, setSelectedView] = useState<"list" | "stats">("list")
+  const { trackInteraction } = useTrackingContext()
+
+  useEffect(() => {
+    trackInteraction("view", "course_progress", "component", {
+      courseCount: courses.length,
+      completedCourses: courses.filter((course) => course.progress === 100).length,
+    })
+  }, [])
 
   if (!courses?.length) {
     return (
@@ -35,7 +39,7 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
         <CardContent className="flex flex-col items-center justify-center space-y-4 py-8">
           <Book className="h-12 w-12 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No courses enrolled yet</p>
-          <Button asChild>
+          <Button asChild onClick={() => trackInteraction("click", "browse_courses", "button")}>
             <Link href="/dashboard/courses">Browse Courses</Link>
           </Button>
         </CardContent>
@@ -43,44 +47,68 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
     )
   }
 
-  const completedCourses = courses?.filter(course => course.progress === 100).length
+  const completedCourses = courses?.filter((course) => course.progress === 100).length
   const totalCourses = courses?.length
   const progressPercentage = totalCourses ? (completedCourses / totalCourses) * 100 : 0
 
   // Calculate time metrics
   const totalHoursSpent = Math.round(stats.totalTimeSpent / 3600)
-  const averageCompletion = courses.reduce((acc, course) => 
-    acc + course.progress, 0) / courses.length
+  const averageCompletion = courses.reduce((acc, course) => acc + course.progress, 0) / courses.length
 
   // Generate AI insights
   const getAIInsights = () => {
     const insights = []
-    
-    if (averageCompletion < 50) {
+
+    if (stats.courseCompletionRate < 50) {
       insights.push({
         icon: Target,
-        message: "Focus on completing current courses before starting new ones",
-        type: "recommendation"
+        message: "Try to complete more courses to improve your overall progress",
+        type: "recommendation",
       })
     }
 
     if (stats.averageScore < 70) {
       insights.push({
         icon: Brain,
-        message: "Review previous chapters to improve quiz scores",
-        type: "improvement"
+        message: "Review previous chapters to improve your quiz scores",
+        type: "improvement",
       })
     }
 
-    if (totalHoursSpent > 20) {
+    if (stats.consistencyScore < 60) {
+      insights.push({
+        icon: Clock,
+        message: "Maintain a more consistent study schedule to boost your learning",
+        type: "consistency",
+      })
+    }
+
+    if (stats.learningEfficiency > 80) {
       insights.push({
         icon: Trophy,
-        message: "You're in the top 25% of active learners!",
-        type: "achievement"
+        message: "Great job! Your learning efficiency is impressive. Keep it up!",
+        type: "achievement",
+      })
+    }
+
+    if (stats.difficultyProgression > 70) {
+      insights.push({
+        icon: Target,
+        message: "You're tackling more challenging content. Consider reviewing fundamentals if needed.",
+        type: "challenge",
       })
     }
 
     return insights
+  }
+
+  const handleTabChange = (value: string) => {
+    setSelectedView(value as "list" | "stats")
+    trackInteraction("tab_change", "course_progress", "tab", { newView: value })
+  }
+
+  const handleCourseClick = (courseId: string, courseName: string) => {
+    trackInteraction("click", "course_item", "link", { courseId, courseName })
   }
 
   return (
@@ -102,10 +130,7 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Progress 
-                  value={progressPercentage} 
-                  className="h-2 cursor-help transition-all hover:h-3" 
-                />
+                <Progress value={progressPercentage} className="h-2 cursor-help transition-all hover:h-3" />
               </TooltipTrigger>
               <TooltipContent>
                 <p>Complete {totalCourses - completedCourses} more courses to reach 100%</p>
@@ -114,7 +139,7 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
           </TooltipProvider>
         </div>
 
-        <Tabs defaultValue="list">
+        <Tabs defaultValue="list" onValueChange={handleTabChange}>
           <div className="flex items-center justify-end mb-4">
             <TabsList>
               <TabsTrigger value="list">List</TabsTrigger>
@@ -123,7 +148,7 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
           </div>
 
           <TabsContent value="stats" className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
@@ -151,22 +176,49 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
                   <p className="text-xs text-muted-foreground">Highest Score</p>
                 </CardContent>
               </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-2xl font-bold">{Math.round(stats.courseCompletionRate)}%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Course Completion Rate</p>
+                </CardContent>
+              </Card>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">AI Insights</h4>
-              <div className="grid gap-4">
-                {getAIInsights().map((insight, index) => (
-                  <div
-                    key={`insight-${insight.type}-${index}`}
-                    className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted"
-                  >
-                    <insight.icon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm">{insight.message}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold mb-2">Learning Efficiency</h3>
+                  <Progress value={stats.learningEfficiency} className="h-2" />
+                  <p className="text-sm mt-2">
+                    Your learning efficiency score is {Math.round(stats.learningEfficiency)}%
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold mb-2">Consistency Score</h3>
+                  <Progress value={stats.consistencyScore} className="h-2" />
+                  <p className="text-sm mt-2">Your consistency score is {Math.round(stats.consistencyScore)}%</p>
+                </CardContent>
+              </Card>
             </div>
+
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-semibold mb-2">Top Performing Topics</h3>
+                <ul className="space-y-2">
+                  {stats.topPerformingTopics.map((topic, index) => (
+                    <li key={index} className="flex justify-between items-center">
+                      <span>{topic.topic}</span>
+                      <span className="font-semibold">{Math.round(topic.averageScore)}%</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="list">
@@ -177,6 +229,7 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
                     key={`course-${course.id || index}`}
                     href={`/dashboard/course/${course.course.slug}`}
                     className="group block"
+                    onClick={() => handleCourseClick(course.id.toString(), course.course.name)}
                   >
                     <div className="flex items-center space-x-4 rounded-lg border p-4 transition-colors hover:bg-muted">
                       <div className="relative h-16 w-16 overflow-hidden rounded-md">
@@ -195,19 +248,18 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
                         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                           <div className="flex items-center">
                             <Clock className="mr-1 h-4 w-4" />
-                            <span>
-                              {Math.round(course.progress)}% Complete
-                            </span>
+                            <span>{Math.round(course.progress)}% Complete</span>
                           </div>
                           <div className="flex items-center">
                             <Book className="mr-1 h-4 w-4" />
-                            <span>{course.course.category.name}</span>
+                            <span>{course.course.category?.name || "Uncategorized"}</span>
                           </div>
                         </div>
-                        <Progress 
-                          value={course.progress} 
-                          className="h-1 transition-all group-hover:h-2" 
-                        />
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                          <span>Last accessed: {new Date(course.lastAccessedAt).toLocaleDateString()}</span>
+                          <span>Time spent: {Math.round(course.timeSpent / 3600)}h</span>
+                        </div>
+                        <Progress value={course.progress} className="h-1 transition-all group-hover:h-2" />
                       </div>
                     </div>
                   </Link>
@@ -220,3 +272,4 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
     </Card>
   )
 }
+

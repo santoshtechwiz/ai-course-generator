@@ -24,10 +24,11 @@ type Question = {
 
 interface PlayQuizProps {
   questions: Question[]
-  quizId: number
+  quizId: number,
+  slug:string
 }
 
-export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
+export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
@@ -66,7 +67,7 @@ export default function PlayQuiz({ questions, quizId }: PlayQuizProps) {
         timeSpent: finalQuestionTimes[index] || 0,
       }));
 
-      const response = await fetch('/api/quiz/score', {
+      const response = await fetch(`/api/quiz/${slug}/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

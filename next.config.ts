@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false,
   output: 'standalone',
   env: {
     DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || 'no-static',

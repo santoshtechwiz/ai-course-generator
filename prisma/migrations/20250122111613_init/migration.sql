@@ -44,6 +44,10 @@ CREATE TABLE "User" (
     "totalTimeSpent" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastLogin" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastActiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "engagementScore" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "streakDays" INTEGER NOT NULL DEFAULT 0,
+    "lastStreakDate" TIMESTAMP(3),
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -71,6 +75,8 @@ CREATE TABLE "Course" (
     "isCompleted" BOOLEAN DEFAULT false,
     "isPublic" BOOLEAN NOT NULL DEFAULT false,
     "slug" TEXT,
+    "difficulty" TEXT,
+    "estimatedHours" DOUBLE PRECISION,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -84,6 +90,7 @@ CREATE TABLE "CourseUnit" (
     "name" TEXT NOT NULL,
     "isCompleted" BOOLEAN DEFAULT false,
     "duration" INTEGER,
+    "order" INTEGER,
 
     CONSTRAINT "CourseUnit_pkey" PRIMARY KEY ("id")
 );
@@ -99,6 +106,7 @@ CREATE TABLE "Chapter" (
     "isCompleted" BOOLEAN NOT NULL DEFAULT false,
     "summaryStatus" TEXT NOT NULL DEFAULT 'PENDING',
     "videoStatus" TEXT NOT NULL DEFAULT 'PENDING',
+    "order" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "Chapter_pkey" PRIMARY KEY ("id")
 );
@@ -131,7 +139,7 @@ CREATE TABLE "CourseProgress" (
     "currentChapterId" INTEGER NOT NULL,
     "currentUnitId" INTEGER,
     "completedChapters" TEXT NOT NULL,
-    "progress" INTEGER NOT NULL DEFAULT 0,
+    "progress" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "lastAccessedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "timeSpent" INTEGER NOT NULL DEFAULT 0,
     "isCompleted" BOOLEAN NOT NULL DEFAULT false,
@@ -139,6 +147,9 @@ CREATE TABLE "CourseProgress" (
     "quizProgress" TEXT,
     "notes" TEXT,
     "bookmarks" TEXT,
+    "lastInteractionType" TEXT,
+    "interactionCount" INTEGER NOT NULL DEFAULT 0,
+    "engagementScore" DOUBLE PRECISION NOT NULL DEFAULT 0,
 
     CONSTRAINT "CourseProgress_pkey" PRIMARY KEY ("id")
 );
@@ -208,10 +219,97 @@ CREATE TABLE "UserQuiz" (
     "isFavorite" BOOLEAN DEFAULT false,
     "lastAttempted" TIMESTAMP(3),
     "bestScore" INTEGER,
+    "difficulty" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "UserQuiz_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserQuizAttempt" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "userQuizId" INTEGER NOT NULL,
+    "score" INTEGER,
+    "timeSpent" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "improvement" DOUBLE PRECISION,
+    "accuracy" DOUBLE PRECISION,
+    "deviceInfo" TEXT,
+    "browserInfo" TEXT,
+    "completionSpeed" DOUBLE PRECISION,
+    "difficultyRating" DOUBLE PRECISION,
+
+    CONSTRAINT "UserQuizAttempt_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserInteraction" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "interactionType" TEXT NOT NULL,
+    "entityId" TEXT NOT NULL,
+    "entityType" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "metadata" JSONB,
+    "duration" INTEGER,
+
+    CONSTRAINT "UserInteraction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LearningPath" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "isCompleted" BOOLEAN NOT NULL DEFAULT false,
+    "progress" DOUBLE PRECISION NOT NULL DEFAULT 0,
+
+    CONSTRAINT "LearningPath_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserAchievement" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "achievementType" TEXT NOT NULL,
+    "achievedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "metadata" JSONB,
+    "points" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "UserAchievement_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ContentRecommendation" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "contentType" TEXT NOT NULL,
+    "contentId" TEXT NOT NULL,
+    "recommendedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "reason" TEXT,
+    "relevanceScore" DOUBLE PRECISION NOT NULL DEFAULT 0,
+
+    CONSTRAINT "ContentRecommendation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserEngagementMetrics" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "totalLoginTime" INTEGER NOT NULL DEFAULT 0,
+    "averageSessionLength" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "lastCalculated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "weeklyActiveMinutes" INTEGER NOT NULL DEFAULT 0,
+    "monthlyActiveMinutes" INTEGER NOT NULL DEFAULT 0,
+    "completionRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+
+    CONSTRAINT "UserEngagementMetrics_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -242,21 +340,6 @@ CREATE TABLE "OpenEndedQuestion" (
 );
 
 -- CreateTable
-CREATE TABLE "UserQuizAttempt" (
-    "id" SERIAL NOT NULL,
-    "userId" TEXT NOT NULL,
-    "userQuizId" INTEGER NOT NULL,
-    "score" INTEGER,
-    "timeSpent" INTEGER,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "improvement" DOUBLE PRECISION,
-    "accuracy" DOUBLE PRECISION,
-
-    CONSTRAINT "UserQuizAttempt_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "UserQuizAttemptQuestion" (
     "id" SERIAL NOT NULL,
     "attemptId" INTEGER NOT NULL,
@@ -268,6 +351,14 @@ CREATE TABLE "UserQuizAttemptQuestion" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "UserQuizAttemptQuestion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "_CourseToLearningPath" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_CourseToLearningPath_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -364,6 +455,39 @@ CREATE INDEX "UserQuiz_user_id_idx" ON "UserQuiz"("user_id");
 CREATE INDEX "UserQuiz_topic_idx" ON "UserQuiz"("topic");
 
 -- CreateIndex
+CREATE INDEX "UserQuizAttempt_userId_idx" ON "UserQuizAttempt"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserQuizAttempt_userQuizId_idx" ON "UserQuizAttempt"("userQuizId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserQuizAttempt_userId_userQuizId_createdAt_key" ON "UserQuizAttempt"("userId", "userQuizId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "UserInteraction_userId_interactionType_idx" ON "UserInteraction"("userId", "interactionType");
+
+-- CreateIndex
+CREATE INDEX "UserInteraction_entityId_entityType_idx" ON "UserInteraction"("entityId", "entityType");
+
+-- CreateIndex
+CREATE INDEX "LearningPath_userId_idx" ON "LearningPath"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserAchievement_userId_achievementType_idx" ON "UserAchievement"("userId", "achievementType");
+
+-- CreateIndex
+CREATE INDEX "ContentRecommendation_userId_contentType_idx" ON "ContentRecommendation"("userId", "contentType");
+
+-- CreateIndex
+CREATE INDEX "ContentRecommendation_contentId_idx" ON "ContentRecommendation"("contentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserEngagementMetrics_userId_key" ON "UserEngagementMetrics"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserEngagementMetrics_userId_idx" ON "UserEngagementMetrics"("userId");
+
+-- CreateIndex
 CREATE INDEX "UserQuizQuestion_userQuizId_idx" ON "UserQuizQuestion"("userQuizId");
 
 -- CreateIndex
@@ -376,19 +500,13 @@ CREATE UNIQUE INDEX "OpenEndedQuestion_questionId_key" ON "OpenEndedQuestion"("q
 CREATE INDEX "OpenEndedQuestion_difficulty_idx" ON "OpenEndedQuestion"("difficulty");
 
 -- CreateIndex
-CREATE INDEX "UserQuizAttempt_userId_idx" ON "UserQuizAttempt"("userId");
-
--- CreateIndex
-CREATE INDEX "UserQuizAttempt_userQuizId_idx" ON "UserQuizAttempt"("userQuizId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "UserQuizAttempt_userId_userQuizId_key" ON "UserQuizAttempt"("userId", "userQuizId");
-
--- CreateIndex
 CREATE INDEX "UserQuizAttemptQuestion_attemptId_idx" ON "UserQuizAttemptQuestion"("attemptId");
 
 -- CreateIndex
 CREATE INDEX "UserQuizAttemptQuestion_questionId_idx" ON "UserQuizAttemptQuestion"("questionId");
+
+-- CreateIndex
+CREATE INDEX "_CourseToLearningPath_B_index" ON "_CourseToLearningPath"("B");
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -442,19 +560,40 @@ ALTER TABLE "CourseQuizAttempt" ADD CONSTRAINT "CourseQuizAttempt_courseQuizId_f
 ALTER TABLE "UserQuiz" ADD CONSTRAINT "UserQuiz_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserQuizQuestion" ADD CONSTRAINT "UserQuizQuestion_userQuizId_fkey" FOREIGN KEY ("userQuizId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "OpenEndedQuestion" ADD CONSTRAINT "OpenEndedQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "UserQuizQuestion"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "UserQuizAttempt" ADD CONSTRAINT "UserQuizAttempt_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserQuizAttempt" ADD CONSTRAINT "UserQuizAttempt_userQuizId_fkey" FOREIGN KEY ("userQuizId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "UserInteraction" ADD CONSTRAINT "UserInteraction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LearningPath" ADD CONSTRAINT "LearningPath_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserAchievement" ADD CONSTRAINT "UserAchievement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ContentRecommendation" ADD CONSTRAINT "ContentRecommendation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserEngagementMetrics" ADD CONSTRAINT "UserEngagementMetrics_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserQuizQuestion" ADD CONSTRAINT "UserQuizQuestion_userQuizId_fkey" FOREIGN KEY ("userQuizId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OpenEndedQuestion" ADD CONSTRAINT "OpenEndedQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "UserQuizQuestion"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "UserQuizAttemptQuestion" ADD CONSTRAINT "UserQuizAttemptQuestion_attemptId_fkey" FOREIGN KEY ("attemptId") REFERENCES "UserQuizAttempt"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserQuizAttemptQuestion" ADD CONSTRAINT "UserQuizAttemptQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "UserQuizQuestion"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CourseToLearningPath" ADD CONSTRAINT "_CourseToLearningPath_A_fkey" FOREIGN KEY ("A") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CourseToLearningPath" ADD CONSTRAINT "_CourseToLearningPath_B_fkey" FOREIGN KEY ("B") REFERENCES "LearningPath"("id") ON DELETE CASCADE ON UPDATE CASCADE;
