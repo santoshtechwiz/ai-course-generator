@@ -1,28 +1,28 @@
-'use client'
+"use client"
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
-import { Course, CourseProgress, QuizAttempt } from '@/app/types'
+import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
+import type { Course, CourseProgress, QuizAttempt } from "@/app/types"
 
 interface AIRecommendationsProps {
-  courses: Course[];
-  courseProgress: CourseProgress[];
-  quizAttempts: QuizAttempt[];
+  courses: Course[]
+  courseProgress: CourseProgress[]
+  quizAttempts: QuizAttempt[]
 }
 
 interface Recommendation {
-  type: 'next' | 'review' | 'practice';
-  message: string;
-  courseId: number;
-  chapterId: number;
-  slug: string;
+  type: "next" | "review" | "practice"
+  message: string
+  courseId: number
+  chapterId: number
+  slug: string
 }
 
 export default function AIRecommendations({ courses, courseProgress, quizAttempts }: AIRecommendationsProps) {
@@ -39,44 +39,49 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
       const newRecommendations: Recommendation[] = []
 
       // Find courses with low progress
-      const lowProgressCourses = courseProgress.filter(c => c.progress < 30 && !c.isCompleted)
+      const lowProgressCourses = courseProgress.filter((c) => c.progress < 30 && !c.isCompleted)
       if (lowProgressCourses.length > 0) {
-        const course = courses.find(c => c.id === lowProgressCourses[0].courseId)
-        if (course && course.courseUnits && course.courseUnits.length > 0 && course.courseUnits[0].chapters.length > 0) {
+        const course = courses.find((c) => c.id === lowProgressCourses[0].courseId)
+        if (
+          course &&
+          course.courseUnits &&
+          course.courseUnits.length > 0 &&
+          course.courseUnits[0].chapters.length > 0
+        ) {
           newRecommendations.push({
-            type: 'next',
+            type: "next",
             message: `Continue ${course.name} to maintain your learning momentum`,
             courseId: +course.id,
             chapterId: +course.courseUnits[0].chapters[0].id,
-            slug: course.slug || ''
+            slug: course.slug || "",
           })
         }
       }
 
       // Find quizzes with low scores
-      const lowScoreQuizzes = quizAttempts.filter(q => q?.score < 70)
+      const lowScoreQuizzes = quizAttempts.filter((q) => q?.score < 70)
       if (lowScoreQuizzes.length > 0) {
-        const latestLowScoreQuiz = lowScoreQuizzes.reduce((latest, current) => 
-          new Date(latest.createdAt) > new Date(current.createdAt) ? latest : current
+        const latestLowScoreQuiz = lowScoreQuizzes.reduce((latest, current) =>
+          new Date(latest.createdAt) > new Date(current.createdAt) ? latest : current,
         )
-        const relevantCourse = courses.find(c => 
-          c.courseUnits?.some(unit => 
-            unit.chapters.some(chapter => 
-              chapter.questions?.some(question => question.id === latestLowScoreQuiz.quizId)
-            )
-          )
+        const relevantCourse = courses.find((c) =>
+          c.courseUnits?.some((unit) =>
+            unit.chapters.some((chapter) =>
+              chapter.questions?.some((question) => question.id === latestLowScoreQuiz.quizId),
+            ),
+          ),
         )
         if (relevantCourse) {
           const relevantChapter = relevantCourse.courseUnits
-            ?.flatMap(unit => unit.chapters)
-            .find(chapter => chapter.questions?.some(question => question.id === latestLowScoreQuiz.quizId))
+            ?.flatMap((unit) => unit.chapters)
+            .find((chapter) => chapter.questions?.some((question) => question.id === latestLowScoreQuiz.quizId))
           if (relevantChapter) {
             newRecommendations.push({
-              type: 'review',
-              message: 'Review previous chapters to improve your quiz scores',
+              type: "review",
+              message: "Review previous chapters to improve your quiz scores",
               courseId: relevantCourse.id,
               chapterId: relevantChapter.id,
-              slug: relevantCourse.slug || ''
+              slug: relevantCourse.slug || "",
             })
           }
         }
@@ -84,23 +89,28 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
 
       // Recommend practice if no recent activity
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      const inactiveCourses = courseProgress.filter(c => new Date(c.lastAccessedAt) < oneWeekAgo && !c.isCompleted)
+      const inactiveCourses = courseProgress.filter((c) => new Date(c.lastAccessedAt) < oneWeekAgo && !c.isCompleted)
       if (inactiveCourses.length > 0) {
-        const course = courses.find(c => c.id === inactiveCourses[0].courseId)
-        if (course && course.courseUnits && course.courseUnits.length > 0 && course.courseUnits[0].chapters.length > 0) {
+        const course = courses.find((c) => c.id === inactiveCourses[0].courseId)
+        if (
+          course &&
+          course.courseUnits &&
+          course.courseUnits.length > 0 &&
+          course.courseUnits[0].chapters.length > 0
+        ) {
           newRecommendations.push({
-            type: 'practice',
-            message: 'Practice makes perfect! Take a quick quiz to stay sharp',
+            type: "practice",
+            message: "Practice makes perfect! Take a quick quiz to stay sharp",
             courseId: course.id,
             chapterId: course.courseUnits[0].chapters[0].id,
-            slug: course.slug || ''
+            slug: course.slug || "",
           })
         }
       }
 
       setRecommendations(newRecommendations)
     } catch (err) {
-      setError('Failed to generate recommendations. Please try again.')
+      setError("Failed to generate recommendations. Please try again.")
       toast({
         title: "Error",
         description: "Failed to generate recommendations. Please try again.",
@@ -215,22 +225,14 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
                   onClick={() => handleRecommendationClick(rec)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && handleRecommendationClick(rec)}
+                  onKeyDown={(e) => e.key === "Enter" && handleRecommendationClick(rec)}
                 >
-                  {rec.type === 'review' && (
-                    <RotateCcw className="h-5 w-5 text-yellow-500 shrink-0" />
-                  )}
-                  {rec.type === 'practice' && (
-                    <Target className="h-5 w-5 text-blue-500 shrink-0" />
-                  )}
-                  {rec.type === 'next' && (
-                    <ArrowRight className="h-5 w-5 text-green-500 shrink-0" />
-                  )}
+                  {rec.type === "review" && <RotateCcw className="h-5 w-5 text-yellow-500 shrink-0" />}
+                  {rec.type === "practice" && <Target className="h-5 w-5 text-blue-500 shrink-0" />}
+                  {rec.type === "next" && <ArrowRight className="h-5 w-5 text-green-500 shrink-0" />}
                   <div className="flex-1 space-y-2">
                     <p className="text-sm">{rec.message}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Click to get started
-                    </p>
+                    <p className="text-xs text-muted-foreground">Click to get started</p>
                   </div>
                 </div>
               </motion.div>

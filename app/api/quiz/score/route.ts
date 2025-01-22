@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
       // Step 3: Create or update quizAttempt
       const existingAttempt = await prisma.userQuizAttempt.findUnique({
-        where: { userId_userQuizId: { userId, userQuizId: quizId } },
+        where: {userId_userQuizId_createdAt: { userId, quizId,createdAt} },
       });
 
       let quizAttempt;
