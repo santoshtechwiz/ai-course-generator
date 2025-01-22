@@ -44,10 +44,8 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { slug: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {

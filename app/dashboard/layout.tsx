@@ -2,16 +2,13 @@
 
 import { ActivityProvider } from "@/app/providers/activityContext";
 import { Toaster } from "@/components/ui/toaster";
-
 import { UserProvider } from "@/app/providers/userContext";
-
 import { ThemeProvider } from "../providers/theme-provider";
 import Footer from "../components/shared/Footer";
 import { GlobalLoading } from "../components/shared/GlobalLoading";
 import Navbar from "../components/shared/Navbar";
 import { Suspense } from "react";
 import { TrackingProvider } from "../providers/TrackingProvider";
-import { cookies } from "next/headers";
 import { useSession } from "next-auth/react";
 
 export default function DashboardLayout({
@@ -19,7 +16,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const userId = useSession().data?.user?.id;
+  const userId = useSession().data?.user?.id ?? ""; // Provide a default value
+
   return (
     <TrackingProvider userId={userId}>
       <ThemeProvider
@@ -34,14 +32,13 @@ export default function DashboardLayout({
             <ActivityProvider>
               <GlobalLoading />
               <main className="flex-1">
-                <div className="container mx-auto px-4 lg:px-4 ">
+                <div className="container mx-auto px-4 lg:px-4">
                   <Suspense fallback={<div>Loading...</div>}>
                     {children}
                   </Suspense>
                 </div>
               </main>
               <Footer />
-              <Toaster />
             </ActivityProvider>
           </div>
         </UserProvider>

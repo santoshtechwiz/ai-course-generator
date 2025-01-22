@@ -6,7 +6,10 @@ import { getRandomQuestions } from "@/lib/db";
 export default async function OpenEndedQuizPage() {
   const session = await getAuthSession();
   const credits = session?.user.credits ?? 0;
-  const randomQuestions = await getRandomQuestions();
+  const randomQuestions = (await getRandomQuestions()).map(question => ({
+    ...question,
+    description: question.description || "No description available"
+  }));
 
   return (
     <div className="container mx-auto p-4 min-h-screen bg-background text-foreground">

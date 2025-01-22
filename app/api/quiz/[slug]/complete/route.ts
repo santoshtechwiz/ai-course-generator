@@ -84,17 +84,30 @@ async function handleQuizAttempt(userId: string, body: any) {
         ])
 
         if (answers && Array.isArray(answers)) {
-          const validAnswers = answers.map((answer: any) => ({
-            attemptId: quizAttempt.id,
-            questionId: answer.questionId,
-            userAnswer: answer.userAnswer,
-            isCorrect: answer.isCorrect,
-            timeSpent: Math.round(answer.timeSpent),
-          }))
-
-          if (validAnswers.length > 0) {
-            await tx.userQuizAttemptQuestion.createMany({ data: validAnswers })
-          }
+          await Promise.all(
+            answers.map((answer: any) =>
+              tx.userQuizAttemptQuestion.upsert({
+                where: {
+                  attemptId_questionId: {
+                    attemptId: quizAttempt.id,
+                    questionId: answer.questionId,
+                  },
+                },
+                update: {
+                  userAnswer: answer.userAnswer,
+                  isCorrect: answer.isCorrect,
+                  timeSpent: Math.round(answer.timeSpent),
+                },
+                create: {
+                  attemptId: quizAttempt.id,
+                  questionId: answer.questionId,
+                  userAnswer: answer.userAnswer,
+                  isCorrect: answer.isCorrect,
+                  timeSpent: Math.round(answer.timeSpent),
+                },
+              }),
+            ),
+          )
         }
 
         return { updatedUserQuiz, quizAttempt }
@@ -111,7 +124,6 @@ async function handleQuizAttempt(userId: string, body: any) {
     return NextResponse.json({ success: false, error: "Failed to process quiz attempt" }, { status: 500 })
   }
 }
-
 async function handleQuizAnswers(userId: string, body: any) {
   const { slug, answers, totalTime } = body
 

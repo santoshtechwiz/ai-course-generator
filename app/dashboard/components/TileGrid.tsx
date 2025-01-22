@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import type { LucideIcon } from "lucide-react"
-import { FileQuestion, BookOpen, PenTool, AlignLeft } from "lucide-react"
+import { FileQuestion, BookOpen, PenTool, AlignLeft } from 'lucide-react'
 import Link from "next/link"
 
 interface TileProps {
@@ -206,4 +206,3 @@ export function TileGrid() {
     </motion.div>
   )
 }
-

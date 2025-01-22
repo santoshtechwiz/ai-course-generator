@@ -17,12 +17,12 @@ interface SearchResult {
   topic?: string
   slug?: string
   questionPreview?: string | null
-  quizType: string
+  quizType?: string
 }
 
 interface SearchResponse {
   courses: SearchResult[]
-  quizzes: SearchResult[]
+  games: SearchResult[]
 }
 
 interface SearchModalProps {
@@ -44,7 +44,6 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
     debounce(async (query: string) => {
       if (query.trim()) {
         setIsLoading(true)
-        // Set a timeout to show loader only if the request takes more than 300ms
         loaderTimeoutRef.current = setTimeout(() => setShowLoader(true), 300)
 
         try {
@@ -93,14 +92,14 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
     if (e.key === "ArrowDown") {
       e.preventDefault()
       setSelectedIndex((prev) =>
-        Math.min(prev + 1, (searchResults?.courses.length || 0) + (searchResults?.quizzes.length || 0) - 1),
+        Math.min(prev + 1, (searchResults?.courses.length || 0) + (searchResults?.games.length || 0) - 1),
       )
     } else if (e.key === "ArrowUp") {
       e.preventDefault()
       setSelectedIndex((prev) => Math.max(prev - 1, -1))
     } else if (e.key === "Enter" && selectedIndex !== -1) {
       e.preventDefault()
-      const allResults = [...(searchResults?.courses || []), ...(searchResults?.quizzes || [])]
+      const allResults = [...(searchResults?.courses || []), ...(searchResults?.games || [])]
       const selected = allResults[selectedIndex]
       if (selected) {
         handleResultClick(selected)
@@ -131,7 +130,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
     )
   }
 
-  const renderSearchResult = (result: SearchResult, index: number, type: "course" | "quiz") => (
+  const renderSearchResult = (result: SearchResult, index: number, type: "course" | "game") => (
     <motion.li
       key={result.id}
       initial={{ opacity: 0, y: -10 }}
@@ -153,7 +152,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
           <p className="font-medium text-base truncate">
             {highlightMatch(result.name || result.topic || "", searchTerm)}
           </p>
-          {type === "quiz" && result.questionPreview && (
+          {type === "game" && result.questionPreview && (
             <p className="text-sm text-muted-foreground mt-1 truncate">
               {highlightMatch(result.questionPreview, searchTerm)}
             </p>
@@ -200,7 +199,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
                 <div className="flex justify-center items-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : searchResults && (searchResults?.courses?.length > 0 || searchResults?.quizzes?.length > 0) ? (
+              ) : searchResults && (searchResults?.courses?.length > 0 || searchResults?.games?.length > 0) ? (
                 <div className="space-y-6">
                   <AnimatePresence>
                     {searchResults.courses.length > 0 && (
@@ -215,7 +214,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
                         </ul>
                       </motion.div>
                     )}
-                    {searchResults.quizzes.length > 0 && (
+                    {searchResults.games.length > 0 && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
@@ -223,8 +222,8 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
                       >
                         <h3 className="text-lg font-semibold mb-3">Quizzes</h3>
                         <ul className="space-y-2">
-                          {searchResults.quizzes.map((quiz, index) =>
-                            renderSearchResult(quiz, searchResults.courses.length + index, "quiz"),
+                          {searchResults.games.map((game, index) =>
+                            renderSearchResult(game, searchResults.courses.length + index, "game"),
                           )}
                         </ul>
                       </motion.div>
