@@ -18,21 +18,20 @@ import LandingHeader from "./LanndingHeader";
 import ShowcaseSection from "./ShowcaseSection";
 
 
-
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-};
+}
 
 const fadeInLeft: Variants = {
   hidden: { opacity: 0, x: -50 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.6 } },
-};
+}
 
 const fadeInRight: Variants = {
   hidden: { opacity: 0, x: 50 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.6 } },
-};
+}
 
 const stagger: Variants = {
   visible: {
@@ -40,44 +39,44 @@ const stagger: Variants = {
       staggerChildren: 0.1,
     },
   },
-};
+}
 
 export default function LandingComponent() {
-  const router = useRouter();
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const featuresRef = useRef(null);
-  const howItWorksRef = useRef(null);
-  const showcaseRef = useRef(null);
-  const testimonialsRef = useRef(null);
-  const faqRef = useRef(null);
+  const router = useRouter()
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const featuresRef = useRef(null)
+  const howItWorksRef = useRef(null)
+  const showcaseRef = useRef(null)
+  const testimonialsRef = useRef(null)
+  const faqRef = useRef(null)
 
-  const isInViewFeatures = useInView(featuresRef, { once: true, amount: 0.3 });
-  const isInViewHowItWorks = useInView(howItWorksRef, { once: true, amount: 0.3 });
-  const isInViewShowcase = useInView(showcaseRef, { once: true, amount: 0.3 });
-  const isInViewTestimonials = useInView(testimonialsRef, { once: true, amount: 0.3 });
-  const isInViewFAQ = useInView(faqRef, { once: true, amount: 0.3 });
+  const isInViewFeatures = useInView(featuresRef, { once: true, amount: 0.3 })
+  const isInViewHowItWorks = useInView(howItWorksRef, { once: true, amount: 0.3 })
+  const isInViewShowcase = useInView(showcaseRef, { once: true, amount: 0.3 })
+  const isInViewTestimonials = useInView(testimonialsRef, { once: true, amount: 0.3 })
+  const isInViewFAQ = useInView(faqRef, { once: true, amount: 0.3 })
 
-  const controls = useAnimation();
+  const controls = useAnimation()
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
-    };
+      setShowScrollTop(window.scrollY > 300)
+    }
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   const handleTopicSubmit = (topic: string) => {
     if (topic) {
-      router.push(`/dashboard/create?topic=${encodeURIComponent(topic)}`);
+      router.push(`/dashboard/create?topic=${encodeURIComponent(topic)}`)
     } else {
-      router.push('/dashboard/create');
+      router.push("/dashboard/create")
     }
-  };
+  }
 
   const handleSignInClick = () => {
-    router.push('/auth/signin?callbackUrl=/dashboard');
+    router.push("/auth/signin?callbackUrl=/dashboard")
   }
 
   return (
@@ -114,11 +113,7 @@ export default function LandingComponent() {
         {/* Features Section */}
         <Element name="features">
           <section ref={featuresRef} className="py-20 px-4">
-            <motion.div
-              initial="hidden"
-              animate={isInViewFeatures ? "visible" : "hidden"}
-              variants={fadeInRight}
-            >
+            <motion.div initial="hidden" animate={isInViewFeatures ? "visible" : "hidden"} variants={fadeInRight}>
               <FeatureSections featuresRef={featuresRef} controls={controls} />
             </motion.div>
           </section>
@@ -127,11 +122,7 @@ export default function LandingComponent() {
         {/* Showcase Section */}
         <Element name="showcase">
           <section ref={showcaseRef} className="py-20 px-4 bg-muted/20">
-            <motion.div
-              initial="hidden"
-              animate={isInViewShowcase ? "visible" : "hidden"}
-              variants={fadeInLeft}
-            >
+            <motion.div initial="hidden" animate={isInViewShowcase ? "visible" : "hidden"} variants={fadeInLeft}>
               <ShowcaseSection />
             </motion.div>
           </section>
@@ -140,11 +131,7 @@ export default function LandingComponent() {
         {/* Testimonials Section */}
         <Element name="testimonials">
           <section ref={testimonialsRef} className="py-20 px-4">
-            <motion.div
-              initial="hidden"
-              animate={isInViewTestimonials ? "visible" : "hidden"}
-              variants={fadeInRight}
-            >
+            <motion.div initial="hidden" animate={isInViewTestimonials ? "visible" : "hidden"} variants={fadeInRight}>
               <TestimonialsSection />
             </motion.div>
           </section>
@@ -153,11 +140,7 @@ export default function LandingComponent() {
         {/* FAQ Section */}
         <Element name="faq">
           <section ref={faqRef} className="py-20 px-4 bg-muted/20">
-            <motion.div
-              initial="hidden"
-              animate={isInViewFAQ ? "visible" : "hidden"}
-              variants={fadeInLeft}
-            >
+            <motion.div initial="hidden" animate={isInViewFAQ ? "visible" : "hidden"} variants={fadeInLeft}>
               <FAQSection />
             </motion.div>
           </section>
@@ -183,6 +166,7 @@ export default function LandingComponent() {
         <ArrowUp className="h-6 w-6" />
       </motion.button>
     </div>
-  );
+  )
 }
+
 

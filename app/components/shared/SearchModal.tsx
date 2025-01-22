@@ -15,9 +15,8 @@ interface SearchResult {
   id: number
   name?: string
   topic?: string
-  slug?: string
   questionPreview?: string | null
-  quizType?: string
+  quizType?: "mcq" | "open-ended" | "fill-blanks"
 }
 
 interface SearchResponse {
@@ -108,9 +107,26 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
   }
 
   const handleResultClick = (result: SearchResult) => {
-    const url = result.topic
-      ? `/dashboard/${result.quizType === "mcq" ? "mcq" : "openended"}/${result.slug}`
-      : `/dashboard/course/${result.slug}`
+    let url
+    if (result.topic) {
+      // This is a game/quiz
+      switch (result.quizType) {
+        case "mcq":
+          url = "/dashboard/mcq"
+          break
+        case "open-ended":
+          url = "/dashboard/openended"
+          break
+        case "fill-blanks":
+          url = "/dashboard/blanks"
+          break
+        default:
+          url = "/dashboard/quiz"
+      }
+    } else {
+      // This is a course
+      url = "/dashboard/course"
+    }
 
     onResultClick(url)
     setIsOpen(false)

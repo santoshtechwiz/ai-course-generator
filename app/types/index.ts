@@ -14,7 +14,7 @@ export interface DashboardUser extends PrismaUser {
   courses: Course[]
   courseProgress: CourseProgress[]
   userQuizzes: UserQuiz[]
-  subscriptions: UserSubscription | null
+  subscriptions: UserSubscription[]
   favorites: Favorite[]
   quizAttempts: UserQuizAttempt[]
   engagementScore: number
@@ -113,6 +113,7 @@ export interface UserQuiz extends BaseEntity {
   difficulty: string | null
   questions: UserQuizQuestion[]
   attempts: UserQuizAttempt[]
+  percentageCorrect: number
 }
 
 export interface UserQuizQuestion extends BaseEntity {
@@ -247,6 +248,29 @@ export interface TopicPerformance {
   averageScore: number
   attempts: number
   averageTimeSpent: number
+}
+
+export interface QuizAttempt extends BaseEntity {
+  userId: string
+  userQuizId: number
+  score: number | null
+  timeSpent: number | null
+  improvement: number | null
+  accuracy: number | null
+  deviceInfo: string | null
+  browserInfo: string | null
+  completionSpeed: number | null
+  difficultyRating: number | null
+  attemptQuestions: UserQuizAttemptQuestion[]
+  userQuiz: {
+    id: number
+    topic: string
+    questions: {
+      id: number
+      question: string
+      answer: string
+    }[]
+  }
 }
 
 export interface QuizAttempt {

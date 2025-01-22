@@ -72,14 +72,10 @@ const stagger = {
   },
 };
 
-type FeatureProps = {
-  featuresRef: React.RefObject<HTMLElement>;
-  controls: ReturnType<typeof useAnimation>;
-};
-
-export default function FeatureSections({ featuresRef, controls }: FeatureProps) {
+export default function FeatureSections() {
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
+  const controls = useAnimation();
 
   useEffect(() => {
     if (isInView) {
@@ -154,4 +150,3 @@ export default function FeatureSections({ featuresRef, controls }: FeatureProps)
     </Element>
   );
 }
-
