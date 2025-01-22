@@ -413,7 +413,7 @@ model UserQuizAttemptQuestion {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
+  @@unique([attemptId, questionId])
   @@index([attemptId])
   @@index([questionId])
 }
-

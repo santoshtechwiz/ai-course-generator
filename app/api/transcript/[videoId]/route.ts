@@ -3,7 +3,8 @@ import ytdl from "ytdl-core";
 import axios from "axios";
 import { XMLParser } from "fast-xml-parser";
 
-export async function GET(req: Request, { params }: { params: { videoId: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ videoId: string }> }) {
+  const params = await props.params;
   const videoId = params.videoId;
 
   if (!videoId) {
