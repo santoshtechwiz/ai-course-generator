@@ -133,3 +133,7 @@ export interface CourseQuiz {
   question: string
   answer: string
 }
+export interface RandomQuizProps{
+
+  
+}

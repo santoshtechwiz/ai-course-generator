@@ -68,7 +68,7 @@ const RandomQuiz: React.FC<RandomQuizProps> = ({ games }) => {
         <div className="p-4">
           <div className="grid gap-4">
             <AnimatePresence mode="wait">
-              {displayedGames.map((game) => (
+              {displayedGames.map((game:any) => (
                 <motion.div
                   key={game.id}
                   layout

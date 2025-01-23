@@ -1,6 +1,6 @@
 "use client";
 
-import { ActivityProvider } from "@/app/providers/activityContext";
+
 import { Toaster } from "@/components/ui/toaster";
 import { UserProvider } from "@/app/providers/userContext";
 import { ThemeProvider } from "../providers/theme-provider";
@@ -16,7 +16,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const userId = useSession().data?.user?.id ?? ""; // Provide a default value
+  const userId = useSession().data?.user?.id ?? "";
 
   return (
     <TrackingProvider userId={userId}>
@@ -29,7 +29,7 @@ export default function DashboardLayout({
         <UserProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
-            <ActivityProvider>
+           
               <GlobalLoading />
               <main className="flex-1">
                 <div className="container mx-auto px-4 lg:px-4">
@@ -39,7 +39,7 @@ export default function DashboardLayout({
                 </div>
               </main>
               <Footer />
-            </ActivityProvider>
+            <Toaster />
           </div>
         </UserProvider>
       </ThemeProvider>

@@ -45,78 +45,58 @@ async function handleQuizAttempt(userId: string, body: any) {
   const durationInSeconds = Math.round(duration)
 
   try {
-    const result = await prisma.$transaction(
-      async (tx) => {
-        const [updatedUserQuiz, updatedUser, quizAttempt] = await Promise.all([
-          tx.userQuiz.update({
-            where: { id: quizId },
-            data: {
-              timeEnded: new Date(),
-              lastAttempted: new Date(),
-              bestScore: { set: Math.max(score, quizExists.bestScore ?? 0) },
-            },
-          }),
-          tx.user.update({
-            where: { id: userId },
-            data: {
-              totalQuizzesAttempted: { increment: 1 },
-              totalTimeSpent: { increment: durationInSeconds },
-            },
-          }),
-          tx.userQuizAttempt.upsert({
-            where: {
-              userId_userQuizId: { userId, userQuizId: quizId },
-            },
-            update: {
-              score,
-              timeSpent: durationInSeconds,
-              improvement: score - (quizExists.bestScore ?? 0),
-              accuracy: answers ? (answers.filter((a: any) => a.isCorrect).length / answers.length) * 100 : null,
-            },
-            create: {
-              userId,
-              userQuizId: quizId,
-              score,
-              timeSpent: durationInSeconds,
-              accuracy: answers ? (answers.filter((a: any) => a.isCorrect).length / answers.length) * 100 : null,
-            },
-          }),
-        ])
+    const result = await prisma.$transaction(async (tx) => {
+      const [updatedUserQuiz, updatedUser, quizAttempt] = await Promise.all([
+        tx.userQuiz.update({
+          where: { id: quizId },
+          data: {
+            timeEnded: new Date(),
+            lastAttempted: new Date(),
+            bestScore: { set: Math.max(score, quizExists.bestScore ?? 0) },
+          },
+        }),
+        tx.user.update({
+          where: { id: userId },
+          data: {
+            totalQuizzesAttempted: { increment: 1 },
+            totalTimeSpent: { increment: durationInSeconds },
+          },
+        }),
+        tx.userQuizAttempt.upsert({
+          where: {
+            userId_userQuizId: { userId, userQuizId: quizId },
+          },
+          update: {
+            score,
+            timeSpent: durationInSeconds,
+            improvement: score - (quizExists.bestScore ?? 0),
+            accuracy: answers ? (answers.filter((a: any) => a.isCorrect).length / answers.length) * 100 : null,
+          },
+          create: {
+            userId,
+            userQuizId: quizId,
+            score,
+            timeSpent: durationInSeconds,
+            accuracy: answers ? (answers.filter((a: any) => a.isCorrect).length / answers.length) * 100 : null,
+          },
+        }),
+      ])
 
-        if (answers && Array.isArray(answers)) {
-          await Promise.all(
-            answers.map((answer: any) =>
-              tx.userQuizAttemptQuestion.upsert({
-                where: {
-                  attemptId_questionId: {
-                    attemptId: quizAttempt.id,
-                    questionId: answer.questionId,
-                  },
-                },
-                update: {
-                  userAnswer: answer.userAnswer,
-                  isCorrect: answer.isCorrect,
-                  timeSpent: Math.round(answer.timeSpent),
-                },
-                create: {
-                  attemptId: quizAttempt.id,
-                  questionId: answer.questionId,
-                  userAnswer: answer.userAnswer,
-                  isCorrect: answer.isCorrect,
-                  timeSpent: Math.round(answer.timeSpent),
-                },
-              }),
-            ),
-          )
-        }
+      if (answers && Array.isArray(answers)) {
+        await tx.userQuizAttemptQuestion.createMany({
+          data: answers.map((answer: any) => ({
+            attemptId: quizAttempt.id,
+            questionId: answer.questionId,
+            userAnswer: JSON.stringify(answer.userAnswer),
+            isCorrect: answer.isCorrect,
+            timeSpent: Math.round(answer.timeSpent),
+          })),
+          skipDuplicates: true,
+        })
+      }
 
-        return { updatedUserQuiz, quizAttempt }
-      },
-      {
-        timeout: 10000, // Increase timeout to 10 seconds
-        maxWait: 5000, // Maximum time to wait for a transaction slot
-      },
-    )
+      return { updatedUserQuiz, quizAttempt }
+    })
 
     return NextResponse.json({ success: true, result })
   } catch (error) {
@@ -124,6 +104,7 @@ async function handleQuizAttempt(userId: string, body: any) {
     return NextResponse.json({ success: false, error: "Failed to process quiz attempt" }, { status: 500 })
   }
 }
+
 async function handleQuizAnswers(userId: string, body: any) {
   const { slug, answers, totalTime } = body
 
@@ -138,59 +119,54 @@ async function handleQuizAnswers(userId: string, body: any) {
 
   let score = 0
   const attemptQuestions = userQuiz.questions.map((question, index) => {
-    const isCorrect = question.answer.toLowerCase() === answers[index].toLowerCase()
+    const userAnswer = answers[index]
+    const isCorrect = question.answer.toLowerCase() === userAnswer.answer.toLowerCase()
     if (isCorrect) score++
     return {
       questionId: question.id,
-      userAnswer: answers[index],
+      userAnswer: JSON.stringify(userAnswer),
       isCorrect,
-      timeSpent: Math.floor(totalTime / answers.length),
+      timeSpent: userAnswer.timeSpent || Math.floor(totalTime / answers.length),
     }
   })
 
   try {
-    const [quizAttempt, updatedUser] = await prisma.$transaction(
-      [
-        prisma.userQuizAttempt.upsert({
-          where: {
-            userId_userQuizId: {
-              userId: userQuiz.userId,
-              userQuizId: userQuiz.id,
-            },
-          },
-          update: {
-            score,
-            timeSpent: totalTime,
-            accuracy: (score / userQuiz.questions.length) * 100,
-            attemptQuestions: {
-              deleteMany: {},
-              create: attemptQuestions,
-            },
-          },
-          create: {
+    const [quizAttempt, updatedUser] = await prisma.$transaction([
+      prisma.userQuizAttempt.upsert({
+        where: {
+          userId_userQuizId: {
             userId: userQuiz.userId,
             userQuizId: userQuiz.id,
-            score,
-            timeSpent: totalTime,
-            accuracy: (score / userQuiz.questions.length) * 100,
-            attemptQuestions: {
-              create: attemptQuestions,
-            },
           },
-        }),
-        prisma.user.update({
-          where: { id: userQuiz.userId },
-          data: {
-            totalQuizzesAttempted: { increment: 1 },
-            engagementScore: { increment: Math.round((score / userQuiz.questions.length) * 100) },
+        },
+        update: {
+          score,
+          timeSpent: totalTime,
+          accuracy: (score / userQuiz.questions.length) * 100,
+          attemptQuestions: {
+            deleteMany: {},
+            create: attemptQuestions,
           },
-        }),
-      ],
-      {
-        timeout: 10000, // Increase timeout to 10 seconds
-        maxWait: 5000, // Maximum time to wait for a transaction slot
-      },
-    )
+        },
+        create: {
+          userId: userQuiz.userId,
+          userQuizId: userQuiz.id,
+          score,
+          timeSpent: totalTime,
+          accuracy: (score / userQuiz.questions.length) * 100,
+          attemptQuestions: {
+            create: attemptQuestions,
+          },
+        },
+      }),
+      prisma.user.update({
+        where: { id: userQuiz.userId },
+        data: {
+          totalQuizzesAttempted: { increment: 1 },
+          engagementScore: { increment: Math.round((score / userQuiz.questions.length) * 100) },
+        },
+      }),
+    ])
 
     return NextResponse.json({
       success: true,
