@@ -81,75 +81,7 @@ export class SubscriptionService {
     return { sessionId: session.id }
   }
 
-  static async handleSubscriptionCreated(sessionId: string): Promise<void> {
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ["subscription"],
-    })
 
-    if (session.status !== "complete") {
-      throw new Error("Payment not completed")
-    }
-
-    const userId = session.metadata?.userId
-    const plan = session.metadata?.planName as SubscriptionPlanType
-
-    if (!userId || !plan) {
-      throw new Error("Invalid session metadata")
-    }
-
-    const subscription = session.subscription as Stripe.Subscription
-    const planDetails = SUBSCRIPTION_PLANS.find((p) => p.name === plan)
-    if (!planDetails) throw new Error("Invalid plan")
-
-    await prisma.$transaction(async (prisma) => {
-      await prisma.userSubscription.upsert({
-        where: { userId },
-        update: {
-          planId: planDetails.name,
-          status: "ACTIVE",
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          stripeSubscriptionId: subscription.id,
-        },
-        create: {
-          userId,
-          planId: planDetails.name,
-          status: "ACTIVE",
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          stripeSubscriptionId: subscription.id,
-          stripeCustomerId: session.customer as string,
-        },
-      })
-
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          credits: { increment: planDetails.tokens },
-          userType: planDetails.name,
-        },
-      })
-    })
-  }
-
-  static async cancelSubscription(userId: string): Promise<void> {
-    const userSubscription = await prisma.userSubscription.findUnique({
-      where: { userId },
-    })
-    if (!userSubscription || !userSubscription.stripeSubscriptionId) {
-      throw new Error("No active subscription found")
-    }
-
-    await stripe.subscriptions.cancel(userSubscription.stripeSubscriptionId)
-
-    await prisma.userSubscription.update({
-      where: { userId },
-      data: {
-        status: "CANCELED",
-        cancelAtPeriodEnd: true,
-      },
-    })
-  }
 
   static async getSubscriptionStatus(userId: string): Promise<{
     plan: SubscriptionPlanType | "FREE" | null
