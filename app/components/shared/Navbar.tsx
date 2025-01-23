@@ -162,9 +162,8 @@ const EnhancedSearchBar = ({ onSearch }: { onSearch: () => void }) => {
       <Input
         type="search"
         placeholder="Search..."
-        className={`w-full rounded-full pl-10 pr-4 py-2 bg-background/50 border-primary/20 transition-all duration-300 ${
-          isFocused ? "ring-2 ring-primary/20 border-primary" : ""
-        }`}
+        className={`w-full rounded-full pl-10 pr-4 py-2 bg-background/50 border-primary/20 transition-all duration-300 ${isFocused ? "ring-2 ring-primary/20 border-primary" : ""
+          }`}
         onClick={onSearch}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
@@ -196,13 +195,14 @@ export default function Navbar() {
   }, [handleScroll])
 
   const handleSignIn = () => signIn()
-  const handleSignOut = () => signOut()
-
+  const handleSignOut = async () => {
+    await signOut({ redirect: false })
+    router.push("/")
+  }
   return (
     <motion.header
-      className={`sticky top-0 z-50 w-full border-b bg-background/70 backdrop-blur-lg transition-shadow duration-300 ${
-        scrolled ? "shadow-md" : "shadow-sm"
-      }`}
+      className={`sticky top-0 z-50 w-full border-b bg-background/70 backdrop-blur-lg transition-shadow duration-300 ${scrolled ? "shadow-md" : "shadow-sm"
+        }`}
       initial={{ opacity: 0, y: -100 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -269,7 +269,7 @@ export default function Navbar() {
                           <span>Profile</span>
                         </Link>
                       </DropdownMenuItem>
-                    
+
                       <DropdownMenuItem
                         onClick={handleSignOut}
                         className="flex items-center text-red-500 hover:text-red-600"

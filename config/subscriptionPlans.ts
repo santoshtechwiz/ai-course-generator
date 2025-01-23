@@ -1,58 +1,102 @@
-
 export const SUBSCRIPTION_PLANS = [
   {
-    name: 'FREE',
-    options: [
-      { duration: 1, price: 0 }
+    name: "FREE",
+    options: [{ duration: 1, price: 0 }],
+    tokens: 1,
+    limits: {
+      courses: 1,
+      mcq: 3,
+      openEnded: 3,
+      fillInTheBlanks: 3,
+    },
+    features: [
+      "1 course",
+      "Up to 5 sections per course",
+      "Basic MCQ quiz support",
+      "Basic Fill-in-the-Blank quiz support",
+      "Basic Open-Ended quiz support",
     ],
-    tokens: 3,
-    features: ['3 credits per month', 'Basic access', 'Community support']
   },
   {
-    name: 'BASIC',
+    name: "BASIC",
     options: [
-      { duration: 1, price: 5 }
+      { duration: 1, price: 9.99 },
+      { duration: 6, price: 49.99 },
     ],
     tokens: 10,
-    features: ['10 credits per month', 'Basic support', 'Access to standard features']
+    limits: {
+      courses: Infinity,
+      mcq: 10,
+      openEnded: 5,
+      fillInTheBlanks: 5,
+    },
+    features: [
+      "Unlimited courses",
+      "Up to 5 sections per course",
+      "Video transcripts",
+      "Video quizzes",
+      "Enhanced MCQ quizzes",
+      "Enhanced Fill-in-the-Blank quizzes",
+      "Enhanced Open-Ended quizzes",
+    ],
   },
   {
-    name: 'PREMIUM',
+    name: "PRO",
     options: [
-      { duration: 6, price: 25 }
+      { duration: 1, price: 19.99 },
+      { duration: 6, price: 99.99 },
     ],
     tokens: 50,
-    features: ['50 credits for 6 months', 'Priority support', 'Access to all features', 'Premium content access']
-  }
+    limits: {
+      courses: Infinity,
+      sectionsPerCourse: 20,
+      mcq: 15,
+      openEnded: 15,
+      fillInTheBlanks: 15,
+    },
+    features: [
+      "Unlimited courses",
+      "Up to 20 sections per course",
+      "Video transcripts",
+      "Video quizzes",
+      "Advanced MCQ quizzes",
+      "Advanced Fill-in-the-Blank quizzes",
+      "Advanced Open-Ended quizzes",
+    ],
+  },
 ];
 
 export const FAQ_ITEMS = [
   {
-    question: "What are credits used for?",
-    answer: "Credits are used to access premium features and content on our platform. Each credit represents a unit of access to our services."
-  },
-  {
-    question: "How long are my credits valid?",
-    answer: "Credit validity depends on your plan - Free and Basic plan credits are valid for 1 month, while Premium plan credits are valid for 6 months."
+    question: "What's included in each course?",
+    answer:
+      "Each course can include video content, transcripts, various types of quizzes (MCQ, Fill-in-the-Blank, Open-Ended), and sections to organize your content. The number and complexity of these features depend on your subscription plan.",
   },
   {
     question: "Can I upgrade my plan?",
-    answer: "Yes, you can upgrade your plan at any time. Your new benefits will be available immediately after upgrading."
+    answer:
+      "Yes, you can upgrade your plan at any time. Your new benefits will be available immediately after upgrading.",
+  },
+  {
+    question: "What happens if I reach my quiz or section limit?",
+    answer:
+      "If you reach your plan's limit for quizzes or sections, you'll need to upgrade to a higher tier plan to add more. Existing content will remain accessible.",
   },
   {
     question: "Is there a refund policy?",
-    answer: "We offer a 14-day money-back guarantee for paid plans. If you're not satisfied, you can request a full refund within this period."
-  }
-];
+    answer:
+      "We offer a 14-day money-back guarantee for paid plans. If you're not satisfied, you can request a full refund within this period.",
+  },
+]
 
-export type SubscriptionPlanType = keyof typeof SUBSCRIPTION_PLANS;
-  
+export type SubscriptionPlanType = keyof typeof SUBSCRIPTION_PLANS
+
 export const SUBSCRIPTION_STATUSES = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-  PAST_DUE: 'PAST_DUE',
-  CANCELED: 'CANCELED',
-} as const;
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+  PAST_DUE: "PAST_DUE",
+  CANCELED: "CANCELED",
+} as const
 
-export type SubscriptionStatusType = keyof typeof SUBSCRIPTION_STATUSES;
+export type SubscriptionStatusType = keyof typeof SUBSCRIPTION_STATUSES
 

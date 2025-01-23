@@ -2,8 +2,9 @@ import { getPublicQuizzes } from "@/lib/db"
 import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/authOptions"
 import RandomQuiz from "../mcq/components/RandomQuiz"
-import CreateQuizForm from "./components/CreateQuizForm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight"
+import { QuizWrapper } from "@/components/QuizWrapper"
 
 const Page = async () => {
   const session = await getAuthSession()
@@ -20,7 +21,7 @@ const Page = async () => {
             <CardTitle>Create a New Quiz</CardTitle>
           </CardHeader>
           <CardContent>
-            <CreateQuizForm isLoggedIn={isLoggedIn} />
+            <QuizWrapper type="mcq" />
           </CardContent>
         </Card>
         <Card>
@@ -28,7 +29,7 @@ const Page = async () => {
             <CardTitle>Random Quiz</CardTitle>
           </CardHeader>
           <CardContent>
-            <RandomQuiz games={publicQuizzes} />
+            <AnimatedQuizHighlight />
           </CardContent>
         </Card>
       </div>

@@ -1,107 +1,106 @@
-'use client';
+"use client"
 
-import React, { MouseEvent } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { signIn, useSession } from 'next-auth/react';
-import { Button } from '@/components/ui/button';
-import { Loader2, Lock, CheckCircle, User } from 'lucide-react';
-import { useSubscriptionStatus } from '@/hooks/useSubscroption';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import React from "react"
+import { useRouter, usePathname } from "next/navigation"
+import { signIn } from "next-auth/react"
+import { Button } from "@/components/ui/button"
+import { Loader2, Lock, CheckCircle, User } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { usePlanAware } from "@/hooks/usePlanAware"
 
-interface CreditButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
-  label: string;
-  onClick?: (e: MouseEvent<HTMLButtonElement>) => Promise<void> | void;
-  requiredCredits?: number;
-  loadingLabel?: string;
+export interface CreditButtonButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  label: string
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => Promise<void> | void
+  actionType: "courses" | "mcq" | "openEnded" | "fillInTheBlanks"
+  loadingLabel?: string
+  isEnabled?: boolean
 }
 
 export function CreditButton({
   label,
   onClick,
-  requiredCredits = 0,
-  loadingLabel = 'Processing...',
-
+  actionType,
+  loadingLabel = "Processing...",
+  isEnabled = true,
   ...props
-}: CreditButtonProps) {
-  const [isLoading, setIsLoading] = React.useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
-  const { data: session, status } = useSession();
-  const subscriptionStatus = useSubscriptionStatus();
+}: CreditButtonButtonProps) {
+  const [isActionLoading, setIsActionLoading] = React.useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
+  const { isAuthenticated, isLoading, currentPlan, subscriptionStatus } = usePlanAware()
 
-  const handleClick = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    setIsActionLoading(true)
 
-    if (status === 'unauthenticated') {
-      const callbackUrl = encodeURIComponent(pathname || '/');
-      await signIn('credentials', { callbackUrl: `/auth/signin?callbackUrl=${callbackUrl}` });
-      setIsLoading(false);
-      return;
-    }
-
-    if (!subscriptionStatus || subscriptionStatus.credits < requiredCredits) {
-      router.push('/dashboard/subscription');
-      setIsLoading(false);
-      return;
-    }
-
-    if (onClick) {
-      try {
-        await onClick(e);
-      } catch (error) {
-        console.error('Error in CreditButton onClick:', error);
-      } finally {
-        setIsLoading(false);
+    try {
+      if (!isAuthenticated) {
+        const callbackUrl = encodeURIComponent(pathname || "/")
+        await signIn("credentials", { callbackUrl: `/auth/signin?callbackUrl=${callbackUrl}` })
+        return
       }
-    } else {
-      setIsLoading(false);
+
+      const currentCount = subscriptionStatus?.[actionType] || 0
+      const limit = currentPlan.limits[actionType]
+
+      if (currentCount >= limit) {
+        router.push("/dashboard/subscription")
+        return
+      }
+
+      if (onClick) {
+        await onClick(e)
+      }
+    } catch (error) {
+      console.error("Error in PlanAwareButton onClick:", error)
+    } finally {
+      setIsActionLoading(false)
     }
-  };
+  }
 
-  const isAuthenticated = status === 'authenticated';
-  const hasEnoughCredits = (subscriptionStatus?.credits ?? 0) >= requiredCredits;
-  const isDisabled = isLoading || !isAuthenticated || !hasEnoughCredits;
+  const currentCount = subscriptionStatus?.[actionType] || 0
+  const limit = currentPlan.limits[actionType]
+  const isWithinLimit = currentCount < limit
+  const isDisabled = isActionLoading || isLoading || !isAuthenticated || !isWithinLimit || !isEnabled
 
-  const getButtonIcon = () => {
-    if (isLoading) return <Loader2 className="h-4 w-4 animate-spin" />;
-    if (!isAuthenticated) return <User className="h-4 w-4" />;
-    if (!hasEnoughCredits) return <Lock className="h-4 w-4" />;
-    return <CheckCircle className="h-4 w-4" />;
-  };
+  const getButtonContent = () => {
+    if (isActionLoading) {
+      return (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          {loadingLabel}
+        </>
+      )
+    }
+    if (!isAuthenticated) return <User className="h-4 w-4 mr-2" />
+    if (!isWithinLimit) return <Lock className="h-4 w-4 mr-2" />
+    return <CheckCircle className="h-4 w-4 mr-2" />
+  }
 
-  const tooltipContent = !isAuthenticated
-    ? 'Sign in to proceed.'
-    : !hasEnoughCredits
-    ? `You need ${requiredCredits} credit${requiredCredits > 1 ? 's' : ''} to proceed.`
-    : '';
+  const getTooltipContent = () => {
+    if (isLoading) return "Loading subscription status..."
+    if (!isAuthenticated) return "Sign in to proceed."
+    if (!isWithinLimit) return `You've reached the limit for ${actionType} in your current plan.`
+    if (!isEnabled) return "This action is currently disabled."
+    return ""
+  }
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            onClick={handleClick}
-            disabled={isDisabled}
-            {...props}
-          >
-            {isDisabled ? getButtonIcon() : label}
-            {isLoading && (
-              <span className="ml-2">{loadingLabel}</span>
-            )}
+          <Button onClick={handleClick} disabled={isDisabled} {...props}>
+            {getButtonContent()}
+            {!isActionLoading && label}
           </Button>
         </TooltipTrigger>
-        {isDisabled && tooltipContent && (
+        {isDisabled && (
           <TooltipContent>
-            <p>{tooltipContent}</p>
+            <p>{getTooltipContent()}</p>
           </TooltipContent>
         )}
       </Tooltip>
     </TooltipProvider>
-  );
+  )
 }
+

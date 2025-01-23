@@ -1,27 +1,32 @@
-import { SUBSCRIPTION_PLANS, SubscriptionPlanType } from '@/config/subscriptionPlans'
-import { PrismaClient } from '@prisma/client'
-import Stripe from 'stripe'
+import { SUBSCRIPTION_PLANS, type SubscriptionPlanType } from "@/config/subscriptionPlans"
+import { PrismaClient } from "@prisma/client"
+import Stripe from "stripe"
 
 const prisma = new PrismaClient()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia', // Update to the latest stable version
+  apiVersion: "2023-10-16", // Update to the latest stable version
 })
 
 export class SubscriptionService {
-  static async createCheckoutSession(userId: string, plan: SubscriptionPlanType): Promise<{ sessionId: string }> {
+  static async createCheckoutSession(userId: string, planName: string, duration: number) {
+    const plan = SUBSCRIPTION_PLANS.find((p) => p.name === planName)
+    if (!plan) {
+      throw new Error("Invalid plan name")
+    }
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { subscriptions: true },
     })
-    if (!user) throw new Error('User not found')
 
-    if (user.subscriptions && user.subscriptions.status === 'ACTIVE') {
-      throw new Error('User already has an active subscription')
+    if (!user) throw new Error("User not found")
+
+    if (user.subscriptions && user.subscriptions.status === "ACTIVE") {
+      throw new Error("User already has an active subscription")
     }
-
-    const planDetails = SUBSCRIPTION_PLANS.find(p => p.name === plan)
-    if (!planDetails) throw new Error('Invalid plan')
-
+    const option = plan.options.find((o) => o.duration === duration)
+    if (!option) {
+      throw new Error("Invalid duration for the selected plan")
+    }
     let stripeCustomer = user.subscriptions?.stripeCustomerId
     if (!stripeCustomer) {
       const customer = await stripe.customers.create({
@@ -36,41 +41,40 @@ export class SubscriptionService {
         update: { stripeCustomerId: stripeCustomer },
         create: {
           userId: user.id,
-          planId: planDetails.name,
-          status: 'PENDING',
+          planId: plan.name,
+          status: "PENDING",
           stripeCustomerId: stripeCustomer,
           currentPeriodStart: new Date(),
           currentPeriodEnd: new Date(),
         },
       })
     }
-
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomer,
-      mode: 'subscription',
-      payment_method_types: ['card'],
+      payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: "usd",
             product_data: {
-              name: planDetails.name,
+              name: `${plan.name} Plan - ${duration} month${duration > 1 ? "s" : ""}`,
             },
-            unit_amount: planDetails.options[0].price * 100,
+            unit_amount: Math.round(option.price * 100),
             recurring: {
-              interval: planDetails.options[0].duration === 1 ? 'month' : 'year',
+              interval: duration === 1 ? "month" : "year",
+              interval_count: duration === 1 ? 1 : duration / 12,
             },
           },
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL}/dashboard/cancelled`,
+      mode: "subscription",
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
       metadata: {
-        userId: user.id,
-        planName: plan,
-        duration: planDetails.options[0].duration.toString(),
-        tokens: planDetails.tokens.toString(),
+        userId,
+        planName,
+        tokens: plan.tokens.toString(),
       },
     })
 
@@ -79,30 +83,30 @@ export class SubscriptionService {
 
   static async handleSubscriptionCreated(sessionId: string): Promise<void> {
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription'],
+      expand: ["subscription"],
     })
 
-    if (session.status !== 'complete') {
-      throw new Error('Payment not completed')
+    if (session.status !== "complete") {
+      throw new Error("Payment not completed")
     }
 
     const userId = session.metadata?.userId
     const plan = session.metadata?.planName as SubscriptionPlanType
 
     if (!userId || !plan) {
-      throw new Error('Invalid session metadata')
+      throw new Error("Invalid session metadata")
     }
 
     const subscription = session.subscription as Stripe.Subscription
-    const planDetails = SUBSCRIPTION_PLANS.find(p => p.name === plan)
-    if (!planDetails) throw new Error('Invalid plan')
+    const planDetails = SUBSCRIPTION_PLANS.find((p) => p.name === plan)
+    if (!planDetails) throw new Error("Invalid plan")
 
     await prisma.$transaction(async (prisma) => {
       await prisma.userSubscription.upsert({
         where: { userId },
         update: {
           planId: planDetails.name,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           currentPeriodStart: new Date(subscription.current_period_start * 1000),
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
           stripeSubscriptionId: subscription.id,
@@ -110,7 +114,7 @@ export class SubscriptionService {
         create: {
           userId,
           planId: planDetails.name,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           currentPeriodStart: new Date(subscription.current_period_start * 1000),
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
           stripeSubscriptionId: subscription.id,
@@ -133,7 +137,7 @@ export class SubscriptionService {
       where: { userId },
     })
     if (!userSubscription || !userSubscription.stripeSubscriptionId) {
-      throw new Error('No active subscription found')
+      throw new Error("No active subscription found")
     }
 
     await stripe.subscriptions.cancel(userSubscription.stripeSubscriptionId)
@@ -141,16 +145,16 @@ export class SubscriptionService {
     await prisma.userSubscription.update({
       where: { userId },
       data: {
-        status: 'CANCELED',
+        status: "CANCELED",
         cancelAtPeriodEnd: true,
       },
     })
   }
 
   static async getSubscriptionStatus(userId: string): Promise<{
-    plan: SubscriptionPlanType | 'FREE' | null;
-    status: string | null;
-    endDate: Date | null;
+    plan: SubscriptionPlanType | "FREE" | null
+    status: string | null
+    endDate: Date | null
   }> {
     const userSubscription = await prisma.userSubscription.findUnique({
       where: { userId },
@@ -158,7 +162,7 @@ export class SubscriptionService {
 
     if (!userSubscription) {
       return {
-        plan: 'FREE',
+        plan: "FREE",
         status: null,
         endDate: null,
       }

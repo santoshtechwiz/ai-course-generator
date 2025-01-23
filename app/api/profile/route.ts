@@ -1,21 +1,14 @@
-
+import { getAuthSession } from '@/lib/authOptions';
 import { prisma } from '@/lib/db';
 import { getToken } from 'next-auth/jwt';
 import NodeCache from 'node-cache';
-
-
 
 // Initialize a simple in-memory cache using NodeCache
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // 5 minutes TTL with periodic check
 
 export async function GET(request: Request) {
-  const token = await getToken({ req: request as any });
 
-  if (!token) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  }
-
-  const userId = token.sub;
+  const userId = (await getAuthSession())?.user.id;
 
   // Check if data is cached
   const cacheKey = `user:${userId}`;

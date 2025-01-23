@@ -13,11 +13,13 @@ import { CreditButton } from "@/app/components/shared/CreditButton"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+export const fetchCache = 'force-no-store';
 interface TopicFormProps {
-  credits: number
+  credits: number,
+  maxQuestions: number
 }
 
-function TopicFormComponent({ credits }: TopicFormProps) {
+function TopicFormComponent({ credits,maxQuestions }: TopicFormProps) {
   const [topic, setTopic] = useState("")
   const [questionCount, setQuestionCount] = useState(5)
   const [openInfo, setOpenInfo] = useState(false)
@@ -50,7 +52,7 @@ function TopicFormComponent({ credits }: TopicFormProps) {
     } finally {
       setIsLoading(false)
     }
-  }, [topic, questionCount, router])
+  }, [topic, questionCount, router,maxQuestions])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
@@ -81,7 +83,7 @@ function TopicFormComponent({ credits }: TopicFormProps) {
         <Slider
           id="questionCount"
           min={1}
-          max={10}
+          max={maxQuestions}
           step={1}
           value={[questionCount]}
           onValueChange={(values) => setQuestionCount(values[0])}
@@ -93,7 +95,7 @@ function TopicFormComponent({ credits }: TopicFormProps) {
           value={questionCount}
           onChange={(e) => setQuestionCount(Number(e.target.value))}
           min={1}
-          max={10}
+          max={maxQuestions}
           className="w-20 h-10 text-center"
           aria-label="Number of questions"
         />
@@ -216,22 +218,18 @@ function TopicFormComponent({ credits }: TopicFormProps) {
 
         <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
           <CreditButton
-            type="submit"
-            label="Generate Quiz"
-            onClick={(e) => {
-              e.preventDefault()
-              handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
-            }}
-            requiredCredits={credits}
-            loadingLabel="Generating Quiz..."
-            
-         
-            disabled={isDisabled}
-            className="w-full h-14 text-lg font-medium rounded-lg transition-all
-              hover:scale-[1.02] active:scale-[0.98]
-              disabled:opacity-50 disabled:cursor-not-allowed
-              focus:ring-2 focus:ring-primary focus:ring-offset-2"
+           label="Generate Quiz"
+           actionType="openEnded"
+           onClick={generateQuiz}
+           loadingLabel="Generating Quiz..."
+           isEnabled={!isDisabled}
+           className="w-full h-14 text-lg font-medium rounded-lg transition-all
+             hover:scale-[1.02] active:scale-[0.98]
+             disabled:opacity-50 disabled:cursor-not-allowed
+             focus:ring-2 focus:ring-primary focus:ring-offset-2"
           />
+       
+      
         </CardFooter>
       </Card>
     </motion.div>

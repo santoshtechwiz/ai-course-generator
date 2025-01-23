@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { getAuthSession } from "@/lib/authOptions";
 import { SubscriptionService } from "@/services/subscriptionService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { SUBSCRIPTION_PLANS, SubscriptionPlanType } from '@/config/subscriptionPlans';
+import { SubscriptionPlanType } from '@/config/subscriptionPlans';
 import SubscriptionPlans from '@/app/dashboard/subscription/components/SubscriptionPlans';
 import { Skeleton } from "@/components/ui/skeleton";
 

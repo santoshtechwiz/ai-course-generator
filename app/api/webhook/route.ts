@@ -114,7 +114,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: session.metadata!.userId },
-      data: { credits: { increment: tokens } },
+      data: { credits: { increment: tokens },userType: session.metadata!.planName },
     });
 
     if (session.subscription && typeof session.customer === 'string') {

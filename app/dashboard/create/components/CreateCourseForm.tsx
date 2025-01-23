@@ -21,22 +21,24 @@ import { Progress } from "@/components/ui/progress"
 import { Loader2, Save, BookOpen, Info, FileText, Eye } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { SubscriptionStatus, useSubscriptionStatus } from "@/hooks/useSubscroption"
+
 import { CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
 import { useTheme } from "next-themes"
 import { CreditButton } from '@/app/components/shared/CreditButton';
+import { useSubscription } from "@/hooks/useSubscription"
 
 interface CourseCreationFormProps {
   topic: string;
+  maxQuestions: number
 }
 
-export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
+export default function CourseCreationForm({ topic,maxQuestions }: CourseCreationFormProps) {
   const [step, setStep] = React.useState(1)
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
 
-  const status: SubscriptionStatus | null = useSubscriptionStatus()
+  const { subscriptionStatus, isLoading } = useSubscription()
   const { data: session, status: authStatus } = useSession()
   const router = useRouter()
   const { toast } = useToast()
@@ -189,7 +191,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
               {step === 3 && <PreviewStep watch={watch} />}
             </CardContent>
 
-            <CardFooter className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 pt-4 pb-4 md:pt-6 md:pb-8 px-4 md:px-6 border-t">
+            <CardFooter  className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 pt-4 pb-4 md:pt-6 md:pb-8 px-4 md:px-6 border-t">
               <Button
                 type="button"
                 variant="outline"
@@ -204,8 +206,9 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                 {step < totalSteps ? (
                   <Button 
                     type="button"
+                    
                     onClick={handleNext}
-                    disabled={!isStepValid()}
+                    disabled={!isStepValid() || maxQuestions === 0}
                     className="w-full md:w-auto"
                   >
                     Continue
@@ -213,6 +216,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                 ) : (
                   <CreditButton
                     type="submit"
+                   
                     label={isSubmitting || createCourseMutation.status === 'pending' ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -225,7 +229,7 @@ export default function CourseCreationForm({ topic }: CourseCreationFormProps) {
                       </>
                     )}
                     onClick={handleSubmit(onSubmit)}
-                    requiredCredits={1}
+                 
                     disabled={isCreateDisabled || showConfirmDialog}
                     className="w-full md:w-auto disabled:opacity-50"
                   />
