@@ -31,14 +31,15 @@ interface QuizData {
 export default function Page({ params }: { params: { slug: string } }) {
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState<string[]>([])
+  const [answers, setAnswers] = useState<{ answer: string; timeSpent: number; hintsUsed: boolean }[]>([])
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [startTime, setStartTime] = useState<number | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [quizResults, setQuizResults] = useState<QuizResults | null>(null)
+  const [finalScore, setFinalScore] = useState<number | null>(null)
   const slug = React.use(params).slug
+
   useEffect(() => {
     let timer: NodeJS.Timeout
     if (startTime && !quizCompleted) {
@@ -83,15 +84,18 @@ export default function Page({ params }: { params: { slug: string } }) {
     if (!quizData) return
 
     const newAnswers = [...answers]
-    newAnswers[currentQuestion] = answer
+    newAnswers[currentQuestion] = { answer, timeSpent: elapsedTime, hintsUsed: false }
     setAnswers(newAnswers)
 
     if (currentQuestion < quizData.questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
+      setStartTime(Date.now())
+      setElapsedTime(0)
     } else {
       setQuizCompleted(true)
       try {
-        await axios.post(`/api/quiz/${slug}/complete`,  {
+        await axios.post(`/api/quiz/${slug}/complete`, {
+          slug:slug,
           answers: newAnswers,
           totalTime: elapsedTime,
         })
@@ -108,8 +112,17 @@ export default function Page({ params }: { params: { slug: string } }) {
       setCurrentQuestion(0)
       setAnswers([])
       setQuizCompleted(false)
+      setStartTime(Date.now())
+      setElapsedTime(0)
       setError(null)
+      setFinalScore(null)
     }
+  }
+
+  const handleComplete = (score: number) => {
+    setFinalScore(score)
+    // You can perform any additional actions with the final score here
+    console.log("Final score:", score)
   }
 
   if (loading) {
@@ -159,7 +172,12 @@ export default function Page({ params }: { params: { slug: string } }) {
   if (quizCompleted) {
     return (
       <React.Suspense fallback={<CourseAILoader />}>
-        <QuizResults answers={answers} questions={quizData.questions} onRestart={handleRestart} />
+        <QuizResults
+          answers={answers}
+          questions={quizData.questions}
+          onRestart={handleRestart}
+          onComplete={handleComplete}
+        />
       </React.Suspense>
     )
   }
@@ -175,6 +193,16 @@ export default function Page({ params }: { params: { slug: string } }) {
           initialIsPublic={false}
           initialIsFavorite={false}
         />
+        <div className="mb-4 text-center">
+          <span className="text-lg font-semibold">
+            Question {currentQuestion + 1} of {quizData.questions.length}
+          </span>
+        </div>
+        <div className="mb-4 text-center">
+          <span className="text-md">
+            Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
+          </span>
+        </div>
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center text-2xl">
@@ -202,4 +230,3 @@ export default function Page({ params }: { params: { slug: string } }) {
     </div>
   )
 }
-

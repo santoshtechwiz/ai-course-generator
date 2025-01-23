@@ -508,7 +508,7 @@ export async function clearExpiredSessions() {
 
 
 
-export async function getCourseData(slug: string): Promise<FullCourseType | null> {
+export async function getCourseData(slug: string): Promise<Course | null> {
   const course = await prisma.course.findFirst({
     where: { slug },
     include: {
@@ -574,4 +574,29 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
   };
 
   return fullCourse;
+}
+export async function fetchRandomQuizzes(count: number = 3) {
+  try {
+    const quizzes = await prisma.userQuiz.findMany({
+      select: {
+        id: true,
+        topic: true,
+        slug: true,
+        quizType: true,
+        difficulty: true,
+        bestScore: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 100, 
+    })
+
+    // Shuffle the quizzes and take the requested count
+    const shuffled = quizzes.sort(() => 0.5 - Math.random())
+    return shuffled.slice(0, count)
+  } catch (error) {
+    console.error('Error fetching random quizzes:', error)
+    
+  }
 }
