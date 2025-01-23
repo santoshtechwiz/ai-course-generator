@@ -146,3 +146,6 @@ export interface CourseDetails{
   totalUnits:number,
   slug:string
 }
+export interface CourseAIErrors{
+  
+}
