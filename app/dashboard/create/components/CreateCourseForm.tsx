@@ -27,6 +27,7 @@ import { SignInBanner } from "../../quiz/components/SignInBanner"
 import { useTheme } from "next-themes"
 import { CreditButton } from '@/app/components/shared/CreditButton';
 import { useSubscription } from "@/hooks/useSubscription"
+import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
 interface CourseCreationFormProps {
   topic: string;
@@ -214,25 +215,16 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
                     Continue
                   </Button>
                 ) : (
-                  <CreditButton
-                    type="submit"
-                   
-                    label={isSubmitting || createCourseMutation.status === 'pending' ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creating Course...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Create Course
-                      </>
-                    )}
-                    onClick={handleSubmit(onSubmit)}
-                 
-                    disabled={isCreateDisabled || showConfirmDialog}
-                    className="w-full md:w-auto disabled:opacity-50"
-                  />
+                  <PlanAwareButton
+                  type="submit"
+                  actionType="courses"
+                  label={
+                    isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"
+                  }
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={isCreateDisabled || showConfirmDialog}
+                  className="w-full md:w-auto disabled:opacity-50"
+                />
                 )}
 
                 {(!status?.isSubscribed && (availableCredits ?? 0) > 0) && (

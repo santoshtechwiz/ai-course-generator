@@ -8,7 +8,7 @@ import { Loader2, Lock, CheckCircle, User } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { usePlanAware } from "@/hooks/usePlanAware"
 
-export interface CreditButtonButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface PlanAwareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => Promise<void> | void
   actionType: "courses" | "mcq" | "openEnded" | "fillInTheBlanks"
@@ -16,14 +16,14 @@ export interface CreditButtonButtonProps extends React.ButtonHTMLAttributes<HTML
   isEnabled?: boolean
 }
 
-export function CreditButton({
+export function PlanAwareButton({
   label,
   onClick,
   actionType,
   loadingLabel = "Processing...",
   isEnabled = true,
   ...props
-}: CreditButtonButtonProps) {
+}: PlanAwareButtonProps) {
   const [isActionLoading, setIsActionLoading] = React.useState(false)
   const router = useRouter()
   const pathname = usePathname()

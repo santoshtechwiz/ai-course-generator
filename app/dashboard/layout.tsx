@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { UserProvider } from "@/app/providers/userContext";
 import { ThemeProvider } from "../providers/theme-provider";
 import Footer from "../components/shared/Footer";
-import { GlobalLoading } from "../components/shared/GlobalLoading";
+import { GlobalLoading, LoadingProvider } from "../components/shared/GlobalLoading";
 import Navbar from "../components/shared/Navbar";
 import { Suspense } from "react";
 import { TrackingProvider } from "../providers/TrackingProvider";
@@ -23,6 +23,7 @@ export default function DashboardLayout({
 
   return (
     <Providers>
+       <LoadingProvider>
     <TrackingProvider userId={userId}>
       <ThemeProvider
         attribute="class"
@@ -33,8 +34,9 @@ export default function DashboardLayout({
         <UserProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
-
+         
             <GlobalLoading />
+           
             <SubscriptionProvider>
             <main className="flex-1">
               <div className="container mx-auto px-4 lg:px-4">
@@ -47,12 +49,14 @@ export default function DashboardLayout({
               </div>
             </main>
             </SubscriptionProvider>
+           
             <Footer />
             <Toaster />
           </div>
         </UserProvider>
       </ThemeProvider>
     </TrackingProvider>
+    </LoadingProvider>
     </Providers>
   );
 }

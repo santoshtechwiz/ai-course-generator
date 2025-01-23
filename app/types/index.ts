@@ -137,3 +137,12 @@ export interface RandomQuizProps{
 
   
 }
+export interface CourseDetails{
+
+  id:number,
+  courseName:string,
+  category:string,
+  totalChapters:number,
+  totalUnits:number,
+  slug:string
+}

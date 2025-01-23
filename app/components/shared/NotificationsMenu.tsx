@@ -15,7 +15,7 @@ interface NotificationsMenuProps {
 export default function NotificationsMenu({ initialCount = 0 }: NotificationsMenuProps) {
   const { toast } = useToast()
   const { user, loading: isLoading, error } = useUser();
-  console.log(user);
+
 
   const displayCount = React.useMemo(() => {
     return (user?.credits ?? 0) > 99 ? '99+' : (user?.credits ?? 0).toString()
