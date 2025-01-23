@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { Menu, Search, LogOut, LogIn, User, X, Settings } from "lucide-react"
+import { Menu, Search, LogOut, LogIn, User, X, Settings, Bell } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import { navItems } from "@/constants/navItems"
@@ -47,7 +46,6 @@ const MobileMenu = () => {
       </SheetTrigger>
       <SheetContent side="right" className="p-0 w-full sm:w-[350px]">
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <Logo />
             <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
@@ -56,15 +54,6 @@ const MobileMenu = () => {
             </Button>
           </div>
 
-          {/* Search */}
-          <div className="p-4 border-b">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search..." className="pl-9 w-full" />
-            </div>
-          </div>
-
-          {/* Navigation */}
           <ScrollArea className="flex-1 p-4">
             <nav className="space-y-2">
               {navItems.map((item, index) => (
@@ -90,7 +79,6 @@ const MobileMenu = () => {
             </nav>
           </ScrollArea>
 
-          {/* Footer */}
           <div className="p-4 border-t">
             {session ? (
               <div className="space-y-4">
@@ -127,7 +115,7 @@ const NavItems = () => {
   const router = useRouter()
 
   return (
-    <motion.div className="flex space-x-4">
+    <motion.div className="flex space-x-6">
       {navItems.map((item, index) => (
         <motion.div
           key={item.name}
@@ -145,36 +133,6 @@ const NavItems = () => {
           </Button>
         </motion.div>
       ))}
-    </motion.div>
-  )
-}
-
-const EnhancedSearchBar = ({ onSearch }: { onSearch: () => void }) => {
-  const [isFocused, setIsFocused] = useState(false)
-
-  return (
-    <motion.div
-      className="relative w-full max-w-[200px] md:max-w-sm"
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Input
-        type="search"
-        placeholder="Search..."
-        className={`w-full rounded-full pl-10 pr-4 py-2 bg-background/50 border-primary/20 transition-all duration-300 ${isFocused ? "ring-2 ring-primary/20 border-primary" : ""
-          }`}
-        onClick={onSearch}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-      />
-      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      <motion.div
-        className="absolute inset-0 rounded-full pointer-events-none"
-        initial={false}
-        animate={isFocused ? { scale: 1.05, opacity: 1 } : { scale: 1, opacity: 0 }}
-        transition={{ duration: 0.2 }}
-      />
     </motion.div>
   )
 }
@@ -199,37 +157,40 @@ export default function Navbar() {
     await signOut({ redirect: false })
     router.push("/")
   }
+
   return (
     <motion.header
-      className={`sticky top-0 z-50 w-full border-b bg-background/70 backdrop-blur-lg transition-shadow duration-300 ${scrolled ? "shadow-md" : "shadow-sm"
-        }`}
+      className={`sticky top-0 z-50 w-full border-b bg-background/70 backdrop-blur-lg transition-shadow duration-300 ${
+        scrolled ? "shadow-md" : "shadow-sm"
+      }`}
       initial={{ opacity: 0, y: -100 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-8">
-        <div className="flex items-center gap-4 flex-1">
+      <div className="container flex h-20 max-w-screen-2xl items-center justify-between px-4 md:px-8">
+        <div className="flex items-center gap-6 flex-1">
           <MobileMenu />
           <Logo />
+          <nav className="hidden md:flex items-center space-x-4 flex-1 justify-center" aria-label="Main Navigation">
+            <NavItems />
+          </nav>
         </div>
 
-        <nav className="hidden md:flex items-center space-x-4 flex-1 justify-center" aria-label="Main Navigation">
-          <NavItems />
-        </nav>
+        <div className="flex items-center gap-6 flex-1 justify-end">
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button variant="ghost" size="icon" onClick={() => setIsSearchModalOpen(true)}>
+              <Search className="h-5 w-5" />
+              <span className="sr-only">Search</span>
+            </Button>
+          </motion.div>
 
-        <div className="flex items-center gap-4 flex-1 justify-end">
-          <div className="hidden sm:block">
-            <EnhancedSearchBar onSearch={() => setIsSearchModalOpen(true)} />
-          </div>
-          <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setIsSearchModalOpen(true)}>
-            <Search className="h-5 w-5" />
-            <span className="sr-only">Search</span>
-          </Button>
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
             <NotificationsMenu initialCount={0} />
           </motion.div>
 
-          <ThemeToggle />
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <ThemeToggle />
+          </motion.div>
 
           <AnimatePresence mode="wait">
             {status === "authenticated" && session ? (

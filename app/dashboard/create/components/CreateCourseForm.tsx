@@ -24,7 +24,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
 import { useTheme } from "next-themes"
-import { CreditButton } from "@/app/components/shared/CreditButton"
+
 import { useSubscription } from "@/hooks/useSubscription"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
@@ -142,7 +142,7 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
     !session ||
     (!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) === 0) ||
     isSubmitting ||
-    createCourseMutation.status === "loading" ||
+    createCourseMutation.status === "pending" ||
     showConfirmDialog
 
   const stepIcons = [
@@ -154,7 +154,7 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
   return (
     <div className="py-6 px-4 md:py-12 md:px-6 bg-background">
       <div className="max-w-4xl mx-auto">
-        <Card>
+        <Card className="dark:bg-gray-800">
           <SignInBanner isAuthenticated={authStatus === "authenticated"} />
           <CardHeader className="text-center space-y-2 p-4 md:p-6">
             <div className="flex justify-center mb-4">
@@ -166,8 +166,8 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
                 <BookOpen className="w-8 h-8 text-primary" />
               </motion.div>
             </div>
-            <CardTitle className="text-2xl md:text-3xl font-bold">Create a New Course</CardTitle>
-            <CardDescription className="text-base md:text-lg">
+            <CardTitle className="text-2xl md:text-3xl font-bold text-foreground">Create a New Course</CardTitle>
+            <CardDescription className="text-base md:text-lg text-muted-foreground">
               Fill in the details for your new course. Progress is automatically saved.
             </CardDescription>
           </CardHeader>
@@ -182,7 +182,9 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
                   <Tooltip>
                     <TooltipTrigger>
                       <div
-                        className={`flex flex-col items-center justify-center ${step === index + 1 ? "text-primary" : "text-muted-foreground"}`}
+                        className={`flex flex-col items-center justify-center ${
+                          step === index + 1 ? "text-primary" : "text-muted-foreground"
+                        }`}
                       >
                         {icon}
                         <span className="text-xs mt-1">{`Step ${index + 1}`}</span>

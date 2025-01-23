@@ -15,6 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 
 interface TileProps {
   icon: LucideIcon
@@ -35,6 +36,8 @@ const tiles = [
       "Challenge minds with thought-provoking MCQs!",
       "Craft questions that spark curiosity and learning.",
       "Design a quiz that engages and educates simultaneously.",
+      "Test knowledge and critical thinking with well-crafted MCQs.",
+      "Create a quiz that both challenges and enlightens.",
     ],
   },
   {
@@ -46,6 +49,8 @@ const tiles = [
       "Inspire deep thinking with open-ended questions!",
       "Encourage students to express their ideas freely.",
       "Foster critical thinking through thoughtful inquiries.",
+      "Unlock creativity with questions that have no limits.",
+      "Explore the depths of knowledge with open-ended prompts.",
     ],
   },
   {
@@ -57,6 +62,8 @@ const tiles = [
       "Why not create your own course?",
       "Share your expertise through an engaging course!",
       "Design a learning journey that inspires and educates.",
+      "Transform your knowledge into a structured learning experience.",
+      "Craft a course that leaves a lasting impact on learners.",
     ],
   },
   {
@@ -68,6 +75,8 @@ const tiles = [
       "Craft a fill-in-the-blanks activity to spark curiosity!",
       "Challenge learners with engaging word puzzles.",
       "Create exercises that make learning interactive and fun.",
+      "Bridge the gaps in knowledge with clever fill-in-the-blank questions.",
+      "Enhance vocabulary and comprehension through interactive exercises.",
     ],
   },
 ]
@@ -80,7 +89,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
     if (isOpen) {
       return setInterval(() => {
         setCurrentQuote((prev) => (prev + 1) % quotes.length)
-      }, 3000)
+      }, 5000)
     }
     return null
   }, [isOpen, quotes.length])
@@ -97,6 +106,8 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
         <Card className="cursor-pointer h-full" onClick={() => setIsOpen(true)}>
           <CardHeader>
@@ -108,14 +119,17 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
           <CardContent>
             <p className="text-sm text-muted-foreground text-center">{description}</p>
           </CardContent>
+          <CardFooter className="justify-center">
+            <Badge variant="secondary">Click to explore</Badge>
+          </CardFooter>
         </Card>
       </motion.div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[90vw] sm:h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <Icon className="h-6 w-6 mr-2" />
+            <DialogTitle className="flex items-center text-3xl">
+              <Icon className="h-8 w-8 mr-2" />
               {title}
             </DialogTitle>
             <DialogDescription asChild>
@@ -125,17 +139,36 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-xl italic mt-4"
                 >
                   "{quotes[currentQuote]}"
                 </motion.p>
               </AnimatePresence>
             </DialogDescription>
           </DialogHeader>
-          <p>{description}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex-grow flex flex-col justify-center items-center text-center"
+          >
+            <p className="text-lg mb-8">{description}</p>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            >
+              <Icon className="h-32 w-32 text-primary" />
+            </motion.div>
+          </motion.div>
           <DialogFooter>
-            <Button asChild className="w-full">
-              <Link href={url}>Start Creating</Link>
+            <Button asChild className="w-full text-lg h-12">
+              <Link href={url}>
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+                  Start Creating
+                </motion.span>
+              </Link>
             </Button>
           </DialogFooter>
         </DialogContent>
