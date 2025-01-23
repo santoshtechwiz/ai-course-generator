@@ -83,7 +83,8 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
         // Add links to Wikipedia for key terms
         modifiedText = modifiedText.replace(
           /\[([^\]]+)\]/g,
-          '<a href="https://en.wikipedia.org/wiki/$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">$1</a>',
+          (match, term) =>
+            `<a href="https://en.wikipedia.org/wiki/${encodeURIComponent(term.replace(/ /g, "_"))}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">${term}</a>`,
         )
 
         return <span dangerouslySetInnerHTML={{ __html: modifiedText }} />
@@ -152,13 +153,12 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
                     if (typeof children === "string" && children.toLowerCase() === "main points:") {
                       return <h4 className="text-lg font-semibold mb-2 text-secondary">Main Points:</h4>
                     }
-                    
 
                     return (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <strong className="font-bold text-primary cursor-help">{children}</strong>
+                            <strong className="font-bold text-primary cursor-help block mb-2">{children}</strong>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Important concept</p>
@@ -167,6 +167,11 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
                       </TooltipProvider>
                     )
                   },
+                  a: ({ href, children }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      {children}
+                    </a>
+                  ),
                 }}
               >
                 {data.data}

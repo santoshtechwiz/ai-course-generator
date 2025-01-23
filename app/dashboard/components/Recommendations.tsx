@@ -9,12 +9,13 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import type { Course, CourseProgress, QuizAttempt } from "@/app/types"
+import { Course, CourseProgress, UserQuizAttempt } from "@/app/types"
+
 
 interface AIRecommendationsProps {
   courses: Course[]
   courseProgress: CourseProgress[]
-  quizAttempts: QuizAttempt[]
+  quizAttempts: UserQuizAttempt[]
 }
 
 interface Recommendation {
@@ -41,7 +42,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
       // Find courses with low progress
       const lowProgressCourses = courseProgress.filter((c) => c.progress < 30 && !c.isCompleted)
       if (lowProgressCourses.length > 0) {
-        const course = courses.find((c) => c.id === lowProgressCourses[0].courseId)
+        const course = courses.find((c) => c.id === lowProgressCourses[0].course.id)
         if (
           course &&
           course.courseUnits &&
@@ -51,15 +52,15 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
           newRecommendations.push({
             type: "next",
             message: `Continue ${course.name} to maintain your learning momentum`,
-            courseId: +course.id,
-            chapterId: +course.courseUnits[0].chapters[0].id,
+            courseId: course.id,
+            chapterId: course.courseUnits[0].chapters[0].id,
             slug: course.slug || "",
           })
         }
       }
 
       // Find quizzes with low scores
-      const lowScoreQuizzes = quizAttempts.filter((q) => q?.score < 70)
+      const lowScoreQuizzes = quizAttempts.filter((q) => q.score !== null && q.score < 70)
       if (lowScoreQuizzes.length > 0) {
         const latestLowScoreQuiz = lowScoreQuizzes.reduce((latest, current) =>
           new Date(latest.createdAt) > new Date(current.createdAt) ? latest : current,
@@ -67,14 +68,14 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
         const relevantCourse = courses.find((c) =>
           c.courseUnits?.some((unit) =>
             unit.chapters.some((chapter) =>
-              chapter.questions?.some((question) => question.id === latestLowScoreQuiz.quizId),
+              chapter.questions?.some((question) => question.id === latestLowScoreQuiz.userQuizId),
             ),
           ),
         )
         if (relevantCourse) {
           const relevantChapter = relevantCourse.courseUnits
             ?.flatMap((unit) => unit.chapters)
-            .find((chapter) => chapter.questions?.some((question) => question.id === latestLowScoreQuiz.quizId))
+            .find((chapter) => chapter.questions?.some((question) => question.id === latestLowScoreQuiz.userQuizId))
           if (relevantChapter) {
             newRecommendations.push({
               type: "review",
@@ -91,7 +92,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
       const inactiveCourses = courseProgress.filter((c) => new Date(c.lastAccessedAt) < oneWeekAgo && !c.isCompleted)
       if (inactiveCourses.length > 0) {
-        const course = courses.find((c) => c.id === inactiveCourses[0].courseId)
+        const course = courses.find((c) => c.id === inactiveCourses[0].course.id)
         if (
           course &&
           course.courseUnits &&
