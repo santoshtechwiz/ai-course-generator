@@ -1,10 +1,10 @@
-'use client'
+"use client"
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useMutation } from "@tanstack/react-query"
-import { useForm, SubmitHandler } from "react-hook-form"
+import { useForm, type SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 import { signIn, useSession } from "next-auth/react"
@@ -18,23 +18,22 @@ import { ConfirmationDialog } from "./ConfirmationDialog"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Loader2, Save, BookOpen, Info, FileText, Eye } from 'lucide-react'
+import { Loader2, Save, BookOpen, Info, FileText, Eye } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-
-import { CreateCourseInput, createCourseSchema } from "@/schema/schema"
+import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
 import { useTheme } from "next-themes"
-import { CreditButton } from '@/app/components/shared/CreditButton';
+import { CreditButton } from "@/app/components/shared/CreditButton"
 import { useSubscription } from "@/hooks/useSubscription"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
 interface CourseCreationFormProps {
-  topic: string;
+  topic: string
   maxQuestions: number
 }
 
-export default function CourseCreationForm({ topic,maxQuestions }: CourseCreationFormProps) {
+export default function CourseCreationForm({ topic, maxQuestions }: CourseCreationFormProps) {
   const [step, setStep] = React.useState(1)
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
@@ -43,16 +42,22 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
   const { data: session, status: authStatus } = useSession()
   const router = useRouter()
   const { toast } = useToast()
-  const [availableCredits, setAvailableCredits] = React.useState(status?.credits)
+  const [availableCredits, setAvailableCredits] = React.useState(subscriptionStatus?.credits)
   const { theme } = useTheme()
 
   React.useEffect(() => {
-    if (status) {
-      setAvailableCredits(status?.credits)
+    if (subscriptionStatus) {
+      setAvailableCredits(subscriptionStatus.credits)
     }
-  }, [status])
+  }, [subscriptionStatus])
 
-  const { control, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<CreateCourseInput>({
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateCourseInput>({
     resolver: zodResolver(createCourseSchema),
     defaultValues: {
       title: topic || "",
@@ -72,7 +77,7 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
         title: "Success",
         description: "Course created successfully",
       })
-      setAvailableCredits(prev => (prev ?? 0) - 1)
+      setAvailableCredits((prev) => (prev ?? 0) - 1)
       router.push(`/dashboard/create/${data.slug}`)
     },
     onError: () => {
@@ -94,13 +99,13 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
       signIn()
       return
     }
-    if (!status?.isSubscribed && (availableCredits ?? 0) === 0) {
+    if (!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) === 0) {
       toast({
         title: "Subscription or Credits Required",
         description: "Please subscribe or buy credits to create a course.",
         variant: "destructive",
       })
-      router.push('dashboard/subscription')
+      router.push("dashboard/subscription")
       return
     }
     setShowConfirmDialog(true)
@@ -108,13 +113,13 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
 
   const handleConfirmCreate = async () => {
     setShowConfirmDialog(false)
-    if (!status?.isSubscribed && (availableCredits ?? 0) === 0) {
+    if (!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) === 0) {
       toast({
         title: "No Credits Available",
         description: "You don't have enough credits to create a course. Please subscribe or buy more credits.",
         variant: "destructive",
       })
-      router.push('dashboard/subscription')
+      router.push("dashboard/subscription")
       return
     }
     await createCourseMutation.mutateAsync(watch())
@@ -127,27 +132,33 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
     if (step === 1) {
       return !!watch("title") && !!watch("description") && !!watch("category")
     } else if (step === 2) {
-      return watch("units").length > 0 && watch("units").every(unit => !!unit)
+      return watch("units").length > 0 && watch("units").every((unit) => !!unit)
     }
     return true
   }
 
-  const isCreateDisabled = step !== 3 || !session || (!status?.isSubscribed && (availableCredits ?? 0) === 0) || isSubmitting || createCourseMutation.status === 'loading' || showConfirmDialog
+  const isCreateDisabled =
+    step !== 3 ||
+    !session ||
+    (!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) === 0) ||
+    isSubmitting ||
+    createCourseMutation.status === "loading" ||
+    showConfirmDialog
 
   const stepIcons = [
-    <Info key="1" className="w-6 h-6 text-primary" />,
-    <FileText key="2" className="w-6 h-6 text-primary" />,
-    <Eye key="3" className="w-6 h-6 text-primary" />,
+    <Info key="1" className="w-6 h-6" />,
+    <FileText key="2" className="w-6 h-6" />,
+    <Eye key="3" className="w-6 h-6" />,
   ]
 
   return (
-    <div className={`py-6 px-4 md:py-12 md:px-6 ${theme === 'dark' ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-100 to-white'}`}>
+    <div className="py-6 px-4 md:py-12 md:px-6 bg-background">
       <div className="max-w-4xl mx-auto">
-        <Card className={`w-full ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white'}`}>
-          <SignInBanner isAuthenticated={authStatus === 'authenticated'} />
+        <Card>
+          <SignInBanner isAuthenticated={authStatus === "authenticated"} />
           <CardHeader className="text-center space-y-2 p-4 md:p-6">
             <div className="flex justify-center mb-4">
-              <motion.div 
+              <motion.div
                 className="p-3 bg-primary/10 rounded-xl"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -170,14 +181,14 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
                 <TooltipProvider key={index}>
                   <Tooltip>
                     <TooltipTrigger>
-                      <div className={`flex flex-col items-center justify-center ${step === index + 1 ? 'text-primary' : 'text-gray-500'}`}>
+                      <div
+                        className={`flex flex-col items-center justify-center ${step === index + 1 ? "text-primary" : "text-muted-foreground"}`}
+                      >
                         {icon}
                         <span className="text-xs mt-1">{`Step ${index + 1}`}</span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      {index === 0 ? 'Basic Info' : index === 1 ? 'Content' : 'Preview'}
-                    </TooltipContent>
+                    <TooltipContent>{index === 0 ? "Basic Info" : index === 1 ? "Content" : "Preview"}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               ))}
@@ -192,7 +203,7 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
               {step === 3 && <PreviewStep watch={watch} />}
             </CardContent>
 
-            <CardFooter  className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 pt-4 pb-4 md:pt-6 md:pb-8 px-4 md:px-6 border-t">
+            <CardFooter className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 pt-4 pb-4 md:pt-6 md:pb-8 px-4 md:px-6 border-t">
               <Button
                 type="button"
                 variant="outline"
@@ -205,9 +216,8 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
 
               <div className="flex flex-col items-center md:items-end space-y-4 w-full md:w-auto">
                 {step < totalSteps ? (
-                  <Button 
+                  <Button
                     type="button"
-                    
                     onClick={handleNext}
                     disabled={!isStepValid() || maxQuestions === 0}
                     className="w-full md:w-auto"
@@ -216,20 +226,21 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
                   </Button>
                 ) : (
                   <PlanAwareButton
-                  type="submit"
-                  actionType="courses"
-                  label={
-                    isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"
-                  }
-                  onClick={handleSubmit(onSubmit)}
-                  disabled={isCreateDisabled || showConfirmDialog}
-                  className="w-full md:w-auto disabled:opacity-50"
-                />
+                    type="submit"
+                    actionType="courses"
+                    label={
+                      isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"
+                    }
+                    onClick={handleSubmit(onSubmit)}
+                    disabled={isCreateDisabled || showConfirmDialog}
+                    className="w-full md:w-auto disabled:opacity-50"
+                  />
                 )}
 
-                {(!status?.isSubscribed && (availableCredits ?? 0) > 0) && (
-                  <p className="text-sm text-gray-500 text-center md:text-right">
-                    Available credits: {availableCredits} <br className="md:hidden" />(This action will deduct 1 credit)
+                {!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) > 0 && (
+                  <p className="text-sm text-muted-foreground text-center md:text-right">
+                    Available credits: {availableCredits} <br className="md:hidden" />
+                    (This action will deduct 1 credit)
                   </p>
                 )}
               </div>
@@ -243,7 +254,7 @@ export default function CourseCreationForm({ topic,maxQuestions }: CourseCreatio
         onOpenChange={setShowConfirmDialog}
         onConfirm={handleConfirmCreate}
         formData={watch()}
-        isSubmitting={isSubmitting || createCourseMutation.status === 'pending'}
+        isSubmitting={isSubmitting || createCourseMutation.status === "pending"}
       />
     </div>
   )
