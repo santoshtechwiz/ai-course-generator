@@ -2,7 +2,7 @@ export const SUBSCRIPTION_PLANS = [
   {
     name: "FREE",
     options: [{ duration: 1, price: 0 }],
-    tokens: 1,
+    tokens: 3,
     limits: {
       courses: 1,
       mcq: 3,

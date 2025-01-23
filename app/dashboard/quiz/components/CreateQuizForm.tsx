@@ -36,7 +36,8 @@ import { signIn, useSession } from 'next-auth/react'
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { motion } from "framer-motion"
 import { SignInBanner } from "./SignInBanner"
-import { CreditButton } from "@/app/components/shared/CreditButton"
+import { PlanAwareButton } from "@/app/components/PlanAwareButton"
+
 
 
 type QuizFormData = z.infer<typeof quizSchema>
@@ -247,9 +248,10 @@ export default function CreateQuizForm({ isLoggedIn,maxQuestions}: Props) {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <CreditButton
+              <PlanAwareButton
                 type="submit"
                 disabled={isLoading}
+                
                 className="w-full"
                 label={isLoading ? "Creating..." : (isLoggedIn ? "Create Quiz" : "Sign In to Create")}
                 onClick={handleSubmit(onSubmit)} actionType={"courses"}       

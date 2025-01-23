@@ -12,6 +12,7 @@ import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
 import { CreditButton } from "@/app/components/shared/CreditButton"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
 export const fetchCache = 'force-no-store';
 interface TopicFormProps {
@@ -217,7 +218,7 @@ function TopicFormComponent({ credits,maxQuestions }: TopicFormProps) {
         </CardContent>
 
         <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
-          <CreditButton
+          <PlanAwareButton
            label="Generate Quiz"
            actionType="openEnded"
            onClick={generateQuiz}

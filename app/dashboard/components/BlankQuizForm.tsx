@@ -8,8 +8,9 @@ import { Slider } from "@/components/ui/slider"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
-import { CreditButton } from "@/app/components/shared/CreditButton"
+
 import { Progress } from "@/components/ui/progress"
+import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
 interface TopicFormProps {
   credits: number,
@@ -203,7 +204,7 @@ function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProp
         </CardContent>
 
         <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
-          <CreditButton
+          <PlanAwareButton
             type="submit"
             label="Generate Quiz"
             onClick={(e) => {
@@ -214,6 +215,7 @@ function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProp
         
             loadingLabel="Generating Quiz..."
             disabled={isDisabled}
+            actionType="fillInTheBlanks"
             className="w-full h-14 text-lg font-medium rounded-lg transition-all
               hover:scale-[1.02] active:scale-[0.98]
               disabled:opacity-50 disabled:cursor-not-allowed

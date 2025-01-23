@@ -19,7 +19,7 @@ import { navItems } from "@/constants/navItems"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import SearchModal from "./SearchModal"
-import { useDebounce } from "@/hooks/useDebounce"
+
 const MobileMenu = () => {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
