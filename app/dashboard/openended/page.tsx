@@ -2,13 +2,15 @@ import { getAuthSession } from "@/lib/authOptions";
 import TopicForm from "./components/TopicForm";
 import RandomQuestions from "./components/RandomQuestions";
 import { getRandomQuestions } from "@/lib/db";
+import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight";
+import { QuizWrapper } from "@/components/QuizWrapper";
 
 export default async function OpenEndedQuizPage() {
   const session = await getAuthSession();
   const credits = session?.user.credits ?? 0;
   const randomQuestions = (await getRandomQuestions()).map(question => ({
     ...question,
-    description: question.description || "No description available"
+    
   }));
 
   return (
@@ -16,10 +18,12 @@ export default async function OpenEndedQuizPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <h1 className="text-3xl font-bold mb-6 text-primary">Generate AI Quiz</h1>
-          <TopicForm credits={credits} />
+          {/* <TopicForm credits={credits} /> */}
+          <QuizWrapper type={"open-ended"} />
         </div>
         <div className="hidden lg:block">
-          <RandomQuestions questions={randomQuestions} />
+          {/* <RandomQuestions questions={randomQuestions} /> */}
+          <AnimatedQuizHighlight />
         </div>
       </div>
     </div>

@@ -3,7 +3,6 @@
 import { memo, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
@@ -11,13 +10,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
 import { CreditButton } from "@/app/components/shared/CreditButton"
 import { Progress } from "@/components/ui/progress"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface TopicFormProps {
-  credits: number
+  credits: number,
+  maxQuestions: number
 }
 
-function FillInTheBlankQuizFormComponent({ credits }: TopicFormProps) {
+function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProps) {
   const [topic, setTopic] = useState("")
   const [questionCount, setQuestionCount] = useState(5)
   const [openInfo, setOpenInfo] = useState(false)
@@ -81,7 +80,7 @@ function FillInTheBlankQuizFormComponent({ credits }: TopicFormProps) {
         <Slider
           id="questionCount"
           min={1}
-          max={10}
+          max={maxQuestions}
           step={1}
           value={[questionCount]}
           onValueChange={(values) => setQuestionCount(values[0])}
@@ -212,7 +211,7 @@ function FillInTheBlankQuizFormComponent({ credits }: TopicFormProps) {
               handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
             }}
             
-            requiredCredits={1}
+        
             loadingLabel="Generating Quiz..."
             disabled={isDisabled}
             className="w-full h-14 text-lg font-medium rounded-lg transition-all

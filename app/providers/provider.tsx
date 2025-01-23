@@ -14,7 +14,7 @@ interface ProvidersProps extends Omit<ThemeProviderProps, 'children'>, Omit<Sess
 export function Providers({ children, session, ...props }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionProvider session={session} refetchInterval={300}>
+      <SessionProvider session={session}>
         {children}
       </SessionProvider>
     </QueryClientProvider>

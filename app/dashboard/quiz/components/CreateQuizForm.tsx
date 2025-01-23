@@ -42,11 +42,12 @@ import { CreditButton } from "@/app/components/shared/CreditButton"
 type QuizFormData = z.infer<typeof quizSchema>
 
 interface Props {
-  isLoggedIn: boolean,
- 
+  isLoggedIn: boolean
+  maxQuestions: number
 }
 
-export default function CreateQuizForm({ isLoggedIn}: Props) {
+
+export default function CreateQuizForm({ isLoggedIn,maxQuestions}: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
@@ -121,7 +122,7 @@ export default function CreateQuizForm({ isLoggedIn}: Props) {
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router])
+  }, [createQuizMutation, watch, toast, router,maxQuestions])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -191,7 +192,7 @@ export default function CreateQuizForm({ isLoggedIn}: Props) {
                   <Slider
                     value={[field.value]}
                     onValueChange={(value) => field.onChange(value[0])}
-                    max={15}
+                    max={maxQuestions}
                     min={1}
                     step={1}
                     className="py-4"
@@ -200,7 +201,7 @@ export default function CreateQuizForm({ isLoggedIn}: Props) {
                 )}
               />
               <p className="text-sm text-muted-foreground text-center">
-                Select between 1 and 15 questions
+                Select between 1 and {maxQuestions} questions
               </p>
             </div>
             {errors.amount && (
@@ -251,8 +252,7 @@ export default function CreateQuizForm({ isLoggedIn}: Props) {
                 disabled={isLoading}
                 className="w-full"
                 label={isLoading ? "Creating..." : (isLoggedIn ? "Create Quiz" : "Sign In to Create")}
-                onClick={handleSubmit(onSubmit)}
-                requiredCredits={session?.user?.credits ?? 0}
+                onClick={handleSubmit(onSubmit)} actionType={"courses"}       
               />
             </motion.div>
             {status !== 'authenticated' && (

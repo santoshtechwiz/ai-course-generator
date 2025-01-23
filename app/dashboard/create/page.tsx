@@ -1,6 +1,7 @@
 import CreateCourseForm from "./components/CreateCourseForm"
 import { getCourseDetails } from "@/lib/db"
 import PopularCourses from "./components/PopularCourses"
+import { QuizWrapper } from "@/components/QuizWrapper"
 
 export const fetchCache = "force-no-store"
 
@@ -13,7 +14,8 @@ const Page = async ({ searchParams }: { searchParams: Promise<{ topic?: string }
       {/* Main Content */}
       <div className="flex-grow p-4 md:p-6">
         <div className="w-full max-w-4xl mx-auto">
-          <CreateCourseForm topic={topic} />
+          {/* <CreateCourseForm topic={topic} /> */}
+          <QuizWrapper type={"course"} />
         </div>
       </div>
 
