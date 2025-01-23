@@ -45,7 +45,7 @@ const initializeTrie = async () => {
     });
 
     courses.forEach((course) => {
-      courseTrie.insert(course.name, course.id);
+      courseTrie.insert(course.name.toLowerCase(), course.id); // Normalize input
     });
 
     console.log('Trie initialized with courses data.');
@@ -78,13 +78,14 @@ export async function GET(request: Request) {
 
   try {
     // Search for matching course IDs using the Trie
-    const courseIds = courseTrie.search(query);
+    const courseIds = courseTrie.search(query.toLowerCase()); // Normalize query
     const courses = courseIds.length
       ? await prisma.course.findMany({
           where: { id: { in: courseIds } },
           select: {
             id: true,
             name: true,
+            description: true,
             slug: true,
           },
         })

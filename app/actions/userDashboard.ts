@@ -193,12 +193,12 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
         ...quiz,
         percentageCorrect:
           quiz.attempts[0]?.score !== undefined && quiz.questions?.length
-            ? (quiz.attempts[0]?.score ?? 0) / (quiz.questions?.length ?? 1) * 100
+            ? (quiz.attempts[0]?.score ?? 0 / quiz.questions.length) * 100
             : 0,
       })) as UserQuiz[],
       courseProgress: user.courseProgress as CourseProgress[],
       favorites: user.favorites as Favorite[],
-      quizAttempts: user.userQuizAttempts as unknown as UserQuizAttempt[],
+      quizAttempts: user.userQuizAttempts as UserQuizAttempt[],
       engagementScore: 0,
       streakDays: 0,
       lastStreakDate: null,
