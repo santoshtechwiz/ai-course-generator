@@ -1,49 +1,61 @@
-import { Inter } from 'next/font/google'
-
-import './globals.css'
-
-import { Metadata } from 'next';
-import { Providers } from './providers/provider';
-import Head from 'next/head';
-
-
+import { Inter } from "next/font/google"
+import "./globals.css"
+import type { Metadata } from "next"
+import { Providers } from "./providers/provider"
+import Script from "next/script"
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-});
+  display: "swap",
+})
+
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://example.com"),
   title: {
-    default: "Course AI",
-    template: "%s | Course AI",
+    default: process.env.NEXT_PUBLIC_SITE_NAME || "Course AI",
+    template: `%s | ${process.env.NEXT_PUBLIC_SITE_NAME || "Course AI"}`,
   },
-  description: "AI-powered course creation and learning platform",
-  keywords: ["AI", "education", "online courses", "learning platform"],
-  authors: [{ name: "Your Name", url: "https://yourwebsite.com" }],
-  creator: "Your Name or Company",
-  metadataBase: new URL("https://your-website-url.com"),
+  description:
+    "Revolutionize your learning experience with our AI-powered course creation and personalized education platform",
+  keywords: [
+    "AI education",
+    "personalized learning",
+    "online courses",
+    "adaptive learning",
+    "course creation",
+    "e-learning platform",
+    "artificial intelligence in education",
+    "smart tutoring",
+    "interactive lessons",
+    "skill development",
+  ],
+  authors: [{ name: process.env.NEXT_PUBLIC_AUTHOR_NAME, url: process.env.NEXT_PUBLIC_AUTHOR_URL }],
+  creator: process.env.NEXT_PUBLIC_CREATOR,
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://your-website-url.com",
-    title: "Course AI",
-    description: "AI-powered course creation and learning platform",
-    siteName: "Course AI",
+    url: process.env.NEXT_PUBLIC_SITE_URL,
+    title: process.env.NEXT_PUBLIC_SITE_NAME,
+    description:
+      "Revolutionize your learning experience with our AI-powered course creation and personalized education platform",
+    siteName: process.env.NEXT_PUBLIC_SITE_NAME,
     images: [
       {
-        url: "https://your-website-url.com/og-image.jpg",
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "Course AI Open Graph Image",
+        alt: `${process.env.NEXT_PUBLIC_SITE_NAME} Open Graph Image`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Course AI",
-    description: "AI-powered course creation and learning platform",
-    images: ["https://your-website-url.com/twitter-image.jpg"],
-    creator: "@yourtwitter",
+    title: process.env.NEXT_PUBLIC_SITE_NAME,
+    description:
+      "Revolutionize your learning experience with our AI-powered course creation and personalized education platform",
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/twitter-image.jpg`],
+    creator: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
   },
   robots: {
     index: true,
@@ -56,7 +68,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-};
+}
 
 export default function RootLayout({
   children,
@@ -64,14 +76,21 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
-      {/* <Head>
-      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lora:wght@400;700&display=swap" rel="stylesheet">
-      </link>
-
-      </Head> */}
+    <html lang="en" className={inter.variable}>
       <body>
         <Providers>{children}</Providers>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
+          `}
+        </Script>
       </body>
     </html>
   )

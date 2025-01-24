@@ -9,6 +9,9 @@ const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // 5 minutes TTL 
 export async function GET(request: Request) {
 
   const userId = (await getAuthSession())?.user.id;
+  if(!userId) {
+    return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+  }
 
   // Check if data is cached
   const cacheKey = `user:${userId}`;

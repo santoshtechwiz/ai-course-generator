@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button"
 import { CalendarIcon } from 'lucide-react'
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
-import { Subscription } from "@/app/types"
+import { UserSubscription } from "@prisma/client"
 
 
-export default function SubscriptionStatus({ subscription }: { subscription: Subscription}) {
+
+export default function SubscriptionStatus({ subscription }: { subscription: UserSubscription}) {
   if (!subscription) {
     return (
       <Card>

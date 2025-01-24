@@ -5,7 +5,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SubscriptionPlanType } from '@/config/subscriptionPlans';
 import SubscriptionPlans from '@/app/dashboard/subscription/components/SubscriptionPlans';
 import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorBoundary } from 'react-error-boundary';
 
 export default async function SubscribePage() {
   const session = await getAuthSession();
@@ -42,15 +41,13 @@ export default async function SubscribePage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-center mb-8">Subscription Plans</h1>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <Suspense fallback={<SubscriptionPlansSkeleton />}>
-          <SubscriptionPlansWrapper 
-            userId={userId} 
-            getSubscriptionData={getSubscriptionData}
-            isProd={isProd}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <Suspense fallback={<SubscriptionPlansSkeleton />}>
+        <SubscriptionPlansWrapper 
+          userId={userId} 
+          getSubscriptionData={getSubscriptionData}
+          isProd={isProd}
+        />
+      </Suspense>
     </div>
   );
 }
@@ -66,26 +63,6 @@ function SubscriptionPlansSkeleton() {
       <Skeleton className="h-[200px] w-full" />
       <Skeleton className="h-[300px] w-full" />
     </div>
-  );
-}
-
-function ErrorFallback({ error, resetErrorBoundary }: { 
-  error: Error, 
-  resetErrorBoundary: () => void 
-}) {
-  return (
-    <Alert variant="destructive">
-      <AlertTitle>An Error Occurred</AlertTitle>
-      <AlertDescription>
-        {error.message}
-        <button 
-          onClick={resetErrorBoundary} 
-          className="ml-4 text-blue-600 underline"
-        >
-          Retry
-        </button>
-      </AlertDescription>
-    </Alert>
   );
 }
 
@@ -105,7 +82,12 @@ async function SubscriptionPlansWrapper({
   const { currentPlan, subscriptionStatus, error } = await getSubscriptionData();
 
   if (error) {
-    throw new Error(error);
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
   }
 
   return (
@@ -116,4 +98,4 @@ async function SubscriptionPlansWrapper({
       isProd={isProd}
     />
   );
-} 
+}

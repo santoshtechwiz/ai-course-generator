@@ -2,52 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 180 20% 96%;
+    --foreground: 180 30% 20%;
+    --card: 180 20% 96%;
+    --card-foreground: 180 30% 20%;
+    --popover: 180 20% 96%;
+    --popover-foreground: 180 30% 20%;
+    --primary: 180 60% 50%;
+    --primary-foreground: 180 90% 98%;
+    --secondary: 120 50% 45%;
+    --secondary-foreground: 120 40% 20%;
+    --muted: 180 15% 88%;
+    --muted-foreground: 180 30% 20%;
+    --accent: 180 15% 88%;
+    --accent-foreground: 60 40% 20%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 10% 95%;
+    --border: 180 20% 85%;
+    --input: 180 20% 85%;
+    --ring: 180 60% 50%;
+    --radius: 0.5rem;
+    --chart-1: 180 60% 50%;
+    --chart-2: 120 50% 45%;
+    --chart-3: 60 60% 55%;
+    --chart-4: 0 70% 55%;
+    --chart-5: 240 60% 50%;
+    
+    --sidebar-background: 180 20% 93%;
+    --sidebar-foreground: 180 30% 31%;
+    --sidebar-primary: 180 60% 38%;
+    --sidebar-primary-foreground: 180 90% 100%;
+    --sidebar-accent: 180 15% 85%;
+    --sidebar-accent-foreground: 60 40% 20%;
+    --sidebar-border: 180 20% 82%;
+    --sidebar-ring: 180 60% 47%;
+  }
 
-:root  {
-  --background: 346.8 100% 95%;
-  --foreground: 346.8 5% 0%;
-  --card: 346.8 50% 90%;
-  --card-foreground: 346.8 5% 10%;
-  --popover: 346.8 100% 95%;
-  --popover-foreground: 346.8 100% 0%;
-  --primary: 346.8 77.2% 49.8%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 346.8 30% 70%;
-  --secondary-foreground: 0 0% 0%;
-  --muted: 308.8 30% 85%;
-  --muted-foreground: 346.8 5% 35%;
-  --accent: 308.8 30% 80%;
-  --accent-foreground: 346.8 5% 10%;
-  --destructive: 0 100% 30%;
-  --destructive-foreground: 346.8 5% 90%;
-  --border: 346.8 30% 50%;
-  --input: 346.8 30% 18%;
-  --ring: 346.8 77.2% 49.8%;
-  --radius: 0.5rem;
-}
-.dark  {
-  --background: 346.8 50% 5%;
-  --foreground: 346.8 5% 90%;
-  --card: 346.8 50% 0%;
-  --card-foreground: 346.8 5% 90%;
-  --popover: 346.8 50% 5%;
-  --popover-foreground: 346.8 5% 90%;
-  --primary: 346.8 77.2% 49.8%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 346.8 30% 10%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 308.8 30% 15%;
-  --muted-foreground: 346.8 5% 60%;
-  --accent: 308.8 30% 15%;
-  --accent-foreground: 346.8 5% 90%;
-  --destructive: 0 100% 30%;
-  --destructive-foreground: 346.8 5% 90%;
-  --border: 346.8 30% 18%;
-  --input: 346.8 30% 18%;
-  --ring: 346.8 77.2% 49.8%;
-  --radius: 0.5rem;
+  .dark {
+    --background: 180 20% 10%;
+    --foreground: 180 60% 85%;
+    --card: 180 20% 10%;
+    --card-foreground: 180 60% 85%;
+    --popover: 180 20% 10%;
+    --popover-foreground: 180 60% 85%;
+    --primary: 180 60% 50%;
+    --primary-foreground: 180 90% 98%;
+    --secondary: 120 50% 30%;
+    --secondary-foreground: 120 60% 85%;
+    --muted: 180 20% 20%;
+    --muted-foreground: 180 40% 60%;
+    --accent: 180 20% 20%;
+    --accent-foreground: 180 60% 85%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 10% 95%;
+    --border: 180 20% 30%;
+    --input: 180 20% 30%;
+    --ring: 180 60% 50%;
+    --radius: 0.5rem;
+    --chart-1: 180 60% 50%;
+    --chart-2: 120 50% 40%;
+    --chart-3: 60 50% 55%;
+    --chart-4: 240 50% 55%;
+    --chart-5: 0 60% 50%;
+    
+    --sidebar-background: 180 20% 2%;
+    --sidebar-foreground: 180 60% 38%;
+    --sidebar-primary: 180 60% 25%;
+    --sidebar-primary-foreground: 180 90% 98%;
+    --sidebar-accent: 180 20% 12%;
+    --sidebar-accent-foreground: 180 60% 85%;
+    --sidebar-border: 180 20% 22%;
+    --sidebar-ring: 180 60% 42%;
+  }
 }
 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
 
 .perspective {
   perspective: 1000px;
@@ -64,22 +103,4 @@
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
 
-/* Ensure footer sticks to bottom */
-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-main {
-  flex: 1;
-}
