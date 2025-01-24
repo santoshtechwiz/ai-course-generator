@@ -146,6 +146,6 @@ export interface CourseDetails{
   totalUnits:number,
   slug:string
 }
-export interface CourseAIErrors{
-  
+export class CourseAIErrors{
+  constructor(public message:string){}
 }
