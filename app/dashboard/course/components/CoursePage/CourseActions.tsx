@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import cn from 'classnames'
+
 import {
   Tooltip,
   TooltipTrigger,
@@ -13,6 +13,7 @@ import { ShieldAlert, Shield, Star, Trash2 } from 'lucide-react'
 import { AlertDialogHeader, AlertDialogFooter } from '@/components/ui/alert-dialog'
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from '@radix-ui/react-alert-dialog'
 import useCourseActions from '@/hooks/useCourseActions'
+import { cn } from '@/lib/utils'
 
 // Updated ActionButton component
 function ActionButton({ 
