@@ -1,14 +1,11 @@
 'use client'
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 
-export default function CanceledPage() {
-  const router = useRouter();
-
+function CanceledPageContent() {
   useEffect(() => {
     // Show toast notification
     toast({
@@ -43,3 +40,10 @@ export default function CanceledPage() {
   );
 }
 
+export default function CanceledPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CanceledPageContent />
+    </Suspense>
+  );
+}
