@@ -88,15 +88,7 @@ function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProp
           className="flex-grow"
           aria-label="Select number of questions"
         />
-        <Input
-          type="number"
-          value={questionCount}
-          onChange={(e) => setQuestionCount(Number(e.target.value))}
-          min={1}
-          max={10}
-          className="w-20 h-10 text-center"
-          aria-label="Number of questions"
-        />
+       
       </div>
     </div>
   )
