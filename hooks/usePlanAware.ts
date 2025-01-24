@@ -3,7 +3,8 @@
 import { useSession } from "next-auth/react"
 import { useSubscription } from "@/hooks/useSubscription"
 import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
-import { useLoading } from "@/app/components/shared/GlobalLoading"
+import { useLoading } from "@/app/providers/LoadingContext"
+
 
 
 export function usePlanAware() {

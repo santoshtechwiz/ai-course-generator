@@ -12,7 +12,7 @@ import Link from "next/link"
 import Image from "next/image"
 import type { CourseProgress as CourseProgressType, UserStats } from "@/app/types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useTrackingContext } from "@/app/providers/TrackingProvider"
+//import { useTrackingContext } from "@/app/providers/TrackingProvider"
 
 interface CourseProgressProps {
   courses: CourseProgressType[]
@@ -21,14 +21,14 @@ interface CourseProgressProps {
 
 export default function CourseProgress({ courses, stats }: CourseProgressProps) {
   const [selectedView, setSelectedView] = useState<"list" | "stats">("list")
-  const { trackInteraction } = useTrackingContext()
+  //const { trackInteraction } = useTrackingContext()
 
-  useEffect(() => {
-    trackInteraction("view", "course_progress", "component", {
-      courseCount: courses.length,
-      completedCourses: courses.filter((course) => course.progress === 100).length,
-    })
-  }, [])
+  // useEffect(() => {
+  //   trackInteraction("view", "course_progress", "component", {
+  //     courseCount: courses.length,
+  //     completedCourses: courses.filter((course) => course.progress === 100).length,
+  //   })
+  // }, [])
 
   if (!courses?.length) {
     return (
