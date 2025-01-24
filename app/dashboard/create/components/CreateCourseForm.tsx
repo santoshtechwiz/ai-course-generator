@@ -227,7 +227,7 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
                 ) : (
                   <PlanAwareButton
                     type="submit"
-                    actionType="courses"
+                    isLoggedIn={!!session}
                     label={
                       isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"
                     }

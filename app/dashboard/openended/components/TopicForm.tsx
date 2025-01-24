@@ -12,15 +12,17 @@ import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
 
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {  PlanAwareButtonWithLoading } from "@/app/components/PlanAwareButton"
+import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
 export const fetchCache = 'force-no-store';
 interface TopicFormProps {
   credits: number,
-  maxQuestions: number
+  maxQuestions: number,
+  subscriptionPlan:any,
+  isLoggedIn: boolean
 }
 
-function TopicFormComponent({ credits,maxQuestions=0 }: TopicFormProps) {
+function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan}: TopicFormProps) {
   const [topic, setTopic] = useState("")
   const [questionCount, setQuestionCount] = useState(maxQuestions)
   const [openInfo, setOpenInfo] = useState(false)
@@ -28,6 +30,7 @@ function TopicFormComponent({ credits,maxQuestions=0 }: TopicFormProps) {
   const [error, setError] = useState("")
   const router = useRouter()
 
+  const isEnabled = true;
   const generateQuiz = useCallback(async () => {
     setIsLoading(true)
     setError("")
@@ -53,7 +56,7 @@ function TopicFormComponent({ credits,maxQuestions=0 }: TopicFormProps) {
     } finally {
       setIsLoading(false)
     }
-  }, [topic, questionCount, router,maxQuestions])
+  }, [topic, questionCount, router, maxQuestions])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
@@ -91,7 +94,7 @@ function TopicFormComponent({ credits,maxQuestions=0 }: TopicFormProps) {
           className="flex-grow"
           aria-label="Select number of questions"
         />
-       
+
       </div>
     </div>
   )
@@ -210,19 +213,20 @@ function TopicFormComponent({ credits,maxQuestions=0 }: TopicFormProps) {
         </CardContent>
 
         <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
-          <PlanAwareButtonWithLoading
-           label="Generate Quiz"
-           actionType="openEnded"
-           onClick={generateQuiz}
-           loadingLabel="Generating Quiz..."
-           isEnabled={!isDisabled}
-           className="w-full h-14 text-lg font-medium rounded-lg transition-all
+        <PlanAwareButton
+            label="Generate Quiz"
+            onClick={generateQuiz}
+            isLoggedIn={isLoggedIn}
+            disabled={isLoading}
+            hasCredits={credits > 0}
+            loadingLabel="Generating..."
+            className="w-full h-14 text-lg font-medium rounded-lg transition-all
              hover:scale-[1.02] active:scale-[0.98]
              disabled:opacity-50 disabled:cursor-not-allowed
              focus:ring-2 focus:ring-primary focus:ring-offset-2"
           />
-       
-      
+
+
         </CardFooter>
       </Card>
     </motion.div>
@@ -233,5 +237,5 @@ export const TopicForm = memo(TopicFormComponent)
 
 
 
- export default TopicForm
+export default TopicForm
 

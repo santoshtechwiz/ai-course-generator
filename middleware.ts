@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
+
 import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
 import { trackServerSideInteraction } from "@/lib/tracking"
 
-const secret = process.env.NEXTAUTH_SECRET
+
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
@@ -50,16 +50,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Check authentication for protected routes
-  const isProtectedRoute = routeConfig.protected.some((route) => pathname.startsWith(route))
-  if (isProtectedRoute) {
-    const session = await getToken({ req, secret })
-    if (!session) {
-      const signInUrl = new URL(routeConfig.authRedirects.signIn, req.url)
-      signInUrl.searchParams.set("callbackUrl", pathname)
-      return NextResponse.redirect(signInUrl)
-    }
-  }
 
   // Track user interaction
   const userId = req.cookies.get("userId")?.value

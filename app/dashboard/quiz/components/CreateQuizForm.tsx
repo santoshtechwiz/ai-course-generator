@@ -43,12 +43,14 @@ import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 type QuizFormData = z.infer<typeof quizSchema>
 
 interface Props {
+  credits: number,
+  
   isLoggedIn: boolean
   maxQuestions: number
 }
 
 
-export default function CreateQuizForm({ isLoggedIn,maxQuestions}: Props) {
+export default function CreateQuizForm({ isLoggedIn,maxQuestions,credits}: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
@@ -250,13 +252,13 @@ export default function CreateQuizForm({ isLoggedIn,maxQuestions}: Props) {
               whileTap={{ scale: 0.98 }}
             >
               <PlanAwareButton
-                type="submit"
+               
                 disabled={isLoading}
-                
+                loadingLabel="Generating..."
+                isLoggedIn={isLoggedIn}
                 className="w-full"
-                label={isLoading ? "Creating..." : (isLoggedIn ? "Create Quiz" : "Sign In to Create")}
-                onClick={handleSubmit(onSubmit)} actionType={"courses"}       
-              />
+                hasCredits={credits > 0}
+                onClick={handleSubmit(onSubmit)} label={"Generating"}              />
             </motion.div>
             {status !== 'authenticated' && (
               <motion.div

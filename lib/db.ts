@@ -1,7 +1,7 @@
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import { getAuthSession } from './authOptions';
-import { Course,  } from '@/app/types';
+import { Course, FullCourseType,  } from '@/app/types';
 
 
 
@@ -508,7 +508,7 @@ export async function clearExpiredSessions() {
 
 
 
-export async function getCourseData(slug: string): Promise<Course | null> {
+export async function getCourseData(slug: string): Promise<FullCourseType | null> {
   const course = await prisma.course.findFirst({
     where: { slug },
     include: {
@@ -555,6 +555,7 @@ export async function getCourseData(slug: string): Promise<Course | null> {
   });
 
   const fullCourse: FullCourseType = {
+    
     ...course,
     courseUnits: course.courseUnits.map(unit => ({
       ...unit,
