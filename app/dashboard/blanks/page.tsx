@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight";
-import FillInTheBlankQuizForm from "../components/BlankQuizForm";
-import { getAuthSession } from "@/lib/authOptions";
+
 import { QuizWrapper } from "@/components/QuizWrapper";
 
 export default async function QuizPage() {
