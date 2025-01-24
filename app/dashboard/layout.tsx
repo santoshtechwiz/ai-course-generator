@@ -8,7 +8,7 @@ import Footer from "../components/shared/Footer";
 import { GlobalLoading, LoadingProvider } from "../components/shared/GlobalLoading";
 import Navbar from "../components/shared/Navbar";
 import { Suspense } from "react";
-import { TrackingProvider } from "../providers/TrackingProvider";
+
 import { useSession } from "next-auth/react";
 import { DebugUserInfo } from "../components/DebugUserInfo";
 import { Providers } from "../providers/provider";
@@ -24,7 +24,7 @@ export default function DashboardLayout({
   return (
     <Providers>
        <LoadingProvider>
-    <TrackingProvider userId={userId}>
+   
       <ThemeProvider
         attribute="class"
         defaultTheme="light"
@@ -55,7 +55,7 @@ export default function DashboardLayout({
           </div>
         </UserProvider>
       </ThemeProvider>
-    </TrackingProvider>
+  
     </LoadingProvider>
     </Providers>
   );
