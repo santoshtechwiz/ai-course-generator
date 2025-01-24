@@ -1,12 +1,16 @@
 "use client"
 
-import React from "react"
+import type React from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Loader2, Lock, CheckCircle, User } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { usePlanAware } from "@/hooks/usePlanAware"
+
+import { LoadingProvider, useLoading } from "../providers/LoadingContext"
+import { GlobalLoading } from "./shared/GlobalLoading"
 
 export interface PlanAwareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string
@@ -24,46 +28,52 @@ export function PlanAwareButton({
   isEnabled = true,
   ...props
 }: PlanAwareButtonProps) {
-  const [isActionLoading, setIsActionLoading] = React.useState(false)
+  const [isActionLoading, setIsActionLoading] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { isAuthenticated, isLoading, currentPlan, subscriptionStatus } = usePlanAware()
+  const { setLoading } = useLoading()
 
-  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    setIsActionLoading(true)
+  const handleClick = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault()
+      setIsActionLoading(true)
+      setLoading(true)
 
-    try {
-      if (!isAuthenticated) {
-        const callbackUrl = encodeURIComponent(pathname || "/")
-        await signIn("credentials", { callbackUrl: `/auth/signin?callbackUrl=${callbackUrl}` })
-        return
+      try {
+        if (!isAuthenticated) {
+          const callbackUrl = encodeURIComponent(pathname || "/")
+          await signIn("credentials", { callbackUrl: `/auth/signin?callbackUrl=${callbackUrl}` })
+          return
+        }
+
+        const currentCount = subscriptionStatus?.[actionType] || 0
+        const limit = currentPlan.limits[actionType]
+
+        if (currentCount >= limit) {
+          router.push("/dashboard/subscription")
+          return
+        }
+
+        if (onClick) {
+          await onClick(e)
+        }
+      } catch (error) {
+        console.error("Error in PlanAwareButton onClick:", error)
+      } finally {
+        setIsActionLoading(false)
+        setLoading(false)
       }
-
-      const currentCount = subscriptionStatus?.[actionType] || 0
-      const limit = currentPlan.limits[actionType]
-
-      if (currentCount >= limit) {
-        router.push("/dashboard/subscription")
-        return
-      }
-
-      if (onClick) {
-        await onClick(e)
-      }
-    } catch (error) {
-      console.error("Error in PlanAwareButton onClick:", error)
-    } finally {
-      setIsActionLoading(false)
-    }
-  }
+    },
+    [isAuthenticated, pathname, subscriptionStatus, actionType, currentPlan.limits, router, onClick, setLoading],
+  )
 
   const currentCount = subscriptionStatus?.[actionType] || 0
   const limit = currentPlan.limits[actionType]
   const isWithinLimit = currentCount < limit
   const isDisabled = isActionLoading || isLoading || !isAuthenticated || !isWithinLimit || !isEnabled
 
-  const getButtonContent = () => {
+  const getButtonContent = useCallback(() => {
     if (isActionLoading) {
       return (
         <>
@@ -75,15 +85,15 @@ export function PlanAwareButton({
     if (!isAuthenticated) return <User className="h-4 w-4 mr-2" />
     if (!isWithinLimit) return <Lock className="h-4 w-4 mr-2" />
     return <CheckCircle className="h-4 w-4 mr-2" />
-  }
+  }, [isActionLoading, loadingLabel, isAuthenticated, isWithinLimit])
 
-  const getTooltipContent = () => {
+  const getTooltipContent = useCallback(() => {
     if (isLoading) return "Loading subscription status..."
     if (!isAuthenticated) return "Sign in to proceed."
     if (!isWithinLimit) return `You've reached the limit for ${actionType} in your current plan.`
     if (!isEnabled) return "This action is currently disabled."
     return ""
-  }
+  }, [isLoading, isAuthenticated, isWithinLimit, actionType, isEnabled])
 
   return (
     <TooltipProvider>
@@ -101,6 +111,14 @@ export function PlanAwareButton({
         )}
       </Tooltip>
     </TooltipProvider>
+  )
+}
+
+export function PlanAwareButtonWithLoading(props: PlanAwareButtonProps) {
+  return (
+    <LoadingProvider>
+      <PlanAwareButton {...props} />
+    </LoadingProvider>
   )
 }
 

@@ -19,12 +19,10 @@ CREATE TABLE "Account" (
 
 -- CreateTable
 CREATE TABLE "Session" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "sessionToken" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "expires" TIMESTAMP(3) NOT NULL,
-    "isAdmin" BOOLEAN NOT NULL DEFAULT false,
-    "lastUsed" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
@@ -38,7 +36,7 @@ CREATE TABLE "User" (
     "image" TEXT,
     "credits" INTEGER NOT NULL DEFAULT 3,
     "isAdmin" BOOLEAN NOT NULL DEFAULT false,
-    "userType" TEXT,
+    "userType" TEXT NOT NULL DEFAULT 'Free',
     "totalCoursesWatched" INTEGER NOT NULL DEFAULT 0,
     "totalQuizzesAttempted" INTEGER NOT NULL DEFAULT 0,
     "totalTimeSpent" INTEGER NOT NULL DEFAULT 0,
@@ -157,7 +155,7 @@ CREATE TABLE "CourseProgress" (
 -- CreateTable
 CREATE TABLE "UserSubscription" (
     "id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "planId" TEXT NOT NULL,
     "status" TEXT NOT NULL,
     "currentPeriodStart" TIMESTAMP(3) NOT NULL,
@@ -371,9 +369,6 @@ CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provi
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
 
 -- CreateIndex
-CREATE INDEX "Session_user_id_idx" ON "Session"("user_id");
-
--- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
@@ -425,7 +420,7 @@ CREATE INDEX "CourseProgress_courseId_idx" ON "CourseProgress"("courseId");
 CREATE UNIQUE INDEX "CourseProgress_user_id_courseId_key" ON "CourseProgress"("user_id", "courseId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserSubscription_user_id_key" ON "UserSubscription"("user_id");
+CREATE UNIQUE INDEX "UserSubscription_userId_key" ON "UserSubscription"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserSubscription_stripeSubscriptionId_key" ON "UserSubscription"("stripeSubscriptionId");
@@ -461,7 +456,7 @@ CREATE INDEX "UserQuizAttempt_userId_idx" ON "UserQuizAttempt"("userId");
 CREATE INDEX "UserQuizAttempt_userQuizId_idx" ON "UserQuizAttempt"("userQuizId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserQuizAttempt_userId_userQuizId_createdAt_key" ON "UserQuizAttempt"("userId", "userQuizId", "createdAt");
+CREATE UNIQUE INDEX "UserQuizAttempt_userId_userQuizId_key" ON "UserQuizAttempt"("userId", "userQuizId");
 
 -- CreateIndex
 CREATE INDEX "UserInteraction_userId_interactionType_idx" ON "UserInteraction"("userId", "interactionType");
@@ -506,13 +501,16 @@ CREATE INDEX "UserQuizAttemptQuestion_attemptId_idx" ON "UserQuizAttemptQuestion
 CREATE INDEX "UserQuizAttemptQuestion_questionId_idx" ON "UserQuizAttemptQuestion"("questionId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "UserQuizAttemptQuestion_attemptId_questionId_key" ON "UserQuizAttemptQuestion"("attemptId", "questionId");
+
+-- CreateIndex
 CREATE INDEX "_CourseToLearningPath_B_index" ON "_CourseToLearningPath"("B");
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Session" ADD CONSTRAINT "Session_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -545,7 +543,7 @@ ALTER TABLE "CourseProgress" ADD CONSTRAINT "CourseProgress_user_id_fkey" FOREIG
 ALTER TABLE "CourseProgress" ADD CONSTRAINT "CourseProgress_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CourseQuiz" ADD CONSTRAINT "CourseQuiz_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;

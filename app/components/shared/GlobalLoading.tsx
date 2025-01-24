@@ -1,59 +1,10 @@
 "use client"
 
 import type React from "react"
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-
 import { cn } from "@/lib/utils"
-import CourseAILoader from "@/app/dashboard/course/components/CourseAILoader"
-interface LoadingContextType {
-  isLoading: boolean
-  setLoading: (isLoading: boolean) => void
-  progress: number
-  setProgress: (progress: number) => void
-}
-
-const LoadingContext = createContext<LoadingContextType | undefined>(undefined)
-
-export const useLoading = () => {
-  const context = useContext(LoadingContext)
-  if (!context) {
-    throw new Error("useLoading must be used within a LoadingProvider")
-  }
-  return context
-}
-
-export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(false)
-  const [progress, setProgress] = useState(0)
-
-  const setLoading = useCallback((loading: boolean) => {
-    setIsLoading(loading)
-    if (loading) {
-      setProgress(0)
-    } else {
-      setProgress(100)
-    }
-  }, [])
-
-  return (
-    <LoadingContext.Provider value={{ isLoading, setLoading, progress, setProgress }}>
-      {children}
-    </LoadingContext.Provider>
-  )
-}
-
-
-interface RouteMessages {
-  [key: string]: string
-}
-
-const routeMessages: RouteMessages = {
-  "/dashboard": "Loading Dashboard...",
-  "/dashboard/quizzes": "Preparing Quizzes...",
-  "/dashboard/courses": "Loading Courses...",
-}
 
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <motion.div
@@ -64,23 +15,90 @@ const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   />
 )
 
+const AIBrain: React.FC = () => {
+  return (
+    <motion.div
+      className="w-32 h-32 relative flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div
+        className="w-24 h-24 bg-primary rounded-full flex items-center justify-center"
+        animate={{
+          y: ["0%", "-10%", "0%"],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Number.POSITIVE_INFINITY,
+          ease: "easeInOut",
+        }}
+      >
+        <motion.div
+          className="w-20 h-20 border-4 border-background rounded-full"
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.7, 1, 0.7],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+      </motion.div>
+      {[...Array(6)].map((_, index) => (
+        <motion.div
+          key={index}
+          className="absolute w-3 h-3 bg-primary/50 rounded-full"
+          animate={{
+            scale: [1, 1.5, 1],
+            opacity: [0.5, 1, 0.5],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Number.POSITIVE_INFINITY,
+            delay: index * 0.3,
+          }}
+          style={{
+            left: `${50 + 45 * Math.cos((index * Math.PI) / 3)}%`,
+            top: `${50 + 45 * Math.sin((index * Math.PI) / 3)}%`,
+          }}
+        />
+      ))}
+    </motion.div>
+  )
+}
+
 export function GlobalLoading(): JSX.Element {
   const pathname = usePathname()
-  const { isLoading, progress, setProgress } = useLoading()
-
-  const loadingMessage = useMemo(() => {
-    const path = pathname || ""
-    return routeMessages[path] || "Loading..."
-  }, [pathname])
+  const [isLoading, setIsLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    if (isLoading && progress < 90) {
-      const timer = setInterval(() => {
-        setProgress((prev) => Math.min(prev + 10, 90))
-      }, 200)
-      return () => clearInterval(timer)
+    setIsLoading(true)
+    setProgress(0)
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(timer)
+          return 100
+        }
+        return Math.min(prev + 10, 100)
+      })
+    }, 100)
+
+    const hideLoader = setTimeout(() => {
+      setIsLoading(false)
+    }, 1500) // Adjust this value to control how long the loader is shown
+
+    return () => {
+      clearInterval(timer)
+      clearTimeout(hideLoader)
     }
-  }, [isLoading, progress, setProgress])
+  }, [pathname])
 
   return (
     <AnimatePresence>
@@ -94,19 +112,34 @@ export function GlobalLoading(): JSX.Element {
         >
           <ProgressBar value={progress} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
+            <AIBrain />
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{
+                duration: 0.5,
+                type: "spring",
+                stiffness: 260,
+                damping: 20,
+              }}
+              className="flex space-x-2"
             >
-              <CourseAILoader />
+              {[0, 1, 2].map((index) => (
+                <motion.div
+                  key={index}
+                  animate={{
+                    y: ["0%", "-50%", "0%"],
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                    delay: index * 0.1,
+                  }}
+                  className="w-3 h-3 bg-primary rounded-full"
+                />
+              ))}
             </motion.div>
-            <motion.p
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-              className="text-sm font-medium text-muted-foreground"
-            >
-              {loadingMessage}
-            </motion.p>
           </div>
         </motion.div>
       )}
