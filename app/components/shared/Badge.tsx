@@ -1,6 +1,9 @@
 import { motion } from 'framer-motion';
-import { BadgeProps } from '../types/quiz-card';
 
+interface BadgeProps {
+  text: string;
+  type: 'difficulty' | 'questions' | 'trending';
+}
 const badgeVariants = {
   initial: { scale: 0.8, opacity: 0 },
   animate: { scale: 1, opacity: 1 },

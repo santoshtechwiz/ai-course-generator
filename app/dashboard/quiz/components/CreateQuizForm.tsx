@@ -52,13 +52,14 @@ export default function CreateQuizForm({ isLoggedIn,maxQuestions}: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
+ 
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
 
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     topic: "",
-    amount: 5,
+    amount: maxQuestions,
     difficulty: "medium",
   })
   const {

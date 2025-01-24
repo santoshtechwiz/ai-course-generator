@@ -9,10 +9,10 @@ import { Slider } from "@/components/ui/slider"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
-import { CreditButton } from "@/app/components/shared/CreditButton"
+
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { PlanAwareButton, PlanAwareButtonWithLoading } from "@/app/components/PlanAwareButton"
+import {  PlanAwareButtonWithLoading } from "@/app/components/PlanAwareButton"
 
 export const fetchCache = 'force-no-store';
 interface TopicFormProps {
@@ -20,9 +20,9 @@ interface TopicFormProps {
   maxQuestions: number
 }
 
-function TopicFormComponent({ credits,maxQuestions }: TopicFormProps) {
+function TopicFormComponent({ credits,maxQuestions=0 }: TopicFormProps) {
   const [topic, setTopic] = useState("")
-  const [questionCount, setQuestionCount] = useState(5)
+  const [questionCount, setQuestionCount] = useState(maxQuestions)
   const [openInfo, setOpenInfo] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -91,15 +91,7 @@ function TopicFormComponent({ credits,maxQuestions }: TopicFormProps) {
           className="flex-grow"
           aria-label="Select number of questions"
         />
-        <Input
-          type="number"
-          value={questionCount}
-          onChange={(e) => setQuestionCount(Number(e.target.value))}
-          min={1}
-          max={maxQuestions}
-          className="w-20 h-10 text-center"
-          aria-label="Number of questions"
-        />
+       
       </div>
     </div>
   )

@@ -30,6 +30,12 @@ export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [])
 
+  useEffect(() => {
+    if (!isLoading) {
+      setProgress(100)
+    }
+  }, [isLoading])
+
   const contextValue = React.useMemo(
     () => ({
       isLoading,
