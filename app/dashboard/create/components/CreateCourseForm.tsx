@@ -154,7 +154,7 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
   return (
     <div className="py-6 px-4 md:py-12 md:px-6 bg-background">
       <div className="max-w-4xl mx-auto">
-        <Card className="dark:bg-gray-800">
+        <Card>
           <SignInBanner isAuthenticated={authStatus === "authenticated"} />
           <CardHeader className="text-center space-y-2 p-4 md:p-6">
             <div className="flex justify-center mb-4">
@@ -163,13 +163,11 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <BookOpen className="w-8 h-8 text-primary" />
+                <BookOpen className="h-8 w-8 text-primary" />
               </motion.div>
             </div>
-            <CardTitle className="text-2xl md:text-3xl font-bold text-foreground">Create a New Course</CardTitle>
-            <CardDescription className="text-base md:text-lg text-muted-foreground">
-              Fill in the details for your new course. Progress is automatically saved.
-            </CardDescription>
+            <CardTitle className="text-2xl font-semibold">Create a New Course</CardTitle>
+            <CardDescription>Fill in the details for your new course. Progress is automatically saved.</CardDescription>
           </CardHeader>
 
           <div className="px-4 md:px-6 mb-6 md:mb-8">
@@ -195,17 +193,17 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
                 </TooltipProvider>
               ))}
             </div>
-            <Progress value={(step / totalSteps) * 100} className="h-2 mt-4" />
+            <Progress value={(step / totalSteps) * 100} className="mt-4" />
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6">
+            <CardContent className="space-y-6">
               {step === 1 && <BasicInfoStep control={control} errors={errors} />}
               {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
               {step === 3 && <PreviewStep watch={watch} />}
             </CardContent>
 
-            <CardFooter className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 pt-4 pb-4 md:pt-6 md:pb-8 px-4 md:px-6 border-t">
+            <CardFooter className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 border-t">
               <Button
                 type="button"
                 variant="outline"

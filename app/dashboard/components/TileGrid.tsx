@@ -106,21 +106,28 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
-        whileHover={{ scale: 1.05 }}
+        whileHover={{ scale: 1.05, boxShadow: "0px 0px 8px rgba(0,0,0,0.2)" }}
         whileTap={{ scale: 0.95 }}
       >
-        <Card className="cursor-pointer h-full" onClick={() => setIsOpen(true)}>
+        <Card
+          className="cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:bg-accent"
+          onClick={() => setIsOpen(true)}
+        >
           <CardHeader>
-            <CardTitle className="flex items-center justify-center">
-              <Icon className="h-8 w-8 mr-2" />
+            <CardTitle className="flex items-center justify-center text-2xl">
+              <motion.div initial={{ rotate: 0 }} animate={{ rotate: 360 }} transition={{ duration: 0.5 }}>
+                <Icon className="h-12 w-12 mr-3 text-primary" />
+              </motion.div>
               {title}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground text-center">{description}</p>
+            <p className="text-lg text-muted-foreground text-center">{description}</p>
           </CardContent>
           <CardFooter className="justify-center">
-            <Badge variant="secondary">Click to explore</Badge>
+            <Badge variant="secondary" className="text-lg py-2 px-4">
+              Click to explore
+            </Badge>
           </CardFooter>
         </Card>
       </motion.div>
@@ -128,8 +135,10 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[90vw] sm:h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center text-3xl">
-              <Icon className="h-8 w-8 mr-2" />
+            <DialogTitle className="flex items-center text-4xl">
+              <motion.div initial={{ rotate: 0 }} animate={{ rotate: 360 }} transition={{ duration: 0.5 }}>
+                <Icon className="h-12 w-12 mr-3 text-primary" />
+              </motion.div>
               {title}
             </DialogTitle>
             <DialogDescription asChild>
@@ -140,7 +149,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.5 }}
-                  className="text-xl italic mt-4"
+                  className="text-2xl italic mt-6"
                 >
                   "{quotes[currentQuote]}"
                 </motion.p>
@@ -153,19 +162,25 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex-grow flex flex-col justify-center items-center text-center"
           >
-            <p className="text-lg mb-8">{description}</p>
+            <p className="text-xl mb-10">{description}</p>
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
             >
-              <Icon className="h-32 w-32 text-primary" />
+              <Icon className="h-40 w-40 text-primary" />
             </motion.div>
           </motion.div>
           <DialogFooter>
-            <Button asChild className="w-full text-lg h-12">
+            <Button asChild className="w-full text-xl h-14">
               <Link href={url}>
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   Start Creating
                 </motion.span>
               </Link>
@@ -179,7 +194,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
 
 export function TileGrid() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl w-full p-6">
       {tiles.map((tile, index) => (
         <Tile key={index} {...tile} index={index} />
       ))}
