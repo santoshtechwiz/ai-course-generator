@@ -1,7 +1,8 @@
-import { FullCourseType } from "@/app/types";
+import { Course } from "@/app/types";
+
 
 interface CourseStructuredDataProps {
-  course: FullCourseType;
+  course: Course;
 }
 
 export default function CourseStructuredData({ course }: CourseStructuredDataProps) {
@@ -19,9 +20,9 @@ export default function CourseStructuredData({ course }: CourseStructuredDataPro
     inLanguage: "en",
     image: course.image || "/default-course-image.jpg",
     courseCode: course.slug,
-    numberOfCredits: course.courseUnits.length,
+    numberOfCredits: course?.courseUnits?.length,
     educationalLevel: "Beginner",
-    teaches: course.courseUnits.map(unit => unit.name).join(", "),
+    teaches: course?.courseUnits?.map(unit => unit.name).join(", "),
   };
 
   return (

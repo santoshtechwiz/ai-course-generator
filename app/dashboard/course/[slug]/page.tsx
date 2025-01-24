@@ -6,7 +6,6 @@ import CourseStructuredData from "../components/CoursePage/CourseStructuredData"
 import { Skeleton } from "@/components/ui/skeleton";
 import CoursePage from "../components/CoursePage/CoursePage";
 
-export const dynamic = "force-dynamic";
 
 function LoadingSkeleton() {
   return (

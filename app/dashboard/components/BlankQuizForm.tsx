@@ -14,10 +14,11 @@ import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
 interface TopicFormProps {
   credits: number,
-  maxQuestions: number
+  maxQuestions: number,
+  isLoggedIn: boolean
 }
 
-function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProps) {
+function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: TopicFormProps) {
   const [topic, setTopic] = useState("")
   const [questionCount, setQuestionCount] = useState(5)
   const [openInfo, setOpenInfo] = useState(false)
@@ -35,7 +36,7 @@ function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProp
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ topic, questionCount,difficulty: "easy" }),
+        body: JSON.stringify({ topic, questionCount, difficulty: "easy" }),
       })
 
       if (!response.ok) {
@@ -88,7 +89,7 @@ function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProp
           className="flex-grow"
           aria-label="Select number of questions"
         />
-       
+
       </div>
     </div>
   )
@@ -101,7 +102,7 @@ function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProp
         <p className="text-xs text-muted-foreground">
           You have <span className="font-bold text-primary">{credits}</span> credits remaining.
         </p>
-        
+
       </CardContent>
     </Card>
   )
@@ -196,23 +197,19 @@ function FillInTheBlankQuizFormComponent({ credits ,maxQuestions}: TopicFormProp
         </CardContent>
 
         <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
+
           <PlanAwareButton
-            type="submit"
-            label="Generate Quiz"
+
+            disabled={isLoading}
+            loadingLabel="Generating..."
+            isLoggedIn={isLoggedIn}
+            className="w-full"
+            hasCredits={credits > 0}
+
             onClick={(e) => {
               e.preventDefault()
               handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
-            }}
-            
-        
-            loadingLabel="Generating Quiz..."
-            disabled={isDisabled}
-            actionType="fillInTheBlanks"
-            className="w-full h-14 text-lg font-medium rounded-lg transition-all
-              hover:scale-[1.02] active:scale-[0.98]
-              disabled:opacity-50 disabled:cursor-not-allowed
-              focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          />
+            } } label={"Generating"} />
         </CardFooter>
       </Card>
     </motion.div>

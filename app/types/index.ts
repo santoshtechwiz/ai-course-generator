@@ -149,3 +149,14 @@ export interface CourseDetails{
 export class CourseAIErrors{
   constructor(public message:string){}
 }
+
+export interface FullChapterType extends Chapter{
+
+  videoId:string
+
+
+}
+
+export interface FullCourseType extends Course{
+
+}

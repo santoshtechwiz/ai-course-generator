@@ -125,7 +125,7 @@ export const AnimatedQuizHighlight: React.FC = () => {
       </CardContent>
       <CardFooter>
         <Button className="w-full" asChild>
-          <Link href="/quizzes">
+          <Link href="/dashboard/quizzes">
             Explore More Quizzes
             <ChevronRight className="ml-2 h-4 w-4" />
           </Link>

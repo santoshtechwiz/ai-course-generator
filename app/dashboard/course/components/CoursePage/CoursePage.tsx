@@ -70,10 +70,10 @@ export default function CoursePage({ course }: CoursePageProps) {
   const hasSetInitialVideo = useRef(false)
 
   const videoQueue = useMemo(() => {
-    return course.courseUnits.flatMap((unit) =>
+    return course.courseUnits?.flatMap((unit) =>
       unit.chapters
         .filter((chapter): chapter is FullChapterType & { videoId: string } => 
-          Boolean(chapter.videoId))
+          'videoId' in chapter && Boolean(chapter.videoId))
         .map((chapter) => ({
           videoId: chapter.videoId,
           chapterId: chapter.id,
