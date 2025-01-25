@@ -21,6 +21,16 @@ export function generateSitemapXml(courses: Course[], quizzes: UserQuiz[]): stri
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+   <url>
+    <loc>${BASE_URL}/dashboard/courses</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+   <url>
+    <loc>${BASE_URL}/dashboard/quizzes</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
   <url>
     <loc>${BASE_URL}/terms</loc>
     <changefreq>monthly</changefreq>

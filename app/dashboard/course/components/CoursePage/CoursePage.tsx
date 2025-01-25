@@ -358,7 +358,7 @@ export default function CoursePage({ course }: CoursePageProps) {
           currentChapter={state.currentChapter}
           currentTime={0}
           onTimeUpdate={(time: number) => {
-            if (state.currentChapter) {
+            if (state.currentChapter && session) {
               throttledUpdateProgress({
                 currentChapterId: Number(state.currentChapter.id),
               })
@@ -379,7 +379,7 @@ export default function CoursePage({ course }: CoursePageProps) {
           isAuthenticated={!!session}
           courseOwnerId={course.userId}
           isSubscribed={isSubscribed}
-      
+
           progress={progress || null}
         />
       </div>
