@@ -5,6 +5,8 @@ import { useEffect } from "react"
 import { useSession } from "next-auth/react"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import type { SubscriptionPlanType } from "@/config/subscriptionPlans"
+import { GlobalLoading } from "../components/shared/GlobalLoading"
+
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
@@ -34,6 +36,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   }, [session, status, setSubscriptionStatus, setIsLoading])
 
-  return <>{children}</>
+  return (
+    <>
+      <GlobalLoading />
+      {children}
+    </>
+  )
 }
 

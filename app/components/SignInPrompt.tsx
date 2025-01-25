@@ -1,10 +1,11 @@
 "use client"
 
-import type React from "react"
-import { motion } from "framer-motion"
+import React, { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { LightbulbIcon, BrainIcon, TrophyIcon } from "lucide-react"
 
 interface SignInPromptProps {
   title?: string
@@ -12,51 +13,102 @@ interface SignInPromptProps {
   callbackUrl?: string
 }
 
+const quotes = [
+  { text: "Knowledge is power. Test yours!", icon: LightbulbIcon },
+  { text: "Challenge your mind, grow your skills.", icon: BrainIcon },
+  { text: "Practice makes perfect. Start now!", icon: TrophyIcon },
+]
+
 export const SignInPrompt: React.FC<SignInPromptProps> = ({
-  title = "Sign In Required",
-  message = "Sign in to view your results and save your progress.",
+  title = "Unlock Your Potential",
+  message = "Sign in to view your results, track progress, and join the community of learners.",
   callbackUrl = "/dashboard",
 }) => {
+  const [currentQuote, setCurrentQuote] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentQuote((prev) => (prev + 1) % quotes.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [])
+
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-      <Card className="max-w-md mx-auto mt-8 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-          <CardTitle className="flex items-center justify-center text-2xl font-bold">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="flex justify-center mb-6">
-            <motion.svg
-              width="100"
-              height="100"
-              viewBox="0 0 100 100"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+    <Card className="w-full max-w-md mx-auto mt-8 overflow-hidden">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <motion.div
+          className="rounded-lg bg-primary/10 p-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentQuote}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="flex items-center space-x-4"
             >
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#6366F1" strokeWidth="4" />
-              <motion.path
-                d="M30 50 L45 65 L70 40"
-                fill="none"
-                stroke="#6366F1"
-                strokeWidth="4"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ delay: 0.5, duration: 0.8, ease: "easeInOut" }}
-              />
-            </motion.svg>
+              {React.createElement(quotes[currentQuote].icon, { className: "h-6 w-6 text-primary" })}
+              <p className="text-sm text-primary font-medium">{quotes[currentQuote].text}</p>
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
           </div>
-          <p className="text-center text-gray-600 dark:text-gray-300 mb-6">{message}</p>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={() => signIn(undefined, { callbackUrl })}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:-translate-y-1"
-            >
-              Sign In
-            </Button>
-          </motion.div>
-        </CardContent>
-      </Card>
-    </motion.div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Why sign in?</span>
+          </div>
+        </div>
+        <ul className="space-y-2 text-sm">
+          <motion.li
+            className="flex items-center"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <svg className="mr-2 h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Track your progress over time
+          </motion.li>
+          <motion.li
+            className="flex items-center"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <svg className="mr-2 h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Compete with friends and peers
+          </motion.li>
+          <motion.li
+            className="flex items-center"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <svg className="mr-2 h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Access exclusive quizzes and content
+          </motion.li>
+        </ul>
+      </CardContent>
+      <CardFooter>
+        <Button className="w-full" onClick={() => signIn(undefined, { callbackUrl })}>
+          Sign In to Continue
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
 

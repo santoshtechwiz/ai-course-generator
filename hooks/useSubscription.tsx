@@ -1,13 +1,20 @@
 "use client"
 
+import { useEffect } from "react"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 export function useSubscription() {
-  const { subscriptionStatus, isLoading } = useSubscriptionStore()
+  const { subscriptionStatus, isLoading, setIsLoading } = useSubscriptionStore()
 
-  if (subscriptionStatus === null && !isLoading) {
-    throw new Error("useSubscription must be used within a SubscriptionProvider")
-  }
+  useEffect(() => {
+    setIsLoading(true)
+    // Simulating an async operation
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [setIsLoading])
 
   return { subscriptionStatus, isLoading }
 }

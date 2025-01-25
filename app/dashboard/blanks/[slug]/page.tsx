@@ -7,10 +7,11 @@ import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
 import { Book, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useSession } from "next-auth/react"
+
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { toast } from "@/hooks/use-toast"
 import QuizResults from "../../openended/components/QuizResults"
+import { useSession } from "next-auth/react"
 
 interface Question {
   id: number
@@ -27,7 +28,8 @@ interface Question {
 interface QuizData {
   id: number
   questions: Question[]
-  topic: string
+  topic: string,
+  userId:string,
 }
 
 export default function Page({ params }: { params: { slug: string } }) {
@@ -39,9 +41,10 @@ export default function Page({ params }: { params: { slug: string } }) {
   const [error, setError] = useState<string | null>(null)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [elapsedTime, setElapsedTime] = useState(0)
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const slug = React.use(params).slug;
+
 
   const fetchQuizData = useCallback(async () => {
     try {
@@ -134,7 +137,7 @@ export default function Page({ params }: { params: { slug: string } }) {
     [isAuthenticated, quizData, slug, answers, elapsedTime],
   )
 
-  if (loading) return <CourseAILoader />
+  // if (loading) return <CourseAILoader />
 
   if (error) {
     return (
@@ -188,7 +191,14 @@ export default function Page({ params }: { params: { slug: string } }) {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <QuizActions quizId={quizData.id.toString()} quizSlug={slug} initialIsPublic={false} initialIsFavorite={false} />
+      <QuizActions 
+        userId={session?.user?.id || ""} 
+        ownerId={quizData.userId}
+        quizId={quizData.id.toString()} 
+        quizSlug={slug} 
+        initialIsPublic={false} 
+        initialIsFavorite={false} 
+      />
       <div className="mb-4 text-center">
         <span className="text-lg font-semibold">
           Question {currentQuestion + 1} of {quizData.questions.length}

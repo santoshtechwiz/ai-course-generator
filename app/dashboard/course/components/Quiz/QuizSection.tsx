@@ -100,15 +100,15 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
     )
   }
 
-  if (isQuizLoading) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="flex flex-col items-center justify-center h-40">
-          <CompactAILoader />
-        </CardContent>
-      </Card>
-    )
-  }
+  // if (isQuizLoading) {
+  //   return (
+  //     <Card className="w-full max-w-4xl mx-auto">
+  //       <CardContent className="flex flex-col items-center justify-center h-40">
+  //         <CompactAILoader />
+  //       </CardContent>
+  //     </Card>
+  //   )
+  // }
 
   if (!questions || questions.length === 0) {
     return (

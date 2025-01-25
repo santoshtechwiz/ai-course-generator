@@ -2,15 +2,20 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <motion.div
-    className="h-1 bg-gradient-to-r from-primary via-secondary to-accent fixed top-0 left-0 right-0 z-[10000]"
-    initial={{ width: 0 }}
-    animate={{ width: `${value}%` }}
+    className="h-2 bg-gradient-to-r from-primary via-secondary to-accent fixed top-0 left-0 right-0 z-[10001]"
+    style={{
+      scaleX: value / 100,
+      transformOrigin: "0%",
+    }}
+    initial={{ scaleX: 0 }}
+    animate={{ scaleX: value / 100 }}
     transition={{ duration: 0.3 }}
   />
 )
@@ -18,16 +23,16 @@ const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
 const AIBrain: React.FC = () => {
   return (
     <motion.div
-      className="w-32 h-32 relative flex items-center justify-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      className="w-40 h-40 relative flex items-center justify-center"
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.5 }}
       transition={{ duration: 0.5 }}
     >
       <motion.div
-        className="w-24 h-24 bg-primary rounded-full flex items-center justify-center"
+        className="w-32 h-32 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center"
         animate={{
-          y: ["0%", "-10%", "0%"],
+          scale: [1, 1.1, 1],
         }}
         transition={{
           duration: 3,
@@ -36,22 +41,33 @@ const AIBrain: React.FC = () => {
         }}
       >
         <motion.div
-          className="w-20 h-20 border-4 border-background rounded-full"
+          className="w-24 h-24 border-4 border-background rounded-full flex items-center justify-center"
           animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.7, 1, 0.7],
+            rotate: 360,
           }}
           transition={{
-            duration: 3,
+            duration: 10,
             repeat: Number.POSITIVE_INFINITY,
-            ease: "easeInOut",
+            ease: "linear",
           }}
-        />
+        >
+          <motion.div
+            className="w-16 h-16 bg-accent rounded-full"
+            animate={{
+              scale: [1, 0.8, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "easeInOut",
+            }}
+          />
+        </motion.div>
       </motion.div>
-      {[...Array(6)].map((_, index) => (
+      {[...Array(8)].map((_, index) => (
         <motion.div
           key={index}
-          className="absolute w-3 h-3 bg-primary/50 rounded-full"
+          className="absolute w-4 h-4 bg-primary/50 rounded-full"
           animate={{
             scale: [1, 1.5, 1],
             opacity: [0.5, 1, 0.5],
@@ -59,11 +75,11 @@ const AIBrain: React.FC = () => {
           transition={{
             duration: 2,
             repeat: Number.POSITIVE_INFINITY,
-            delay: index * 0.3,
+            delay: index * 0.2,
           }}
           style={{
-            left: `${50 + 45 * Math.cos((index * Math.PI) / 3)}%`,
-            top: `${50 + 45 * Math.sin((index * Math.PI) / 3)}%`,
+            left: `${50 + 60 * Math.cos((index * Math.PI) / 4)}%`,
+            top: `${50 + 60 * Math.sin((index * Math.PI) / 4)}%`,
           }}
         />
       ))}
@@ -72,13 +88,21 @@ const AIBrain: React.FC = () => {
 }
 
 export function GlobalLoading(): JSX.Element {
-  const pathname = usePathname()
-  const [isLoading, setIsLoading] = useState(false)
+  const { isLoading: isSubscriptionLoading } = useSubscriptionStore()
+  const [isRouteChanging, setIsRouteChanging] = useState(false)
   const [progress, setProgress] = useState(0)
+  const pathname = usePathname()
+const searchParams = useSearchParams()
 
   useEffect(() => {
-    setIsLoading(true)
-    setProgress(0)
+    const handleStart = () => {
+      setIsRouteChanging(true)
+      setProgress(0)
+    }
+
+    const handleComplete = () => {
+      setIsRouteChanging(false)
+    }
 
     const timer = setInterval(() => {
       setProgress((prev) => {
@@ -90,15 +114,12 @@ export function GlobalLoading(): JSX.Element {
       })
     }, 100)
 
-    const hideLoader = setTimeout(() => {
-      setIsLoading(false)
-    }, 1500) // Adjust this value to control how long the loader is shown
-
     return () => {
       clearInterval(timer)
-      clearTimeout(hideLoader)
     }
-  }, [pathname])
+  }, []) 
+
+  const isLoading = isSubscriptionLoading || isRouteChanging
 
   return (
     <AnimatePresence>
@@ -108,35 +129,39 @@ export function GlobalLoading(): JSX.Element {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className={cn("fixed inset-0 z-[9999]", "bg-background/80 dark:bg-background/90", "backdrop-blur-sm")}
+          className={cn("fixed inset-0 z-[9999]", "bg-background/95 dark:bg-background/95", "backdrop-blur-md")}
         >
           <ProgressBar value={progress} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
             <AIBrain />
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="text-lg font-semibold text-primary mb-4"
+            >
+              Loading...
+            </motion.p>
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{
-                duration: 0.5,
-                type: "spring",
-                stiffness: 260,
-                damping: 20,
-              }}
-              className="flex space-x-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="flex space-x-3"
             >
               {[0, 1, 2].map((index) => (
                 <motion.div
                   key={index}
                   animate={{
-                    y: ["0%", "-50%", "0%"],
+                    scale: [1, 1.5, 1],
+                    opacity: [0.5, 1, 0.5],
                   }}
                   transition={{
-                    duration: 0.6,
+                    duration: 1,
                     repeat: Number.POSITIVE_INFINITY,
                     ease: "easeInOut",
-                    delay: index * 0.1,
+                    delay: index * 0.2,
                   }}
-                  className="w-3 h-3 bg-primary rounded-full"
+                  className="w-4 h-4 bg-primary rounded-full"
                 />
               ))}
             </motion.div>
