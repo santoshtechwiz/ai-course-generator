@@ -150,13 +150,59 @@ export class CourseAIErrors{
   constructor(public message:string){}
 }
 
-export interface FullChapterType extends Chapter{
-
-  videoId:string
-
-
+export interface FullChapterType {
+  id: number;
+  name: string;
+  description?: string;
+  videoId?: string;
+  content?: string;
+  order: number;
+  isPublished: boolean;
+  isFree: boolean;
+  courseUnitId: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface FullCourseType extends Course{
+export interface CourseUnitType {
+  id: number;
+  name: string;
+  order: number;
+  courseId: number;
+  chapters: FullChapterType[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+export interface FullCourseType {
+  id: number;
+  name: string;
+  description: string;
+  imageUrl?: string;
+  price: number;
+  isPublished: boolean;
+  categoryId?: number;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  courseUnits?: CourseUnitType[];
+  slug?: string;
+}
+export type Question = {
+  id: number;
+  question: string;
+  answer: string;
+  option1: string;
+  option2: string;
+  option3: string;
+}
+
+export interface QuizCardProps {
+  title: string;
+  questionCount: number;
+  isTrending: boolean;
+  slug: string;
+  quizType: string;
+  estimatedTime?: string;
+  description: string;
 }

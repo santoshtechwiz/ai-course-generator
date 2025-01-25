@@ -9,7 +9,18 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { QuizCardProps } from "@/app/types"
-
+function getQuizTypeRoute(quizType: string): string {
+  switch (quizType) {
+    case "mcq":
+      return "mcq"
+    case "open-ended":
+      return "openended"
+    case "fill-blanks":
+      return "blanks"
+    default:
+      return "quiz"
+  }
+}
 const QuizCard: React.FC<QuizCardProps> = ({
   title,
   questionCount,
@@ -166,7 +177,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
           <Button
             className="w-full group relative overflow-hidden"
             size="lg"
-            onClick={() => router.push(`/dashboard/${quizType === "mcq" ? "mcq" : "openended"}/${slug}`)}
+            onClick={() => router.push(`/dashboard/${getQuizTypeRoute(quizType)}/${slug}`)}
           >
             <motion.span
               initial={{ x: 0 }}

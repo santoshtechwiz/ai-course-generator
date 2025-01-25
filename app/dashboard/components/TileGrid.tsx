@@ -53,19 +53,7 @@ const tiles = [
       "Explore the depths of knowledge with open-ended prompts.",
     ],
   },
-  {
-    icon: BookOpen,
-    title: "Course",
-    description: "Build comprehensive courses with multiple lessons and content types.",
-    url: "/dashboard/create",
-    quotes: [
-      "Why not create your own course?",
-      "Share your expertise through an engaging course!",
-      "Design a learning journey that inspires and educates.",
-      "Transform your knowledge into a structured learning experience.",
-      "Craft a course that leaves a lasting impact on learners.",
-    ],
-  },
+
   {
     icon: AlignLeft,
     title: "Fill in the Blanks",
@@ -77,6 +65,19 @@ const tiles = [
       "Create exercises that make learning interactive and fun.",
       "Bridge the gaps in knowledge with clever fill-in-the-blank questions.",
       "Enhance vocabulary and comprehension through interactive exercises.",
+    ],
+  },
+  {
+    icon: BookOpen,
+    title: "Course",
+    description: "Build comprehensive courses with multiple lessons and content types.",
+    url: "/dashboard/create",
+    quotes: [
+      "Why not create your own course?",
+      "Share your expertise through an engaging course!",
+      "Design a learning journey that inspires and educates.",
+      "Transform your knowledge into a structured learning experience.",
+      "Craft a course that leaves a lasting impact on learners.",
     ],
   },
 ]

@@ -1,37 +1,37 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, XCircle, ArrowRight, RefreshCcw, AlertTriangle, Trophy, Timer, HelpCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import confetti from 'canvas-confetti'
-import { toast } from '@/hooks/use-toast'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { CheckCircle2, XCircle, ArrowRight, RefreshCcw, AlertTriangle, Trophy, Timer, HelpCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
+import confetti from "canvas-confetti"
+import { toast } from "@/hooks/use-toast"
+import { useSession, signIn } from "next-auth/react"
+import { SignInPrompt } from "@/app/components/SignInPrompt"
 
 type Question = {
-  id: number;
-  question: string;
-  answer: string;
-  option1: string;
-  option2: string;
-  option3: string;
+  id: number
+  question: string
+  answer: string
+  option1: string
+  option2: string
+  option3: string
 }
 
 interface PlayQuizProps {
   questions: Question[]
-  quizId: number,
-  slug:string
+  quizId: number
+  slug: string
 }
 
-export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
+export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
   const [score, setScore] = useState(0)
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [uniqueOptions, setUniqueOptions] = useState<string[]>([])
@@ -39,64 +39,83 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
   const [timeSpent, setTimeSpent] = useState(0)
   const [userAnswers, setUserAnswers] = useState<string[]>([])
   const [questionTimes, setQuestionTimes] = useState<number[]>([])
-  const [showSkipDialog, setShowSkipDialog] = useState(false)
+  const [startTime] = useState<number>(Date.now())
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === "authenticated"
 
   const currentQuestion = questions[currentQuestionIndex]
-  const [startTime] = useState<number>(Date.now());
 
   const handleQuizCompletion = async () => {
-    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const duration = Math.floor((Date.now() - startTime) / 1000)
 
-    // Ensure the last answer is recorded
-    const currentTime = timeSpent - questionTimes.reduce((a, b) => a + b, 0);
-    const finalUserAnswers = [...userAnswers, selectedAnswer || ''];
-    const finalQuestionTimes = [...questionTimes, currentTime];
+    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
+    const finalUserAnswers = [...userAnswers, selectedAnswer || ""]
+    const finalQuestionTimes = [...questionTimes, currentTime]
 
-    setQuizCompleted(true);
+    setQuizCompleted(true)
     confetti({
       particleCount: 100,
       spread: 70,
-      origin: { y: 0.6 }
-    });
+      origin: { y: 0.6 },
+    })
 
-    try {
-      const answers = questions.map((q, index) => ({
+    const quizData = {
+      quizId,
+      score,
+      duration,
+      answers: questions.map((q, index) => ({
         questionId: q.id,
-        userAnswer: finalUserAnswers[index] || '',
+        userAnswer: finalUserAnswers[index] || "",
         isCorrect: finalUserAnswers[index] === q.answer,
         timeSpent: finalQuestionTimes[index] || 0,
-      }));
-
-      const response = await fetch(`/api/quiz/${slug}/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ quizId, score, duration, answers }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        toast({
-          title: "Quiz score updated",
-          description: "Your quiz score has been successfully recorded.",
-        });
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error) {
-      console.error('Failed to update quiz score:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update quiz score. Please try again.",
-        variant: "destructive",
-      });
+      })),
     }
-  };
+
+    if (isAuthenticated) {
+      try {
+        const response = await fetch(`/api/quiz/${slug}/complete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(quizData),
+        })
+        const result = await response.json()
+        if (result.success) {
+          toast({
+            title: "Quiz score updated",
+            description: "Your quiz score has been successfully recorded.",
+          })
+        } else {
+          throw new Error(result.error)
+        }
+      } catch (error) {
+        console.error("Failed to update quiz score:", error)
+        toast({
+          title: "Error",
+          description: "Failed to update quiz score. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } else {
+      localStorage.setItem(
+        "quizResults",
+        JSON.stringify({
+          slug,
+          score,
+          quizCompleted: true,
+          timeSpent,
+          userAnswers,
+          questionTimes,
+        }),
+      )
+    }
+  }
 
   useEffect(() => {
     const timer = setInterval(() => {
       if (!quizCompleted) {
-        setTimeSpent(prev => prev + 1)
+        setTimeSpent((prev) => prev + 1)
       }
     }, 1000)
 
@@ -109,8 +128,8 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
         currentQuestion.answer,
         currentQuestion.option1,
         currentQuestion.option2,
-        currentQuestion.option3
-      ].filter(Boolean) // Remove any falsy values (empty strings, null, undefined)
+        currentQuestion.option3,
+      ].filter(Boolean)
 
       const uniqueOptionsSet = new Set(allOptions)
 
@@ -124,7 +143,7 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
           "None of the above",
           "All of the above",
           "Not enough information",
-          "Cannot be determined"
+          "Cannot be determined",
         ]
 
         let i = 0
@@ -140,41 +159,28 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
     }
 
     setSelectedAnswer(null)
-    setIsCorrect(null)
-  }, [currentQuestionIndex, currentQuestion])
-
-  const checkAnswer = () => {
-    if (selectedAnswer === currentQuestion.answer) {
-      setIsCorrect(true)
-      setScore(prevScore => prevScore + 1)
-    } else {
-      setIsCorrect(false)
-    }
-  }
+  }, [currentQuestion]) //Corrected dependency
 
   const nextQuestion = () => {
-    const currentTime = timeSpent - questionTimes.reduce((a, b) => a + b, 0);
-    setUserAnswers(prev => [...prev, selectedAnswer || '']);
-    setQuestionTimes(prev => [...prev, currentTime]);
+    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
+    setUserAnswers((prev) => [...prev, selectedAnswer || ""])
+    setQuestionTimes((prev) => [...prev, currentTime])
+
+    if (selectedAnswer === currentQuestion.answer) {
+      setScore((prevScore) => prevScore + 1)
+    }
 
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prevIndex => prevIndex + 1);
-      setSelectedAnswer(null);
-      setIsCorrect(null);
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
+      setSelectedAnswer(null)
     } else {
-      handleQuizCompletion();
+      handleQuizCompletion()
     }
-  }
-
-  const skipQuestion = () => {
-    setShowSkipDialog(false);
-    nextQuestion();
   }
 
   const resetQuiz = () => {
     setCurrentQuestionIndex(0)
     setSelectedAnswer(null)
-    setIsCorrect(null)
     setScore(0)
     setQuizCompleted(false)
     setHasError(false)
@@ -186,7 +192,7 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
   }
 
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
@@ -208,14 +214,36 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
     )
   }
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      const savedResults = localStorage.getItem("quizResults")
+      if (savedResults) {
+        const {
+          slug: savedSlug,
+          score: savedScore,
+          quizCompleted: savedQuizCompleted,
+          timeSpent: savedTimeSpent,
+          userAnswers: savedUserAnswers,
+          questionTimes: savedQuestionTimes,
+        } = JSON.parse(savedResults)
+        if (savedSlug === slug) {
+          setScore(savedScore)
+          setQuizCompleted(savedQuizCompleted)
+          setTimeSpent(savedTimeSpent)
+          setUserAnswers(savedUserAnswers)
+          setQuestionTimes(savedQuestionTimes)
+          localStorage.removeItem("quizResults")
+        }
+      }
+    }
+  }, [isAuthenticated, slug])
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-[95%] md:max-w-3xl shadow-xl border-0">
         <CardHeader className="space-y-4 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <CardTitle className="text-xl sm:text-2xl font-bold">
-              Interactive Quiz Challenge
-            </CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold">Interactive Quiz Challenge</CardTitle>
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Timer className="w-4 h-4" />
               {formatTime(timeSpent)}
@@ -225,7 +253,9 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
             <Progress value={progress} className="h-2" />
             <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
               <span>Progress: {Math.round(progress)}%</span>
-              <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+              <span>
+                Question {currentQuestionIndex + 1} of {questions.length}
+              </span>
             </div>
           </div>
         </CardHeader>
@@ -243,9 +273,7 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                    <h2 className="text-lg sm:text-xl font-semibold">
-                      {currentQuestion?.question}
-                    </h2>
+                    <h2 className="text-lg sm:text-xl font-semibold">{currentQuestion?.question}</h2>
                   </div>
                   <RadioGroup
                     onValueChange={(value) => setSelectedAnswer(value)}
@@ -265,8 +293,6 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
                             "hover:bg-muted",
                             "border-2 border-transparent",
                             selectedAnswer === option && "border-primary",
-                            isCorrect !== null && option === currentQuestion.answer && "bg-green-100 dark:bg-green-900/20 border-green-500",
-                            isCorrect === false && option === selectedAnswer && "bg-red-100 dark:bg-red-900/20 border-red-500"
                           )}
                         >
                           <RadioGroupItem value={option} id={`option-${index}`} />
@@ -281,36 +307,6 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
                     ))}
                   </RadioGroup>
                 </div>
-                <AnimatePresence>
-                  {isCorrect !== null && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className={cn(
-                        "p-4 rounded-lg",
-                        isCorrect ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"
-                      )}
-                    >
-                      {isCorrect ? (
-                        <p className="text-green-600 dark:text-green-400 flex items-center font-medium">
-                          <CheckCircle2 className="mr-2" />
-                          Excellent! That's the correct answer.
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          <p className="text-red-600 dark:text-red-400 flex items-center font-medium">
-                            <XCircle className="mr-2" />
-                            Not quite right.
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
-                            The correct answer is: {currentQuestion.answer}
-                          </p>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </motion.div>
             ) : (
               <motion.div
@@ -320,74 +316,40 @@ export default function PlayQuiz({ questions, quizId,slug }: PlayQuizProps) {
               >
                 <Trophy className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-yellow-500" />
                 <div className="space-y-2">
-                  <h2 className="text-xl sm:text-2xl font-bold">
-                    Quiz Completed!
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Time taken: {formatTime(timeSpent)}
-                  </p>
+                  <h2 className="text-xl sm:text-2xl font-bold">Quiz Completed!</h2>
+                  <p className="text-muted-foreground">Time taken: {formatTime(timeSpent)}</p>
                 </div>
-                <div className="bg-muted rounded-lg p-4 sm:p-6 space-y-4">
-                  <div className="text-3xl sm:text-4xl font-bold">
-                    {Math.round((score / questions.length) * 100)}%
-                  </div>
-                  <p className="text-muted-foreground">
-                    You got {score} out of {questions.length} questions correct
-                  </p>
-                </div>
-                <Button
-                  onClick={resetQuiz}
-                  className="w-full sm:w-auto"
-                >
-                  <RefreshCcw className="mr-2 h-4 w-4" />
-                  Retake Quiz
-                </Button>
+                {isAuthenticated ? (
+                  <>
+                    <div className="bg-muted rounded-lg p-4 sm:p-6 space-y-4">
+                      <div className="text-3xl sm:text-4xl font-bold">
+                        {Math.round((score / questions.length) * 100)}%
+                      </div>
+                      <p className="text-muted-foreground">
+                        You got {score} out of {questions.length} questions correct
+                      </p>
+                    </div>
+                    <Button onClick={resetQuiz} className="w-full sm:w-auto">
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                      Retake Quiz
+                    </Button>
+                  </>
+                ) : (
+                  <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </CardContent>
         {!quizCompleted && (
-          <CardFooter className="flex flex-col sm:flex-row justify-between gap-4 border-t pt-6">
-            <Button
-              onClick={checkAnswer}
-              disabled={!selectedAnswer || isCorrect !== null}
-              className="w-full sm:w-auto"
-            >
-              Check Answer
+          <CardFooter className="flex justify-end gap-4 border-t pt-6">
+            <Button onClick={nextQuestion} disabled={!selectedAnswer} className="w-full sm:w-auto">
+              {currentQuestionIndex === questions.length - 1 ? "Finish Quiz" : "Next Question"}
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                onClick={() => setShowSkipDialog(true)}
-                variant="outline"
-                className="w-full sm:w-auto"
-                disabled={isCorrect !== null}
-              >
-                Skip
-              </Button>
-              <Button
-                onClick={nextQuestion}
-                disabled={isCorrect === null}
-                className="w-full sm:w-auto"
-              >
-                {currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
           </CardFooter>
         )}
       </Card>
-      <Dialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Skip Question</DialogTitle>
-          </DialogHeader>
-          <p>Are you sure you want to skip this question? You won't be able to come back to it later.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSkipDialog(false)}>Cancel</Button>
-            <Button onClick={skipQuestion}>Skip Question</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

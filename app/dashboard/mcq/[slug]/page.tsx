@@ -9,15 +9,9 @@ import PlayQuiz from "../components/PlayQuiz"
 import { QuizActions } from "../components/QuizActions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Question } from "@/app/types"
 
-type Question = {
-  id: string
-  question: string
-  answer: string
-  option1: string
-  option2: string
-  option3: string
-}
+
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await props.params

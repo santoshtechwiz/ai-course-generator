@@ -45,7 +45,7 @@ const initializeTrie = async () => {
     });
 
     courses.forEach((course) => {
-      courseTrie.insert(course.name.toLowerCase(), course.id); // Normalize input
+      courseTrie.insert(course.name.toLowerCase(), course.id);
     });
 
     console.log('Trie initialized with courses data.');
@@ -77,44 +77,79 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Search for matching course IDs using the Trie
-    const courseIds = courseTrie.search(query.toLowerCase()); // Normalize query
-    const courses = courseIds.length
-      ? await prisma.course.findMany({
-          where: { id: { in: courseIds } },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            slug: true,
-          },
-        })
-      : [];
+    // Search for matching courses using the Trie and additional fields
+    const courseIds = courseTrie.search(query.toLowerCase());
+    const courses = await prisma.course.findMany({
+      where: {
+        OR: [
+          { id: { in: courseIds } },
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        slug: true,
+      },
+    });
 
     // Search games in the database
     const games = await prisma.userQuiz.findMany({
       where: {
-        questions: {
-          some: {
-            OR: [
-              { question: { contains: query, mode: 'insensitive' } },
-              { answer: { contains: query, mode: 'insensitive' } },
-            ],
-          },
-        },
+        OR: [
+          { topic: { contains: query, mode: 'insensitive' } },
+          { questions: {
+            some: {
+              OR: [
+                { question: { contains: query, mode: 'insensitive' } },
+                { answer: { contains: query, mode: 'insensitive' } },
+              ],
+            },
+          }},
+        ],
       },
       select: {
         id: true,
         topic: true,
+        questions: {
+          select: {
+            question: true,
+            answer: true,
+          },
+          take: 1,
+        },
       },
     });
 
-    return NextResponse.json({ courses, games });
+    // Process game results to include a question preview
+    const processedGames = games.map(game => ({
+      id: game.id,
+      topic: game.topic,
+      questionPreview: game.questions[0]?.question || null,
+      quizType: determineQuizType(game),
+    }));
+
+    return NextResponse.json({ courses, games: processedGames });
   } catch (error) {
     console.error('Search error:', error);
     return NextResponse.json(
       { error: 'An error occurred while searching' },
       { status: 500 }
     );
+  }
+}
+
+function determineQuizType(game: any): "mcq" | "open-ended" | "fill-blanks" {
+  // This is a placeholder implementation. You should implement the logic
+  // to determine the quiz type based on your game structure.
+  if (game.questions[0]?.choices) {
+    return "mcq";
+  } else if (game.questions[0]?.blanks) {
+    return "fill-blanks";
+  } else {
+    return "open-ended";
   }
 }

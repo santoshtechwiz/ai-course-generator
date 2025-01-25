@@ -28,7 +28,7 @@ export default function RandomQuestions({ questions }: RandomQuestionsProps) {
           key={question.slug}
           title={question.topic}
           description={question.description}
-          difficulty="Easy"
+         
           questionCount={question.count}
           isTrending={true}
           slug={question.slug}
