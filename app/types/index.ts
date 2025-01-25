@@ -18,7 +18,8 @@ export interface Course {
   description: string | null
   image: string
   slug: string | null
-  courseUnits?: CourseUnit[]
+  courseUnits?: CourseUnit[],
+  createdAt: Date
   category?: {
     id: number
     name: string
@@ -53,6 +54,7 @@ export interface UserQuiz {
   topic: string
   slug: string
   timeStarted: Date
+  createdAt: Date
   timeEnded: Date | null
   quizType: string
   questions: { id: number }[]

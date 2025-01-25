@@ -2,10 +2,11 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+
+import { useApiLoading } from "@/hooks/useApiLoading"
 
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <motion.div
@@ -91,18 +92,21 @@ export function GlobalLoading(): JSX.Element {
   const { isLoading: isSubscriptionLoading } = useSubscriptionStore()
   const [isRouteChanging, setIsRouteChanging] = useState(false)
   const [progress, setProgress] = useState(0)
-
+  const isApiLoading = useApiLoading()
+  //const pathname = usePathname()
+  //const searchParams = useSearchParams()
 
   useEffect(() => {
-    const handleStart = () => {
-      setIsRouteChanging(true)
-      setProgress(0)
-    }
-
-    const handleComplete = () => {
+    setIsRouteChanging(true)
+    setProgress(0)
+    const timer = setTimeout(() => {
       setIsRouteChanging(false)
-    }
+    }, 500) // Adjust this delay as needed
 
+    return () => clearTimeout(timer)
+  }, [isApiLoading]) // Removed unnecessary dependencies: pathname, searchParams
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -116,9 +120,9 @@ export function GlobalLoading(): JSX.Element {
     return () => {
       clearInterval(timer)
     }
-  }, []) 
+  }, [isRouteChanging, isApiLoading])
 
-  const isLoading = isSubscriptionLoading || isRouteChanging
+  const isLoading = isSubscriptionLoading || isRouteChanging || isApiLoading
 
   return (
     <AnimatePresence>
