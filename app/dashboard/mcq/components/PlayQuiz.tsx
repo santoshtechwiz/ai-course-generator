@@ -13,6 +13,7 @@ import confetti from "canvas-confetti"
 import { toast } from "@/hooks/use-toast"
 import { useSession, signIn } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
+import axios from "axios"
 
 type Question = {
   id: number
@@ -59,10 +60,13 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
       origin: { y: 0.6 },
     })
 
+    const finalScore = finalUserAnswers.filter((answer, index) => answer === questions[index].answer).length
+    setScore(finalScore)
+
     const quizData = {
       quizId,
-      score,
-      duration,
+      score: finalScore,
+      totalTime:duration,
       answers: questions.map((q, index) => ({
         questionId: q.id,
         userAnswer: finalUserAnswers[index] || "",
@@ -71,23 +75,18 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
       })),
     }
 
+    console.log("Quiz data:", quizData)
     if (isAuthenticated) {
       try {
-        const response = await fetch(`/api/quiz/${slug}/complete`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(quizData),
-        })
-        const result = await response.json()
-        if (result.success) {
+        const response = await axios.post(`/api/quiz/${slug}/complete`, quizData)
+        console.log("Quiz results saved:", response.data)
+        if (response.data.success) {
           toast({
             title: "Quiz score updated",
             description: "Your quiz score has been successfully recorded.",
           })
         } else {
-          throw new Error(result.error)
+          throw new Error(response.data.error)
         }
       } catch (error) {
         console.error("Failed to update quiz score:", error)
@@ -102,11 +101,11 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
         "quizResults",
         JSON.stringify({
           slug,
-          score,
+          score: finalScore,
           quizCompleted: true,
           timeSpent,
-          userAnswers,
-          questionTimes,
+          userAnswers: finalUserAnswers,
+          questionTimes: finalQuestionTimes,
         }),
       )
     }
@@ -159,7 +158,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     }
 
     setSelectedAnswer(null)
-  }, [currentQuestion]) //Corrected dependency
+  }, [currentQuestion])
 
   const nextQuestion = () => {
     const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)

@@ -1,15 +1,16 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { QuizActions } from "../../mcq/components/QuizActions"
 import CourseAILoader from "../../course/components/CourseAILoader"
-import QuizResults from "../../openended/components/QuizResults"
 import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
-import { Book, AlertCircle, CheckCircle, RefreshCw } from "lucide-react"
+import { Book, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useSession, signIn } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
+import { toast } from "@/hooks/use-toast"
+import QuizResults from "../../openended/components/QuizResults"
 
 interface Question {
   id: number
@@ -36,144 +37,104 @@ export default function Page({ params }: { params: { slug: string } }) {
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [startTime, setStartTime] = useState<number | null>(null)
+  const [startTime, setStartTime] = useState<number>(Date.now())
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [finalScore, setFinalScore] = useState<number | null>(null)
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const isAuthenticated = status === "authenticated"
-  const slug = React.use(params).slug
+  const slug = React.use(params).slug;
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout
-    if (startTime && !quizCompleted) {
-      timer = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
-      }, 1000)
+  const fetchQuizData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/oquiz/${slug}`)
+      if (!response.ok) throw new Error("Failed to fetch quiz data")
+      const data: QuizData = await response.json()
+      setQuizData(data)
+      setError(null)
+    } catch (error) {
+      console.error("Error fetching quiz data:", error)
+      setError("Failed to load quiz data. Please try again later.")
+    } finally {
+      setLoading(false)
     }
-    return () => clearInterval(timer)
-  }, [startTime, quizCompleted])
-
-  useEffect(() => {
-    const fetchQuizData = async () => {
-      try {
-        const response = await fetch(`/api/oquiz/${slug}`)
-        if (!response.ok) {
-          throw new Error("Failed to fetch quiz data")
-        }
-        const data: QuizData = await response.json()
-        const quizDataWithDefaults = {
-          ...data,
-          questions: data.questions.map((question: Question) => ({
-            ...question,
-            openEndedQuestion: {
-              ...question.openEndedQuestion,
-              inputType: question.openEndedQuestion.inputType || "fill-in-the-blanks",
-              hints: question.openEndedQuestion.hints || [],
-              tags: question.openEndedQuestion.tags || [],
-            },
-          })),
-        }
-        setQuizData(quizDataWithDefaults)
-        setStartTime(Date.now())
-        setError(null)
-      } catch (error) {
-        console.error("Error fetching quiz data:", error)
-        setError("Failed to load quiz data. Please try again later.")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchQuizData()
   }, [slug])
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const savedResults = localStorage.getItem("quizResults")
-      if (savedResults) {
-        const { slug: savedSlug, answers: savedAnswers, score, totalTime } = JSON.parse(savedResults)
-        if (savedSlug === slug) {
-          setAnswers(savedAnswers)
+    fetchQuizData()
+  }, [fetchQuizData])
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (!quizCompleted) {
+      timer = setInterval(() => {
+        setElapsedTime((prevTime) => prevTime + 1)
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [quizCompleted])
+
+  const handleAnswer = useCallback(
+    (answer: string) => {
+      setAnswers((prevAnswers) => [...prevAnswers, { answer, timeSpent: elapsedTime, hintsUsed: false }])
+
+      setCurrentQuestion((prevQuestion) => {
+        if (quizData && prevQuestion < quizData.questions.length - 1) {
+          return prevQuestion + 1
+        } else {
           setQuizCompleted(true)
-          setFinalScore(score)
-          setElapsedTime(totalTime)
-          localStorage.removeItem("quizResults")
+          return prevQuestion
         }
-      }
-    }
-  }, [isAuthenticated, slug])
+      })
 
-  const handleAnswer = async (answer: string) => {
-    if (!quizData) return
-
-    const newAnswers = [...answers]
-    newAnswers[currentQuestion] = { answer, timeSpent: elapsedTime, hintsUsed: false }
-    setAnswers(newAnswers)
-
-    if (currentQuestion < quizData.questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
-      setStartTime(Date.now())
       setElapsedTime(0)
-    } else {
-      setQuizCompleted(true)
-      if (isAuthenticated) {
-        await updateScore(slug, newAnswers, elapsedTime, setError)
-      } else {
-        // Save data to local storage for anonymous users
-        localStorage.setItem(
-          "quizResults",
-          JSON.stringify({
-            slug,
-            answers: newAnswers,
-            totalTime: elapsedTime,
-          }),
-        )
-      }
-    }
-  }
+    },
+    [elapsedTime, quizData],
+  )
 
-  const handleRestart = () => {
-    const confirmRestart = window.confirm("Are you sure you want to restart the quiz?")
-    if (confirmRestart) {
+  const handleRestart = useCallback(() => {
+    if (window.confirm("Are you sure you want to restart the quiz?")) {
       setCurrentQuestion(0)
       setAnswers([])
       setQuizCompleted(false)
       setStartTime(Date.now())
       setElapsedTime(0)
-      setError(null)
-      setFinalScore(null)
     }
-  }
+  }, [])
 
-  const handleComplete = async (score: number) => {
-    setFinalScore(score)
-    if (!isAuthenticated) {
-      const savedResults = localStorage.getItem("quizResults")
-      if (savedResults) {
-        const { slug: savedSlug, answers: savedAnswers, totalTime } = JSON.parse(savedResults)
-        if (savedSlug === slug) {
-          localStorage.setItem(
-            "quizResults",
-            JSON.stringify({
-              ...JSON.parse(savedResults),
+  const handleComplete = useCallback(
+    async (score: number) => {
+      if (isAuthenticated && quizData) {
+        try {
+          const response = await fetch(`/api/quiz/${slug}/complete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              quizId: quizData.id,
+              answers,
+              totalTime: elapsedTime,
               score,
+              type: "fill-in-the-blank",
             }),
-          )
+          })
+          if (!response.ok) throw new Error("Failed to update score")
+          toast({
+            title: "Quiz Completed",
+            description: `Your score: ${score.toFixed(1)}%`,
+            variant: "success",
+          })
+        } catch (error) {
+          console.error("Error saving quiz results:", error)
+          toast({
+            title: "Error",
+            description: "Failed to save quiz results. Your progress may not be recorded.",
+            variant: "destructive",
+          })
         }
       }
-      signIn(undefined, { callbackUrl: `/dashboard/blanks/${slug}` })
-    } else {
-      await updateScore(slug, answers, elapsedTime, setError)
-    }
-  }
+    },
+    [isAuthenticated, quizData, slug, answers, elapsedTime],
+  )
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <CourseAILoader />
-      </div>
-    )
-  }
+  if (loading) return <CourseAILoader />
 
   if (error) {
     return (
@@ -186,8 +147,7 @@ export default function Page({ params }: { params: { slug: string } }) {
         </CardHeader>
         <CardContent>
           <p>{error}</p>
-          <Button onClick={() => window.location.reload()} className="mt-4">
-            <RefreshCw className="w-4 h-4 mr-2" />
+          <Button onClick={() => fetchQuizData()} className="mt-4">
             Try Again
           </Button>
         </CardContent>
@@ -212,97 +172,57 @@ export default function Page({ params }: { params: { slug: string } }) {
   }
 
   if (quizCompleted) {
-    if (isAuthenticated) {
-      return (
-        <React.Suspense fallback={<CourseAILoader />}>
-          <QuizResults
-            answers={answers}
-            questions={quizData.questions}
-            onRestart={handleRestart}
-            onComplete={handleComplete}
-          />
-        </React.Suspense>
-      )
-    } else {
-      return (
-        <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
-      )
-    }
+    return isAuthenticated ? (
+      <QuizResults
+        answers={answers}
+        questions={quizData.questions}
+        onRestart={handleRestart}
+        onComplete={handleComplete}
+      />
+    ) : (
+      <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
+    )
   }
 
   const currentQuizQuestion = quizData.questions[currentQuestion]
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <React.Suspense fallback={<CourseAILoader />}>
-        <QuizActions
-          quizId={quizData.id.toString()}
-          quizSlug={slug}
-          initialIsPublic={false}
-          initialIsFavorite={false}
-        />
-        <div className="mb-4 text-center">
-          <span className="text-lg font-semibold">
-            Question {currentQuestion + 1} of {quizData.questions.length}
-          </span>
-        </div>
-        <div className="mb-4 text-center">
-          <span className="text-md">
-            Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
-          </span>
-        </div>
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center text-2xl">
-              <Book className="w-6 h-6 mr-2" />
-              Open-Ended Quiz: {quizData.topic || "Unknown"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {quizData.questions.length > 0 ? (
-              <FillInTheBlanksQuiz
-                question={currentQuizQuestion}
-                onAnswer={handleAnswer}
-                questionNumber={currentQuestion + 1}
-                totalQuestions={quizData.questions.length}
-              />
-            ) : (
-              <p className="text-gray-500 flex items-center">
-                <AlertCircle className="w-5 h-5 mr-2" />
-                No questions available for this quiz.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </React.Suspense>
+      <QuizActions quizId={quizData.id.toString()} quizSlug={slug} initialIsPublic={false} initialIsFavorite={false} />
+      <div className="mb-4 text-center">
+        <span className="text-lg font-semibold">
+          Question {currentQuestion + 1} of {quizData.questions.length}
+        </span>
+      </div>
+      <div className="mb-4 text-center">
+        <span className="text-md">
+          Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
+        </span>
+      </div>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center text-2xl">
+            <Book className="w-6 h-6 mr-2" />
+            Open-Ended Quiz: {quizData.topic || "Unknown"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {quizData.questions.length > 0 ? (
+            <FillInTheBlanksQuiz
+              question={currentQuizQuestion}
+              onAnswer={handleAnswer}
+              questionNumber={currentQuestion + 1}
+              totalQuestions={quizData.questions.length}
+            />
+          ) : (
+            <p className="text-gray-500 flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              No questions available for this quiz.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
-}
-
-async function updateScore(
-  slug: string,
-  answers: { answer: string; timeSpent: number; hintsUsed: boolean }[],
-  totalTime: number,
-  setError: React.Dispatch<React.SetStateAction<string | null>>,
-) {
-  try {
-    const response = await fetch(`/api/quiz/${slug}/complete`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        slug,
-        answers,
-        totalTime,
-      }),
-    })
-    if (!response.ok) {
-      throw new Error("Failed to update score")
-    }
-  } catch (error) {
-    console.error("Error saving quiz results:", error)
-    setError("Failed to save quiz results. Your progress may not be recorded.")
-  }
 }
 

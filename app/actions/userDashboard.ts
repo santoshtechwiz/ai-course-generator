@@ -10,7 +10,6 @@ import type {
   UserQuizAttempt,
   TopicPerformance,
 } from "../types"
-import { User } from "@prisma/client"
 
 // Fetch user data function
 export async function getUserData(userId: string): Promise<DashboardUser | null> {
@@ -106,7 +105,6 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
               orderBy: {
                 createdAt: "desc",
               },
-              take: 1,
             },
           },
         },
@@ -191,10 +189,8 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       subscriptions: user.subscriptions as unknown as UserSubscription[],
       userQuizzes: user.userQuizzes.map((quiz) => ({
         ...quiz,
-        percentageCorrect:
-          quiz.attempts[0]?.score !== undefined && quiz.questions?.length
-            ? (quiz.attempts[0]?.score ?? 0 / quiz.questions.length) * 100
-            : 0,
+        percentageCorrect: quiz.bestScore ?? 0, // Use bestScore directly as it's now stored as a percentage
+        totalAttempts: quiz.attempts.length,
       })) as UserQuiz[],
       courseProgress: user.courseProgress as CourseProgress[],
       favorites: user.favorites as Favorite[],
@@ -224,29 +220,34 @@ export async function getUserStats(userId: string): Promise<UserStats> {
               questions: { select: { id: true } },
             },
           },
+          attemptQuestions: {
+            select: {
+              id: true,
+              questionId: true,
+              userAnswer: true,
+              isCorrect: true,
+              timeSpent: true,
+            },
+          },
         },
         orderBy: { createdAt: "asc" },
       })
 
       const totalQuizzes = new Set(quizAttempts.map((a) => a.userQuizId)).size
       const totalAttempts = quizAttempts.length
-      const totalTimeSpent = quizAttempts.reduce((sum, a) => sum + (a.timeSpent || 0), 0)
+      const totalTimeSpent = quizAttempts.reduce((sum, a) => sum + (a.timeSpent ?? 0), 0)
 
       const scores = quizAttempts.map((attempt) => ({
-        score: attempt.score || 0,
+        score: attempt.score ?? 0,
         totalQuestions: attempt.userQuiz.questions.length,
-        percentageCorrect: attempt.userQuiz.questions.length
-          ? ((attempt.score || 0) / attempt.userQuiz.questions.length) * 100
-          : 0,
+        percentageCorrect: attempt.score ?? 0, // Use score directly as it's now stored as a percentage
         topic: attempt.userQuiz.topic,
-        timeSpent: attempt.timeSpent || 0,
+        timeSpent: attempt.timeSpent ?? 0,
       }))
 
-      const averageScore = scores.length
-        ? scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scores.length
-        : 0
-      const highestScore = scores.length ? Math.max(...scores.map((quiz) => quiz.percentageCorrect)) : 0
-
+      const averageScore =
+        scores.length > 0 ? scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scores.length : 0
+      const highestScore = scores.length > 0 ? Math.max(...scores.map((quiz) => quiz.percentageCorrect)) : 0
       const topicPerformance = scores.reduce(
         (acc, score) => {
           if (!acc[score.topic]) {
@@ -263,9 +264,9 @@ export async function getUserStats(userId: string): Promise<UserStats> {
       const topPerformingTopics: TopicPerformance[] = Object.entries(topicPerformance)
         .map(([topic, data]) => ({
           topic,
-          averageScore: data.totalScore / data.attempts,
+          averageScore: data.attempts > 0 ? data.totalScore / data.attempts : 0,
           attempts: data.attempts,
-          averageTimeSpent: data.totalTimeSpent / data.attempts,
+          averageTimeSpent: data.attempts > 0 ? data.totalTimeSpent / data.attempts : 0,
         }))
         .sort((a, b) => b.averageScore - a.averageScore)
         .slice(0, 5)
@@ -273,11 +274,11 @@ export async function getUserStats(userId: string): Promise<UserStats> {
       const recentAttempts = quizAttempts.slice(-10)
       const recentImprovement =
         recentAttempts.length >= 10
-          ? recentAttempts.slice(5).reduce((sum, a) => sum + (a.score || 0), 0) / 5 -
-            recentAttempts.slice(0, 5).reduce((sum, a) => sum + (a.score || 0), 0) / 5
+          ? (recentAttempts.slice(5).reduce((sum, a) => sum + (a.score ?? 0), 0) / 5) -
+            (recentAttempts.slice(0, 5).reduce((sum, a) => sum + (a.score ?? 0), 0) / 5)
           : 0
 
-      const monthsSinceFirstQuiz = quizAttempts.length
+      const monthsSinceFirstQuiz = quizAttempts.length > 0
         ? (new Date().getTime() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)
         : 1
       const quizzesPerMonth = totalQuizzes / monthsSinceFirstQuiz
@@ -289,6 +290,12 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         },
       })
 
+      const totalCourses = await tx.courseProgress.count({
+        where: {
+          userId,
+        },
+      })
+
       return {
         totalQuizzes,
         totalAttempts,
@@ -296,14 +303,14 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         highestScore,
         completedCourses,
         totalTimeSpent,
-        averageTimePerQuiz: totalAttempts ? totalTimeSpent / totalAttempts : 0,
+        averageTimePerQuiz: totalAttempts > 0 ? totalTimeSpent / totalAttempts : 0,
         topPerformingTopics,
         recentImprovement,
         quizzesPerMonth,
-        courseCompletionRate: 0, // Add calculation or default value
-        consistencyScore: 0, // Add calculation or default value
-        learningEfficiency: 0, // Add calculation or default value
-        difficultyProgression: 0, // Add calculation or default value
+        courseCompletionRate: totalCourses > 0 ? (completedCourses / totalCourses) * 100 : 0,
+        consistencyScore: calculateConsistencyScore(quizAttempts),
+        learningEfficiency: calculateLearningEfficiency(scores),
+        difficultyProgression: calculateDifficultyProgression(scores),
       }
     })
 
@@ -314,3 +321,27 @@ export async function getUserStats(userId: string): Promise<UserStats> {
   }
 }
 
+function calculateConsistencyScore(attempts: UserQuizAttempt[]): number {
+  // Implement consistency score calculation
+  // This is a placeholder implementation
+  return attempts.length > 0 ? Math.min(attempts.length / 10, 1) * 100 : 0
+}
+
+function calculateLearningEfficiency(scores: { score: number; timeSpent: number }[]): number {
+  // Implement learning efficiency calculation
+  // This is a placeholder implementation
+  const totalScore = scores.reduce((sum, score) => sum + score.score, 0)
+  const totalTime = scores.reduce((sum, score) => sum + score.timeSpent, 0)
+  return totalTime > 0 ? (totalScore / totalTime) * 100 : 0
+}
+
+function calculateDifficultyProgression(scores: { score: number }[]): number {
+  // Implement difficulty progression calculation
+  // This is a placeholder implementation
+  if (scores.length < 2) return 0
+  const firstHalf = scores.slice(0, Math.floor(scores.length / 2))
+  const secondHalf = scores.slice(Math.floor(scores.length / 2))
+  const firstHalfAvg = firstHalf.reduce((sum, score) => sum + score.score, 0) / firstHalf.length
+  const secondHalfAvg = secondHalf.reduce((sum, score) => sum + score.score, 0) / secondHalf.length
+  return ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100
+}
