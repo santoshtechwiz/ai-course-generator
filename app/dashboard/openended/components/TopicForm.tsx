@@ -30,7 +30,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
   const [error, setError] = useState("")
   const router = useRouter()
 
-  const isEnabled = true;
+
   const generateQuiz = useCallback(async () => {
     setIsLoading(true)
     setError("")
@@ -67,7 +67,6 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
   )
 
   const isDisabled = useMemo(() => isLoading || credits < 1 || !topic.trim(), [isLoading, credits, topic])
-
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" && !isDisabled) {
@@ -217,13 +216,22 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
             label="Generate Quiz"
             onClick={generateQuiz}
             isLoggedIn={isLoggedIn}
-            disabled={isLoading}
+            isEnabled={!isDisabled}
             hasCredits={credits > 0}
             loadingLabel="Generating..."
-            className="w-full h-14 text-lg font-medium rounded-lg transition-all
-             hover:scale-[1.02] active:scale-[0.98]
-             disabled:opacity-50 disabled:cursor-not-allowed
-             focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            customStates={{
+              default: {
+                tooltip: "Click to generate your quiz",
+              },
+              notEnabled: {
+                label: "Enter a topic to generate",
+                tooltip: "Please enter a topic before generating the quiz",
+              },
+              noCredits: {
+                label: "Out of credits",
+                tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
+              },
+            }}
           />
 
 

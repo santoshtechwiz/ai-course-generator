@@ -596,9 +596,9 @@ export async function fetchRandomQuizzes(count: number = 3) {
 
     // Shuffle the quizzes and take the requested count
     const shuffled = quizzes.sort(() => 0.5 - Math.random())
-    return shuffled.slice(0, count)
+    return shuffled.slice(0, count) || [];
   } catch (error) {
-    console.error('Error fetching random quizzes:', error)
+      return [];
     
   }
 }

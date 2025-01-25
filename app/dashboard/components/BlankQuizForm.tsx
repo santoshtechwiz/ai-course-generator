@@ -61,17 +61,17 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
     [generateQuiz],
   )
 
-  const isDisabled = useMemo(() => isLoading || credits < 1 || !topic.trim(), [isLoading, credits, topic])
+ 
+  const isFormValid = useMemo(() => topic.trim().length >= 3, [topic])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !isDisabled) {
+      if (e.key === "Enter" && isFormValid && !isLoading) {
         handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
       }
     },
-    [handleSubmit, isDisabled],
+    [handleSubmit, isFormValid, isLoading],
   )
-
   const renderQuestionCount = () => (
     <div className="space-y-3">
       <label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
@@ -198,18 +198,35 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
 
         <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
 
-          <PlanAwareButton
-
-            disabled={isLoading}
-            loadingLabel="Generating..."
+        <PlanAwareButton
+            label="Generate Quiz"
+            onClick={generateQuiz}
             isLoggedIn={isLoggedIn}
-            className="w-full"
+            isEnabled={isFormValid}
             hasCredits={credits > 0}
-
-            onClick={(e) => {
-              e.preventDefault()
-              handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
-            } } label={"Generating"} />
+            loadingLabel="Generating..."
+            customStates={{
+              default: {
+                tooltip: "Click to generate your fill-in-the-blank quiz",
+              },
+              loading: {
+                label: "Generating Quiz...",
+                tooltip: "Please wait while we generate your quiz",
+              },
+              notLoggedIn: {
+                label: "Sign in to Generate",
+                tooltip: "You need to be signed in to create a quiz",
+              },
+              notEnabled: {
+                label: "Enter a valid topic",
+                tooltip: "Please enter a topic with at least 3 characters",
+              },
+              noCredits: {
+                label: "Out of credits",
+                tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
+              },
+            }}
+          />
         </CardFooter>
       </Card>
     </motion.div>

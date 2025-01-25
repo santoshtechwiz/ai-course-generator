@@ -104,11 +104,11 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
 
   const handleTabChange = (value: string) => {
     setSelectedView(value as "list" | "stats")
-    trackInteraction("tab_change", "course_progress", "tab", { newView: value })
+   // trackInteraction("tab_change", "course_progress", "tab", { newView: value })
   }
 
   const handleCourseClick = (courseId: string, courseName: string) => {
-    trackInteraction("click", "course_item", "link", { courseId, courseName })
+   // trackInteraction("click", "course_item", "link", { courseId, courseName })
   }
 
   return (
