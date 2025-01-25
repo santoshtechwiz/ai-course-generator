@@ -1,12 +1,11 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/utils"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
-
-import { useApiLoading } from "@/hooks/useApiLoading"
+import type React from "react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import useSubscriptionStore from "@/store/useSubscriptionStore";
+import { useApiLoading } from "@/hooks/useApiLoading";
 
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <motion.div
@@ -19,7 +18,7 @@ const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
     animate={{ scaleX: value / 100 }}
     transition={{ duration: 0.3 }}
   />
-)
+);
 
 const AIBrain: React.FC = () => {
   return (
@@ -37,7 +36,7 @@ const AIBrain: React.FC = () => {
         }}
         transition={{
           duration: 3,
-          repeat: Number.POSITIVE_INFINITY,
+          repeat: Infinity,
           ease: "easeInOut",
         }}
       >
@@ -48,7 +47,7 @@ const AIBrain: React.FC = () => {
           }}
           transition={{
             duration: 10,
-            repeat: Number.POSITIVE_INFINITY,
+            repeat: Infinity,
             ease: "linear",
           }}
         >
@@ -59,7 +58,7 @@ const AIBrain: React.FC = () => {
             }}
             transition={{
               duration: 2,
-              repeat: Number.POSITIVE_INFINITY,
+              repeat: Infinity,
               ease: "easeInOut",
             }}
           />
@@ -75,7 +74,7 @@ const AIBrain: React.FC = () => {
           }}
           transition={{
             duration: 2,
-            repeat: Number.POSITIVE_INFINITY,
+            repeat: Infinity,
             delay: index * 0.2,
           }}
           style={{
@@ -85,44 +84,44 @@ const AIBrain: React.FC = () => {
         />
       ))}
     </motion.div>
-  )
-}
+  );
+};
 
 export function GlobalLoading(): JSX.Element {
-  const { isLoading: isSubscriptionLoading } = useSubscriptionStore()
-  const [isRouteChanging, setIsRouteChanging] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const isApiLoading = useApiLoading()
-  //const pathname = usePathname()
-  //const searchParams = useSearchParams()
+  const { isLoading: isSubscriptionLoading } = useSubscriptionStore();
+  const [progress, setProgress] = useState(0);
+  const isApiLoading = useApiLoading();
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Manage overall loading state based on subscription or API loading
   useEffect(() => {
-    setIsRouteChanging(true)
-    setProgress(0)
-    const timer = setTimeout(() => {
-      setIsRouteChanging(false)
-    }, 500) // Adjust this delay as needed
+    setIsLoading(isSubscriptionLoading || isApiLoading);
+  }, [isSubscriptionLoading, isApiLoading]);
 
-    return () => clearTimeout(timer)
-  }, [isApiLoading]) // Removed unnecessary dependencies: pathname, searchParams
-
+  // Simulate progress bar animation
   useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(timer)
-          return 100
-        }
-        return Math.min(prev + 10, 100)
-      })
-    }, 100)
+    let timer: NodeJS.Timeout | null = null;
+    if (isLoading) {
+      setProgress(0);
+      timer = setInterval(() => {
+        setProgress((prev) => {
+          const nextValue = prev + 10;
+          if (nextValue >= 100) {
+            clearInterval(timer!);
+            return 100;
+          }
+          return nextValue;
+        });
+      }, 100);
+    } else {
+      setProgress(100);
+      timer && clearInterval(timer);
+    }
 
     return () => {
-      clearInterval(timer)
-    }
-  }, [isRouteChanging, isApiLoading])
-
-  const isLoading = isSubscriptionLoading || isRouteChanging || isApiLoading
+      timer && clearInterval(timer);
+    };
+  }, [isLoading]);
 
   return (
     <AnimatePresence>
@@ -132,7 +131,11 @@ export function GlobalLoading(): JSX.Element {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className={cn("fixed inset-0 z-[9999]", "bg-background/95 dark:bg-background/95", "backdrop-blur-md")}
+          className={cn(
+            "fixed inset-0 z-[9999]",
+            "bg-background/95 dark:bg-background/95",
+            "backdrop-blur-md"
+          )}
         >
           <ProgressBar value={progress} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
@@ -160,7 +163,7 @@ export function GlobalLoading(): JSX.Element {
                   }}
                   transition={{
                     duration: 1,
-                    repeat: Number.POSITIVE_INFINITY,
+                    repeat: Infinity,
                     ease: "easeInOut",
                     delay: index * 0.2,
                   }}
@@ -172,6 +175,5 @@ export function GlobalLoading(): JSX.Element {
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }
-

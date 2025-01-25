@@ -1,5 +1,4 @@
 import { getAuthSession } from "@/lib/authOptions";
-import TopicForm from "./components/TopicForm";
 import RandomQuestions from "./components/RandomQuestions";
 import { getRandomQuestions } from "@/lib/db";
 import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight";
@@ -7,11 +6,6 @@ import { QuizWrapper } from "@/components/QuizWrapper";
 
 export default async function OpenEndedQuizPage() {
   const session = await getAuthSession();
-  const credits = session?.user.credits ?? 0;
-  const randomQuestions = (await getRandomQuestions()).map(question => ({
-    ...question,
-    
-  }));
 
   return (
     <div className="container mx-auto p-4 min-h-screen bg-background text-foreground">
