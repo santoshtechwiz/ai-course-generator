@@ -7,7 +7,7 @@ import MainContent from "./MainContent"
 import RightSidebar from "./RightSidebar"
 import useProgress from "@/hooks/useProgress"
 import type { FullChapterType, FullCourseType } from "@/app/types"
-import { useSearchParams } from "next/navigation"
+
 import { useUser } from "@/app/providers/userContext"
 
 import throttle from "lodash.throttle"
@@ -66,7 +66,7 @@ export default function CoursePage({ course }: CoursePageProps) {
     nextVideoId: undefined,
     prevVideoId: undefined,
   })
-  const searchParams = useSearchParams()
+
   const { data: session } = useSession()
   const { toast } = useToast()
   const isInitialMount = useRef(true)

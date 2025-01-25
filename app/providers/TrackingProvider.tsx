@@ -1,15 +1,14 @@
 "use client"
 
 import { createContext, useContext, useEffect } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
+
 import { useTracking } from "@/hooks/useTracking"
 
 const TrackingContext = createContext<ReturnType<typeof useTracking> | null>(null)
 
 export function TrackingProvider({ children, userId }: { children: React.ReactNode; userId: string }) {
   const { trackInteraction } = useTracking(userId)
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+
 
   useEffect(() => {
     trackInteraction("page_view", pathname, "page", { query: searchParams.toString() })

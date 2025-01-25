@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
+
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
@@ -91,8 +91,7 @@ export function GlobalLoading(): JSX.Element {
   const { isLoading: isSubscriptionLoading } = useSubscriptionStore()
   const [isRouteChanging, setIsRouteChanging] = useState(false)
   const [progress, setProgress] = useState(0)
-  const pathname = usePathname()
-const searchParams = useSearchParams()
+
 
   useEffect(() => {
     const handleStart = () => {
