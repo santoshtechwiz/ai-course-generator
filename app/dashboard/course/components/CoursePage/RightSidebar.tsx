@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import ChapterList from "./ChapterList";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { FullCourseType, FullChapterType } from "@/app/types";
-import { CourseProgress } from "@prisma/client";
+import { FullCourseType, FullChapterType, CourseProgress } from "@/app/types";
+
 import router from "next/router";
 
 interface RightSidebarProps {
@@ -51,7 +51,7 @@ function RightSidebar({
   );
 
   const totalChapters = useMemo(() => {
-    return course.courseUnits.reduce(
+    return course?.courseUnits?.reduce(
       (sum, unit) => sum + unit.chapters.length,
       0
     );
@@ -68,7 +68,7 @@ function RightSidebar({
       >
         {isAuthenticated && !isSubscribed && <EnrollmentCard />}
 
-        {progress && <ProgressCard progress={progress} totalChapters={totalChapters} />}
+        {progress && <ProgressCard progress={progress} totalChapters={totalChapters ?? 0} />}
 
         <AnimatePresence>
           {(!isOwner && !isSubscribed) ? (

@@ -9,11 +9,12 @@ import debounce from "lodash/debounce"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 
 interface SearchResult {
   id: number
   name?: string
+  description?: string
+  slug?: string
   topic?: string
   questionPreview?: string | null
   quizType?: "mcq" | "open-ended" | "fill-blanks"
@@ -125,7 +126,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
       }
     } else {
       // This is a course
-      url = "/dashboard/course"
+      url = `/dashboard/course/${result.slug}`
     }
 
     onResultClick(url)
@@ -168,6 +169,11 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
           <p className="font-medium text-base truncate">
             {highlightMatch(result.name || result.topic || "", searchTerm)}
           </p>
+          {type === "course" && result.description && (
+            <p className="text-sm text-muted-foreground mt-1 truncate">
+              {highlightMatch(result.description, searchTerm)}
+            </p>
+          )}
           {type === "game" && result.questionPreview && (
             <p className="text-sm text-muted-foreground mt-1 truncate">
               {highlightMatch(result.questionPreview, searchTerm)}

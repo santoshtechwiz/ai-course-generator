@@ -1,6 +1,6 @@
 
 
-import { Course, Unit } from '@prisma/client';
+import { Course, CourseUnit,  } from '@prisma/client';
 import slugify from 'slugify';
 
 const titleToSlug = (title: string) => {
@@ -17,7 +17,7 @@ const getCourseSlug = (course: Course) => {
     return `${titleToSlug(course.name)}-${course.id}`;
 };
 
-const getUnitSlug = (unit: Unit) => {
+const getUnitSlug = (unit: CourseUnit) => {
     return `${titleToSlug(unit.name)}-${unit.id}`;
 };
 

@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import React, { useReducer, useEffect, useMemo, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
@@ -6,9 +6,12 @@ import { useToast } from "@/hooks/use-toast"
 import MainContent from "./MainContent"
 import RightSidebar from "./RightSidebar"
 import useProgress from "@/hooks/useProgress"
-import { FullChapterType, FullCourseType } from "@/app/types"
+import type { FullChapterType, FullCourseType } from "@/app/types"
 import { useSearchParams } from "next/navigation"
 import { useUser } from "@/app/providers/userContext"
+
+import throttle from "lodash.throttle"
+import PriorityQueue from "@/lib/PriorityQueue"
 
 interface State {
   selectedVideoId: string | undefined
@@ -56,75 +59,153 @@ const MemoizedMainContent = React.memo(MainContent)
 const MemoizedRightSidebar = React.memo(RightSidebar)
 
 export default function CoursePage({ course }: CoursePageProps) {
-  const { user, loading: isProfileLoading, error } = useUser();
+  const { user, loading: isProfileLoading, error } = useUser()
   const [state, dispatch] = useReducer(reducer, {
     selectedVideoId: undefined,
     currentChapter: undefined,
     nextVideoId: undefined,
     prevVideoId: undefined,
   })
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams()
   const { data: session } = useSession()
   const { toast } = useToast()
   const isInitialMount = useRef(true)
   const hasSetInitialVideo = useRef(false)
 
   const videoQueue = useMemo(() => {
-    return course.courseUnits?.flatMap((unit) =>
+    const queue = new PriorityQueue<{
+      videoId: string
+      chapterId: number
+      unitId: number
+      chapter: FullChapterType
+    }>()
+
+    course.courseUnits?.forEach((unit, unitIndex) => {
       unit.chapters
-        .filter((chapter): chapter is FullChapterType & { videoId: string } => 
-          'videoId' in chapter && Boolean(chapter.videoId))
-        .map((chapter) => ({
-          videoId: chapter.videoId,
-          chapterId: chapter.id,
-          unitId: unit.id,
-          chapter,
-        }))
-    )
+        .filter(
+          (chapter): chapter is FullChapterType & { videoId: string } =>
+            "videoId" in chapter && Boolean(chapter.videoId),
+        )
+        .forEach((chapter, chapterIndex) => {
+          queue.enqueue(
+            {
+              videoId: chapter.videoId,
+              chapterId: chapter.id,
+              unitId: unit.id,
+              chapter,
+            },
+            unitIndex * 1000 + chapterIndex,
+          )
+        })
+    })
+
+    return queue
   }, [course.courseUnits])
 
   const findChapterByVideoId = useCallback(
     (videoId: string): FullChapterType | undefined => {
-      return videoQueue.find((entry) => entry.videoId === videoId)?.chapter
+      let foundChapter: FullChapterType | undefined
+      const tempQueue = new PriorityQueue<{
+        videoId: string
+        chapterId: number
+        unitId: number
+        chapter: FullChapterType
+      }>()
+
+      while (!videoQueue.isEmpty()) {
+        const entry = videoQueue.dequeue()!
+        if (entry.videoId === videoId) {
+          foundChapter = entry.chapter
+        }
+        tempQueue.enqueue(entry, 0) // Priority doesn't matter for temporary storage
+      }
+
+      // Restore the original queue
+      while (!tempQueue.isEmpty()) {
+        const entry = tempQueue.dequeue()!
+        videoQueue.enqueue(entry, 0) // Use the original priority if needed
+      }
+
+      return foundChapter
     },
-    [videoQueue]
+    [videoQueue],
   )
 
   useEffect(() => {
-    if (videoQueue.length > 0 && !state.selectedVideoId && !hasSetInitialVideo.current) {
-      const chapterId = searchParams.get("chapter");
-      let initialVideo;
+    if (!videoQueue.isEmpty() && !state.selectedVideoId && !hasSetInitialVideo.current) {
+      const chapterId = searchParams.get("chapter")
+      let initialVideo
 
       if (chapterId) {
-        initialVideo = videoQueue.find(
-          (entry) => String(entry.chapterId) === chapterId
-        );
+        const tempQueue = new PriorityQueue<{
+          videoId: string
+          chapterId: number
+          unitId: number
+          chapter: FullChapterType
+        }>()
+        while (!videoQueue.isEmpty()) {
+          const entry = videoQueue.dequeue()!
+          if (String(entry.chapterId) === chapterId) {
+            initialVideo = entry
+            break
+          }
+          tempQueue.enqueue(entry, 0)
+        }
+        // Restore the queue
+        while (!tempQueue.isEmpty()) {
+          videoQueue.enqueue(tempQueue.dequeue()!, 0)
+        }
       }
 
       if (!initialVideo) {
-        initialVideo = videoQueue[0];
+        initialVideo = videoQueue.dequeue()
+        videoQueue.enqueue(initialVideo!, 0)
       }
 
       if (initialVideo) {
         dispatch({
           type: "SET_VIDEO",
           payload: { videoId: initialVideo.videoId, chapter: initialVideo.chapter },
-        });
-        hasSetInitialVideo.current = true;
+        })
+        hasSetInitialVideo.current = true
       }
     }
-  }, [videoQueue, state.selectedVideoId, searchParams]);
+  }, [videoQueue, state.selectedVideoId, searchParams])
 
   useEffect(() => {
     if (!isInitialMount.current && state.selectedVideoId) {
-      const currentIndex = videoQueue.findIndex(
-        (entry) => entry.videoId === state.selectedVideoId
-      )
+      const tempQueue = new PriorityQueue<{
+        videoId: string
+        chapterId: number
+        unitId: number
+        chapter: FullChapterType
+      }>()
+      let currentIndex = -1
+      let nextVideo, prevVideo
+
+      while (!videoQueue.isEmpty()) {
+        const entry = videoQueue.dequeue()!
+        if (entry.videoId === state.selectedVideoId) {
+          currentIndex = tempQueue.isEmpty() ? -1 : tempQueue.getHeap().length - 1
+        }
+        tempQueue.enqueue(entry, 0)
+      }
+
+      if (currentIndex !== -1) {
+        nextVideo = tempQueue.getHeap()[currentIndex + 1]?.item.videoId
+        prevVideo = currentIndex > 0 ? tempQueue.getHeap()[currentIndex - 1]?.item.videoId : undefined
+      }
+
+      // Restore the original queue
+      while (!tempQueue.isEmpty()) {
+        videoQueue.enqueue(tempQueue.dequeue()!, 0)
+      }
+
       dispatch({
         type: "SET_NAVIGATION",
         payload: {
-          next: currentIndex < videoQueue.length - 1 ? videoQueue[currentIndex + 1].videoId : undefined,
-          prev: currentIndex > 0 ? videoQueue[currentIndex - 1].videoId : undefined,
+          next: nextVideo,
+          prev: prevVideo,
         },
       })
     } else {
@@ -132,35 +213,36 @@ export default function CoursePage({ course }: CoursePageProps) {
     }
   }, [state.selectedVideoId, videoQueue])
 
-  const {
-    progress,
-    isLoading,
-    updateProgress,
-  } = useProgress({
+  const { progress, isLoading, updateProgress } = useProgress({
     courseId: +course.id,
     initialProgress: undefined,
     currentChapterId: state.currentChapter?.id?.toString(),
   })
 
+  const throttledUpdateProgress = useCallback(
+    throttle((updateData: any) => {
+      updateProgress(updateData)
+    }, 5000), // Throttle to once every 5 seconds
+    [updateProgress],
+  )
+
   const markChapterAsCompleted = useCallback(() => {
     if (!state.currentChapter || !progress) return
 
-    const updatedCompletedChapters = Array.isArray(progress.completedChapters) 
-      ? [...progress.completedChapters] 
-      : []
+    const updatedCompletedChapters = Array.isArray(progress.completedChapters) ? [...progress.completedChapters] : []
 
     if (!updatedCompletedChapters.includes(+state.currentChapter.id)) {
       updatedCompletedChapters.push(+state.currentChapter.id)
-      const totalChapters = videoQueue.length
+      const totalChapters = videoQueue.size()
       const newProgress = Math.round((updatedCompletedChapters.length / totalChapters) * 100)
 
-      updateProgress({
+      throttledUpdateProgress({
         currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
         completedChapters: updatedCompletedChapters,
         progress: newProgress,
       })
     }
-  }, [state.currentChapter, progress, updateProgress, videoQueue.length])
+  }, [state.currentChapter, progress, throttledUpdateProgress, videoQueue.size()])
 
   const handleVideoEnd = useCallback(() => {
     markChapterAsCompleted()
@@ -168,20 +250,20 @@ export default function CoursePage({ course }: CoursePageProps) {
     if (state.nextVideoId) {
       const nextChapter = findChapterByVideoId(state.nextVideoId)
       if (nextChapter) {
-        const nextVideoEntry = videoQueue.find(entry => entry.videoId === state.nextVideoId)
+        const nextVideoEntry = videoQueue.find((entry) => entry.videoId === state.nextVideoId)
         if (nextVideoEntry) {
           dispatch({
             type: "SET_VIDEO",
             payload: { videoId: state.nextVideoId, chapter: nextChapter },
           })
-          updateProgress({
+          throttledUpdateProgress({
             currentChapterId: Number(nextChapter.id),
             currentUnitId: Number(nextVideoEntry.unitId),
           })
         }
       }
     } else {
-      updateProgress({
+      throttledUpdateProgress({
         currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
         isCompleted: true,
         progress: 100,
@@ -197,38 +279,55 @@ export default function CoursePage({ course }: CoursePageProps) {
     state.currentChapter,
     videoQueue,
     findChapterByVideoId,
-    updateProgress,
+    throttledUpdateProgress,
     toast,
     markChapterAsCompleted,
   ])
 
-  const handleVideoSelect = useCallback((videoId: string) => {
-    if (state.currentChapter) {
-      markChapterAsCompleted()
-    }
-
-    const selectedChapter = findChapterByVideoId(videoId)
-    if (selectedChapter) {
-      const selectedVideoEntry = videoQueue.find(entry => entry.videoId === videoId)
-      if (selectedVideoEntry) {
-        dispatch({
-          type: "SET_VIDEO",
-          payload: { videoId, chapter: selectedChapter },
-        })
-        updateProgress({
-          currentChapterId: Number(selectedChapter.id),
-          currentUnitId: Number(selectedVideoEntry.unitId),
-          lastAccessedAt: new Date(),
-        })
+  const handleVideoSelect = useCallback(
+    (videoId: string) => {
+      if (state.currentChapter) {
+        markChapterAsCompleted()
       }
-    }
-  }, [
-    state.currentChapter,
-    findChapterByVideoId,
-    updateProgress,
-    videoQueue,
-    markChapterAsCompleted,
-  ])
+
+      const selectedChapter = findChapterByVideoId(videoId)
+      if (selectedChapter) {
+        const tempQueue = new PriorityQueue<{
+          videoId: string
+          chapterId: number
+          unitId: number
+          chapter: FullChapterType
+        }>()
+        let selectedVideoEntry
+
+        while (!videoQueue.isEmpty()) {
+          const entry = videoQueue.dequeue()!
+          if (entry.videoId === videoId) {
+            selectedVideoEntry = entry
+          }
+          tempQueue.enqueue(entry, 0)
+        }
+
+        // Restore the original queue
+        while (!tempQueue.isEmpty()) {
+          videoQueue.enqueue(tempQueue.dequeue()!, 0)
+        }
+
+        if (selectedVideoEntry) {
+          dispatch({
+            type: "SET_VIDEO",
+            payload: { videoId, chapter: selectedChapter },
+          })
+          throttledUpdateProgress({
+            currentChapterId: Number(selectedChapter.id),
+            currentUnitId: Number(selectedVideoEntry.unitId),
+            lastAccessedAt: new Date(),
+          })
+        }
+      }
+    },
+    [state.currentChapter, findChapterByVideoId, throttledUpdateProgress, videoQueue, markChapterAsCompleted],
+  )
 
   useEffect(() => {
     return () => {
@@ -260,7 +359,7 @@ export default function CoursePage({ course }: CoursePageProps) {
           currentTime={0}
           onTimeUpdate={(time: number) => {
             if (state.currentChapter) {
-              updateProgress({
+              throttledUpdateProgress({
                 currentChapterId: Number(state.currentChapter.id),
               })
             }
@@ -280,8 +379,8 @@ export default function CoursePage({ course }: CoursePageProps) {
           isAuthenticated={!!session}
           courseOwnerId={course.userId}
           isSubscribed={isSubscribed}
-          showSubscribe={!isSubscribed}
-          progress={progress||null}
+      
+          progress={progress || null}
         />
       </div>
     </div>

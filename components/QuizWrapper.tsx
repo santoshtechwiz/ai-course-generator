@@ -7,6 +7,7 @@ import TopicForm from "@/app/dashboard/openended/components/TopicForm"
 import CreateQuizForm from "@/app/dashboard/quiz/components/CreateQuizForm"
 import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
 import { useSubscription } from "@/hooks/useSubscription"
+import Spinner from "./Spinner"
 
 
 type QuizType = "mcq" | "open-ended" | "fill-in-the-blanks" | "course"
@@ -20,7 +21,7 @@ export function QuizWrapper({ type }: QuizWrapperProps) {
   const { data: session } = useSession()
 
   if (isLoading) {
-    return <div>Loading subscription status...</div>
+    return <div><Spinner></Spinner></div>
   }
 
   const subscriptionPlan = subscriptionStatus ? subscriptionStatus.subscriptionPlan : "FREE"

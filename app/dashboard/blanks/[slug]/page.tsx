@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import axios from "axios"
 import { QuizActions } from "../../mcq/components/QuizActions"
 import CourseAILoader from "../../course/components/CourseAILoader"
 import QuizResults from "../../openended/components/QuizResults"
@@ -9,6 +8,8 @@ import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
 import { Book, AlertCircle, CheckCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useSession, signIn } from "next-auth/react"
+import { SignInPrompt } from "@/app/components/SignInPrompt"
 
 interface Question {
   id: number
@@ -38,6 +39,8 @@ export default function Page({ params }: { params: { slug: string } }) {
   const [startTime, setStartTime] = useState<number | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [finalScore, setFinalScore] = useState<number | null>(null)
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === "authenticated"
   const slug = React.use(params).slug
 
   useEffect(() => {
@@ -53,10 +56,14 @@ export default function Page({ params }: { params: { slug: string } }) {
   useEffect(() => {
     const fetchQuizData = async () => {
       try {
-        const response = await axios.get<QuizData>(`/api/oquiz/${slug}`)
+        const response = await fetch(`/api/oquiz/${slug}`)
+        if (!response.ok) {
+          throw new Error("Failed to fetch quiz data")
+        }
+        const data: QuizData = await response.json()
         const quizDataWithDefaults = {
-          ...response.data,
-          questions: response.data.questions.map((question: Question) => ({
+          ...data,
+          questions: data.questions.map((question: Question) => ({
             ...question,
             openEndedQuestion: {
               ...question.openEndedQuestion,
@@ -80,6 +87,22 @@ export default function Page({ params }: { params: { slug: string } }) {
     fetchQuizData()
   }, [slug])
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      const savedResults = localStorage.getItem("quizResults")
+      if (savedResults) {
+        const { slug: savedSlug, answers: savedAnswers, score, totalTime } = JSON.parse(savedResults)
+        if (savedSlug === slug) {
+          setAnswers(savedAnswers)
+          setQuizCompleted(true)
+          setFinalScore(score)
+          setElapsedTime(totalTime)
+          localStorage.removeItem("quizResults")
+        }
+      }
+    }
+  }, [isAuthenticated, slug])
+
   const handleAnswer = async (answer: string) => {
     if (!quizData) return
 
@@ -93,15 +116,18 @@ export default function Page({ params }: { params: { slug: string } }) {
       setElapsedTime(0)
     } else {
       setQuizCompleted(true)
-      try {
-        await axios.post(`/api/quiz/${slug}/complete`, {
-          slug:slug,
-          answers: newAnswers,
-          totalTime: elapsedTime,
-        })
-      } catch (error) {
-        console.error("Error saving quiz results:", error)
-        setError("Failed to save quiz results. Your progress may not be recorded.")
+      if (isAuthenticated) {
+        await updateScore(slug, newAnswers, elapsedTime, setError)
+      } else {
+        // Save data to local storage for anonymous users
+        localStorage.setItem(
+          "quizResults",
+          JSON.stringify({
+            slug,
+            answers: newAnswers,
+            totalTime: elapsedTime,
+          }),
+        )
       }
     }
   }
@@ -119,10 +145,26 @@ export default function Page({ params }: { params: { slug: string } }) {
     }
   }
 
-  const handleComplete = (score: number) => {
+  const handleComplete = async (score: number) => {
     setFinalScore(score)
-    // You can perform any additional actions with the final score here
-    console.log("Final score:", score)
+    if (!isAuthenticated) {
+      const savedResults = localStorage.getItem("quizResults")
+      if (savedResults) {
+        const { slug: savedSlug, answers: savedAnswers, totalTime } = JSON.parse(savedResults)
+        if (savedSlug === slug) {
+          localStorage.setItem(
+            "quizResults",
+            JSON.stringify({
+              ...JSON.parse(savedResults),
+              score,
+            }),
+          )
+        }
+      }
+      signIn(undefined, { callbackUrl: `/dashboard/blanks/${slug}` })
+    } else {
+      await updateScore(slug, answers, elapsedTime, setError)
+    }
   }
 
   if (loading) {
@@ -170,16 +212,22 @@ export default function Page({ params }: { params: { slug: string } }) {
   }
 
   if (quizCompleted) {
-    return (
-      <React.Suspense fallback={<CourseAILoader />}>
-        <QuizResults
-          answers={answers}
-          questions={quizData.questions}
-          onRestart={handleRestart}
-          onComplete={handleComplete}
-        />
-      </React.Suspense>
-    )
+    if (isAuthenticated) {
+      return (
+        <React.Suspense fallback={<CourseAILoader />}>
+          <QuizResults
+            answers={answers}
+            questions={quizData.questions}
+            onRestart={handleRestart}
+            onComplete={handleComplete}
+          />
+        </React.Suspense>
+      )
+    } else {
+      return (
+        <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
+      )
+    }
   }
 
   const currentQuizQuestion = quizData.questions[currentQuestion]
@@ -230,3 +278,31 @@ export default function Page({ params }: { params: { slug: string } }) {
     </div>
   )
 }
+
+async function updateScore(
+  slug: string,
+  answers: { answer: string; timeSpent: number; hintsUsed: boolean }[],
+  totalTime: number,
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+) {
+  try {
+    const response = await fetch(`/api/quiz/${slug}/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        slug,
+        answers,
+        totalTime,
+      }),
+    })
+    if (!response.ok) {
+      throw new Error("Failed to update score")
+    }
+  } catch (error) {
+    console.error("Error saving quiz results:", error)
+    setError("Failed to save quiz results. Your progress may not be recorded.")
+  }
+}
+

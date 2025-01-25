@@ -1,12 +1,17 @@
 "use client"
 
-import React, { useEffect, useState, use } from "react";
+import React, { useEffect, useState, use } from "react"
 import axios from "axios"
 import QuizResults from "../components/QuizResults"
 import QuizQuestion from "../components/QuizQuestion"
 import { CourseAIErrors } from "@/app/types"
 import CourseAILoader from "../../course/components/CourseAILoader"
 import { QuizActions } from "../../mcq/components/QuizActions"
+import { useSession, signIn } from "next-auth/react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Trophy } from "lucide-react"
+import { SignInPrompt } from "@/app/components/SignInPrompt"
 
 interface Question {
   id: number
@@ -27,7 +32,7 @@ interface QuizData {
 }
 
 const QuizPage = (props: { params: Promise<{ slug: string }> }) => {
-  const params = use(props.params);
+  const params = use(props.params)
   const { slug } = params
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
@@ -37,6 +42,8 @@ const QuizPage = (props: { params: Promise<{ slug: string }> }) => {
   const [error, setError] = useState<CourseAIErrors | null>(null)
   const [startTime, setStartTime] = useState<number | null>(null)
   const [finalScore, setFinalScore] = useState<number | null>(null)
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === "authenticated"
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -70,6 +77,22 @@ const QuizPage = (props: { params: Promise<{ slug: string }> }) => {
     fetchQuiz()
   }, [slug])
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      const savedResults = localStorage.getItem("quizResults")
+      if (savedResults) {
+        const { slug: savedSlug, answers: savedAnswers, score: savedScore } = JSON.parse(savedResults)
+        if (savedSlug === slug) {
+          setAnswers(savedAnswers)
+          setFinalScore(savedScore)
+          setQuizCompleted(true)
+          saveQuizResults(savedAnswers, savedScore)
+          localStorage.removeItem("quizResults")
+        }
+      }
+    }
+  }, [isAuthenticated, slug])
+
   const handleAnswer = (answer: string) => {
     if (!quizData || !quizData.questions) return
 
@@ -83,9 +106,12 @@ const QuizPage = (props: { params: Promise<{ slug: string }> }) => {
       setStartTime(Date.now()) // Reset start time for next question
     } else {
       setQuizCompleted(true)
-      //Calculate score here and pass it to saveQuizResults and handleQuizComplete
-      const score = calculateScore(answers)
-      saveQuizResults(newAnswers, score)
+      const score = calculateScore(newAnswers)
+      if (isAuthenticated) {
+        saveQuizResults(newAnswers, score)
+      } else {
+        localStorage.setItem("quizResults", JSON.stringify({ slug, answers: newAnswers, score }))
+      }
       handleQuizComplete(score)
     }
   }
@@ -99,7 +125,7 @@ const QuizPage = (props: { params: Promise<{ slug: string }> }) => {
   const saveQuizResults = async (
     finalAnswers: Array<{ answer: string; timeSpent: number; hintsUsed: boolean }>,
     score: number,
-  ) => {
+  ): Promise<void> => {
     try {
       const response = await axios.post(`/api/quiz/score`, {
         quizId: quizData?.id,
@@ -110,12 +136,19 @@ const QuizPage = (props: { params: Promise<{ slug: string }> }) => {
       console.log("Quiz results saved:", response.data)
     } catch (error) {
       console.error("Error saving quiz results:", error)
+      throw error
     }
   }
 
-  const handleQuizComplete = (score: number) => {
+  const handleQuizComplete = async (score: number) => {
     setFinalScore(score)
-    // saveQuizResults(answers, score) //already called in handleAnswer
+    if (isAuthenticated) {
+      try {
+        await saveQuizResults(answers, score)
+      } catch (error) {
+        console.error("Failed to save quiz results:", error)
+      }
+    }
   }
 
   const handleRestart = () => {
@@ -145,21 +178,31 @@ const QuizPage = (props: { params: Promise<{ slug: string }> }) => {
     )
   }
 
-  if (quizCompleted) {
-    return (
-      <QuizResults
-        answers={answers}
-        questions={quizData?.questions || []}
-        onRestart={handleRestart}
-        onComplete={handleQuizComplete}
-        finalScore={finalScore}
-      />
-    )
+  if (quizCompleted || (isAuthenticated && finalScore !== null)) {
+    if (isAuthenticated) {
+      return (
+        <QuizResults
+          answers={answers}
+          questions={quizData?.questions || []}
+          onRestart={handleRestart}
+          onComplete={handleQuizComplete}
+        />
+      )
+    } else {
+      return (
+        <SignInPrompt callbackUrl={`/dashboard/openended/${slug}`}></SignInPrompt>
+      )
+    }
   }
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <QuizActions quizId={quizData?.id.toString()} quizSlug={slug} initialIsPublic={false} initialIsFavorite={false} />
+      <QuizActions
+        quizId={quizData?.id?.toString() || ""}
+        quizSlug={slug}
+        initialIsPublic={false}
+        initialIsFavorite={false}
+      />
       <h1 className="text-3xl font-bold mb-4">Open-Ended Quiz: {quizData?.topic || "Unknown"}</h1>
       {quizData && quizData.questions && quizData.questions.length > 0 ? (
         <QuizQuestion
