@@ -12,6 +12,8 @@ import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { toast } from "@/hooks/use-toast"
 import QuizResults from "../../openended/components/QuizResults"
 import { useSession } from "next-auth/react"
+import { GlobalLoading } from "@/app/components/shared/GlobalLoading"
+import { useRouter } from "next/navigation"
 
 interface Question {
   id: number
@@ -28,8 +30,22 @@ interface Question {
 interface QuizData {
   id: number
   questions: Question[]
-  topic: string,
-  userId:string,
+  topic: string
+  userId: string
+}
+
+const saveQuizState = (state: any) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("quizState", JSON.stringify(state))
+  }
+}
+
+const loadQuizState = () => {
+  if (typeof window !== "undefined") {
+    const state = localStorage.getItem("quizState")
+    return state ? JSON.parse(state) : null
+  }
+  return null
 }
 
 export default function Page({ params }: { params: { slug: string } }) {
@@ -43,8 +59,8 @@ export default function Page({ params }: { params: { slug: string } }) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
-  const slug = React.use(params).slug;
-
+  const slug = React.use(params).slug
+  const router = useRouter()
 
   const fetchQuizData = useCallback(async () => {
     try {
@@ -75,22 +91,43 @@ export default function Page({ params }: { params: { slug: string } }) {
     return () => clearInterval(timer)
   }, [quizCompleted])
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      const savedState = loadQuizState()
+      if (savedState) {
+        setQuizData(savedState.quizData)
+        setCurrentQuestion(savedState.currentQuestion)
+        setAnswers(savedState.answers)
+        setQuizCompleted(savedState.quizCompleted)
+        setElapsedTime(savedState.elapsedTime)
+        localStorage.removeItem("quizState")
+      }
+    }
+  }, [isAuthenticated])
+
   const handleAnswer = useCallback(
     (answer: string) => {
-      setAnswers((prevAnswers) => [...prevAnswers, { answer, timeSpent: elapsedTime, hintsUsed: false }])
+      const newAnswers = [...answers, { answer, timeSpent: elapsedTime, hintsUsed: false }]
+      setAnswers(newAnswers)
 
-      setCurrentQuestion((prevQuestion) => {
-        if (quizData && prevQuestion < quizData.questions.length - 1) {
-          return prevQuestion + 1
-        } else {
-          setQuizCompleted(true)
-          return prevQuestion
-        }
-      })
+      const newCurrentQuestion = currentQuestion + 1
+      const newQuizCompleted = !!quizData && newCurrentQuestion >= quizData.questions.length
 
+      setCurrentQuestion(newCurrentQuestion)
+      setQuizCompleted(newQuizCompleted)
       setElapsedTime(0)
+
+      if (newQuizCompleted) {
+        saveQuizState({
+          quizData,
+          currentQuestion: newCurrentQuestion,
+          answers: newAnswers,
+          quizCompleted: newQuizCompleted,
+          elapsedTime: 0,
+        })
+      }
     },
-    [elapsedTime, quizData],
+    [elapsedTime, quizData, currentQuestion, answers],
   )
 
   const handleRestart = useCallback(() => {
@@ -137,7 +174,7 @@ export default function Page({ params }: { params: { slug: string } }) {
     [isAuthenticated, quizData, slug, answers, elapsedTime],
   )
 
-  // if (loading) return <CourseAILoader />
+  if (loading) return <GlobalLoading />
 
   if (error) {
     return (
@@ -175,29 +212,47 @@ export default function Page({ params }: { params: { slug: string } }) {
   }
 
   if (quizCompleted) {
-    return isAuthenticated ? (
-      <QuizResults
-        answers={answers}
-        questions={quizData.questions}
-        onRestart={handleRestart}
-        onComplete={handleComplete}
-      />
-    ) : (
-      <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
-    )
+    if (isAuthenticated) {
+      return (
+        <QuizResults
+          answers={answers}
+          questions={quizData.questions}
+          onRestart={handleRestart}
+          onComplete={handleComplete}
+        />
+      )
+    } else {
+      return (
+        <div className="max-w-4xl mx-auto p-4">
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center text-2xl">
+                <Book className="w-6 h-6 mr-2" />
+                Quiz Completed
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">You've completed the quiz! Sign in to see your results and save your progress.</p>
+              <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
+             
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
   }
 
   const currentQuizQuestion = quizData.questions[currentQuestion]
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <QuizActions 
-        userId={session?.user?.id || ""} 
+      <QuizActions
+        userId={session?.user?.id || ""}
         ownerId={quizData.userId}
-        quizId={quizData.id.toString()} 
-        quizSlug={slug} 
-        initialIsPublic={false} 
-        initialIsFavorite={false} 
+        quizId={quizData.id.toString()}
+        quizSlug={slug}
+        initialIsPublic={false}
+        initialIsFavorite={false}
       />
       <div className="mb-4 text-center">
         <span className="text-lg font-semibold">

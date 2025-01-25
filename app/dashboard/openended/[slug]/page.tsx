@@ -2,16 +2,14 @@
 
 import React, { useEffect, useState, useCallback } from "react"
 import axios from "axios"
-
 import { CourseAIErrors } from "@/app/types"
-import CourseAILoader from "../../course/components/CourseAILoader"
 import { QuizActions } from "../../mcq/components/QuizActions"
 import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { toast } from "@/hooks/use-toast"
-
 import QuizResultsOpenEnded from "../components/QuizResultsOpenEnded"
 import QuizQuestion from "../components/QuizQuestion"
+import { GlobalLoading } from "@/app/components/shared/GlobalLoading"
 
 interface Question {
   id: number
@@ -28,12 +26,12 @@ interface Question {
 interface QuizData {
   id: number
   questions: Question[]
-  topic: string,
+  topic: string
   userId: string
 }
 
 const QuizPage = ({ params }: { params: { slug: string } }) => {
-  const  slug  = React.use(params).slug;
+  const slug = React.use(params).slug
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<
@@ -75,61 +73,6 @@ const QuizPage = ({ params }: { params: { slug: string } }) => {
     }
   }, [slug])
 
-  useEffect(() => {
-    fetchQuiz()
-  }, [fetchQuiz])
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      const savedResults = localStorage.getItem("quizResults")
-      if (savedResults) {
-        const { slug: savedSlug, answers: savedAnswers, score: savedScore } = JSON.parse(savedResults)
-        if (savedSlug === slug) {
-          setAnswers(savedAnswers)
-          setFinalScore(savedScore)
-          setQuizCompleted(true)
-          saveQuizResults(savedAnswers, savedScore)
-          localStorage.removeItem("quizResults")
-        }
-      }
-    }
-  }, [isAuthenticated, slug])
-
-  const handleAnswer = useCallback(
-    (answer: string) => {
-      if (!quizData || !quizData.questions) return
-
-      const timeSpent = startTime ? (Date.now() - startTime) / 1000 : 0
-      const isCorrect = answer.toLowerCase() === quizData.questions[currentQuestion].answer.toLowerCase()
-      const newAnswer = { answer, timeSpent, hintsUsed: false, isCorrect }
-
-      setAnswers((prevAnswers) => [...prevAnswers, newAnswer])
-      setCurrentQuestion((prevQuestion) => {
-        if (prevQuestion < quizData.questions.length - 1) {
-          setStartTime(Date.now())
-          return prevQuestion + 1
-        } else {
-          setQuizCompleted(true)
-          const updatedAnswers = [...answers, newAnswer]
-          const score = calculateScore(updatedAnswers)
-          if (isAuthenticated) {
-            saveQuizResults(updatedAnswers, score)
-          } else {
-            localStorage.setItem("quizResults", JSON.stringify({ slug, answers: updatedAnswers, score }))
-          }
-          setFinalScore(score)
-          return prevQuestion
-        }
-      })
-    },
-    [quizData, currentQuestion, startTime, answers, isAuthenticated, slug],
-  )
-
-  const calculateScore = useCallback((answers: Array<{ isCorrect: boolean }>) => {
-    const correctAnswers = answers.filter((answer) => answer.isCorrect).length
-    return (correctAnswers / answers.length) * 100
-  }, [])
-
   const saveQuizResults = useCallback(
     async (
       finalAnswers: Array<{ answer: string; timeSpent: number; hintsUsed: boolean; isCorrect: boolean }>,
@@ -148,16 +91,82 @@ const QuizPage = ({ params }: { params: { slug: string } }) => {
           variant: "success",
           title: "Quiz results saved!",
         })
+        return true
       } catch (error) {
         console.error("Error saving quiz results:", error)
         toast({
           variant: "destructive",
           title: "Failed to save quiz results",
         })
+        return false
       }
     },
     [quizData, slug],
   )
+
+  useEffect(() => {
+    fetchQuiz()
+  }, [fetchQuiz])
+
+  useEffect(() => {
+    const handleSavedResults = async () => {
+      const savedResults = localStorage.getItem("quizResults")
+      if (savedResults) {
+        const { slug: savedSlug, answers: savedAnswers, score: savedScore } = JSON.parse(savedResults)
+        if (savedSlug === slug) {
+          setAnswers(savedAnswers)
+          setFinalScore(savedScore)
+          setQuizCompleted(true)
+
+          if (isAuthenticated) {
+            const saveSuccess = await saveQuizResults(savedAnswers, savedScore)
+            if (saveSuccess) {
+              localStorage.removeItem("quizResults")
+            }
+          }
+        }
+      }
+    }
+
+    if (isAuthenticated) {
+      handleSavedResults()
+    }
+  }, [isAuthenticated, slug, saveQuizResults])
+
+  const handleAnswer = useCallback(
+    (answer: string) => {
+      if (!quizData || !quizData.questions) return
+
+      const timeSpent = startTime ? (Date.now() - startTime) / 1000 : 0
+      const isCorrect = answer.toLowerCase() === quizData.questions[currentQuestion].answer.toLowerCase()
+      const newAnswer = { answer, timeSpent, hintsUsed: false, isCorrect }
+
+      setAnswers((prevAnswers) => [...prevAnswers, newAnswer])
+      setCurrentQuestion((prevQuestion) => {
+        if (prevQuestion < quizData.questions.length - 1) {
+          setStartTime(Date.now())
+          return prevQuestion + 1
+        } else {
+          setQuizCompleted(true)
+          const updatedAnswers = [...answers, newAnswer]
+          const score = calculateScore(updatedAnswers)
+          setFinalScore(score)
+          if (isAuthenticated) {
+            saveQuizResults(updatedAnswers, score)
+          } else {
+            localStorage.setItem("quizResults", JSON.stringify({ slug, answers: updatedAnswers, score }))
+          }
+          return prevQuestion
+        }
+      })
+    },
+    [quizData, currentQuestion, startTime, answers, isAuthenticated, slug, saveQuizResults],
+  )
+
+  const calculateScore = useCallback((answers: Array<{ isCorrect: boolean }>) => {
+    const correctAnswers = answers.filter((answer) => answer.isCorrect).length
+    return (correctAnswers / answers.length) * 100
+  }, [])
 
   const handleRestart = useCallback(() => {
     const confirmRestart = window.confirm("Are you sure you want to restart the quiz?")
@@ -170,13 +179,19 @@ const QuizPage = ({ params }: { params: { slug: string } }) => {
     }
   }, [])
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex justify-center items-center h-screen">
-  //       <CourseAILoader />
-  //     </div>
-  //   )
-  // }
+  const onComplete = useCallback(
+    (score: number) => {
+      setFinalScore(score)
+      if (isAuthenticated) {
+        saveQuizResults(answers, score)
+      }
+    },
+    [isAuthenticated, answers, saveQuizResults],
+  )
+
+  if (loading) {
+    return <GlobalLoading />
+  }
 
   if (error) {
     return (
@@ -193,11 +208,17 @@ const QuizPage = ({ params }: { params: { slug: string } }) => {
           answers={answers}
           questions={quizData?.questions || []}
           onRestart={handleRestart}
-          onComplete={() => {}} // Remove the onComplete prop as it's no longer needed
+          onComplete={onComplete}
         />
       )
     } else {
-      return <SignInPrompt callbackUrl={`/dashboard/openended/${slug}`} />
+      return (
+        <div className="max-w-4xl mx-auto p-4">
+          <h2 className="text-2xl font-bold mb-4">Quiz Completed</h2>
+          <p className="mb-4">Sign in to view your results and save your progress.</p>
+          <SignInPrompt callbackUrl={`/dashboard/openended/${slug}`} />
+        </div>
+      )
     }
   }
 
