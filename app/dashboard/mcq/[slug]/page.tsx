@@ -80,7 +80,12 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
 
   const result = await prisma.userQuiz.findUnique({
     where: { slug },
-    include: {
+    select: {
+      id: true,
+      topic: true,
+      slug: true,
+      isPublic: true,
+      isFavorite: true,
       questions: {
         select: {
           id: true,
