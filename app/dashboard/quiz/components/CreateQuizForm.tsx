@@ -44,17 +44,17 @@ type QuizFormData = z.infer<typeof quizSchema>
 
 interface Props {
   credits: number,
-  
+
   isLoggedIn: boolean
   maxQuestions: number
 }
 
 
-export default function CreateQuizForm({ isLoggedIn,maxQuestions,credits}: Props) {
+export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
- 
+
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
 
@@ -113,7 +113,7 @@ export default function CreateQuizForm({ isLoggedIn,maxQuestions,credits}: Props
       const response = await createQuizMutation.mutateAsync(watch())
       const userQuizId = response?.userQuizId;
 
-       if (!userQuizId) throw new Error("userQuizId ID not found")
+      if (!userQuizId) throw new Error("userQuizId ID not found")
 
       toast({
         title: "Success!",
@@ -126,7 +126,7 @@ export default function CreateQuizForm({ isLoggedIn,maxQuestions,credits}: Props
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router,maxQuestions])
+  }, [createQuizMutation, watch, toast, router, maxQuestions])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -136,7 +136,7 @@ export default function CreateQuizForm({ isLoggedIn,maxQuestions,credits}: Props
       <SignInBanner isAuthenticated={status === 'authenticated'} />
       <CardHeader>
         <div className="flex justify-center mb-4">
-          <motion.div 
+          <motion.div
             className="p-3 bg-primary/10 rounded-xl"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -252,13 +252,26 @@ export default function CreateQuizForm({ isLoggedIn,maxQuestions,credits}: Props
               whileTap={{ scale: 0.98 }}
             >
               <PlanAwareButton
-               
-                disabled={isLoading}
-                loadingLabel="Generating..."
+                label="Generate Quiz"
+                onClick={handleSubmit(onSubmit)}
                 isLoggedIn={isLoggedIn}
-                className="w-full"
+                isEnabled={!errors.topic && !errors.amount && !errors.difficulty}
                 hasCredits={credits > 0}
-                onClick={handleSubmit(onSubmit)} label={"Generating"}              />
+                loadingLabel="Generating..."
+                customStates={{
+                  default: {
+                    tooltip: "Click to generate your quiz",
+                  },
+                  notEnabled: {
+                    label: "Complete the form",
+                    tooltip: "Please fill out all required fields",
+                  },
+                  noCredits: {
+                    label: "Out of credits",
+                    tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
+                  },
+                }}
+              />
             </motion.div>
             {status !== 'authenticated' && (
               <motion.div
