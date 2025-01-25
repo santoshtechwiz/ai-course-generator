@@ -12,7 +12,7 @@ export const generateOpenEnded = async (
   const functions = [
     {
       name: "createOpenEnded",
-      description: "Create an open-ended question",
+      description: "Create an openended question",
       parameters: {
         type: "object",
         properties: {
@@ -27,8 +27,8 @@ export const generateOpenEnded = async (
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini", 
     messages: [
-      { role: "system", content: "You are an AI that generates open-ended questions." },
-      { role: "user", content: `Generate ${amount} hard open-ended questions about ${topic}.` },
+      { role: "system", content: "You are an AI that generates openended questions." },
+      { role: "user", content: `Generate ${amount} hard openended questions about ${topic}.` },
     ],
     functions,
     function_call: { name: "createOpenEnded" },
@@ -37,7 +37,7 @@ export const generateOpenEnded = async (
   const result = response.choices[0]?.message?.function_call?.arguments;
 
   if (!result) {
-    throw new Error("Failed to generate open-ended questions");
+    throw new Error("Failed to generate openended questions");
   }
 
   return JSON.parse(result) as OpenEndedQuestion[];

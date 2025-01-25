@@ -143,7 +143,7 @@ export default function About() {
             Quickly Test Your Knowledge
           </h2>
           <p className="mb-4 text-lg text-center text-gray-700 md:text-xl">
-            Need to test your knowledge on any topic? With CourseAI, you can quickly create multiple choice, open-ended, or fill-in-the-blank questions in just seconds. Whether you're preparing for an exam, creating a quiz for your course, or simply testing your knowledge, we make it easy.
+            Need to test your knowledge on any topic? With CourseAI, you can quickly create multiple choice, openended, or fill-in-the-blank questions in just seconds. Whether you're preparing for an exam, creating a quiz for your course, or simply testing your knowledge, we make it easy.
           </p>
       
         </motion.section>

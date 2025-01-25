@@ -1,6 +1,6 @@
 'use client'
 
-import { fetchRandomQuizzes } from "@/lib/db"
+
 import axios from "axios"
 import { useState, useEffect } from "react"
 

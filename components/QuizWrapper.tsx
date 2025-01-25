@@ -10,7 +10,7 @@ import { useSubscription } from "@/hooks/useSubscription"
 import Spinner from "./Spinner"
 
 
-type QuizType = "mcq" | "open-ended" | "fill-in-the-blanks" | "course"
+type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"
 
 interface QuizWrapperProps {
   type: QuizType
@@ -29,7 +29,7 @@ export function QuizWrapper({ type }: QuizWrapperProps) {
     switch (type) {
       case "mcq":
         return plan?.limits.mcq || 0
-      case "open-ended":
+      case "openended":
         return plan?.limits.openEnded || 0
       case "fill-in-the-blanks":
         return plan?.limits.fillInTheBlanks || 0
@@ -54,7 +54,7 @@ export function QuizWrapper({ type }: QuizWrapperProps) {
   switch (type) {
     case "mcq":
       return <CreateQuizForm {...commonProps} />
-    case "open-ended":
+    case "openended":
       return <TopicForm {...commonProps} />
     case "fill-in-the-blanks":
       return <FillInTheBlankQuizForm {...commonProps} />

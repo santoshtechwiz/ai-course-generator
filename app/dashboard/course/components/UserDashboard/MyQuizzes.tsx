@@ -19,7 +19,7 @@ const buildQuizSlug = (quizType: QuizType) => {
   switch (quizType) {
     case "mcq":
       return "mcq"
-    case "open-ended":
+    case "openended":
       return "openended"
     case "fill-blanks":
       return "blanks"
@@ -32,7 +32,7 @@ const getQuizTypeLabel = (quizType: QuizType) => {
   switch (quizType) {
     case "mcq":
       return "Multiple Choice"
-    case "open-ended":
+    case "openended":
       return "Open Ended"
     case "fill-blanks":
       return "Fill in the Blanks"

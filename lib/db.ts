@@ -463,7 +463,7 @@ export async function fetchCourses(filters = {}, userId?: string) {
 export async function getRandomQuestions(count: number = 5) {
   const randomQuestions = await prisma.userQuiz.findMany({
     where: {
-      quizType: "open-ended"
+      quizType: "openended"
     },
     select: {
       id: true,

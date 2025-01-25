@@ -58,7 +58,7 @@ async function createQuestions(questions: MCQQuestion[] | OpenEndedQuestion[], u
         question: openEndedQuestion.question,
         answer: openEndedQuestion.answer,
         userQuizId,
-        questionType: "open-ended" as const,
+        questionType: "openended" as const,
       };
     }
   });

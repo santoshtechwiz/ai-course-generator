@@ -13,7 +13,7 @@ function getQuizTypeRoute(quizType: string): string {
   switch (quizType) {
     case "mcq":
       return "mcq"
-    case "open-ended":
+    case "openended":
       return "openended"
     case "fill-blanks":
       return "blanks"

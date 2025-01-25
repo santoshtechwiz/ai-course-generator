@@ -16,8 +16,7 @@ interface SearchResult {
   description?: string
   slug?: string
   topic?: string
-  questionPreview?: string | null
-  quizType?: "mcq" | "open-ended" | "fill-blanks"
+  quizType?: "mcq" | "openended" | "blanks"
 }
 
 interface SearchResponse {
@@ -111,19 +110,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
     let url
     if (result.topic) {
       // This is a game/quiz
-      switch (result.quizType) {
-        case "mcq":
-          url = "/dashboard/mcq"
-          break
-        case "open-ended":
-          url = "/dashboard/openended"
-          break
-        case "fill-blanks":
-          url = "/dashboard/blanks"
-          break
-        default:
-          url = "/dashboard/quiz"
-      }
+      url = `/dashboard/${result.quizType}/${result.slug}`
     } else {
       // This is a course
       url = `/dashboard/course/${result.slug}`
@@ -174,10 +161,8 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
               {highlightMatch(result.description, searchTerm)}
             </p>
           )}
-          {type === "game" && result.questionPreview && (
-            <p className="text-sm text-muted-foreground mt-1 truncate">
-              {highlightMatch(result.questionPreview, searchTerm)}
-            </p>
+          {type === "game" && (
+            <p className="text-sm text-muted-foreground mt-1">{result.quizType?.toUpperCase()} Quiz</p>
           )}
         </div>
       </button>

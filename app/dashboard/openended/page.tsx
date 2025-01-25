@@ -13,7 +13,7 @@ export default async function OpenEndedQuizPage() {
         <div className="lg:col-span-2">
           <h1 className="text-3xl font-bold mb-6 text-primary">Generate AI Quiz</h1>
           {/* <TopicForm credits={credits} /> */}
-          <QuizWrapper type={"open-ended"} />
+          <QuizWrapper type={"openended"} />
         </div>
         <div className="hidden lg:block">
           {/* <RandomQuestions questions={randomQuestions} /> */}

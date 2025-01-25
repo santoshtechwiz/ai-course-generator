@@ -66,7 +66,7 @@ export const generateOpenEndedQuestions = async (
   const functions = [
     {
       name: 'createOpenEndedQuiz',
-      description: 'Create open-ended questions based on a given topic',
+      description: 'Create openended questions based on a given topic',
       parameters: {
         type: 'object',
         properties: {
@@ -93,11 +93,11 @@ export const generateOpenEndedQuestions = async (
     messages: [
       { 
         role: 'system', 
-        content: 'You are an AI that generates insightful open-ended questions based on a given topic. Focus on creating questions that encourage critical thinking and in-depth responses.' 
+        content: 'You are an AI that generates insightful openended questions based on a given topic. Focus on creating questions that encourage critical thinking and in-depth responses.' 
       },
       {
         role: 'user',
-        content: `Generate ${amount} ${difficulty} open-ended questions about ${topic}. Provide a sample answer or key points to cover for each question.`,
+        content: `Generate ${amount} ${difficulty} openended questions about ${topic}. Provide a sample answer or key points to cover for each question.`,
       },
     ],
     functions,
