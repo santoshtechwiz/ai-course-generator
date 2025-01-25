@@ -20,9 +20,7 @@ export function QuizWrapper({ type }: QuizWrapperProps) {
   const { subscriptionStatus, isLoading } = useSubscription()
   const { data: session } = useSession()
 
-  if (isLoading) {
-    return <div><Spinner></Spinner></div>
-  }
+
 
   const subscriptionPlan = subscriptionStatus ? subscriptionStatus.subscriptionPlan : "FREE"
   const plan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionPlan)

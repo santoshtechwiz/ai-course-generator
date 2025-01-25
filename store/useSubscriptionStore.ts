@@ -25,4 +25,3 @@ const useSubscriptionStore = create<SubscriptionState>((set) => ({
 }))
 
 export default useSubscriptionStore
-

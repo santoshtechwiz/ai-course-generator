@@ -28,7 +28,8 @@ interface Question {
 interface QuizData {
   id: number
   questions: Question[]
-  topic: string
+  topic: string,
+  userId: string
 }
 
 const QuizPage = ({ params }: { params: { slug: string } }) => {
@@ -169,13 +170,13 @@ const QuizPage = ({ params }: { params: { slug: string } }) => {
     }
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <CourseAILoader />
-      </div>
-    )
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-center items-center h-screen">
+  //       <CourseAILoader />
+  //     </div>
+  //   )
+  // }
 
   if (error) {
     return (
@@ -205,6 +206,8 @@ const QuizPage = ({ params }: { params: { slug: string } }) => {
       <QuizActions
         quizId={quizData?.id?.toString() || ""}
         quizSlug={slug}
+        userId={session?.user?.id || ""}
+        ownerId={quizData?.userId || ""}
         initialIsPublic={false}
         initialIsFavorite={false}
       />

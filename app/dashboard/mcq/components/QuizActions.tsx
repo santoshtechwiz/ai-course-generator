@@ -1,8 +1,9 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, Star, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, Star, Trash2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,26 +15,40 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { toast } from '@/hooks/use-toast'
+import { toast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface QuizActionsProps {
-  quizId: string;
-  quizSlug: string;
-  initialIsPublic: boolean;
-  initialIsFavorite: boolean;
+  quizId: string
+  quizSlug: string
+  initialIsPublic: boolean
+  initialIsFavorite: boolean
+  userId: string // New prop for the current user's ID
+  ownerId: string // New prop for the quiz owner's ID
 }
 
-export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavorite }: QuizActionsProps) {
+export function QuizActions({
+  quizId,
+  quizSlug,
+  initialIsPublic,
+  initialIsFavorite,
+  userId,
+  ownerId,
+}: QuizActionsProps) {
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
   const router = useRouter()
 
+  // If the user is not the owner, don't render anything
+  if (userId !== ownerId) {
+    return null
+  }
+
   const updateQuiz = async (data: { isPublic?: boolean; isFavorite?: boolean }) => {
     try {
       const response = await fetch(`/api/quiz/${quizSlug}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
       if (response.ok) {
@@ -46,10 +61,10 @@ export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavori
           description: "Your quiz has been successfully updated.",
         })
       } else {
-        throw new Error('Failed to update quiz')
+        throw new Error("Failed to update quiz")
       }
     } catch (error) {
-      console.error('Error updating quiz:', error)
+      console.error("Error updating quiz:", error)
       toast({
         title: "Error",
         description: "Failed to update quiz. Please try again.",
@@ -64,20 +79,20 @@ export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavori
   const handleDelete = async () => {
     try {
       const response = await fetch(`/api/quiz/${quizSlug}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
       })
       if (response.ok) {
         toast({
           title: "Quiz deleted",
           description: "Your quiz has been successfully deleted.",
         })
-        router.push('/dashboard/quizzes')
+        router.push("/dashboard/quizzes")
       } else {
-        throw new Error('Failed to delete quiz')
+        throw new Error("Failed to delete quiz")
       }
     } catch (error) {
-      console.error('Error deleting quiz:', error)
+      console.error("Error deleting quiz:", error)
       toast({
         title: "Error",
         description: "Failed to delete quiz. Please try again.",
@@ -119,7 +134,9 @@ export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavori
               onClick={toggleFavorite}
               className="transition-all duration-300 ease-in-out hover:scale-105 focus:ring-2 focus:ring-primary"
             >
-              <Star className={`mr-2 h-4 w-4 transition-transform duration-300 ease-in-out group-hover:scale-110 ${isFavorite ? "fill-current text-primary" : ""}`} />
+              <Star
+                className={`mr-2 h-4 w-4 transition-transform duration-300 ease-in-out group-hover:scale-110 ${isFavorite ? "fill-current text-primary" : ""}`}
+              />
               <span className="font-medium">{isFavorite ? "Favorited" : "Favorite"}</span>
             </Button>
           </TooltipTrigger>
@@ -130,8 +147,8 @@ export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavori
       </TooltipProvider>
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             size="sm"
             className="transition-all duration-300 ease-in-out hover:scale-105 focus:ring-2 focus:ring-destructive"
           >
@@ -147,8 +164,10 @@ export function QuizActions({ quizId, quizSlug, initialIsPublic, initialIsFavori
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="transition-all duration-300 ease-in-out hover:bg-secondary">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel className="transition-all duration-300 ease-in-out hover:bg-secondary">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleDelete}
               className="hover:bg-destructive/90 transition-all duration-300 ease-in-out"
             >

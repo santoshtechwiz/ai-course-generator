@@ -86,6 +86,7 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
       slug: true,
       isPublic: true,
       isFavorite: true,
+      userId: true,
       questions: {
         select: {
           id: true,
@@ -128,21 +129,22 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
     }
   })
 
-  const isOwner = currentUserId === result.user.id
-
+ 
   return (
     <div className="container mx-auto py-8 space-y-8">
       <Card>
         <CardHeader>
           <CardTitle className="text-3xl">{result.topic} Quiz</CardTitle>
-          {isOwner && (
+         
             <QuizActions
               quizId={result.id.toString()}
+              userId={currentUserId || ""}
+              ownerId={result.user.id}
               quizSlug={result.slug}
               initialIsPublic={result.isPublic || false}
               initialIsFavorite={result.isFavorite || false}
             />
-          )}
+         
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

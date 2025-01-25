@@ -12,7 +12,7 @@ export function usePlanAware() {
   const { subscriptionStatus, isLoading: isSubscriptionLoading } = useSubscription()
   const { setLoading } = useLoading()
 
-  const currentPlan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionStatus?.plan) || SUBSCRIPTION_PLANS[0]
+  const currentPlan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionStatus?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
 
   const isAuthenticated = status === "authenticated"
   const isLoading = status === "loading" || isSubscriptionLoading
