@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -46,37 +46,8 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
 
   const currentQuestion = questions[currentQuestionIndex]
 
-  const handleQuizCompletion = async () => {
-    const duration = Math.floor((Date.now() - startTime) / 1000)
-
-    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
-    const finalUserAnswers = [...userAnswers, selectedAnswer || ""]
-    const finalQuestionTimes = [...questionTimes, currentTime]
-
-    setQuizCompleted(true)
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    })
-
-    const finalScore = finalUserAnswers.filter((answer, index) => answer === questions[index].answer).length
-    setScore(finalScore)
-
-    const quizData = {
-      quizId,
-      score: finalScore,
-      totalTime:duration,
-      answers: questions.map((q, index) => ({
-        questionId: q.id,
-        userAnswer: finalUserAnswers[index] || "",
-        isCorrect: finalUserAnswers[index] === q.answer,
-        timeSpent: finalQuestionTimes[index] || 0,
-      })),
-    }
-
-    console.log("Quiz data:", quizData)
-    if (isAuthenticated) {
+  const saveQuizResults = useCallback(
+    async (quizData: any) => {
       try {
         const response = await axios.post(`/api/quiz/${slug}/complete`, quizData)
         console.log("Quiz results saved:", response.data)
@@ -96,11 +67,48 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
           variant: "destructive",
         })
       }
+    },
+    [slug],
+  )
+
+  const handleQuizCompletion = useCallback(() => {
+    const duration = Math.floor((Date.now() - startTime) / 1000)
+
+    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
+    const finalUserAnswers = [...userAnswers, selectedAnswer || ""]
+    const finalQuestionTimes = [...questionTimes, currentTime]
+
+    setQuizCompleted(true)
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+    })
+
+    const finalScore = finalUserAnswers.filter((answer, index) => answer === questions[index].answer).length
+    setScore(finalScore)
+
+    const quizData = {
+      quizId,
+      score: finalScore,
+      totalTime: duration,
+      answers: questions.map((q, index) => ({
+        questionId: q.id,
+        userAnswer: finalUserAnswers[index] || "",
+        isCorrect: finalUserAnswers[index] === q.answer,
+        timeSpent: finalQuestionTimes[index] || 0,
+      })),
+    }
+
+    console.log("Quiz data:", quizData)
+    if (isAuthenticated) {
+      saveQuizResults(quizData)
     } else {
       localStorage.setItem(
         "quizResults",
         JSON.stringify({
           slug,
+          quizData,
           score: finalScore,
           quizCompleted: true,
           timeSpent,
@@ -109,7 +117,18 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
         }),
       )
     }
-  }
+  }, [
+    isAuthenticated,
+    questions,
+    quizId,
+    saveQuizResults,
+    selectedAnswer,
+    slug,
+    startTime,
+    timeSpent,
+    userAnswers,
+    questionTimes,
+  ])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -160,7 +179,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     setSelectedAnswer(null)
   }, [currentQuestion])
 
-  const nextQuestion = () => {
+  const nextQuestion = useCallback(() => {
     const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
     setUserAnswers((prev) => [...prev, selectedAnswer || ""])
     setQuestionTimes((prev) => [...prev, currentTime])
@@ -175,9 +194,17 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     } else {
       handleQuizCompletion()
     }
-  }
+  }, [
+    currentQuestion.answer,
+    currentQuestionIndex,
+    handleQuizCompletion,
+    questions.length,
+    questionTimes,
+    selectedAnswer,
+    timeSpent,
+  ])
 
-  const resetQuiz = () => {
+  const resetQuiz = useCallback(() => {
     setCurrentQuestionIndex(0)
     setSelectedAnswer(null)
     setScore(0)
@@ -186,15 +213,41 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     setTimeSpent(0)
     setUserAnswers([])
     setQuestionTimes([])
-  }
+  }, [])
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
+  }, [])
 
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const savedResults = localStorage.getItem("quizResults")
+      if (savedResults) {
+        const {
+          slug: savedSlug,
+          quizData,
+          score: savedScore,
+          quizCompleted: savedQuizCompleted,
+          timeSpent: savedTimeSpent,
+          userAnswers: savedUserAnswers,
+          questionTimes: savedQuestionTimes,
+        } = JSON.parse(savedResults)
+        if (savedSlug === slug) {
+          setScore(savedScore)
+          setQuizCompleted(savedQuizCompleted)
+          setTimeSpent(savedTimeSpent)
+          setUserAnswers(savedUserAnswers)
+          setQuestionTimes(savedQuestionTimes)
+          saveQuizResults(quizData)
+          localStorage.removeItem("quizResults")
+        }
+      }
+    }
+  }, [isAuthenticated, slug, saveQuizResults])
 
   if (hasError) {
     return (
@@ -212,30 +265,6 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
       </div>
     )
   }
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      const savedResults = localStorage.getItem("quizResults")
-      if (savedResults) {
-        const {
-          slug: savedSlug,
-          score: savedScore,
-          quizCompleted: savedQuizCompleted,
-          timeSpent: savedTimeSpent,
-          userAnswers: savedUserAnswers,
-          questionTimes: savedQuestionTimes,
-        } = JSON.parse(savedResults)
-        if (savedSlug === slug) {
-          setScore(savedScore)
-          setQuizCompleted(savedQuizCompleted)
-          setTimeSpent(savedTimeSpent)
-          setUserAnswers(savedUserAnswers)
-          setQuestionTimes(savedQuestionTimes)
-          localStorage.removeItem("quizResults")
-        }
-      }
-    }
-  }, [isAuthenticated, slug])
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
