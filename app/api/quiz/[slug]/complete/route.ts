@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     let percentageScore: number;
     const totalQuestions = quiz.questions.length;
 
-    if (type != "open-ended" || type != "fill-in-the-blank") {
+    if (type != "open-ended" && type != "fill-in-the-blank") {
       percentageScore = (score / totalQuestions) * 100;
     } else {
       percentageScore = score;
