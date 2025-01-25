@@ -14,7 +14,7 @@ function getQuizTypeRoute(quizType: string): string {
   switch (quizType) {
     case "mcq":
       return "mcq"
-    case "open-ended":
+    case "openended":
       return "openended"
     case "fill-blanks":
       return "blanks"
@@ -25,7 +25,7 @@ function getQuizTypeRoute(quizType: string): string {
 
 const iconMap = {
   mcq: CheckCircle2,
-  "open-ended": FileQuestion,
+  "openended": FileQuestion,
   "fill-blanks": AlignJustify,
 }
 
@@ -70,7 +70,7 @@ export const AnimatedQuizHighlight: React.FC = () => {
     switch (quizType) {
       case "mcq":
         return "Easy"
-      case "open-ended":
+      case "openended":
       case "fill-blanks":
         return "Hard"
       default:
@@ -100,7 +100,7 @@ export const AnimatedQuizHighlight: React.FC = () => {
                     className={`rounded-full p-3 ${
                       quiz.quizType === "mcq"
                         ? "bg-green-500"
-                        : quiz.quizType === "open-ended"
+                        : quiz.quizType === "openended"
                           ? "bg-red-500"
                           : "bg-yellow-500"
                     }`}

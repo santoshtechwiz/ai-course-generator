@@ -268,7 +268,7 @@ export default function Page({ params }: { params: { slug: string } }) {
         <CardHeader>
           <CardTitle className="flex items-center text-2xl">
             <Book className="w-6 h-6 mr-2" />
-            Open-Ended Quiz: {quizData.topic || "Unknown"}
+            openended Quiz: {quizData.topic || "Unknown"}
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -17,7 +17,7 @@ const benefits = [
   },
   {
     title: "Multiple Question Types",
-    description: "Create diverse assessments with MCQs, open-ended questions, and more.",
+    description: "Create diverse assessments with MCQs, openended questions, and more.",
     icon: "❓",
   },
   {

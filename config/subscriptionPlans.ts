@@ -14,7 +14,7 @@ export const SUBSCRIPTION_PLANS = [
       "Up to 5 sections per course",
       "Basic MCQ quiz support",
       "Basic Fill-in-the-Blank quiz support",
-      "Basic Open-Ended quiz support",
+      "Basic openended quiz support",
     ],
   },
   {
@@ -37,7 +37,7 @@ export const SUBSCRIPTION_PLANS = [
       "Video quizzes",
       "Enhanced MCQ quizzes",
       "Enhanced Fill-in-the-Blank quizzes",
-      "Enhanced Open-Ended quizzes",
+      "Enhanced openended quizzes",
     ],
   },
   {
@@ -61,7 +61,7 @@ export const SUBSCRIPTION_PLANS = [
       "Video quizzes",
       "Advanced MCQ quizzes",
       "Advanced Fill-in-the-Blank quizzes",
-      "Advanced Open-Ended quizzes",
+      "Advanced openended quizzes",
     ],
   },
 ];
@@ -70,7 +70,7 @@ export const FAQ_ITEMS = [
   {
     question: "What's included in each course?",
     answer:
-      "Each course can include video content, transcripts, various types of quizzes (MCQ, Fill-in-the-Blank, Open-Ended), and sections to organize your content. The number and complexity of these features depend on your subscription plan.",
+      "Each course can include video content, transcripts, various types of quizzes (MCQ, Fill-in-the-Blank, openended), and sections to organize your content. The number and complexity of these features depend on your subscription plan.",
   },
   {
     question: "Can I upgrade my plan?",

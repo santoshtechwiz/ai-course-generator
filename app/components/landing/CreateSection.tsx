@@ -23,7 +23,7 @@ const createOptions: CreateOption[] = [
   },
   {
     title: "Open Ended Quiz",
-    description: "Create an open-ended quiz to allow for more detailed responses.",
+    description: "Create an openended quiz to allow for more detailed responses.",
     href: "/dashboard/openended",
     buttonText: "Begin Quiz",
     icon: Zap

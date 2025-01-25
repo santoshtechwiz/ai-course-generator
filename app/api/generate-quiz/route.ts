@@ -33,13 +33,13 @@ export async function POST(req: Request) {
           userId,
           topic,
           timeStarted: new Date(),
-          quizType: 'open-ended',
+          quizType: 'openended',
           slug: slug,
           questions: {
             create: quiz.questions.map((q: { question: string; correct_answer: string; hints: string[]; difficulty: string; tags: string[] }) => ({
               question: q.question,
               answer: q.correct_answer,
-              questionType: 'open-ended',
+              questionType: 'openended',
               openEndedQuestion: {
                 create: {
                   hints: q.hints.join('|'),

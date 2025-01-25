@@ -46,11 +46,11 @@ const tiles = [
     description: "Create questions that allow students to provide detailed written responses.",
     url: "/dashboard/openended",
     quotes: [
-      "Inspire deep thinking with open-ended questions!",
+      "Inspire deep thinking with openended questions!",
       "Encourage students to express their ideas freely.",
       "Foster critical thinking through thoughtful inquiries.",
       "Unlock creativity with questions that have no limits.",
-      "Explore the depths of knowledge with open-ended prompts.",
+      "Explore the depths of knowledge with openended prompts.",
     ],
   },
 

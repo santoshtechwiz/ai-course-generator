@@ -85,7 +85,6 @@ export async function GET(request: Request) {
           { id: { in: courseIds } },
           { name: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
-          
         ],
       },
       select: {
@@ -96,40 +95,25 @@ export async function GET(request: Request) {
       },
     });
 
-    // Search games in the database
+    // Search games in the database (only in topic field)
     const games = await prisma.userQuiz.findMany({
       where: {
-        OR: [
-          { topic: { contains: query, mode: 'insensitive' } },
-          { questions: {
-            some: {
-              OR: [
-                { question: { contains: query, mode: 'insensitive' } },
-                { answer: { contains: query, mode: 'insensitive' } },
-              ],
-            },
-          }},
-        ],
+        topic: { contains: query, mode: 'insensitive' },
       },
       select: {
         id: true,
         topic: true,
-        questions: {
-          select: {
-            question: true,
-            answer: true,
-          },
-          take: 1,
-        },
+        slug: true,
+        quizType: true,
       },
     });
 
-    // Process game results to include a question preview
+    // Process game results
     const processedGames = games.map(game => ({
       id: game.id,
       topic: game.topic,
-      questionPreview: game.questions[0]?.question || null,
-      quizType: determineQuizType(game),
+      slug: game.slug,
+      quizType: game.quizType,
     }));
 
     return NextResponse.json({ courses, games: processedGames });
@@ -139,17 +123,5 @@ export async function GET(request: Request) {
       { error: 'An error occurred while searching' },
       { status: 500 }
     );
-  }
-}
-
-function determineQuizType(game: any): "mcq" | "open-ended" | "fill-blanks" {
-  // This is a placeholder implementation. You should implement the logic
-  // to determine the quiz type based on your game structure.
-  if (game.questions[0]?.choices) {
-    return "mcq";
-  } else if (game.questions[0]?.blanks) {
-    return "fill-blanks";
-  } else {
-    return "open-ended";
   }
 }

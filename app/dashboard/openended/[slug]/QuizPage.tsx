@@ -64,7 +64,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
           answers: finalAnswers,
           totalTime: finalAnswers.reduce((total, ans) => total + ans.timeSpent, 0),
           score: score,
-          type: "open-ended",
+          type: "openended",
         });
 
         toast({
@@ -213,7 +213,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
         initialIsPublic={false}
         initialIsFavorite={false}
       />
-      <h1 className="text-3xl font-bold mb-4">Open-Ended Quiz: {quizData?.topic || "Unknown"}</h1>
+      <h1 className="text-3xl font-bold mb-4">openended Quiz: {quizData?.topic || "Unknown"}</h1>
       {quizData && quizData.questions && quizData.questions.length > 0 ? (
         <QuizQuestion
           question={quizData.questions[currentQuestion]}

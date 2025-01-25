@@ -129,7 +129,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
       onClick={() => setOpenInfo(!openInfo)}
     >
       <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
-        <CardTitle className="text-sm">About Open-Ended Questions</CardTitle>
+        <CardTitle className="text-sm">About openended Questions</CardTitle>
         {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </CardHeader>
       <AnimatePresence>
@@ -141,7 +141,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
             transition={{ duration: 0.3 }}
           >
             <CardContent className="text-sm px-4 pb-4 space-y-2">
-              <p>Open-ended questions encourage critical thinking and detailed responses. They are perfect for:</p>
+              <p>openended questions encourage critical thinking and detailed responses. They are perfect for:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>Assessing deep understanding</li>
                 <li>Promoting thoughtful discussion</li>
@@ -164,7 +164,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
     >
       <Card className="h-full flex flex-col bg-card text-card-foreground shadow-lg">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold text-primary">Create Open-Ended Quiz</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Create openended Quiz</CardTitle>
           <CardDescription className="text-base">
             Choose a topic and customize your quiz settings below.
           </CardDescription>
