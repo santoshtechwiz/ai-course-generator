@@ -54,12 +54,14 @@ function reducer(state: State, action: Action): State {
 
 interface CoursePageProps {
   course: FullCourseType
+  initialChapterId?: string
 }
 
 const MemoizedMainContent = React.memo(MainContent)
 const MemoizedRightSidebar = React.memo(RightSidebar)
 
-export default function CoursePage({ course }: CoursePageProps) {
+
+export default function CoursePage({ course, initialChapterId }: CoursePageProps) {
   const searchParams =useSearchParams();
   const { user, loading: isProfileLoading, error } = useUser()
   const [state, dispatch] = useReducer(reducer, {
@@ -136,7 +138,7 @@ export default function CoursePage({ course }: CoursePageProps) {
   useEffect(() => {
     if (!videoQueue.isEmpty() && !state.selectedVideoId && !hasSetInitialVideo.current) {
       
-      const chapterId = searchParams.get("chapter")
+      const chapterId = initialChapterId;
       let initialVideo
 
       if (chapterId) {

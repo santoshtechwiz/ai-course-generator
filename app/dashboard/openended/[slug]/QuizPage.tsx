@@ -10,8 +10,9 @@ import { SignInPrompt } from "@/app/components/SignInPrompt";
 import { toast } from "@/hooks/use-toast";
 import QuizResultsOpenEnded from "../components/QuizResultsOpenEnded";
 import QuizQuestion from "../components/QuizQuestion";
+import { submitQuizData } from "@/app/actions/actions";
 
-import { submitQuizData } from "@/lib/submitQuizData";
+
 
 interface Question {
   id: number;

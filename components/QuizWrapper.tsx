@@ -7,7 +7,6 @@ import TopicForm from "@/app/dashboard/openended/components/TopicForm"
 import CreateQuizForm from "@/app/dashboard/quiz/components/CreateQuizForm"
 import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
 import { useSubscription } from "@/hooks/useSubscription"
-import Spinner from "./Spinner"
 
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"

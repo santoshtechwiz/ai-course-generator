@@ -6,7 +6,7 @@ import { SubscriptionPlanType } from '@/config/subscriptionPlans';
 import SubscriptionPlans from '@/app/dashboard/subscription/components/SubscriptionPlans';
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function SubscribePage() {
+const Page=async ()=>{
   const session = await getAuthSession();
   const userId = session?.user?.id;
   const isProd = process.env.NODE_ENV === 'production';
@@ -38,13 +38,15 @@ export default async function SubscribePage() {
     }
   }
 
+  const subscriptionData = await getSubscriptionData();
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-center mb-8">Subscription Plans</h1>
       <Suspense fallback={<SubscriptionPlansSkeleton />}>
         <SubscriptionPlansWrapper 
           userId={userId} 
-          getSubscriptionData={getSubscriptionData}
+          subscriptionData={subscriptionData}
           isProd={isProd}
         />
       </Suspense>
@@ -68,18 +70,18 @@ function SubscriptionPlansSkeleton() {
 
 async function SubscriptionPlansWrapper({ 
   userId, 
-  getSubscriptionData,
+  subscriptionData,
   isProd
 }: { 
   userId: string | undefined, 
-  getSubscriptionData: () => Promise<{ 
+  subscriptionData: { 
     currentPlan: SubscriptionPlanType | null, 
     subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | null
     error?: string 
-  }>,
+  },
   isProd: boolean
 }) {
-  const { currentPlan, subscriptionStatus, error } = await getSubscriptionData();
+  const { currentPlan, subscriptionStatus, error } = subscriptionData;
 
   if (error) {
     return (
@@ -99,3 +101,4 @@ async function SubscriptionPlansWrapper({
     />
   );
 }
+export default Page;
