@@ -16,10 +16,7 @@ export default function ShowcaseSection() {
         animate={isShowcaseInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.5 }}
       >
-        <h2 className="text-3xl font-bold text-center mb-12 relative text-foreground">
-          <span className="text-primary">Course Showcase</span>
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-primary rounded-full"></div>
-        </h2>
+        
         <Card className="bg-card/80 backdrop-blur-sm">
           <CardContent className="p-6">
             <CourseQuizCarousel />
