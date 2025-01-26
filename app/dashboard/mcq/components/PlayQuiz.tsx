@@ -51,7 +51,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
   const saveQuizResults = useCallback(
     async (quizData: any) => {
       try {
-      setLoading(true);
+        setLoading(true);
         await submitQuizData({
           slug,
           quizId,
@@ -271,7 +271,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <ApiLoader loading={loading}></ApiLoader>
+
       <Card className="w-full max-w-[95%] md:max-w-3xl shadow-xl border-0">
         <CardHeader className="space-y-4 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -292,6 +292,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
           </div>
         </CardHeader>
         <CardContent className="pb-6">
+          <ApiLoader loading={loading}></ApiLoader>
           <AnimatePresence mode="wait" initial={false}>
             {!quizCompleted ? (
               <motion.div

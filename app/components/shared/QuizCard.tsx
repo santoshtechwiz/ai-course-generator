@@ -94,7 +94,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4 justify-center">
-              <Badge variant="secondary" className={`font-medium ${quizTypeColors[quizType].split(" ")[1]} text-white`}>
+              <Badge variant="secondary" className={`font-medium ${quizTypeColors[quizType]?.split(" ")[1] || ""} text-white`}>
                 {quizTypeLabels[quizType]}
               </Badge>
               <Badge variant="outline" className="font-medium">
