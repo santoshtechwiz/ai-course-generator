@@ -1,10 +1,12 @@
 "use client"
 
 import type React from "react"
-import { motion } from "framer-motion"
-import { Book, Clock, Users, ChevronRight, Sparkles, X } from "lucide-react"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Book, Clock, Users, ChevronRight, Sparkles, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import type { CourseDetails } from "@/app/types"
 
@@ -13,35 +15,54 @@ interface PopularCoursesProps {
 }
 
 const PopularCourses: React.FC<PopularCoursesProps> = ({ courseDetails }) => {
+  const [filter, setFilter] = useState<string | null>(null)
+
+  const filteredCourses = filter ? courseDetails.filter((course) => course.category === filter) : courseDetails
+
+  const categories = Array.from(new Set(courseDetails.map((course) => course.category)))
+
   return (
-    <div className="h-full p-6 space-y-6 bg-background">
-      <div className="sticky top-0 z-10 pb-4 bg-background border-b">
-        <div className="flex justify-between items-center">
+    <div className="h-full space-y-6 bg-background">
+      <div className="sticky top-0 z-10 pb-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2">
             <Sparkles className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold text-foreground">Popular Courses</h2>
           </div>
-          <Button variant="ghost" size="icon">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+          <Button variant="outline" size="sm" onClick={() => setFilter(null)}>
+            <Filter className="h-4 w-4 mr-2" />
+            {filter || "All"}
           </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <Badge
+              key={category}
+              variant="outline"
+              className={`cursor-pointer hover:bg-primary/20 ${filter === category ? "bg-primary/20" : ""}`}
+              onClick={() => setFilter(category)}
+            >
+              {category}
+            </Badge>
+          ))}
         </div>
       </div>
 
-      <div className="space-y-4">
-        {courseDetails.map((course, index) => (
+      <AnimatePresence>
+        {filteredCourses.map((course, index) => (
           <motion.div
             key={course.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ delay: index * 0.1, duration: 0.3 }}
           >
-            <Card className="group hover:bg-muted transition-colors">
+            <Card className="group hover:bg-accent transition-colors">
               <CardHeader className="space-y-1">
                 <CardTitle className="flex justify-between items-center text-2xl">
                   <span>{course.courseName}</span>
                   <motion.div
-                    whileHover={{ scale: 1.1 }}
+                    whileHover={{ scale: 1.1, rotate: 15 }}
                     className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center"
                   >
                     <Book className="h-4 w-4 text-primary" />
@@ -65,16 +86,18 @@ const PopularCourses: React.FC<PopularCoursesProps> = ({ courseDetails }) => {
               </CardContent>
               <CardFooter>
                 <Link href={`/dashboard/course/${course.slug}`} className="w-full">
-                  <Button className="w-full" size="sm">
+                  <Button className="w-full group" size="sm">
                     View Course
-                    <ChevronRight className="ml-2 h-4 w-4" />
+                    <motion.div className="ml-2" initial={{ x: 0 }} whileHover={{ x: 5 }}>
+                      <ChevronRight className="h-4 w-4" />
+                    </motion.div>
                   </Button>
                 </Link>
               </CardFooter>
             </Card>
           </motion.div>
         ))}
-      </div>
+      </AnimatePresence>
     </div>
   )
 }
