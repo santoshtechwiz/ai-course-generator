@@ -35,9 +35,9 @@ export const AnimatedQuizHighlight: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="p-0 border-0 shadow-none">
         <CardHeader>
-          <CardTitle>Featured Quizzes</CardTitle>
+        
         </CardHeader>
         <CardContent className="space-y-4">
           {[...Array(3)].map((_, index) => (
@@ -50,9 +50,9 @@ export const AnimatedQuizHighlight: React.FC = () => {
 
   if (error) {
     return (
-      <Card>
+      <Card className="p-0 border-0 shadow-none">
         <CardHeader>
-          <CardTitle>Featured Quizzes</CardTitle>
+         
         </CardHeader>
         <CardContent>
           <p className="text-destructive">Error: {error}</p>
@@ -74,9 +74,9 @@ export const AnimatedQuizHighlight: React.FC = () => {
   }
 
   return (
-    <Card>
+    <Card className="p-0 border-0 shadow-none">
       <CardHeader>
-        <CardTitle>Featured Quizzes</CardTitle>
+       
         <CardDescription>Explore our latest and most popular quizzes</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

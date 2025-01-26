@@ -132,7 +132,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
   const difficulty = watch("difficulty")
 
   return (
-    <Card className="mx-auto max-w-2xl">
+    <Card className="mx-auto p-2">
       <SignInBanner isAuthenticated={status === 'authenticated'} />
       <CardHeader>
         <div className="flex justify-center mb-4">

@@ -61,7 +61,7 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
     [generateQuiz],
   )
 
- 
+
   const isFormValid = useMemo(() => topic.trim().length >= 3, [topic])
 
   const handleKeyDown = useCallback(
@@ -113,7 +113,7 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
       onClick={() => setOpenInfo(!openInfo)}
     >
       <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
-        <CardTitle className="text-sm">About Fill-in-the-Blank Questions</CardTitle>
+
         {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </CardHeader>
       <AnimatePresence>
@@ -148,7 +148,7 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
     >
       <Card className="h-full flex flex-col bg-card text-card-foreground shadow-lg">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold text-primary">Create Fill-in-the-Blank Quiz</CardTitle>
+         
           <CardDescription className="text-base">
             Select a topic and customize your quiz with fill-in-the-blank questions.
           </CardDescription>
@@ -198,7 +198,7 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
 
         <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
 
-        <PlanAwareButton
+          <PlanAwareButton
             label="Generate Quiz"
             onClick={generateQuiz}
             isLoggedIn={isLoggedIn}

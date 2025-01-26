@@ -1,5 +1,5 @@
+import QuizContentRoot from "./(components)/QuizContentRoot";
 
-import { QuizContentRoot } from "./(components)/QuizContentRoot"
 
 export default function QuizPage() {
   return (
