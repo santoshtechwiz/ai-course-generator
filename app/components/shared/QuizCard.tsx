@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { FC } from "react"
 import Link from "next/link"
 import {
   Clock,
@@ -36,9 +36,9 @@ const quizTypeIcons = {
 }
 
 const quizTypeColors = {
-  mcq: "from-blue-500 to-blue-600",
-  openended: "from-green-500 to-green-600",
-  "fill-blanks": "from-purple-500 to-purple-600",
+  mcq: { gradient: ["#3b82f6", "#2563eb"], badge: "bg-blue-500" }, // Blue
+  openended: { gradient: ["#22c55e", "#16a34a"], badge: "bg-green-500" }, // Green
+  "fill-blanks": { gradient: ["#a78bfa", "#7c3aed"], badge: "bg-purple-500" }, // Purple
 }
 
 const quizTypeLabels = {
@@ -60,7 +60,7 @@ function getQuizTypeRoute(quizType: string): string {
   }
 }
 
-export const QuizCard: React.FC<QuizCardProps> = ({
+export const QuizCard: FC<QuizCardProps> = ({
   title,
   questionCount,
   slug,
@@ -84,8 +84,10 @@ export const QuizCard: React.FC<QuizCardProps> = ({
         >
           <CardHeader className="relative p-6 pb-0">
             <div
-              className="absolute inset-0 bg-gradient-to-br opacity-20"
-              style={{ backgroundImage: `linear-gradient(${quizTypeColors[quizType]})` }}
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage: `linear-gradient(to bottom right, ${quizTypeColors[quizType].gradient[0]}, ${quizTypeColors[quizType].gradient[1]})`,
+              }}
             />
             <div className="relative z-10 mb-4 mx-auto">
               <div className="size-20 mx-auto bg-background/10 rounded-xl backdrop-blur-sm flex items-center justify-center">
@@ -94,7 +96,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4 justify-center">
-              <Badge variant="secondary" className={`font-medium ${quizTypeColors[quizType]?.split(" ")[1] || ""} text-white`}>
+              <Badge className={`font-medium text-white ${quizTypeColors[quizType].badge}`}>
                 {quizTypeLabels[quizType]}
               </Badge>
               <Badge variant="outline" className="font-medium">
@@ -151,7 +153,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                 "disabled:pointer-events-none disabled:opacity-50",
                 "bg-primary text-primary-foreground hover:bg-primary/90",
                 "h-11 px-8 py-2",
-                quizTypeColors[quizType].split(" ")[1],
               )}
             >
               Start Quiz
@@ -163,4 +164,3 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     </div>
   )
 }
-
