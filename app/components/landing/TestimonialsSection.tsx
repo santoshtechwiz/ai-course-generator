@@ -44,7 +44,7 @@ const testimonials = [
   },
 ]
 
-export function TestimonialsSection() {
+export default function TestimonialsSection() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
 
