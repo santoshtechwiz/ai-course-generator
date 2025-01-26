@@ -1,32 +1,26 @@
-import React, { useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+"use client"
 
+import type React from "react"
+import { useCallback } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import { Loader2, ShieldAlert, Shield, Star, Trash2 } from "lucide-react"
 import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import useCourseActions from "@/hooks/useCourseActions"
+import { cn } from "@/lib/utils"
 
-} from '@/components/ui/tooltip'
-import { Loader2 } from 'lucide-react'
-import { ShieldAlert, Shield, Star, Trash2 } from 'lucide-react'
-import { AlertDialogHeader, AlertDialogFooter } from '@/components/ui/alert-dialog'
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from '@radix-ui/react-alert-dialog'
-import useCourseActions from '@/hooks/useCourseActions'
-import { cn } from '@/lib/utils'
-
-// Updated ActionButton component
-function ActionButton({ 
-  onClick, 
-  isLoading, 
-  icon: Icon, 
-  activeIcon: ActiveIcon, 
-  label, 
-  activeLabel, 
-  isActive, 
-  activeClass, 
-  inactiveClass 
-}: {
+interface ActionButtonProps {
   onClick: () => void
   isLoading: boolean
   icon: React.ElementType
@@ -36,108 +30,126 @@ function ActionButton({
   isActive: boolean
   activeClass: string
   inactiveClass: string
-}) {
+}
+
+const ActionButton: React.FC<ActionButtonProps> = ({
+  onClick,
+  isLoading,
+  icon: Icon,
+  activeIcon: ActiveIcon,
+  label,
+  activeLabel,
+  isActive,
+  activeClass,
+  inactiveClass,
+}) => {
   return (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+    <Button
+      variant="outline"
+      size="sm"
       className={cn(
-        "relative flex items-center justify-center w-full sm:w-auto gap-2 px-4 py-2 rounded-md transition-all",
-        isActive ? activeClass : inactiveClass
+        "relative w-full sm:w-auto transition-all duration-200 ease-in-out",
+        isActive ? activeClass : inactiveClass,
       )}
       onClick={onClick}
       disabled={isLoading}
     >
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         {isLoading ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 flex items-center justify-center"
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </motion.div>
         ) : (
           <motion.div
-            key={isActive ? 'active' : 'inactive'}
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.5, opacity: 0 }}
+            key={isActive ? "active" : "inactive"}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.2 }}
             className="flex items-center gap-2"
           >
-            {isActive ? <ActiveIcon className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+            {isActive ? <ActiveIcon className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
             <span className="hidden sm:inline text-sm font-medium">{isActive ? activeLabel : label}</span>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.button>
+    </Button>
   )
 }
 
-
-// Updated CourseActions component
 interface CourseActionsProps {
   slug: string
 }
 
-
-
 export default function CourseActions({ slug }: CourseActionsProps) {
   const { status, loading, handleAction } = useCourseActions({ slug })
 
-  const handlePrivacyToggle = useCallback(() => handleAction('privacy'), [handleAction])
-  const handleFavoriteToggle = useCallback(() => handleAction('favorite'), [handleAction])
-  const handleDelete = useCallback(() => handleAction('delete'), [handleAction])
+  const handlePrivacyToggle = useCallback(() => handleAction("privacy"), [handleAction])
+  const handleFavoriteToggle = useCallback(() => handleAction("favorite"), [handleAction])
+  const handleDelete = useCallback(() => handleAction("delete"), [handleAction])
 
   return (
     <TooltipProvider>
-      <div className="flex flex-row items-center justify-end gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg bg-card">
-        {/* Privacy Button */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-4 p-4 rounded-lg bg-card shadow-sm">
         <Tooltip>
           <TooltipTrigger asChild>
-            <ActionButton
-              onClick={handlePrivacyToggle}
-              isLoading={loading === 'privacy'}
-              icon={ShieldAlert}
-              activeIcon={Shield}
-              label="Private"
-              activeLabel="Public"
-              isActive={status.isPublic}
-              activeClass="bg-green-50 text-green-600 hover:bg-green-100"
-              inactiveClass="bg-red-50 text-red-600 hover:bg-red-100"
-            />
+            <div>
+              <ActionButton
+                onClick={handlePrivacyToggle}
+                isLoading={loading === "privacy"}
+                icon={ShieldAlert}
+                activeIcon={Shield}
+                label="Make Public"
+                activeLabel="Make Private"
+                isActive={status.isPublic}
+                activeClass="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800"
+                inactiveClass="bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-800"
+              />
+            </div>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Toggle course privacy</p>
+            <p>{status.isPublic ? "Make course private" : "Make course public"}</p>
           </TooltipContent>
         </Tooltip>
 
-        {/* Favorite Button */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <ActionButton
-              onClick={handleFavoriteToggle}
-              isLoading={loading === 'favorite'}
-              icon={Star}
-              activeIcon={Star}
-              label="Favorite"
-              activeLabel="Favorited"
-              isActive={status.isFavorite}
-              activeClass="bg-yellow-50 text-yellow-600 hover:bg-yellow-100"
-              inactiveClass="bg-muted text-muted-foreground hover:bg-muted/80"
-            />
+            <div>
+              <ActionButton
+                onClick={handleFavoriteToggle}
+                isLoading={loading === "favorite"}
+                icon={Star}
+                activeIcon={Star}
+                label="Add to Favorites"
+                activeLabel="Remove from Favorites"
+                isActive={status.isFavorite}
+                activeClass="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800"
+                inactiveClass="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              />
+            </div>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>{status.isFavorite ? 'Remove from favorites' : 'Add to favorites'}</p>
+            <p>{status.isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
           </TooltipContent>
         </Tooltip>
 
-        {/* Delete Button */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center w-auto gap-2 px-4 py-2 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800"
             >
-              <Trash2 className="h-5 w-5" />
-              <span className="hidden sm:inline text-sm font-medium">Delete</span>
-            </motion.button>
+              <Trash2 className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Delete</span>
+            </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -150,16 +162,16 @@ export default function CourseActions({ slug }: CourseActionsProps) {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
-                disabled={loading === 'delete'}
-                className="bg-destructive hover:bg-destructive/90"
+                disabled={loading === "delete"}
+                className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
               >
-                {loading === 'delete' ? (
+                {loading === "delete" ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Deleting...</span>
                   </div>
                 ) : (
-                  'Delete'
+                  "Delete"
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>
