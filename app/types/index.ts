@@ -1,4 +1,4 @@
-import { User } from "@prisma/client"
+import { Prisma, User, UserQuizQuestion } from "@prisma/client"
 
 export interface DashboardUser extends User {
   courses: Course[]
@@ -207,4 +207,21 @@ export interface QuizCardProps {
   quizType: string;
   estimatedTime?: string;
   description: string;
+}
+export type QuizWithQuestionsAndTags = Prisma.UserQuizGetPayload<{
+  include: {
+    questions: true
+    
+  }
+}>
+
+export interface QuizListItem {
+  id: number
+  topic: string
+  slug: string
+  questionCount: number
+  questions: UserQuizQuestion[]
+  isPublic: boolean
+  quizType: string
+  tags: string[]
 }

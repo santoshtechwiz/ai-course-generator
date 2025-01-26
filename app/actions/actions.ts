@@ -17,7 +17,7 @@ export async function submitQuizData({
   type,
 }: SubmitQuizDataParams): Promise<void> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/${slug}/complete`, {
+    const response = await fetch(`/api/quiz/${slug}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

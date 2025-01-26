@@ -1,4 +1,3 @@
-'use client'
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
 import Navbar from "@/app/components/shared/Navbar"
