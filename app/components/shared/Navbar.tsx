@@ -1,17 +1,20 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
 import { Search, LogOut, LogIn, User, Crown } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
-
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/ThemeToggle"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
-
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { navItems } from "@/constants/navItems"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
@@ -21,15 +24,12 @@ import { Badge } from "@/components/ui/badge"
 import MobileMenu from "./MobileMenu"
 import Link from "next/link"
 
-
-
-
 const NavItems = () => {
   const pathname = usePathname()
   const router = useRouter()
 
   return (
-    <motion.div className="flex space-x-6">
+    <motion.div className="flex space-x-2">
       {navItems.map((item, index) => (
         <motion.div
           key={item.name}
@@ -38,12 +38,19 @@ const NavItems = () => {
           transition={{ delay: index * 0.1, type: "spring", stiffness: 300, damping: 20 }}
         >
           <Button
-            variant={pathname === item.href ? "secondary" : "ghost"}
-            className="relative overflow-hidden group px-3"
+            variant={pathname === item.href ? "default" : "ghost"}
+            className={`relative overflow-hidden group px-3 ${
+              pathname === item.href ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
+            }`}
             onClick={() => router.push(item.href)}
           >
             <span className="relative z-10">{item.name}</span>
-            <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary transform origin-left scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100" />
+            <motion.span
+              className="absolute inset-0 bg-primary"
+              initial={{ scale: 0 }}
+              animate={{ scale: pathname === item.href ? 1 : 0 }}
+              transition={{ duration: 0.3 }}
+            />
           </Button>
         </motion.div>
       ))}
@@ -69,15 +76,14 @@ export default function Navbar() {
 
   const handleSignIn = () => signIn()
   const handleSignOut = async () => {
-    const currentUrl = window.location.pathname; // Get the current page URL
-    await signOut({ callbackUrl: currentUrl }); // Redirect to the same page after sign-out
-  };
-  
+    const currentUrl = window.location.pathname
+    await signOut({ callbackUrl: currentUrl })
+  }
 
   const getSubscriptionBadge = () => {
     if (isLoadingSubscription || !subscriptionStatus) return null
     const plan = subscriptionStatus.subscriptionPlan as "PRO" | "BASIC" | "FREE"
-    const color = plan === "PRO" ? "yellow" : plan === "BASIC" ? "blue" : plan === "FREE" ? "gray" : "gray"
+    const color = plan === "PRO" ? "yellow" : plan === "BASIC" ? "blue" : "gray"
     return (
       <Badge variant="outline" className={`bg-${color}-500/10 text-${color}-500 border-${color}-500/20`}>
         {plan}
@@ -87,23 +93,29 @@ export default function Navbar() {
 
   return (
     <motion.header
-      className={`sticky top-0 z-50 w-full border-b bg-background/70 backdrop-blur-lg transition-shadow duration-300 ${
+      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-lg transition-all duration-300 ${
         scrolled ? "shadow-md" : "shadow-sm"
       }`}
       initial={{ opacity: 0, y: -100 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="container flex h-20 max-w-screen-2xl items-center justify-between px-4 md:px-8">
+      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-6 flex-1">
           <MobileMenu />
-          <Logo />
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Logo />
+          </motion.div>
           <nav className="hidden md:flex items-center space-x-4 flex-1 justify-center" aria-label="Main Navigation">
             <NavItems />
           </nav>
         </div>
 
-        <div className="flex items-center gap-6 flex-1 justify-end">
+        <div className="flex items-center gap-4 flex-1 justify-end">
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
             <Button variant="ghost" size="icon" onClick={() => setIsSearchModalOpen(true)}>
               <Search className="h-5 w-5" />
@@ -168,7 +180,7 @@ export default function Navbar() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={handleSignOut}
-                        className="flex items-center text-red-500 hover:text-red-600"
+                        className="flex items-center text-destructive hover:text-destructive"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Log out</span>
