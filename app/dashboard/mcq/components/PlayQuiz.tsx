@@ -13,8 +13,8 @@ import confetti from "canvas-confetti"
 import { toast } from "@/hooks/use-toast"
 import { useSession, signIn } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
-import axios from "axios"
-import { submitQuizData } from "@/lib/submitQuizData"
+import { submitQuizData } from "@/app/actions/actions"
+
 
 type Question = {
   id: number

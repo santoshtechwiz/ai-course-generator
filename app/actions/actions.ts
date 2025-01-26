@@ -1,13 +1,10 @@
 
-import { toast } from "@/hooks/use-toast"
-
-
 interface SubmitQuizDataParams {
   slug: string
   quizId: number
   answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
   elapsedTime: number
-  score: number,
+  score: number
   type: string
 }
 
@@ -19,10 +16,8 @@ export async function submitQuizData({
   score,
   type,
 }: SubmitQuizDataParams): Promise<void> {
-
-
   try {
-    const response = await fetch(`/api/quiz/${slug}/complete`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/${slug}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -30,22 +25,16 @@ export async function submitQuizData({
         answers,
         totalTime: elapsedTime,
         score,
-        type
+        type,
       }),
     })
 
     if (!response.ok) {
       throw new Error("Failed to update score")
     }
-
-    // Show success toast
-    toast({
-      title: "Quiz Completed",
-      description: `Your score: ${score.toFixed(1)}%`,
-      variant: "success",
-    })
-  } finally {
-
+  } catch (error) {
+    console.error("Error submitting quiz data:", error)
+    throw error
   }
 }
 
