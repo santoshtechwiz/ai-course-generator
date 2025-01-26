@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import Link from "next/link"
-import { Book, FileQuestion, Star, Zap, ArrowRight, Clock } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { Book, FileQuestion, Star, Zap, ArrowRight, Clock } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface CourseCardProps {
-  id: string
-  name: string
-  description: string
-  image: string
-  rating: number
-  slug: string
-  unitCount: number
-  lessonCount: number
-  quizCount: number
-  userId: string
-  estimatedTime?: string
+  id: string;
+  name: string;
+  description: string;
+  rating: number;
+  slug: string;
+  unitCount: number;
+  lessonCount: number;
+  quizCount: number;
+  userId: string;
+  estimatedTime?: string;
+  tags?: string[]; // Accept tags as props to avoid randomness
 }
 
-const possibleTags = ["Popular", "New"]
+const DEFAULT_TAGS = ["Popular", "New"];
 
 export const CourseCard: React.FC<CourseCardProps> = ({
   id,
@@ -35,21 +35,19 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   lessonCount,
   quizCount,
   estimatedTime = "2-3 weeks",
+  tags = DEFAULT_TAGS,
 }) => {
-  const [isHovered, setIsHovered] = useState(false)
+  const [isHovered, setIsHovered] = useState(false);
 
   const cardVariants = {
     initial: { scale: 1 },
     hover: { scale: 1.05, transition: { duration: 0.3 } },
-  }
+  };
 
   const iconVariants = {
     initial: { scale: 1, rotate: 0 },
     hover: { scale: 1.2, rotate: 360, transition: { duration: 0.5 } },
-  }
-
-  // Generate random tags
-  const tags = possibleTags.filter(() => Math.random() > 0.5)
+  };
 
   return (
     <motion.div
@@ -60,12 +58,17 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       transition={{ duration: 0.3 }}
       className="max-w-sm mx-auto"
     >
-      <motion.div variants={cardVariants} initial="initial" whileHover="hover" className="h-full">
+      <motion.div
+        variants={cardVariants}
+        initial="initial"
+        whileHover="hover"
+        className="h-full"
+      >
         <Card
           className={cn(
             "overflow-hidden transition-all duration-300 h-full",
             "hover:shadow-lg hover:border-primary/20",
-            "dark:bg-card dark:text-card-foreground",
+            "dark:bg-card dark:text-card-foreground"
           )}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -97,14 +100,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                   className={cn(
                     "font-medium",
                     tag === "Popular" && "bg-purple-500 hover:bg-purple-600",
-                    tag === "Best Seller" && "bg-yellow-500 hover:bg-yellow-600",
-                    tag === "Top Rated" && "bg-green-500 hover:bg-green-600",
-                    tag === "New" && "bg-blue-500 hover:bg-blue-600",
+                    tag === "New" && "bg-blue-500 hover:bg-blue-600"
                   )}
                 >
                   {tag === "Popular" && <Zap className="size-3 mr-1" />}
-                  {tag === "Best Seller" && <Star className="size-3 mr-1" />}
-                  {tag === "Top Rated" && <Star className="size-3 mr-1" />}
                   {tag === "New" && <Zap className="size-3 mr-1" />}
                   {tag}
                 </Badge>
@@ -122,7 +121,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
                 <FileQuestion className="size-4 mr-2 text-secondary" />
-                <span className="text-muted-foreground">{quizCount||5} Quizzes</span>
+                <span className="text-muted-foreground">{quizCount || 5} Quizzes</span>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
                 <Star className="size-4 mr-2 text-yellow-500" />
@@ -161,6 +160,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         </Card>
       </motion.div>
     </motion.div>
-  )
-}
-
+  );
+};
+export default CourseCard;

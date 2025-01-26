@@ -1,7 +1,7 @@
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import { getAuthSession } from './authOptions';
-import { Course, FullCourseType,  } from '@/app/types';
+import { Course, FullCourseType, QuizListItem, QuizWithQuestionsAndTags,  } from '@/app/types';
 import axios from 'axios';
 
 
@@ -170,39 +170,7 @@ export const deleteCourse = async (id: number) => {
   }
 };
 
-// Create a new quiz
-export const createQuiz = async (data: Prisma.QuizCreateInput) => {
-  try {
-    return await prisma.quiz.create({
-      data,
-    });
-  } catch (error) {
-    console.error("Error creating quiz:", error);
-    throw error;
-  }
-};
 
-// Get all quizzes
-export const getQuizzes = async () => {
-  try {
-    return await prisma.quiz.findMany();
-  } catch (error) {
-    console.error("Error fetching quizzes:", error);
-    throw error;
-  }
-};
-
-// Get a single quiz by ID
-export const getQuizById = async (id: number) => {
-  try {
-    return await prisma.quiz.findUnique({
-      where: { id },
-    });
-  } catch (error) {
-    console.error("Error fetching quiz by ID:", error);
-    throw error;
-  }
-};
 
 
 
@@ -612,3 +580,33 @@ export async function getQuizData(slug: string) {
   }
 }
 
+
+export async function getQuizzes(): Promise<QuizListItem[]> {
+  try {
+    const quizzes: QuizWithQuestionsAndTags[] = await prisma.userQuiz.findMany({
+      include: {
+        questions: true,
+        
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+
+    return quizzes.map(
+      (quiz): QuizListItem => ({
+        id: quiz.id,
+        topic: quiz.topic,
+        slug: quiz.slug,
+        questionCount: quiz.questions.length,
+        questions: quiz.questions,
+        isPublic: quiz.isPublic ?? false,
+        quizType: quiz.quizType,
+        tags: []
+      }),
+    )
+  } catch (error) {
+    console.error("Failed to fetch quizzes:", error)
+    return []
+  }
+}

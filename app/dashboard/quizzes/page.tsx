@@ -1,50 +1,19 @@
-'use client'
+import { Suspense } from "react"
+import { ExploreClient } from "./components/ExploreClient"
+import { getQuizzes } from "@/lib/db"
 
-import { useState, useEffect } from 'react'
 
-import { Input } from "@/components/ui/input"
-import { Search } from 'lucide-react'
-import { CreateQuizCard, QuizCardListing } from './components/QuizCardListing'
-import { UserQuiz } from '@prisma/client'
+export const dynamic = "force-dynamic"
 
-export const dynamic = 'force-dynamic'
-export default function QuizzesPage() {
-  const [quizzes, setQuizzes] = useState<UserQuiz[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-
-  useEffect(() => {
-    // Fetch quizzes from your API
-    const fetchQuizzes = async () => {
-      const response = await fetch('/api/quizzes')
-      const data = await response.json()
-      setQuizzes(data)
-    }
-    fetchQuizzes()
-  }, [])
-
-  const filteredQuizzes = quizzes.filter(quiz => 
-    quiz.topic.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+export default async function QuizPage() {
+  const initialQuizzes = await getQuizzes()
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-center text-primary">Explore Quizzes</h1>
-      <div className="relative mb-8">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search quizzes..."
-          className="pl-10 w-full"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredQuizzes.map((quiz, index) => (
-          <QuizCardListing key={quiz.id} quiz={quiz} index={index} />
-        ))}
-        <CreateQuizCard />
-      </div>
+      <Suspense fallback={<div>Loading...</div>}>
+        <ExploreClient initialQuizzes={initialQuizzes} />
+      </Suspense>
     </div>
   )
 }

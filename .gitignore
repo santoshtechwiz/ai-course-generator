@@ -44,3 +44,4 @@ dev.db
 y.js
 docker-compose.yaml
 /app/dashboard/blanks/components
+/app/dashboard/deep.js

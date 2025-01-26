@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast"
 import { useSession, signIn } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { submitQuizData } from "@/app/actions/actions"
+import { ApiLoader } from "@/app/components/ApiLoader"
 
 
 type Question = {
@@ -44,23 +45,14 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
   const [startTime] = useState<number>(Date.now())
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
-
+  const [loading, setLoading] = useState(false); // Track loading state
   const currentQuestion = questions[currentQuestionIndex]
 
   const saveQuizResults = useCallback(
     async (quizData: any) => {
       try {
-        // const response = await axios.post(`/api/quiz/${slug}/complete`, quizData)
-        // console.log("Quiz results saved:", response.data)
-        // if (response.data.success) {
-        //   toast({
-        //     title: "Quiz score updated",
-        //     description: "Your quiz score has been successfully recorded.",
-        //   })
-        // } else {
-        //   throw new Error(response.data.error)
-        // }
-         await submitQuizData({
+      setLoading(true);
+        await submitQuizData({
           slug,
           quizId,
           answers: quizData.answers,
@@ -68,8 +60,10 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
           score: quizData.score,
           type: "mcq",
         });
+        setLoading(false);
       } catch (error) {
         console.error("Failed to update quiz score:", error)
+        setLoading(false);
         toast({
           title: "Error",
           description: "Failed to update quiz score. Please try again.",
@@ -277,6 +271,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
+      <ApiLoader loading={loading}></ApiLoader>
       <Card className="w-full max-w-[95%] md:max-w-3xl shadow-xl border-0">
         <CardHeader className="space-y-4 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
