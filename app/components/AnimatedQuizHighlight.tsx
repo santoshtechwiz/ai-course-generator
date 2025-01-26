@@ -13,13 +13,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 function getQuizTypeRoute({ quizType }: { quizType: string }): string {
   switch (quizType) {
     case "mcq":
-      return "/dashboard/mcq"
+      return "dashboard/mcq"
     case "openended":
-      return "/dashboard/openended"
+      return "dashboard/openended"
     case "fill-blanks":
-      return "/dashboard/blanks"
+      return "dashboard/blanks"
     default:
-      return "/dashboard/quiz"
+      return "dashboard/quiz"
   }
 }
 

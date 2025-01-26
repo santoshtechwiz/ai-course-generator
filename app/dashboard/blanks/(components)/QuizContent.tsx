@@ -1,18 +1,16 @@
-'use client'
+"use client"
 
 import React, { useState, useEffect, useCallback } from "react"
-
-import { Book, AlertCircle } from 'lucide-react'
+import { Book, AlertCircle, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
-
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { submitQuizData } from "@/app/actions/actions"
-import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
+
 import { QuizActions } from "../../mcq/components/QuizActions"
 import QuizResults from "../../openended/components/QuizResults"
+import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
 
 interface Question {
   id: number
@@ -58,8 +56,8 @@ export function QuizContent({ slug }: { slug: string }) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
-  const[score, setScore] = useState(false);
-  
+  const [score, setScore] = useState(false)
+
   const fetchQuizData = useCallback(async () => {
     try {
       const response = await fetch(`/api/oquiz/${slug}`)
@@ -142,21 +140,19 @@ export function QuizContent({ slug }: { slug: string }) {
     async (score: number) => {
       if (isAuthenticated && quizData) {
         try {
-          setScore(true);
+          setScore(true)
           await submitQuizData({
             slug,
             quizId: quizData.id,
             answers,
             elapsedTime,
             score,
-            type: "fill-in-the-blank"
+            type: "fill-in-the-blank",
           })
-          setScore(false);
-          // You might want to add a success toast notification here
+          setScore(false)
         } catch (error) {
-          setScore(false);
+          setScore(false)
           console.error("Error saving quiz results:", error)
-          
         }
       }
     },
@@ -198,38 +194,6 @@ export function QuizContent({ slug }: { slug: string }) {
     )
   }
 
-  if (quizCompleted) {
-    if (isAuthenticated) {
-      return (
-        <QuizResults
-          answers={answers}
-          questions={quizData.questions}
-          onRestart={handleRestart}
-          onComplete={handleComplete}
-        />
-      )
-    } else {
-      return (
-        <div className="max-w-4xl mx-auto p-4">
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center text-2xl">
-                <Book className="w-6 h-6 mr-2" />
-                Quiz Completed
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">You've completed the quiz! Sign in to see your results and save your progress.</p>
-              <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
-            </CardContent>
-          </Card>
-        </div>
-      )
-    }
-  }
-
-  const currentQuizQuestion = quizData.questions[currentQuestion]
-
   return (
     <div className="max-w-4xl mx-auto p-4">
       <QuizActions
@@ -240,27 +204,39 @@ export function QuizContent({ slug }: { slug: string }) {
         initialIsPublic={false}
         initialIsFavorite={false}
       />
-      <div className="mb-4 text-center">
-        <span className="text-lg font-semibold">
-          Question {currentQuestion + 1} of {quizData.questions.length}
-        </span>
-      </div>
-      <div className="mb-4 text-center">
-        <span className="text-md">
-          Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
-        </span>
-      </div>
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center text-2xl">
+      <div className="mb-8 border border-gray-200 rounded-lg shadow-md">
+        <div className="flex flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center text-2xl font-bold">
             <Book className="w-6 h-6 mr-2" />
             Fill in the Blanks Quiz: {quizData.topic || "Unknown"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {quizData.questions.length > 0 ? (
+          </div>
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
+            </span>
+          </div>
+        </div>
+        <div className="px-4 py-4">
+          {quizCompleted ? (
+            isAuthenticated ? (
+              <QuizResults
+                answers={answers}
+                questions={quizData.questions}
+                onRestart={handleRestart}
+                onComplete={handleComplete}
+              />
+            ) : (
+              <div>
+                <p className="mb-4">
+                  You've completed the quiz! Sign in to see your results and save your progress.
+                </p>
+                <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
+              </div>
+            )
+          ) : quizData.questions.length > 0 ? (
             <FillInTheBlanksQuiz
-              question={currentQuizQuestion}
+              question={quizData.questions[currentQuestion]}
               onAnswer={handleAnswer}
               questionNumber={currentQuestion + 1}
               totalQuestions={quizData.questions.length}
@@ -271,8 +247,10 @@ export function QuizContent({ slug }: { slug: string }) {
               No questions available for this quiz.
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
     </div>
   )
 }
+

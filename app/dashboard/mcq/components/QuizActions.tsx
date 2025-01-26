@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, Star, Trash2 } from "lucide-react"
+import { Eye, EyeOff, Star, Trash2, Share2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,14 +17,15 @@ import {
 } from "@/components/ui/alert-dialog"
 import { toast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { motion } from "framer-motion"
 
-interface QuizActionsProps {
+interface QuizActionsToolbarProps {
   quizId: string
   quizSlug: string
   initialIsPublic: boolean
   initialIsFavorite: boolean
-  userId: string // New prop for the current user's ID
-  ownerId: string // New prop for the quiz owner's ID
+  userId: string
+  ownerId: string
 }
 
 export function QuizActions({
@@ -34,12 +35,11 @@ export function QuizActions({
   initialIsFavorite,
   userId,
   ownerId,
-}: QuizActionsProps) {
+}: QuizActionsToolbarProps) {
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
   const router = useRouter()
 
-  // If the user is not the owner, don't render anything
   if (userId !== ownerId) {
     return null
   }
@@ -57,8 +57,10 @@ export function QuizActions({
         setIsFavorite(updatedQuiz.isFavorite)
         toast({
           title: "Quiz updated",
+          description: `Your quiz is now ${updatedQuiz.isPublic ? "public" : "private"}${
+            data.isFavorite !== undefined ? ` and ${updatedQuiz.isFavorite ? "favorited" : "unfavorited"}` : ""
+          }.`,
           variant: "success",
-          description: "Your quiz has been successfully updated.",
         })
       } else {
         throw new Error("Failed to update quiz")
@@ -68,7 +70,7 @@ export function QuizActions({
       toast({
         title: "Error",
         description: "Failed to update quiz. Please try again.",
-        variant: "danger",
+        variant: "destructive",
       })
     }
   }
@@ -86,6 +88,7 @@ export function QuizActions({
         toast({
           title: "Quiz deleted",
           description: "Your quiz has been successfully deleted.",
+          variant: "success",
         })
         router.push("/dashboard/quizzes")
       } else {
@@ -101,22 +104,41 @@ export function QuizActions({
     }
   }
 
+  const handleShare = () => {
+    if (isPublic) {
+      const shareUrl = `${window.location.origin}/quiz/${quizSlug}`
+      navigator.clipboard.writeText(shareUrl)
+      toast({
+        title: "Share link copied",
+        description: "The quiz link has been copied to your clipboard.",
+        variant: "success",
+      })
+    } else {
+      toast({
+        title: "Cannot share private quiz",
+        description: "Make the quiz public to share it.",
+        variant: "danger",
+      })
+    }
+  }
+
   return (
-    <div className="flex flex-wrap gap-3 p-4 rounded-lg shadow-sm">
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-wrap items-center gap-2 mb-5 mt-5 p-3 bg-card rounded-lg shadow-md"
+    >
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={isPublic ? "secondary" : "outline"}
+              variant={isPublic ? "default" : "secondary"}
               size="sm"
               onClick={togglePublic}
-              className="transition-all duration-300 ease-in-out hover:scale-105 focus:ring-2 focus:ring-primary"
+              className="transition-all duration-300 ease-in-out hover:scale-105"
             >
-              {isPublic ? (
-                <Eye className="mr-2 h-4 w-4 transition-transform duration-300 ease-in-out group-hover:scale-110" />
-              ) : (
-                <EyeOff className="mr-2 h-4 w-4 transition-transform duration-300 ease-in-out group-hover:scale-110" />
-              )}
+              {isPublic ? <Eye className="mr-2 h-4 w-4 text-primary" /> : <EyeOff className="mr-2 h-4 w-4" />}
               <span className="font-medium">{isPublic ? "Public" : "Private"}</span>
             </Button>
           </TooltipTrigger>
@@ -125,18 +147,17 @@ export function QuizActions({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={isFavorite ? "secondary" : "outline"}
+              variant={isFavorite ? "default" : "secondary"}
               size="sm"
               onClick={toggleFavorite}
-              className="transition-all duration-300 ease-in-out hover:scale-105 focus:ring-2 focus:ring-primary"
+              className="transition-all duration-300 ease-in-out hover:scale-105"
             >
-              <Star
-                className={`mr-2 h-4 w-4 transition-transform duration-300 ease-in-out group-hover:scale-110 ${isFavorite ? "fill-current text-primary" : ""}`}
-              />
+              <Star className={`mr-2 h-4 w-4 ${isFavorite ? "fill-primary text-primary" : ""}`} />
               <span className="font-medium">{isFavorite ? "Favorited" : "Favorite"}</span>
             </Button>
           </TooltipTrigger>
@@ -145,38 +166,52 @@ export function QuizActions({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+              className="transition-all duration-300 ease-in-out hover:scale-105"
+              disabled={!isPublic}
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              <span className="font-medium">Share</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isPublic ? "Copy share link" : "Make public to share"}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button
             variant="destructive"
             size="sm"
-            className="transition-all duration-300 ease-in-out hover:scale-105 focus:ring-2 focus:ring-destructive"
+            className="transition-all duration-300 ease-in-out hover:scale-105 ml-auto"
           >
-            <Trash2 className="mr-2 h-4 w-4 transition-transform duration-300 ease-in-out group-hover:scale-110" />
+            <Trash2 className="mr-2 h-4 w-4" />
             <span className="font-medium">Delete</span>
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete your quiz and remove it from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="transition-all duration-300 ease-in-out hover:bg-secondary">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="hover:bg-destructive/90 transition-all duration-300 ease-in-out"
-            >
-              Delete
-            </AlertDialogAction>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   )
 }
 
