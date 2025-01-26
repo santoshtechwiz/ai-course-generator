@@ -12,7 +12,7 @@ interface CarouselItem {
   id: number
   name: string
   description: string
-  type: 'course' | 'quiz'
+  type: 'course' | 'mcq'|'openended'|'fill-in-the-blank'
   slug: string
 }
 
@@ -199,6 +199,34 @@ export default function CourseQuizCarousel() {
                         {items[currentIndex].type === "course" ? "Start Course" : "Take Quiz"}
                       </Button>
                     </Link>
+                  {items[currentIndex].type === "mcq" ? (
+                    <Link href={`/mcq/${items[currentIndex].slug}`}>
+                      <Button
+                        size="lg"
+                        className="font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        Take Quiz
+                      </Button>
+                    </Link>
+                  ) : items[currentIndex].type === "openended" ? (
+                    <Link href={`/dashboard/openended/${items[currentIndex].slug}`}>
+                      <Button
+                        size="lg"
+                        className="font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        Take Quiz
+                      </Button>
+                    </Link>
+                  ) : items[currentIndex].type === "fill-in-the-blank" ? (
+                    <Link href={`/dashboard/blanks/${items[currentIndex].slug}`}>
+                      <Button
+                        size="lg"
+                        className="font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        Take Quiz
+                      </Button>
+                    </Link>
+                  ) : null}
                   </CardFooter>
                 </div>
               </Card>

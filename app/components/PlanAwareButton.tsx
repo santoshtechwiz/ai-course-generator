@@ -70,6 +70,7 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
   hasCredits = true,
   loadingLabel = "Processing...",
   customStates = {},
+  className = "",
   ...props
 }) => {
   const [isLoading, setIsLoading] = useState(false)
@@ -101,6 +102,7 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            className={`w-full justify-center py-2 px-4 text-sm sm:text-base md:text-lg lg:py-3 lg:px-6 ${className}`}
             onClick={handleClick}
             variant={currentState.variant}
             disabled={isLoading || !isLoggedIn || !isEnabled || !hasCredits}

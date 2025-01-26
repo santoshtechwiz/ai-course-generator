@@ -1,183 +1,106 @@
-'use client'
+"use client"
 
-import { useEffect, useRef, useState } from "react"
-import { motion } from "framer-motion"
-import { useInView } from "react-intersection-observer"
-import CTA from "./CTA"
-import ParallaxBackground from "./ParallaxBackground"
-import Icon from "./Icon"
+import type React from "react"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 
-import BrainSVG from "./BrainSvg"
+interface StoryFrame {
+  emoji: string
+  text: string
+}
 
+const story: StoryFrame[] = [
+  { emoji: "👩‍🏫", text: "Meet Sarah, a teacher with a passion for learning." },
+  { emoji: "💡", text: "One day, she had a brilliant idea." },
+  { emoji: "🖥️", text: "She discovered CourseAI and started creating online courses." },
+  { emoji: "📚", text: "Sarah made courses on various topics she loved." },
+  { emoji: "👨‍🎓👩‍🎓", text: "Students from all over the world joined her classes." },
+  { emoji: "🌟", text: "Her courses became a huge success!" },
+  { emoji: "🎉", text: "Now, Sarah inspires others to share their knowledge too." },
+]
 
-export default function About() {
-  const [scrollY, setScrollY] = useState(0)
-  const aboutRef = useRef<HTMLDivElement>(null)
+const emojiVariants = {
+  hidden: { scale: 0, rotate: -180 },
+  visible: {
+    scale: 1,
+    rotate: 0,
+    transition: { type: "spring", stiffness: 260, damping: 20 },
+  },
+  exit: {
+    scale: 0,
+    rotate: 180,
+    transition: { duration: 0.2 },
+  },
+}
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY)
-    }
+const textVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 100, damping: 10, delay: 0.2 },
+  },
+  exit: {
+    opacity: 0,
+    y: -50,
+    transition: { duration: 0.2 },
+  },
+}
 
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+export const EmojiStory: React.FC = () => {
+  const [currentFrame, setCurrentFrame] = useState(0)
 
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
+  const nextFrame = () => {
+    setCurrentFrame((prev) => (prev + 1) % story.length)
   }
 
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  })
+  const prevFrame = () => {
+    setCurrentFrame((prev) => (prev - 1 + story.length) % story.length)
+  }
 
   return (
-    <div ref={aboutRef} className="relative min-h-screen overflow-hidden bg-light-gray">
-      <ParallaxBackground scrollY={scrollY} />
-
-      <main className="relative z-10 px-4 py-16 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <motion.h1 
-          className="mb-8 text-4xl font-bold text-center text-primary md:text-5xl"
-          initial="hidden"
-          animate="visible"
-          variants={fadeInUp}
-        >
-          Why CourseAI?
-        </motion.h1>
-
-        <motion.p 
-          className="mb-12 text-xl text-center text-gray-700 md:text-2xl"
-          initial="hidden"
-          animate="visible"
-          variants={fadeInUp}
-        >
-          Easily create any course on any topic with CourseAI, designed for busy professionals like you.
-        </motion.p>
-
-        <motion.section 
-          className="mb-16"
-          ref={ref}
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          variants={fadeInUp}
-        >
-          <h2 className="mb-6 text-3xl font-semibold text-center text-primary md:text-4xl">
-            About Us
-          </h2>
-          <p className="mb-4 text-lg text-center text-gray-700 md:text-xl">
-            CourseAI is an educational platform designed to allow anyone—whether an expert or a beginner—to easily create and share courses on any topic. We understand that time is valuable, so we've made course creation quick, effective, and flexible.
-          </p>
-          <div className="flex justify-center mt-8">
-            <BrainSVG className="w-64 h-64 text-primary" />
+    <Card className="w-full max-w-2xl mx-auto overflow-hidden">
+      <CardContent className="p-6">
+        <div className="flex flex-col items-center justify-center space-y-8">
+          <div className="relative w-48 h-48">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentFrame}
+                variants={emojiVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="absolute inset-0 flex items-center justify-center text-8xl"
+              >
+                {story[currentFrame].emoji}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </motion.section>
-
-        <motion.section 
-          className="mb-16"
-          ref={ref}
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          variants={fadeInUp}
-        >
-          <h2 className="mb-6 text-3xl font-semibold text-center text-primary md:text-4xl">
-            Our Core Values
-          </h2>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            <CoreValue
-              icon="clock"
-              title="Effortless Course Creation"
-              description="Create any course easily with our intuitive platform and templates."
-            />
-            <CoreValue
-              icon="device"
-              title="On-the-Go Learning"
-              description="Access your courses from any device, at any time, from anywhere."
-            />
-            <CoreValue
-              icon="users"
-              title="Built by Professionals"
-              description="CourseAI is designed by experts who understand the needs of professionals."
-            />
-            <CoreValue
-              icon="wallet"
-              title="Affordable and Flexible"
-              description="Affordable pricing for everyone, making course creation accessible to all."
-            />
+          <div className="h-20 text-center">
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={currentFrame}
+                variants={textVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="text-lg"
+              >
+                {story[currentFrame].text}
+              </motion.p>
+            </AnimatePresence>
           </div>
-        </motion.section>
-
-        <motion.section 
-          className="mb-16"
-          ref={ref}
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          variants={fadeInUp}
-        >
-          <h2 className="mb-6 text-3xl font-semibold text-center text-primary md:text-4xl">
-            Why We Created CourseAI
-          </h2>
-          <p className="mb-4 text-lg text-center text-gray-700 md:text-xl">
-            While there are many platforms like Udemy and Codecademy offering online courses, they often come with high fees and lack the flexibility that busy professionals need. We created CourseAI to solve these problems. Our goal is to democratize education by allowing anyone to create a course and share knowledge on any topic, without the financial barrier.
-          </p>
-          <p className="mb-4 text-lg text-center text-gray-700 md:text-xl">
-            Unlike Udemy, where course creators are limited by their content's pricing model, CourseAI gives you full control over your content. You can create a course for free, offer it for a fee, or even make it available to others at no cost. We believe in making education accessible, without the need for huge investments upfront.
-          </p>
-          <p className="mb-4 text-lg text-center text-gray-700 md:text-xl">
-            And unlike Codecademy, which focuses mainly on coding and technical skills, CourseAI allows you to create courses on any topic imaginable—from business to cooking, from marketing to music. Whether you're an expert in your field or passionate about sharing your knowledge, CourseAI gives you the tools to share it with the world.
-          </p>
-          <p className="mb-4 text-lg text-center text-gray-700 md:text-xl">
-            We created CourseAI to empower individuals to learn, teach, and grow without the limitations of traditional learning platforms.
-          </p>
-        </motion.section>
-
-        <motion.section 
-          className="mb-16"
-          ref={ref}
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          variants={fadeInUp}
-        >
-          <h2 className="mb-6 text-3xl font-semibold text-center text-primary md:text-4xl">
-            Quickly Test Your Knowledge
-          </h2>
-          <p className="mb-4 text-lg text-center text-gray-700 md:text-xl">
-            Need to test your knowledge on any topic? With CourseAI, you can quickly create multiple choice, openended, or fill-in-the-blank questions in just seconds. Whether you're preparing for an exam, creating a quiz for your course, or simply testing your knowledge, we make it easy.
-          </p>
-      
-        </motion.section>
-
-        <motion.section 
-          className="mb-16"
-          ref={ref}
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          variants={fadeInUp}
-        >
-          <h2 className="mb-6 text-3xl font-semibold text-center text-primary md:text-4xl">
-            Join CourseAI Today
-          </h2>
-          <p className="mb-8 text-lg text-center text-gray-700 md:text-xl">
-            With CourseAI, creating a course or testing your knowledge on any topic is just a few clicks away. Start your journey today, and make your knowledge available to others while expanding your own.
-          </p>
-          <CTA />
-        </motion.section>
-      </main>
-    </div>
+          <div className="flex justify-center space-x-4">
+            <Button onClick={prevFrame} variant="outline">
+              Previous
+            </Button>
+            <Button onClick={nextFrame}>Next</Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
-function CoreValue({ icon, title, description }) {
-  return (
-    <motion.div 
-      className="flex flex-col items-center text-center"
-      whileHover={{ scale: 1.05 }}
-      transition={{ type: "spring", stiffness: 300 }}
-    >
-      <Icon name={icon} className="w-16 h-16 mb-4 text-primary" />
-      <h3 className="mb-2 text-xl font-semibold text-primary">{title}</h3>
-      <p className="text-gray-700 text-lg">{description}</p>
-    </motion.div>
-  )
-}
