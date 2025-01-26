@@ -1,57 +1,56 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Book, HelpCircle, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import Link from 'next/link'
-import { cn } from '@/lib/utils'
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, ChevronRight, BookOpen, ListChecks, PenLine, FileText, Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
 
 interface CarouselItem {
   id: number
   name: string
   description: string
-  type: 'course' | 'mcq'|'openended'|'fill-in-the-blank'
+  type: "course" | "mcq" | "openended" | "fill-in-the-blank"
   slug: string
 }
 
-const CACHE_KEY = 'carouselItems'
+const CACHE_KEY = "carouselItems"
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
-const BackgroundPattern = () => (
-  <div className="absolute inset-0 w-full h-full overflow-hidden">
-    <svg
-      className="absolute top-0 left-0 w-full h-full opacity-[0.07] text-primary"
-      width="100%"
-      height="100%"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <pattern id="hexagons" width="50" height="43.4" patternUnits="userSpaceOnUse" patternTransform="scale(2)">
-          <path
-            d="M25,17.3205081 L50,0 L50,34.641016 L25,51.9615242 L0,34.641016 L0,0 Z"
-            stroke="currentColor"
-            strokeWidth="1"
-            fill="none"
-          />
-        </pattern>
-        <pattern id="circles" width="30" height="30" patternUnits="userSpaceOnUse" patternTransform="scale(2)">
-          <circle cx="15" cy="15" r="6" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        </pattern>
-        <linearGradient id="fadeGradient" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.1" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#hexagons)" />
-      <rect width="100%" height="100%" fill="url(#circles)" />
-      <rect width="100%" height="100%" fill="url(#fadeGradient)" />
-    </svg>
-    
-    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-  </div>
-)
+const TypeIcon = ({ type }: { type: CarouselItem["type"] }) => {
+  const iconProps = {
+    className: "w-24 h-24 opacity-10 absolute right-4 top-4 transition-transform group-hover:scale-110",
+  }
+  switch (type) {
+    case "course":
+      return <BookOpen {...iconProps} />
+    case "mcq":
+      return <ListChecks {...iconProps} />
+    case "openended":
+      return <PenLine {...iconProps} />
+    case "fill-in-the-blank":
+      return <FileText {...iconProps} />
+    default:
+      return null
+  }
+}
+
+const getTypeColor = (type: CarouselItem["type"]) => {
+  switch (type) {
+    case "course":
+      return "from-blue-500/20 to-transparent"
+    case "mcq":
+      return "from-green-500/20 to-transparent"
+    case "openended":
+      return "from-purple-500/20 to-transparent"
+    case "fill-in-the-blank":
+      return "from-orange-500/20 to-transparent"
+    default:
+      return "from-primary/20 to-transparent"
+  }
+}
 
 export default function CourseQuizCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -71,16 +70,14 @@ export default function CourseQuizCarousel() {
           }
         }
 
-        const response = await fetch('/api/carousel-items')
-        if (!response.ok) {
-          throw new Error('Failed to fetch carousel items')
-        }
+        const response = await fetch("/api/carousel-items")
+        if (!response.ok) throw new Error("Failed to fetch carousel items")
         const fetchedItems = await response.json()
 
         localStorage.setItem(CACHE_KEY, JSON.stringify({ items: fetchedItems, timestamp: Date.now() }))
         setItems(fetchedItems)
       } catch (error) {
-        console.error('Error fetching carousel items:', error)
+        console.error("Error fetching carousel items:", error)
       } finally {
         setIsLoading(false)
       }
@@ -97,14 +94,6 @@ export default function CourseQuizCarousel() {
       return () => clearInterval(interval)
     }
   }, [items])
-
-  const nextSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % items.length)
-  }
-
-  const prevSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + items.length) % items.length)
-  }
 
   if (isLoading) {
     return (
@@ -124,128 +113,100 @@ export default function CourseQuizCarousel() {
 
   return (
     <div className="relative w-full max-w-4xl mx-auto px-4 py-8">
-      <Button
-        variant="outline"
-        size="icon"
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full shadow-lg bg-background/80 backdrop-blur-sm"
-        onClick={prevSlide}
+      <motion.div
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
       >
-        <ChevronLeft className="h-4 w-4" />
-        <span className="sr-only">Previous slide</span>
-      </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full shadow-lg bg-background/80 backdrop-blur-sm"
-        onClick={nextSlide}
+        <Button
+          variant="secondary"
+          size="icon"
+          className="h-12 w-12 rounded-full shadow-lg bg-background/80 backdrop-blur-sm"
+          onClick={() => setCurrentIndex((prev) => (prev - 1 + items.length) % items.length)}
+        >
+          <ChevronLeft className="h-6 w-6" />
+          <span className="sr-only">Previous slide</span>
+        </Button>
+      </motion.div>
+
+      <motion.div
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
       >
-        <ChevronRight className="h-4 w-4" />
-        <span className="sr-only">Next slide</span>
-      </Button>
-      
+        <Button
+          variant="secondary"
+          size="icon"
+          className="h-12 w-12 rounded-full shadow-lg bg-background/80 backdrop-blur-sm"
+          onClick={() => setCurrentIndex((prev) => (prev + 1) % items.length)}
+        >
+          <ChevronRight className="h-6 w-6" />
+          <span className="sr-only">Next slide</span>
+        </Button>
+      </motion.div>
+
       <div className="overflow-hidden rounded-xl">
         <div className="relative min-h-[400px]">
-          <AnimatePresence initial={false} custom={currentIndex}>
-            <motion.div
-              key={currentIndex}
-              custom={currentIndex}
-              variants={{
-                enter: (direction: number) => ({
-                  opacity: 0,
-                  x: direction > 0 ? "100%" : "-100%",
-                }),
-                center: {
-                  opacity: 1,
-                  x: 0,
-                },
-                exit: (direction: number) => ({
-                  opacity: 0,
-                  x: direction < 0 ? "100%" : "-100%",
-                }),
-              }}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 },
-              }}
-              className="absolute w-full h-full"
-            >
-              <Card className="w-full h-full mx-auto shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden border-primary/10">
-                <BackgroundPattern />
-                <div className="relative z-10 flex flex-col h-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-4 text-2xl">
-                      {items[currentIndex].type === "course" ? (
-                        <Book className="text-primary h-6 w-6" />
-                      ) : (
-                        <HelpCircle className="text-primary h-6 w-6" />
-                      )}
-                      {items[currentIndex].name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                    <p className="text-muted-foreground text-lg leading-relaxed">
-                      {items[currentIndex].description}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="flex justify-end pt-6">
-                    <Link href={`/dashboard/${items[currentIndex].type}/${items[currentIndex].slug}`}>
-                      <Button
-                        size="lg"
-                        className="font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
-                      >
-                        {items[currentIndex].type === "course" ? "Start Course" : "Take Quiz"}
-                      </Button>
-                    </Link>
-                  {items[currentIndex].type === "mcq" ? (
-                    <Link href={`/mcq/${items[currentIndex].slug}`}>
-                      <Button
-                        size="lg"
-                        className="font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
-                      >
-                        Take Quiz
-                      </Button>
-                    </Link>
-                  ) : items[currentIndex].type === "openended" ? (
-                    <Link href={`/dashboard/openended/${items[currentIndex].slug}`}>
-                      <Button
-                        size="lg"
-                        className="font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
-                      >
-                        Take Quiz
-                      </Button>
-                    </Link>
-                  ) : items[currentIndex].type === "fill-in-the-blank" ? (
-                    <Link href={`/dashboard/blanks/${items[currentIndex].slug}`}>
-                      <Button
-                        size="lg"
-                        className="font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
-                      >
-                        Take Quiz
-                      </Button>
-                    </Link>
-                  ) : null}
-                  </CardFooter>
-                </div>
-              </Card>
-            </motion.div>
+          <AnimatePresence initial={false} mode="wait">
+            {items.map(
+              (item, index) =>
+                index === currentIndex && (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, x: 100 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -100 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="absolute inset-0"
+                  >
+                    <Card className="w-full h-full group relative overflow-hidden">
+                      <div
+                        className={cn(
+                          "absolute inset-0 bg-gradient-to-br transition-opacity duration-300",
+                          getTypeColor(item.type),
+                        )}
+                      />
+                      <TypeIcon type={item.type} />
+                      <div className="relative z-10 flex flex-col h-full p-6">
+                        <CardHeader className="flex-1">
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                          >
+                            <CardTitle className="text-3xl font-bold mb-2">{item.name}</CardTitle>
+                            <CardDescription className="text-lg">{item.description}</CardDescription>
+                          </motion.div>
+                        </CardHeader>
+                        <CardFooter className="pt-6">
+                          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
+                            <Link href={`/dashboard/${item.type}/${item.slug}`} className="w-full">
+                              <Button size="lg" className="w-full text-lg font-semibold">
+                                {item.type === "course" ? "Start Course" : "Take Quiz"}
+                              </Button>
+                            </Link>
+                          </motion.div>
+                        </CardFooter>
+                      </div>
+                    </Card>
+                  </motion.div>
+                ),
+            )}
           </AnimatePresence>
         </div>
       </div>
-      
-      <div className="flex justify-center gap-2 mt-6">
+
+      <div className="flex justify-center gap-3 mt-6">
         {items.map((_, index) => (
-          <button
+          <motion.button
             key={index}
             onClick={() => setCurrentIndex(index)}
             className={cn(
-              "w-2.5 h-2.5 rounded-full transition-colors",
-              index === currentIndex
-                ? "bg-primary"
-                : "bg-primary/20"
+              "w-3 h-3 rounded-full transition-all duration-300",
+              index === currentIndex ? "bg-primary scale-125" : "bg-primary/20 hover:bg-primary/40",
             )}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.8 }}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
