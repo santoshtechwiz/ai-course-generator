@@ -5,14 +5,17 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Lock, CheckCircle, User, Loader2, CreditCard } from "lucide-react"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
+
 
 export interface PlanAwareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => Promise<void> | void
-  isLoggedIn: boolean
+  isLoggedIn?: boolean
   isEnabled?: boolean
   hasCredits?: boolean
   loadingLabel?: string
+  disableInternalCreditCheck?: boolean
   customStates?: {
     default?: Partial<ButtonState>
     loading?: Partial<ButtonState>
@@ -67,25 +70,40 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
   onClick,
   isLoggedIn,
   isEnabled = true,
-  hasCredits = true,
+  hasCredits,
   loadingLabel = "Processing...",
+  disableInternalCreditCheck = false,
   customStates = {},
   className = "",
   ...props
 }) => {
   const [isLoading, setIsLoading] = useState(false)
+  const { subscriptionStatus } = useSubscriptionStore()
 
   const currentState = useMemo(() => {
     if (isLoading) return { ...defaultStates.loading, ...customStates.loading }
-    if (!isLoggedIn) return { ...defaultStates.notLoggedIn, ...customStates.notLoggedIn }
-    if (!hasCredits) return { ...defaultStates.noCredits, ...customStates.noCredits }
+    if (isLoggedIn === false) return { ...defaultStates.notLoggedIn, ...customStates.notLoggedIn }
+    if (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0) {
+      return { ...defaultStates.noCredits, ...customStates.noCredits }
+    }
+    if (hasCredits === false) return { ...defaultStates.noCredits, ...customStates.noCredits }
     if (!isEnabled) return { ...defaultStates.notEnabled, ...customStates.notEnabled }
     return { ...defaultStates.default, ...customStates.default, label }
-  }, [isLoading, isLoggedIn, hasCredits, isEnabled, label, customStates])
+  }, [
+    isLoading,
+    isLoggedIn,
+    hasCredits,
+    isEnabled,
+    label,
+    customStates,
+    subscriptionStatus,
+    disableInternalCreditCheck,
+  ])
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    if (isLoading || !isLoggedIn || !isEnabled || !hasCredits || !onClick) return
+    if (isLoading || isLoggedIn === false || !isEnabled || hasCredits === false || !onClick) return
+    if (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0) return
 
     setIsLoading(true)
     try {
@@ -97,6 +115,13 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
     }
   }
 
+  const isDisabled: boolean =
+    isLoading ||
+    isLoggedIn === false ||
+    !isEnabled ||
+    hasCredits === false ||
+    (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0) || false
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -105,7 +130,7 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
             className={`w-full justify-center py-2 px-4 text-sm sm:text-base md:text-lg lg:py-3 lg:px-6 ${className}`}
             onClick={handleClick}
             variant={currentState.variant}
-            disabled={isLoading || !isLoggedIn || !isEnabled || !hasCredits}
+            disabled={isDisabled}
             {...props}
           >
             {currentState.icon}
@@ -121,4 +146,6 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
 }
 
 PlanAwareButton.displayName = "PlanAwareButton"
+
+export default PlanAwareButton
 
