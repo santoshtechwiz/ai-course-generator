@@ -10,7 +10,8 @@ import { SignInPrompt } from "@/app/components/SignInPrompt";
 import { toast } from "@/hooks/use-toast";
 import QuizResultsOpenEnded from "../components/QuizResultsOpenEnded";
 import QuizQuestion from "../components/QuizQuestion";
-import { GlobalLoading } from "@/app/components/shared/GlobalLoading";
+
+import { submitQuizData } from "@/lib/submitQuizData";
 
 interface Question {
   id: number;
@@ -59,17 +60,25 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
       isSaving.current = true;
 
       try {
-        await axios.post(`/api/quiz/${slug}/complete`, {
+        // await axios.post(`/api/quiz/${slug}/complete`, {
+        //   quizId: quizData?.id,
+        //   answers: finalAnswers,
+        //   totalTime: finalAnswers.reduce((total, ans) => total + ans.timeSpent, 0),
+        //   score: score,
+        //   type: "openended",
+        // });
+
+        // toast({
+        //   variant: "success",
+        //   title: "Quiz results saved!",
+        // });
+        submitQuizData({
+          slug,
           quizId: quizData?.id,
           answers: finalAnswers,
-          totalTime: finalAnswers.reduce((total, ans) => total + ans.timeSpent, 0),
-          score: score,
+          elapsedTime: finalAnswers.reduce((total, ans) => total + ans.timeSpent, 0),
+          score,
           type: "openended",
-        });
-
-        toast({
-          variant: "success",
-          title: "Quiz results saved!",
         });
       } catch (error) {
         console.error("Error saving quiz results:", error);
@@ -170,9 +179,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
     [isAuthenticated, answers, saveQuizResults]
   );
 
-  if (loading) {
-    return <GlobalLoading />;
-  }
+
 
   if (error) {
     return (

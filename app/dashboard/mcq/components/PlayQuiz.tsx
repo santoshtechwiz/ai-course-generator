@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast"
 import { useSession, signIn } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import axios from "axios"
+import { submitQuizData } from "@/lib/submitQuizData"
 
 type Question = {
   id: number
@@ -49,16 +50,24 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
   const saveQuizResults = useCallback(
     async (quizData: any) => {
       try {
-        const response = await axios.post(`/api/quiz/${slug}/complete`, quizData)
-        console.log("Quiz results saved:", response.data)
-        if (response.data.success) {
-          toast({
-            title: "Quiz score updated",
-            description: "Your quiz score has been successfully recorded.",
-          })
-        } else {
-          throw new Error(response.data.error)
-        }
+        // const response = await axios.post(`/api/quiz/${slug}/complete`, quizData)
+        // console.log("Quiz results saved:", response.data)
+        // if (response.data.success) {
+        //   toast({
+        //     title: "Quiz score updated",
+        //     description: "Your quiz score has been successfully recorded.",
+        //   })
+        // } else {
+        //   throw new Error(response.data.error)
+        // }
+         await submitQuizData({
+          slug,
+          quizId,
+          answers: quizData.answers,
+          elapsedTime: quizData.totalTime,
+          score: quizData.score,
+          type: "mcq",
+        });
       } catch (error) {
         console.error("Failed to update quiz score:", error)
         toast({

@@ -11,7 +11,7 @@ interface LoadingContextType {
 
 const LoadingContext = createContext<LoadingContextType | undefined>(undefined)
 
-export const useLoading = () => {
+export const useLoaderContext = () => {
   const context = useContext(LoadingContext)
   if (!context) {
     throw new Error("useLoading must be used within a LoadingProvider")

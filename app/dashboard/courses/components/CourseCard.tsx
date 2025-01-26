@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { motion, useAnimation, AnimatePresence } from "framer-motion"
+import { useState } from "react"
+import { motion } from "framer-motion"
 import Link from "next/link"
-import { Book, FileQuestion, Star, Zap } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Book, FileQuestion, Star, Zap, ArrowRight, Clock } from "lucide-react"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -20,7 +20,10 @@ interface CourseCardProps {
   lessonCount: number
   quizCount: number
   userId: string
+  estimatedTime?: string
 }
+
+const possibleTags = ["Popular", "New"]
 
 export const CourseCard: React.FC<CourseCardProps> = ({
   id,
@@ -31,46 +34,22 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   unitCount,
   lessonCount,
   quizCount,
+  estimatedTime = "2-3 weeks",
 }) => {
   const [isHovered, setIsHovered] = useState(false)
-  const controls = useAnimation()
 
-  useEffect(() => {
-    controls.start({
-      scale: [1, 1.02, 1],
-      transition: { duration: 4, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" },
-    })
-  }, [controls])
-
-  const svgVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: { duration: 0.5, ease: "easeOut" },
-    },
-    hover: {
-      scale: 1.1,
-      transition: { duration: 0.3 },
-    },
+  const cardVariants = {
+    initial: { scale: 1 },
+    hover: { scale: 1.05, transition: { duration: 0.3 } },
   }
 
-  const circleVariants = {
-    hidden: { scale: 0, opacity: 0 },
-    visible: (i: number) => ({
-      scale: 1,
-      opacity: 1,
-      transition: { delay: i * 0.2, duration: 0.5 },
-    }),
+  const iconVariants = {
+    initial: { scale: 1, rotate: 0 },
+    hover: { scale: 1.2, rotate: 360, transition: { duration: 0.5 } },
   }
 
-  const lineVariants = {
-    hidden: { pathLength: 0 },
-    visible: {
-      pathLength: 1,
-      transition: { duration: 1.5, ease: "easeInOut" },
-    },
-  }
+  // Generate random tags
+  const tags = possibleTags.filter(() => Math.random() > 0.5)
 
   return (
     <motion.div
@@ -79,162 +58,109 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
+      className="max-w-sm mx-auto"
     >
-      <Card
-        className={cn(
-          "overflow-hidden transition-all duration-300",
-          "hover:shadow-xl dark:hover:shadow-primary/20",
-          "border-2 border-transparent hover:border-primary/20",
-          "dark:bg-card dark:text-card-foreground",
-        )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className="relative">
-          <motion.div
-            className={cn(
-              "h-48 w-full flex items-center justify-center overflow-hidden",
-              "bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5",
-              "dark:from-primary/10 dark:via-secondary/10 dark:to-accent/10",
-            )}
-            animate={
-              isHovered
-                ? {
-                    backgroundImage:
-                      "linear-gradient(to bottom right, var(--primary), var(--secondary), var(--accent))",
-                  }
-                : {}
-            }
-            transition={{ duration: 0.5 }}
-          >
-            <motion.svg
-              className="w-40 mt-10 h-40 text-primary dark:text-primary-foreground"
-              viewBox="0 0 100 100"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              variants={svgVariants}
-              initial="hidden"
-              animate={isHovered ? "hover" : "visible"}
-            >
-              <motion.path
-                d="M50 10 C25 10 10 30 10 50 C10 70 25 90 50 90 C75 90 90 70 90 50 C90 30 75 10 50 10"
-                stroke="currentColor"
-                strokeWidth="2"
-                variants={lineVariants}
-              />
-              <motion.path
-                d="M30 30 L70 70 M30 70 L70 30 M50 20 L50 80 M20 50 L80 50"
-                stroke="currentColor"
-                strokeWidth="1"
-                variants={lineVariants}
-              />
-              {[30, 50, 70].map((cx, i) =>
-                [30, 50, 70].map((cy, j) => (
-                  <motion.circle
-                    key={`${i}-${j}`}
-                    cx={cx}
-                    cy={cy}
-                    r="3"
-                    fill="currentColor"
-                    custom={i * 3 + j}
-                    variants={circleVariants}
-                  />
-                )),
-              )}
-            </motion.svg>
-            <AnimatePresence>
-              {isHovered && (
-                <motion.div
-                  className="absolute inset-0 bg-primary/10 backdrop-blur-[1px] flex items-center justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <span className="text-primary-foreground text-lg font-medium">Explore Course</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+      <motion.div variants={cardVariants} initial="initial" whileHover="hover" className="h-full">
+        <Card
+          className={cn(
+            "overflow-hidden transition-all duration-300 h-full",
+            "hover:shadow-lg hover:border-primary/20",
+            "dark:bg-card dark:text-card-foreground",
+          )}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <CardHeader className="relative p-6 pb-0">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 opacity-20"
+              animate={isHovered ? { opacity: 0.3 } : { opacity: 0.2 }}
+              transition={{ duration: 0.5 }}
+            />
+            <motion.div className="relative z-10 mb-4 mx-auto" variants={iconVariants}>
+              <div className="size-20 mx-auto bg-background/10 rounded-xl backdrop-blur-sm flex items-center justify-center">
+                <Book className="size-10 text-primary" />
+              </div>
+            </motion.div>
 
-          <div className="absolute top-3 left-3 flex flex-row gap-2 flex-wrap max-w-[calc(100%-24px)]">
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-              <Badge variant="secondary" className="font-medium">
-                {unitCount} Unit{unitCount !== 1 && "s"}
+            <div className="flex flex-wrap gap-2 mb-4 justify-center">
+              <Badge variant="secondary" className="font-medium bg-primary text-primary-foreground">
+                Course
               </Badge>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Zap className="w-3 h-3" />
-                AI-Powered
+              <Badge variant="outline" className="font-medium">
+                <Clock className="size-3 mr-1" />
+                {estimatedTime}
               </Badge>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
-              <Badge variant="secondary" className="bg-purple-500 dark:bg-purple-700 text-white">
-                Popular
-              </Badge>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-              <Badge
-                variant="outline"
-                className="border-yellow-500 text-yellow-500 dark:border-yellow-400 dark:text-yellow-400"
-              >
-                Best Seller
-              </Badge>
-            </motion.div>
-            {rating >= 4.5 && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+              {tags.map((tag, index) => (
                 <Badge
-                  variant="outline"
-                  className="border-green-500 text-green-500 dark:border-green-400 dark:text-green-400"
+                  key={index}
+                  variant="default"
+                  className={cn(
+                    "font-medium",
+                    tag === "Popular" && "bg-purple-500 hover:bg-purple-600",
+                    tag === "Best Seller" && "bg-yellow-500 hover:bg-yellow-600",
+                    tag === "Top Rated" && "bg-green-500 hover:bg-green-600",
+                    tag === "New" && "bg-blue-500 hover:bg-blue-600",
+                  )}
                 >
-                  Top Rated
+                  {tag === "Popular" && <Zap className="size-3 mr-1" />}
+                  {tag === "Best Seller" && <Star className="size-3 mr-1" />}
+                  {tag === "Top Rated" && <Star className="size-3 mr-1" />}
+                  {tag === "New" && <Zap className="size-3 mr-1" />}
+                  {tag}
                 </Badge>
+              ))}
+            </div>
+
+            <CardTitle className="text-2xl font-bold text-center relative z-10">{name}</CardTitle>
+          </CardHeader>
+
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-center gap-4">
+              <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
+                <Book className="size-4 mr-2 text-muted-foreground" />
+                <span className="text-muted-foreground">{lessonCount} Lessons</span>
               </motion.div>
-            )}
-          </div>
-        </div>
+              <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
+                <FileQuestion className="size-4 mr-2 text-secondary" />
+                <span className="text-muted-foreground">{quizCount||5} Quizzes</span>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
+                <Star className="size-4 mr-2 text-yellow-500" />
+                <span className="text-muted-foreground">{rating.toFixed(1)} Rating</span>
+              </motion.div>
+            </div>
+            <CardDescription className="text-center">{description}</CardDescription>
+          </CardContent>
 
-        <CardHeader className="p-6 pb-0">
-          <CardTitle className="text-xl mb-2">{name}</CardTitle>
-        </CardHeader>
-
-        <CardContent className="p-6 pt-2">
-          <p className="text-muted-foreground text-sm mb-4">{description}</p>
-          <div className="flex items-center gap-6 text-sm">
-            <motion.div className="flex items-center" whileHover={{ scale: 1.05 }}>
-              <Book className="w-4 h-4 mr-2 text-primary dark:text-primary-foreground" />
-              <span className="text-muted-foreground">{lessonCount} lessons</span>
-            </motion.div>
-            <motion.div className="flex items-center" whileHover={{ scale: 1.05 }}>
-              <FileQuestion className="w-4 h-4 mr-2 text-secondary dark:text-secondary-foreground" />
-              <span className="text-muted-foreground">{quizCount} quizzes</span>
-            </motion.div>
-            <motion.div className="flex items-center" whileHover={{ scale: 1.05 }}>
-              <Star className="w-4 h-4 mr-2 text-yellow-500 dark:text-yellow-400" />
-              <span className="text-muted-foreground">{rating.toFixed(1)}</span>
-            </motion.div>
-          </div>
-        </CardContent>
-
-        <CardFooter className="p-6 pt-0">
-          <Button asChild className="w-full group" size="lg">
-            <Link href={`/dashboard/course/${slug}`}>
-              <span className="relative">
-                Explore Course
+          <CardFooter className="p-6 pt-0">
+            <Button asChild className="w-full group relative overflow-hidden" size="lg">
+              <Link href={`/dashboard/course/${slug}`}>
                 <motion.span
-                  className="absolute -right-6 top-1/2 -translate-y-1/2"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
+                  initial={{ x: 0 }}
+                  animate={isHovered ? { x: -10 } : { x: 0 }}
+                  className="relative z-10 flex items-center justify-center gap-2"
                 >
-                  <Zap className="w-4 h-4" />
+                  Explore Course
+                  <motion.span
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={isHovered ? { x: 0, opacity: 1 } : { x: -10, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ArrowRight className="size-4" />
+                  </motion.span>
                 </motion.span>
-              </span>
-            </Link>
-          </Button>
-        </CardFooter>
-      </Card>
+                <motion.div
+                  className="absolute inset-0 bg-primary"
+                  initial={{ x: "100%" }}
+                  animate={isHovered ? { x: "0%" } : { x: "100%" }}
+                  transition={{ duration: 0.3 }}
+                />
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </motion.div>
   )
 }
+

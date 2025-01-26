@@ -1,3 +1,4 @@
+"use client"
 import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,12 +23,15 @@ export default function QuizResults({ answers, questions, onRestart, onComplete 
   }, [answers, questions, onComplete])
 
   const calculateScore = (answers: { answer: string }[], questions: { answer: string }[]): number => {
-    return answers.reduce((acc, answer, index) => {
+    const totalScore = answers.reduce((acc, answer, index) => {
       const correctAnswer = questions[index].answer.toLowerCase()
       const userAnswer = answer.answer.toLowerCase()
       const similarity = calculateSimilarity(correctAnswer, userAnswer)
       return acc + similarity
     }, 0)
+
+    // Ensure the score doesn't exceed 100%
+    return Math.min(100, totalScore / questions.length)
   }
 
   const calculateSimilarity = (str1: string, str2: string): number => {
@@ -38,7 +42,7 @@ export default function QuizResults({ answers, questions, onRestart, onComplete 
       return 100
     }
     const editDistance = levenshteinDistance(longer, shorter)
-    return (1 - editDistance / longerLength) * 100
+    return Math.max(0, Math.min(100, (1 - editDistance / longerLength) * 100))
   }
 
   const levenshteinDistance = (str1: string, str2: string): number => {
