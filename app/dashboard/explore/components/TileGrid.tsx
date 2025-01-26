@@ -24,6 +24,7 @@ interface TileProps {
   url: string
   index: number
   quotes: string[]
+  color: string
 }
 
 const tiles = [
@@ -32,6 +33,7 @@ const tiles = [
     title: "Create MCQ",
     description: "Design multiple-choice questions with options, correct answers, and explanations.",
     url: "/dashboard/quiz",
+    color: "blue",
     quotes: [
       "Challenge minds with thought-provoking MCQs!",
       "Craft questions that spark curiosity and learning.",
@@ -45,6 +47,7 @@ const tiles = [
     title: "Open Ended",
     description: "Create questions that allow students to provide detailed written responses.",
     url: "/dashboard/openended",
+    color: "green",
     quotes: [
       "Inspire deep thinking with openended questions!",
       "Encourage students to express their ideas freely.",
@@ -53,12 +56,12 @@ const tiles = [
       "Explore the depths of knowledge with openended prompts.",
     ],
   },
-
   {
     icon: AlignLeft,
     title: "Fill in the Blanks",
     description: "Create exercises where students complete sentences by filling in missing words.",
     url: "/dashboard/blanks",
+    color: "orange",
     quotes: [
       "Craft a fill-in-the-blanks activity to spark curiosity!",
       "Challenge learners with engaging word puzzles.",
@@ -72,6 +75,7 @@ const tiles = [
     title: "Course",
     description: "Build comprehensive courses with multiple lessons and content types.",
     url: "/dashboard/create",
+    color: "purple",
     quotes: [
       "Why not create your own course?",
       "Share your expertise through an engaging course!",
@@ -82,7 +86,7 @@ const tiles = [
   },
 ]
 
-function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps) {
+function Tile({ icon: Icon, title, description, url, index, quotes, color }: TileProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentQuote, setCurrentQuote] = useState(0)
 
@@ -107,26 +111,34 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
-        whileHover={{ scale: 1.05, boxShadow: "0px 0px 8px rgba(0,0,0,0.2)" }}
+        whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
         <Card
-          className="cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:bg-accent"
+          className={`cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:bg-${color}-100 dark:hover:bg-${color}-900 group`}
           onClick={() => setIsOpen(true)}
         >
           <CardHeader>
-            <CardTitle className="flex items-center justify-center text-2xl">
-              <motion.div initial={{ rotate: 0 }} animate={{ rotate: 360 }} transition={{ duration: 0.5 }}>
-                <Icon className="h-12 w-12 mr-3 text-primary" />
+            <CardTitle className="flex items-center justify-center text-2xl group-hover:text-primary">
+              <motion.div
+                initial={{ rotate: 0 }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+                className={`text-${color}-500 group-hover:text-primary`}
+              >
+                <Icon className="h-12 w-12 mr-3" />
               </motion.div>
               {title}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg text-muted-foreground text-center">{description}</p>
+            <p className="text-lg text-muted-foreground text-center group-hover:text-foreground">{description}</p>
           </CardContent>
           <CardFooter className="justify-center">
-            <Badge variant="secondary" className="text-lg py-2 px-4">
+            <Badge
+              variant="secondary"
+              className={`text-lg py-2 px-4 bg-${color}-200 dark:bg-${color}-800 group-hover:bg-primary group-hover:text-primary-foreground`}
+            >
               Click to explore
             </Badge>
           </CardFooter>
@@ -136,9 +148,9 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[90vw] sm:h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center text-4xl">
+            <DialogTitle className={`flex items-center text-4xl text-${color}-500`}>
               <motion.div initial={{ rotate: 0 }} animate={{ rotate: 360 }} transition={{ duration: 0.5 }}>
-                <Icon className="h-12 w-12 mr-3 text-primary" />
+                <Icon className="h-12 w-12 mr-3" />
               </motion.div>
               {title}
             </DialogTitle>
@@ -169,11 +181,11 @@ function Tile({ icon: Icon, title, description, url, index, quotes }: TileProps)
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
             >
-              <Icon className="h-40 w-40 text-primary" />
+              <Icon className={`h-40 w-40 text-${color}-500`} />
             </motion.div>
           </motion.div>
           <DialogFooter>
-            <Button asChild className="w-full text-xl h-14">
+            <Button asChild className={`w-full text-xl h-14 bg-${color}-500 hover:bg-${color}-600 text-white`}>
               <Link href={url}>
                 <motion.span
                   initial={{ opacity: 0 }}
