@@ -1,25 +1,23 @@
-"use client"
 
-import { Suspense } from "react"
-import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight"
-import { QuizWrapper } from "@/components/QuizWrapper"
+import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight";
+import { QuizWrapper } from "@/components/QuizWrapper";
 
-export function QuizContentRoot() {
+export default async function QuizContentRoot() {
+
+
   return (
-    <div className="flex flex-wrap md:flex-nowrap gap-8">
-      {/* Left Column - Fill in the Blank Form */}
-      <div className="flex-grow bg-white dark:bg-gray-800 p-8 shadow rounded">
-        <Suspense fallback={<div>Loading quiz...</div>}>
+    <div className="container mx-auto p-4 min-h-screen bg-background text-foreground">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <h1 className="text-3xl font-bold mb-6 text-primary">Create Fill-in-the-Blank Quiz</h1>
+          {/* <TopicForm credits={credits} /> */}
           <QuizWrapper type="fill-in-the-blanks" />
-        </Suspense>
-      </div>
-      {/* Right Column - Highlight */}
-      <div className="w-full md:w-96 bg-gray-200 dark:bg-gray-800 p-8 shadow rounded">
-        <Suspense fallback={<div>Loading highlight...</div>}>
+        </div>
+        <div className="hidden lg:block">
+          {/* <RandomQuestions questions={randomQuestions} /> */}
           <AnimatedQuizHighlight />
-        </Suspense>
+        </div>
       </div>
     </div>
   )
 }
-

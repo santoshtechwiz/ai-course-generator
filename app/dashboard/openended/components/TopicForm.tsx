@@ -106,18 +106,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
         <p className="text-xs text-muted-foreground">
           You have <span className="font-bold text-primary">{credits}</span> credits remaining.
         </p>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="link" className="p-0 h-auto text-xs">
-                How to earn more credits?
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Complete quizzes, invite friends, or upgrade your account to earn more credits!</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+       
       </CardContent>
     </Card>
   )
@@ -163,7 +152,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
     >
       <Card className="h-full flex flex-col bg-card text-card-foreground shadow-lg">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold text-primary">Create openended Quiz</CardTitle>
+      
           <CardDescription className="text-base">
             Choose a topic and customize your quiz settings below.
           </CardDescription>

@@ -1,30 +1,28 @@
-import CreateCourseForm from "./components/CreateCourseForm"
-import { getCourseDetails } from "@/lib/db"
-import PopularCourses from "./components/PopularCourses"
-import { QuizWrapper } from "@/components/QuizWrapper"
 
-export const fetchCache = "force-no-store"
+
+
+import { QuizWrapper } from "@/components/QuizWrapper";
+import PopularCourses from "./components/PopularCourses";
+import { getCourseDetails } from "@/lib/db";
 
 const Page = async ({ searchParams }: { searchParams: Promise<{ topic?: string }> }) => {
-  const topic = (await searchParams)?.topic || ""
-  const courseData = await getCourseDetails()
+   const topic = (await searchParams)?.topic || ""
+   const courseData = await getCourseDetails()
 
   return (
-    <div className="flex flex-col md:flex-row w-full min-h-screen bg-background">
-      {/* Main Content */}
-      <div className="flex-grow p-4 md:p-6">
-        <div className="w-full max-w-4xl mx-auto">
-          {/* <CreateCourseForm topic={topic} /> */}
+    <div className="container mx-auto p-4 min-h-screen bg-background text-foreground">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <h1 className="text-3xl font-bold mb-6 text-primary">Generate AI Course</h1>
+          {/* <TopicForm credits={credits} /> */}
           <QuizWrapper type={"course"} />
         </div>
-      </div>
-
-      {/* Sidebar */}
-      <div className="md:w-[400px] border-l border-border bg-card">
-        <PopularCourses courseDetails={courseData} />
+        <div className="hidden lg:block">
+          {/* <RandomQuestions questions={randomQuestions} /> */}
+          <PopularCourses courseDetails={courseData} />
+        </div>
       </div>
     </div>
   )
 }
-
 export default Page
