@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
+
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
 import { Search, LogOut, LogIn, User, Crown } from "lucide-react"
@@ -19,6 +19,8 @@ import SearchModal from "./SearchModal"
 import { useSubscription } from "@/hooks/useSubscription"
 import { Badge } from "@/components/ui/badge"
 import MobileMenu from "./MobileMenu"
+import Link from "next/link"
+
 
 
 
@@ -67,9 +69,10 @@ export default function Navbar() {
 
   const handleSignIn = () => signIn()
   const handleSignOut = async () => {
-    await signOut({ redirect: false })
-    router.push("/")
-  }
+    const currentUrl = window.location.pathname; // Get the current page URL
+    await signOut({ callbackUrl: currentUrl }); // Redirect to the same page after sign-out
+  };
+  
 
   const getSubscriptionBadge = () => {
     if (isLoadingSubscription || !subscriptionStatus) return null

@@ -12,6 +12,7 @@ import { useUser } from "@/app/providers/userContext"
 
 import throttle from "lodash.throttle"
 import PriorityQueue from "@/lib/PriorityQueue"
+import { useSearchParams } from "next/navigation"
 
 interface State {
   selectedVideoId: string | undefined
@@ -59,6 +60,7 @@ const MemoizedMainContent = React.memo(MainContent)
 const MemoizedRightSidebar = React.memo(RightSidebar)
 
 export default function CoursePage({ course }: CoursePageProps) {
+  const searchParams =useSearchParams();
   const { user, loading: isProfileLoading, error } = useUser()
   const [state, dispatch] = useReducer(reducer, {
     selectedVideoId: undefined,
@@ -133,6 +135,7 @@ export default function CoursePage({ course }: CoursePageProps) {
 
   useEffect(() => {
     if (!videoQueue.isEmpty() && !state.selectedVideoId && !hasSetInitialVideo.current) {
+      
       const chapterId = searchParams.get("chapter")
       let initialVideo
 

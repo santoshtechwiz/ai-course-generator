@@ -10,16 +10,16 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
-function getQuizTypeRoute(quizType: string): string {
+function getQuizTypeRoute({ quizType }: { quizType: string }): string {
   switch (quizType) {
     case "mcq":
-      return "mcq"
+      return "/dashboard/mcq"
     case "openended":
-      return "openended"
+      return "/dashboard/openended"
     case "fill-blanks":
-      return "blanks"
+      return "/dashboard/blanks"
     default:
-      return "quiz"
+      return "/dashboard/quiz"
   }
 }
 
@@ -29,11 +29,6 @@ const iconMap = {
   "fill-blanks": AlignJustify,
 }
 
-const difficultyColorMap = {
-  Easy: "bg-green-500",
-  Medium: "bg-yellow-500",
-  Hard: "bg-red-500",
-}
 
 export const AnimatedQuizHighlight: React.FC = () => {
   const { quizzes, isLoading, error } = useRandomQuizzes(3)
@@ -86,7 +81,7 @@ export const AnimatedQuizHighlight: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {quizzes.map((quiz, index) => (
-          <Link href={`/${getQuizTypeRoute(quiz.quizType)}/${quiz.slug}`} key={quiz.id}>
+          <Link href={`/${getQuizTypeRoute({ quizType: quiz.quizType })}/${quiz.slug}`} key={quiz.id}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

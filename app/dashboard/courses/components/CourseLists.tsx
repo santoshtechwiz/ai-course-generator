@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { CourseCard } from "./CourseCard"
+
 import SearchBar from "./SearchBar"
+import {CourseCard} from "./CourseCard"
 
 interface Course {
   id: string

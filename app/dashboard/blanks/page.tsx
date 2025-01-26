@@ -7,7 +7,7 @@ export default async function QuizPage() {
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-8 text-center">
-        Welcome to QuizMaster
+       
       </h1>
       <div className="flex flex-wrap md:flex-nowrap gap-8">
         {/* Left Column - Fill in the Blank Form */}

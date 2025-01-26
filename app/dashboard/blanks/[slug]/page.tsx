@@ -2,18 +2,17 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { QuizActions } from "../../mcq/components/QuizActions"
-import CourseAILoader from "../../course/components/CourseAILoader"
 import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
 import { Book, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { SignInPrompt } from "@/app/components/SignInPrompt"
-import { toast } from "@/hooks/use-toast"
 import QuizResults from "../../openended/components/QuizResults"
 import { useSession } from "next-auth/react"
-import { GlobalLoading } from "@/app/components/shared/GlobalLoading"
+
 import { useRouter } from "next/navigation"
+import { submitQuizData } from "@/lib/submitQuizData"
 
 interface Question {
   id: number
@@ -143,38 +142,47 @@ export default function Page({ params }: { params: { slug: string } }) {
   const handleComplete = useCallback(
     async (score: number) => {
       if (isAuthenticated && quizData) {
-        try {
-          const response = await fetch(`/api/quiz/${slug}/complete`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              quizId: quizData.id,
-              answers,
-              totalTime: elapsedTime,
-              score,
-              type: "fill-in-the-blank",
-            }),
+        // try {
+        //   const response = await fetch(`/api/quiz/${slug}/complete`, {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify({
+        //       quizId: quizData.id,
+        //       answers,
+        //       totalTime: elapsedTime,
+        //       score,
+        //       type: "fill-in-the-blank",
+        //     }),
+        //   })
+        //   if (!response.ok) throw new Error("Failed to update score")
+        //   toast({
+        //     title: "Quiz Completed",
+        //     description: `Your score: ${score.toFixed(1)}%`,
+        //     variant: "success",
+        //   })
+        // } catch (error) {
+        //   console.error("Error saving quiz results:", error)
+        //   toast({
+        //     title: "Error",
+        //     description: "Failed to save quiz results. Your progress may not be recorded.",
+        //     variant: "destructive",
+        //   })
+        // }
+        submitQuizData(
+          {
+            slug,
+            quizId: quizData.id,
+            answers,
+            elapsedTime,
+            score,
+            type: "fill-in-the-blank"
           })
-          if (!response.ok) throw new Error("Failed to update score")
-          toast({
-            title: "Quiz Completed",
-            description: `Your score: ${score.toFixed(1)}%`,
-            variant: "success",
-          })
-        } catch (error) {
-          console.error("Error saving quiz results:", error)
-          toast({
-            title: "Error",
-            description: "Failed to save quiz results. Your progress may not be recorded.",
-            variant: "destructive",
-          })
-        }
       }
     },
     [isAuthenticated, quizData, slug, answers, elapsedTime],
   )
 
-  if (loading) return <GlobalLoading />
+
 
   if (error) {
     return (
@@ -234,7 +242,7 @@ export default function Page({ params }: { params: { slug: string } }) {
             <CardContent>
               <p className="mb-4">You've completed the quiz! Sign in to see your results and save your progress.</p>
               <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
-             
+
             </CardContent>
           </Card>
         </div>

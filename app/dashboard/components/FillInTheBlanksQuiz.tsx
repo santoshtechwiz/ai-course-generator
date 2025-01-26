@@ -1,13 +1,13 @@
 "use client"
-
 import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import levenshtein from "js-levenshtein"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AlertCircle, CheckCircle2, HelpCircle } from "lucide-react"
+import { AlertCircle, CheckCircle2, HelpCircle } from 'lucide-react'
 
 interface Question {
   id: number
@@ -32,15 +32,43 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [submitted, setSubmitted] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(false)
+  const [isValidInput, setIsValidInput] = useState(false)
+
+  const similarityThreshold = 3 // Allow up to 3 character edits for Levenshtein distance
+  const minimumPrefixLength = 3 // Require at least 3 characters to match the start of the correct answer
 
   useEffect(() => {
     setAnswer("")
     setShowHints(Array(question.openEndedQuestion.hints.length).fill(false))
     setSubmitted(false)
+    setIsCorrect(false)
+    setIsValidInput(false)
   }, [question])
 
   const handleInputChange = (value: string) => {
     setAnswer(value)
+
+    // Convert input and answer to lowercase and trim spaces
+    const userInput = value.trim().toLowerCase()
+    const correctAnswer = question.answer.trim().toLowerCase()
+
+    // Check if the input has at least 3 characters
+    if (userInput.length < minimumPrefixLength) {
+      setIsValidInput(false)
+      return
+    }
+
+    // Check if the first `minimumPrefixLength` characters match
+    const prefixMatch = correctAnswer.startsWith(userInput.slice(0, minimumPrefixLength))
+
+    // Compute Levenshtein distance if prefix matches
+    if (prefixMatch) {
+      const distance = levenshtein(userInput, correctAnswer)
+      setIsValidInput(distance <= similarityThreshold)
+    } else {
+      setIsValidInput(false)
+    }
   }
 
   const toggleHint = (hintIndex: number) => {
@@ -48,12 +76,12 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
   }
 
   const handleSubmit = () => {
+    const distance = levenshtein(answer.trim().toLowerCase(), question.answer.trim().toLowerCase())
+    const isAnswerCorrect = distance <= similarityThreshold
+
+    setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
     onAnswer(answer)
-  }
-
-  const isCorrect = () => {
-    return answer.toLowerCase() === question.answer.toLowerCase()
   }
 
   return (
@@ -83,20 +111,20 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
               value={answer}
               onChange={(e) => handleInputChange(e.target.value)}
               className={`w-full ${
-                submitted ? (isCorrect() ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50") : ""
+                submitted ? (isCorrect ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50") : ""
               }`}
               disabled={submitted}
               placeholder="Type your answer here"
             />
             {submitted && (
               <div className="flex items-center mt-2">
-                {isCorrect() ? (
+                {isCorrect ? (
                   <CheckCircle2 className="w-5 h-5 text-green-500 mr-2" />
                 ) : (
                   <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
                 )}
-                <span className={isCorrect() ? "text-green-700" : "text-red-700"}>
-                  {isCorrect() ? "Correct!" : `Incorrect. The correct answer is: ${question.answer}`}
+                <span className={isCorrect ? "text-green-700" : "text-red-700"}>
+                  {isCorrect ? "Correct!" : `Incorrect. The correct answer is: ${question.answer}`}
                 </span>
               </div>
             )}
@@ -131,18 +159,17 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
                     >
                       <p className="text-sm text-blue-700">{question.openEndedQuestion.hints[hIndex]}</p>
                     </motion.div>
-                  ),
+                  )
               )}
             </AnimatePresence>
           </CardContent>
         </Card>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button onClick={handleSubmit} disabled={submitted}>
+        <Button onClick={handleSubmit} disabled={!isValidInput || submitted}>
           {submitted ? "Submitted" : "Submit Answer"}
         </Button>
       </CardFooter>
     </Card>
   )
 }
-
