@@ -58,8 +58,8 @@ export function QuizContent({ slug }: { slug: string }) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
-  const router = useRouter()
-
+  const[score, setScore] = useState(false);
+  
   const fetchQuizData = useCallback(async () => {
     try {
       const response = await fetch(`/api/oquiz/${slug}`)
@@ -142,6 +142,7 @@ export function QuizContent({ slug }: { slug: string }) {
     async (score: number) => {
       if (isAuthenticated && quizData) {
         try {
+          setScore(true);
           await submitQuizData({
             slug,
             quizId: quizData.id,
@@ -150,10 +151,12 @@ export function QuizContent({ slug }: { slug: string }) {
             score,
             type: "fill-in-the-blank"
           })
+          setScore(false);
           // You might want to add a success toast notification here
         } catch (error) {
+          setScore(false);
           console.error("Error saving quiz results:", error)
-          // You might want to add an error toast notification here
+          
         }
       }
     },
