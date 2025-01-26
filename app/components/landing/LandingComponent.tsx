@@ -11,7 +11,7 @@ import FeatureSections from "@/app/components/landing/FeatureSection";
 import HowItWorks from "@/app/components/landing/HowItWorks";
 import LandingCTA from "@/app/components/landing/LandingCTA";
 
-import { TestimonialsSection } from "@/app/components/landing/testimonials-section";
+import { TestimonialsSection } from "@/app/components/landing/TestimonialsSection";
 
 import LandingHero from "./LandingHero";
 import LandingHeader from "./LanndingHeader";

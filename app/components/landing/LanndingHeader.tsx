@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import Logo from "../shared/Logo"
 
 const navItems = [
   { name: "Features", to: "features" },
@@ -47,9 +48,10 @@ export default function LandingHeader() {
           duration={500}
           className="flex items-center space-x-2 cursor-pointer"
         >
-          <span className="text-xl font-bold">CourseAI</span>
+          
+          
         </ScrollLink>
-
+        <Logo></Logo>
         <div className="hidden md:flex items-center space-x-8">
           {navItems.map((item) => (
             <ScrollLink
