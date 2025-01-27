@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import QuizResultsOpenEnded from "../components/QuizResultsOpenEnded";
 import QuizQuestion from "../components/QuizQuestion";
 import { submitQuizData } from "@/app/actions/actions";
+import { ApiLoader } from "@/app/components/ApiLoader";
 
 
 
@@ -181,7 +182,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
   );
 
 
-
+ if (loading) return <div><ApiLoader loading={loading}></ApiLoader></div>
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">

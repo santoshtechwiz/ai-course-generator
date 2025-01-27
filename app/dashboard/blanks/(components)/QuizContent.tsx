@@ -1,16 +1,19 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
-import { Book, AlertCircle, Clock } from "lucide-react"
+import { Book, AlertCircle, Clock, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { useSession } from "next-auth/react"
 import { submitQuizData } from "@/app/actions/actions"
-
 import { QuizActions } from "../../mcq/components/QuizActions"
 import QuizResults from "../../openended/components/QuizResults"
 import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
+import { ApiLoader } from "@/app/components/ApiLoader"
+import HelpSection from "@/app/components/HelpSection"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { AnimatePresence, motion } from "framer-motion"
 
 interface Question {
   id: number
@@ -57,7 +60,9 @@ export function QuizContent({ slug }: { slug: string }) {
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const [score, setScore] = useState(false)
+  const [showHelp, setShowHelp] = useState(true)
 
+  const toggleHelp = () => setShowHelp(!showHelp)
   const fetchQuizData = useCallback(async () => {
     try {
       const response = await fetch(`/api/oquiz/${slug}`)
@@ -158,7 +163,12 @@ export function QuizContent({ slug }: { slug: string }) {
     },
     [isAuthenticated, quizData, slug, answers, elapsedTime],
   )
-
+  if (loading)
+    return (
+      <div>
+        <ApiLoader loading={loading}></ApiLoader>
+      </div>
+    )
   if (error) {
     return (
       <Card className="max-w-md mx-auto mt-8">
@@ -204,20 +214,47 @@ export function QuizContent({ slug }: { slug: string }) {
         initialIsPublic={false}
         initialIsFavorite={false}
       />
-      <div className="mb-8 border border-gray-200 rounded-lg shadow-md">
-        <div className="flex flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
-          <div className="flex items-center text-2xl font-bold">
+      <Card className="mb-8 shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between px-6 py-4 border-b">
+          <CardTitle className="flex items-center text-2xl font-bold">
             <Book className="w-6 h-6 mr-2" />
             Fill in the Blanks Quiz: {quizData.topic || "Unknown"}
+          </CardTitle>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
+              </span>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleHelp}>
+                    <HelpCircle className={`w-5 h-5 ${showHelp ? "text-primary" : ""}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{showHelp ? "Hide" : "Show"} help on answer matching</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4" />
-            <span className="text-sm font-medium">
-              {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
-            </span>
-          </div>
-        </div>
-        <div className="px-4 py-4">
+        </CardHeader>
+        <CardContent className="px-6 py-4">
+          <AnimatePresence>
+            {showHelp && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mb-4"
+              >
+                <HelpSection />
+              </motion.div>
+            )}
+          </AnimatePresence>
           {quizCompleted ? (
             isAuthenticated ? (
               <QuizResults
@@ -228,9 +265,7 @@ export function QuizContent({ slug }: { slug: string }) {
               />
             ) : (
               <div>
-                <p className="mb-4">
-                  You've completed the quiz! Sign in to see your results and save your progress.
-                </p>
+                <p className="mb-4">You've completed the quiz! Sign in to see your results and save your progress.</p>
                 <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
               </div>
             )
@@ -247,9 +282,8 @@ export function QuizContent({ slug }: { slug: string }) {
               No questions available for this quiz.
             </p>
           )}
-        </div>
-      </div>
-
+        </CardContent>
+      </Card>
     </div>
   )
 }

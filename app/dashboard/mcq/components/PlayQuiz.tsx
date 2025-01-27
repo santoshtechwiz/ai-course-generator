@@ -251,7 +251,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
       }
     }
   }, [isAuthenticated, slug, saveQuizResults])
-
+  if (loading) return <div><ApiLoader loading={loading}></ApiLoader></div>
   if (hasError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">

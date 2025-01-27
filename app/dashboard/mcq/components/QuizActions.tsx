@@ -106,7 +106,7 @@ export function QuizActions({
 
   const handleShare = () => {
     if (isPublic) {
-      const shareUrl = `${window.location.origin}/quiz/${quizSlug}`
+      const shareUrl = `${window.location.origin}/dashboard/openended/${quizSlug}`
       navigator.clipboard.writeText(shareUrl)
       toast({
         title: "Share link copied",
@@ -175,14 +175,13 @@ export function QuizActions({
               size="sm"
               onClick={handleShare}
               className="transition-all duration-300 ease-in-out hover:scale-105"
-              disabled={!isPublic}
             >
               <Share2 className="mr-2 h-4 w-4" />
               <span className="font-medium">Share</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{isPublic ? "Copy share link" : "Make public to share"}</p>
+            <p>Copy share link</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
