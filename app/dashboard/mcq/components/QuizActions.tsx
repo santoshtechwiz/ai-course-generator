@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Eye, EyeOff, Star, Trash2, Share2 } from "lucide-react"
@@ -38,13 +38,36 @@ export function QuizActions({
 }: QuizActionsToolbarProps) {
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
+  const [isPublicLoading, setIsPublicLoading] = useState(false)
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
+  const [isShareLoading, setIsShareLoading] = useState(false)
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const fetchQuizState = async () => {
+      try {
+        const response = await fetch(`/api/quiz/${quizSlug}`)
+        if (response.ok) {
+          const quizData = await response.json()
+          setIsPublic(quizData.isPublic)
+          setIsFavorite(quizData.isFavorite)
+        }
+      } catch (error) {
+        console.error("Error fetching quiz state:", error)
+      }
+    }
+
+    fetchQuizState()
+  }, [quizSlug])
 
   if (userId !== ownerId) {
     return null
   }
 
   const updateQuiz = async (data: { isPublic?: boolean; isFavorite?: boolean }) => {
+    const loadingState = data.isPublic !== undefined ? setIsPublicLoading : setIsFavoriteLoading
+    loadingState(true)
     try {
       const response = await fetch(`/api/quiz/${quizSlug}`, {
         method: "PATCH",
@@ -72,6 +95,8 @@ export function QuizActions({
         description: "Failed to update quiz. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      loadingState(false)
     }
   }
 
@@ -79,6 +104,7 @@ export function QuizActions({
   const toggleFavorite = () => updateQuiz({ isFavorite: !isFavorite })
 
   const handleDelete = async () => {
+    setIsDeleteLoading(true)
     try {
       const response = await fetch(`/api/quiz/${quizSlug}`, {
         method: "DELETE",
@@ -101,25 +127,31 @@ export function QuizActions({
         description: "Failed to delete quiz. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsDeleteLoading(false)
     }
   }
 
   const handleShare = () => {
-    if (isPublic) {
-      const shareUrl = `${window.location.origin}/dashboard/openended/${quizSlug}`
-      navigator.clipboard.writeText(shareUrl)
-      toast({
-        title: "Share link copied",
-        description: "The quiz link has been copied to your clipboard.",
-        variant: "success",
-      })
-    } else {
-      toast({
-        title: "Cannot share private quiz",
-        description: "Make the quiz public to share it.",
-        variant: "danger",
-      })
-    }
+    setIsShareLoading(true)
+    setTimeout(() => {
+      if (isPublic) {
+        const shareUrl = `${window.location.origin}/dashboard/openended/${quizSlug}`
+        navigator.clipboard.writeText(shareUrl)
+        toast({
+          title: "Share link copied",
+          description: "The quiz link has been copied to your clipboard.",
+          variant: "success",
+        })
+      } else {
+        toast({
+          title: "Cannot share private quiz",
+          description: "Make the quiz public to share it.",
+          variant: "danger",
+        })
+      }
+      setIsShareLoading(false)
+    }, 500) // Simulate a short delay for better UX
   }
 
   return (
@@ -136,10 +168,25 @@ export function QuizActions({
               variant={isPublic ? "default" : "secondary"}
               size="sm"
               onClick={togglePublic}
-              className="transition-all duration-300 ease-in-out hover:scale-105"
+              disabled={isPublicLoading}
+              className={`w-28 transition-all duration-300 ${
+                isPublic
+                  ? "bg-green-500 hover:bg-green-600 active:bg-green-700"
+                  : "bg-gray-500 hover:bg-gray-600 active:bg-gray-700"
+              }`}
             >
-              {isPublic ? <Eye className="mr-2 h-4 w-4 text-primary" /> : <EyeOff className="mr-2 h-4 w-4" />}
-              <span className="font-medium">{isPublic ? "Public" : "Private"}</span>
+              {isPublicLoading ? (
+                <span className="loader"></span>
+              ) : (
+                <>
+                  {isPublic ? (
+                    <Eye className="mr-2 h-4 w-4 text-white" />
+                  ) : (
+                    <EyeOff className="mr-2 h-4 w-4 text-white" />
+                  )}
+                  <span className="font-medium text-white">{isPublic ? "Public" : "Private"}</span>
+                </>
+              )}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -155,10 +202,21 @@ export function QuizActions({
               variant={isFavorite ? "default" : "secondary"}
               size="sm"
               onClick={toggleFavorite}
-              className="transition-all duration-300 ease-in-out hover:scale-105"
+              disabled={isFavoriteLoading}
+              className={`w-28 transition-all duration-300 ${
+                isFavorite
+                  ? "bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700"
+                  : "bg-gray-500 hover:bg-gray-600 active:bg-gray-700"
+              }`}
             >
-              <Star className={`mr-2 h-4 w-4 ${isFavorite ? "fill-primary text-primary" : ""}`} />
-              <span className="font-medium">{isFavorite ? "Favorited" : "Favorite"}</span>
+              {isFavoriteLoading ? (
+                <span className="loader"></span>
+              ) : (
+                <>
+                  <Star className={`mr-2 h-4 w-4 ${isFavorite ? "fill-white text-white" : "text-white"}`} />
+                  <span className="font-medium text-white">{isFavorite ? "Favorited" : "Favorite"}</span>
+                </>
+              )}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -174,10 +232,17 @@ export function QuizActions({
               variant="outline"
               size="sm"
               onClick={handleShare}
-              className="transition-all duration-300 ease-in-out hover:scale-105"
+              disabled={isShareLoading}
+              className="w-28 transition-all duration-300 hover:bg-gray-100 active:bg-gray-200"
             >
-              <Share2 className="mr-2 h-4 w-4" />
-              <span className="font-medium">Share</span>
+              {isShareLoading ? (
+                <span className="loader"></span>
+              ) : (
+                <>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  <span className="font-medium">Share</span>
+                </>
+              )}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -191,10 +256,17 @@ export function QuizActions({
           <Button
             variant="destructive"
             size="sm"
-            className="transition-all duration-300 ease-in-out hover:scale-105 ml-auto"
+            disabled={isDeleteLoading}
+            className="w-28 transition-all duration-300 hover:bg-red-600 active:bg-red-700 ml-auto"
           >
-            <Trash2 className="mr-2 h-4 w-4" />
-            <span className="font-medium">Delete</span>
+            {isDeleteLoading ? (
+              <span className="loader"></span>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span className="font-medium">Delete</span>
+              </>
+            )}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
