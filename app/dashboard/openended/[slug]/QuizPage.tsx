@@ -12,6 +12,7 @@ import QuizResultsOpenEnded from "../components/QuizResultsOpenEnded";
 import QuizQuestion from "../components/QuizQuestion";
 import { submitQuizData } from "@/app/actions/actions";
 import { GlobalLoader } from "@/app/components/GlobalLoader";
+import { useLoaderContext } from "@/app/providers/LoadingContext";
 
 
 
@@ -52,7 +53,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isSaving = useRef(false);
-
+  const { setLoading: toggleLoading } = useLoaderContext();
   const saveQuizResults = useCallback(
     async (
       finalAnswers: Array<{ answer: string; timeSpent: number; hintsUsed: boolean; isCorrect: boolean }>,
@@ -62,25 +63,22 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
       isSaving.current = true;
 
       try {
-        // await axios.post(`/api/quiz/${slug}/complete`, {
-        //   quizId: quizData?.id,
-        //   answers: finalAnswers,
-        //   totalTime: finalAnswers.reduce((total, ans) => total + ans.timeSpent, 0),
-        //   score: score,
-        //   type: "openended",
-        // });
-
-        // toast({
-        //   variant: "success",
-        //   title: "Quiz results saved!",
-        // });
-        submitQuizData({
+        toggleLoading(true);
+       await submitQuizData({
           slug,
           quizId: quizData?.id,
           answers: finalAnswers,
           elapsedTime: finalAnswers.reduce((total, ans) => total + ans.timeSpent, 0),
           score,
           type: "openended",
+
+        }, () => {
+
+          toggleLoading(false)
+        });
+        toast({
+          variant: "success",
+          title: "Quiz results saved successfully",
         });
       } catch (error) {
         console.error("Error saving quiz results:", error);
@@ -158,7 +156,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
     [quizData, currentQuestion, startTime, isAuthenticated, slug, saveQuizResults, calculateScore]
   );
 
-  
+
 
   const handleRestart = useCallback(() => {
     const confirmRestart = window.confirm("Are you sure you want to restart the quiz?");
@@ -182,7 +180,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
   );
 
 
- if (loading) return <div><GlobalLoader loading={loading}></GlobalLoader></div>
+  if (loading) return <div><GlobalLoader loading={loading}></GlobalLoader></div>
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -214,15 +212,17 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
+      
       <QuizActions
         quizId={quizData?.id?.toString() || ""}
         quizSlug={slug}
         userId={session?.user?.id || ""}
         ownerId={quizData?.userId || ""}
         initialIsPublic={false}
-        initialIsFavorite={false}
+        initialIsFavorite={false} 
+        
       />
-      <h1 className="text-3xl font-bold mb-4">openended Quiz: {quizData?.topic || "Unknown"}</h1>
+      <h1 className="text-3xl font-bold mb-4 text-gradient">Open Ended Quiz: {quizData?.topic || "Unknown"}</h1>
       {quizData && quizData.questions && quizData.questions.length > 0 ? (
         <QuizQuestion
           question={quizData.questions[currentQuestion]}

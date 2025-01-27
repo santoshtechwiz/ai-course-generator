@@ -61,7 +61,7 @@ const tiles = [
     title: "Fill in the Blanks",
     description: "Create exercises where students complete sentences by filling in missing words.",
     url: "/dashboard/blanks",
-    color: "orange",
+    color: "pink",
     quotes: [
       "Craft a fill-in-the-blanks activity to spark curiosity!",
       "Challenge learners with engaging word puzzles.",

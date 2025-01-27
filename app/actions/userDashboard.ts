@@ -198,7 +198,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       streakDays: 0,
       lastStreakDate: null,
     }
-
+  
     return dashboardUser
   } catch (error) {
     console.error("Error fetching user data:", error)
@@ -355,18 +355,5 @@ function calculateDifficultyProgression(scores: { score: number }[]): number {
   return Math.max(-100, Math.min(((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100, 100))
 }
 
-// // Example usage
-// async function main() {
-//   const userId = "cm6a7zi8z000ae1hgcvwzfuvw"
-//   try {
-//     const userData = await getUserData(userId)
-//     console.log("User Data:", JSON.stringify(userData, null, 2))
-
-//     const userStats = await getUserStats(userId)
-//     console.log("User Stats:", JSON.stringify(userStats, null, 2))
-//   } catch (error) {
-//     console.error("Error:", error)
-//   }
-// }
 
 // main()

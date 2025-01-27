@@ -28,10 +28,12 @@ export default async function Page({ params }: { params: { slug: string } }) {
   if (!course) {
     notFound();
   }
+  //genrate quiz data from course
+
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <CourseStructuredData course={course} />
+      <CourseStructuredData course={course}  />
       <CoursePage course={course} />
     </Suspense>
   );

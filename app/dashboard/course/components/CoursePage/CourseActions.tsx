@@ -4,7 +4,7 @@ import type React from "react"
 import { useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { Loader2, ShieldAlert, Shield, Star, Trash2 } from "lucide-react"
+import { Loader2, ShieldAlert, Shield, Star, Trash2, Download } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -19,6 +19,9 @@ import {
 import { Button } from "@/components/ui/button"
 import useCourseActions from "@/hooks/useCourseActions"
 import { cn } from "@/lib/utils"
+import { PDFDownloadLink } from "@react-pdf/renderer"
+import QuizPDF from "../QuizPDF"
+
 
 interface ActionButtonProps {
   onClick: () => void
@@ -86,9 +89,10 @@ const ActionButton: React.FC<ActionButtonProps> = ({
 
 interface CourseActionsProps {
   slug: string
+  quizData: any // Replace 'any' with your actual quiz data type
 }
 
-export default function CourseActions({ slug }: CourseActionsProps) {
+export default function CourseActions({ slug, quizData }: CourseActionsProps) {
   const { status, loading, handleAction } = useCourseActions({ slug })
 
   const handlePrivacyToggle = useCallback(() => handleAction("privacy"), [handleAction])
@@ -97,10 +101,10 @@ export default function CourseActions({ slug }: CourseActionsProps) {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-4 p-4 rounded-lg bg-card shadow-sm">
+      <div className="flex flex-wrap items-stretch justify-end gap-2 p-4 rounded-lg bg-card shadow-sm">
         <Tooltip>
           <TooltipTrigger asChild>
-            <div>
+            <div className="w-full sm:w-auto">
               <ActionButton
                 onClick={handlePrivacyToggle}
                 isLoading={loading === "privacy"}
@@ -121,7 +125,7 @@ export default function CourseActions({ slug }: CourseActionsProps) {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div>
+            <div className="w-full sm:w-auto">
               <ActionButton
                 onClick={handleFavoriteToggle}
                 isLoading={loading === "favorite"}
@@ -140,14 +144,37 @@ export default function CourseActions({ slug }: CourseActionsProps) {
           </TooltipContent>
         </Tooltip>
 
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="w-full sm:w-auto">
+              <PDFDownloadLink document={<QuizPDF quizData={quizData} />} fileName={`${slug}-quiz.pdf`}>
+                {({ blob, url, loading, error }) => (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800"
+                    disabled={loading}
+                  >
+                    <Download className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Download PDF</span>
+                  </Button>
+                )}
+              </PDFDownloadLink>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p>Download quiz as PDF</p>
+          </TooltipContent>
+        </Tooltip>
+
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800"
+              className="w-full sm:w-auto bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Delete</span>
             </Button>
           </AlertDialogTrigger>
