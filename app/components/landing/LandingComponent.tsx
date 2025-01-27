@@ -12,13 +12,14 @@ import FeatureSections from "@/app/components/landing/FeatureSection"
 import HowItWorks from "@/app/components/landing/HowItWorks"
 import LandingCTA from "@/app/components/landing/LandingCTA"
 import LandingHero from "./LandingHero"
-import AboutUs from "@/app/about/AboutUs"
+
 import { useInView } from "framer-motion"
 import LandingHeader from "./LanndingHeader"
 
 // Dynamically import heavy components
 const ShowcaseSection = dynamic(() => import("./ShowcaseSection"), { ssr: false })
 const TestimonialsSection = dynamic(() => import("./TestimonialsSection"), { ssr: false })
+const AboutUs = dynamic(() => import("@/app/about/AboutUs"), { ssr: false })
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },

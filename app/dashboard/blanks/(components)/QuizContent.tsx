@@ -14,6 +14,7 @@ import { GlobalLoader } from "@/app/components/GlobalLoader"
 import HelpSection from "@/app/components/HelpSection"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { AnimatePresence, motion } from "framer-motion"
+import { HelpModal } from "@/app/components/HelpModal"
 
 interface Question {
   id: number
@@ -61,6 +62,7 @@ export function QuizContent({ slug }: { slug: string }) {
   const isAuthenticated = status === "authenticated"
   const [score, setScore] = useState(false)
   const [showHelp, setShowHelp] = useState(true)
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false)
 
   const toggleHelp = () => setShowHelp(!showHelp)
   const fetchQuizData = useCallback(async () => {
@@ -163,12 +165,14 @@ export function QuizContent({ slug }: { slug: string }) {
     },
     [isAuthenticated, quizData, slug, answers, elapsedTime],
   )
+
   if (loading)
     return (
       <div>
         <GlobalLoader loading={loading}></GlobalLoader>
       </div>
     )
+
   if (error) {
     return (
       <Card className="max-w-md mx-auto mt-8">
@@ -227,34 +231,10 @@ export function QuizContent({ slug }: { slug: string }) {
                 {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
               </span>
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={toggleHelp}>
-                    <HelpCircle className={`w-5 h-5 ${showHelp ? "text-primary" : ""}`} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{showHelp ? "Hide" : "Show"} help on answer matching</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <HelpModal isOpen={isHelpModalOpen} onOpenChange={setIsHelpModalOpen} />
           </div>
         </CardHeader>
         <CardContent className="px-6 py-4">
-          <AnimatePresence>
-            {showHelp && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mb-4"
-              >
-                <HelpSection />
-              </motion.div>
-            )}
-          </AnimatePresence>
           {quizCompleted ? (
             isAuthenticated ? (
               <QuizResults
@@ -287,4 +267,3 @@ export function QuizContent({ slug }: { slug: string }) {
     </div>
   )
 }
-
