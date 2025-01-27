@@ -77,3 +77,39 @@ export async function DELETE(req: Request, props: { params: Promise<{ slug: stri
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }
+
+
+export async function GET(
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
+
+  const result = await prisma.userQuiz.findUnique({
+    where: {
+      slug: slug
+    },
+    include: {
+      questions: {
+        select: {
+          question: true,
+          options: true
+        }
+      }
+    }
+  });
+
+  if (!result) {
+    return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
+  }
+
+  const data = {
+    isPublic: result.isPublic,
+    isFavorite: result.isFavorite,
+    quizData: {
+      title: result.topic,
+      questions: result.questions,
+      options:  result.questions.map(q => q.options)
+    }
+  }
+  return NextResponse.json(data)
+}

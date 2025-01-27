@@ -35,7 +35,7 @@ const LandingCTA = ({ handleSignInClick }: LandingCTAProps) => {
         >
           <motion.h2
             variants={fadeInUp}
-            className="text-3xl md:text-4xl font-bold"
+            className="text-3xl md:text-4xl font-bold text-gradient"
           >
             Ready to Revolutionize Your Learning?
           </motion.h2>

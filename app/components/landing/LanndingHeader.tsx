@@ -12,6 +12,8 @@ const navItems = [
   { name: "Features", to: "features" },
   { name: "How It Works", to: "how-it-works" },
   { name: "Showcase", to: "showcase" },
+  {name:'Faq',to:'faq'},
+  {name:'About',to:'about'}
 ]
 
 export default function LandingHeader() {

@@ -1,8 +1,8 @@
-import { Course } from "@/app/types";
+import { Course, FullCourseType } from "@/app/types";
 
 
 interface CourseStructuredDataProps {
-  course: Course;
+  course: FullCourseType;
 }
 
 export default function CourseStructuredData({ course }: CourseStructuredDataProps) {
@@ -18,7 +18,7 @@ export default function CourseStructuredData({ course }: CourseStructuredDataPro
     },
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/course/${course.slug}`,
     inLanguage: "en",
-    image: course.image || "/default-course-image.jpg",
+    image: course.imageUrl || "/default-course-image.jpg",
     courseCode: course.slug,
     numberOfCredits: course?.courseUnits?.length,
     educationalLevel: "Beginner",

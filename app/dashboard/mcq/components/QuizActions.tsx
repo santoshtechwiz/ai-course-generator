@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, Star, Trash2, Share2 } from "lucide-react"
+import { Eye, EyeOff, Star, Trash2, Share2, Download } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,8 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
+import QuizPDF from "../../course/components/QuizPDF"
+import { PDFDownloadLink } from "@react-pdf/renderer"
 
 interface QuizActionsToolbarProps {
   quizId: string
@@ -42,6 +44,7 @@ export function QuizActions({
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
   const [isShareLoading, setIsShareLoading] = useState(false)
   const [isDeleteLoading, setIsDeleteLoading] = useState(false)
+  const [data, setData] = useState<any | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -50,6 +53,8 @@ export function QuizActions({
         const response = await fetch(`/api/quiz/${quizSlug}`)
         if (response.ok) {
           const quizData = await response.json()
+          console.log(quizData);
+          setData(quizData.quizData);
           setIsPublic(quizData.isPublic)
           setIsFavorite(quizData.isFavorite)
         }
@@ -59,7 +64,7 @@ export function QuizActions({
     }
 
     fetchQuizState()
-  }, [quizSlug])
+  }, [quizSlug,quizId])
 
   if (userId !== ownerId) {
     return null
@@ -247,6 +252,36 @@ export function QuizActions({
           </TooltipTrigger>
           <TooltipContent>
             <p>Copy share link</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {/* <PDFDownloadLink document={<QuizPDF quizData={data} />} fileName={`${quizSlug}-quiz.pdf`}>
+              {({ blob, url, loading, error }) => (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={loading}
+                    className="w-28 transition-all duration-300 hover:bg-gray-100 active:bg-gray-200"
+                  >
+                    {loading ? (
+                      <span className="loader"></span>
+                    ) : (
+                      <>
+                        <Download className="mr-2 h-4 w-4" />
+                        <span className="font-medium">PDF</span>
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
+            </PDFDownloadLink> */}
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Download quiz as PDF</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

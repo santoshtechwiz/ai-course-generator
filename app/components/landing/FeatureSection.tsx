@@ -83,12 +83,12 @@ const FeatureSections = ({ featuresRef, controls }: { featuresRef: React.Mutable
       <section ref={sectionRef} className="py-20 px-4 bg-gradient-to-b from-background to-secondary/20">
         <div className="container mx-auto max-w-6xl">
           <motion.div initial="hidden" animate={controls} variants={stagger} className="space-y-12">
-            <motion.div variants={fadeInUp} className="text-center space-y-4">
+            {/* <motion.div variants={fadeInUp} className="text-center space-y-4">
               <h2 className="text-3xl font-bold text-foreground">Empower Your Course Creation</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Transform YouTube videos into comprehensive courses with CourseAI's powerful features
               </p>
-            </motion.div>
+            </motion.div> */}
 
             <motion.div variants={stagger} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {features.map((feature, idx) => (

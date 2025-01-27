@@ -12,7 +12,7 @@ import FeatureSections from "@/app/components/landing/FeatureSection"
 import HowItWorks from "@/app/components/landing/HowItWorks"
 import LandingCTA from "@/app/components/landing/LandingCTA"
 import LandingHero from "./LandingHero"
-
+import AboutUs from "@/app/about/AboutUs"
 import { useInView } from "framer-motion"
 import LandingHeader from "./LanndingHeader"
 
@@ -53,6 +53,7 @@ export default function LandingComponent() {
     testimonials: useRef(null),
     faq: useRef(null),
     cta: useRef(null),
+    about: useRef(null),
   }
 
   const howItWorksInView = useInView(sectionInViewRefs["how-it-works"], { once: true, amount: 0.3 })
@@ -61,6 +62,7 @@ export default function LandingComponent() {
   const testimonialsInView = useInView(sectionInViewRefs["testimonials"], { once: true, amount: 0.3 })
   const faqInView = useInView(sectionInViewRefs["faq"], { once: true, amount: 0.3 })
   const landingCTAInView = useInView(sectionInViewRefs["cta"], { once: true, amount: 0.3 })
+  const aboutUsInView = useInView(sectionInViewRefs["about"], { once: true, amount: 0.3 })
   const controls = useAnimation()
 
   useEffect(() => {
@@ -98,6 +100,10 @@ export default function LandingComponent() {
         return faqInView
       case "cta":
         return landingCTAInView
+
+      case "about":
+
+        return aboutUsInView
       default:
         return false
     }
@@ -109,7 +115,7 @@ export default function LandingComponent() {
       <main className="space-y-24 pb-24">
         <LandingHero onTopicSubmit={handleTopicSubmit} />
 
-        {["how-it-works", "features", "showcase", "testimonials", "faq"].map((section, index) => (
+        {["how-it-works", "features", "showcase", "testimonials", "faq",'about'].map((section, index) => (
           <Element key={section} name={section}>
             <section
               ref={(el) => (sectionInViewRefs[section].current = el)}
@@ -167,8 +173,11 @@ function getDescriptionForSection(section: string): string {
       return "Hear what our users have to say about their experience"
     case "faq":
       return "Find answers to commonly asked questions"
+        case "about":
+      return 'Discover the story behind CourseAI'
     case "cta":
       return "Ready to get started? Sign up now"
+  
     default:
       return ""
   }
@@ -181,7 +190,7 @@ function getSectionComponent(section: string, props: any) {
   return (
     <>
       <motion.div variants={fadeInUp} className="text-center space-y-4 mb-12">
-        <h2 className="text-3xl font-bold text-primary capitalize">{title}</h2>
+        <h2 className="text-3xl font-bold text-primary text-gradient capitalize">{title}</h2>
         <p className="text-muted-foreground max-w-2xl mx-auto">{description}</p>
       </motion.div>
       {renderSectionContent(section, props)}
@@ -203,6 +212,8 @@ function renderSectionContent(section: string, props: any) {
       return <FAQSection />
     case "cta":
       return <LandingCTA handleSignInClick={props.handleSignInClick} />
+    case "about":
+      return <AboutUs />
     default:
       return null
   }

@@ -15,8 +15,9 @@ export async function submitQuizData({
   elapsedTime,
   score,
   type,
-}: SubmitQuizDataParams): Promise<void> {
+}: SubmitQuizDataParams, setLoading?: (state: boolean) => void): Promise<void> {
   try {
+    if (setLoading) setLoading(true); // Show 
     const response = await fetch(`/api/quiz/${slug}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -27,6 +28,8 @@ export async function submitQuizData({
         score,
         type,
       }),
+
+
     })
 
     if (!response.ok) {
@@ -36,5 +39,7 @@ export async function submitQuizData({
     console.error("Error submitting quiz data:", error)
     throw error
   }
+  finally {
+    if (setLoading) setLoading(false); // Hide loader
+  }
 }
-

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle2, XCircle, Clock, TrendingUp, Award, Book, BarChart, HelpCircle } from "lucide-react"
 import type { UserQuizAttempt } from "@/app/types"
 import { Progress } from "@/components/ui/progress"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface QuizAttemptsProps {
   quizAttempts: UserQuizAttempt[]
@@ -81,15 +82,24 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                         </div>
                         <p className="text-2xl font-bold mt-1">{attempt.timeSpent}s</p>
                       </div>
-                      <div className="bg-muted/50 p-3 rounded-lg">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <TrendingUp className="w-4 h-4 text-primary" />
-                          Improvement
-                        </div>
-                        <p className="text-2xl font-bold mt-1">
-                          {attempt.improvement ? `+${attempt.improvement.toFixed(1)}%` : "N/A"}
-                        </p>
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="bg-muted/50 p-3 rounded-lg cursor-help">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                <TrendingUp className="w-4 h-4 text-primary" />
+                                Improvement
+                              </div>
+                              <p className="text-2xl font-bold mt-1">
+                                {attempt.improvement ? `+${attempt.improvement.toFixed(1)}%` : "N/A"}
+                              </p>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Improvement from your last attempt</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <div className="space-y-2">
                       {attempt.attemptQuestions.map((question, qIndex) => (
