@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AlertCircle, CheckCircle2, HelpCircle, Clock } from 'lucide-react'
+import { AlertCircle, CheckCircle2, HelpCircle, Clock } from "lucide-react"
 
 interface Question {
   id: number
@@ -80,46 +80,48 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
 
   return (
     <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-       
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
+        <CardTitle className="text-xl font-bold">Fill in the Blanks</CardTitle>
         <Badge variant="outline" className="text-sm">
           Question {questionNumber} of {totalQuestions}
         </Badge>
       </CardHeader>
-      <CardContent className="space-y-6 pt-4">
+      <CardContent className="space-y-6">
         <div className="space-y-4">
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col space-y-2">
             <h3 className="text-lg font-semibold">{question.question}</h3>
-            <div className="flex flex-wrap justify-end gap-2">
+            <div className="flex flex-wrap gap-2">
               {question.openEndedQuestion.tags.map((tag, tIndex) => (
-                <Badge key={tIndex} variant="secondary" className="text-xs">
+                <Badge key={tIndex} variant="secondary" className="text-xs bg-blue-100 text-blue-800">
                   {tag}
                 </Badge>
               ))}
             </div>
           </div>
-          <Input
-            type="text"
-            value={answer}
-            onChange={(e) => handleInputChange(e.target.value)}
-            className={`w-full ${
-              submitted ? (isCorrect ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50") : ""
-            }`}
-            disabled={submitted}
-            placeholder="Type your answer here"
-          />
-          {submitted && (
-            <div className="flex items-center mt-2">
-              {isCorrect ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500 mr-2" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-              )}
-              <span className={isCorrect ? "text-green-700" : "text-red-700"}>
-                {isCorrect ? "Correct!" : `Incorrect. The correct answer is: ${question.answer}`}
-              </span>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Input
+              type="text"
+              value={answer}
+              onChange={(e) => handleInputChange(e.target.value)}
+              className={`w-full ${
+                submitted ? (isCorrect ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50") : ""
+              }`}
+              disabled={submitted}
+              placeholder="Type your answer here"
+            />
+            {submitted && (
+              <div className="flex items-center mt-2">
+                {isCorrect ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mr-2" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                )}
+                <span className={isCorrect ? "text-green-700" : "text-red-700"}>
+                  {isCorrect ? "Correct!" : `Incorrect. The correct answer is: ${question.answer}`}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -153,7 +155,7 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
                   >
                     <p className="text-sm text-blue-700">{question.openEndedQuestion.hints[hIndex]}</p>
                   </motion.div>
-                )
+                ),
             )}
           </AnimatePresence>
         </div>
@@ -166,3 +168,4 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
     </Card>
   )
 }
+
