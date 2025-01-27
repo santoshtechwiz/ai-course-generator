@@ -14,7 +14,7 @@ import { toast } from "@/hooks/use-toast"
 import { useSession, signIn } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { submitQuizData } from "@/app/actions/actions"
-import { ApiLoader } from "@/app/components/ApiLoader"
+import { GlobalLoader } from "@/app/components/GlobalLoader"
 
 
 type Question = {
@@ -251,7 +251,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
       }
     }
   }, [isAuthenticated, slug, saveQuizResults])
-  if (loading) return <div><ApiLoader loading={loading}></ApiLoader></div>
+  if (loading) return <div><GlobalLoader loading={loading}></GlobalLoader></div>
   if (hasError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -292,7 +292,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
           </div>
         </CardHeader>
         <CardContent className="pb-6">
-          <ApiLoader loading={loading}></ApiLoader>
+          <GlobalLoader loading={loading}></GlobalLoader>
           <AnimatePresence mode="wait" initial={false}>
             {!quizCompleted ? (
               <motion.div

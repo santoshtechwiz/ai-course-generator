@@ -1,20 +1,19 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CreditCard, Zap, Sparkles } from 'lucide-react';
+import { getAuthSession } from "@/lib/authOptions";
+import { getUserData, getUserStats } from "../actions/userDashboard";
+import UserNotFound from "@/components/UserNotFound";
 import UserProfile from "./components/UserProfile";
 import QuizHistory from "./components/QuizHistory";
-import { getAuthSession } from "@/lib/authOptions";
 import SubscriptionStatus from "./course/components/UserDashboard/SubscriptionStatus";
 import FavoriteCourses from "./components/FavoriteCourses";
-import UserNotFound from "@/components/UserNotFound";
-import { getUserData, getUserStats } from "../actions/userDashboard";
-import { Skeleton } from "@/components/ui/skeleton";
 import AIRecommendations from "./components/Recommendations";
 import CourseProgress from "./course/components/CoursePage/CourseProgress";
 import { MyCourses } from "./course/components/UserDashboard/MyCourses";
 import { MyQuizzes } from "./course/components/UserDashboard/MyQuizzes";
-
-import { CreditCard, Zap } from 'lucide-react';
 import { QuizAttempts } from "./course/components/UserDashboard/QuizAttempts";
 import { UserStatsOverview } from "./course/components/UserDashboard/UserStatsOverview";
 
@@ -65,79 +64,93 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 lg:p-8 bg-background text-foreground">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
-        <div>
-          <h1 className="text-3xl lg:text-4xl font-bold mb-2">{getGreeting()}, {userData.name || 'User'}!</h1>
-          <p className="text-muted-foreground">{getMotivationalMessage()}</p>
-        </div>
-        <Card className="w-full sm:w-auto bg-primary text-primary-foreground p-4 shadow-md">
-          <div className="flex items-center justify-between space-x-4">
-            <div className="flex items-center space-x-2">
-              <CreditCard className="h-5 w-5" />
-              <span className="font-semibold">Credits: {userData.credits}</span>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="container mx-auto p-6 lg:p-8">
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold mb-2 text-foreground">
+                {getGreeting()}, {userData.name || 'User'}!
+              </h1>
+              <p className="text-muted-foreground text-lg">{getMotivationalMessage()}</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <Zap className="h-5 w-5" />
-              <span className="font-semibold">
-                {userData.subscriptions?.planId || "FREE"}
-              </span>
-            </div>
+            <Card className="w-full sm:w-auto bg-primary text-primary-foreground p-4 shadow-md">
+              <div className="flex items-center justify-between space-x-4">
+                <div className="flex items-center space-x-2">
+                  <CreditCard className="h-5 w-5" />
+                  <span className="font-semibold">Credits: {userData.credits}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Zap className="h-5 w-5" />
+                  <span className="font-semibold">
+                    {userData.subscriptions?.planId || "FREE"}
+                  </span>
+                </div>
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Suspense fallback={<LoadingCard />}>
-            <UserProfile user={userData} />
-          </Suspense>
-
-          <Suspense fallback={<LoadingCard />}>
-            <CourseProgress
-              courses={userData.courseProgress}
-              stats={userStats}
-            />
-          </Suspense>
-
-          <Suspense fallback={<LoadingCard />}>
-            <MyCourses courses={userData.courses} />
-          </Suspense>
-
-          <Suspense fallback={<LoadingCard />}>
-            <MyQuizzes quizzes={userData.userQuizzes} />
-          </Suspense>
-
-          <Suspense fallback={<LoadingCard />}>
-            <QuizAttempts quizAttempts={userData.quizAttempts} />
-          </Suspense>
+          <Card className="bg-secondary text-secondary-foreground p-4">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="font-medium">Quick Tip:</span>
+              <span>Complete a quiz today to boost your learning streak!</span>
+            </div>
+          </Card>
         </div>
 
-        <div className="space-y-6">
-          <Suspense fallback={<LoadingCard />}>
-            <QuizHistory quizzes={userData.userQuizzes} />
-          </Suspense>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Suspense fallback={<LoadingCard />}>
+              <UserProfile user={userData} />
+            </Suspense>
 
-          <Suspense fallback={<LoadingCard />}>
-            <FavoriteCourses favorites={userData.favorites} />
-          </Suspense>
+            <Suspense fallback={<LoadingCard />}>
+              <CourseProgress
+                courses={userData.courseProgress}
+                stats={userStats}
+              />
+            </Suspense>
 
-          <Suspense fallback={<LoadingCard />}>
-            <AIRecommendations
-              courses={userData.courses}
-              courseProgress={userData.courseProgress}
-              quizAttempts={userData.quizAttempts}
-            />
-          </Suspense>
-          <Suspense fallback={<LoadingCard />}>
-            <UserStatsOverview stats={userStats} />
-          </Suspense>
-          <Suspense fallback={<LoadingCard />}>
-            <SubscriptionStatus subscription={userData.subscriptions} />
-          </Suspense>
+            <Suspense fallback={<LoadingCard />}>
+              <MyCourses courses={userData.courses} />
+            </Suspense>
+
+            <Suspense fallback={<LoadingCard />}>
+              <MyQuizzes quizzes={userData.userQuizzes} />
+            </Suspense>
+
+            <Suspense fallback={<LoadingCard />}>
+              <QuizAttempts quizAttempts={userData.quizAttempts} />
+            </Suspense>
+          </div>
+
+          <div className="space-y-6">
+            <Suspense fallback={<LoadingCard />}>
+              <UserStatsOverview stats={userStats} />
+            </Suspense>
+
+            <Suspense fallback={<LoadingCard />}>
+              <QuizHistory quizzes={userData.userQuizzes} />
+            </Suspense>
+
+            <Suspense fallback={<LoadingCard />}>
+              <FavoriteCourses favorites={userData.favorites} />
+            </Suspense>
+
+            <Suspense fallback={<LoadingCard />}>
+              <AIRecommendations
+                courses={userData.courses}
+                courseProgress={userData.courseProgress}
+                quizAttempts={userData.quizAttempts}
+              />
+            </Suspense>
+
+            <Suspense fallback={<LoadingCard />}>
+              <SubscriptionStatus subscription={userData.subscriptions} />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-

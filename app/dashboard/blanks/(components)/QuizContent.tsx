@@ -10,7 +10,7 @@ import { submitQuizData } from "@/app/actions/actions"
 import { QuizActions } from "../../mcq/components/QuizActions"
 import QuizResults from "../../openended/components/QuizResults"
 import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
-import { ApiLoader } from "@/app/components/ApiLoader"
+import { GlobalLoader } from "@/app/components/GlobalLoader"
 import HelpSection from "@/app/components/HelpSection"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { AnimatePresence, motion } from "framer-motion"
@@ -166,7 +166,7 @@ export function QuizContent({ slug }: { slug: string }) {
   if (loading)
     return (
       <div>
-        <ApiLoader loading={loading}></ApiLoader>
+        <GlobalLoader loading={loading}></GlobalLoader>
       </div>
     )
   if (error) {

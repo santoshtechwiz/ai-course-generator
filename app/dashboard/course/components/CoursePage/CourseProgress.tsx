@@ -12,7 +12,7 @@ import Link from "next/link"
 import Image from "next/image"
 import type { CourseProgress as CourseProgressType, UserStats } from "@/app/types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-//import { useTrackingContext } from "@/app/providers/TrackingProvider"
+
 
 interface CourseProgressProps {
   courses: CourseProgressType[]
@@ -21,14 +21,7 @@ interface CourseProgressProps {
 
 export default function CourseProgress({ courses, stats }: CourseProgressProps) {
   const [selectedView, setSelectedView] = useState<"list" | "stats">("list")
-  //const { trackInteraction } = useTrackingContext()
 
-  // useEffect(() => {
-  //   trackInteraction("view", "course_progress", "component", {
-  //     courseCount: courses.length,
-  //     completedCourses: courses.filter((course) => course.progress === 100).length,
-  //   })
-  // }, [])
 
   if (!courses?.length) {
     return (
@@ -39,9 +32,7 @@ export default function CourseProgress({ courses, stats }: CourseProgressProps) 
         <CardContent className="flex flex-col items-center justify-center space-y-4 py-8">
           <Book className="h-12 w-12 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No courses enrolled yet</p>
-          <Button asChild onClick={() => trackInteraction("click", "browse_courses", "button")}>
-            <Link href="/dashboard/courses">Browse Courses</Link>
-          </Button>
+       
         </CardContent>
       </Card>
     )

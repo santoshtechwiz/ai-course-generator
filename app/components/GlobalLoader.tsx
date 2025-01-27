@@ -1,15 +1,14 @@
-import React, { ReactNode } from "react";
+import React from "react";
 import { Watch } from "react-loader-spinner";
 
-interface ApiLoaderProps {
+interface GlobalLoaderProps {
   loading: boolean;
-  
 }
 
-export const ApiLoader: React.FC<ApiLoaderProps> = ({ loading }) => {
+export const GlobalLoader: React.FC<GlobalLoaderProps> = ({ loading }) => {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75 z-50">
         <Watch
           visible={true}
           height="80"
@@ -18,11 +17,10 @@ export const ApiLoader: React.FC<ApiLoaderProps> = ({ loading }) => {
           color="#4fa94d"
           ariaLabel="watch-loading"
         />
-        {/* show toast */}
-        
+        {/* Add any toast or notification here */}
       </div>
     );
   }
 
-  return <></>;
+  return null;
 };
