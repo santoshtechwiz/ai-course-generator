@@ -225,3 +225,10 @@ export interface QuizListItem {
   quizType: string
   tags: string[]
 }
+export interface CreateQuizCardConfig {
+  title?: string
+  description?: string
+  createUrl?: string
+  animationDuration?: number
+  className?: string
+}

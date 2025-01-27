@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { ExploreClient } from "./components/ExploreClient"
+import { ExploreQuizzes } from "./components/ExploreQuizzes"
 import { getQuizzes } from "@/lib/db"
 
 
@@ -12,7 +12,7 @@ export default async function QuizPage() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-center text-primary">Explore Quizzes</h1>
       <Suspense fallback={<div>Loading...</div>}>
-        <ExploreClient initialQuizzes={initialQuizzes} />
+        <ExploreQuizzes initialQuizzes={initialQuizzes} />
       </Suspense>
     </div>
   )
