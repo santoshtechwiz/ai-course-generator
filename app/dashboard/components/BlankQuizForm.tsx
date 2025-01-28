@@ -5,16 +5,14 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
-
 import { Progress } from "@/components/ui/progress"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
 interface TopicFormProps {
-  credits: number,
-  maxQuestions: number,
+  credits: number
+  maxQuestions: number
   isLoggedIn: boolean
 }
 
@@ -61,7 +59,6 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
     [generateQuiz],
   )
 
-
   const isFormValid = useMemo(() => topic.trim().length >= 3, [topic])
 
   const handleKeyDown = useCallback(
@@ -72,6 +69,7 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
     },
     [handleSubmit, isFormValid, isLoading],
   )
+
   const renderQuestionCount = () => (
     <div className="space-y-3">
       <label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
@@ -89,54 +87,8 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
           className="flex-grow"
           aria-label="Select number of questions"
         />
-
       </div>
     </div>
-  )
-
-  const renderCreditsCard = () => (
-    <Card className="bg-primary/5 border-primary/20">
-      <CardContent className="p-4 space-y-2">
-        <CardTitle className="text-base mb-2">Available Credits</CardTitle>
-        <Progress value={(credits / 10) * 100} className="h-2" />
-        <p className="text-xs text-muted-foreground">
-          You have <span className="font-bold text-primary">{credits}</span> credits remaining.
-        </p>
-
-      </CardContent>
-    </Card>
-  )
-
-  const renderInfoCard = () => (
-    <Card
-      className="bg-muted cursor-pointer transition-colors hover:bg-muted/80"
-      onClick={() => setOpenInfo(!openInfo)}
-    >
-      <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
-
-        {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-      </CardHeader>
-      <AnimatePresence>
-        {openInfo && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <CardContent className="text-sm px-4 pb-4 space-y-2">
-              <p>Fill-in-the-blank questions assess the ability to recall and apply knowledge in context. They are useful for:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Testing factual knowledge</li>
-                <li>Reinforcing key concepts</li>
-                <li>Promoting active recall</li>
-                <li>Measuring comprehension and retention</li>
-              </ul>
-            </CardContent>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Card>
   )
 
   return (
@@ -144,17 +96,16 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="h-full"
+      className="w-full"
     >
-      <Card className="h-full flex flex-col bg-card text-card-foreground shadow-lg">
-        <CardHeader className="pb-4">
-         
-          <CardDescription className="text-base">
+      <div className="flex flex-col bg-background border border-border shadow-sm">
+        <div className="px-2 sm:px-4 pb-4 border-b">
+          <p className="text-base text-muted-foreground">
             Select a topic and customize your quiz with fill-in-the-blank questions.
-          </CardDescription>
-        </CardHeader>
+          </p>
+        </div>
 
-        <CardContent className="space-y-6 flex-grow">
+        <div className="space-y-6 flex-grow px-2 sm:px-4 py-6">
           <form onSubmit={handleSubmit} className="space-y-6" onKeyDown={handleKeyDown}>
             <div className="space-y-3">
               <label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
@@ -175,8 +126,49 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
             </div>
 
             {renderQuestionCount()}
-            {renderCreditsCard()}
-            {renderInfoCard()}
+
+            <div className="bg-primary/5 border border-primary/20 rounded-lg">
+              <div className="p-4 space-y-2">
+                <h3 className="text-base font-semibold mb-2">Available Credits</h3>
+                <Progress value={(credits / 10) * 100} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="bg-muted cursor-pointer transition-colors hover:bg-muted/80 rounded-lg"
+              onClick={() => setOpenInfo(!openInfo)}
+            >
+              <div className="flex flex-row items-center justify-between py-2 px-4">
+                <h3 className="text-sm font-semibold">About Fill-in-the-Blank Questions</h3>
+                {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+              <AnimatePresence>
+                {openInfo && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="text-sm px-4 pb-4 space-y-2">
+                      <p>
+                        Fill-in-the-blank questions assess the ability to recall and apply knowledge in context. They
+                        are useful for:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Testing factual knowledge</li>
+                        <li>Reinforcing key concepts</li>
+                        <li>Promoting active recall</li>
+                        <li>Measuring comprehension and retention</li>
+                      </ul>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <AnimatePresence>
               {error && (
@@ -194,10 +186,9 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
               )}
             </AnimatePresence>
           </form>
-        </CardContent>
+        </div>
 
-        <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
-
+        <div className="sticky bottom-0 pt-4 px-2 sm:px-4 bg-background border-t">
           <PlanAwareButton
             label="Generate Quiz"
             onClick={generateQuiz}
@@ -205,6 +196,7 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
             isEnabled={isFormValid}
             hasCredits={credits > 0}
             loadingLabel="Generating..."
+            className="w-full"
             customStates={{
               default: {
                 tooltip: "Click to generate your fill-in-the-blank quiz",
@@ -227,8 +219,8 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
               },
             }}
           />
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   )
 }
@@ -236,3 +228,4 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
 export const FillInTheBlankQuizForm = memo(FillInTheBlankQuizFormComponent)
 
 export default FillInTheBlankQuizForm
+
