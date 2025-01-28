@@ -7,6 +7,7 @@ import { Sparkles, Rocket, Brain, PlusCircle, ArrowRight, Zap, Lightbulb } from 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useTheme } from "next-themes"
 
 interface CreateQuizCardProps {
   compact?: boolean
@@ -18,38 +19,40 @@ interface CreateQuizCardProps {
   className?: string
 }
 
-export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({ 
-  compact, 
-  floating, 
+export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
+  compact,
+  floating,
   title = "Create Your Own Quiz",
   description = "Transform your knowledge into an engaging quiz in minutes! ✨",
   createUrl = "/dashboard/quiz",
   animationDuration = 1.5,
-  className
+  className,
 }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const shouldReduceMotion = useReducedMotion()
-  
-  // Handle mobile touch events
+  const { theme } = useTheme()
+
   const [isTouched, setIsTouched] = useState(false)
-  
+
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
   const animationSpeed = shouldReduceMotion ? 0 : animationDuration
 
+  const isDarkTheme = theme === "dark"
+
   if (compact) {
     return (
       <Link href={createUrl} passHref>
-        <Button 
+        <Button
           className={cn(
-            "whitespace-nowrap bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 group",
+            "whitespace-nowrap bg-gradient-to-r from-primary to-primary-foreground hover:from-primary/90 hover:to-primary-foreground/90 group",
             "relative overflow-hidden",
             "md:px-6 md:py-3",
             "text-base md:text-lg",
-            className
+            className,
           )}
         >
           <motion.span
@@ -61,9 +64,9 @@ export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
           </motion.span>
           <span className="relative z-10">{title}</span>
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-violet-500/50 to-indigo-500/50"
-            initial={{ x: '-100%' }}
-            animate={{ x: isHovered ? '100%' : '-100%' }}
+            className="absolute inset-0 bg-gradient-to-r from-primary/50 to-primary-foreground/50"
+            initial={{ x: "-100%" }}
+            animate={{ x: isHovered ? "100%" : "-100%" }}
             transition={{ duration: animationSpeed * 0.5 }}
           />
         </Button>
@@ -79,13 +82,7 @@ export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
   ]
 
   const cardContent = (
-    <CardContent 
-      className={cn(
-        "text-center p-6 relative overflow-hidden",
-        floating ? "pb-4" : "",
-        "md:p-8"
-      )}
-    >
+    <CardContent className={cn("text-center p-6 relative overflow-hidden", floating ? "pb-4" : "", "md:p-8")}>
       <AnimatePresence>
         {(isHovered || isTouched) && isMounted && (
           <>
@@ -93,24 +90,21 @@ export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ 
+                animate={{
                   opacity: [0, 1, 0],
                   y: [-20, -100],
-                  x: Math.sin(index * Math.PI/2) * 30
+                  x: Math.sin((index * Math.PI) / 2) * 30,
                 }}
-                transition={{ 
+                transition={{
                   duration: animationSpeed,
                   delay: delay * animationSpeed,
-                  repeat: Infinity,
-                  repeatDelay: animationSpeed
+                  repeat: Number.POSITIVE_INFINITY,
+                  repeatDelay: animationSpeed,
                 }}
-                className={cn(
-                  "absolute",
-                  color
-                )}
+                className={cn("absolute", color)}
                 style={{
-                  left: `${25 + (index * 15)}%`,
-                  bottom: "20%"
+                  left: `${25 + index * 15}%`,
+                  bottom: "20%",
                 }}
               >
                 <Icon className="w-6 h-6 md:w-8 md:h-8" />
@@ -122,20 +116,22 @@ export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
 
       <motion.div
         animate={{
-          rotate: (isHovered || isTouched) ? 180 : 0,
-          scale: (isHovered || isTouched) ? 1.1 : 1,
+          rotate: isHovered || isTouched ? 180 : 0,
+          scale: isHovered || isTouched ? 1.1 : 1,
         }}
         transition={{ duration: animationSpeed * 0.2 }}
         className="relative z-10"
       >
         <div className="relative inline-block">
-          <PlusCircle className={cn(
-            "mx-auto mb-4 text-white",
-            floating ? "w-12 h-12" : "w-16 h-16",
-            "md:w-20 md:h-20"
-          )} />
+          <PlusCircle
+            className={cn(
+              "mx-auto mb-4 text-primary-foreground",
+              floating ? "w-12 h-12" : "w-16 h-16",
+              "md:w-20 md:h-20",
+            )}
+          />
           <motion.div
-            animate={{ scale: (isHovered || isTouched) ? 1.2 : 1 }}
+            animate={{ scale: isHovered || isTouched ? 1.2 : 1 }}
             transition={{ duration: animationSpeed * 0.2 }}
             className="absolute inset-0 flex items-center justify-center"
           >
@@ -144,45 +140,46 @@ export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
         </div>
       </motion.div>
 
-      <h3 className={cn(
-        "font-semibold mb-2 text-white",
-        floating ? "text-lg md:text-xl" : "text-xl md:text-2xl"
-      )}>
+      <h3
+        className={cn(
+          "font-semibold mb-2 text-primary-foreground",
+          floating ? "text-lg md:text-xl" : "text-xl md:text-2xl",
+        )}
+      >
         {title}
       </h3>
-      
+
       {!floating && (
-        <p className="text-white/90 mb-6 text-sm md:text-base max-w-xs mx-auto">
-          {description}
-        </p>
+        <p className="text-primary-foreground/90 mb-6 text-sm md:text-base max-w-xs mx-auto">{description}</p>
       )}
 
       <Link href={createUrl} passHref>
-        <Button 
+        <Button
           size={floating ? "default" : "lg"}
+          variant="secondary"
           className={cn(
-            "group bg-white text-primary hover:bg-white/90 transition-all duration-300",
+            "group transition-all duration-300",
             "transform hover:scale-105",
             "text-base md:text-lg",
             "px-6 py-3 md:px-8 md:py-4",
-            "shadow-lg hover:shadow-xl"
+            "shadow-lg hover:shadow-xl",
           )}
         >
           Start Creating
-          <motion.span 
+          <motion.span
             className="ml-2 relative"
-            animate={{ x: (isHovered || isTouched) ? 5 : 0 }}
+            animate={{ x: isHovered || isTouched ? 5 : 0 }}
             transition={{ duration: animationSpeed * 0.2 }}
           >
             <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
             <motion.div
-              animate={{ 
-                opacity: (isHovered || isTouched) ? 1 : 0,
-                x: (isHovered || isTouched) ? [0, 20] : 0,
+              animate={{
+                opacity: isHovered || isTouched ? 1 : 0,
+                x: isHovered || isTouched ? [0, 20] : 0,
               }}
-              transition={{ 
-                duration: animationSpeed * 0.3, 
-                repeat: Infinity 
+              transition={{
+                duration: animationSpeed * 0.3,
+                repeat: Number.POSITIVE_INFINITY,
               }}
               className="absolute inset-0"
             >
@@ -192,10 +189,9 @@ export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
         </Button>
       </Link>
 
-      {/* Mobile touch feedback */}
       <button
         className="md:hidden absolute inset-0 w-full h-full bg-transparent"
-        onClick={() => setIsTouched(prev => !prev)}
+        onClick={() => setIsTouched((prev) => !prev)}
         aria-label="Toggle animations"
       />
     </CardContent>
@@ -212,11 +208,13 @@ export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className={cn(
-          "bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600",
-          "text-white shadow-lg hover:shadow-violet-500/25",
-          "border-2 border-white/10"
-        )}>
+        <Card
+          className={cn(
+            "bg-gradient-to-br from-primary via-primary to-primary-foreground",
+            "text-primary-foreground shadow-lg hover:shadow-primary/25",
+            "border-2 border-primary-foreground/10",
+          )}
+        >
           {cardContent}
         </Card>
       </motion.div>
@@ -232,24 +230,26 @@ export const CreateQuizCard: React.FC<CreateQuizCardProps> = ({
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
     >
-      <Card className={cn(
-        "h-full flex flex-col justify-center items-center",
-        "hover:shadow-xl transition-all duration-300",
-        "transform hover:-translate-y-2",
-        "bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600",
-        "text-white border-2 border-white/10",
-        "relative overflow-hidden"
-      )}>
+      <Card
+        className={cn(
+          "h-full flex flex-col justify-center items-center",
+          "hover:shadow-xl transition-all duration-300",
+          "transform hover:-translate-y-2",
+          "bg-gradient-to-br from-primary via-primary to-primary-foreground",
+          "text-primary-foreground border-2 border-primary-foreground/10",
+          "relative overflow-hidden",
+        )}
+      >
         {cardContent}
-        
-        {/* Gradient overlay */}
+
         <motion.div
-          className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20"
+          className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary-foreground/20"
           initial={{ opacity: 0 }}
-          animate={{ opacity: (isHovered || isTouched) ? 1 : 0 }}
+          animate={{ opacity: isHovered || isTouched ? 1 : 0 }}
           transition={{ duration: animationSpeed * 0.3 }}
         />
       </Card>
     </motion.div>
   )
 }
+

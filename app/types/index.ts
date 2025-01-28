@@ -42,7 +42,7 @@ export interface CourseProgress {
   id: number
   progress: number
   currentChapterId: number
-  completedChapters: string
+  completedChapters: string|string[]
   timeSpent: number
   isCompleted: boolean
   lastAccessedAt: Date

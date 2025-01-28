@@ -231,11 +231,13 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         isCompleted?: boolean
         lastAccessedAt?: Date
       }) => {
-        updateProgress(updateData)
+        if (session) {
+          updateProgress(updateData)
+        }
       },
       5000,
     ),
-    [updateProgress],
+    [updateProgress, session],
   )
 
   const markChapterAsCompleted = useCallback(() => {
@@ -275,16 +277,19 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         }
       }
     } else {
-      throttledUpdateProgress({
-        currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
-        isCompleted: true,
-        progress: 100,
-      })
-      toast({
-        title: "Course Completed",
-        description: "Congratulations! You've completed all videos in this course.",
-        variant: "default",
-      })
+      const allChaptersCompleted = videoQueue.size() === progress?.completedChapters.length
+      if (allChaptersCompleted) {
+        throttledUpdateProgress({
+          currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
+          isCompleted: true,
+          progress: 100,
+        })
+        toast({
+          title: "Course Completed",
+          description: "Congratulations! You've completed all videos in this course.",
+          variant: "default",
+        })
+      }
     }
   }, [
     state.nextVideoId,
@@ -294,6 +299,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     throttledUpdateProgress,
     toast,
     markChapterAsCompleted,
+    progress?.completedChapters.length,
   ])
 
   const handleVideoSelect = useCallback(
@@ -380,13 +386,14 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
             currentChapter={state.currentChapter}
             currentTime={0}
             onTimeUpdate={(time: number) => {
+              console.log("Time update", time)
               if (state.currentChapter && session) {
                 throttledUpdateProgress({
                   currentChapterId: Number(state.currentChapter.id),
                 })
               }
             }}
-            progress={progress}
+            progress={progress || undefined}
             onChapterComplete={markChapterAsCompleted}
             planId={user?.planId}
           />
@@ -428,6 +435,9 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                 courseOwnerId={course.userId}
                 isSubscribed={isSubscribed}
                 progress={progress || null}
+                nextVideoId={state.nextVideoId}
+                prevVideoId={state.prevVideoId}
+                completedChapters={progress?.completedChapters || []}
               />
             </motion.div>
           )}
