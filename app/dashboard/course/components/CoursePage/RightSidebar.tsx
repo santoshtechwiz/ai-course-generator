@@ -1,31 +1,27 @@
-import React, { useCallback, useMemo } from "react";
-import { signIn, useSession } from "next-auth/react";
-import { Lock, User, Info, ArrowRight, Zap } from 'lucide-react';
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import ChapterList from "./ChapterList";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { FullCourseType, FullChapterType, CourseProgress } from "@/app/types";
+"use client"
 
-import router from "next/router";
+import React, { useRef, useCallback, useMemo } from "react"
+import { signIn, useSession } from "next-auth/react"
+import { Lock, Info, PlayCircle, ChevronDown, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { TooltipProvider, TooltipContent, TooltipTrigger, Tooltip } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
+import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types"
+import { useRouter } from "next/navigation"
+
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 interface RightSidebarProps {
-  course: FullCourseType;
-  currentChapter?: FullChapterType;
-  courseId: string;
-  onVideoSelect: (videoId: string) => void;
-  currentVideoId: string;
-  isAuthenticated: boolean;
-  courseOwnerId: string;
-  isSubscribed: boolean;
-  progress: CourseProgress | null;
-}
-
-interface ProgressCardProps {
-  progress: CourseProgress;
-  totalChapters: number;
+  course: FullCourseType
+  currentChapter?: FullChapterType
+  courseId: string
+  onVideoSelect: (videoId: string) => void
+  currentVideoId: string
+  isAuthenticated: boolean
+  courseOwnerId: string
+  isSubscribed: boolean
+  progress: CourseProgress | null
 }
 
 function RightSidebar({
@@ -38,164 +34,178 @@ function RightSidebar({
   isSubscribed,
   progress,
 }: RightSidebarProps) {
-  const { data: session } = useSession();
-  const isOwner = session?.user?.id === courseOwnerId;
+  const { data: session } = useSession()
+  const router = useRouter()
+  const isOwner = session?.user?.id === courseOwnerId
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   const handleVideoSelect = useCallback(
     (videoId: string) => {
-      if (videoId !== currentVideoId) {
-        onVideoSelect(videoId);
-      }
+      onVideoSelect(videoId)
     },
-    [currentVideoId, onVideoSelect]
-  );
+    [onVideoSelect],
+  )
 
-  const totalChapters = useMemo(() => {
-    return course?.courseUnits?.reduce(
-      (sum, unit) => sum + unit.chapters.length,
-      0
-    );
-  }, [course.courseUnits]);
+  const { totalChapters, unitProgresses } = useMemo(() => {
+    let total = 0
+    const unitProgresses =
+      course.courseUnits?.map((unit) => {
+        const chapters = unit.chapters.length
+        total += chapters
+        const completedInUnit = unit.chapters.filter((chapter) =>
+          progress?.completedChapters.includes(chapter.id.toString()),
+        ).length
+        return {
+          unitId: unit.id,
+          progress: Math.round((completedInUnit / chapters) * 100),
+          completedChapters: completedInUnit,
+          totalChapters: chapters,
+        }
+      }) || []
 
-  return (
-    <TooltipProvider>
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 20 }}
-        transition={{ duration: 0.3 }}
-        className="h-full space-y-6 relative w-full lg:w-[350px] lg:max-w-md mx-auto p-4"
-      >
-        {isAuthenticated && !isSubscribed && <EnrollmentCard />}
+    return { totalChapters: total, unitProgresses }
+  }, [course.courseUnits, progress?.completedChapters])
 
-        {progress && <ProgressCard progress={progress} totalChapters={totalChapters ?? 0} />}
-
-        <AnimatePresence>
-          {(!isOwner && !isSubscribed) ? (
-            <LockedContentOverlay isAuthenticated={isAuthenticated} />
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-6 relative"
+  if (!isOwner && !isSubscribed) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="p-4 border-b">
+          <h1 className="text-2xl font-bold">{course.name}</h1>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center">
+            <Lock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">{isAuthenticated ? "Premium Content" : "Sign In Required"}</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {isAuthenticated ? "Subscribe to access the full course content." : "Sign in to explore all courses."}
+            </p>
+            <Button
+              onClick={() =>
+                isAuthenticated
+                  ? router.push("/dashboard/subscription")
+                  : signIn(undefined, { callbackUrl: window.location.href })
+              }
+              className="w-full"
             >
-              <ChapterList
-                course={course}
-                onVideoSelect={handleVideoSelect}
-                currentVideoId={currentVideoId}
-                isAuthenticated={isAuthenticated}
-                completedChapters={Array.isArray(progress?.completedChapters) ? progress.completedChapters : []}
-                currentChapter={currentChapter}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </TooltipProvider>
-  );
-}
-
-function EnrollmentCard() {
-  return (
-    <Card className="mb-6 border-2 border-primary">
-      <CardContent className="p-6">
-        <h3 className="text-2xl font-bold mb-4 text-center">Unlock Premium Features</h3>
-        <ul className="list-disc list-inside mb-6 text-sm space-y-2">
-          <li>Create your own quizzes</li>
-          <li>Access exclusive playlists</li>
-          <li>Customize your learning experience</li>
-          <li>Track your progress across all courses</li>
-        </ul>
-        <Button 
-          onClick={() => router.push('/dashboard/subscription')}
-          className="w-full text-lg py-6 relative overflow-hidden group"
-        >
-          <span className="relative z-10">Subscribe Now</span>
-          <motion.div
-            className="absolute inset-0 bg-primary-foreground opacity-20"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: [0, 1, 1], opacity: [0, 1, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-          />
-          <ArrowRight className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ProgressCard({ progress, totalChapters }: ProgressCardProps) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between text-xl">
-          Course Progress
-          <Tooltip>
-            <TooltipTrigger>
-              <Info size={18} className="text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Track your progress through the course</p>
-            </TooltipContent>
-          </Tooltip>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Progress value={progress.progress} className="w-full h-3 bg-gray-200" />
-        <p className="text-sm text-muted-foreground mt-4 flex justify-between items-center">
-          <span>{progress.completedChapters.length} / {totalChapters} chapters completed</span>
-          <span className="text-lg font-semibold">{Math.round(progress.progress)}%</span>
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function LockedContentOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50"
-    >
-      <Card className="w-full max-w-sm mx-4 border-2 border-primary">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-center text-2xl">
-            <Lock className="mr-2" />
-            {isAuthenticated ? "Premium Content" : "Sign In Required"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center mb-6 text-lg">
-            {isAuthenticated 
-              ? "Subscribe to access the full course content and track your progress."
-              : "Sign in to explore all playlists and quizzes."}
-          </p>
-          <Button
-            className="w-full bg-primary text-primary-foreground text-lg py-6 relative overflow-hidden group"
-            onClick={() => isAuthenticated 
-              ? router.push('/dashboard/subscription')
-              : signIn(undefined, { callbackUrl: window.location.href })
-            }
-          >
-            <span className="relative z-10">
               {isAuthenticated ? "Subscribe Now" : "Sign In"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b">
+        <h1 className="text-2xl font-bold">{course.name}</h1>
+        {currentChapter && (
+          <p className="text-sm text-muted-foreground mt-1">Currently watching: {currentChapter.name}</p>
+        )}
+      </div>
+
+      {progress && (
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">Course Progress</h2>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Track your progress through the course</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <Progress value={progress.progress} className="h-2" />
+          <p className="text-sm text-muted-foreground mt-2 flex justify-between">
+            <span>
+              {progress.completedChapters.length} / {totalChapters} chapters
             </span>
-            <motion.div
-              className="absolute inset-0 bg-primary-foreground opacity-20"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [0, 1, 1], opacity: [0, 1, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            />
-            <ArrowRight className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </Button>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
+            <span>{Math.round(progress.progress)}%</span>
+          </p>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4">
+          {course.courseUnits?.map((unit, index) => {
+            const unitProgress = unitProgresses.find((up) => up.unitId === unit.id)
+            const isCurrentUnit = unit.chapters.some((chapter) => chapter.id === currentChapter?.id)
+
+            return (
+              <Collapsible
+                key={unit.id}
+                defaultOpen={isCurrentUnit}
+                className="mb-4 bg-muted/30 rounded-lg overflow-hidden"
+              >
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center">
+                    <h3 className="text-lg font-semibold">{unit.name}</h3>
+                    <Badge variant={isCurrentUnit ? "default" : "secondary"} className="ml-2">
+                      {unitProgress?.completedChapters}/{unitProgress?.totalChapters}
+                    </Badge>
+                  </div>
+                  {isCurrentUnit ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </CollapsibleTrigger>
+
+                <CollapsibleContent>
+                  <Progress value={unitProgress?.progress} className="h-1 mt-2 mb-3" />
+
+                  <div className="space-y-2 pl-4 pr-2 max-h-96 overflow-y-auto border-l-2 border-muted">
+                    {unit.chapters.map((chapter) => {
+                      const isCompleted = progress?.completedChapters.includes(chapter.id.toString())
+                      const isCurrent = chapter.videoId === currentVideoId
+
+                      return (
+                        <button
+                          key={chapter.id}
+                          onClick={() => chapter.videoId && handleVideoSelect(chapter.videoId)}
+                          className={`
+                            w-full text-left p-3 rounded-lg
+                            transition-all duration-200 ease-in-out
+                            hover:bg-muted/50
+                            ${isCurrent ? "bg-primary text-primary-foreground" : ""}
+                            ${isCompleted && !isCurrent ? "text-muted-foreground" : ""}
+                          `}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`
+                              flex-shrink-0 h-2 w-2 rounded-full
+                              ${isCompleted ? "bg-primary" : "bg-muted-foreground"}
+                              ${isCurrent ? "animate-pulse" : ""}
+                            `}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="line-clamp-1">{chapter.name}</span>
+                                {isCurrent && (
+                                  <PlayCircle className="flex-shrink-0 h-4 w-4 text-primary-foreground animate-pulse" />
+                                )}
+                              </div>
+                              {chapter.description && (
+                                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                  {chapter.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
 
-export default RightSidebar;
+export default React.memo(RightSidebar)
 

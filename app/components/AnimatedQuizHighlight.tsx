@@ -2,17 +2,17 @@
 
 import React from "react"
 import { motion } from "framer-motion"
-import { CheckCircle2, FileQuestion, AlignJustify, HelpCircle, ChevronRight, Zap, Trophy } from 'lucide-react'
+import { CheckCircle2, FileQuestion, AlignJustify, HelpCircle, ChevronRight, Zap, Trophy } from "lucide-react"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
 import Link from "next/link"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const iconMap = {
   mcq: CheckCircle2,
-  "openended": FileQuestion,
+  openended: FileQuestion,
   "fill-blanks": AlignJustify,
 }
 
@@ -32,7 +32,7 @@ function getQuizTypeRoute({ quizType }: { quizType: string }): string {
 const difficultyColors = {
   Easy: "bg-green-500/10 text-green-600 border-green-200",
   Medium: "bg-yellow-500/10 text-yellow-600 border-yellow-200",
-  Hard: "bg-red-500/10 text-red-600 border-red-200"
+  Hard: "bg-red-500/10 text-red-600 border-red-200",
 }
 
 export const AnimatedQuizHighlight: React.FC = () => {
@@ -40,7 +40,7 @@ export const AnimatedQuizHighlight: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Random Quizzes</h2>
@@ -56,11 +56,11 @@ export const AnimatedQuizHighlight: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6">
-        <CardTitle className="flex items-center mb-4">
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center mb-4">
           <Zap className="h-5 w-5 text-primary mr-2" />
-          Random Quizzes
-        </CardTitle>
+          <h2 className="text-lg font-semibold">Random Quizzes</h2>
+        </div>
         <p className="text-destructive">Error: {error}</p>
       </div>
     )
@@ -79,8 +79,8 @@ export const AnimatedQuizHighlight: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Random Quizzes</h2>
@@ -102,7 +102,7 @@ export const AnimatedQuizHighlight: React.FC = () => {
             >
               <Card className="transition-colors hover:bg-accent">
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-4">
                     <motion.div
                       whileHover={{ rotate: 15 }}
                       className={`rounded-lg p-3 ${
@@ -123,17 +123,15 @@ export const AnimatedQuizHighlight: React.FC = () => {
                         }`,
                       })}
                     </motion.div>
-                    <div className="flex-grow">
-                      <h3 className="text-lg font-semibold group-hover:text-primary transition-colors">
+                    <div className="flex-grow min-w-0">
+                      <h3 className="text-lg font-semibold group-hover:text-primary transition-colors truncate">
                         {quiz.topic}
                       </h3>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {quiz.quizType.replace("-", " ")}
-                      </p>
+                      <p className="text-sm text-muted-foreground capitalize">{quiz.quizType.replace("-", " ")}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <Badge 
-                        variant="outline" 
+                    <div className="flex flex-row sm:flex-col items-start sm:items-end gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                      <Badge
+                        variant="outline"
                         className={`${difficultyColors[getQuizDifficulty(quiz.quizType) as keyof typeof difficultyColors]}`}
                       >
                         {getQuizDifficulty(quiz.quizType)}
@@ -153,18 +151,10 @@ export const AnimatedQuizHighlight: React.FC = () => {
         ))}
       </div>
 
-      <Button 
-        className="w-full group" 
-        variant="outline"
-        asChild
-      >
-        <Link href="/dashboard/quizzes">
-          Explore More Quizzes
-          <motion.div
-            className="ml-2"
-            initial={{ x: 0 }}
-            whileHover={{ x: 5 }}
-          >
+      <Button className="w-full group" variant="outline" asChild>
+        <Link href="/dashboard/quizzes" className="flex items-center justify-center">
+          <span>Explore More Quizzes</span>
+          <motion.div className="ml-2" initial={{ x: 0 }} whileHover={{ x: 5 }}>
             <ChevronRight className="h-4 w-4" />
           </motion.div>
         </Link>
@@ -172,3 +162,4 @@ export const AnimatedQuizHighlight: React.FC = () => {
     </div>
   )
 }
+

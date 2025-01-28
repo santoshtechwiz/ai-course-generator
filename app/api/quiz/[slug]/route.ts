@@ -83,6 +83,9 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  if (!slug) {
+    return NextResponse.json({ error: "Slug is required" }, { status: 400 })
+  }
 
   const result = await prisma.userQuiz.findUnique({
     where: {

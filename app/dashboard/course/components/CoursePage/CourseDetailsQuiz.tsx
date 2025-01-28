@@ -11,13 +11,15 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
-import type { Course, Chapter, CourseQuiz } from "@prisma/client"
+
 import QuizBackground from "./QuizBackground"
 import ComponentLoader from "../ComponentLoader"
+import { FullChapterType, FullCourseType } from "@/app/types"
+import { CourseQuiz } from "@prisma/client"
 
 type Props = {
-  course: Course
-  chapter: Chapter & {
+  course: FullCourseType
+  chapter: FullChapterType & {
     questions: CourseQuiz[]
   }
 }

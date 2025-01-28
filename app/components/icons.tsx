@@ -146,12 +146,12 @@ export const QuizCard: FC<QuizCardProps> = ({
 
   return (
     <motion.div
-      className="group relative w-full max-w-sm mx-auto [perspective:1000px] px-4 sm:px-0"
+      className="group relative w-full max-w-sm mx-auto [perspective:1000px]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="relative h-[450px] sm:h-[400px] w-full rounded-xl shadow-lg transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
+      <div className="relative h-[400px] w-full rounded-xl shadow-lg transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
         {/* Front Face */}
         <div className="absolute inset-0 h-full w-full rounded-xl [backface-visibility:hidden]">
           <Card
@@ -195,7 +195,7 @@ export const QuizCard: FC<QuizCardProps> = ({
               ))}
             </div>
 
-            <CardHeader className="relative p-4 sm:p-6 pb-0">
+            <CardHeader className="relative p-6 pb-0">
               <div className="flex items-center justify-between mb-4">
                 <Badge className={cn("font-medium text-white px-3 py-1", colors.badge)}>
                   <QuizTypeIcon className="w-4 h-4 mr-2" />
@@ -206,11 +206,11 @@ export const QuizCard: FC<QuizCardProps> = ({
                   {estimatedTime}
                 </div>
               </div>
-              <CardTitle className="text-xl sm:text-2xl font-bold relative z-10">{title}</CardTitle>
+              <CardTitle className="text-2xl font-bold relative z-10">{title}</CardTitle>
             </CardHeader>
 
-            <CardContent className="p-4 sm:p-6 pt-2 sm:pt-4 space-y-4 sm:space-y-6 relative z-10">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <CardContent className="p-6 pt-4 space-y-6 relative z-10">
+              <div className="flex items-center gap-4">
                 <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg", colors.light, "backdrop-blur-sm")}>
                   <HelpCircle className={cn("w-4 h-4", colors.text)} />
                   <span className="font-medium">{questionCount} Questions</span>
@@ -247,11 +247,11 @@ export const QuizCard: FC<QuizCardProps> = ({
               "text-primary-foreground",
             )}
           >
-            <CardContent className="flex flex-col items-center justify-center h-full p-4 sm:p-6 text-center space-y-4 sm:space-y-6">
+            <CardContent className="flex flex-col items-center justify-center h-full p-6 text-center space-y-6">
               <TypeBenefitIcon className="w-12 h-12 mb-2" />
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold mb-2">{quizTypeInfo.title}</h2>
-                <p className="text-xs sm:text-sm mb-2 sm:mb-4 text-primary-foreground/90">{quizTypeInfo.description}</p>
+                <h2 className="text-xl font-semibold mb-2">{quizTypeInfo.title}</h2>
+                <p className="text-sm mb-4 text-primary-foreground/90">{quizTypeInfo.description}</p>
               </div>
 
               <ul className="space-y-2 text-sm text-primary-foreground/90">
@@ -264,10 +264,10 @@ export const QuizCard: FC<QuizCardProps> = ({
               </ul>
 
               <Link
-                href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}
+                href={`/dashboard/${quizType === 'fill-blanks' ? 'blanks' : quizType}/${slug}`}
                 className={cn(
-                  "inline-flex items-center px-4 sm:px-6 py-2 sm:py-3",
-                  "text-sm sm:text-base text-primary font-medium bg-background",
+                  "inline-flex items-center px-6 py-3",
+                  "text-primary font-medium bg-background",
                   "rounded-lg shadow-lg",
                   "hover:bg-background/90 transition-colors",
                   "group/button",

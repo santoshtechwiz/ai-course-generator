@@ -19,9 +19,6 @@ import {
 import { Button } from "@/components/ui/button"
 import useCourseActions from "@/hooks/useCourseActions"
 import { cn } from "@/lib/utils"
-import { PDFDownloadLink } from "@react-pdf/renderer"
-import QuizPDF from "../QuizPDF"
-
 
 interface ActionButtonProps {
   onClick: () => void
@@ -50,10 +47,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
     <Button
       variant="outline"
       size="sm"
-      className={cn(
-        "relative w-full sm:w-auto transition-all duration-200 ease-in-out",
-        isActive ? activeClass : inactiveClass,
-      )}
+      className={cn("relative w-full transition-all duration-200 ease-in-out", isActive ? activeClass : inactiveClass)}
       onClick={onClick}
       disabled={isLoading}
     >
@@ -76,10 +70,10 @@ const ActionButton: React.FC<ActionButtonProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-2"
           >
             {isActive ? <ActiveIcon className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-            <span className="hidden sm:inline text-sm font-medium">{isActive ? activeLabel : label}</span>
+            <span className="hidden md:inline text-sm font-medium">{isActive ? activeLabel : label}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -101,10 +95,15 @@ export default function CourseActions({ slug, quizData }: CourseActionsProps) {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-wrap items-stretch justify-end gap-2 p-4 rounded-lg bg-card shadow-sm">
+      <motion.div
+        className="flex flex-wrap items-stretch justify-end gap-2 p-4 rounded-lg bg-card shadow-sm"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="w-full sm:w-auto">
+            <div className="flex-1 md:flex-none">
               <ActionButton
                 onClick={handlePrivacyToggle}
                 isLoading={loading === "privacy"}
@@ -125,7 +124,7 @@ export default function CourseActions({ slug, quizData }: CourseActionsProps) {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="w-full sm:w-auto">
+            <div className="flex-1 md:flex-none">
               <ActionButton
                 onClick={handleFavoriteToggle}
                 isLoading={loading === "favorite"}
@@ -144,39 +143,18 @@ export default function CourseActions({ slug, quizData }: CourseActionsProps) {
           </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="w-full sm:w-auto">
-              <PDFDownloadLink document={<QuizPDF quizData={quizData} />} fileName={`${slug}-quiz.pdf`}>
-                {({ blob, url, loading, error }) => (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full sm:w-auto bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800"
-                    disabled={loading}
-                  >
-                    <Download className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Download PDF</span>
-                  </Button>
-                )}
-              </PDFDownloadLink>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>Download quiz as PDF</p>
-          </TooltipContent>
-        </Tooltip>
-
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800"
-            >
-              <Trash2 className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Delete</span>
-            </Button>
+            <div className="flex-1 md:flex-none">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800"
+              >
+                <Trash2 className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Delete</span>
+              </Button>
+            </div>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -204,7 +182,7 @@ export default function CourseActions({ slug, quizData }: CourseActionsProps) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
+      </motion.div>
     </TooltipProvider>
   )
 }
