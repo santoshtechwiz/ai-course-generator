@@ -15,16 +15,14 @@ import { BasicInfoStep } from "./BasicInfoStep"
 import { ContentStep } from "./ContentStep"
 import { PreviewStep } from "./PreviewStep"
 import { ConfirmationDialog } from "./ConfirmationDialog"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Loader2, Save, BookOpen, Info, FileText, Eye } from "lucide-react"
+import { BookOpen, Info, FileText, Eye } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
 import { useTheme } from "next-themes"
-
 import { useSubscription } from "@/hooks/useSubscription"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
@@ -152,11 +150,11 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
   ]
 
   return (
-    <div className="py-6 px-4 md:py-12 md:px-6 bg-background">
-      <div className="max-w-4xl mx-auto">
-        <Card>
+    <div className="w-full bg-background">
+      <div className="w-full">
+        <div className="bg-background border border-border shadow-sm">
           <SignInBanner isAuthenticated={authStatus === "authenticated"} />
-          <CardHeader className="text-center space-y-2 p-4 md:p-6">
+          <div className="text-center space-y-2 px-2 sm:px-4 py-4">
             <div className="flex justify-center mb-4">
               <motion.div
                 className="p-3 bg-primary/10 rounded-xl"
@@ -166,11 +164,13 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
                 <BookOpen className="h-8 w-8 text-primary" />
               </motion.div>
             </div>
-            <CardTitle className="text-2xl font-semibold">Create a New Course</CardTitle>
-            <CardDescription>Fill in the details for your new course. Progress is automatically saved.</CardDescription>
-          </CardHeader>
+            <h2 className="text-2xl font-semibold">Create a New Course</h2>
+            <p className="text-muted-foreground">
+              Fill in the details for your new course. Progress is automatically saved.
+            </p>
+          </div>
 
-          <div className="px-4 md:px-6 mb-6 md:mb-8">
+          <div className="px-2 sm:px-4 mb-6">
             <div className="hidden md:block">
               <StepIndicator currentStep={step} totalSteps={totalSteps} />
             </div>
@@ -196,14 +196,14 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
             <Progress value={(step / totalSteps) * 100} className="mt-4" />
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-6 px-2 sm:px-4">
               {step === 1 && <BasicInfoStep control={control} errors={errors} />}
               {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
               {step === 3 && <PreviewStep watch={watch} />}
-            </CardContent>
+            </div>
 
-            <CardFooter className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 border-t">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 border-t px-2 sm:px-4 py-4">
               <Button
                 type="button"
                 variant="outline"
@@ -244,9 +244,9 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
                   </p>
                 )}
               </div>
-            </CardFooter>
+            </div>
           </form>
-        </Card>
+        </div>
       </div>
 
       <ConfirmationDialog

@@ -1,16 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Brain, Lightbulb, Lock, HelpCircle, Timer, User, Save } from 'lucide-react'
+import { Brain, HelpCircle, Timer, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
@@ -19,45 +11,32 @@ import { useToast } from "@/hooks/use-toast"
 import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import type { z } from "zod"
 import axios from "axios"
 import { useRouter } from "next/navigation"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ConfirmDialog } from "./ConfirmDialog"
 import { quizSchema } from "@/schema/schema"
-
-import { signIn, useSession } from 'next-auth/react'
+import { signIn, useSession } from "next-auth/react"
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { motion } from "framer-motion"
 import { SignInBanner } from "./SignInBanner"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
-
-
 type QuizFormData = z.infer<typeof quizSchema>
 
 interface Props {
-  credits: number,
-
+  credits: number
   isLoggedIn: boolean
   maxQuestions: number
 }
-
 
 export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
-
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
-
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     topic: "",
@@ -91,19 +70,22 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
         description: "Failed to create quiz. Please try again.",
         variant: "destructive",
       })
-    }
+    },
   })
 
-  const onSubmit = React.useCallback((data: QuizFormData) => {
-    if (isLoading) return
+  const onSubmit = React.useCallback(
+    (data: QuizFormData) => {
+      if (isLoading) return
 
-    if (!isLoggedIn) {
-      signIn('credentials', { callbackUrl: '/dashboard/quiz' })
-      return
-    }
+      if (!isLoggedIn) {
+        signIn("credentials", { callbackUrl: "/dashboard/quiz" })
+        return
+      }
 
-    setIsConfirmDialogOpen(true)
-  }, [isLoading, isLoggedIn])
+      setIsConfirmDialogOpen(true)
+    },
+    [isLoading, isLoggedIn],
+  )
 
   const handleConfirm = React.useCallback(async () => {
     setIsConfirmDialogOpen(false)
@@ -111,7 +93,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
 
     try {
       const response = await createQuizMutation.mutateAsync(watch())
-      const userQuizId = response?.userQuizId;
+      const userQuizId = response?.userQuizId
 
       if (!userQuizId) throw new Error("userQuizId ID not found")
 
@@ -126,33 +108,28 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router, maxQuestions])
+  }, [createQuizMutation, watch, toast, router])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
 
   return (
-    <Card className="mx-auto p-2">
-      <SignInBanner isAuthenticated={status === 'authenticated'} />
-      <CardHeader>
+    <div className="w-full bg-background border border-border shadow-sm">
+      <SignInBanner isAuthenticated={status === "authenticated"} />
+      <div className="px-2 sm:px-4 pt-6 pb-4">
         <div className="flex justify-center mb-4">
-          <motion.div
-            className="p-3 bg-primary/10 rounded-xl"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
+          <motion.div className="p-3 bg-primary/10 rounded-xl" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Brain className="w-8 h-8 text-primary" />
           </motion.div>
         </div>
-        <CardTitle className="text-center text-3xl font-bold">
-          Create Your Quiz
-        </CardTitle>
-        <CardDescription className="text-center text-lg">
+        <h2 className="text-center text-2xl md:text-3xl font-bold">Create Your Quiz</h2>
+        <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
           Customize your quiz settings and challenge yourself!
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        </p>
+      </div>
+
+      <div className="px-2 sm:px-4 pb-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
             <Label htmlFor="topic" className="text-lg font-medium">
               Topic
@@ -177,9 +154,13 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
               </TooltipProvider>
             </div>
             {errors.topic && (
-              <p className="text-sm text-destructive" id="topic-error">{errors.topic.message}</p>
+              <p className="text-sm text-destructive" id="topic-error">
+                {errors.topic.message}
+              </p>
             )}
-            <p className="text-sm text-muted-foreground" id="topic-description">Choose a specific topic for more focused questions</p>
+            <p className="text-sm text-muted-foreground" id="topic-description">
+              Choose a specific topic for more focused questions
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -204,15 +185,13 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                   />
                 )}
               />
-              <p className="text-sm text-muted-foreground text-center">
-                Select between 1 and {maxQuestions} questions
-              </p>
+              <p className="text-sm text-muted-foreground text-center">Select between 1 and {maxQuestions} questions</p>
             </div>
-            {errors.amount && (
-              <p className="text-sm text-destructive">{errors.amount.message}</p>
-            )}
+            {errors.amount && <p className="text-sm text-destructive">{errors.amount.message}</p>}
             <p className="text-sm text-muted-foreground mt-2">
-              {isLoggedIn ? "Unlimited quizzes available" : `This quiz will use ${amount} credit${amount > 1 ? 's' : ''}`}
+              {isLoggedIn
+                ? "Unlimited quizzes available"
+                : `This quiz will use ${amount} credit${amount > 1 ? "s" : ""}`}
             </p>
           </div>
 
@@ -226,10 +205,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                       <Button
                         type="button"
                         variant={difficulty === level ? "default" : "outline"}
-                        className={cn(
-                          "capitalize",
-                          difficulty === level && "border-primary"
-                        )}
+                        className={cn("capitalize", difficulty === level && "border-primary")}
                         onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
                         aria-pressed={difficulty === level}
                       >
@@ -245,12 +221,8 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
             </div>
           </div>
 
-          <div className="flex space-x-4">
-            <motion.div
-              className="w-full"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
+          <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
+            <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <PlanAwareButton
                 label="Generate Quiz"
                 onClick={handleSubmit(onSubmit)}
@@ -258,6 +230,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 isEnabled={!errors.topic && !errors.amount && !errors.difficulty}
                 hasCredits={credits > 0}
                 loadingLabel="Generating..."
+                className="w-full"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your quiz",
@@ -273,14 +246,12 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 }}
               />
             </motion.div>
-            {status !== 'authenticated' && (
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
+            {status !== "authenticated" && (
+              <motion.div className="w-full sm:w-auto" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button
                   type="button"
                   variant="outline"
+                  className="w-full"
                   onClick={() => {
                     toast({
                       title: "Quiz Saved",
@@ -295,16 +266,16 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
             )}
           </div>
         </form>
-      </CardContent>
-      <CardFooter className="flex flex-col space-y-4 border-t pt-6">
-        {/* Removed credits-related UI elements */}
-      </CardFooter>
+      </div>
+
+      <div className="flex flex-col space-y-4 border-t px-2 sm:px-4 py-6">{/* Footer content */}</div>
+
       <ConfirmDialog
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
         onCancel={() => setIsConfirmDialogOpen(false)}
       />
-    </Card>
+    </div>
   )
 }
 

@@ -3,33 +3,29 @@
 import { memo, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
-
 import { Progress } from "@/components/ui/progress"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 
-export const fetchCache = 'force-no-store';
+export const fetchCache = "force-no-store"
+
 interface TopicFormProps {
-  credits: number,
-  maxQuestions: number,
-  subscriptionPlan:any,
+  credits: number
+  maxQuestions: number
+  subscriptionPlan: any
   isLoggedIn: boolean
 }
 
-function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan}: TopicFormProps) {
+function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPlan }: TopicFormProps) {
   const [topic, setTopic] = useState("")
   const [questionCount, setQuestionCount] = useState(maxQuestions)
   const [openInfo, setOpenInfo] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
-
 
   const generateQuiz = useCallback(async () => {
     setIsLoading(true)
@@ -56,7 +52,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
     } finally {
       setIsLoading(false)
     }
-  }, [topic, questionCount, router, maxQuestions])
+  }, [topic, questionCount, router])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
@@ -93,54 +89,8 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
           className="flex-grow"
           aria-label="Select number of questions"
         />
-
       </div>
     </div>
-  )
-
-  const renderCreditsCard = () => (
-    <Card className="bg-primary/5 border-primary/20">
-      <CardContent className="p-4 space-y-2">
-        <CardTitle className="text-base mb-2">Available Credits</CardTitle>
-        <Progress value={(credits / 10) * 100} className="h-2" />
-        <p className="text-xs text-muted-foreground">
-          You have <span className="font-bold text-primary">{credits}</span> credits remaining.
-        </p>
-       
-      </CardContent>
-    </Card>
-  )
-
-  const renderInfoCard = () => (
-    <Card
-      className="bg-muted cursor-pointer transition-colors hover:bg-muted/80"
-      onClick={() => setOpenInfo(!openInfo)}
-    >
-      <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
-        <CardTitle className="text-sm">About openended Questions</CardTitle>
-        {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-      </CardHeader>
-      <AnimatePresence>
-        {openInfo && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <CardContent className="text-sm px-4 pb-4 space-y-2">
-              <p>openended questions encourage critical thinking and detailed responses. They are perfect for:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Assessing deep understanding</li>
-                <li>Promoting thoughtful discussion</li>
-                <li>Developing analytical skills</li>
-                <li>Encouraging creative thinking</li>
-              </ul>
-            </CardContent>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Card>
   )
 
   return (
@@ -148,17 +98,14 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="h-full"
+      className="w-full"
     >
-      <Card className="h-full flex flex-col bg-card text-card-foreground shadow-lg">
-        <CardHeader className="pb-4">
-      
-          <CardDescription className="text-base">
-            Choose a topic and customize your quiz settings below.
-          </CardDescription>
-        </CardHeader>
+      <div className="flex flex-col bg-background border border-border shadow-sm">
+        <div className="px-2 sm:px-4 pb-4 border-b">
+          <p className="text-base text-muted-foreground">Choose a topic and customize your quiz settings below.</p>
+        </div>
 
-        <CardContent className="space-y-6 flex-grow">
+        <div className="space-y-6 flex-grow px-2 sm:px-4 py-6">
           <form onSubmit={handleSubmit} className="space-y-6" onKeyDown={handleKeyDown}>
             <div className="space-y-3">
               <label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
@@ -179,8 +126,48 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
             </div>
 
             {renderQuestionCount()}
-            {renderCreditsCard()}
-            {renderInfoCard()}
+
+            <div className="bg-primary/5 border border-primary/20 rounded-lg">
+              <div className="p-4 space-y-2">
+                <h3 className="text-base font-semibold mb-2">Available Credits</h3>
+                <Progress value={(credits / 10) * 100} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="bg-muted cursor-pointer transition-colors hover:bg-muted/80 rounded-lg"
+              onClick={() => setOpenInfo(!openInfo)}
+            >
+              <div className="flex flex-row items-center justify-between py-2 px-4">
+                <h3 className="text-sm font-semibold">About Open-ended Questions</h3>
+                {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+              <AnimatePresence>
+                {openInfo && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="text-sm px-4 pb-4 space-y-2">
+                      <p>
+                        Open-ended questions encourage critical thinking and detailed responses. They are perfect for:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Assessing deep understanding</li>
+                        <li>Promoting thoughtful discussion</li>
+                        <li>Developing analytical skills</li>
+                        <li>Encouraging creative thinking</li>
+                      </ul>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <AnimatePresence>
               {error && (
@@ -198,16 +185,17 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
               )}
             </AnimatePresence>
           </form>
-        </CardContent>
+        </div>
 
-        <CardFooter className="sticky bottom-0 pt-4 px-4 bg-card border-t">
-        <PlanAwareButton
+        <div className="sticky bottom-0 pt-4 px-2 sm:px-4 bg-background border-t">
+          <PlanAwareButton
             label="Generate Quiz"
             onClick={generateQuiz}
             isLoggedIn={isLoggedIn}
             isEnabled={!isDisabled}
             hasCredits={credits > 0}
             loadingLabel="Generating..."
+            className="w-full"
             customStates={{
               default: {
                 tooltip: "Click to generate your quiz",
@@ -222,17 +210,13 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn,subscriptionPlan
               },
             }}
           />
-
-
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   )
 }
 
 export const TopicForm = memo(TopicFormComponent)
-
-
 
 export default TopicForm
 
