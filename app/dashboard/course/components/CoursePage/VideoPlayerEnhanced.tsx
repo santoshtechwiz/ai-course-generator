@@ -18,10 +18,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Maximize2, Minimize2, Settings } from 'lucide-react'
 import { formatTime, getVideoQualityOptions, PLAYBACK_SPEEDS } from '@/lib/utils'
 
-
 interface VideoPlayerProps {
   videoId: string
-  onEnded?: () => void
+  onEnded: () => void
   autoPlay?: boolean
   onProgress?: (progress: number) => void
   initialTime?: number
@@ -38,7 +37,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const [playing, setPlaying] = useState(autoPlay)
   const [volume, setVolume] = useState(0.8)
-  const [muted, setMuted] = useState(true)
+  const [muted, setMuted] = useState(false)
   const [played, setPlayed] = useState(0)
   const [duration, setDuration] = useState(0)
   const [showControls, setShowControls] = useState(true)
@@ -46,6 +45,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   const [quality, setQuality] = useState('auto')
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [availableQualities, setAvailableQualities] = useState<string[]>([])
+  const [showNextVideoOverlay, setShowNextVideoOverlay] = useState(false)
   const playerRef = useRef<ReactPlayer>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -55,7 +55,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
     if (playerRef.current) {
       playerRef.current.seekTo(0)
     }
-  }, [videoId, autoPlay])
+  }, [autoPlay]); // Removed videoId from dependencies
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -79,7 +79,12 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleProgress = (state: { played: number; playedSeconds: number }) => {
     if (!playerRef.current?.getInternalPlayer()?.seeking) {
       setPlayed(state.played)
-      onProgress?.(state.playedSeconds)
+      onProgress?.(state.played)
+
+      // Show "Moving to next video" overlay 5 seconds before the end
+      if (duration - state.playedSeconds <= 15 && !showNextVideoOverlay) {
+        setShowNextVideoOverlay(true)
+      }
     }
   }
   const handleDuration = (duration: number) => setDuration(duration)
@@ -106,6 +111,11 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }
 
+  const handleVideoEnd = () => {
+    setShowNextVideoOverlay(false)
+    onEnded()
+  }
+
   return (
     <TooltipProvider>
       <div
@@ -124,7 +134,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
           muted={muted}
           onProgress={handleProgress}
           onDuration={handleDuration}
-          onEnded={onEnded}
+          onEnded={handleVideoEnd}
           onReady={handleReady}
           progressInterval={1000}
           playbackRate={playbackSpeed}
@@ -137,7 +147,13 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {!playing && (
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <img src={brandLogo} alt="Brand Logo" className="w-24 h-24 object-contain" />
+            <img src={brandLogo || "/placeholder.svg"} alt="Brand Logo" className="w-24 h-24 object-contain" />
+          </div>
+        )}
+
+        {showNextVideoOverlay && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70">
+            <div className="text-white text-2xl font-bold">Moving to next video...</div>
           </div>
         )}
 
@@ -294,4 +310,3 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
 }
 
 export default EnhancedVideoPlayer
-

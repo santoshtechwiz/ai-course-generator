@@ -51,7 +51,7 @@ export const CourseCard = ({
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Link href={`/courses/${slug}`} passHref className="w-full">
+        <Link href={`/dashboard/course/${slug}`} passHref className="w-full">
           <Button className="w-full">View Course</Button>
         </Link>
       </CardFooter>

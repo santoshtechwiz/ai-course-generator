@@ -8,13 +8,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import dynamic from "next/dynamic"
 import ConfettiExplosion from "react-confetti-explosion"
-import { Chapter, Course } from "@/app/types"
+import { FullChapterType, FullCourseType } from "@/app/types"
 
 export interface CourseDetailsTabsProps {
   chapterId: number
   name: string
-  course: Course
-  chapter: Chapter,
+  course: FullCourseType
+  chapter: FullChapterType,
   planId?: string
 }
 

@@ -188,6 +188,7 @@ export interface FullCourseType {
   createdAt: Date;
   updatedAt: Date;
   courseUnits?: CourseUnitType[];
+  
   slug?: string;
 }
 export type Question = {

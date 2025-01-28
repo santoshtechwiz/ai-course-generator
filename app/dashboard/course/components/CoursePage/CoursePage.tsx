@@ -1,18 +1,19 @@
 "use client"
 
-import React, { useReducer, useEffect, useMemo, useCallback, useRef } from "react"
+import React, { useReducer, useEffect, useMemo, useCallback, useRef, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import MainContent from "./MainContent"
 import RightSidebar from "./RightSidebar"
 import useProgress from "@/hooks/useProgress"
 import type { FullChapterType, FullCourseType } from "@/app/types"
-
 import { useUser } from "@/app/providers/userContext"
-
 import throttle from "lodash.throttle"
 import PriorityQueue from "@/lib/PriorityQueue"
 import { useSearchParams } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { Menu, VideotapeIcon, X } from "lucide-react"
 
 interface State {
   selectedVideoId: string | undefined
@@ -60,9 +61,8 @@ interface CoursePageProps {
 const MemoizedMainContent = React.memo(MainContent)
 const MemoizedRightSidebar = React.memo(RightSidebar)
 
-
 export default function CoursePage({ course, initialChapterId }: CoursePageProps) {
-  const searchParams =useSearchParams();
+  const searchParams = useSearchParams()
   const { user, loading: isProfileLoading, error } = useUser()
   const [state, dispatch] = useReducer(reducer, {
     selectedVideoId: undefined,
@@ -70,7 +70,8 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     nextVideoId: undefined,
     prevVideoId: undefined,
   })
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSmallScreen, setIsSmallScreen] = useState(false)
   const { data: session } = useSession()
   const { toast } = useToast()
   const isInitialMount = useRef(true)
@@ -121,13 +122,12 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         if (entry.videoId === videoId) {
           foundChapter = entry.chapter
         }
-        tempQueue.enqueue(entry, 0) // Priority doesn't matter for temporary storage
+        tempQueue.enqueue(entry, 0)
       }
 
-      // Restore the original queue
       while (!tempQueue.isEmpty()) {
         const entry = tempQueue.dequeue()!
-        videoQueue.enqueue(entry, 0) // Use the original priority if needed
+        videoQueue.enqueue(entry, 0)
       }
 
       return foundChapter
@@ -137,8 +137,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
   useEffect(() => {
     if (!videoQueue.isEmpty() && !state.selectedVideoId && !hasSetInitialVideo.current) {
-      
-      const chapterId = initialChapterId;
+      const chapterId = initialChapterId
       let initialVideo
 
       if (chapterId) {
@@ -156,7 +155,6 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
           }
           tempQueue.enqueue(entry, 0)
         }
-        // Restore the queue
         while (!tempQueue.isEmpty()) {
           videoQueue.enqueue(tempQueue.dequeue()!, 0)
         }
@@ -175,7 +173,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         hasSetInitialVideo.current = true
       }
     }
-  }, [videoQueue, state.selectedVideoId, searchParams])
+  }, [videoQueue, state.selectedVideoId, initialChapterId])
 
   useEffect(() => {
     if (!isInitialMount.current && state.selectedVideoId) {
@@ -201,7 +199,6 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         prevVideo = currentIndex > 0 ? tempQueue.getHeap()[currentIndex - 1]?.item.videoId : undefined
       }
 
-      // Restore the original queue
       while (!tempQueue.isEmpty()) {
         videoQueue.enqueue(tempQueue.dequeue()!, 0)
       }
@@ -225,9 +222,19 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   })
 
   const throttledUpdateProgress = useCallback(
-    throttle((updateData: any) => {
-      updateProgress(updateData)
-    }, 5000), // Throttle to once every 5 seconds
+    throttle(
+      (updateData: {
+        currentChapterId?: number
+        completedChapters?: number[]
+        progress?: number
+        currentUnitId?: number
+        isCompleted?: boolean
+        lastAccessedAt?: Date
+      }) => {
+        updateProgress(updateData)
+      },
+      5000,
+    ),
     [updateProgress],
   )
 
@@ -297,27 +304,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
       const selectedChapter = findChapterByVideoId(videoId)
       if (selectedChapter) {
-        const tempQueue = new PriorityQueue<{
-          videoId: string
-          chapterId: number
-          unitId: number
-          chapter: FullChapterType
-        }>()
-        let selectedVideoEntry
-
-        while (!videoQueue.isEmpty()) {
-          const entry = videoQueue.dequeue()!
-          if (entry.videoId === videoId) {
-            selectedVideoEntry = entry
-          }
-          tempQueue.enqueue(entry, 0)
-        }
-
-        // Restore the original queue
-        while (!tempQueue.isEmpty()) {
-          videoQueue.enqueue(tempQueue.dequeue()!, 0)
-        }
-
+        const selectedVideoEntry = videoQueue.find((entry) => entry.videoId === videoId)
         if (selectedVideoEntry) {
           dispatch({
             type: "SET_VIDEO",
@@ -331,8 +318,20 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         }
       }
     },
-    [state.currentChapter, findChapterByVideoId, throttledUpdateProgress, videoQueue, markChapterAsCompleted],
+    [state.currentChapter, findChapterByVideoId, throttledUpdateProgress, videoQueue, markChapterAsCompleted, dispatch],
   )
+
+  useEffect(() => {
+    const handleResize = () => {
+      const smallScreen = window.innerWidth < 1024
+      setIsSmallScreen(smallScreen)
+      setIsSidebarOpen(!smallScreen)
+    }
+
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -345,48 +344,94 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <div className="h-16 w-16 border-t-4 border-b-4 border-primary rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] bg-background">
-      <div className="flex-grow lg:w-3/4 p-4">
-        <MemoizedMainContent
-          course={course}
-          initialVideoId={state.selectedVideoId}
-          nextVideoId={state.nextVideoId}
-          prevVideoId={state.prevVideoId}
-          onVideoEnd={handleVideoEnd}
-          onVideoSelect={handleVideoSelect}
-          currentChapter={state.currentChapter}
-          currentTime={0}
-          onTimeUpdate={(time: number) => {
-            if (state.currentChapter && session) {
-              throttledUpdateProgress({
-                currentChapterId: Number(state.currentChapter.id),
-              })
-            }
-          }}
-          progress={progress}
-          onChapterComplete={markChapterAsCompleted}
-          planId={user?.planId}
-        />
-      </div>
-      <div className="w-full lg:w-1/4 lg:min-w-[350px] p-4 mt-4 lg:mt-0">
-        <MemoizedRightSidebar
-          course={course}
-          currentChapter={state.currentChapter}
-          courseId={course.id.toString()}
-          onVideoSelect={handleVideoSelect}
-          currentVideoId={state.selectedVideoId || ""}
-          isAuthenticated={!!session}
-          courseOwnerId={course.userId}
-          isSubscribed={isSubscribed}
+    <div className="flex flex-col min-h-screen bg-background">
+      <nav className="sticky top-0 z-50 w-full bg-background border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 max-w-screen-2xl items-center">
+          <div className="flex flex-1 items-center justify-between">
+            <h1 className="text-lg font-semibold md:hidden">{course.name}</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden"
+              aria-label="Open sidebar"
+            >
+              <VideotapeIcon className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </nav>
 
-          progress={progress || null}
-        />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-grow overflow-hidden lg:w-3/4 relative">
+          <MemoizedMainContent
+            course={course}
+            initialVideoId={state.selectedVideoId}
+            nextVideoId={state.nextVideoId}
+            prevVideoId={state.prevVideoId}
+            onVideoEnd={handleVideoEnd}
+            onVideoSelect={handleVideoSelect}
+            currentChapter={state.currentChapter}
+            currentTime={0}
+            onTimeUpdate={(time: number) => {
+              if (state.currentChapter && session) {
+                throttledUpdateProgress({
+                  currentChapterId: Number(state.currentChapter.id),
+                })
+              }
+            }}
+            progress={progress}
+            onChapterComplete={markChapterAsCompleted}
+            planId={user?.planId}
+          />
+        </div>
+
+        <AnimatePresence>
+          {(isSidebarOpen || !isSmallScreen) && (
+            <motion.div
+              className={`
+                w-full lg:w-1/4 bg-background
+                overflow-hidden flex flex-col
+                fixed inset-y-0 right-0 z-50
+                lg:relative lg:translate-x-0
+              `}
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarOpen(false)}
+                className="absolute top-4 right-4 lg:hidden"
+                aria-label="Close sidebar"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+              <MemoizedRightSidebar
+                course={course}
+                currentChapter={state.currentChapter}
+                courseId={course.id.toString()}
+                onVideoSelect={(videoId) => {
+                  handleVideoSelect(videoId)
+                  if (isSmallScreen) setIsSidebarOpen(false)
+                }}
+                currentVideoId={state.selectedVideoId || ""}
+                isAuthenticated={!!session}
+                courseOwnerId={course.userId}
+                isSubscribed={isSubscribed}
+                progress={progress || null}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )

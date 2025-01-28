@@ -1,62 +1,64 @@
-"use client";
+"use client"
 
-import React from "react";
-import Link from "next/link";
-import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
-import ChapterCard, { ChapterCardHandler } from "./ChapterCardHandler";
+import React from "react"
+import Link from "next/link"
+import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
+import ChapterCard, { type ChapterCardHandler } from "./ChapterCardHandler"
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Course, CourseUnit, Chapter} from "@prisma/client";
+import { Button, buttonVariants } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import type { Course, CourseUnit, Chapter } from "@prisma/client"
 
 export type CourseProps = {
   course: Course & {
     units: (CourseUnit & {
-      chapters: Chapter[];
-    })[];
-  };
-};
+      chapters: Chapter[]
+    })[]
+  }
+}
+
 const ConfirmChapters = ({ course }: CourseProps) => {
-  console.log(JSON.stringify(course));
-  const [loading, setLoading] = React.useState(false);
-  const chapterRefs: Record<string, React.RefObject<ChapterCardHandler>> = {};
-  course.units.forEach((unit) => {
-    unit.chapters.forEach((chapter) => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      chapterRefs[chapter.id] = React.useRef(null);
-    });
-  });
-  const [completedChapters, setCompletedChapters] = React.useState<Set<number>>(
-    new Set()
-  );
+  const [loading, setLoading] = React.useState(false)
+  const chapterRefs: Record<string, React.RefObject<ChapterCardHandler>> = {}
+  const refs = React.useMemo(() => {
+    const refs: Record<string, React.RefObject<ChapterCardHandler>> = {}
+    course.units.forEach((unit) => {
+      unit.chapters.forEach((chapter) => {
+        refs[chapter.id] = React.useRef(null)
+      })
+    })
+    return refs
+  }, [course])
+  const [completedChapters, setCompletedChapters] = React.useState<Set<number>>(new Set())
   const totalChaptersCount = React.useMemo(() => {
     return course.units.reduce((acc, unit) => {
-      return acc + unit.chapters.length;
-    }, 0);
-  }, [course.units]);
+      return acc + unit.chapters.length
+    }, 0)
+  }, [course.units])
 
-  const progress = (completedChapters.size / totalChaptersCount) * 100;
+  const progress = (completedChapters.size / totalChaptersCount) * 100
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center gap-2">
-          <BookOpen className="w-6 h-6" />
-          {course.name}
-        </CardTitle>
-        <div className="mt-2 space-y-1">
+    <div className="w-full h-full flex flex-col bg-background">
+      <div className="flex-none p-4 sm:p-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <BookOpen className="w-6 h-6" />
+            {course.name}
+          </h1>
+        </div>
+        <div className="space-y-1">
           <Progress value={progress} className="w-full" />
           <p className="text-sm text-muted-foreground">
             {completedChapters.size} of {totalChaptersCount} chapters completed
           </p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[60vh] pr-4">
+      </div>
+      <ScrollArea className="flex-grow px-4 sm:px-6">
+        <div className="space-y-8 py-6">
           {course.units.map((unit, unitIndex) => (
-            <div key={unit.id} className="mb-8">
+            <div key={unit.id}>
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">
                 Unit {unitIndex + 1}
               </h2>
@@ -66,7 +68,7 @@ const ConfirmChapters = ({ course }: CourseProps) => {
                   <ChapterCard
                     onComplete={completedChapters}
                     setCompletedChapters={setCompletedChapters}
-                    ref={chapterRefs[chapter.id]}
+                    ref={refs[chapter.id]}
                     key={chapter.id}
                     chapter={chapter}
                     chapterIndex={chapterIndex}
@@ -75,8 +77,10 @@ const ConfirmChapters = ({ course }: CourseProps) => {
               </div>
             </div>
           ))}
-        </ScrollArea>
-        <div className="flex items-center justify-between mt-6">
+        </div>
+      </ScrollArea>
+      <div className="flex-none p-4 sm:p-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
+        <div className="flex items-center justify-between">
           <Link
             href="/dashboard/create"
             className={buttonVariants({
@@ -102,10 +106,10 @@ const ConfirmChapters = ({ course }: CourseProps) => {
               className="font-semibold"
               disabled={loading}
               onClick={() => {
-                setLoading(true);
-                Object.values(chapterRefs).forEach((ref) => {
-                  ref.current?.triggerLoad();
-                });
+                setLoading(true)
+                Object.values(refs).forEach((ref) => {
+                  ref.current?.triggerLoad()
+                })
               }}
             >
               {loading ? "Generating..." : "Generate"}
@@ -113,9 +117,10 @@ const ConfirmChapters = ({ course }: CourseProps) => {
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
-  );
-};
+      </div>
+    </div>
+  )
+}
 
-export default ConfirmChapters;
+export default ConfirmChapters
+
