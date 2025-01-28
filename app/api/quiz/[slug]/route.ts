@@ -79,9 +79,9 @@ export async function DELETE(req: Request, props: { params: Promise<{ slug: stri
 }
 
 
-export async function GET(
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(req: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
+
   const { slug } = await params;
   if (!slug) {
     return NextResponse.json({ error: "Slug is required" }, { status: 400 })
