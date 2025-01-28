@@ -51,13 +51,12 @@ const QuizCard: React.FC<{ quiz: any; index: number }> = React.memo(({ quiz, ind
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.1 }}
       layout
-      className="w-full"
     >
       <Link href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}>
-        <Card className="transition-all hover:shadow-md hover:bg-accent/50 h-full">
-          <CardContent className="p-4 flex flex-col h-full">
-            <div className="flex items-center justify-between mb-2">
-              <Badge variant="outline" className={`${color} text-xs`}>
+        <Card className="transition-all hover:shadow-md hover:bg-accent/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className={color}>
                 {difficulty}
               </Badge>
               {quiz.bestScore && (
@@ -67,13 +66,15 @@ const QuizCard: React.FC<{ quiz: any; index: number }> = React.memo(({ quiz, ind
                 </div>
               )}
             </div>
-            <div className="flex items-start gap-3 flex-grow">
-              <div className={`rounded-lg p-2 ${color} flex-shrink-0`}>
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+          </CardHeader>
+          <CardContent className="pb-2">
+            <div className="flex items-start gap-4">
+              <div className={`rounded-lg p-2 ${color}`}>
+                <Icon className="h-5 w-5" />
               </div>
               <div className="flex-grow min-w-0">
-                <h3 className="text-sm sm:text-base font-semibold truncate">{quiz.topic}</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground capitalize">{quiz.quizType.replace("-", " ")}</p>
+                <CardTitle className="text-base font-semibold truncate">{quiz.topic}</CardTitle>
+                <p className="text-sm text-muted-foreground capitalize">{quiz.quizType.replace("-", " ")}</p>
               </div>
             </div>
           </CardContent>
@@ -92,14 +93,14 @@ export const AnimatedQuizHighlight: React.FC = () => {
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
             Random Quizzes
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="space-y-4">
           {[...Array(3)].map((_, index) => (
-            <Skeleton key={index} className="h-[120px] w-full" />
+            <Skeleton key={index} className="h-[100px] w-full" />
           ))}
         </CardContent>
       </Card>
@@ -110,7 +111,7 @@ export const AnimatedQuizHighlight: React.FC = () => {
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
             Random Quizzes
           </CardTitle>
@@ -124,9 +125,9 @@ export const AnimatedQuizHighlight: React.FC = () => {
 
   return (
     <Card className="w-full">
-      <CardHeader className="space-y-1">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
             Random Quizzes
           </CardTitle>
@@ -135,14 +136,12 @@ export const AnimatedQuizHighlight: React.FC = () => {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <AnimatePresence>
-            {quizzes.map((quiz, index) => (
-              <QuizCard key={quiz.id} quiz={quiz} index={index} />
-            ))}
-          </AnimatePresence>
-        </div>
+      <CardContent className="space-y-4">
+        <AnimatePresence>
+          {quizzes.map((quiz, index) => (
+            <QuizCard key={quiz.id} quiz={quiz} index={index} />
+          ))}
+        </AnimatePresence>
       </CardContent>
       <CardFooter>
         <Button className="w-full group" variant="outline" asChild>
