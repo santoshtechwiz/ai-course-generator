@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { CourseProgress } from '@/app/types';
 
-interface UseProgressProps {
+export interface UseProgressProps {
   courseId: number;
   initialProgress?: CourseProgress;
   currentChapterId?: string;

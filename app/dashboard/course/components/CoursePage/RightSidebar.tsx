@@ -1,14 +1,13 @@
-"use client"
-
-import React, { useRef, useCallback, useMemo } from "react"
+import React from "react"
 import { signIn, useSession } from "next-auth/react"
-import { Lock, Info, PlayCircle, ChevronDown, ChevronRight } from "lucide-react"
+import { Lock, Info, PlayCircle, ChevronDown, ChevronRight, CheckCircle, Circle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { TooltipProvider, TooltipContent, TooltipTrigger, Tooltip } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types"
 import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
@@ -22,6 +21,9 @@ interface RightSidebarProps {
   courseOwnerId: string
   isSubscribed: boolean
   progress: CourseProgress | null
+  nextVideoId?: string
+  prevVideoId?: string,
+  completedChapters: string|string[]
 }
 
 function RightSidebar({
@@ -33,38 +35,12 @@ function RightSidebar({
   courseOwnerId,
   isSubscribed,
   progress,
+  nextVideoId,
+  prevVideoId,
 }: RightSidebarProps) {
   const { data: session } = useSession()
   const router = useRouter()
   const isOwner = session?.user?.id === courseOwnerId
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-
-  const handleVideoSelect = useCallback(
-    (videoId: string) => {
-      onVideoSelect(videoId)
-    },
-    [onVideoSelect],
-  )
-
-  const { totalChapters, unitProgresses } = useMemo(() => {
-    let total = 0
-    const unitProgresses =
-      course.courseUnits?.map((unit) => {
-        const chapters = unit.chapters.length
-        total += chapters
-        const completedInUnit = unit.chapters.filter((chapter) =>
-          progress?.completedChapters.includes(chapter.id.toString()),
-        ).length
-        return {
-          unitId: unit.id,
-          progress: Math.round((completedInUnit / chapters) * 100),
-          completedChapters: completedInUnit,
-          totalChapters: chapters,
-        }
-      }) || []
-
-    return { totalChapters: total, unitProgresses }
-  }, [course.courseUnits, progress?.completedChapters])
 
   if (!isOwner && !isSubscribed) {
     return (
@@ -122,17 +98,20 @@ function RightSidebar({
           <Progress value={progress.progress} className="h-2" />
           <p className="text-sm text-muted-foreground mt-2 flex justify-between">
             <span>
-              {progress.completedChapters.length} / {totalChapters} chapters
+              {progress.completedChapters.length} /{" "}
+              {course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0)} chapters
             </span>
             <span>{Math.round(progress.progress)}%</span>
           </p>
         </div>
       )}
 
+      
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
           {course.courseUnits?.map((unit, index) => {
-            const unitProgress = unitProgresses.find((up) => up.unitId === unit.id)
+            const unitProgress =
+              Array.isArray(progress?.completedChapters) ? progress.completedChapters.filter((id) => unit.chapters.some((chapter) => chapter.id === id)).length : 0
             const isCurrentUnit = unit.chapters.some((chapter) => chapter.id === currentChapter?.id)
 
             return (
@@ -145,53 +124,53 @@ function RightSidebar({
                   <div className="flex items-center">
                     <h3 className="text-lg font-semibold">{unit.name}</h3>
                     <Badge variant={isCurrentUnit ? "default" : "secondary"} className="ml-2">
-                      {unitProgress?.completedChapters}/{unitProgress?.totalChapters}
+                      {unitProgress}/{unit.chapters.length}
                     </Badge>
                   </div>
                   {isCurrentUnit ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </CollapsibleTrigger>
 
                 <CollapsibleContent>
-                  <Progress value={unitProgress?.progress} className="h-1 mt-2 mb-3" />
+                  <Progress value={(unitProgress / unit.chapters.length) * 100} className="h-1 mt-2 mb-3" />
 
                   <div className="space-y-2 pl-4 pr-2 max-h-96 overflow-y-auto border-l-2 border-muted">
                     {unit.chapters.map((chapter) => {
-                      const isCompleted = progress?.completedChapters.includes(chapter.id.toString())
+                      const isCompleted = progress?.completedChapters.includes(chapter.id)
                       const isCurrent = chapter.videoId === currentVideoId
+                      const isNext = chapter.videoId === nextVideoId
+                      const isPrev = chapter.videoId === prevVideoId
+                      const isQueued = !isCompleted && !isCurrent
 
                       return (
                         <button
                           key={chapter.id}
-                          onClick={() => chapter.videoId && handleVideoSelect(chapter.videoId)}
-                          className={`
-                            w-full text-left p-3 rounded-lg
-                            transition-all duration-200 ease-in-out
-                            hover:bg-muted/50
-                            ${isCurrent ? "bg-primary text-primary-foreground" : ""}
-                            ${isCompleted && !isCurrent ? "text-muted-foreground" : ""}
-                          `}
+                          onClick={() => chapter.videoId && onVideoSelect(chapter.videoId)}
+                          className={cn(
+                            "w-full text-left p-3 rounded-lg transition-all duration-200 ease-in-out",
+                            "hover:bg-muted/50 flex items-center gap-3",
+                            isCurrent && "bg-primary text-primary-foreground",
+                            isCompleted && !isCurrent && "text-muted-foreground",
+                            isNext && "border-l-2 border-primary",
+                            isPrev && "border-r-2 border-primary",
+                          )}
                         >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`
-                              flex-shrink-0 h-2 w-2 rounded-full
-                              ${isCompleted ? "bg-primary" : "bg-muted-foreground"}
-                              ${isCurrent ? "animate-pulse" : ""}
-                            `}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="line-clamp-1">{chapter.name}</span>
-                                {isCurrent && (
-                                  <PlayCircle className="flex-shrink-0 h-4 w-4 text-primary-foreground animate-pulse" />
-                                )}
-                              </div>
-                              {chapter.description && (
-                                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                                  {chapter.description}
-                                </p>
+                          <div className="flex-shrink-0">
+                            {isCurrent && <PlayCircle className="h-5 w-5 text-primary-foreground animate-pulse" />}
+                            {isCompleted && !isCurrent && <CheckCircle className="h-5 w-5 text-primary" />}
+                            {isQueued && <Circle className="h-5 w-5 text-muted-foreground" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="line-clamp-1 font-medium">{chapter.name}</span>
+                              {isCurrent && (
+                                <Badge variant="secondary" className="ml-2">
+                                  Playing
+                                </Badge>
                               )}
                             </div>
+                            {chapter.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{chapter.description}</p>
+                            )}
                           </div>
                         </button>
                       )

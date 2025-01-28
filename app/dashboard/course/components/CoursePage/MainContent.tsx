@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react"
 import type { FullCourseType, FullChapterType } from "@/app/types"
 import type { CourseProgress } from "@prisma/client"
 import { useToast } from "@/hooks/use-toast"
+import { UseProgressProps } from "@/hooks/useProgress"
 
 const VideoPlayerEnhanced = dynamic(() => import("./VideoPlayerEnhanced"), {
   ssr: false,
@@ -29,7 +30,7 @@ interface MainContentProps {
   currentChapter?: FullChapterType
   currentTime: number
   onTimeUpdate: (time: number) => void
-  progress?: CourseProgress | null
+  progress?: Partial<CourseProgress> 
   onChapterComplete?: (chapterId: number) => void
   planId?: string
 }
