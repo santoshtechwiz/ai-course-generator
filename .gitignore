@@ -45,3 +45,4 @@ y.js
 docker-compose.yaml
 /app/dashboard/blanks/components
 /app/dashboard/deep.js
+migrate.mjs
