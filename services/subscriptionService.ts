@@ -70,8 +70,8 @@ export class SubscriptionService {
         },
       ],
       mode: "subscription",
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_URL||'https://courseai.dev'}/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL||'https://courseai.dev'}/dashboard/cancelled`,
       metadata: {
         userId,
         planName,
