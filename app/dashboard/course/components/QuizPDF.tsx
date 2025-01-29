@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
 })
 
-interface QuizPDFProps {
+export interface QuizPDFProps {
   quizData: {
     title: string
     description?: string

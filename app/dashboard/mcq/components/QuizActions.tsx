@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { motion } from "framer-motion"
 import QuizPDF from "../../course/components/QuizPDF"
 import { PDFDownloadLink } from "@react-pdf/renderer"
+import QuizPDFDownload from "../../course/components/QuizPDFDownload"
 
 interface QuizActionsToolbarProps {
   quizId: string
@@ -253,27 +254,7 @@ export function QuizActions({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <PDFDownloadLink document={<QuizPDF quizData={data} />} fileName={`${quizSlug}-quiz.pdf`}>
-              {({ loading }: { loading: boolean }) => (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={loading}
-                    className="flex-1 md:flex-none md:w-28 transition-all duration-300"
-                  >
-                    {loading ? (
-                      <span className="loader"></span>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4 md:mr-2" />
-                        <span className="hidden md:inline">PDF</span>
-                      </>
-                    )}
-                  </Button>
-                </>
-              )}
-            </PDFDownloadLink>
+           <QuizPDFDownload quizData={data} />
           </TooltipTrigger>
           <TooltipContent>
             <p>Download quiz as PDF</p>
