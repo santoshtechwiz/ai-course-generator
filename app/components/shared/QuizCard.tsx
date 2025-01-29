@@ -5,9 +5,6 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import {
   CheckSquare,
-  AlignLeft,
-  FileInput,
-  ArrowRight,
   Clock,
   HelpCircle,
   Zap,
@@ -17,8 +14,9 @@ import {
   CheckCircle2,
   PenLine,
   Puzzle,
+  ArrowRight,
 } from "lucide-react"
-import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
@@ -146,7 +144,7 @@ export const QuizCard: FC<QuizCardProps> = ({
 
   return (
     <motion.div
-      className="group relative w-full sm:max-w-sm mx-auto [perspective:1000px]"
+      className="group relative w-full max-w-sm mx-auto [perspective:1000px]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -166,15 +164,6 @@ export const QuizCard: FC<QuizCardProps> = ({
           >
             {/* Background Pattern */}
             {quizTypePatterns[quizType]}
-
-            {/* Half SVG Image */}
-            <svg
-              className="absolute right-0 top-0 h-full w-1/2 opacity-10"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-            >
-              <path d="M0 0 L100 0 L100 100 L0 100 Z" fill="currentColor" />
-            </svg>
 
             {/* Floating Icons */}
             <div className="absolute inset-0 overflow-hidden">
@@ -259,8 +248,8 @@ export const QuizCard: FC<QuizCardProps> = ({
           </Card>
         </div>
 
-        {/* Back Face - Keeping the same as before */}
-        <div className="absolute inset-0 h-full w-full rounded-xl p-6 [transform:rotateY(180deg)] [backface-visibility:hidden]">
+        {/* Back Face */}
+        <div className="absolute inset-0 h-full w-full rounded-xl p-4 sm:p-6 [transform:rotateY(180deg)] [backface-visibility:hidden]">
           <Card
             className={cn(
               "h-full overflow-hidden border-2",
@@ -270,16 +259,16 @@ export const QuizCard: FC<QuizCardProps> = ({
             )}
           >
             <CardContent className="flex flex-col items-center justify-center h-full p-4 sm:p-6 text-center space-y-4 sm:space-y-6">
-              <TypeBenefitIcon className="w-12 h-12 mb-2" />
+              <TypeBenefitIcon className="w-10 h-10 sm:w-12 sm:h-12 mb-2" />
               <div>
-                <h2 className="text-xl font-semibold mb-2">{quizTypeInfo.title}</h2>
-                <p className="text-sm mb-4 text-primary-foreground/90">{quizTypeInfo.description}</p>
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">{quizTypeInfo.title}</h2>
+                <p className="text-xs sm:text-sm mb-4 text-primary-foreground/90">{quizTypeInfo.description}</p>
               </div>
 
-              <ul className="space-y-2 text-sm text-primary-foreground/90">
+              <ul className="space-y-2 text-xs sm:text-sm text-primary-foreground/90">
                 {quizTypeInfo.benefits.map((benefit, index) => (
                   <li key={index} className="flex items-center gap-2">
-                    <CheckSquare className="w-4 h-4 flex-shrink-0" />
+                    <CheckSquare className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     {benefit}
                   </li>
                 ))}
@@ -288,15 +277,16 @@ export const QuizCard: FC<QuizCardProps> = ({
               <Link
                 href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}
                 className={cn(
-                  "inline-flex items-center px-6 py-3",
+                  "inline-flex items-center px-4 py-2 sm:px-6 sm:py-3",
                   "text-primary font-medium bg-background",
-                  "rounded-lg shadow-lg",
+                  "rounded-lg shadow-lg whitespace-nowrap",
                   "hover:bg-background/90 transition-colors",
                   "group/button",
                 )}
+                aria-label={`Start ${title} Quiz`}
               >
                 Start Quiz
-                <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover/button:translate-x-1" />
+                <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover/button:translate-x-1" />
               </Link>
             </CardContent>
           </Card>
@@ -305,4 +295,3 @@ export const QuizCard: FC<QuizCardProps> = ({
     </motion.div>
   )
 }
-

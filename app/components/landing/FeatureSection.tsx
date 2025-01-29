@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect } from "react"
-import { motion, useAnimation, useInView } from "framer-motion"
+import { motion, useInView } from "framer-motion"
 import { Element } from "react-scroll"
 import { Youtube, FileText, HelpCircle, Layers, Zap, Users, CreditCard } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

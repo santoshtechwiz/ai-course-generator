@@ -7,20 +7,23 @@ import { ArrowUp } from "lucide-react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { FAQSection } from "@/app/components/landing/FaqSection"
+import { useInView } from "framer-motion"
+import type React from "react" // Added import for React
+
 import FeatureSections from "@/app/components/landing/FeatureSection"
 import HowItWorks from "@/app/components/landing/HowItWorks"
 import LandingCTA from "@/app/components/landing/LandingCTA"
 import LandingHero from "./LandingHero"
-
-import { useInView } from "framer-motion"
+import FAQSection from "./FaqSection"
 import LandingHeader from "./LanndingHeader"
+
 
 // Dynamically import heavy components
 const ShowcaseSection = dynamic(() => import("./ShowcaseSection"), { ssr: false })
 const TestimonialsSection = dynamic(() => import("./TestimonialsSection"), { ssr: false })
 const AboutUs = dynamic(() => import("@/app/about/AboutUs"), { ssr: false })
 
+// Animation variants
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
@@ -44,28 +47,89 @@ const stagger: Variants = {
   },
 }
 
-export default function LandingComponent() {
+// Type definitions
+type SectionKey = "how-it-works" | "features" | "showcase" | "testimonials" | "faq" | "cta" | "about"
+
+type SectionRefs = {
+  [key in SectionKey]: React.RefObject<HTMLElement>
+}
+
+type SectionConfig = {
+  key: SectionKey
+  title: string
+  description: string
+  Component: React.ComponentType<any>
+  props?: Record<string, any>
+}
+
+type LandingComponentProps = {
+  sections?: SectionConfig[]
+}
+
+export default function LandingComponent({ sections }: LandingComponentProps) {
   const router = useRouter()
   const [showScrollTop, setShowScrollTop] = useState(false)
-  const sectionInViewRefs = {
-    "how-it-works": useRef(null),
-    features: useRef(null),
-    showcase: useRef(null),
-    testimonials: useRef(null),
-    faq: useRef(null),
-    cta: useRef(null),
-    about: useRef(null),
-  }
-
-  const howItWorksInView = useInView(sectionInViewRefs["how-it-works"], { once: true, amount: 0.3 })
-  const featuresInView = useInView(sectionInViewRefs["features"], { once: true, amount: 0.3 })
-  const showcaseInView = useInView(sectionInViewRefs["showcase"], { once: true, amount: 0.3 })
-  const testimonialsInView = useInView(sectionInViewRefs["testimonials"], { once: true, amount: 0.3 })
-  const faqInView = useInView(sectionInViewRefs["faq"], { once: true, amount: 0.3 })
-  const landingCTAInView = useInView(sectionInViewRefs["cta"], { once: true, amount: 0.3 })
-  const aboutUsInView = useInView(sectionInViewRefs["about"], { once: true, amount: 0.3 })
   const controls = useAnimation()
 
+  // Default sections configuration
+  const defaultSections: SectionConfig[] = [
+    {
+      key: "how-it-works",
+      title: "How It Works",
+      description: "See how our AI transforms your ideas into a complete course",
+      Component: HowItWorks,
+    },
+    {
+      key: "features",
+      title: "Features",
+      description: "Discover the powerful features that make course creation effortless",
+      Component: FeatureSections,
+      props: { controls },
+    },
+    {
+      key: "showcase",
+      title: "Showcase",
+      description: "Explore some of the amazing courses created with our platform",
+      Component: ShowcaseSection,
+    },
+    {
+      key: "testimonials",
+      title: "Testimonials",
+      description: "Hear what our users have to say about their experience",
+      Component: TestimonialsSection,
+    },
+    {
+      key: "faq",
+      title: "Frequently Asked Questions",
+      description: "Find answers to commonly asked questions",
+      Component: FAQSection,
+    },
+    {
+      key: "about",
+      title: "About Us",
+      description: "Discover the story behind CourseAI",
+      Component: AboutUs,
+    },
+  ]
+
+  const sectionConfigs = sections || defaultSections
+
+  // Refs for sections
+  const sectionInViewRefs: SectionRefs = sectionConfigs.reduce((acc, section) => {
+    acc[section.key] = useRef(null)
+    return acc
+  }, {} as SectionRefs)
+
+  // Check if sections are in view
+  const sectionInView = sectionConfigs.reduce(
+    (acc, section) => {
+      acc[section.key] = useInView(sectionInViewRefs[section.key], { once: true, amount: 0.3 })
+      return acc
+    },
+    {} as Record<SectionKey, boolean>,
+  )
+
+  // Handle scroll to top button visibility
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300)
@@ -75,6 +139,7 @@ export default function LandingComponent() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // Handle topic submission
   const handleTopicSubmit = (topic: string) => {
     if (topic) {
       router.push(`/dashboard/create?topic=${encodeURIComponent(topic)}`)
@@ -83,31 +148,9 @@ export default function LandingComponent() {
     }
   }
 
+  // Handle sign-in click
   const handleSignInClick = () => {
     router.push("/auth/signin?callbackUrl=/dashboard")
-  }
-
-  const getSectionInView = (section: string) => {
-    switch (section) {
-      case "how-it-works":
-        return howItWorksInView
-      case "features":
-        return featuresInView
-      case "showcase":
-        return showcaseInView
-      case "testimonials":
-        return testimonialsInView
-      case "faq":
-        return faqInView
-      case "cta":
-        return landingCTAInView
-
-      case "about":
-
-        return aboutUsInView
-      default:
-        return false
-    }
   }
 
   return (
@@ -116,32 +159,42 @@ export default function LandingComponent() {
       <main className="space-y-24 pb-24">
         <LandingHero onTopicSubmit={handleTopicSubmit} />
 
-        {["how-it-works", "features", "showcase", "testimonials", "faq",'about'].map((section, index) => (
-          <Element key={section} name={section}>
+        {sectionConfigs.map((section, index) => (
+          <Element key={section.key} name={section.key}>
             <section
-              ref={(el) => (sectionInViewRefs[section].current = el)}
+              ref={sectionInViewRefs[section.key]}
               className={`py-20 px-4 ${index % 2 === 1 ? "bg-muted/20" : ""}`}
             >
               <motion.div
                 className="container mx-auto max-w-6xl"
                 initial="hidden"
-                animate={getSectionInView(section) ? "visible" : "hidden"}
+                animate={sectionInView[section.key] ? "visible" : "hidden"}
                 variants={index % 2 === 0 ? fadeInLeft : fadeInRight}
               >
                 <motion.div variants={stagger} className="space-y-12">
                   <motion.div variants={fadeInUp}>
-                    {getSectionComponent(section, { controls, handleSignInClick })}
+                    <motion.div variants={fadeInUp} className="text-center space-y-4 mb-12">
+                      <h2 className="text-3xl font-bold text-primary text-gradient capitalize">{section.title}</h2>
+                      <p className="text-muted-foreground max-w-2xl mx-auto">{section.description}</p>
+                    </motion.div>
+                    <section.Component
+                      {...(section.props || {})}
+                      sectionRef={sectionInViewRefs[section.key]}
+                      handleSignInClick={handleSignInClick}
+                    />
                   </motion.div>
                 </motion.div>
               </motion.div>
             </section>
           </Element>
         ))}
+
         <section className="py-20 px-4">
           <LandingCTA handleSignInClick={handleSignInClick} />
         </section>
       </main>
 
+      {/* Scroll to top button */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: showScrollTop ? 1 : 0 }}
@@ -160,63 +213,5 @@ export default function LandingComponent() {
       </motion.div>
     </div>
   )
-}
-
-function getDescriptionForSection(section: string): string {
-  switch (section) {
-    case "how-it-works":
-      return "See how our AI transforms your ideas into a complete course"
-    case "features":
-      return "Discover the powerful features that make course creation effortless"
-    case "showcase":
-      return "Explore some of the amazing courses created with our platform"
-    case "testimonials":
-      return "Hear what our users have to say about their experience"
-    case "faq":
-      return "Find answers to commonly asked questions"
-        case "about":
-      return 'Discover the story behind CourseAI'
-    case "cta":
-      return "Ready to get started? Sign up now"
-  
-    default:
-      return ""
-  }
-}
-
-function getSectionComponent(section: string, props: any) {
-  const title = section.replace("-", " ")
-  const description = getDescriptionForSection(section)
-
-  return (
-    <>
-      <motion.div variants={fadeInUp} className="text-center space-y-4 mb-12">
-        <h2 className="text-3xl font-bold text-primary text-gradient capitalize">{title}</h2>
-        <p className="text-muted-foreground max-w-2xl mx-auto">{description}</p>
-      </motion.div>
-      {renderSectionContent(section, props)}
-    </>
-  )
-}
-
-function renderSectionContent(section: string, props: any) {
-  switch (section) {
-    case "how-it-works":
-      return <HowItWorks />
-    case "features":
-      return <FeatureSections featuresRef={props.featuresRef} controls={props.controls} />
-    case "showcase":
-      return <ShowcaseSection />
-    case "testimonials":
-      return <TestimonialsSection />
-    case "faq":
-      return <FAQSection />
-    case "cta":
-      return <LandingCTA handleSignInClick={props.handleSignInClick} />
-    case "about":
-      return <AboutUs />
-    default:
-      return null
-  }
 }
 
