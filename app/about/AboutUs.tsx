@@ -83,7 +83,7 @@ const AboutUs = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
       >
-        <Button size="lg" className="px-8 py-3 text-lg">
+        <Button size="lg" className="px-8 py-3 text-lg" onClick={() => window.location.href = "/contactus"}>
           Get in Touch
         </Button>
       </motion.div>
