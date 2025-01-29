@@ -1,21 +1,24 @@
-
 import { Suspense } from "react"
 import { SuccessContent } from "./components/SuccessContent"
-
+import { Skeleton } from "@/components/ui/skeleton" // Shadcn Skeleton for loading state
+import { Card } from "@/components/ui/card" // Shadcn Card for container styling
+import { Button } from "@/components/ui/button" // Shadcn Button for interactions (if needed)
 
 export default function SuccessPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-          </div>
-        }
-      >
-        <SuccessContent />
-      </Suspense>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      <Card className="w-full max-w-md p-6 space-y-4">
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center space-x-2">
+              <Skeleton className="h-8 w-8 rounded-full" /> {/* Shadcn Skeleton for loading spinner */}
+              <span className="text-sm text-muted-foreground">Loading...</span>
+            </div>
+          }
+        >
+          <SuccessContent />
+        </Suspense>
+      </Card>
     </div>
   )
 }
-

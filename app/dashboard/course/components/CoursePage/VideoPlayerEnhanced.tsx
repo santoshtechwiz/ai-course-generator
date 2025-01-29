@@ -33,7 +33,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   autoPlay = false,
   onProgress,
   initialTime = 0,
-  brandLogo = '/placeholder.svg?height=100&width=100'
+  brandLogo = '/logo.svg', // Default SVG logo
 }) => {
   const [playing, setPlaying] = useState(autoPlay)
   const [volume, setVolume] = useState(0.8)
@@ -55,7 +55,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
     if (playerRef.current) {
       playerRef.current.seekTo(0)
     }
-  }, [autoPlay]); // Removed videoId from dependencies
+  }, [autoPlay])
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -81,7 +81,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
       setPlayed(state.played)
       onProgress?.(state.played)
 
-      // Show "Moving to next video" overlay 5 seconds before the end
+      // Show "Moving to next video" overlay 15 seconds before the end
       if (duration - state.playedSeconds <= 15 && !showNextVideoOverlay) {
         setShowNextVideoOverlay(true)
       }
@@ -124,6 +124,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
         onMouseEnter={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
       >
+        {/* Video Player */}
         <ReactPlayer
           ref={playerRef}
           url={`https://www.youtube.com/watch?v=${videoId}`}
@@ -145,18 +146,19 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
           }}
         />
 
-        {!playing && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <img src={brandLogo || "/placeholder.svg"} alt="Brand Logo" className="w-24 h-24 object-contain" />
-          </div>
-        )}
+        {/* Brand Logo */}
+        <div className="absolute top-4 right-4 z-10">
+          <img src={brandLogo} alt="Brand Logo" className="w-12 h-12 object-contain" />
+        </div>
 
+        {/* Next Video Overlay */}
         {showNextVideoOverlay && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70">
+          <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50">
             <div className="text-white text-2xl font-bold">Moving to next video...</div>
           </div>
         )}
 
+        {/* Controls */}
         <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
           <Slider
             value={[played]}
