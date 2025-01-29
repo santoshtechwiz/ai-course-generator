@@ -53,8 +53,9 @@ export function QuizActions({
         const response = await fetch(`/api/quiz/${quizSlug}`)
         if (response.ok) {
           const quizData = await response.json()
-          console.log(quizData);
-          setData(quizData.quizData);
+          console.log(quizData)
+          console.log(quizData.quizData);
+          setData(quizData.quizData)
           setIsPublic(quizData.isPublic)
           setIsFavorite(quizData.isFavorite)
         }
@@ -64,7 +65,7 @@ export function QuizActions({
     }
 
     fetchQuizState()
-  }, [quizSlug,quizId])
+  }, [quizSlug, quizId])
 
   if (userId !== ownerId) {
     return null
@@ -81,6 +82,7 @@ export function QuizActions({
       })
       if (response.ok) {
         const updatedQuiz = await response.json()
+        setData(updatedQuiz.quizData);
         setIsPublic(updatedQuiz.isPublic)
         setIsFavorite(updatedQuiz.isFavorite)
         toast({
@@ -164,7 +166,7 @@ export function QuizActions({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-wrap items-center gap-2 mb-5 mt-5 p-3 bg-card rounded-lg shadow-md"
+      className="flex flex-wrap items-center justify-between gap-2 mb-5 mt-5 p-3 bg-card rounded-lg shadow-md"
     >
       <TooltipProvider>
         <Tooltip>
@@ -174,22 +176,18 @@ export function QuizActions({
               size="sm"
               onClick={togglePublic}
               disabled={isPublicLoading}
-              className={`w-28 transition-all duration-300 ${
-                isPublic
-                  ? "bg-green-500 hover:bg-green-600 active:bg-green-700"
-                  : "bg-gray-500 hover:bg-gray-600 active:bg-gray-700"
-              }`}
+              className="flex-1 md:flex-none md:w-28 transition-all duration-300"
             >
               {isPublicLoading ? (
                 <span className="loader"></span>
               ) : (
                 <>
                   {isPublic ? (
-                    <Eye className="mr-2 h-4 w-4 text-white" />
+                    <Eye className="h-4 w-4 md:mr-2" />
                   ) : (
-                    <EyeOff className="mr-2 h-4 w-4 text-white" />
+                    <EyeOff className="h-4 w-4 md:mr-2" />
                   )}
-                  <span className="font-medium text-white">{isPublic ? "Public" : "Private"}</span>
+                  <span className="hidden md:inline">{isPublic ? "Public" : "Private"}</span>
                 </>
               )}
             </Button>
@@ -208,18 +206,14 @@ export function QuizActions({
               size="sm"
               onClick={toggleFavorite}
               disabled={isFavoriteLoading}
-              className={`w-28 transition-all duration-300 ${
-                isFavorite
-                  ? "bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700"
-                  : "bg-gray-500 hover:bg-gray-600 active:bg-gray-700"
-              }`}
+              className="flex-1 md:flex-none md:w-28 transition-all duration-300"
             >
               {isFavoriteLoading ? (
                 <span className="loader"></span>
               ) : (
                 <>
-                  <Star className={`mr-2 h-4 w-4 ${isFavorite ? "fill-white text-white" : "text-white"}`} />
-                  <span className="font-medium text-white">{isFavorite ? "Favorited" : "Favorite"}</span>
+                  <Star className={`h-4 w-4 md:mr-2 ${isFavorite ? "fill-white" : ""}`} />
+                  <span className="hidden md:inline">{isFavorite ? "Favorited" : "Favorite"}</span>
                 </>
               )}
             </Button>
@@ -238,14 +232,14 @@ export function QuizActions({
               size="sm"
               onClick={handleShare}
               disabled={isShareLoading}
-              className="w-28 transition-all duration-300 hover:bg-gray-100 active:bg-gray-200"
+              className="flex-1 md:flex-none md:w-28 transition-all duration-300"
             >
               {isShareLoading ? (
                 <span className="loader"></span>
               ) : (
                 <>
-                  <Share2 className="mr-2 h-4 w-4" />
-                  <span className="font-medium">Share</span>
+                  <Share2 className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Share</span>
                 </>
               )}
             </Button>
@@ -255,30 +249,31 @@ export function QuizActions({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            {/* <PDFDownloadLink document={<QuizPDF quizData={data} />} fileName={`${quizSlug}-quiz.pdf`}>
-              {({ blob, url, loading, error }) => (
+            <PDFDownloadLink document={<QuizPDF quizData={data} />} fileName={`${quizSlug}-quiz.pdf`}>
+              {({ loading }: { loading: boolean }) => (
                 <>
                   <Button
                     variant="outline"
                     size="sm"
                     disabled={loading}
-                    className="w-28 transition-all duration-300 hover:bg-gray-100 active:bg-gray-200"
+                    className="flex-1 md:flex-none md:w-28 transition-all duration-300"
                   >
                     {loading ? (
                       <span className="loader"></span>
                     ) : (
                       <>
-                        <Download className="mr-2 h-4 w-4" />
-                        <span className="font-medium">PDF</span>
+                        <Download className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">PDF</span>
                       </>
                     )}
                   </Button>
                 </>
               )}
-            </PDFDownloadLink> */}
+            </PDFDownloadLink>
           </TooltipTrigger>
           <TooltipContent>
             <p>Download quiz as PDF</p>
@@ -292,14 +287,14 @@ export function QuizActions({
             variant="destructive"
             size="sm"
             disabled={isDeleteLoading}
-            className="w-28 transition-all duration-300 hover:bg-red-600 active:bg-red-700 ml-auto"
+            className="flex-1 md:flex-none md:w-28 transition-all duration-300"
           >
             {isDeleteLoading ? (
               <span className="loader"></span>
             ) : (
               <>
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span className="font-medium">Delete</span>
+                <Trash2 className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Delete</span>
               </>
             )}
           </Button>
@@ -320,4 +315,3 @@ export function QuizActions({
     </motion.div>
   )
 }
-

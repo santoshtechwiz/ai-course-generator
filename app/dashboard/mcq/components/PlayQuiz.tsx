@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -16,7 +15,6 @@ import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { submitQuizData } from "@/app/actions/actions"
 import { GlobalLoader } from "@/app/components/GlobalLoader"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
 
 type Question = {
   id: number
@@ -46,13 +44,13 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
   const [startTime] = useState<number>(Date.now())
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
-  const [loading, setLoading] = useState(false); // Track loading state
+  const [loading, setLoading] = useState(false)
   const currentQuestion = questions[currentQuestionIndex]
 
   const saveQuizResults = useCallback(
     async (quizData: any) => {
       try {
-        setLoading(true);
+        setLoading(true)
         await submitQuizData({
           slug,
           quizId,
@@ -60,11 +58,11 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
           elapsedTime: quizData.totalTime,
           score: quizData.score,
           type: "mcq",
-        });
-        setLoading(false);
+        })
+        setLoading(false)
       } catch (error) {
         console.error("Failed to update quiz score:", error)
-        setLoading(false);
+        setLoading(false)
         toast({
           title: "Error",
           description: "Failed to update quiz score. Please try again.",
@@ -72,7 +70,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
         })
       }
     },
-    [slug],
+    [slug, quizId],
   )
 
   const handleQuizCompletion = useCallback(() => {
@@ -252,29 +250,29 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
       }
     }
   }, [isAuthenticated, slug, saveQuizResults])
-  if (loading) return <div><GlobalLoader loading={loading}></GlobalLoader></div>
+
+  if (loading) return <GlobalLoader loading={loading} />
+
   if (hasError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl shadow-xl border-0">
-          <CardContent className="p-6 text-center">
-            <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Question Error</h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              This question needs review due to insufficient options.
-            </p>
-            <Button onClick={nextQuestion}>Skip to Next Question</Button>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-2xl p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg text-center">
+          <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Question Error</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            This question needs review due to insufficient options.
+          </p>
+          <Button onClick={nextQuestion}>Skip to Next Question</Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <Card className="w-full max-w-[95%] md:max-w-3xl mx-auto shadow-xl border-0">
-      <CardHeader className="space-y-4 pb-4">
+    <div className="w-full max-w-[95%] md:max-w-3xl mx-auto p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+      <div className="space-y-4 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <CardTitle className="text-xl sm:text-2xl font-bold">Interactive Quiz Challenge</CardTitle>
+          <h1 className="text-xl sm:text-2xl font-bold">Interactive Quiz Challenge</h1>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -298,8 +296,8 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
             </span>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="pb-6">
+      </div>
+      <div className="pb-6">
         <AnimatePresence mode="wait" initial={false}>
           {!quizCompleted ? (
             <motion.div
@@ -380,9 +378,9 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
             </motion.div>
           )}
         </AnimatePresence>
-      </CardContent>
+      </div>
       {!quizCompleted && (
-        <CardFooter className="flex justify-between items-center gap-4 border-t pt-6">
+        <div className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
           <p className="text-sm text-muted-foreground">
             Question time:{" "}
             {formatTime(timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0))}
@@ -391,8 +389,8 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
             {currentQuestionIndex === questions.length - 1 ? "Finish Quiz" : "Next Question"}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
-        </CardFooter>
+        </div>
       )}
-    </Card>
+    </div>
   )
 }
