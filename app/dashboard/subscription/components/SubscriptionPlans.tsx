@@ -9,7 +9,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { toast } from "@/hooks/use-toast"
-import { SUBSCRIPTION_PLANS, FAQ_ITEMS, type SubscriptionPlanType } from "@/config/subscriptionPlans"
+import {
+  SUBSCRIPTION_PLANS,
+  FAQ_ITEMS,
+  type SubscriptionPlanType,
+  type SubscriptionStatusType,
+} from "@/config/subscriptionPlans"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -17,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 interface SubscriptionPlansProps {
   userId?: string
   currentPlan: SubscriptionPlanType | null
-  subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
+  subscriptionStatus: SubscriptionStatusType | null
   isProd: boolean
 }
 
@@ -136,7 +141,16 @@ export default function SubscriptionPlans({ userId, currentPlan, subscriptionSta
   )
 }
 
-function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubscribe, duration }) {
+interface PlanCardsProps {
+  plans: typeof SUBSCRIPTION_PLANS
+  currentPlan: SubscriptionPlanType | null
+  subscriptionStatus: SubscriptionStatusType | null
+  loading: SubscriptionPlanType | null
+  handleSubscribe: (planName: SubscriptionPlanType, duration: number) => Promise<void>
+  duration: "monthly" | "biannual"
+}
+
+function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubscribe, duration }: PlanCardsProps) {
   const isSubscribed = currentPlan && subscriptionStatus?.toUpperCase() === "ACTIVE"
   const durationValue = duration === "monthly" ? 1 : 6
 
@@ -177,8 +191,8 @@ function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubs
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={() => handleSubscribe(plan.name as SubscriptionPlanType, durationValue)}
-                      disabled={isSubscribed || loading === plan.name}
+                      onClick={() => handleSubscribe(plan.name, durationValue)}
+                      disabled={isSubscribed || loading === plan.name || plan.name === "FREE"}
                       className="w-full"
                     >
                       {loading === plan.name ? (
@@ -188,6 +202,8 @@ function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubs
                         </>
                       ) : currentPlan === plan.name && isSubscribed ? (
                         "Current Plan"
+                      ) : plan.name === "FREE" ? (
+                        "Start for Free"
                       ) : (
                         "Subscribe"
                       )}
@@ -198,7 +214,9 @@ function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubs
                       ? "You already have an active subscription. Contact support to change plans."
                       : currentPlan === plan.name && isSubscribed
                         ? "This is your current plan"
-                        : "Click to subscribe to this plan"}
+                        : plan.name === "FREE"
+                          ? "Start using the free plan"
+                          : "Click to subscribe to this plan"}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -210,7 +228,7 @@ function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubs
   )
 }
 
-function ComparisonTable({ plans }) {
+function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -247,7 +265,7 @@ function ComparisonTable({ plans }) {
               <TableCell className="font-medium">Bi-Annual Price</TableCell>
               {plans.map((plan) => (
                 <TableCell key={plan.name}>
-                  {plan.options[1]?.price === 0 ? "Free" : `$${plan.options[1]?.price}`}
+                  {plan.options[1]?.price === 0 ? "Free" : `$${plan.options[1]?.price ?? "N/A"}`}
                 </TableCell>
               ))}
             </TableRow>
@@ -278,8 +296,8 @@ function FAQSection() {
       <Accordion type="single" collapsible className="w-full">
         {FAQ_ITEMS.map((item, index) => (
           <AccordionItem key={index} value={`item-${index}`}>
-            <AccordionTrigger>{item.question}</AccordionTrigger>
-            <AccordionContent>{item.answer}</AccordionContent>
+            <AccordionTrigger className="text-left text-base font-medium">{item.question}</AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground">{item.answer}</AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>

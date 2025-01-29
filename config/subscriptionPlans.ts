@@ -14,7 +14,7 @@ export const SUBSCRIPTION_PLANS = [
       "Up to 5 sections per course",
       "Basic MCQ quiz support",
       "Basic Fill-in-the-Blank quiz support",
-      "Basic openended quiz support",
+      "Basic open-ended quiz support",
     ],
   },
   {
@@ -25,7 +25,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 10,
     limits: {
-      courses: Infinity,
+      courses: Number.POSITIVE_INFINITY,
       mcq: 10,
       openEnded: 5,
       fillInTheBlanks: 5,
@@ -37,7 +37,7 @@ export const SUBSCRIPTION_PLANS = [
       "Video quizzes",
       "Enhanced MCQ quizzes",
       "Enhanced Fill-in-the-Blank quizzes",
-      "Enhanced openended quizzes",
+      "Enhanced open-ended quizzes",
     ],
   },
   {
@@ -48,7 +48,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 50,
     limits: {
-      courses: Infinity,
+      courses: Number.POSITIVE_INFINITY,
       sectionsPerCourse: 20,
       mcq: 15,
       openEnded: 15,
@@ -61,16 +61,16 @@ export const SUBSCRIPTION_PLANS = [
       "Video quizzes",
       "Advanced MCQ quizzes",
       "Advanced Fill-in-the-Blank quizzes",
-      "Advanced openended quizzes",
+      "Advanced open-ended quizzes",
     ],
   },
-];
+] as const
 
 export const FAQ_ITEMS = [
   {
     question: "What's included in each course?",
     answer:
-      "Each course can include video content, transcripts, various types of quizzes (MCQ, Fill-in-the-Blank, openended), and sections to organize your content. The number and complexity of these features depend on your subscription plan.",
+      "Each course can include video content, transcripts, various types of quizzes (MCQ, Fill-in-the-Blank, open-ended), and sections to organize your content. The number and complexity of these features depend on your subscription plan.",
   },
   {
     question: "Can I upgrade my plan?",
@@ -87,9 +87,9 @@ export const FAQ_ITEMS = [
     answer:
       "We offer a 14-day money-back guarantee for paid plans. If you're not satisfied, you can request a full refund within this period.",
   },
-]
+] as const
 
-export type SubscriptionPlanType = keyof typeof SUBSCRIPTION_PLANS
+export type SubscriptionPlanType = (typeof SUBSCRIPTION_PLANS)[number]["name"]
 
 export const SUBSCRIPTION_STATUSES = {
   ACTIVE: "ACTIVE",
