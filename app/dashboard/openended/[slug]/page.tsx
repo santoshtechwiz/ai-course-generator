@@ -11,7 +11,7 @@ type Props = {
 async function getQuizData(slug: string) {
   try {
 
-    const response = await fetch(`$/api/oquiz/${slug}`)
+    const response = await fetch(`/api/oquiz/${slug}`)
     const data = await response.json()
     return data
   } catch (error) {

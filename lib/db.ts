@@ -570,15 +570,7 @@ export async function fetchRandomQuizzes(count: number = 3) {
     
   }
 }
-export async function getQuizData(slug: string) {
-  try {
-    const response = await axios.get<any>(`/api/oquiz/${slug}`)
-    return response.data
-  } catch (error) {
-    console.error("Error fetching quiz data:", error)
-    return null
-  }
-}
+
 
 
 export async function getQuizzes(): Promise<QuizListItem[]> {
