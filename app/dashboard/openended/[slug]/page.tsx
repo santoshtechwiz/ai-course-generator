@@ -2,7 +2,7 @@ import axios from "axios"
 import type { Metadata, ResolvingMetadata } from "next"
 import { notFound } from "next/navigation"
 import QuizPage from "./QuizPage"
-import { env } from "process"
+
 
 type Props = {
   params: { slug: string }
@@ -11,7 +11,7 @@ type Props = {
 async function getQuizData(slug: string) {
   try {
 
-    const response = await fetch(`${env.NEXT_PUBLIC_APP_URL}/api/oquiz/${slug}`)
+    const response = await fetch(`$/api/oquiz/${slug}`)
     const data = await response.json()
     return data
   } catch (error) {
