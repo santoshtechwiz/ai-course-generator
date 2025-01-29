@@ -131,7 +131,13 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
       <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
         <div className="p-6 space-y-4">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{result.topic} Quiz</h1>
-          <QuizActions
+         
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <Suspense fallback={<QuizSkeleton />}>
+              <QuizActions
             quizId={result.id.toString()}
             userId={currentUserId || ""}
             ownerId={result.user.id}
@@ -139,11 +145,6 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
             initialIsPublic={result.isPublic || false}
             initialIsFavorite={result.isFavorite || false}
           />
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <Suspense fallback={<QuizSkeleton />}>
                 <PlayQuiz questions={questions} quizId={result.id} slug={slug} />
               </Suspense>
             </div>

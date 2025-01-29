@@ -111,8 +111,8 @@ export async function GET(req: Request, props: { params: Promise<{ slug: string 
     quizData: {
       title: result.topic,
       questions: result.questions,
-      options:  result.questions.map(q => q.options)
+      
     }
-  }
+  };
   return NextResponse.json(data)
 }
