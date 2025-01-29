@@ -61,6 +61,7 @@ export default function SubscriptionPlans({ userId, currentPlan, subscriptionSta
       })
 
       if (!response.ok) {
+        //print all the response
         console.log(response);
         throw new Error(`HTTP error! status: ${response.status}`)
       }
