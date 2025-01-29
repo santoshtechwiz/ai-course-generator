@@ -62,7 +62,7 @@ const faqData = [
   },
 ];
 
-export function FAQSection() {
+export default function FAQSection() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredFAQs = faqData.filter(
@@ -79,14 +79,14 @@ export function FAQSection() {
         transition={{ duration: 0.5 }}
         className="max-w-3xl mx-auto space-y-8"
       >
-        <motion.h2 
+        {/* <motion.h2 
           className="text-3xl font-bold tracking-tighter sm:text-4xl text-center text-primary"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           Explore Frequently Asked Questions
-        </motion.h2>
+        </motion.h2> */}
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
