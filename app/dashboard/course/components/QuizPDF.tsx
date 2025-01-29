@@ -69,6 +69,12 @@ const styles = StyleSheet.create({
     color: "#374151",
     marginBottom: 5,
   },
+  answerSpace: {
+    height: 40,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    marginTop: 10,
+  },
   footer: {
     position: "absolute",
     bottom: 30,
@@ -89,23 +95,32 @@ const styles = StyleSheet.create({
   },
 })
 
+interface Question {
+  question: string
+  options?: string[] | null
+}
+
 export interface QuizPDFProps {
   quizData: {
     title: string
     description?: string
-    questions: {
-      question: string
-      options: string[]
-    }[]
+    questions: Question[]
+  }
+  config?: {
+    showOptions?: boolean
+    showAnswerSpace?: boolean
+    answerSpaceHeight?: number
   }
 }
 
-const QuizPDF: React.FC<QuizPDFProps> = ({ quizData }) => {
+const ConfigurableQuizPDF: React.FC<QuizPDFProps> = ({ quizData, config = {} }) => {
+  const { showOptions = true, showAnswerSpace = true, answerSpaceHeight = 40 } = config
+
   // Memoizing the parsed options for performance
   const questionsWithParsedOptions = useMemo(() => {
     return quizData?.questions.map((q) => ({
       ...q,
-      options: Array.isArray(q.options) ? q.options : JSON.parse(q.options),
+      options: q.options ? (Array.isArray(q.options) ? q.options : JSON.parse(q.options)) : null,
     }))
   }, [quizData?.questions])
 
@@ -120,13 +135,18 @@ const QuizPDF: React.FC<QuizPDFProps> = ({ quizData }) => {
           <View key={i} style={styles.questionSection}>
             <Text style={styles.questionNumber}>{`Question ${i + 1}`}</Text>
             <Text style={styles.question}>{q.question}</Text>
-            <View style={styles.optionsContainer}>
-              {q.options.map((option, j) => (
-                <Text key={j} style={styles.option}>
-                  {`${String.fromCharCode(65 + j)}. ${option}`}
-                </Text>
-              ))}
-            </View>
+            {showOptions && q.options && (
+              <View style={styles.optionsContainer}>
+                {q.options.map((option, j) => (
+                  <Text key={j} style={styles.option}>
+                    {`${String.fromCharCode(65 + j)}. ${option}`}
+                  </Text>
+                ))}
+              </View>
+            )}
+            {showAnswerSpace && (!q.options || !showOptions) && (
+              <View style={[styles.answerSpace, { height: answerSpaceHeight }]} />
+            )}
           </View>
         ))}
         <View style={styles.footer}>
@@ -142,5 +162,5 @@ const QuizPDF: React.FC<QuizPDFProps> = ({ quizData }) => {
   )
 }
 
-export default QuizPDF
+export default ConfigurableQuizPDF
 

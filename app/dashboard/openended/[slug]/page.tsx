@@ -2,21 +2,19 @@
 import type { Metadata, ResolvingMetadata } from "next"
 import { notFound } from "next/navigation"
 import QuizPage from "./QuizPage"
+import axios from "axios";
 
-
-type Props = {
-  params: { slug: string }
-}
 
 async function getQuizData(slug: string) {
   try {
+    // Use absolute URL for server-side fetch
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"; 
+    const { data } = await axios.get(`${baseUrl}/api/oquiz/${slug}`);
 
-    const response = await fetch(`/api/oquiz/${slug}`)
-    const data = await response.json()
-    return data
+    return data;
   } catch (error) {
-    console.error("Error fetching quiz data:", error)
-    return null
+    console.error("Error fetching quiz data:", error);
+    return null;
   }
 }
 
@@ -58,7 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 const Page = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const slug = (await params).slug
   const quizData = await getQuizData(slug)
-
+  console.log(quizData);
   if (!quizData) {
     return notFound()
   }

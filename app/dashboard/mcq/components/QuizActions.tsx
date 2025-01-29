@@ -18,8 +18,7 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
-import QuizPDF from "../../course/components/QuizPDF"
-import { PDFDownloadLink } from "@react-pdf/renderer"
+
 import QuizPDFDownload from "../../course/components/QuizPDFDownload"
 
 interface QuizActionsToolbarProps {
