@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     const { sessionId } = await SubscriptionService.createCheckoutSession(userId, planName, duration)
     return NextResponse.json({ sessionId })
   } catch (error) {
+    console.error('Failed to create checkout session:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 400 })
   }
 }

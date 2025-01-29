@@ -1,4 +1,4 @@
-import axios from "axios"
+
 import type { Metadata, ResolvingMetadata } from "next"
 import { notFound } from "next/navigation"
 import QuizPage from "./QuizPage"
