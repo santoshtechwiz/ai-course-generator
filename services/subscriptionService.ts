@@ -1,8 +1,9 @@
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanType } from "@/config/subscriptionPlans"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/db"
+
 import Stripe from "stripe"
 
-const prisma = new PrismaClient()
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-10-28.acacia", // Update to the latest stable version
 })
@@ -70,7 +71,7 @@ export class SubscriptionService {
       ],
       mode: "subscription",
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/cancelled`,
       metadata: {
         userId,
         planName,
