@@ -4,18 +4,34 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { Course, FullCourseType, QuizListItem, QuizWithQuestionsAndTags,  } from '@/app/types';
 
 
+
+import { neon } from "@neondatabase/serverless";
+
+// Create a global object to store the Prisma client instance (for Next.js Fast Refresh)
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-// Ensure a single Prisma instance
+// Use Neon serverless driver instead of the default Node.js driver
+const databaseUrl = process.env.DATABASE_URL!;
+
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "info", "warn", "error"] : ["warn", "error"],
+    datasources: {
+      
+      db: {
+        url: databaseUrl,
+      },
+    },
   });
 
+// Avoid creating multiple Prisma instances in development
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
+export default prisma;
+
 
 
 // Create a new course

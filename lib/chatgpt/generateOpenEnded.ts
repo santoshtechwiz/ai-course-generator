@@ -7,7 +7,8 @@ interface OpenEndedQuestion {
 
 export const generateOpenEnded = async (
   topic: string,
-  amount: number
+  amount: number,
+  model: string="gpt-3.5-turbo"
 ): Promise<OpenEndedQuestion[]> => {
   const functions = [
     {
@@ -25,7 +26,7 @@ export const generateOpenEnded = async (
   ];
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini", 
+    model: model, 
     messages: [
       { role: "system", content: "You are an AI that generates openended questions." },
       { role: "user", content: `Generate ${amount} hard openended questions about ${topic}.` },

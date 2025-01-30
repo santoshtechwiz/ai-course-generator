@@ -22,6 +22,7 @@ const quizSchema = z.object({
     topic: z.string().min(3, "Topic must be at least 3 characters long").max(100, "Topic must be at most 100 characters long"),
     amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
     difficulty: z.enum(["easy", "medium", "hard"]),
+    userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
   });
 
 
@@ -45,12 +46,14 @@ export const quizCreationSchema = z.object({
   type: z.enum(["mcq", "open_ended"]).default("mcq"),
   amount: z.number().min(1).max(15),
   difficulty: z.enum(["easy", "medium", "hard"]),
+  userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
 });
 export const getQuestionsSchema = z.object({
   topic: z.string(),
   amount: z.number().int().positive().min(1).max(10),
   type: z.enum(["mcq", "open_ended"]),
   difficulty: z.enum(["easy", "medium", "hard"]),
+  userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
 });
 
 export const checkAnswerSchema = z.object({

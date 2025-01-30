@@ -6,8 +6,8 @@ import { ZodError } from 'zod';
 
 export async function POST(req: Request) {
   try {
-    const { amount, topic, type,difficulty } = getQuestionsSchema.parse(await req.json());
-    const  questions = await generateQuestions({ amount, topic, type,difficulty });
+    const { amount, topic, type,difficulty,userType} = getQuestionsSchema.parse(await req.json());
+    const  questions = await generateQuestions({ amount, topic, type,difficulty,userType });
 
     return NextResponse.json(questions);
   } catch (error) {

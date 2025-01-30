@@ -9,7 +9,8 @@ interface QuizQuestion {
 
 
 
-export const generateMcqForUserInput = async (topic: string, amount: number, difficulty: string = 'hard') => {
+export const generateMcqForUserInput = async (topic: string, amount: number, difficulty: string = 'hard', userType) => {
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo" : "gpt-4o-mini";
   const functions = [
     {
       name: 'createMCQ',
@@ -38,7 +39,7 @@ export const generateMcqForUserInput = async (topic: string, amount: number, dif
   ];
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: model,
     messages: [
       { role: 'system', content: 'You are an AI that generates multiple-choice questions.' },
       {
@@ -51,7 +52,7 @@ export const generateMcqForUserInput = async (topic: string, amount: number, dif
   });
 
   const result = JSON.parse(response.choices[0].message?.function_call?.arguments || '{}');
- 
+
   if (!result.questions || !Array.isArray(result.questions)) {
     throw new Error('Invalid response format: questions array is missing.');
   }
@@ -61,8 +62,10 @@ export const generateMcqForUserInput = async (topic: string, amount: number, dif
 export const generateOpenEndedQuestions = async (
   topic: string,
   amount: number = 5,
-  difficulty: string = 'medium'
+  difficulty: string = 'medium',
+  userType: string = 'FREE'
 ): Promise<QuizQuestion[]> => {
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo" : "gpt-4o-mini";
   const functions = [
     {
       name: 'createOpenEndedQuiz',
@@ -89,11 +92,11 @@ export const generateOpenEndedQuestions = async (
   ];
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: model,
     messages: [
-      { 
-        role: 'system', 
-        content: 'You are an AI that generates insightful openended questions based on a given topic. Focus on creating questions that encourage critical thinking and in-depth responses.' 
+      {
+        role: 'system',
+        content: 'You are an AI that generates insightful openended questions based on a given topic. Focus on creating questions that encourage critical thinking and in-depth responses.'
       },
       {
         role: 'user',
@@ -105,7 +108,7 @@ export const generateOpenEndedQuestions = async (
   });
 
   const result = JSON.parse(response.choices[0].message?.function_call?.arguments || '{}');
-  
+
   if (!result.questions || !Array.isArray(result.questions)) {
     throw new Error('Invalid response format: questions array is missing.');
   }
