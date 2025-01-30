@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { motion } from "framer-motion"
 
 import QuizPDFDownload from "../../course/components/QuizPDFDownload"
+import { useSubscription } from "@/hooks/useSubscription"
 
 interface QuizActionsToolbarProps {
   quizId: string
@@ -46,6 +47,7 @@ export function QuizActions({
   const [isDeleteLoading, setIsDeleteLoading] = useState(false)
   const [data, setData] = useState<any | null>(null)
   const router = useRouter()
+  const { subscriptionStatus, isLoading } = useSubscription();
 
   useEffect(() => {
     const fetchQuizState = async () => {
@@ -87,9 +89,8 @@ export function QuizActions({
         setIsFavorite(updatedQuiz.isFavorite)
         toast({
           title: "Quiz updated",
-          description: `Your quiz is now ${updatedQuiz.isPublic ? "public" : "private"}${
-            data.isFavorite !== undefined ? ` and ${updatedQuiz.isFavorite ? "favorited" : "unfavorited"}` : ""
-          }.`,
+          description: `Your quiz is now ${updatedQuiz.isPublic ? "public" : "private"}${data.isFavorite !== undefined ? ` and ${updatedQuiz.isFavorite ? "favorited" : "unfavorited"}` : ""
+            }.`,
           variant: "success",
         })
       } else {
@@ -250,17 +251,18 @@ export function QuizActions({
         </Tooltip>
       </TooltipProvider>
 
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-           <QuizPDFDownload quizData={data} />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Download quiz as PDF</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
+      {subscriptionStatus?.subscriptionPlan === "PRO" && !isLoading && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <QuizPDFDownload quizData={data} />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Download quiz as PDF</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button
