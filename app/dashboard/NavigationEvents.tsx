@@ -1,27 +1,31 @@
-"use client"
+"use client";
 
-import { usePathname } from "next/navigation"
-import { useLoaderContext } from "../providers/LoadingContext"
-import { useEffect } from "react"
-
-
+import { useEffect } from "react";
+import { useLoaderContext } from "../providers/laderContext";
+import { usePathname } from "next/navigation";
 
 export function NavigationEvents() {
-  const pathname = usePathname()
-  const { setLoading } = useLoaderContext()
+  const pathname = usePathname(); // ✅ Ensure slug changes trigger effects
+  const { startNavigation, completeNavigation } = useLoaderContext();
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search)
-    const url = pathname + searchParams.toString()
-    setLoading(true)
+    const handleStart = () => startNavigation();
+    const handleComplete = () => completeNavigation();
 
-    // You can add a small delay here if you want to show the loader for a minimum time
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 300)
+    window.addEventListener("beforeunload", handleStart);
+    window.addEventListener("load", handleComplete);
 
-    return () => clearTimeout(timer)
-  }, [pathname, setLoading])
+    return () => {
+      window.removeEventListener("beforeunload", handleStart);
+      window.removeEventListener("load", handleComplete);
+    };
+  }, [startNavigation, completeNavigation]); // ✅ Removed unused dependencies
 
-  return null
+  useEffect(() => {
+    startNavigation();
+    const timer = setTimeout(() => completeNavigation(), 300);
+    return () => clearTimeout(timer);
+  }, [startNavigation, completeNavigation,pathname]); // ✅ Removed unused dependencies
+
+  return null;
 }

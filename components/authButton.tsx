@@ -27,7 +27,7 @@ export function AuthButton({ provider, logo, text, callbackUrl }: AuthButtonProp
   }
 
   return (
-    <Suspense fallback={<>Loading...</>}>
+    <Suspense fallback={null}>
       <motion.button
         onClick={handleClick}
         disabled={isLoading}

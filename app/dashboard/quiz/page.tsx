@@ -1,17 +1,14 @@
-import { getPublicQuizzes } from "@/lib/db"
+
 import type { Metadata } from "next"
-import { getAuthSession } from "@/lib/authOptions"
 import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { Sparkles, BookOpen, Lightbulb } from 'lucide-react'
-import Link from "next/link"
+
 
 const Page = async () => {
-  const session = await getAuthSession()
-  const isLoggedIn = !!session?.user
 
-  const publicQuizzes = await getPublicQuizzes()
+
 
   return (
     <div className="container mx-auto py-6 space-y-8">

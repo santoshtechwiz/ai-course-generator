@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster"
 import Navbar from "@/app/components/shared/Navbar"
 import Footer from "@/app/components/shared/Footer"
 import { ClientLayoutWrapper } from "../components/ClientLayoutWrapper"
+import { LoadingBar } from "../components/Loadingbar"
 
 export default function DashboardLayout({
   children,
@@ -15,7 +16,7 @@ export default function DashboardLayout({
         <Navbar />
         <main className="flex-1">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+            <Suspense fallback={<LoadingBar />}>{children}</Suspense>
           </div>
         </main>
         <Footer />
