@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,6 +14,7 @@ interface QuizQuestionProps {
   question: {
     id: number
     question: string
+    answer: string
     openEndedQuestion: {
       hints: string | string[]
       difficulty: string
@@ -27,13 +28,44 @@ interface QuizQuestionProps {
 
 export default function QuizQuestion({ question, onAnswer, questionNumber, totalQuestions }: QuizQuestionProps) {
   const [answer, setAnswer] = useState("")
-  const [showHints, setShowHints] = useState(false)
+  const [showHints, setShowHints] = useState<boolean[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [hintLevel, setHintLevel] = useState(0)
 
-  const hints = Array.isArray(question.openEndedQuestion.hints)
-    ? question.openEndedQuestion.hints
-    : question.openEndedQuestion.hints.split("|")
+  const hints = useMemo(() => {
+    const baseHints = Array.isArray(question.openEndedQuestion.hints)
+      ? question.openEndedQuestion.hints
+      : question.openEndedQuestion.hints.split("|")
+
+    const correctAnswer = question.answer.toLowerCase()
+    const words = correctAnswer.split(/\s+/)
+    const sentenceCount = correctAnswer.split(/[.!?]+/).length
+
+    const contextualHints = [
+      `This answer relates to ${Array.isArray(question.openEndedQuestion.tags) ? question.openEndedQuestion.tags.join(", ") : question.openEndedQuestion.tags}.`,
+      `The response is approximately ${words.length} words long.`,
+      `The answer consists of ${sentenceCount} sentence${sentenceCount > 1 ? "s" : ""}.`,
+      `Key concepts to consider: ${baseHints[0]}`,
+      `Think about the ${question.openEndedQuestion.difficulty} level terminology related to this topic.`,
+    ]
+
+    const structuralHints = [
+      `The first sentence starts with "${words[0]}".`,
+      `The last sentence ends with "${words[words.length - 1]}".`,
+      `Important phrases in the answer include: "${words.slice(Math.floor(words.length / 3), Math.floor(words.length / 3) + 3).join(" ")}"`,
+      `Another key phrase is: "${words.slice(Math.floor((words.length * 2) / 3), Math.floor((words.length * 2) / 3) + 3).join(" ")}"`,
+    ]
+
+    const detailedHints = baseHints.slice(1).map((hint) => `Additional information: ${hint}`)
+
+    return [...contextualHints, ...structuralHints, ...detailedHints]
+  }, [
+    question.openEndedQuestion.hints,
+    question.answer,
+    question.openEndedQuestion.tags,
+    question.openEndedQuestion.difficulty,
+  ])
 
   const tags = Array.isArray(question.openEndedQuestion.tags)
     ? question.openEndedQuestion.tags
@@ -41,15 +73,29 @@ export default function QuizQuestion({ question, onAnswer, questionNumber, total
 
   useEffect(() => {
     setProgress((questionNumber / totalQuestions) * 100)
-  }, [questionNumber, totalQuestions])
+    setShowHints(Array(hints.length).fill(false))
+    setHintLevel(0)
+  }, [questionNumber, totalQuestions, hints.length])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
     await new Promise((resolve) => setTimeout(resolve, 500)) // Animation delay
     onAnswer(answer)
     setAnswer("")
-    setShowHints(false)
+    setShowHints(Array(hints.length).fill(false))
+    setHintLevel(0)
     setIsSubmitting(false)
+  }
+
+  const handleProgressiveHint = () => {
+    if (hintLevel < hints.length) {
+      setShowHints((prev) => {
+        const newHints = [...prev]
+        newHints[hintLevel] = true
+        return newHints
+      })
+      setHintLevel((prev) => prev + 1)
+    }
   }
 
   const getDifficultyColor = (difficulty: string) => {
@@ -128,36 +174,31 @@ export default function QuizQuestion({ question, onAnswer, questionNumber, total
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowHints(!showHints)}
+              onClick={handleProgressiveHint}
+              disabled={hintLevel >= hints.length}
               className="w-full sm:w-auto hover:bg-primary hover:text-primary-foreground"
             >
               <LightbulbIcon className="w-4 h-4 mr-2" />
-              {showHints ? "Hide Hints" : "Show Hints"}
+              {hintLevel === 0 ? "Get Hint" : `Next Hint (${hintLevel}/${hints.length})`}
             </Button>
             <AnimatePresence>
-              {showHints && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <ul className="space-y-2 mt-2">
-                    {hints.map((hint, index) => (
-                      <motion.li
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-start gap-2 text-sm text-muted-foreground bg-secondary/10 p-2 rounded"
-                      >
+              {showHints.map(
+                (show, index) =>
+                  show && (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex items-start gap-2 text-sm text-muted-foreground bg-secondary/10 p-2 rounded mt-2">
                         <CheckCircleIcon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span>{hint}</span>
-                      </motion.li>
-                    ))}
-                  </ul>
-                </motion.div>
+                        <span>{hints[index]}</span>
+                      </div>
+                    </motion.div>
+                  ),
               )}
             </AnimatePresence>
           </div>

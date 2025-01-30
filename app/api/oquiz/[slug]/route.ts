@@ -1,12 +1,13 @@
 
 
-import { type NextRequest, NextResponse } from "next/server"
+import {  NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/authOptions"
 import { prisma } from "@/lib/db"
 
-export async function GET(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
+
+export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    const { slug } = await props.params
+    const slug = (await params).slug;
 
     if (!slug) {
       return NextResponse.json({ error: "Quiz slug is required" }, { status: 400 })
@@ -25,9 +26,9 @@ export async function GET(request: NextRequest, props: { params: Promise<{ slug:
       const session = await getAuthSession()
       const userId = session?.user.id
 
-      if (!userId || userId !== quiz.userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      }
+      // if (!userId || userId !== quiz.userId) {
+      //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      // }
     }
 
     const result = await prisma.userQuiz.findFirst({

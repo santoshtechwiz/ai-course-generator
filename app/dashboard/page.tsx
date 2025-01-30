@@ -19,19 +19,19 @@ import { UserStatsOverview } from "./course/components/UserDashboard/UserStatsOv
 
 export const dynamic = 'force-dynamic'
 
-function LoadingCard() {
-  return (
-    <Card className="p-4 bg-card text-card-foreground shadow-sm rounded-lg">
-      <CardHeader>
-        <Skeleton className="h-6 w-2/3" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-4 w-full mb-2" />
-        <Skeleton className="h-4 w-3/4" />
-      </CardContent>
-    </Card>
-  );
-}
+// function LoadingCard() {
+//   return (
+//     <Card className="p-4 bg-card text-card-foreground shadow-sm rounded-lg">
+//       <CardHeader>
+//         <Skeleton className="h-6 w-2/3" />
+//       </CardHeader>
+//       <CardContent>
+//         <Skeleton className="h-4 w-full mb-2" />
+//         <Skeleton className="h-4 w-3/4" />
+//       </CardContent>
+//     </Card>
+//   );
+// }
 
 export default async function DashboardPage() {
   const session = await getAuthSession();
@@ -100,44 +100,44 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <UserProfile user={userData} />
             </Suspense>
 
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <CourseProgress
                 courses={userData.courseProgress}
                 stats={userStats}
               />
             </Suspense>
 
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <MyCourses courses={userData.courses} />
             </Suspense>
 
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <MyQuizzes quizzes={userData.userQuizzes} />
             </Suspense>
 
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <QuizAttempts quizAttempts={userData.quizAttempts} />
             </Suspense>
           </div>
 
           <div className="space-y-6">
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <UserStatsOverview stats={userStats} />
             </Suspense>
 
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <QuizHistory quizzes={userData.userQuizzes} />
             </Suspense>
 
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <FavoriteCourses favorites={userData.favorites} />
             </Suspense>
 
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <AIRecommendations
                 courses={userData.courses}
                 courseProgress={userData.courseProgress}
@@ -145,7 +145,7 @@ export default async function DashboardPage() {
               />
             </Suspense>
 
-            <Suspense fallback={<LoadingCard />}>
+            <Suspense>
               <SubscriptionStatus subscription={userData.subscriptions} />
             </Suspense>
           </div>

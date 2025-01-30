@@ -1,20 +1,21 @@
 import { Suspense } from "react"
-import { ExploreQuizzes } from "./components/ExploreQuizzes"
-import { getQuizzes } from "@/lib/db"
+import { PublicQuizzes } from "./components/PublicQuizzes"
+import { getQuizzes } from "@/app/actions/getQuizes"
 
 
 export const dynamic = "force-dynamic"
 
-export default async function QuizPage() {
-  const initialQuizzes = await getQuizzes()
+const QuizPage=async()=> {
+  const initialQuizzesData = await getQuizzes(1, 10)
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-center text-primary">Explore Quizzes</h1>
       <Suspense fallback={<div>Loading...</div>}>
-        <ExploreQuizzes initialQuizzes={initialQuizzes} />
+        <PublicQuizzes initialQuizzesData={initialQuizzesData} />
       </Suspense>
     </div>
   )
 }
+export default QuizPage;
 
