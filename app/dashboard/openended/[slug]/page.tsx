@@ -4,16 +4,15 @@ import { notFound } from "next/navigation"
 import QuizPage from "./QuizPage"
 
 
-
 async function getQuizData(slug: string) {
   try {
-    const response = await fetch(`/api/oquiz/${slug}`);
-    const data = await response.json();
 
-    return data;
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/oquiz/${slug}`)
+    const data = await response.json()
+    return data
   } catch (error) {
-    console.error("Error fetching quiz data:", error);
-    return null;
+    console.error("Error fetching quiz data:", error)
+    return null
   }
 }
 
