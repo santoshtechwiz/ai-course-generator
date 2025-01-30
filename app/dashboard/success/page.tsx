@@ -2,7 +2,6 @@ import { Suspense } from "react"
 import { SuccessContent } from "./components/SuccessContent"
 import { Skeleton } from "@/components/ui/skeleton" // Shadcn Skeleton for loading state
 import { Card } from "@/components/ui/card" // Shadcn Card for container styling
-import { Button } from "@/components/ui/button" // Shadcn Button for interactions (if needed)
 
 export default function SuccessPage() {
   return (

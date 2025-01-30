@@ -1,9 +1,10 @@
 import CourseCreationVideo from "@/app/components/landing/CourseCreationVideo";
 import ConfirmChapters from "../../course/components/ConfirmChapters";
 import { getAuthSession } from "@/lib/authOptions";
-import { getCourses, prisma } from "@/lib/db";
+
 import { redirect } from "next/navigation";
 import React from "react";
+import { getCourses } from "@/app/actions/getCourses";
 
 export const fetchCache = "force-no-store";
 type Props = {

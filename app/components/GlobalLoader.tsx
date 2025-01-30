@@ -17,7 +17,7 @@ export const GlobalLoader: React.FC<GlobalLoaderProps> = ({ loading }) => {
           color="#4fa94d"
           ariaLabel="watch-loading"
         />
-        {/* Add any toast or notification here */}
+       
       </div>
     );
   }

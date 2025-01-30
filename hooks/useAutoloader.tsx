@@ -1,14 +1,10 @@
 "use client"
 
+import { useLoaderContext } from "@/app/providers/laderContext"
 import { useEffect } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
-import { useLoaderContext } from "@/app/providers/LoadingContext"
-
 
 
 export const useAutoLoader = () => {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const { setLoading } = useLoaderContext()
 
   useEffect(() => {
@@ -27,7 +23,9 @@ export const useAutoLoader = () => {
   }, [setLoading])
 
   useEffect(() => {
-    setLoading(false)
+    setLoading(true)
+    const timer = setTimeout(() => setLoading(false), 300)
+    return () => clearTimeout(timer)
   }, [setLoading])
 }
 

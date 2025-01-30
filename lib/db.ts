@@ -30,57 +30,7 @@ export const createCourse = async (data: Prisma.CourseCreateInput) => {
   }
 };
 
-// Get all courses
-export const getCourses = async (slug: string) => {
-  try {
-    const course = await prisma.course.findUnique({
-      where: {
-        slug: slug, // Querying by slug instead of id
-      },
-      include: {
-        courseUnits: {
-          include: {
-            chapters: true, // Ensure the chapter relationship is included
-          },
-        },
-      },
-    });
-    return course;
-  } catch (error) {
-    console.error("Error fetching courses:", error);
 
-  }
-  return null;
-};
-
-export async function getPublicQuizzes() {
-  try {
-    const quizzes = await prisma.userQuiz.findMany({
-      select: {
-        id: true,
-        topic: true,
-        slug: true,
-        _count: {
-          select: {
-            questions: true,
-          },
-        },
-      },
-      where: { isPublic: true },
-      take: 10,
-    });
-
-    return quizzes.map((quiz) => ({
-      id: quiz.id,
-      topic: quiz.topic,
-      totalQuestions: quiz._count.questions,
-      slug: quiz.slug || "",
-    }));
-  } catch (error) {
-    console.error("Error fetching public quizzes:", error);
-    return [];
-  }
-}
 
 // Fetch course details
 export async function getCourseDetails(): Promise<any[]> {

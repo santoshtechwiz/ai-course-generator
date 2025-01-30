@@ -1,4 +1,4 @@
-import { NavItem } from '@/app/types'
+
 import { Cpu, Brain, Sparkles, Zap, CreditCard } from 'lucide-react'
 
 export const navItems = [
@@ -36,3 +36,12 @@ export const navItems = [
   },
 ] as NavItem[]
 
+interface NavItem {
+  name: string
+  href: string
+  icon: any
+  subItems: SubItem[]
+}
+interface SubItem {
+
+}
