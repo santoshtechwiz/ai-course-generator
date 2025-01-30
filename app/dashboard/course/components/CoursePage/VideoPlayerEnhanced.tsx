@@ -17,6 +17,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Maximize2, Minimize2, Settings } from 'lucide-react'
 import { formatTime, getVideoQualityOptions, PLAYBACK_SPEEDS } from '@/lib/utils'
+import Logo from '@/app/components/shared/Logo'
 
 interface VideoPlayerProps {
   videoId: string
@@ -33,7 +34,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   autoPlay = false,
   onProgress,
   initialTime = 0,
-  brandLogo = '/logo.svg', // Default SVG logo
+  brandLogo = <Logo></Logo>
 }) => {
   const [playing, setPlaying] = useState(autoPlay)
   const [volume, setVolume] = useState(0.8)
@@ -148,7 +149,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Brand Logo */}
         <div className="absolute top-4 right-4 z-10">
-          <img src={brandLogo} alt="Brand Logo" className="w-12 h-12 object-contain" />
+          <Logo></Logo>
         </div>
 
         {/* Next Video Overlay */}

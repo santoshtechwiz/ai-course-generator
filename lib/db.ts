@@ -1,12 +1,6 @@
 
 import { PrismaClient, Prisma } from '@prisma/client';
 
-import { Course, FullCourseType, QuizListItem, QuizWithQuestionsAndTags,  } from '@/app/types';
-
-
-
-import { neon } from "@neondatabase/serverless";
-
 // Create a global object to store the Prisma client instance (for Next.js Fast Refresh)
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
@@ -18,7 +12,7 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     datasources: {
-      
+
       db: {
         url: databaseUrl,
       },
@@ -48,57 +42,7 @@ export const createCourse = async (data: Prisma.CourseCreateInput) => {
 
 
 
-// Fetch course details
-export async function getCourseDetails(): Promise<any[]> {
-  const courses = await prisma.course.findMany({
-    orderBy: { id: "asc" },
-    where: { isPublic: true },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      category: { select: { name: true } },
-      courseUnits: {
-        select: {
-          chapters: {
-            select: { id: true },
-          },
-        },
-      },
-    },
-    take: 5,
-  });
 
-  // Map through courses to structure the result
-  return courses.map((course) => {
-    const totalUnits = (course.courseUnits || []).length;
-    const totalChapters = (course.courseUnits || []).reduce(
-      (sum: number, section: { chapters: { id: number }[] }) => sum + section.chapters.length,
-      0
-    );
-
-    return {
-      id: course.id,
-      courseName: course.name,
-      totalUnits,
-      totalChapters,
-      category: course.category?.name || null,
-      slug: course.slug || "",
-    };
-  });
-}
-
-// Get a single course by ID
-export const getCourseById = async (id: number) => {
-  try {
-    return await prisma.course.findUnique({
-      where: { id },
-    });
-  } catch (error) {
-    console.error("Error fetching course by ID:", error);
-    throw error;
-  }
-};
 
 // Get a single course by slug
 export const getCourseBySlug = async (slug: string) => {
@@ -241,7 +185,7 @@ export async function fetchSlug(type: "course" | "mcq" | 'openended', id: string
       });
       return course?.slug || null;
     }
-    if(type === "mcq" || type === "openended") {
+    if (type === "mcq" || type === "openended") {
       const quiz = await prisma.userQuiz.findUnique({
         where: { id: parseInt(id, 10) },
         select: { slug: true },
@@ -304,27 +248,6 @@ export async function getUserWithCourses(userId: string) {
 }
 
 
-
-
-
-
-export async function getCourse(slug: string): Promise<Course | null> {
-  return await prisma.course.findFirst({
-    where: { slug },
-    include: {
-      courseUnits: {
-        include: {
-          chapters: true,
-        },
-      },
-      courseProgress: {
-        include: {
-          user: true,
-        },
-      },
-    },
-  });
-}
 
 
 
@@ -444,74 +367,7 @@ export async function clearExpiredSessions() {
 
 
 
-export async function getCourseData(slug: string): Promise<FullCourseType | null> {
-  const course = await prisma.course.findFirst({
-    where: { slug },
-    include: {
-      category: true,
-      courseUnits: {
-        include: {
-          chapters: {
-            include: {
-              courseQuizzes: true,
-            },
-          },
-        },
-      },
-      courseProgress: {
-        include: {
-          user: true,
-        },
-      },
-    },
-  });
 
-  if (!course) return null;
-
-  // Fetch quiz attempts for all questions in the course
-  const quizAttempts = await prisma.userQuizAttempt.findMany({
-    where: {
-      userQuiz: {
-        questions: {
-          some: {
-            userQuizId: course.id,
-          },
-        },
-      },
-    },
-    include: {
-      user: true,
-      userQuiz: {
-        include: {
-          questions: true,
-        },
-      },
-      attemptQuestions: true,
-    },
-  });
-
-  const fullCourse: FullCourseType = {
-    
-    ...course,
-    courseUnits: course.courseUnits.map(unit => ({
-      ...unit,
-      chapters: unit.chapters.map(chapter => ({
-        ...chapter,
-        questions: chapter.courseQuizzes.map(question => ({
-          ...question,
-          attempts: quizAttempts
-            .filter(attempt => attempt.userQuiz.questions.some(q => q.id === question.id))
-            .map(attempt => ({
-              ...attempt,
-              attemptQuestions: attempt.attemptQuestions.filter(aq => aq.questionId === question.id),
-            })),
-        })),
-      })),
-    })),
-  };
-
-  return fullCourse;
-}
 export async function fetchRandomQuizzes(count: number = 3) {
   try {
     const quizzes = await prisma.userQuiz.findMany({
@@ -526,15 +382,15 @@ export async function fetchRandomQuizzes(count: number = 3) {
       orderBy: {
         createdAt: 'desc',
       },
-      take: 100, 
+      take: 100,
     })
 
     // Shuffle the quizzes and take the requested count
     const shuffled = quizzes.sort(() => 0.5 - Math.random())
     return shuffled.slice(0, count) || [];
   } catch (error) {
-      return [];
-    
+    return [];
+
   }
 }
 

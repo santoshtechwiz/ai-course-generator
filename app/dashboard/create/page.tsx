@@ -1,8 +1,9 @@
 import { QuizWrapper } from "@/components/QuizWrapper";
 import PopularCourses from "./components/PopularCourses";
 import RandomQuote from "@/components/RandomQuote";
-import { getCourseDetails } from "@/lib/db";
+
 import { Sparkles, BookOpen, Lightbulb } from "lucide-react";
+import { getCourseDetails } from "@/app/actions/getCourseDetails";
 
 const Page = async ({ searchParams }: { searchParams: Promise<{ topic?: string }> }) => {
   const topic = (await searchParams)?.topic || "";

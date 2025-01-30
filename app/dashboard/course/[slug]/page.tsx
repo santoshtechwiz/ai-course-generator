@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getCourseData } from "@/lib/db";
+;
 
 import CourseStructuredData from "../components/CoursePage/CourseStructuredData";
 import { Skeleton } from "@/components/ui/skeleton";
 import CoursePage from "../components/CoursePage/CoursePage";
+import { getCourseData } from "@/app/actions/getCourseData";
 
 
 function LoadingSkeleton() {
