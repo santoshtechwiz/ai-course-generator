@@ -74,10 +74,10 @@ async function updateTopicCount(topic: string) {
   });
 }
 
-async function fetchQuizQuestions(amount: number, topic: string, type: QuizType, difficulty: string) {
+async function fetchQuizQuestions(amount: number, topic: string, type: QuizType, difficulty: string,userType) {
   const { data } = await axios.post<MCQQuestion[] | OpenEndedQuestion[]>(
     `${process.env.NEXTAUTH_URL}/api/quiz`,
-    { amount, topic, type, difficulty },
+    { amount, topic, type, difficulty,userType },
     { headers: { 'Content-Type': 'application/json' } }
   );
   return data;
@@ -114,11 +114,11 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { topic, type, amount, difficulty } = quizCreationSchema.parse(body);
+    const { topic, type, amount, difficulty,userType } = quizCreationSchema.parse(body);
     const slug = generateSlug(topic);
 
     // 1. First fetch questions to ensure we can create a quiz
-    const questions = await fetchQuizQuestions(amount, topic, type, difficulty);
+    const questions = await fetchQuizQuestions(amount, topic, type, difficulty,userType);
     if (questions.length === 0) {
       return NextResponse.json(
         { error: "No questions were generated for the given topic." },

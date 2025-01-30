@@ -22,6 +22,7 @@ import { usePersistentState } from "@/hooks/usePersistentState"
 import { motion } from "framer-motion"
 import { SignInBanner } from "./SignInBanner"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 type QuizFormData = z.infer<typeof quizSchema>
 
@@ -37,12 +38,15 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
-
+  const {subscriptionStatus} =useSubscriptionStore();
+  
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     topic: "",
     amount: maxQuestions,
     difficulty: "medium",
+   
   })
+  formData.userType=subscriptionStatus?.subscriptionPlan;
   const {
     control,
     register,
@@ -55,6 +59,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
     defaultValues: formData,
   })
   React.useEffect(() => {
+   
     const subscription = watch((value) => setFormData(value as QuizFormData))
     return () => subscription.unsubscribe()
   }, [watch, setFormData])

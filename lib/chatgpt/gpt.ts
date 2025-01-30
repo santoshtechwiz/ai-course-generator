@@ -18,14 +18,14 @@ export const openai = new OpenAI({
 export async function generateQuestions(req: unknown): Promise<{ questions: Question[] }> {
   try {
     // Validate the input using Zod
-    const { amount, topic, type,difficulty } = getQuestionsSchema.parse(req);
+    const { amount, topic, type,difficulty,userType } = getQuestionsSchema.parse(req);
 
     console.log(`Generating ${amount} ${type} questions about ${topic}`);
 
     // Generate questions based on the type
     const questions = type === 'mcq'
-      ? await generateMcqForUserInput(topic, amount,difficulty)
-      : await generateOpenEnded(topic, amount);
+      ? await generateMcqForUserInput(topic, amount,difficulty,userType)
+      : await generateOpenEnded(topic, amount,userType);
 
    
     return  questions ;

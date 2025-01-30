@@ -233,3 +233,13 @@ export interface CreateQuizCardConfig {
   animationDuration?: number
   className?: string
 }
+
+export interface MCQQuestion{
+
+}
+export interface OpenEndedQuestion{
+
+}
+export interface QuizType{
+  
+}

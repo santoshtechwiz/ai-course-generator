@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, Star, Trash2, Share2, Download } from "lucide-react"
+import { Eye, Star, Trash2, Share2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +47,7 @@ export function QuizActions({
   const [isDeleteLoading, setIsDeleteLoading] = useState(false)
   const [data, setData] = useState<any | null>(null)
   const router = useRouter()
-  const { subscriptionStatus, isLoading } = useSubscription();
+  const { subscriptionStatus, isLoading } = useSubscription()
 
   useEffect(() => {
     const fetchQuizState = async () => {
@@ -56,7 +56,7 @@ export function QuizActions({
         if (response.ok) {
           const quizData = await response.json()
           console.log(quizData)
-          console.log(quizData.quizData);
+          console.log(quizData.quizData)
           setData(quizData.quizData)
           setIsPublic(quizData.isPublic)
           setIsFavorite(quizData.isFavorite)
@@ -84,13 +84,14 @@ export function QuizActions({
       })
       if (response.ok) {
         const updatedQuiz = await response.json()
-        setData(updatedQuiz.quizData);
+        setData(updatedQuiz.quizData)
         setIsPublic(updatedQuiz.isPublic)
         setIsFavorite(updatedQuiz.isFavorite)
         toast({
           title: "Quiz updated",
-          description: `Your quiz is now ${updatedQuiz.isPublic ? "public" : "private"}${data.isFavorite !== undefined ? ` and ${updatedQuiz.isFavorite ? "favorited" : "unfavorited"}` : ""
-            }.`,
+          description: `Your quiz is now ${updatedQuiz.isPublic ? "public" : "private"}${
+            data.isFavorite !== undefined ? ` and ${updatedQuiz.isFavorite ? "favorited" : "unfavorited"}` : ""
+          }.`,
           variant: "success",
         })
       } else {
@@ -167,133 +168,114 @@ export function QuizActions({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-wrap items-center justify-between gap-2 mb-5 mt-5 p-3 bg-card rounded-lg shadow-md"
+      className="space-y-4"
     >
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={isPublic ? "default" : "secondary"}
-              size="sm"
-              onClick={togglePublic}
-              disabled={isPublicLoading}
-              className="flex-1 md:flex-none md:w-28 transition-all duration-300"
-            >
-              {isPublicLoading ? (
-                <span className="loader"></span>
-              ) : (
-                <>
-                  {isPublic ? (
-                    <Eye className="h-4 w-4 md:mr-2" />
-                  ) : (
-                    <EyeOff className="h-4 w-4 md:mr-2" />
-                  )}
-                  <span className="hidden md:inline">{isPublic ? "Public" : "Private"}</span>
-                </>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{isPublic ? "Make quiz private" : "Make quiz public"}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={isFavorite ? "default" : "secondary"}
-              size="sm"
-              onClick={toggleFavorite}
-              disabled={isFavoriteLoading}
-              className="flex-1 md:flex-none md:w-28 transition-all duration-300"
-            >
-              {isFavoriteLoading ? (
-                <span className="loader"></span>
-              ) : (
-                <>
-                  <Star className={`h-4 w-4 md:mr-2 ${isFavorite ? "fill-white" : ""}`} />
-                  <span className="hidden md:inline">{isFavorite ? "Favorited" : "Favorite"}</span>
-                </>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleShare}
-              disabled={isShareLoading}
-              className="flex-1 md:flex-none md:w-28 transition-all duration-300"
-            >
-              {isShareLoading ? (
-                <span className="loader"></span>
-              ) : (
-                <>
-                  <Share2 className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Share</span>
-                </>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Copy share link</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      {subscriptionStatus?.subscriptionPlan === "PRO" && !isLoading && (
+      <div className="flex items-center justify-start space-x-2 bg-muted p-2 rounded-md overflow-x-auto">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <QuizPDFDownload quizData={data} />
+              <Button
+                variant={isPublic ? "default" : "secondary"}
+                size="icon"
+                onClick={togglePublic}
+                disabled={isPublicLoading}
+                className="w-10 h-10 transition-all duration-300"
+              >
+                {isPublicLoading ? <span className="loader"></span> : <Eye className="h-4 w-4" />}
+              </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Download quiz as PDF</p>
+              <p>
+                {isPublic ? "Public" : "Private"} - Click to {isPublic ? "make private" : "make public"}
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      )}
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={isDeleteLoading}
-            className="flex-1 md:flex-none md:w-28 transition-all duration-300"
-          >
-            {isDeleteLoading ? (
-              <span className="loader"></span>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Delete</span>
-              </>
-            )}
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your quiz and remove it from our servers.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={isFavorite ? "default" : "secondary"}
+                size="icon"
+                onClick={toggleFavorite}
+                disabled={isFavoriteLoading}
+                className="w-10 h-10 transition-all duration-300"
+              >
+                {isFavoriteLoading ? (
+                  <span className="loader"></span>
+                ) : (
+                  <Star className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {isFavorite ? "Favorited" : "Favorite"} - Click to{" "}
+                {isFavorite ? "remove from favorites" : "add to favorites"}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleShare}
+                disabled={isShareLoading}
+                className="w-10 h-10 transition-all duration-300"
+              >
+                {isShareLoading ? <span className="loader"></span> : <Share2 className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Share - Click to copy share link</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {subscriptionStatus?.subscriptionPlan === "PRO" && !isLoading && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <QuizPDFDownload quizData={data} />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Download - Click to download as PDF</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="destructive"
+              size="icon"
+              disabled={isDeleteLoading}
+              className="w-10 h-10 transition-all duration-300"
+            >
+              {isDeleteLoading ? <span className="loader"></span> : <Trash2 className="h-4 w-4" />}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your quiz and remove it from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </motion.div>
   )
 }
+
