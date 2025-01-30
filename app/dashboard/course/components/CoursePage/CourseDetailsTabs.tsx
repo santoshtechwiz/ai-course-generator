@@ -9,6 +9,8 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import dynamic from "next/dynamic"
 import ConfettiExplosion from "react-confetti-explosion"
 import { FullChapterType, FullCourseType } from "@/app/types"
+import { PDFViewer } from "@react-pdf/renderer"
+import PDFGenerator from "@/app/components/shared/PDFGenerator"
 
 export interface CourseDetailsTabsProps {
   chapterId: number
@@ -121,8 +123,8 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
                     chapterId={chapterId}
                     name={name}
                     onSummaryReady={handleSummaryReady}
-                    onError={handleError}
                   />
+                  
                 </TabsContent>
                 <TabsContent value="quiz" className="mt-0">
                   {planId === "PREMIUM" ? (
