@@ -10,6 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import AIEmoji from "../AIEmoji"
+import PDFGenerator from "@/app/components/shared/PDFGenerator"
+
 
 interface CourseAISummaryProps {
   chapterId: number
@@ -71,11 +73,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
   }, [chapterId, onSummaryReady, retryCount])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchSummary()
-    }, INITIAL_DELAY)
-
-    return () => clearTimeout(timer)
+    fetchSummary()
   }, [fetchSummary])
 
   const enhancedMarkdownRenderer = useCallback(({ children }: { children: React.ReactNode }) => {
@@ -128,7 +126,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
           transition={{ duration: 0.3 }}
           className="space-y-4"
         >
-          <div className="flex items-center space-x-2 text-red-500">
+          <div className="flex items-center space-x-2 text-destructive">
             <AlertCircle size={20} />
             <p className="font-semibold">Error retrieving content</p>
           </div>
@@ -138,7 +136,9 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
           {retryCountdown > 0 ? (
             <p className="text-sm text-muted-foreground">Retrying in {retryCountdown} seconds...</p>
           ) : (
-            <Button onClick={fetchSummary}>Retry Now</Button>
+            <Button variant="secondary" onClick={fetchSummary}>
+              Retry Now
+            </Button>
           )}
         </motion.div>
       )
@@ -153,7 +153,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
           className="space-y-4"
         >
           <h2 className="text-3xl font-bold mb-6">{name}</h2>
-          <Card>
+          <Card className="bg-card">
             <CardContent className="p-6">
               <ReactMarkdown
                 className="prose lg:prose-xl dark:prose-invert max-w-none"
@@ -210,13 +210,15 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
         className="space-y-4"
       >
         <p className="text-muted-foreground">No content available at the moment. Please try again later.</p>
-        <Button onClick={fetchSummary}>Retry</Button>
+        <Button variant="secondary" onClick={fetchSummary}>
+          Retry
+        </Button>
       </motion.div>
     )
-  }, [isLoading, error, data, retryCount, name, fetchSummary, showAIEmoji]) // Removed unnecessary dependency: enhancedMarkdownRenderer
+  }, [isLoading, error, data, retryCount, name, fetchSummary, showAIEmoji, retryCountdown]) // Added retryCountdown to dependencies
 
   return (
-    <div className="relative">
+    <div className="relative space-y-4">
       <AnimatePresence mode="wait">
         <motion.div
           key={
@@ -230,6 +232,11 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
           {content}
         </motion.div>
       </AnimatePresence>
+      {data?.success && data.data && (
+        <div className="mt-4">
+          <PDFGenerator markdown={data.data} chapterName={name} />
+        </div>
+      )}
     </div>
   )
 }
