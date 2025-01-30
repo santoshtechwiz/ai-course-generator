@@ -14,74 +14,81 @@ interface Quiz {
 }
 
 
-export const generateOpenEndedQuiz = async (
-  topic: string,
-  amount: number = 5,
-  difficulty: string = 'medium'
-): Promise<Quiz> => {
+
+export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficulty = "medium"): Promise<Quiz> => {
   const functions = [
     {
-      name: 'createOpenEndedQuiz',
-      description: 'Create an openended quiz based on a given topic',
+      name: "createOpenEndedQuiz",
+      description: "Create a concise open-ended quiz based on a given topic",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
-          quiz_title: { type: 'string' },
+          quiz_title: { type: "string" },
           questions: {
-            type: 'array',
+            type: "array",
             items: {
-              type: 'object',
+              type: "object",
               properties: {
-                question: { type: 'string' },
-                correct_answer: { type: 'string' },
-                hints: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Two hints for the question'
+                question: {
+                  type: "string",
+                  description: "A brief, clear question (max 15 words)",
                 },
-                difficulty: { 
-                  type: 'string',
-                  enum: ['Easy', 'Medium', 'Hard']
+                correct_answer: {
+                  type: "string",
+                  description: "A concise answer (max 5 words)",
+                },
+                hints: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                    description: "Short hint (max 8 words)",
+                  },
+                  description: "Two brief hints for the question",
+                },
+                difficulty: {
+                  type: "string",
+                  enum: ["Easy", "Medium", "Hard"],
                 },
                 tags: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Two relevant tags for the question'
-                }
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Two relevant tags for the question",
+                },
               },
-              required: ['question', 'correct_answer', 'hints', 'difficulty', 'tags'],
+              required: ["question", "correct_answer", "hints", "difficulty", "tags"],
             },
           },
         },
-        required: ['quiz_title', 'questions'],
+        required: ["quiz_title", "questions"],
       },
     },
-  ];
+  ]
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: "gpt-4o-mini",
     messages: [
-      { 
-        role: 'system', 
-        content: 'You are an AI that generates insightful openended quizzes based on a given topic. Focus on creating questions that encourage critical thinking and test knowledge.' 
+      {
+        role: "system",
+        content:
+          "You are an AI that generates concise, engaging open-ended quizzes. Create short questions with brief, easy-to-type answers. Focus on key concepts and avoid overly complex language. Aim for questions that can be answered in a few words.",
       },
       {
-        role: 'user',
-        content: `Generate an openended quiz about ${topic} with ${amount} questions. The quiz should have a title, and each question should have a correct answer, two hints, a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions.`,
+        role: "user",
+        content: `Generate a concise open-ended quiz about ${topic} with ${amount} questions. The quiz should have a short title. Each question should be brief (max 150 words) with a concise answer (max 200 words), two short hints (max 8 words each), a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions. Prioritize questions that can be answered with a single word or a very short phrase.`,
       },
     ],
     functions,
-    function_call: { name: 'createOpenEndedQuiz' },
-  });
+    function_call: { name: "createOpenEndedQuiz" },
+  })
 
-  const result = JSON.parse(response.choices[0].message?.function_call?.arguments || '{}');
-  
+  const result = JSON.parse(response.choices[0].message?.function_call?.arguments || "{}")
+
   if (!result.quiz_title || !result.questions || !Array.isArray(result.questions)) {
-    throw new Error('Invalid response format: quiz_title or questions array is missing.');
+    throw new Error("Invalid response format: quiz_title or questions array is missing.")
   }
 
-  return result as Quiz;
-};
+  return result as Quiz
+}
 
 export const generateOpenEndedFillIntheBlanks = async (
   topic: string,

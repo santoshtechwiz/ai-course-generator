@@ -572,34 +572,3 @@ export async function fetchRandomQuizzes(count: number = 3) {
   }
 }
 
-
-
-export async function getQuizzes(): Promise<QuizListItem[]> {
-  try {
-    const quizzes: QuizWithQuestionsAndTags[] = await prisma.userQuiz.findMany({
-      include: {
-        questions: true,
-        
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
-
-    return quizzes.map(
-      (quiz): QuizListItem => ({
-        id: quiz.id,
-        topic: quiz.topic,
-        slug: quiz.slug,
-        questionCount: quiz.questions.length,
-        questions: quiz.questions,
-        isPublic: quiz.isPublic ?? false,
-        quizType: quiz.quizType,
-        tags: []
-      }),
-    )
-  } catch (error) {
-    console.error("Failed to fetch quizzes:", error)
-    return []
-  }
-}

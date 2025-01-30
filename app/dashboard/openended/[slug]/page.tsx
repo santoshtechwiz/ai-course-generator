@@ -7,9 +7,8 @@ import axios from "axios";
 
 async function getQuizData(slug: string) {
   try {
-    // Use absolute URL for server-side fetch
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"; 
-    const { data } = await axios.get(`${baseUrl}/api/oquiz/${slug}`);
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/oquiz/${slug}`);
+    const data = await response.json();
 
     return data;
   } catch (error) {
@@ -18,40 +17,40 @@ async function getQuizData(slug: string) {
   }
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }, parent: ResolvingMetadata): Promise<Metadata> {
-  const slug = (await params).slug
-  const quizData = await getQuizData(slug)
+// export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }, parent: ResolvingMetadata): Promise<Metadata> {
+//   const slug = (await params).slug
+//   const quizData = await getQuizData(slug)
 
-  if (!quizData) {
-    return notFound()
-  }
+//   if (!quizData) {
+//     return notFound()
+//   }
 
-  const previousImages = (await parent).openGraph?.images || []
+//   const previousImages = (await parent).openGraph?.images || []
 
-  return {
-    title: `${quizData.topic} Quiz`,
-    description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
-    openGraph: {
-      title: `${quizData.topic} Quiz`,
-      description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
-      images: [
-        {
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.topic)}`,
-          width: 1200,
-          height: 630,
-          alt: `${quizData.topic} Quiz`,
-        },
-        ...previousImages,
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${quizData.topic} Quiz`,
-      description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
-      images: [`${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.topic)}`],
-    },
-  }
-}
+//   return {
+//     title: `${quizData.topic} Quiz`,
+//     description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
+//     openGraph: {
+//       title: `${quizData.topic} Quiz`,
+//       description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
+//       images: [
+//         {
+//           url: `${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.topic)}`,
+//           width: 1200,
+//           height: 630,
+//           alt: `${quizData.topic} Quiz`,
+//         },
+//         ...previousImages,
+//       ],
+//     },
+//     twitter: {
+//       card: "summary_large_image",
+//       title: `${quizData.topic} Quiz`,
+//       description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
+//       images: [`${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.topic)}`],
+//     },
+//   }
+// }
 
 const Page = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const slug = (await params).slug

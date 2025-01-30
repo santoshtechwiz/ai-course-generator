@@ -1,17 +1,17 @@
 "use client"
 
 import { motion } from "framer-motion"
-
-import type { UserQuiz } from "@prisma/client"
 import { QuizCard } from "@/app/components/shared/QuizCard"
+
+import type React from "react" // Import React
 import { QuizListItem } from "@/app/types"
 
-interface QuizCardListingProps {
+interface PublicQuizCardListingProps {
   quiz: QuizListItem
   index: number
 }
 
-export const QuizCardListing: React.FC<QuizCardListingProps> = ({ quiz, index }) => {
+export const PublicQuizCardListing: React.FC<PublicQuizCardListingProps> = ({ quiz, index }) => {
   return (
     <motion.div
       key={quiz.id}
@@ -23,14 +23,17 @@ export const QuizCardListing: React.FC<QuizCardListingProps> = ({ quiz, index })
       <QuizCard
         title={quiz.topic}
         description={quiz.topic}
-        questionCount={quiz.questions.length}
+        questionCount={quiz.questionCount}
         isPublic={quiz.isPublic}
         slug={quiz.slug}
-        tags={quiz.tags}
         quizType={quiz.quizType as "mcq" | "openended" | "fill-blanks"}
-        estimatedTime={`${Math.ceil(quiz.questions.length * 0.5)} min`}
+        estimatedTime={`${Math.ceil(quiz.questionCount * 0.5)} min`}
+       
       />
     </motion.div>
   )
 }
+
+
+
 

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import levenshtein from "js-levenshtein"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AlertCircle, CheckCircle2, HelpCircle, Clock, BookOpen } from "lucide-react"
+import { AlertCircle, CheckCircle2, HelpCircle, Clock, BookOpen, Lightbulb } from "lucide-react"
 
 interface Question {
   id: number
@@ -22,32 +22,49 @@ interface Question {
   }
 }
 
-interface FillInTheBlanksQuizProps {
+interface ImprovedFillInTheBlanksQuizProps {
   question: Question
   onAnswer: (answer: string) => void
   questionNumber: number
   totalQuestions: number
 }
 
-export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQuestions }: FillInTheBlanksQuizProps) {
+export function FillInTheBlanksQuiz({
+  question,
+  onAnswer,
+  questionNumber,
+  totalQuestions,
+}: ImprovedFillInTheBlanksQuizProps) {
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [submitted, setSubmitted] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [isValidInput, setIsValidInput] = useState(false)
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [hintLevel, setHintLevel] = useState(0)
 
   const similarityThreshold = 3
   const minimumPrefixLength = 3
 
+  const progressiveHints = useMemo(() => {
+    const correctAnswer = question.answer.toLowerCase()
+    return [
+      `The answer starts with "${correctAnswer[0]}".`,
+      `The answer has ${correctAnswer.length} characters.`,
+      `The answer ends with "${correctAnswer[correctAnswer.length - 1]}".`,
+      ...question.openEndedQuestion.hints,
+    ]
+  }, [question.answer])
+
   useEffect(() => {
     setAnswer("")
-    setShowHints(Array(question.openEndedQuestion.hints.length).fill(false))
+    setShowHints(Array(progressiveHints.length).fill(false))
     setSubmitted(false)
     setIsCorrect(false)
     setIsValidInput(false)
     setElapsedTime(0)
-  }, [question])
+    setHintLevel(0)
+  }, [progressiveHints])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -86,6 +103,17 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
     setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
     onAnswer(answer)
+  }
+
+  const handleProgressiveHint = () => {
+    if (hintLevel < progressiveHints.length) {
+      setShowHints((prev) => {
+        const newHints = [...prev]
+        newHints[hintLevel] = true
+        return newHints
+      })
+      setHintLevel((prev) => prev + 1)
+    }
   }
 
   const formatTime = (seconds: number) => {
@@ -177,28 +205,25 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
         </div>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {question.openEndedQuestion.hints.map((hint, hIndex) => (
-              <TooltipProvider key={hIndex}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`text-xs transition-colors duration-300 ${
-                        showHints[hIndex] ? "bg-blue-100 text-blue-800" : ""
-                      }`}
-                      onClick={() => toggleHint(hIndex)}
-                    >
-                      <HelpCircle className="w-4 h-4 mr-1" />
-                      Hint {hIndex + 1}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{showHints[hIndex] ? "Hide hint" : "Show hint"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs transition-colors duration-300"
+                    onClick={handleProgressiveHint}
+                    disabled={hintLevel >= progressiveHints.length || submitted}
+                  >
+                    <Lightbulb className="w-4 h-4 mr-1" />
+                    {hintLevel === 0 ? "Get Hint" : `Next Hint (${hintLevel}/${progressiveHints.length})`}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Get a progressive hint to help you</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <AnimatePresence>
             {showHints.map(
@@ -212,7 +237,7 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
                     transition={{ duration: 0.3 }}
                     className="bg-blue-50 border border-blue-200 rounded p-2 mt-2"
                   >
-                    <p className="text-sm text-blue-700">{question.openEndedQuestion.hints[hIndex]}</p>
+                    <p className="text-sm text-blue-700">{progressiveHints[hIndex]}</p>
                   </motion.div>
                 ),
             )}
