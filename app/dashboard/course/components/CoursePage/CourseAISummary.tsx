@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react"
+"use client"
+
+import type React from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeSanitize from "rehype-sanitize"
@@ -11,7 +14,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import AIEmoji from "../AIEmoji"
 import PDFGenerator from "@/app/components/shared/PDFGenerator"
-
 
 interface CourseAISummaryProps {
   chapterId: number
@@ -27,7 +29,6 @@ interface SummaryResponse {
 
 const MAX_RETRIES = 3
 const RETRY_INTERVAL = 60000 // 1 minute
-const INITIAL_DELAY = 60000 // 1 minute
 
 const fetchChapterSummary = async (chapterId: number): Promise<SummaryResponse> => {
   const response = await axios.post<SummaryResponse>(`/api/summary`, { chapterId })
@@ -75,26 +76,6 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
   useEffect(() => {
     fetchSummary()
   }, [fetchSummary])
-
-  const enhancedMarkdownRenderer = useCallback(({ children }: { children: React.ReactNode }) => {
-    const processedContent = React.Children.map(children, (child) => {
-      if (typeof child === "string") {
-        let modifiedText = child.replace(/(Summary:)/g, "<br /><br />$1")
-        modifiedText = modifiedText.replace(
-          /\*\*(.*?)\*\*/g,
-          '<span class="bg-primary/10 text-primary font-semibold px-1 rounded">$1</span>',
-        )
-        modifiedText = modifiedText.replace(
-          /\[([^\]]+)\]/g,
-          (match, term) =>
-            `<a href="https://en.wikipedia.org/wiki/${encodeURIComponent(term.replace(/ /g, "_"))}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">${term}</a>`,
-        )
-        return <span dangerouslySetInnerHTML={{ __html: modifiedText }} />
-      }
-      return child
-    })
-    return <>{processedContent}</>
-  }, [])
 
   const content = useMemo(() => {
     if (showAIEmoji) {
@@ -172,12 +153,11 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
                     if (typeof children === "string" && children.toLowerCase() === "main points:") {
                       return <h4 className="text-lg font-semibold mb-2 text-secondary">Main Points:</h4>
                     }
-
                     return (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <strong className="font-bold text-primary cursor-help block mb-2">{children}</strong>
+                            <strong className="font-bold text-primary cursor-help">{children}</strong>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Important concept</p>
@@ -187,7 +167,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
                     )
                   },
                   a: ({ href, children }) => (
-                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                       {children}
                     </a>
                   ),
@@ -197,6 +177,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
               </ReactMarkdown>
             </CardContent>
           </Card>
+          <PDFGenerator markdown={data.data} chapterName={name} />
         </motion.div>
       )
     }
@@ -215,7 +196,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
         </Button>
       </motion.div>
     )
-  }, [isLoading, error, data, retryCount, name, fetchSummary, showAIEmoji, retryCountdown]) // Added retryCountdown to dependencies
+  }, [isLoading, error, data, retryCount, name, fetchSummary, showAIEmoji, retryCountdown])
 
   return (
     <div className="relative space-y-4">
@@ -232,11 +213,6 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
           {content}
         </motion.div>
       </AnimatePresence>
-      {data?.success && data.data && (
-        <div className="mt-4">
-          <PDFGenerator markdown={data.data} chapterName={name} />
-        </div>
-      )}
     </div>
   )
 }

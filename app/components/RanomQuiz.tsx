@@ -2,13 +2,14 @@
 
 import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle2, FileQuestion, AlignJustify, HelpCircle, ChevronRight, Zap, Trophy } from "lucide-react"
+import { CheckCircle2, FileQuestion, AlignJustify, HelpCircle, ChevronRight, Zap, Trophy, Sparkles } from "lucide-react"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Progress } from "@/components/ui/progress"
 
 const iconMap = {
   mcq: CheckCircle2,
@@ -40,7 +41,7 @@ const getQuizDifficulty = (quizType: string) => {
   }
 }
 
-const QuizCard: React.FC<{ quiz: any; index: number }> = React.memo(({ quiz, index }) => {
+const RandomQuizCard: React.FC<{ quiz: any; index: number }> = React.memo(({ quiz, index }) => {
   const difficulty = getQuizDifficulty(quiz.quizType)
   const { color } = difficultyConfig[difficulty as keyof typeof difficultyConfig]
   const Icon = iconMap[quiz.quizType as keyof typeof iconMap] || HelpCircle
@@ -49,34 +50,54 @@ const QuizCard: React.FC<{ quiz: any; index: number }> = React.memo(({ quiz, ind
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.1 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
       layout
+      className="group"
     >
       <Link href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}>
-        <Card className="transition-all hover:shadow-md hover:bg-accent/50">
+        <Card className="transition-all duration-300 hover:shadow-lg hover:bg-accent/50 overflow-hidden">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <Badge variant="outline" className={color}>
+              <Badge variant="outline" className={`${color} transition-all duration-300 group-hover:scale-105`}>
                 {difficulty}
               </Badge>
               {quiz.bestScore && (
-                <div className="flex items-center text-xs font-medium text-muted-foreground">
+                <motion.div
+                  className="flex items-center text-xs font-medium text-muted-foreground"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
                   <Trophy className="h-3 w-3 mr-1 text-yellow-500" />
                   Best: {quiz.bestScore}%
-                </div>
+                </motion.div>
               )}
             </div>
           </CardHeader>
           <CardContent className="pb-2">
             <div className="flex items-start gap-4">
-              <div className={`rounded-lg p-2 ${color}`}>
+              <motion.div
+                className={`rounded-lg p-2 ${color}`}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
                 <Icon className="h-5 w-5" />
-              </div>
+              </motion.div>
               <div className="flex-grow min-w-0">
                 <CardTitle className="text-base font-semibold truncate">{quiz.topic}</CardTitle>
                 <p className="text-sm text-muted-foreground capitalize">{quiz.quizType.replace("-", " ")}</p>
               </div>
             </div>
+            <motion.div
+              className="mt-4"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+            >
+              <Progress value={quiz.completionRate || 0} className="h-1" />
+              <p className="text-xs text-muted-foreground mt-1">{quiz.completionRate || 0}% completion rate</p>
+            </motion.div>
           </CardContent>
         </Card>
       </Link>
@@ -84,7 +105,7 @@ const QuizCard: React.FC<{ quiz: any; index: number }> = React.memo(({ quiz, ind
   )
 })
 
-QuizCard.displayName = "QuizCard"
+RandomQuizCard.displayName = "RandomQuizCard"
 
 export const AnimatedQuizHighlight: React.FC = () => {
   const { quizzes, isLoading, error } = useRandomQuizzes(3)
@@ -100,7 +121,7 @@ export const AnimatedQuizHighlight: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {[...Array(3)].map((_, index) => (
-            <Skeleton key={index} className="h-[100px] w-full" />
+            <Skeleton key={index} className="h-[120px] w-full" />
           ))}
         </CardContent>
       </Card>
@@ -124,34 +145,40 @@ export const AnimatedQuizHighlight: React.FC = () => {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <Card className="w-full overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-primary/10 to-secondary/10 pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
             Random Quizzes
           </CardTitle>
-          <Badge variant="outline" className="text-xs">
-            Updated Daily
-          </Badge>
+         
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4">
         <AnimatePresence>
           {quizzes.map((quiz, index) => (
-            <QuizCard key={quiz.id} quiz={quiz} index={index} />
+            <RandomQuizCard key={quiz.id} quiz={quiz} index={index} />
           ))}
         </AnimatePresence>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="bg-muted/50 p-4">
         <Button className="w-full group" variant="outline" asChild>
           <Link href="/dashboard/quizzes" className="flex items-center justify-center">
             <span>Explore More Quizzes</span>
-            <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <motion.div
+              className="ml-2"
+              whileHover={{ x: 5 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </motion.div>
           </Link>
         </Button>
       </CardFooter>
     </Card>
   )
 }
+
+export default AnimatedQuizHighlight
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight"
+import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { Sparkles, BookOpen, Lightbulb } from "lucide-react"
@@ -9,14 +9,7 @@ const Page = async () => {
     <div className="container mx-auto py-6 space-y-6">
       <RandomQuote />
 
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-primary inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/5">
-          <Sparkles className="h-8 w-8" />
-          Create & Play Quizzes
-          <Sparkles className="h-8 w-8" />
-        </h1>
-        <p className="text-muted-foreground">Create, share, and learn with our interactive quizzes</p>
-      </div>
+     
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 relative group">

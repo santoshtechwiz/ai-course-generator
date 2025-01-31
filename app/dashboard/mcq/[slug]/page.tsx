@@ -8,7 +8,7 @@ import PlayQuiz from "../components/PlayQuiz"
 import { QuizActions } from "../components/QuizActions"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Question } from "@/app/types"
-import { AnimatedQuizHighlight } from "@/app/components/AnimatedQuizHighlight"
+import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await props.params

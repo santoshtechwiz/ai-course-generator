@@ -1,6 +1,6 @@
 "use client"
 
-import React, { type FC } from "react"
+import type { FC } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -144,12 +144,12 @@ export const QuizCard: FC<QuizCardProps> = ({
 
   return (
     <motion.div
-      className="group relative w-full max-w-sm mx-auto [perspective:1000px]"
+      className="group relative w-full max-w-xs mx-auto [perspective:1000px]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="relative h-[300px] sm:h-[400px] w-full rounded-xl shadow-lg transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
+      <div className="relative h-[280px] w-full rounded-xl shadow-lg transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
         {/* Front Face */}
         <div className="absolute inset-0 h-full w-full rounded-xl [backface-visibility:hidden]">
           <Card
@@ -194,51 +194,51 @@ export const QuizCard: FC<QuizCardProps> = ({
               ))}
             </div>
 
-            <CardHeader className="relative p-6 pb-0">
-              <div className="flex items-center justify-between mb-4">
-                <Badge className={cn("font-medium text-white px-3 py-1", colors.badge)}>
-                  <QuizTypeIcon className="w-4 h-4 mr-2" />
+            <CardHeader className="relative p-4 pb-0">
+              <div className="flex items-center justify-between mb-2">
+                <Badge className={cn("font-medium text-white px-2 py-1 text-xs", colors.badge)}>
+                  <QuizTypeIcon className="w-3 h-3 mr-1" />
                   {quizTypeLabels[quizType]}
                 </Badge>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4" />
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="w-3 h-3" />
                   {estimatedTime}
                 </div>
               </div>
-              <CardTitle className="text-2xl font-bold relative z-10">{title}</CardTitle>
+              <CardTitle className="text-lg font-bold relative z-10">{title}</CardTitle>
             </CardHeader>
 
-            <CardContent className="p-4 sm:p-6 pt-2 sm:pt-4 space-y-4 sm:space-y-6 relative z-10">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <CardContent className="p-4 pt-2 space-y-3 relative z-10">
+              <div className="flex flex-col items-start gap-2">
                 <div
                   className={cn(
-                    "flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm",
+                    "flex items-center gap-1 px-2 py-1 rounded-md text-xs",
                     colors.light,
                     "backdrop-blur-sm",
                   )}
                 >
-                  <HelpCircle className={cn("w-3 h-3 sm:w-4 sm:h-4", colors.text)} />
+                  <HelpCircle className={cn("w-3 h-3", colors.text)} />
                   <span className="font-medium">{questionCount} Questions</span>
                 </div>
                 <div
                   className={cn(
-                    "flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm",
+                    "flex items-center gap-1 px-2 py-1 rounded-md text-xs",
                     colors.light,
                     "backdrop-blur-sm",
                   )}
                 >
-                  <Zap className={cn("w-3 h-3 sm:w-4 sm:h-4", colors.text)} />
+                  <Zap className={cn("w-3 h-3", colors.text)} />
                   <span className="font-medium">Boost Knowledge</span>
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground line-clamp-2 relative z-10">{description}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2 relative z-10">{description}</p>
             </CardContent>
 
             {/* Gradient Overlay */}
             <div
               className={cn(
-                "absolute bottom-0 left-0 right-0 h-32",
+                "absolute bottom-0 left-0 right-0 h-24",
                 "bg-gradient-to-t from-background via-background/80 to-transparent",
               )}
             />
@@ -249,7 +249,7 @@ export const QuizCard: FC<QuizCardProps> = ({
         </div>
 
         {/* Back Face */}
-        <div className="absolute inset-0 h-full w-full rounded-xl p-4 sm:p-6 [transform:rotateY(180deg)] [backface-visibility:hidden]">
+        <div className="absolute inset-0 h-full w-full rounded-xl p-4 [transform:rotateY(180deg)] [backface-visibility:hidden]">
           <Card
             className={cn(
               "h-full overflow-hidden border-2",
@@ -258,17 +258,17 @@ export const QuizCard: FC<QuizCardProps> = ({
               "text-primary-foreground",
             )}
           >
-            <CardContent className="flex flex-col items-center justify-center h-full p-4 sm:p-6 text-center space-y-4 sm:space-y-6">
-              <TypeBenefitIcon className="w-10 h-10 sm:w-12 sm:h-12 mb-2" />
+            <CardContent className="flex flex-col items-center justify-center h-full p-4 text-center space-y-3">
+              <TypeBenefitIcon className="w-8 h-8 mb-1" />
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold mb-2">{quizTypeInfo.title}</h2>
-                <p className="text-xs sm:text-sm mb-4 text-primary-foreground/90">{quizTypeInfo.description}</p>
+                <h2 className="text-base font-semibold mb-1">{quizTypeInfo.title}</h2>
+                <p className="text-xs mb-2 text-primary-foreground/90">{quizTypeInfo.description}</p>
               </div>
 
-              <ul className="space-y-2 text-xs sm:text-sm text-primary-foreground/90">
+              <ul className="space-y-1 text-xs text-primary-foreground/90">
                 {quizTypeInfo.benefits.map((benefit, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <CheckSquare className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <li key={index} className="flex items-center gap-1">
+                    <CheckSquare className="w-3 h-3 flex-shrink-0" />
                     {benefit}
                   </li>
                 ))}
@@ -277,16 +277,16 @@ export const QuizCard: FC<QuizCardProps> = ({
               <Link
                 href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}
                 className={cn(
-                  "inline-flex items-center px-4 py-2 sm:px-6 sm:py-3",
-                  "text-primary font-medium bg-background",
-                  "rounded-lg shadow-lg whitespace-nowrap",
+                  "inline-flex items-center px-3 py-2",
+                  "text-primary text-sm font-medium bg-background",
+                  "rounded-md shadow-lg whitespace-nowrap",
                   "hover:bg-background/90 transition-colors",
                   "group/button",
                 )}
                 aria-label={`Start ${title} Quiz`}
               >
                 Start Quiz
-                <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover/button:translate-x-1" />
+                <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover/button:translate-x-1" />
               </Link>
             </CardContent>
           </Card>
@@ -295,3 +295,4 @@ export const QuizCard: FC<QuizCardProps> = ({
     </motion.div>
   )
 }
+
