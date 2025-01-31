@@ -14,7 +14,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://example.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"),
   title: {
     default: process.env.NEXT_PUBLIC_SITE_NAME || "Course AI",
     template: `%s | ${process.env.NEXT_PUBLIC_SITE_NAME || "Course AI"}`,
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     siteName: process.env.NEXT_PUBLIC_SITE_NAME,
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_SITE_URL}/og-image.jpg`,
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/default-thumbnail.png`,
         width: 1200,
         height: 630,
         alt: `${process.env.NEXT_PUBLIC_SITE_NAME} Open Graph Image`,
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     title: process.env.NEXT_PUBLIC_SITE_NAME,
     description:
       "Revolutionize your learning experience with our AI-powered course creation and personalized education platform",
-    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/twitter-image.jpg`],
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/default-thumbnail.png`],
     creator: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
   },
   robots: {

@@ -7,6 +7,7 @@ import TopicForm from "@/app/dashboard/openended/components/TopicForm"
 import CreateQuizForm from "@/app/dashboard/quiz/components/CreateQuizForm"
 import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
 import { useSubscription } from "@/hooks/useSubscription"
+import { GlobalLoader } from "@/app/components/GlobalLoader"
 
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"
@@ -49,7 +50,11 @@ export function QuizWrapper({ type }: QuizWrapperProps) {
     isLoggedIn,
     credits,
   }
-
+ if (isLoading) {
+    return (
+      <GlobalLoader loading={isLoading} />
+    )
+  }
   switch (type) {
     case "mcq":
       return <CreateQuizForm {...commonProps} />
