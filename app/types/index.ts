@@ -234,12 +234,46 @@ export interface CreateQuizCardConfig {
   className?: string
 }
 
-export interface MCQQuestion{
+export interface MultipleChoiceQuestion{
+  question:string;
+  answer:string;
+  option1:string;
+  option2:string;
+  option3:string;
 
 }
 export interface OpenEndedQuestion{
 
+  question:string;
+  answer:string;
+
 }
-export interface QuizType{
-  
+export enum QuizType{
+
+  MultipleChoice = 'mcq',
+  OpenEnded = 'openended',
+  Code='code',
+  FillInTheBlanks='fillintheblanks'
+}
+
+export interface CodeChallenge  {
+  question: string
+  codeSnippet?: string
+  language?: string
+  options: string
+  correctAnswer: string
+}
+
+
+export interface QuizQuestion {
+  question: string
+  options: string
+  codeSnippet: string | null
+}
+
+export interface CodingQuizProps {
+  quizData: {
+    title: string
+    questions: QuizQuestion[]
+  }
 }

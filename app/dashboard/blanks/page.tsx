@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
+import { RanomQuiz } from "@/app/components/RanomQuiz"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { BookOpen, Lightbulb } from "lucide-react"
@@ -33,7 +33,7 @@ const Page = async () => {
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-secondary/5 to-background rounded-xl -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
           <div className="relative bg-background/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-border/50">
-            <AnimatedQuizHighlight />
+            <RanomQuiz />
           </div>
         </div>
       </div>

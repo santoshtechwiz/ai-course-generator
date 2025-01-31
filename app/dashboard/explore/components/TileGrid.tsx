@@ -84,6 +84,20 @@ const tiles = [
       "Craft a course that leaves a lasting impact on learners.",
     ],
   },
+  {
+    icon: BookOpen,
+    title: "code",
+    description: "Build comprehensive courses with multiple lessons and content types.",
+    url: "/dashboard/code",
+    color: "red",
+    quotes: [
+      "Why not create your own course?",
+      "Share your expertise through an engaging course!",
+      "Design a learning journey that inspires and educates.",
+      "Transform your knowledge into a structured learning experience.",
+      "Craft a course that leaves a lasting impact on learners.",
+    ],
+  },
 ]
 
 function Tile({ icon: Icon, title, description, url, index, quotes, color }: TileProps) {

@@ -8,7 +8,7 @@ import PlayQuiz from "../components/PlayQuiz"
 import { QuizActions } from "../components/QuizActions"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Question } from "@/app/types"
-import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
+import { RanomQuiz } from "@/app/components/RanomQuiz"
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await props.params
@@ -151,7 +151,7 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
             <div className="lg:col-span-1">
               <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6">
                 
-                <AnimatedQuizHighlight />
+                <RanomQuiz />
               </div>
             </div>
           </div>

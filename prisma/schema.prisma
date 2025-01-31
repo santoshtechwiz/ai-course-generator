@@ -398,6 +398,7 @@ model UserQuizQuestion {
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
   attemptQuestions  UserQuizAttemptQuestion[]
+  codeSnippet       String?
 
   @@index([userQuizId])
   @@index([questionType])
