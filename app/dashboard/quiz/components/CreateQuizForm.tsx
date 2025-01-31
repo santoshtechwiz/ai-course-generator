@@ -38,15 +38,15 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
-  const {subscriptionStatus} =useSubscriptionStore();
-  
+  const { subscriptionStatus } = useSubscriptionStore()
+
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     topic: "",
     amount: maxQuestions,
     difficulty: "medium",
-   
   })
-  formData.userType=subscriptionStatus?.subscriptionPlan;
+  formData.userType = subscriptionStatus?.subscriptionPlan
+
   const {
     control,
     register,
@@ -58,8 +58,8 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
     resolver: zodResolver(quizSchema),
     defaultValues: formData,
   })
+
   React.useEffect(() => {
-   
     const subscription = watch((value) => setFormData(value as QuizFormData))
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
@@ -119,23 +119,38 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
   const difficulty = watch("difficulty")
 
   return (
-    <div className="w-full bg-background border border-border shadow-sm">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-2xl mx-auto bg-background border border-border shadow-sm rounded-lg overflow-hidden"
+    >
       <SignInBanner isAuthenticated={status === "authenticated"} />
-      <div className="px-2 sm:px-4 pt-6 pb-4">
+      <motion.div
+        className="px-4 sm:px-6 pt-6 pb-4 bg-primary/5 border-b"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
         <div className="flex justify-center mb-4">
           <motion.div className="p-3 bg-primary/10 rounded-xl" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Brain className="w-8 h-8 text-primary" />
           </motion.div>
         </div>
-        <h2 className="text-center text-2xl md:text-3xl font-bold">Create Your Quiz</h2>
+        <h2 className="text-center text-2xl md:text-3xl font-bold text-primary">Create Your Quiz</h2>
         <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
           Customize your quiz settings and challenge yourself!
         </p>
-      </div>
+      </motion.div>
 
-      <div className="px-2 sm:px-4 pb-6">
+      <div className="px-4 sm:px-6 py-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <Label htmlFor="topic" className="text-lg font-medium">
               Topic
             </Label>
@@ -143,7 +158,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
               <Input
                 id="topic"
                 placeholder="Enter the quiz topic"
-                className="h-12 pr-10"
+                className="h-12 pr-10 transition-all duration-300 focus:ring-2 focus:ring-primary"
                 {...register("topic")}
                 aria-describedby="topic-description"
               />
@@ -166,14 +181,27 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
             <p className="text-sm text-muted-foreground" id="topic-description">
               Choose a specific topic for more focused questions
             </p>
-          </div>
+          </motion.div>
 
-          <div className="space-y-4">
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
             <Label className="text-lg font-medium">Number of Questions</Label>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Timer className="w-5 h-5 text-muted-foreground" />
-                <span className="text-2xl font-bold text-primary">{amount}</span>
+                <motion.span
+                  className="text-2xl font-bold text-primary"
+                  key={amount}
+                  initial={{ scale: 1.2, color: "#00ff00" }}
+                  animate={{ scale: 1, color: "var(--primary)" }}
+                  transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                >
+                  {amount}
+                </motion.span>
               </div>
               <Controller
                 name="amount"
@@ -198,24 +226,31 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 ? "Unlimited quizzes available"
                 : `This quiz will use ${amount} credit${amount > 1 ? "s" : ""}`}
             </p>
-          </div>
+          </motion.div>
 
-          <div className="space-y-4">
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
             <Label className="text-lg font-medium">Difficulty</Label>
             <div className="grid grid-cols-3 gap-4">
               {["easy", "medium", "hard"].map((level) => (
                 <TooltipProvider key={level}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant={difficulty === level ? "default" : "outline"}
-                        className={cn("capitalize", difficulty === level && "border-primary")}
-                        onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
-                        aria-pressed={difficulty === level}
-                      >
-                        {level}
-                      </Button>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          type="button"
+                          variant={difficulty === level ? "default" : "outline"}
+                          className={cn("capitalize w-full", difficulty === level && "border-primary")}
+                          onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
+                          aria-pressed={difficulty === level}
+                        >
+                          {level}
+                        </Button>
+                      </motion.div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>{level.charAt(0).toUpperCase() + level.slice(1)} difficulty questions</p>
@@ -224,9 +259,14 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 </TooltipProvider>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
+          <motion.div
+            className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
             <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <PlanAwareButton
                 label="Generate Quiz"
@@ -235,7 +275,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 isEnabled={!errors.topic && !errors.amount && !errors.difficulty}
                 hasCredits={credits > 0}
                 loadingLabel="Generating..."
-                className="w-full"
+                className="w-full transition-all duration-300 hover:shadow-lg"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your quiz",
@@ -256,7 +296,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="w-full transition-all duration-300 hover:shadow-md"
                   onClick={() => {
                     toast({
                       title: "Quiz Saved",
@@ -269,18 +309,16 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 </Button>
               </motion.div>
             )}
-          </div>
+          </motion.div>
         </form>
       </div>
-
-      <div className="flex flex-col space-y-4 border-t px-2 sm:px-4 py-6">{/* Footer content */}</div>
 
       <ConfirmDialog
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
         onCancel={() => setIsConfirmDialogOpen(false)}
       />
-    </div>
+    </motion.div>
   )
 }
 

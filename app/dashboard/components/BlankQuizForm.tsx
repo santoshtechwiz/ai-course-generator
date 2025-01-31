@@ -6,9 +6,11 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ChevronDown, ChevronUp, Info, AlertCircle } from "lucide-react"
+import { ChevronDown, Info, AlertCircle, Brain } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 
 interface TopicFormProps {
   credits: number
@@ -70,64 +72,95 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
     [handleSubmit, isFormValid, isLoading],
   )
 
-  const renderQuestionCount = () => (
-    <div className="space-y-3">
-      <label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
-        <span>Number of Questions</span>
-        <span className="text-xl font-bold text-primary tabular-nums">{questionCount}</span>
-      </label>
-      <div className="flex items-center space-x-4">
-        <Slider
-          id="questionCount"
-          min={1}
-          max={maxQuestions}
-          step={1}
-          value={[questionCount]}
-          onValueChange={(values) => setQuestionCount(values[0])}
-          className="flex-grow"
-          aria-label="Select number of questions"
-        />
-      </div>
-    </div>
-  )
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full"
+      className="w-full max-w-2xl mx-auto"
     >
-      <div className="flex flex-col bg-background border border-border shadow-sm">
-        <div className="px-2 sm:px-4 pb-4 border-b">
-          <p className="text-base text-muted-foreground">
+      <Card className="bg-background border border-border shadow-sm">
+        <CardHeader className="bg-primary/5 border-b">
+          <div className="flex justify-center mb-4">
+            <motion.div
+              className="p-3 bg-primary/10 rounded-xl"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Brain className="w-8 h-8 text-primary" />
+            </motion.div>
+          </div>
+          <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
+            Fill-in-the-Blank Quiz Generator
+          </CardTitle>
+          <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
             Select a topic and customize your quiz with fill-in-the-blank questions.
           </p>
-        </div>
+        </CardHeader>
 
-        <div className="space-y-6 flex-grow px-2 sm:px-4 py-6">
+        <CardContent className="space-y-6 pt-6">
           <form onSubmit={handleSubmit} className="space-y-6" onKeyDown={handleKeyDown}>
-            <div className="space-y-3">
-              <label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
+            <motion.div
+              className="space-y-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
                 <Info className="h-4 w-4 text-primary" />
                 Quiz Topic
-              </label>
+              </Label>
               <Input
                 id="topic"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="E.g., Climate Change, AI in Education..."
-                className="w-full h-12 text-lg"
+                className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
                 aria-label="Quiz topic"
                 autoFocus
                 required
                 minLength={3}
               />
-            </div>
+            </motion.div>
 
-            {renderQuestionCount()}
+            <motion.div
+              className="space-y-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
+                <span>Number of Questions</span>
+                <motion.span
+                  className="text-xl font-bold text-primary tabular-nums"
+                  key={questionCount}
+                  initial={{ scale: 1.2, color: "#00ff00" }}
+                  animate={{ scale: 1, color: "var(--primary)" }}
+                  transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                >
+                  {questionCount}
+                </motion.span>
+              </Label>
+              <div className="flex items-center space-x-4">
+                <Slider
+                  id="questionCount"
+                  min={1}
+                  max={maxQuestions}
+                  step={1}
+                  value={[questionCount]}
+                  onValueChange={(values) => setQuestionCount(values[0])}
+                  className="flex-grow"
+                  aria-label="Select number of questions"
+                />
+              </div>
+            </motion.div>
 
-            <div className="bg-primary/5 border border-primary/20 rounded-lg">
+            <motion.div
+              className="bg-primary/5 border border-primary/20 rounded-lg"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
               <div className="p-4 space-y-2">
                 <h3 className="text-base font-semibold mb-2">Available Credits</h3>
                 <Progress value={(credits / 10) * 100} className="h-2" />
@@ -135,15 +168,20 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
                   You have <span className="font-bold text-primary">{credits}</span> credits remaining.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
-            <div
+            <motion.div
               className="bg-muted cursor-pointer transition-colors hover:bg-muted/80 rounded-lg"
               onClick={() => setOpenInfo(!openInfo)}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
             >
               <div className="flex flex-row items-center justify-between py-2 px-4">
                 <h3 className="text-sm font-semibold">About Fill-in-the-Blank Questions</h3>
-                {openInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                <motion.div animate={{ rotate: openInfo ? 180 : 0 }} transition={{ duration: 0.3 }}>
+                  <ChevronDown className="h-4 w-4" />
+                </motion.div>
               </div>
               <AnimatePresence>
                 {openInfo && (
@@ -168,7 +206,7 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
 
             <AnimatePresence>
               {error && (
@@ -186,41 +224,46 @@ function FillInTheBlankQuizFormComponent({ credits, maxQuestions, isLoggedIn }: 
               )}
             </AnimatePresence>
           </form>
-        </div>
 
-        <div className="sticky bottom-0 pt-4 px-2 sm:px-4 bg-background border-t">
-          <PlanAwareButton
-            label="Generate Quiz"
-            onClick={generateQuiz}
-            isLoggedIn={isLoggedIn}
-            isEnabled={isFormValid}
-            hasCredits={credits > 0}
-            loadingLabel="Generating..."
-            className="w-full"
-            customStates={{
-              default: {
-                tooltip: "Click to generate your fill-in-the-blank quiz",
-              },
-              loading: {
-                label: "Generating Quiz...",
-                tooltip: "Please wait while we generate your quiz",
-              },
-              notLoggedIn: {
-                label: "Sign in to Generate",
-                tooltip: "You need to be signed in to create a quiz",
-              },
-              notEnabled: {
-                label: "Enter a valid topic",
-                tooltip: "Please enter a topic with at least 3 characters",
-              },
-              noCredits: {
-                label: "Out of credits",
-                tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
-              },
-            }}
-          />
-        </div>
-      </div>
+          <motion.div
+            className="pt-4 border-t"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <PlanAwareButton
+              label="Generate Quiz"
+              onClick={generateQuiz}
+              isLoggedIn={isLoggedIn}
+              isEnabled={isFormValid}
+              hasCredits={credits > 0}
+              loadingLabel="Generating..."
+              className="w-full transition-all duration-300 hover:shadow-lg"
+              customStates={{
+                default: {
+                  tooltip: "Click to generate your fill-in-the-blank quiz",
+                },
+                loading: {
+                  label: "Generating Quiz...",
+                  tooltip: "Please wait while we generate your quiz",
+                },
+                notLoggedIn: {
+                  label: "Sign in to Generate",
+                  tooltip: "You need to be signed in to create a quiz",
+                },
+                notEnabled: {
+                  label: "Enter a valid topic",
+                  tooltip: "Please enter a topic with at least 3 characters",
+                },
+                noCredits: {
+                  label: "Out of credits",
+                  tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
+                },
+              }}
+            />
+          </motion.div>
+        </CardContent>
+      </Card>
     </motion.div>
   )
 }
