@@ -22,7 +22,7 @@ interface CodeQuizFormProps {
   credits: number
   maxQuestions: number
   isLoggedIn: boolean
-  subscriptionPlan: any
+  subscriptionPlan: string
 }
 
 const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLoggedIn, subscriptionPlan }) => {
@@ -64,7 +64,7 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
     setError("")
 
     try {
-      const response = await fetch("/api/generate-code-quiz", {
+      const response = await fetch("/api/code", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

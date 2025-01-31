@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
-import { FileQuestion, BookOpen, PenTool, AlignLeft, X } from "lucide-react"
+import { FileQuestion, BookOpen, PenTool, AlignLeft, X, Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -85,17 +85,17 @@ const tiles = [
     ],
   },
   {
-    icon: BookOpen,
-    title: "code",
-    description: "Build comprehensive courses with multiple lessons and content types.",
+    icon: Code,
+    title: "Code Quiz",
+    description: "Create coding challenges and quizzes to test programming skills.",
     url: "/dashboard/code",
     color: "red",
     quotes: [
-      "Why not create your own course?",
-      "Share your expertise through an engaging course!",
-      "Design a learning journey that inspires and educates.",
-      "Transform your knowledge into a structured learning experience.",
-      "Craft a course that leaves a lasting impact on learners.",
+      "Challenge coders with intriguing problems!",
+      "Craft coding quizzes that sharpen programming skills.",
+      "Design puzzles that push the boundaries of logical thinking.",
+      "Create a coding challenge that both tests and teaches.",
+      "Inspire the next generation of programmers with your quizzes.",
     ],
   },
 ]
