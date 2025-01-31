@@ -24,7 +24,7 @@ interface QuizCardProps {
   title: string
   questionCount: number
   slug: string
-  quizType: "mcq" | "openended" | "fill-blanks"
+  quizType: "mcq" | "openended" | "fill-blanks" | "code"
   estimatedTime?: string
   description: string
   isPublic?: boolean
@@ -34,6 +34,7 @@ const quizTypeIcons = {
   mcq: CheckCircle2,
   openended: PenLine,
   "fill-blanks": Puzzle,
+  "code": PenLine,
 }
 
 const quizTypePatterns = {
@@ -72,6 +73,17 @@ const quizTypePatterns = {
       <rect x="0" y="0" width="100%" height="100%" fill="url(#fillblanks-pattern)" />
     </svg>
   ),
+  "code": (
+    <svg
+      className="absolute inset-0 w-full h-full opacity-[0.03] dark:opacity-[0.05]"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <pattern id="fillblanks-pattern" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
+        <path d="M25,0 L50,25 L25,50 L0,25 L25,0z M25,10 L40,25 L25,40 L10,25 L25,10z" fill="currentColor" />
+      </pattern>
+      <rect x="0" y="0" width="100%" height="100%" fill="url(#fillblanks-pattern)" />
+    </svg>
+  ),
 }
 
 const quizTypeColors = {
@@ -99,12 +111,21 @@ const quizTypeColors = {
     text: "text-purple-600 dark:text-purple-400",
     shadow: "shadow-purple-500/25",
   },
+  code: {
+    gradient: ["#f59e0b", "#d97706"],
+    badge: "bg-yellow-500",
+    light: "bg-yellow-50 dark:bg-yellow-950/30",
+    border: "border-yellow-200 dark:border-yellow-800",
+    text: "text-yellow-600 dark:text-yellow-400",
+    shadow: "shadow-yellow-500/25",
+  },
 }
 
 const quizTypeLabels = {
   mcq: "Multiple Choice",
   openended: "Open-Ended",
   "fill-blanks": "Fill in the Blanks",
+  "code": "Code",
 }
 
 const quizTypeDescriptions = {
@@ -121,6 +142,12 @@ const quizTypeDescriptions = {
     icon: Brain,
   },
   "fill-blanks": {
+    title: "Complete the Puzzle",
+    description: "Fill in missing pieces to strengthen your recall ability.",
+    benefits: ["Memory enhancement", "Context understanding", "Precise learning"],
+    icon: Sparkles,
+  },
+  "code": {
     title: "Complete the Puzzle",
     description: "Fill in missing pieces to strengthen your recall ability.",
     benefits: ["Memory enhancement", "Context understanding", "Precise learning"],

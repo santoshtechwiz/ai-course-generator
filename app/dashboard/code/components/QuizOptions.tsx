@@ -1,34 +1,40 @@
 import type React from "react"
-import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
 
 interface QuizOptionsProps {
   options: string[]
   selectedOption: string | null
   onSelect: (option: string) => void
   disabled: boolean
-  correctAnswer?: string
+  renderOptionContent: (option: string) => React.ReactNode
 }
 
-const QuizOptions: React.FC<QuizOptionsProps> = ({ options, selectedOption, onSelect, disabled, correctAnswer }) => {
+const QuizOptions: React.FC<QuizOptionsProps> = ({
+  options,
+  selectedOption,
+  onSelect,
+  disabled,
+  renderOptionContent,
+}) => {
   return (
-    <div className="space-y-2 mt-4">
+    <div className="space-y-3">
       {options.map((option, index) => (
-        <motion.button
+        <Button
           key={index}
-          className={cn(
-            "w-full text-left px-4 py-2 border rounded-lg transition",
-            selectedOption === option && !disabled ? "bg-blue-100 border-blue-500" : "bg-white",
-            disabled && selectedOption === option && selectedOption !== correctAnswer && "bg-red-100 border-red-500",
-            disabled && option === correctAnswer && "bg-green-100 border-green-500",
-          )}
+          variant="outline"
+          className={`w-full p-4 h-auto flex items-start justify-start text-left whitespace-normal ${
+            selectedOption === option ? "border-2 border-primary bg-primary/5" : "hover:bg-secondary/80"
+          }`}
           onClick={() => onSelect(option)}
           disabled={disabled}
-          whileHover={{ scale: disabled ? 1 : 1.02 }}
-          whileTap={{ scale: disabled ? 1 : 0.98 }}
         >
-          {option}
-        </motion.button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium bg-secondary/50 px-2 py-1 rounded">
+              {String.fromCharCode(65 + index)}
+            </span>
+            {renderOptionContent(option)}
+          </div>
+        </Button>
       ))}
     </div>
   )
