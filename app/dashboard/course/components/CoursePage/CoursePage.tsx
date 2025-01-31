@@ -14,6 +14,7 @@ import { useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Menu, VideotapeIcon, X } from "lucide-react"
+import { GlobalLoader } from "@/app/components/GlobalLoader"
 
 interface State {
   selectedVideoId: string | undefined
@@ -62,7 +63,7 @@ const MemoizedMainContent = React.memo(MainContent)
 const MemoizedRightSidebar = React.memo(RightSidebar)
 
 export default function CoursePage({ course, initialChapterId }: CoursePageProps) {
-  const searchParams = useSearchParams()
+ 
   const { user, loading: isProfileLoading, error } = useUser()
   const [state, dispatch] = useReducer(reducer, {
     selectedVideoId: undefined,
@@ -349,9 +350,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-16 w-16 border-t-4 border-b-4 border-primary rounded-full animate-spin" />
-      </div>
+      <GlobalLoader loading={isLoading} />
     )
   }
 
