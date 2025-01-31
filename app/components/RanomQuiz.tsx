@@ -107,7 +107,7 @@ const RandomQuizCard: React.FC<{ quiz: any; index: number }> = React.memo(({ qui
 
 RandomQuizCard.displayName = "RandomQuizCard"
 
-export const AnimatedQuizHighlight: React.FC = () => {
+export const RanomQuiz: React.FC = () => {
   const { quizzes, isLoading, error } = useRandomQuizzes(3)
 
   if (isLoading) {
@@ -180,5 +180,5 @@ export const AnimatedQuizHighlight: React.FC = () => {
   )
 }
 
-export default AnimatedQuizHighlight
+export default RanomQuiz
 
