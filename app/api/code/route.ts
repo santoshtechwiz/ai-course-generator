@@ -1,9 +1,9 @@
 
 
-import { MultipleChoiceQuestion, CodeChallenge, QuizType } from "@/app/types"
+import { CodeChallenge, QuizType } from "@/app/types"
 import { getAuthSession } from "@/lib/authOptions";
 import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
-import { getUnitSlug, titleToSlug } from "@/lib/slug";
+import { titleToSlug } from "@/lib/slug";
 import { NextResponse } from "next/server";
 
 

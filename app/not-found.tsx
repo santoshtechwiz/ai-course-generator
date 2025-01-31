@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import Navbar from "./components/shared/Navbar"
 import Footer from "./components/shared/Footer"
-import { RanomQuiz } from "./components/RanomQuiz"
+import { AnimatedQuizHighlight } from "./components/RanomQuiz"
 import { motion } from "framer-motion"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -66,7 +66,7 @@ export default function NotFound() {
             The page you're looking for doesn't exist or has been moved.
           </motion.p>
           <motion.div className="mt-6" variants={itemVariants}>
-            <RanomQuiz />
+            <AnimatedQuizHighlight />
           </motion.div>
          
           <motion.div className="mt-12" variants={itemVariants}>
