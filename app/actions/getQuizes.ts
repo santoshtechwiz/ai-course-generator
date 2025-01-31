@@ -36,7 +36,7 @@ export async function getQuizzes(
           slug: quiz.slug,
           questionCount: quiz.questions.length,
           questions: quiz.questions,
-          isPublic: quiz.isPublic ?? false,
+          isPublic: quiz.isPublic ?? true,
           quizType: quiz.quizType,
           tags: []
         }),

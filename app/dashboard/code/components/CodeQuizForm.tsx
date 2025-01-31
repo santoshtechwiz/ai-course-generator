@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import PlanAwareButton from "@/app/components/PlanAwareButton"
-import { languages } from "@/config/lang"
+import { languages, getSubtopics } from "@/config/lang"
 
 interface CodeQuizFormProps {
   credits: number
@@ -27,10 +27,13 @@ interface CodeQuizFormProps {
 
 const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLoggedIn, subscriptionPlan }) => {
   const [language, setLanguage] = useState("")
+  const [subtopic, setSubtopic] = useState("")
   const [difficulty, setDifficulty] = useState(50)
   const [questionCount, setQuestionCount] = useState(maxQuestions)
-  const [open, setOpen] = useState(false)
+  const [openLanguage, setOpenLanguage] = useState(false)
+  const [openSubtopic, setOpenSubtopic] = useState(false)
   const [customLanguage, setCustomLanguage] = useState("")
+  const [customSubtopic, setCustomSubtopic] = useState("")
   const [openInfo, setOpenInfo] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -38,7 +41,13 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
 
   const handleLanguageSelect = useCallback((selectedLanguage: string) => {
     setLanguage(selectedLanguage)
-    setOpen(false)
+    setOpenLanguage(false)
+    setSubtopic("")
+  }, [])
+
+  const handleSubtopicSelect = useCallback((selectedSubtopic: string) => {
+    setSubtopic(selectedSubtopic)
+    setOpenSubtopic(false)
   }, [])
 
   const handleCustomLanguageSubmit = useCallback(
@@ -46,11 +55,23 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
       e.preventDefault()
       if (customLanguage.trim()) {
         setLanguage(customLanguage.trim())
-        setOpen(false)
+        setOpenLanguage(false)
         setCustomLanguage("")
       }
     },
     [customLanguage],
+  )
+
+  const handleCustomSubtopicSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault()
+      if (customSubtopic.trim()) {
+        setSubtopic(customSubtopic.trim())
+        setOpenSubtopic(false)
+        setCustomSubtopic("")
+      }
+    },
+    [customSubtopic],
   )
 
   const getDifficultyLabel = useCallback((value: number) => {
@@ -69,7 +90,7 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ language, difficulty: getDifficultyLabel(difficulty), questionCount }),
+        body: JSON.stringify({ language, subtopic, difficulty: getDifficultyLabel(difficulty), questionCount }),
       })
 
       if (!response.ok) {
@@ -84,9 +105,12 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
     } finally {
       setIsLoading(false)
     }
-  }, [language, difficulty, questionCount, router, getDifficultyLabel])
+  }, [language, subtopic, difficulty, questionCount, router, getDifficultyLabel])
 
-  const isDisabled = useMemo(() => isLoading || credits < 1 || !language.trim(), [isLoading, credits, language])
+  const isDisabled = useMemo(
+    () => isLoading || credits < 1 || !language.trim() || !subtopic.trim(),
+    [isLoading, credits, language, subtopic],
+  )
 
   return (
     <motion.div
@@ -116,62 +140,111 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
 
         <CardContent className="space-y-6 pt-6">
           <motion.div
-            className="space-y-3"
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Label htmlFor="language-select" className="text-sm font-medium flex items-center gap-2">
-              <Info className="h-4 w-4 text-primary" />
-              Programming Language
-            </Label>
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-                  {language
-                    ? languages.find((lang) => lang.name === language)?.icon({ className: "mr-2 h-4 w-4" })
-                    : null}
-                  {language || "Select language..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0">
-                <Command>
-                  <CommandInput placeholder="Search language..." />
-                  <CommandList>
-                    <CommandEmpty>No language found.</CommandEmpty>
-                    {Array.from(new Set(languages.map((lang) => lang.category))).map((category) => (
-                      <CommandGroup key={category} heading={category}>
-                        {languages
-                          .filter((lang) => lang.category === category)
-                          .map((lang) => (
-                            <CommandItem key={lang.name} onSelect={() => handleLanguageSelect(lang.name)}>
-                              <Check
-                                className={cn("mr-2 h-4 w-4", language === lang.name ? "opacity-100" : "opacity-0")}
-                              />
-                              {lang.icon({ className: "mr-2 h-4 w-4" })}
-                              {lang.name}
-                            </CommandItem>
-                          ))}
+            <div className="space-y-3">
+              <Label htmlFor="language-select" className="text-sm font-medium flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" />
+                Programming Language
+              </Label>
+              <Popover open={openLanguage} onOpenChange={setOpenLanguage}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openLanguage}
+                    className="w-full justify-between"
+                  >
+                    {language
+                      ? languages.find((lang) => lang.name === language)?.icon({ className: "mr-2 h-4 w-4" })
+                      : null}
+                    {language || "Select language..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search language..." />
+                    <CommandList>
+                      <CommandEmpty>No language found.</CommandEmpty>
+                      {Array.from(new Set(languages.map((lang) => lang.category))).map((category) => (
+                        <CommandGroup key={category} heading={category}>
+                          {languages
+                            .filter((lang) => lang.category === category)
+                            .map((lang) => (
+                              <CommandItem key={lang.name} onSelect={() => handleLanguageSelect(lang.name)}>
+                                <Check
+                                  className={cn("mr-2 h-4 w-4", language === lang.name ? "opacity-100" : "opacity-0")}
+                                />
+                                {lang.icon({ className: "mr-2 h-4 w-4" })}
+                                {lang.name}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      ))}
+                      <CommandGroup heading="Custom">
+                        <form onSubmit={handleCustomLanguageSubmit} className="flex p-2">
+                          <Input
+                            value={customLanguage}
+                            onChange={(e) => setCustomLanguage(e.target.value)}
+                            placeholder="Enter custom language"
+                            className="flex-grow"
+                          />
+                          <Button type="submit" size="sm" className="ml-2">
+                            Add
+                          </Button>
+                        </form>
                       </CommandGroup>
-                    ))}
-                    <CommandGroup heading="Custom">
-                      <form onSubmit={handleCustomLanguageSubmit} className="flex p-2">
-                        <Input
-                          value={customLanguage}
-                          onChange={(e) => setCustomLanguage(e.target.value)}
-                          placeholder="Enter custom language"
-                          className="flex-grow"
-                        />
-                        <Button type="submit" size="sm" className="ml-2">
-                          Add
-                        </Button>
-                      </form>
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-3">
+              <Label htmlFor="subtopic-select" className="text-sm font-medium flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" />
+                Subtopic
+              </Label>
+              <Popover open={openSubtopic} onOpenChange={setOpenSubtopic}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between">
+                    {subtopic || "Select subtopic..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search subtopic..." />
+                    <CommandList>
+                      <CommandEmpty>No subtopic found.</CommandEmpty>
+                      {getSubtopics(language).map((topic) => (
+                        <CommandItem key={topic} onSelect={() => handleSubtopicSelect(topic)}>
+                          <Check className={cn("mr-2 h-4 w-4", subtopic === topic ? "opacity-100" : "opacity-0")} />
+                          {topic}
+                        </CommandItem>
+                      ))}
+                      <CommandGroup heading="Custom">
+                        <form onSubmit={handleCustomSubtopicSubmit} className="flex p-2">
+                          <Input
+                            value={customSubtopic}
+                            onChange={(e) => setCustomSubtopic(e.target.value)}
+                            placeholder="Enter custom subtopic"
+                            className="flex-grow"
+                          />
+                          <Button type="submit" size="sm" className="ml-2">
+                            Add
+                          </Button>
+                        </form>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
           </motion.div>
 
           <motion.div
@@ -321,8 +394,8 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
                   tooltip: "Join us to start your coding journey",
                 },
                 notEnabled: {
-                  label: "Select a Language",
-                  tooltip: "Choose a programming language to continue",
+                  label: "Select Language & Subtopic",
+                  tooltip: "Choose a programming language and subtopic to continue",
                 },
                 noCredits: {
                   label: "Upgrade to Continue",

@@ -3,8 +3,9 @@
 import { CodeChallenge, QuizType } from "@/app/types"
 import { getAuthSession } from "@/lib/authOptions";
 import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
-import { titleToSlug } from "@/lib/slug";
+import { titleSubTopicToSlug, titleToSlug } from "@/lib/slug";
 import { NextResponse } from "next/server";
+import { generateCodingMCQs } from "./quizGenerator";
 
 
 
@@ -68,7 +69,8 @@ print(list(filter(lambda x: x % 2 == 0, range(10))))
 }
 
 export async function POST(req: Request) {
-  const { language, difficulty } = await req.json()
+  let { language, subtopic, difficulty, questionCount } = await req.json();
+  questionCount = questionCount === 0 ? 2 : questionCount;
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json(
@@ -80,17 +82,19 @@ export async function POST(req: Request) {
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   try {
-    let quizzes = dummyQuizzes[language] || dummyQuizzes["JavaScript"]
-    const slug=titleToSlug(language);
+    const slug = titleSubTopicToSlug(language, subtopic);
     const userQuiz = await createUserQuiz(session.user.id, language, 'code', slug);
     // Shuffle and slice to get random quizzes
-    quizzes = quizzes.sort(() => 0.5 - Math.random()).slice(0, 5)
-
-    // Add difficulty to each quiz (in a real scenario, you'd have different quizzes for each difficulty)
-    quizzes = quizzes.map((quiz) => ({ ...quiz, difficulty }))
     try {
       // 3. Create questions for the quiz
-      
+
+      let quizzes = await generateCodingMCQs(language, subtopic, difficulty, questionCount);  //dummyQuizzes[language] || dummyQuizzes["JavaScript"]
+
+      quizzes = quizzes.sort(() => 0.5 - Math.random()).slice(0, 5)
+      console.log(quizzes);
+      // Add difficulty to each quiz (in a real scenario, you'd have different quizzes for each difficulty)
+      quizzes = quizzes.map((quiz) => ({ ...quiz, difficulty }))
+
       await createQuestions(quizzes, userQuiz.id, QuizType.Code);
 
       // 4. Update topic count
@@ -113,10 +117,12 @@ export async function POST(req: Request) {
       });
       throw error;
     }
-  //  return Response.json(quizzes)
+    //  return Response.json(quizzes)
   } catch (error) {
     console.error(error)
     return Response.json({ error: "Failed to generate quizzes" }, { status: 500 })
   }
 }
+
+
 

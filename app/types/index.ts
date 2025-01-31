@@ -260,18 +260,25 @@ export interface CodeChallenge  {
   question: string
   codeSnippet?: string
   language?: string
-  options: string
+  options: string |string[]
   correctAnswer: string
 }
 
 
 export interface QuizQuestion {
   question: string
-  options: string
+  options: string[]
   codeSnippet: string | null
+  language?: string
 }
 
 export interface CodingQuizProps {
+  isFavorite: boolean
+  isPublic: boolean
+  slug: string
+  quizId: string
+  userId?: string
+  ownerId?: string
   quizData: {
     title: string
     questions: QuizQuestion[]

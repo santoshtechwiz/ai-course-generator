@@ -84,7 +84,7 @@ export function PublicQuizzes({ initialQuizzesData }: PublicQuizzesProps) {
       </div>
 
       <AnimatePresence>
-        {filteredQuizzes.length === 0 && status !== 'loading' && (
+        {filteredQuizzes.length === 0 && status !== 'success' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

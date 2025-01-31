@@ -2,8 +2,8 @@ import { CodingQuizProps } from "@/app/types";
 import prisma from "@/lib/db";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request, props: { params: { slug: string } }): Promise<NextResponse> {
-  const { slug } = props.params;
+export async function GET(_: Request, props: { params:Promise< { slug: string }> }): Promise<NextResponse> {
+  const { slug } = await props.params;
   if (!slug) {
     return NextResponse.json({ error: "Slug is required" }, { status: 400 });
   }
@@ -17,6 +17,8 @@ export async function GET(req: Request, props: { params: { slug: string } }): Pr
        isFavorite: true,
          isPublic: true,
          topic: true,
+         slug: true,
+         
         questions: {
           select: {
             question: true,
@@ -32,17 +34,22 @@ export async function GET(req: Request, props: { params: { slug: string } }): Pr
     }
 
     const quizData: CodingQuizProps = {
+      isFavorite: result.isFavorite ?? false,
+      isPublic: result.isPublic ?? false,
+      slug: slug,
+      quizId: result.slug,
       quizData: {
         title: result.topic,
         questions: result.questions.map(q => ({
           question: q.question,
           options: q.options ? JSON.parse(q.options) : [],
-          codeSnippet: q.codeSnippet
+          codeSnippet: q.codeSnippet,
+          language: "python"
         }))
       }
     };
 
-    return NextResponse.json(quizData.quizData);
+    return NextResponse.json(quizData);
   } catch (error) {
     console.error("Error fetching quiz:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
