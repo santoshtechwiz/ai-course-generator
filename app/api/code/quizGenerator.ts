@@ -1,4 +1,3 @@
-
 import { CodeChallenge } from "@/app/types"
 import OpenAI from "openai"
 
@@ -9,63 +8,76 @@ export async function generateCodingMCQs(
   subtopic: string,
   difficulty: string,
   questionCount: number = 2,
+  userType: "FREE" | "BASIC" | "PREMIUM" = "FREE"
 ): Promise<CodeChallenge[]> {
   try {
+    const model = userType === "PREMIUM" ? "gpt-4o-mini" : "gpt-3.5-turbo"
+    const codingQuestionCount = Math.ceil(questionCount * 0.9) // 90% of questions should be coding
+
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: model,
       messages: [
         {
           role: "system",
-          content: `Generate ${questionCount} coding MCQs on ${subtopic} in ${language} at ${difficulty} level.
-              Each MCQ must include:
-              - A clear question without code snippets.
-              - A code snippet in the "codeSnippet" field if needed for the question.
-              - Four answer options without labels (A, B, C, D). Options may contain code snippets if necessary.
-              - One correct answer.
-              Ensure all code is properly formatted and indented. Use triple backticks (\`\`\`) to enclose code snippets in options.`
+          content: `You are an AI that generates multiple-choice coding questions.`
         },
+        {
+          role: "user",
+          content: `Generate ${questionCount} ${difficulty} multiple-choice questions about ${language} ${subtopic}. 
+          At least ${codingQuestionCount} questions should involve coding problems.
+          Each question should have one correct answer and three incorrect options.
+          If the question involves code, put the code in a separate codeSnippet field.
+          Ensure all code is properly formatted and indented.`
+        }
       ],
       functions: [
         {
-          name: "create_coding_mcqs",
+          name: "createCodingMCQ",
           parameters: {
             type: "object",
             properties: {
-              quizzes: {
+              questions: {
                 type: "array",
                 items: {
                   type: "object",
                   properties: {
                     question: { type: "string" },
                     codeSnippet: { type: "string" },
-                    options: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-                    correctAnswer: { type: "string" },
+                    answer: { type: "string", description: "Correct answer, max 15 words" },
+                    option1: { type: "string", description: "Incorrect option, max 15 words" },
+                    option2: { type: "string", description: "Incorrect option, max 15 words" },
+                    option3: { type: "string", description: "Incorrect option, max 15 words" },
                   },
-                  required: ["question", "options", "correctAnswer"],
+                  required: ["question", "answer", "option1", "option2", "option3"],
                 },
-                minItems: questionCount,
-                maxItems: questionCount,
               },
             },
-            required: ["quizzes"],
+            required: ["questions"],
           },
         },
       ],
-      function_call: { name: "create_coding_mcqs" },
+      function_call: { name: "createCodingMCQ" },
     })
 
     const functionCall = response.choices[0].message.function_call
     if (!functionCall) throw new Error("Function call failed")
 
-    const quizData: { quizzes: CodeChallenge[] } = JSON.parse(functionCall.arguments)
+    const result = JSON.parse(functionCall.arguments || '{}')
 
-    return quizData.quizzes.map((q) => {
+    if (!result.questions || !Array.isArray(result.questions)) {
+      throw new Error('Invalid response format: questions array is missing.')
+    }
+
+    const quizzes: CodeChallenge[] = result.questions.map((q: any) => ({
+      question: q.question,
+      codeSnippet: q.codeSnippet || null,
+      options: [q.answer, q.option1, q.option2, q.option3].map(option => option.replace(/^[A-D]\.\s*/, '').trim()),
+      correctAnswer: q.answer.replace(/^[A-D]\.\s*/, '').trim(),
+    }))
+
+    return quizzes.map((q) => {
       if (q.codeSnippet && q.question.includes("```")) {
         throw new Error(`Code in question, should be in codeSnippet: ${q.question}`)
-      }
-      // Remove any A., B., C., D. labels from options
-      if (Array.isArray(q.options)) {
-        q.options = q.options.map(option => option.replace(/^[A-D]\.\s*/, '').trim())
       }
       return q
     })

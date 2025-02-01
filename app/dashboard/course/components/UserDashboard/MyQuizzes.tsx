@@ -23,6 +23,8 @@ const buildQuizSlug = (quizType: QuizType) => {
       return "openended"
     case "fill-blanks":
       return "blanks"
+    case "code":
+      return "code"
     default:
       return "quiz"
   }
@@ -36,6 +38,8 @@ const getQuizTypeLabel = (quizType: QuizType) => {
       return "Open Ended"
     case "fill-blanks":
       return "Fill in the Blanks"
+    case "code":
+      return "Code"
     default:
       return "Quiz"
   }
@@ -71,14 +75,14 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
     <ScrollArea className="h-[400px] pr-4">
       <div className="space-y-4">
         {quizzesToRender.map((quiz, index) => (
-          <Link href={`/dashboard/${buildQuizSlug(quiz.quizType)}/${quiz.slug}`} key={quiz.id} className="block">
+          <Link href={`/dashboard/${buildQuizSlug(quiz.quizType as QuizType)}/${quiz.slug}`} key={quiz.id} className="block">
             <Card className="hover:shadow-md transition-all duration-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="font-medium text-lg">{quiz.topic}</p>
                     <div className="flex items-center space-x-2 text-sm">
-                      <Badge className={getQuizColor(index)}>{getQuizTypeLabel(quiz.quizType)}</Badge>
+                      <Badge className={getQuizColor(index)}>{getQuizTypeLabel(quiz.quizType as QuizType)}</Badge>
                       {quiz.timeEnded ? (
                         <Badge variant="outline" className="bg-green-50 text-green-700">
                           <CheckCircle2 className="w-3 h-3 mr-1" />

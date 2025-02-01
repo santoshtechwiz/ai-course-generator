@@ -28,11 +28,8 @@ const QuizOptions: React.FC<QuizOptionsProps> = ({
           onClick={() => onSelect(option)}
           disabled={disabled}
         >
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium bg-secondary/50 px-2 py-1 rounded">
-              {String.fromCharCode(65 + index)}
-            </span>
-            {renderOptionContent(option)}
+          <div className="flex items-center">
+            <div className="pl-2 w-full">{renderOptionContent(option)}</div>
           </div>
         </Button>
       ))}

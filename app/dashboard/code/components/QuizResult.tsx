@@ -1,23 +1,94 @@
-import React from "react"
+"use client"
+
+import type React from "react"
+import { useEffect } from "react"
 import { motion } from "framer-motion"
-import { CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
+import { submitQuizData } from "@/app/actions/actions"
+import { useRouter } from "next/navigation"
 
 interface QuizResultProps {
   correctCount: number
   totalQuestions: number
   onRestartQuiz: () => void
+  isSubmitting: boolean
+  savedResults: {
+    slug: string
+    quizId: number
+    answers: Array<{
+      answer: string
+      timeSpent: number
+      hintsUsed: boolean
+    }>
+    elapsedTime: number
+    score: number
+    type: string
+  } | null // Allow null for cases where results might not be available
 }
 
-const QuizResult: React.FC<QuizResultProps> = ({ correctCount, totalQuestions, onRestartQuiz }) => {
-  const percentage = Math.round((correctCount / totalQuestions) * 100)
-  const session = useSession();
-  if(session.status !== "authenticated"){
-    return <SignInPrompt />
+const QuizResult: React.FC<QuizResultProps> = ({
+  correctCount,
+  totalQuestions: initialTotalQuestions,
+  onRestartQuiz,
+  isSubmitting,
+  savedResults,
+}) => {
+  const percentage = savedResults?.score ?? Math.round((correctCount / initialTotalQuestions) * 100)
+  const { data: session, status } = useSession()
+  const router = useRouter()
+
+  useEffect(() => {
+    const submitSavedResults = async () => {
+      if (session && savedResults) {
+        try {
+          await submitQuizData(savedResults)
+          // Clear saved results after successful submission
+          localStorage.removeItem("quizResults")
+        } catch (error) {
+          console.error("Failed to submit saved quiz results:", error)
+        }
+      }
+    }
+
+    submitSavedResults()
+  }, [session, savedResults])
+
+  const handleRestartQuiz = () => {
+    if (savedResults) {
+      router.push(`/dashboard/code/${savedResults.slug}`)
+    } else {
+      onRestartQuiz()
+    }
   }
+
+  const formatTime = (seconds: number | undefined): string => {
+    if (typeof seconds !== "number" || isNaN(seconds)) {
+      return "N/A"
+    }
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = Math.floor(seconds % 60)
+    return `${minutes}m ${remainingSeconds}s`
+  }
+
+  if (status === "loading" || isSubmitting) {
+    return <div>Loading...</div>
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div>
+        <SignInPrompt />
+        <p>Your results have been saved. Sign in to see your results and track your progress!</p>
+      </div>
+    )
+  }
+
+  const totalQuestions = savedResults?.answers.length ?? initialTotalQuestions
+  const score = savedResults?.score ?? percentage
 
   return (
     <motion.div
@@ -41,6 +112,7 @@ const QuizResult: React.FC<QuizResultProps> = ({ correctCount, totalQuestions, o
             <p className="text-xl">
               You got {correctCount} out of {totalQuestions} questions correct
             </p>
+            <p className="text-lg">Total time: {formatTime(savedResults?.elapsedTime)}</p>
             <p className="text-lg text-gray-600">
               {percentage >= 70
                 ? "Great job! You've mastered this quiz."
@@ -49,8 +121,8 @@ const QuizResult: React.FC<QuizResultProps> = ({ correctCount, totalQuestions, o
           </div>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Button onClick={onRestartQuiz} className="w-full max-w-xs">
-            Start New Quiz
+          <Button onClick={handleRestartQuiz} className="w-full max-w-xs">
+            Retake Quiz
           </Button>
         </CardFooter>
       </Card>
@@ -59,3 +131,4 @@ const QuizResult: React.FC<QuizResultProps> = ({ correctCount, totalQuestions, o
 }
 
 export default QuizResult
+
