@@ -17,12 +17,9 @@ async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   }
 }
 
-interface PageProps {
-  params: { slug: string }
-}
 
-export async function generateMetadata({ params }:  PageProps, parent: ResolvingMetadata): Promise<Metadata> {
-  const quizData = await getQuizData(params.slug)
+export async function generateMetadata({ params  }: { params: Promise<{ slug: string }> }, parent: ResolvingMetadata): Promise<Metadata> {
+  const quizData = await getQuizData((await params).slug)
 
   if (!quizData) {
     return notFound()
@@ -55,8 +52,8 @@ export async function generateMetadata({ params }:  PageProps, parent: Resolving
   }
 }
 
-export default async function Page({ params }: PageProps) {
-  const quizData = await getQuizData(params.slug)
+export default async function Page({ params  }: { params: Promise<{ slug: string }> }) {
+  const quizData = await getQuizData((await params).slug)
 
   if (!quizData) {
     return notFound()

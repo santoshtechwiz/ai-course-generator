@@ -9,6 +9,7 @@ import QuizOptions from "./QuizOptions"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { submitQuizData } from "@/app/actions/actions"
+import { QuizActions } from "../../mcq/components/QuizActions"
 
 interface QuizQuestion {
   question: string
@@ -193,36 +194,54 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardContent className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">{currentQuestion.question}</h3>
-        </div>
-        {currentQuestion.codeSnippet && (
-          <div className="my-4">{renderCode(currentQuestion.codeSnippet, currentQuestion.language)}</div>
-        )}
-        <div className="my-4">
-          <QuizOptions
-            options={options}
-            selectedOption={selectedOptions[currentQuestionIndex]}
-            onSelect={handleSelectOption}
-            disabled={false}
-            renderOptionContent={renderOptionContent}
-          />
-        </div>
-        <Button
-          className="w-full"
-          onClick={handleNextQuestion}
-          disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
-        >
-          {currentQuestionIndex < quizData.questions.length - 1 ? "Next Question" : "Finish Quiz"}
-        </Button>
-        <div className="text-sm text-gray-500">
-          Question {currentQuestionIndex + 1} of {quizData.questions.length}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center px-4 md:px-6 lg:px-8 w-full">
+      {/* Quiz Actions (Aligned) */}
+      <div className="w-full max-w-2xl mb-4">
+        <QuizActions quizId={quizId.toString()} quizSlug={slug} initialIsFavorite={isFavorite} initialIsPublic={isPublic} userId={userId} ownerId={ownerId} />
+      </div>
+
+      {/* Quiz Card */}
+
+
+
+
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-semibold">{currentQuestion.question}</h3>
+          </div>
+          {currentQuestion.codeSnippet && (
+            <div className="my-4">{renderCode(currentQuestion.codeSnippet, currentQuestion.language)}</div>
+          )}
+          <div className="my-4">
+            <QuizOptions
+              options={options}
+              selectedOption={selectedOptions[currentQuestionIndex]}
+              onSelect={handleSelectOption}
+              disabled={false}
+              renderOptionContent={renderOptionContent} />
+          </div>
+          <Button
+            className="w-full"
+            onClick={handleNextQuestion}
+            disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
+          >
+            {currentQuestionIndex < quizData.questions.length - 1 ? "Next Question" : "Finish Quiz"}
+          </Button>
+          <div className="text-sm text-gray-500">
+            Question {currentQuestionIndex + 1} of {quizData.questions.length}
+          </div>
+        </CardContent>
+      </Card>
+
+
+
+
+
+    </div>
   )
+
+
 }
 
 export default CodingQuiz

@@ -1,12 +1,9 @@
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import dynamic from "next/dynamic";
-import ConfigurableQuizPDF, { QuizPDFProps } from "./QuizPDF";
+import ConfigurableQuizPDF, { QuizPDFProps } from "./ConfigurableQuizPDF";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon } from "lucide-react";
 
 
-
-const QuizPDFDynamic = dynamic(() => Promise.resolve(ConfigurableQuizPDF), { ssr: false });
 
 const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
   const quizSlug = "example-quiz"; // Replace with actual quiz slug
