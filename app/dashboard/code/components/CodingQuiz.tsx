@@ -191,9 +191,9 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
         )}
       </span>
     );
-  };
+};
 
-  const renderCode = (code: string, language = "javascript") => {
+const renderCode = (code: string, language = "javascript") => {
     const cleanCode = code.replace(/^```[\w]*\n?|\n?```$/g, "");
 
     return (
@@ -213,8 +213,7 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
         </SyntaxHighlighter>
       </div>
     );
-  };
-
+};
   const renderOptionContent = (option: string) => {
     const codeRegex = /```[\s\S]*?```/g;
     const parts = option.split(codeRegex);

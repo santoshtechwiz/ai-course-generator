@@ -1,8 +1,11 @@
 "use client"
-import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer"
+import { Document, Page, Text, View, StyleSheet, Font, pdf } from "@react-pdf/renderer"
 import { marked } from "marked"
-import { PDFDownloadLink } from "@react-pdf/renderer"
 import { Button } from "@/components/ui/button"
+
+import { useState } from "react"
+import { SiAdobe } from "react-icons/si"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 // Register a font with multiple weights
 Font.register({
@@ -152,16 +155,51 @@ const PDFDocument = ({ content, chapterName }: { content: string; chapterName: s
 }
 
 const PDFGenerator = ({ markdown, chapterName }: { markdown: string; chapterName: string }) => {
+  const [isDownloading, setIsDownloading] = useState(false)
+  const { subscriptionStatus,canDownloadPDF } = useSubscriptionStore()
+
+  const handleDownload = async () => {
+    setIsDownloading(true)
+    let url = ""
+
+    try {
+      const blob = await pdf(<PDFDocument content={markdown} chapterName={chapterName} />).toBlob()
+      url = URL.createObjectURL(blob)
+
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${chapterName.replace(/\s+/g, "_")}_summary.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error("Error in download process:", error)
+    } finally {
+      if (url) URL.revokeObjectURL(url)
+      setIsDownloading(false)
+    }
+  }
+
+  const isDisabled =
+    !subscriptionStatus ||
+    subscriptionStatus.subscriptionPlan === "FREE" ||
+    subscriptionStatus.subscriptionPlan === "BASIC"
+
   return (
     <div className="flex justify-end mt-4">
-      <PDFDownloadLink
-        document={<PDFDocument content={markdown} chapterName={chapterName} />}
-        fileName={`${chapterName.replace(/\s+/g, "_")}_summary.pdf`}
+      <Button
+        onClick={handleDownload}
+        disabled={isDownloading || isDisabled}
+        variant="outline"
+        className="flex items-center gap-2"
       >
-        {({ blob, url, loading, error }) => (
-          <Button disabled={loading}>{loading ? "Generating PDF..." : "Download PDF"}</Button>
+        {isDownloading ? (
+          <span className="animate-spin border-2 border-t-transparent border-gray-600 rounded-full w-4 h-4"></span>
+        ) : (
+          <SiAdobe className="h-5 w-5" />
         )}
-      </PDFDownloadLink>
+        <span>{isDisabled ? "Upgrade to Download" : isDownloading ? "Generating PDF..." : "Download PDF"}</span>
+      </Button>
     </div>
   )
 }

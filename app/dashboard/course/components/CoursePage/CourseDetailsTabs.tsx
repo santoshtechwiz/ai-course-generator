@@ -1,23 +1,25 @@
-'use client'
+"use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import type React from "react"
+import { useState, useEffect, useCallback } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Lock } from "lucide-react"
 import dynamic from "next/dynamic"
 import ConfettiExplosion from "react-confetti-explosion"
-import { FullChapterType, FullCourseType } from "@/app/types"
-import { PDFViewer } from "@react-pdf/renderer"
-import PDFGenerator from "@/app/components/shared/PDFGenerator"
+import type { FullChapterType, FullCourseType } from "@/app/types"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
+
 
 export interface CourseDetailsTabsProps {
   chapterId: number
   name: string
   course: FullCourseType
-  chapter: FullChapterType,
-  planId?: string
+  chapter: FullChapterType
 }
 
 const CourseAISummary = dynamic(() => import("./CourseAISummary"), { ssr: false })
@@ -31,17 +33,14 @@ const tabVariants = {
   exit: { opacity: 0, y: -10 },
 }
 
-const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
-  chapterId,
-  name,
-  course,
-  chapter,
-  planId
-}) => {
+const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, course, chapter }) => {
   const [activeTab, setActiveTab] = useState<Tab>("summary")
   const [isSummaryReady, setIsSummaryReady] = useState(false)
   const [isExploding, setIsExploding] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { subscriptionStatus } = useSubscriptionStore()
+  const isPremium = subscriptionStatus?.subscriptionPlan === "PRO"
 
   const handleSummaryReady = useCallback((isReady: boolean) => {
     setIsSummaryReady(isReady)
@@ -59,7 +58,15 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
     setIsSummaryReady(false)
     setActiveTab("summary")
     setError(null)
-  }, [chapterId])
+  }, []) // Removed unnecessary dependency: chapterId
+
+  const handleTabChange = (value: string) => {
+    if (value === "quiz" && !isPremium) {
+      // Don't change the tab for non-premium users
+      return
+    }
+    setActiveTab(value as Tab)
+  }
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -71,10 +78,7 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
           </Alert>
         )}
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as Tab)}
-        >
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger
               value="summary"
@@ -93,13 +97,29 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
                 )}
               </span>
             </TabsTrigger>
-            <TabsTrigger
-              value="quiz"
-              disabled={!isSummaryReady}
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Quiz
-            </TabsTrigger>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative">
+                    <TabsTrigger
+                      value="quiz"
+                      disabled={!isSummaryReady || !isPremium}
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                    >
+                      Quiz
+                      {!isPremium && <Lock className="w-4 h-4 ml-2 inline-block" />}
+                    </TabsTrigger>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {!isSummaryReady
+                    ? "Complete the summary to unlock the quiz"
+                    : !isPremium
+                      ? "Upgrade to Premium to access quizzes"
+                      : "Take the quiz to test your knowledge"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </TabsList>
 
           <div className="relative min-h-[300px]">
@@ -124,22 +144,19 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({
                     name={name}
                     onSummaryReady={handleSummaryReady}
                   />
-                  
                 </TabsContent>
                 <TabsContent value="quiz" className="mt-0">
-                  {planId === "PREMIUM" ? (
-                  <CourseDetailsQuiz
-                    chapter={chapter}
-                    course={course}
-                    onError={handleError}
-                  />
+                  {isPremium ? (
+                    <CourseDetailsQuiz chapter={chapter} course={course} onError={handleError} />
                   ) : (
-                  <Alert variant="warning" className="mb-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                    This feature is available for premium users only.
-                    </AlertDescription>
-                  </Alert>
+                    <div className="text-center p-8">
+                      <Lock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Upgrade to Premium to access quizzes and test your knowledge.
+                      </p>
+                      <Button variant="default">Upgrade to Premium</Button>
+                    </div>
                   )}
                 </TabsContent>
               </motion.div>

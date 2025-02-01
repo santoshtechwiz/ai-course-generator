@@ -1,70 +1,93 @@
+import { Zap, Rocket, Star, Crown } from 'lucide-react'
+
 export const SUBSCRIPTION_PLANS = [
   {
     name: "FREE",
+    icon: Zap,
     options: [{ duration: 1, price: 0 }],
     tokens: 3,
     limits: {
-      courses: 1,
-      mcq: 3,
-      openEnded: 3,
-      fillInTheBlanks: 3,
+      courses: 3,
+      totalQuestions: 3,
     },
     features: [
-      "1 course",
-      "Up to 5 sections per course",
-      "Basic MCQ quiz support",
-      "Basic Fill-in-the-Blank quiz support",
-      "Basic open-ended quiz support",
+      "3 courses",
+      "Up to 3 questions (combined across MCQs, open-ended, and coding quizzes)",
+      "Basic features ",
+      "Video transcripts",
+      "No Video Quiz",
+      "No PDF downloads",
+      "Low AI accuracy",
     ],
   },
   {
     name: "BASIC",
+    icon: Rocket,
     options: [
       { duration: 1, price: 9.99 },
       { duration: 6, price: 49.99 },
     ],
     tokens: 10,
     limits: {
-      courses: Number.POSITIVE_INFINITY,
-      mcq: 10,
-      openEnded: 5,
-      fillInTheBlanks: 5,
+      courses: 10,
+      totalQuestions: 5,
     },
     features: [
-      "Unlimited courses",
-      "Up to 5 sections per course",
+      "10 courses",
+      "Up to 5 questions combined across MCQ, open-ended, and coding quizzes",
       "Video transcripts",
-      "Video quizzes",
-      "Enhanced MCQ quizzes",
-      "Enhanced Fill-in-the-Blank quizzes",
-      "Enhanced open-ended quizzes",
+      "Improved AI-generated content accuracy",
     ],
   },
   {
     name: "PRO",
+    icon: Star,
     options: [
       { duration: 1, price: 19.99 },
       { duration: 6, price: 99.99 },
     ],
     tokens: 50,
     limits: {
-      courses: Number.POSITIVE_INFINITY,
-      sectionsPerCourse: 20,
-      mcq: 15,
-      openEnded: 15,
-      fillInTheBlanks: 15,
+      courses: 50,
+      totalQuestions: 10,
     },
     features: [
-      "Unlimited courses",
-      "Up to 20 sections per course",
-      "Video transcripts",
-      "Video quizzes",
-      "Advanced MCQ quizzes",
-      "Advanced Fill-in-the-Blank quizzes",
-      "Advanced open-ended quizzes",
+      "50 courses",
+      "Up to 10 questions combined across MCQ, open-ended, and coding quizzes",
+      "Advanced features and PDF downloads",
+      "High AI accuracy",
+      "Video Quiz",
+      "Priority support",
     ],
   },
-] as const
+  {
+    name: "ULTIMATE",
+    icon: Crown,
+    options: [
+      { duration: 1, price: 39.99 },
+      { duration: 6, price: 199.99 },
+    ],
+    tokens: 100,
+    limits: {
+      courses: 100,
+      totalQuestions: 15,
+    },
+    features: [
+      "100 courses",
+      "Up to 15 questions combined across MCQ, open-ended, and coding quizzes",
+      "Expert features and PDF downloads",
+      "Highest AI accuracy",
+      "coding quizzes",
+      "Video Quiz",
+      "Priority support",
+    ],
+  },
+] as const;
+
+
+
+
+
 
 export const FAQ_ITEMS = [
   {
