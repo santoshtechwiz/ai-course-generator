@@ -45,6 +45,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const [loading, setLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const currentQuestion = questions[currentQuestionIndex]
 
   const saveQuizResults = useCallback(
@@ -182,20 +183,24 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
   }, [currentQuestion])
 
   const nextQuestion = useCallback(() => {
-    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
-    setUserAnswers((prev) => [...prev, selectedAnswer || ""])
-    setQuestionTimes((prev) => [...prev, currentTime])
+    setIsSubmitting(true)
+    setTimeout(() => {
+      const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
+      setUserAnswers((prev) => [...prev, selectedAnswer || ""])
+      setQuestionTimes((prev) => [...prev, currentTime])
 
-    if (selectedAnswer === currentQuestion.answer) {
-      setScore((prevScore) => prevScore + 1)
-    }
+      if (selectedAnswer === currentQuestion.answer) {
+        setScore((prevScore) => prevScore + 1)
+      }
 
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
-      setSelectedAnswer(null)
-    } else {
-      handleQuizCompletion()
-    }
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
+        setSelectedAnswer(null)
+      } else {
+        handleQuizCompletion()
+      }
+      setIsSubmitting(false)
+    }, 500) // Simulate a delay for smoother UX
   }, [
     currentQuestion.answer,
     currentQuestionIndex,
@@ -385,9 +390,17 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
             Question time:{" "}
             {formatTime(timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0))}
           </p>
-          <Button onClick={nextQuestion} disabled={!selectedAnswer} className="w-full sm:w-auto">
-            {currentQuestionIndex === questions.length - 1 ? "Finish Quiz" : "Next Question"}
-            <ArrowRight className="ml-2 h-4 w-4" />
+          <Button onClick={nextQuestion} disabled={!selectedAnswer || isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? (
+              "Submitting..."
+            ) : currentQuestionIndex === questions.length - 1 ? (
+              "Finish Quiz"
+            ) : (
+              <>
+                Next Question
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
+            )}
           </Button>
         </div>
       )}

@@ -1,33 +1,56 @@
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import ConfigurableQuizPDF, { QuizPDFProps } from "./ConfigurableQuizPDF";
-import { Button } from "@/components/ui/button";
-import { DownloadIcon } from "lucide-react";
+"use client"
 
+import React, { useState, useEffect } from "react"
+import { pdf } from "@react-pdf/renderer"
+import type { QuizPDFProps } from "./ConfigurableQuizPDF"
+import { Button } from "@/components/ui/button"
+import { DownloadIcon } from "lucide-react"
+import ConfigurableQuizPDF from "./ConfigurableQuizPDF"
 
 
 const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
-  const quizSlug = "example-quiz"; // Replace with actual quiz slug
-  return (
-    <PDFDownloadLink document={<ConfigurableQuizPDF quizData={quizData} />} fileName={`${quizSlug}-quiz.pdf`}>
-      {({ loading }: { loading: boolean }) => (
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={loading}
-          className="flex-1 md:flex-none md:w-28 transition-all duration-300"
-        >
-          {loading ? (
-            <span className="loader"></span>
-          ) : (
-            <>
-              <DownloadIcon className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">PDF</span>
-            </>
-          )}
-        </Button>
-      )}
-    </PDFDownloadLink>
-  );
-};
+  const [isClient, setIsClient] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const quizSlug =quizData?.title+".pdf";
 
-export default QuizPDFDownload;
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) return null
+
+  const handleDownload = async () => {
+    setIsDownloading(true)
+    let url = ""
+
+    try {
+      const blob = await pdf(<ConfigurableQuizPDF quizData={quizData} />).toBlob()
+      url = URL.createObjectURL(blob)
+
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${quizSlug}-quiz.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error("Error in download process:", error)
+    } finally {
+      if (url) URL.revokeObjectURL(url)
+      setIsDownloading(false)
+    }
+  }
+
+  return (
+    <Button onClick={handleDownload} disabled={isDownloading} variant="outline" className="flex items-center gap-2">
+      {isDownloading ? (
+        <span className="animate-spin border-2 border-t-transparent border-gray-600 rounded-full w-4 h-4"></span>
+      ) : (
+        <DownloadIcon className="h-5 w-5" />
+      )}
+      <span>Download PDF</span>
+    </Button>
+  )
+}
+
+export default QuizPDFDownload

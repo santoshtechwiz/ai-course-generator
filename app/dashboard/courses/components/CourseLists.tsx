@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X } from "lucide-react";
+import { Search, X } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { CourseCard } from "./CourseCard";
-import { CreateQuizCard } from "@/app/components/CreateQuizCard";
+import { CreateCard } from "@/app/components/CreateCard";
 import { useInView } from "react-intersection-observer";
-import { Skeleton } from "@/components/ui/skeleton";
-import { debounce } from "lodash";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface Course {
   id: string;
@@ -25,34 +24,30 @@ interface Course {
 
 interface CourseListProps {
   initialCourses: Course[];
+  url: string;
 }
 
-const CourseList = ({ initialCourses }: CourseListProps) => {
-  const [filteredCourses, setFilteredCourses] = useState(initialCourses);
+const CourseList = ({ initialCourses, url }: CourseListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const [showCreatePrompt, setShowCreatePrompt] = useState(false);
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const { ref, inView } = useInView({
     threshold: 0.1,
     triggerOnce: true,
   });
 
-  // Debounced search function
-  const handleSearch = debounce((query: string) => {
-    const lowercaseQuery = query.toLowerCase();
-    const filtered = initialCourses.filter(
+  const filteredCourses = useMemo(() => {
+    const lowercaseQuery = debouncedSearchQuery.toLowerCase();
+    return initialCourses.filter(
       (course) =>
         course.name.toLowerCase().includes(lowercaseQuery) ||
-        (course.description?.toLowerCase() || "").includes(lowercaseQuery),
+        (course.description?.toLowerCase() || "").includes(lowercaseQuery)
     );
-    setFilteredCourses(filtered);
-    setIsSearching(lowercaseQuery.length > 0);
-  }, 300);
+  }, [initialCourses, debouncedSearchQuery]);
 
-  useEffect(() => {
-    handleSearch(searchQuery);
-  }, [searchQuery, initialCourses]);
+  const isSearching = debouncedSearchQuery.length > 0;
 
   useEffect(() => {
     if (inView) {
@@ -62,17 +57,16 @@ const CourseList = ({ initialCourses }: CourseListProps) => {
 
   const handleClearSearch = () => {
     setSearchQuery("");
-    handleSearch("");
   };
 
   if (!initialCourses || initialCourses.length === 0) {
     return (
       <div className="text-center">
         <p className="text-gray-500 mb-4">No courses available.</p>
-        <CreateQuizCard
+        <CreateCard
           title="Create Your First Course"
           description="Start your teaching journey by creating your first course!"
-          createUrl="http://localhost:3000/dashboard/create"
+          createUrl={url}
           animationDuration={2.0}
         />
       </div>
@@ -117,14 +111,14 @@ const CourseList = ({ initialCourses }: CourseListProps) => {
             <p className="text-xl text-muted-foreground mb-4">
               {isSearching ? "No courses found matching your search." : "No courses available."}
             </p>
-            <CreateQuizCard
+            <CreateCard
               title={isSearching ? "Create New Course" : "Add Your First Course"}
               description={
                 isSearching
                   ? "Can't find what you're looking for? Create a new course!"
                   : "Start your teaching journey by creating your first course!"
               }
-              createUrl="http://localhost:3000/dashboard/create"
+              createUrl={url}
               animationDuration={2.0}
             />
           </motion.div>
@@ -159,10 +153,10 @@ const CourseList = ({ initialCourses }: CourseListProps) => {
             exit={{ opacity: 0, y: 50 }}
             className="fixed bottom-4 right-4 z-20"
           >
-            <CreateQuizCard
+            <CreateCard
               floating
               title="Create Course"
-              createUrl="http://localhost:3000/dashboard/create"
+              createUrl={url}
               animationDuration={2.0}
               className="w-auto"
             />

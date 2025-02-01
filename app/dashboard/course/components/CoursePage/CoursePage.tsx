@@ -15,6 +15,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Menu, VideotapeIcon, X } from "lucide-react"
 import { GlobalLoader } from "@/app/components/GlobalLoader"
+import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface State {
   selectedVideoId: string | undefined
@@ -63,7 +65,6 @@ const MemoizedMainContent = React.memo(MainContent)
 const MemoizedRightSidebar = React.memo(RightSidebar)
 
 export default function CoursePage({ course, initialChapterId }: CoursePageProps) {
- 
   const { user, loading: isProfileLoading, error } = useUser()
   const [state, dispatch] = useReducer(reducer, {
     selectedVideoId: undefined,
@@ -348,9 +349,15 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
   const isSubscribed = session?.user?.userType !== "Free"
 
-  if (isLoading) {
+  if (isLoading || isProfileLoading) {
     return (
-      <GlobalLoader loading={isLoading} />
+      <div className="flex flex-col min-h-screen bg-background">
+        <Skeleton className="h-14 w-full sticky top-0 z-50" />
+        <div className="flex flex-1 overflow-hidden">
+          <Skeleton className="flex-grow lg:w-3/4" />
+          <Skeleton className="w-1/4 hidden lg:block" />
+        </div>
+      </div>
     )
   }
 
@@ -401,12 +408,10 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         <AnimatePresence>
           {(isSidebarOpen || !isSmallScreen) && (
             <motion.div
-              className={`
-                w-full lg:w-1/4 bg-background
-                overflow-hidden flex flex-col
-                fixed inset-y-0 right-0 z-50
-                lg:relative lg:translate-x-0
-              `}
+              className={cn(
+                "w-full lg:w-1/4 bg-background overflow-hidden flex flex-col fixed inset-y-0 right-0 z-50 lg:relative lg:translate-x-0",
+                isSmallScreen && "shadow-lg"
+              )}
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -445,4 +450,3 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     </div>
   )
 }
-

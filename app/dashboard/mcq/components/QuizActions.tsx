@@ -55,8 +55,6 @@ export function QuizActions({
         const response = await fetch(`/api/quiz/${quizSlug}`)
         if (response.ok) {
           const quizData = await response.json()
-          console.log(quizData)
-          console.log(quizData.quizData)
           setData(quizData.quizData)
           setIsPublic(quizData.isPublic)
           setIsFavorite(quizData.isFavorite)
@@ -171,17 +169,25 @@ export function QuizActions({
       className="space-y-4"
     >
       <div className="flex items-center justify-start space-x-2 bg-muted p-2 rounded-md overflow-x-auto">
+        {/* Public/Private Button */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={isPublic ? "default" : "secondary"}
-                size="icon"
+                variant={isPublic ? "secondary" : "destructive"}
+                size="sm"
                 onClick={togglePublic}
                 disabled={isPublicLoading}
-                className="w-10 h-10 transition-all duration-300"
+                className="transition-all duration-300"
               >
-                {isPublicLoading ? <span className="loader"></span> : <Eye className="h-4 w-4" />}
+                {isPublicLoading ? (
+                  <span className="loader"></span>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">{isPublic ? "Public" : "Private"}</span>
+                  </>
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -192,20 +198,24 @@ export function QuizActions({
           </Tooltip>
         </TooltipProvider>
 
+        {/* Favorite/Unfavorite Button */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={isFavorite ? "default" : "secondary"}
-                size="icon"
+                variant={isFavorite ? "link" : "secondary"}
+                size="sm"
                 onClick={toggleFavorite}
                 disabled={isFavoriteLoading}
-                className="w-10 h-10 transition-all duration-300"
+                className="transition-all duration-300"
               >
                 {isFavoriteLoading ? (
                   <span className="loader"></span>
                 ) : (
-                  <Star className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+                  <>
+                    <Star className={`h-4 w-4 md:mr-2 ${isFavorite ? "fill-current" : ""}`} />
+                    <span className="hidden md:inline">{isFavorite ? "Favorited" : "Favorite"}</span>
+                  </>
                 )}
               </Button>
             </TooltipTrigger>
@@ -218,17 +228,25 @@ export function QuizActions({
           </Tooltip>
         </TooltipProvider>
 
+        {/* Share Button */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                size="icon"
+                size="sm"
                 onClick={handleShare}
                 disabled={isShareLoading}
-                className="w-10 h-10 transition-all duration-300"
+                className="transition-all duration-300"
               >
-                {isShareLoading ? <span className="loader"></span> : <Share2 className="h-4 w-4" />}
+                {isShareLoading ? (
+                  <span className="loader"></span>
+                ) : (
+                  <>
+                    <Share2 className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">Share</span>
+                  </>
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -237,6 +255,7 @@ export function QuizActions({
           </Tooltip>
         </TooltipProvider>
 
+        {/* PDF Download Button (PRO only) */}
         {subscriptionStatus?.subscriptionPlan === "PRO" && !isLoading && (
           <TooltipProvider>
             <Tooltip>
@@ -250,15 +269,23 @@ export function QuizActions({
           </TooltipProvider>
         )}
 
+        {/* Delete Button */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="destructive"
-              size="icon"
+              size="sm"
               disabled={isDeleteLoading}
-              className="w-10 h-10 transition-all duration-300"
+              className="transition-all duration-300"
             >
-              {isDeleteLoading ? <span className="loader"></span> : <Trash2 className="h-4 w-4" />}
+              {isDeleteLoading ? (
+                <span className="loader"></span>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Delete</span>
+                </>
+              )}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -278,4 +305,3 @@ export function QuizActions({
     </motion.div>
   )
 }
-
