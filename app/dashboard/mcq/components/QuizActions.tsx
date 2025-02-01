@@ -67,7 +67,7 @@ export function QuizActions({
     fetchQuizState()
   }, [quizSlug, quizId])
 
-  if (userId !== ownerId) {
+  if (!userId || !ownerId || userId !== ownerId) {
     return null
   }
 
