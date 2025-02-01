@@ -17,6 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import PlanAwareButton from "@/app/components/PlanAwareButton"
 import { languages, getSubtopics } from "@/config/lang"
+import { SubscriptionSlider } from "@/app/components/SubscriptionSlider"
 
 interface CodeQuizFormProps {
   credits: number
@@ -294,7 +295,7 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
                 {questionCount}
               </motion.span>
             </Label>
-            <Slider
+            {/* <Slider
               id="questionCount"
               min={1}
               max={maxQuestions}
@@ -302,6 +303,11 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
               value={[questionCount]}
               onValueChange={(values) => setQuestionCount(values[0])}
               className="w-full"
+            /> */}
+            <SubscriptionSlider
+              value={questionCount}
+              onValueChange={setQuestionCount}
+              ariaLabel="Select number of questions"
             />
           </motion.div>
 

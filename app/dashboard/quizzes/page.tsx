@@ -1,12 +1,14 @@
 import { Suspense } from "react"
 import { PublicQuizzes } from "./components/PublicQuizzes"
 import { getQuizzes } from "@/app/actions/getQuizes"
-
+import { getAuthSession } from "@/lib/authOptions"
 
 export const dynamic = "force-dynamic"
 
-const QuizPage=async()=> {
-  const initialQuizzesData = await getQuizzes(1, 10)
+const QuizPage = async () => {
+  const session = await getAuthSession();
+  const userId = session?.user?.id || null; 
+  const initialQuizzesData = await getQuizzes(1, 10,  userId || undefined);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -15,7 +17,7 @@ const QuizPage=async()=> {
         <PublicQuizzes initialQuizzesData={initialQuizzesData} />
       </Suspense>
     </div>
-  )
-}
-export default QuizPage;
+  );
+};
 
+export default QuizPage;
