@@ -15,7 +15,8 @@ interface Quiz {
 
 
 
-export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficulty = "medium"): Promise<Quiz> => {
+export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficulty = "medium",userType="FREE"): Promise<Quiz> => {
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo" : "gpt-4o-mini";
   const functions = [
     {
       name: "createOpenEndedQuiz",
@@ -65,7 +66,7 @@ export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficult
   ]
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: model,
     messages: [
       {
         role: "system",
@@ -92,10 +93,11 @@ export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficult
 
 export const generateOpenEndedFillIntheBlanks = async (
   topic: string,
-  amount: number
+  amount: number,
+  userType: string = "FREE"
 ): Promise<Quiz> => {
   const useDummyData = false; // Use dummy data for local testing
-  
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo" : "gpt-4o-mini";
   if (useDummyData) {
     // Return dummy data if not making an actual API call
     return {
@@ -153,7 +155,7 @@ export const generateOpenEndedFillIntheBlanks = async (
   ];
   
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model:model,
     messages: [
       {
         role: "system",

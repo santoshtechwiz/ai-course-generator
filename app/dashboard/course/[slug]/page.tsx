@@ -86,8 +86,8 @@ export async function generateMetadata(
 }
 
 // Main Course Page Component
-export default async function Page({ params }: { params: { slug: string } }) {
-  const slug = params.slug;
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const slug = (await params).slug;
   const course = await getCourseData(slug);
 
   if (!course) {

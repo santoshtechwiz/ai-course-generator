@@ -1,6 +1,6 @@
 import { getAuthSession } from "@/lib/authOptions";
 import { prisma } from "@/lib/db";
-import { chatGptRequest } from "@/lib/chatgpt/strict_output";
+import { chatGptRequest } from "@/lib/chatgpt/chatGptRequest";
 import { Course } from "@prisma/client";
 
 // Define types for function returns

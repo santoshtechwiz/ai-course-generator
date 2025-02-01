@@ -1,4 +1,4 @@
-import { chatGptRequest } from './strict_output';
+import { chatGptRequest } from './chatGptRequest';
 
 // Default token limit for truncation
 const MAX_TOKENS = 4000;

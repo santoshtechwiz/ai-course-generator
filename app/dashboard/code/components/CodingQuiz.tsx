@@ -1,124 +1,125 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useCallback } from "react"
-import { motion } from "framer-motion"
-import { CheckCircle, XCircle } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import QuizOptions from "./QuizOptions"
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
-import { submitQuizData } from "@/app/actions/actions"
-import { QuizActions } from "../../mcq/components/QuizActions"
-import { useSession } from "next-auth/react"
-import { SignInPrompt } from "@/app/components/SignInPrompt"
-import { useRouter } from "next/navigation"
+import React, { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
+import { CheckCircle, RefreshCcw, Trophy, XCircle } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import QuizOptions from "./QuizOptions";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { submitQuizData } from "@/app/actions/actions";
+import { QuizActions } from "../../mcq/components/QuizActions";
+import { useSession } from "next-auth/react";
+import { SignInPrompt } from "@/app/components/SignInPrompt";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface QuizQuestion {
-  question: string
-  options: string[]
-  codeSnippet: string | null
-  language?: string
+  question: string;
+  options: string[];
+  codeSnippet: string | null;
+  language?: string;
 }
 
 interface CodingQuizProps {
-  quizId: number
-  slug: string
-  isFavorite: boolean
-  isPublic: boolean
-  userId: string
-  ownerId: string
+  quizId: number;
+  slug: string;
+  isFavorite: boolean;
+  isPublic: boolean;
+  userId: string;
+  ownerId: string;
   quizData: {
-    title: string
-    questions: QuizQuestion[]
-  }
+    title: string;
+    questions: QuizQuestion[];
+  };
 }
 
 const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPublic, userId, ownerId, quizData }) => {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>(
-    new Array(quizData.questions.length).fill(null),
-  )
-  const [startTimes, setStartTimes] = useState<number[]>(new Array(quizData.questions.length).fill(Date.now()))
-  const [timeSpent, setTimeSpent] = useState<number[]>(new Array(quizData.questions.length).fill(0))
-  const [quizCompleted, setQuizCompleted] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [quizResults, setQuizResults] = useState<any>(null)
-  const router = useRouter()
-  const { data: session, status } = useSession()
+    new Array(quizData.questions.length).fill(null)
+  );
+  const [startTimes, setStartTimes] = useState<number[]>(new Array(quizData.questions.length).fill(Date.now()));
+  const [timeSpent, setTimeSpent] = useState<number[]>(new Array(quizData.questions.length).fill(0));
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quizResults, setQuizResults] = useState<any>(null);
+  const router = useRouter();
+  const { data: session, status } = useSession();
 
   const currentQuestion: QuizQuestion = quizData.questions[currentQuestionIndex] ?? {
     question: "",
     options: [],
     codeSnippet: null,
     language: "javascript",
-  }
-  const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : []
+  };
+  const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : [];
 
   useEffect(() => {
     // Start timing for the first question
     setStartTimes((prev) => {
-      const newStartTimes = [...prev]
-      newStartTimes[0] = Date.now()
-      return newStartTimes
-    })
+      const newStartTimes = [...prev];
+      newStartTimes[0] = Date.now();
+      return newStartTimes;
+    });
 
     // Check for saved results in localStorage
-    const savedResults = localStorage.getItem("quizResults")
+    const savedResults = localStorage.getItem("quizResults");
     if (savedResults) {
-      setQuizResults(JSON.parse(savedResults))
-      setQuizCompleted(true)
+      setQuizResults(JSON.parse(savedResults));
+      setQuizCompleted(true);
     }
-  }, [])
+  }, []);
 
   const handleSelectOption = (option: string) => {
     setSelectedOptions((prev) => {
-      const newSelectedOptions = [...prev]
-      newSelectedOptions[currentQuestionIndex] = option
-      return newSelectedOptions
-    })
-  }
+      const newSelectedOptions = [...prev];
+      newSelectedOptions[currentQuestionIndex] = option;
+      return newSelectedOptions;
+    });
+  };
 
   const calculateScore = useCallback(() => {
     return selectedOptions.reduce((score, selected, index) => {
-      return score + (selected === quizData.questions[index].options[0] ? 1 : 0)
-    }, 0)
-  }, [selectedOptions, quizData.questions])
+      return score + (selected === quizData.questions[index].options[0] ? 1 : 0);
+    }, 0);
+  }, [selectedOptions, quizData.questions]);
 
   const handleNextQuestion = useCallback(async () => {
     // Calculate time spent on current question
-    const currentTime = Date.now()
-    const timeSpentOnQuestion = Math.round((currentTime - startTimes[currentQuestionIndex]) / 1000)
+    const currentTime = Date.now();
+    const timeSpentOnQuestion = Math.round((currentTime - startTimes[currentQuestionIndex]) / 1000);
 
     setTimeSpent((prev) => {
-      const newTimeSpent = [...prev]
-      newTimeSpent[currentQuestionIndex] = timeSpentOnQuestion
-      return newTimeSpent
-    })
+      const newTimeSpent = [...prev];
+      newTimeSpent[currentQuestionIndex] = timeSpentOnQuestion;
+      return newTimeSpent;
+    });
 
     if (currentQuestionIndex < quizData.questions.length - 1) {
-      setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       // Start timing for the next question
       setStartTimes((prev) => {
-        const newStartTimes = [...prev]
-        newStartTimes[currentQuestionIndex + 1] = Date.now()
-        return newStartTimes
-      })
+        const newStartTimes = [...prev];
+        newStartTimes[currentQuestionIndex + 1] = Date.now();
+        return newStartTimes;
+      });
     } else {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
       try {
-        const correctCount = calculateScore()
-        const score = (correctCount / quizData.questions.length) * 100
+        const correctCount = calculateScore();
+        const score = (correctCount / quizData.questions.length) * 100;
 
         // Calculate the total time spent on all questions
         const totalTimeSpent =
-          timeSpent.reduce((sum, time) => sum + time, 0) + (Date.now() - startTimes[currentQuestionIndex]) / 1000
+          timeSpent.reduce((sum, time) => sum + time, 0) + (Date.now() - startTimes[currentQuestionIndex]) / 1000;
 
         const answers = selectedOptions.map((answer, index) => ({
           answer: answer || "",
           timeSpent: index === currentQuestionIndex ? (Date.now() - startTimes[index]) / 1000 : timeSpent[index],
           hintsUsed: false,
-        }))
+        }));
 
         const results = {
           slug,
@@ -127,20 +128,20 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
           elapsedTime: Math.round(totalTimeSpent),
           score,
           type: "code",
-        }
+        };
 
         if (status === "authenticated") {
-          const submittedResults = await submitQuizData(results, setIsSubmitting)
-          setQuizResults(submittedResults)
+          const submittedResults = await submitQuizData(results, setIsSubmitting);
+          setQuizResults(submittedResults);
         } else {
           // Save results to localStorage if user is not signed in
-          localStorage.setItem("quizResults", JSON.stringify(results))
-          setQuizResults(results)
+          localStorage.setItem("quizResults", JSON.stringify(results));
+          setQuizResults(results);
         }
-        setQuizCompleted(true)
+        setQuizCompleted(true);
       } catch (error) {
-        console.error("Error submitting quiz data:", error)
-        setIsSubmitting(false)
+        console.error("Error submitting quiz data:", error);
+        setIsSubmitting(false);
       }
     }
   }, [
@@ -153,21 +154,21 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
     timeSpent,
     slug,
     status,
-  ])
+  ]);
 
   const restartQuiz = () => {
-    localStorage.removeItem("quizResults")
-    setCurrentQuestionIndex(0)
-    setSelectedOptions(new Array(quizData.questions.length).fill(null))
-    setStartTimes(new Array(quizData.questions.length).fill(Date.now()))
-    setTimeSpent(new Array(quizData.questions.length).fill(0))
-    setQuizCompleted(false)
-    setIsSubmitting(false)
-    setQuizResults(null)
-  }
+    localStorage.removeItem("quizResults");
+    setCurrentQuestionIndex(0);
+    setSelectedOptions(new Array(quizData.questions.length).fill(null));
+    setStartTimes(new Array(quizData.questions.length).fill(Date.now()));
+    setTimeSpent(new Array(quizData.questions.length).fill(0));
+    setQuizCompleted(false);
+    setIsSubmitting(false);
+    setQuizResults(null);
+  };
 
   const renderCode = (code: string, language = "javascript") => {
-    const cleanCode = code.replace(/^```[\w]*\n?|\n?```$/g, "")
+    const cleanCode = code.replace(/^```[\w]*\n?|\n?```$/g, "");
 
     return (
       <div className="rounded-md overflow-hidden">
@@ -185,13 +186,13 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
           {cleanCode}
         </SyntaxHighlighter>
       </div>
-    )
-  }
+    );
+  };
 
   const renderOptionContent = (option: string) => {
-    const codeRegex = /```[\s\S]*?```/g
-    const parts = option.split(codeRegex)
-    const codes = option.match(codeRegex) || []
+    const codeRegex = /```[\s\S]*?```/g;
+    const parts = option.split(codeRegex);
+    const codes = option.match(codeRegex) || [];
 
     return (
       <div className="w-full">
@@ -202,87 +203,68 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
           </React.Fragment>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   useEffect(() => {
     const submitSavedResults = async () => {
       if (status === "authenticated" && quizResults && !quizResults.submitted) {
         try {
-          const submittedResults = await submitQuizData(quizResults, setIsSubmitting)
-          setQuizResults(submittedResults)
-          localStorage.removeItem("quizResults")
+          const submittedResults = await submitQuizData(quizResults, setIsSubmitting);
+          setQuizResults(submittedResults);
+          localStorage.removeItem("quizResults");
         } catch (error) {
-          console.error("Failed to submit saved quiz results:", error)
+          console.error("Failed to submit saved quiz results:", error);
         }
       }
-    }
+    };
 
-    submitSavedResults()
-  }, [status, quizResults])
+    submitSavedResults();
+  }, [status, quizResults]);
 
   if (quizCompleted) {
     const correctCount = quizResults
       ? Math.round((quizResults.score / 100) * quizData.questions.length)
-      : calculateScore()
-    const totalQuestions = quizData.questions.length
-    const percentage = quizResults ? quizResults.score : (correctCount / totalQuestions) * 100
-    const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0)
-
-   
-    if (status === "unauthenticated") {
-      return (
-        <div>
-          <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} />
-          <p>Your results have been saved. Sign in to see your results and track your progress!</p>
-        </div>
-      )
-    }
+      : calculateScore();
+    const totalQuestions = quizData.questions.length;
+    const percentage = quizResults ? quizResults.score : (correctCount / totalQuestions) * 100;
+    const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0);
 
     const formatTime = (seconds: number): string => {
-      const minutes = Math.floor(seconds / 60)
-      const remainingSeconds = Math.floor(seconds % 60)
-      return `${minutes}m ${remainingSeconds}s`
-    }
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+      return `${minutes}m ${remainingSeconds}s`;
+    };
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md mx-auto"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center min-h-screen p-4 bg-background"
       >
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Quiz Results</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center space-y-4">
-              {percentage >= 70 ? (
-                <CheckCircle className="w-16 h-16 text-green-500" />
-              ) : (
-                <XCircle className="w-16 h-16 text-red-500" />
-              )}
-              <p className="text-3xl font-bold">{percentage.toFixed(2)}%</p>
-              <p className="text-xl">
-                You got {correctCount} out of {totalQuestions} questions correct
-              </p>
-              <p className="text-lg">Total time: {formatTime(totalTime)}</p>
-              <p className="text-lg text-gray-600">
-                {percentage >= 70
-                  ? "Great job! You've mastered this quiz."
-                  : "Keep practicing! You'll improve with time."}
-              </p>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button onClick={restartQuiz} className="w-full max-w-xs">
-              Retake Quiz
-            </Button>
-          </CardFooter>
-        </Card>
+        <div className="max-w-2xl w-full text-center space-y-6">
+          <Trophy className="w-16 h-16 mx-auto text-yellow-500" />
+          <h2 className="text-2xl font-bold">Quiz Completed!</h2>
+          <p className="text-muted-foreground">Time taken: {formatTime(totalTime)}</p>
+          {status === "authenticated" ? (
+            <>
+              <div className="bg-muted rounded-lg p-6 space-y-4">
+                <div className="text-4xl font-bold">{Math.round(percentage).toFixed(2)}%</div>
+                <p className="text-muted-foreground">
+                  You got {correctCount} out of {totalQuestions} questions correct
+                </p>
+              </div>
+              <Button onClick={restartQuiz} className="w-full sm:w-auto">
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Retake Quiz
+              </Button>
+            </>
+          ) : (
+            <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} />
+          )}
+        </div>
       </motion.div>
-    )
+    );
   }
 
   return (
@@ -322,14 +304,13 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
           >
             {currentQuestionIndex < quizData.questions.length - 1 ? "Next Question" : "Finish Quiz"}
           </Button>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             Question {currentQuestionIndex + 1} of {quizData.questions.length}
           </div>
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default CodingQuiz
-
+export default CodingQuiz;

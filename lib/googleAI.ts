@@ -1,4 +1,4 @@
-import { chatGptRequest } from "./chatgpt/strict_output";
+import { chatGptRequest } from "./chatgpt/chatGptRequest";
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API);

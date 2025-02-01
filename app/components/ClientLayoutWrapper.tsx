@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/app/providers/theme-provider"
 import { UserProvider } from "@/app/providers/userContext"
 import { SubscriptionProvider } from "@/app/providers/SubscriptionProvider"
 import { NavigationEvents } from "../dashboard/NavigationEvents"
-import { LoadingProvider } from "../providers/laderContext"
+import { LoadingProvider } from "../providers/loadingContext"
 import { LoadingBar } from "./Loadingbar"
 import { Suspense } from "react"
 
@@ -20,9 +20,9 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
             <LoadingProvider>
               <LoadingBar />
               <NavigationEvents />
-             <Suspense fallback={<LoadingBar />}>
-             <main className="flex-1 p-4 overflow-auto">{children}</main>
-             </Suspense>
+              <Suspense fallback={<LoadingBar />}>
+                <main className="flex-1 p-4 overflow-auto">{children}</main>
+              </Suspense>
             </LoadingProvider>
           </div>
         </SubscriptionProvider>
