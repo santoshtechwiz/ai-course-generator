@@ -1,31 +1,32 @@
 "use client";
 
-import { useEffect } from "react";
-import { useLoaderContext } from "../providers/laderContext";
+import { useEffect, useRef } from "react";
+import { useLoaderContext } from "../providers/loadingContext";
 import { usePathname } from "next/navigation";
 
 export function NavigationEvents() {
-  const pathname = usePathname(); // ✅ Ensure slug changes trigger effects
+  const pathname = usePathname();
   const { startNavigation, completeNavigation } = useLoaderContext();
+  const previousPathnameRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const handleStart = () => startNavigation();
-    const handleComplete = () => completeNavigation();
+    // Check if the pathname has changed
+    if (previousPathnameRef.current !== pathname) {
+      // Trigger the loader when the pathname changes
+      startNavigation();
 
-    window.addEventListener("beforeunload", handleStart);
-    window.addEventListener("load", handleComplete);
+      // Simulate a delay for the loader to complete
+      const timer = setTimeout(() => {
+        completeNavigation();
+      }, 300); // Adjust the delay as needed
 
-    return () => {
-      window.removeEventListener("beforeunload", handleStart);
-      window.removeEventListener("load", handleComplete);
-    };
-  }, [startNavigation, completeNavigation]); // ✅ Removed unused dependencies
+      // Update the previous pathname
+      previousPathnameRef.current = pathname;
 
-  useEffect(() => {
-    startNavigation();
-    const timer = setTimeout(() => completeNavigation(), 300);
-    return () => clearTimeout(timer);
-  }, [startNavigation, completeNavigation,pathname]); // ✅ Removed unused dependencies
+      // Cleanup the timer
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, startNavigation, completeNavigation]);
 
   return null;
 }

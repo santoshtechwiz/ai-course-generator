@@ -12,7 +12,7 @@ import QuizResultsOpenEnded from "../components/QuizResultsOpenEnded";
 import QuizQuestion from "../components/QuizQuestion";
 import { submitQuizData } from "@/app/actions/actions";
 import { GlobalLoader } from "@/app/components/GlobalLoader";
-import { useLoaderContext } from "@/app/providers/laderContext";
+import { useLoaderContext } from "@/app/providers/loadingContext";
 
 
 

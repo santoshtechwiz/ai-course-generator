@@ -1,6 +1,7 @@
 "use client"
 
-import { useLoaderContext } from "../providers/laderContext"
+import { useLoaderContext } from "../providers/loadingContext"
+import { GlobalLoader } from "./GlobalLoader"
 
 
 
@@ -11,7 +12,8 @@ export function LoadingBar() {
 
   return (
     <div className="fixed top-0 left-0 right-0 h-1 bg-red-200 z-50">
-      <div className="h-full bg-red-500 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
+      {/* <div className="h-full bg-red-500 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} /> */}
+      <GlobalLoader loading={isLoading} />
     </div>
   )
 }

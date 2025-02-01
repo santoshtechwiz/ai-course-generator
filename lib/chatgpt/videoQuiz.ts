@@ -30,11 +30,13 @@ interface FunctionDefinition {
 export default async function generateMultipleChoiceQuestions(
   courseTitle: string,
   transcript: string,
-  numQuestions: number = 5
+  numQuestions: number = 5,
+  userType: string = "FREE"
 ): Promise<MultipleChoiceQuestion[]> {
   if (!courseTitle || !transcript) {
     throw new Error("Course title and transcript are required");
   }
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo" : "gpt-4o-mini";
 
   const functions: FunctionDefinition[] = [
     {
@@ -66,7 +68,7 @@ export default async function generateMultipleChoiceQuestions(
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: model,
       messages: [
         { role: "system", content: "You are an expert in creating multiple-choice questions." },
         {

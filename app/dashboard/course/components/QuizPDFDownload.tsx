@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react"
 import { pdf } from "@react-pdf/renderer"
 import type { QuizPDFProps } from "./ConfigurableQuizPDF"
 import { Button } from "@/components/ui/button"
-import { DownloadIcon } from "lucide-react"
 import ConfigurableQuizPDF from "./ConfigurableQuizPDF"
+import { SiAdobe } from "react-icons/si"
 
 
 const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
@@ -46,7 +46,7 @@ const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
       {isDownloading ? (
         <span className="animate-spin border-2 border-t-transparent border-gray-600 rounded-full w-4 h-4"></span>
       ) : (
-        <DownloadIcon className="h-5 w-5" />
+        <SiAdobe className="h-5 w-5" />
       )}
       <span>Download PDF</span>
     </Button>

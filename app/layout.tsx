@@ -5,7 +5,8 @@ import { Providers } from "./providers/provider"
 import Script from "next/script"
 import { LoadingBar } from "./components/Loadingbar"
 import { NavigationEvents } from "./dashboard/NavigationEvents"
-import { LoadingProvider } from "./providers/laderContext"
+import { LoadingProvider } from "./providers/loadingContext"
+import { Suspense } from "react"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -85,7 +86,9 @@ export default function RootLayout({
           <LoadingProvider>
             <LoadingBar />
             <NavigationEvents />
+            <Suspense>
             {children}
+            </Suspense>
           </LoadingProvider>
         </Providers>
         <Script
