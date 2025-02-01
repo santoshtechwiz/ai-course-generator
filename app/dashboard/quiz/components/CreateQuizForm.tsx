@@ -23,6 +23,7 @@ import { motion } from "framer-motion"
 import { SignInBanner } from "./SignInBanner"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { SubscriptionSlider } from "@/app/components/SubscriptionSlider"
 
 type QuizFormData = z.infer<typeof quizSchema>
 
@@ -207,15 +208,22 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 name="amount"
                 control={control}
                 render={({ field }) => (
-                  <Slider
-                    value={[field.value]}
-                    onValueChange={(value) => field.onChange(value[0])}
-                    max={maxQuestions}
-                    min={1}
-                    step={1}
-                    className="py-4"
-                    aria-label="Number of questions"
+                  // <Slider
+                  //   value={[field.value]}
+                  //   onValueChange={(value) => field.onChange(value[0])}
+                  //   max={maxQuestions}
+                  //   min={1}
+                  //   step={1}
+                  //   className="py-4"
+                  //   aria-label="Number of questions"
+                  // />
+                  <SubscriptionSlider
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value)}
+                    ariaLabel="Select number of questions"
                   />
+
+
                 )}
               />
               <p className="text-sm text-muted-foreground text-center">Select between 1 and {maxQuestions} questions</p>

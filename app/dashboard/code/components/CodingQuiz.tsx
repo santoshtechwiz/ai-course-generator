@@ -166,6 +166,32 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
     setIsSubmitting(false);
     setQuizResults(null);
   };
+  const renderQuestionText = (text: string) => {
+    // Regex to detect code blocks enclosed in backticks
+    const codeRegex = /`([^`]+)`/g;
+
+    // Split the text into parts, alternating between normal text and code
+    const parts = text.split(codeRegex);
+
+    return (
+      <span>
+        {parts.map((part, index) =>
+          index % 2 === 0 ? (
+            // Normal text
+            <span key={index}>{part}</span>
+          ) : (
+            // Code snippet (highlighted)
+            <code
+              key={index}
+              className="bg-muted/50 text-primary font-mono p-1 rounded-md"
+            >
+              {part}
+            </code>
+          )
+        )}
+      </span>
+    );
+  };
 
   const renderCode = (code: string, language = "javascript") => {
     const cleanCode = code.replace(/^```[\w]*\n?|\n?```$/g, "");
@@ -283,7 +309,7 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="p-6 space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-semibold">{currentQuestion.question}</h3>
+            <h3 className="text-xl font-semibold">      {renderQuestionText(currentQuestion.question)}</h3>
           </div>
           {currentQuestion.codeSnippet && (
             <div className="my-4">{renderCode(currentQuestion.codeSnippet, currentQuestion.language)}</div>

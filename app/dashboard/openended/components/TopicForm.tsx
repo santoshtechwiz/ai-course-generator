@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress"
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { SubscriptionSlider } from "@/app/components/SubscriptionSlider"
 
 export const fetchCache = "force-no-store"
 
@@ -144,15 +145,20 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPla
                 </motion.span>
               </Label>
               <div className="flex items-center space-x-4">
-                <Slider
+                {/* <Slider
                   id="questionCount"
                   min={1}
                   max={maxQuestions}
                   step={1}
                   value={[questionCount]}
-                  onValueChange={(values) => setQuestionCount(values[0])}
+                  onValueChange={(values: number[]) => setQuestionCount(values[0])}
                   className="flex-grow"
                   aria-label="Select number of questions"
+                /> */}
+                <SubscriptionSlider
+                  value={questionCount}
+                  onValueChange={setQuestionCount}
+                  ariaLabel="Select number of questions"
                 />
               </div>
             </motion.div>

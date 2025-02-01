@@ -75,12 +75,7 @@ export async function generateCodingMCQs(
       correctAnswer: q.answer.replace(/^[A-D]\.\s*/, '').trim(),
     }))
 
-    return quizzes.map((q) => {
-      if (q.codeSnippet && q.question.includes("```")) {
-        throw new Error(`Code in question, should be in codeSnippet: ${q.question}`)
-      }
-      return q
-    })
+    return quizzes;
   } catch (error) {
     console.error("MCQ generation failed:", error)
     return []
