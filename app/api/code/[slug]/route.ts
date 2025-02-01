@@ -15,6 +15,7 @@ export async function GET(_: Request, props: { params:Promise< { slug: string }>
       },
       select: {
         id: true,
+        userId: true,
        isFavorite: true,
          isPublic: true,
          topic: true,

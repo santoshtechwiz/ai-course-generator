@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import CodingQuiz from "../components/CodingQuiz"
 import axios from "axios"
 import type { CodingQuizProps } from "@/app/types"
+import { getAuthSession } from "@/lib/authOptions"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
@@ -54,6 +55,9 @@ export async function generateMetadata({ params  }: { params: Promise<{ slug: st
 
 export default async function Page({ params  }: { params: Promise<{ slug: string }> }) {
   const quizData = await getQuizData((await params).slug)
+  const session = await getAuthSession();
+ 
+
 
   if (!quizData) {
     return notFound()
@@ -66,7 +70,7 @@ export default async function Page({ params  }: { params: Promise<{ slug: string
       isFavorite={quizData.isFavorite}
       isPublic={quizData.isPublic}
       userId={quizData.userId || ""}
-      ownerId={quizData.ownerId || ""}
+      ownerId={quizData?.ownerId||""}
       quizData={quizData.quizData}
     />
   )

@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2, Clock, Trophy } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
 
 function getQuizTypeRoute(quizType: string): string {
   switch (quizType) {
@@ -17,6 +16,8 @@ function getQuizTypeRoute(quizType: string): string {
       return "openended"
     case "fill-blanks":
       return "blanks"
+    case "code":
+      return "code"
     default:
       return "quiz"
   }

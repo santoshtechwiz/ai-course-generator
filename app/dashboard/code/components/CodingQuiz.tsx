@@ -1,15 +1,18 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { motion } from "framer-motion"
+import { CheckCircle, XCircle } from "lucide-react"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import QuizResult from "./QuizResult"
-import { useRouter } from "next/navigation"
 import QuizOptions from "./QuizOptions"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { submitQuizData } from "@/app/actions/actions"
 import { QuizActions } from "../../mcq/components/QuizActions"
+import { useSession } from "next-auth/react"
+import { SignInPrompt } from "@/app/components/SignInPrompt"
+import { useRouter } from "next/navigation"
 
 interface QuizQuestion {
   question: string
@@ -42,6 +45,7 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [quizResults, setQuizResults] = useState<any>(null)
   const router = useRouter()
+  const { data: session, status } = useSession()
 
   const currentQuestion: QuizQuestion = quizData.questions[currentQuestionIndex] ?? {
     question: "",
@@ -58,6 +62,13 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
       newStartTimes[0] = Date.now()
       return newStartTimes
     })
+
+    // Check for saved results in localStorage
+    const savedResults = localStorage.getItem("quizResults")
+    if (savedResults) {
+      setQuizResults(JSON.parse(savedResults))
+      setQuizCompleted(true)
+    }
   }, [])
 
   const handleSelectOption = (option: string) => {
@@ -98,26 +109,34 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
       try {
         const correctCount = calculateScore()
         const score = (correctCount / quizData.questions.length) * 100
+
+        // Calculate the total time spent on all questions
+        const totalTimeSpent =
+          timeSpent.reduce((sum, time) => sum + time, 0) + (Date.now() - startTimes[currentQuestionIndex]) / 1000
+
         const answers = selectedOptions.map((answer, index) => ({
           answer: answer || "",
-          timeSpent: timeSpent[index],
+          timeSpent: index === currentQuestionIndex ? (Date.now() - startTimes[index]) / 1000 : timeSpent[index],
           hintsUsed: false,
         }))
 
-        const totalTimeSpent = timeSpent.reduce((sum, time) => sum + time, 0)
+        const results = {
+          slug,
+          quizId: quizId,
+          answers,
+          elapsedTime: Math.round(totalTimeSpent),
+          score,
+          type: "code",
+        }
 
-        const results = await submitQuizData(
-          {
-            slug,
-            quizId: quizId,
-            answers,
-            elapsedTime: totalTimeSpent,
-            score,
-            type: "code",
-          },
-          setIsSubmitting,
-        )
-        setQuizResults(results)
+        if (status === "authenticated") {
+          const submittedResults = await submitQuizData(results, setIsSubmitting)
+          setQuizResults(submittedResults)
+        } else {
+          // Save results to localStorage if user is not signed in
+          localStorage.setItem("quizResults", JSON.stringify(results))
+          setQuizResults(results)
+        }
         setQuizCompleted(true)
       } catch (error) {
         console.error("Error submitting quiz data:", error)
@@ -133,10 +152,18 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
     startTimes,
     timeSpent,
     slug,
+    status,
   ])
 
   const restartQuiz = () => {
-    router.push("/dashboard/code")
+    localStorage.removeItem("quizResults")
+    setCurrentQuestionIndex(0)
+    setSelectedOptions(new Array(quizData.questions.length).fill(null))
+    setStartTimes(new Array(quizData.questions.length).fill(Date.now()))
+    setTimeSpent(new Array(quizData.questions.length).fill(0))
+    setQuizCompleted(false)
+    setIsSubmitting(false)
+    setQuizResults(null)
   }
 
   const renderCode = (code: string, language = "javascript") => {
@@ -178,32 +205,98 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
     )
   }
 
+  useEffect(() => {
+    const submitSavedResults = async () => {
+      if (status === "authenticated" && quizResults && !quizResults.submitted) {
+        try {
+          const submittedResults = await submitQuizData(quizResults, setIsSubmitting)
+          setQuizResults(submittedResults)
+          localStorage.removeItem("quizResults")
+        } catch (error) {
+          console.error("Failed to submit saved quiz results:", error)
+        }
+      }
+    }
+
+    submitSavedResults()
+  }, [status, quizResults])
+
   if (quizCompleted) {
-    const correctCount = calculateScore()
-    const score = (correctCount / quizData.questions.length) * 100
+    const correctCount = quizResults
+      ? Math.round((quizResults.score / 100) * quizData.questions.length)
+      : calculateScore()
+    const totalQuestions = quizData.questions.length
+    const percentage = quizResults ? quizResults.score : (correctCount / totalQuestions) * 100
+    const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0)
+
+   
+    if (status === "unauthenticated") {
+      return (
+        <div>
+          <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} />
+          <p>Your results have been saved. Sign in to see your results and track your progress!</p>
+        </div>
+      )
+    }
+
+    const formatTime = (seconds: number): string => {
+      const minutes = Math.floor(seconds / 60)
+      const remainingSeconds = Math.floor(seconds % 60)
+      return `${minutes}m ${remainingSeconds}s`
+    }
 
     return (
-      <QuizResult
-        correctCount={correctCount}
-        totalQuestions={quizData.questions.length}
-        onRestartQuiz={restartQuiz}
-        isSubmitting={isSubmitting}
-        savedResults={quizResults}
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md mx-auto"
+      >
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">Quiz Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center space-y-4">
+              {percentage >= 70 ? (
+                <CheckCircle className="w-16 h-16 text-green-500" />
+              ) : (
+                <XCircle className="w-16 h-16 text-red-500" />
+              )}
+              <p className="text-3xl font-bold">{percentage.toFixed(2)}%</p>
+              <p className="text-xl">
+                You got {correctCount} out of {totalQuestions} questions correct
+              </p>
+              <p className="text-lg">Total time: {formatTime(totalTime)}</p>
+              <p className="text-lg text-gray-600">
+                {percentage >= 70
+                  ? "Great job! You've mastered this quiz."
+                  : "Keep practicing! You'll improve with time."}
+              </p>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <Button onClick={restartQuiz} className="w-full max-w-xs">
+              Retake Quiz
+            </Button>
+          </CardFooter>
+        </Card>
+      </motion.div>
     )
   }
 
   return (
     <div className="flex flex-col items-center px-4 md:px-6 lg:px-8 w-full">
-      {/* Quiz Actions (Aligned) */}
       <div className="w-full max-w-2xl mb-4">
-        <QuizActions quizId={quizId.toString()} quizSlug={slug} initialIsFavorite={isFavorite} initialIsPublic={isPublic} userId={userId} ownerId={ownerId} />
+        <QuizActions
+          quizId={quizId.toString()}
+          quizSlug={slug}
+          initialIsFavorite={isFavorite}
+          initialIsPublic={isPublic}
+          userId={userId}
+          ownerId={ownerId}
+        />
       </div>
-
-      {/* Quiz Card */}
-
-
-
 
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="p-6 space-y-6">
@@ -219,7 +312,8 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
               selectedOption={selectedOptions[currentQuestionIndex]}
               onSelect={handleSelectOption}
               disabled={false}
-              renderOptionContent={renderOptionContent} />
+              renderOptionContent={renderOptionContent}
+            />
           </div>
           <Button
             className="w-full"
@@ -233,15 +327,8 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
           </div>
         </CardContent>
       </Card>
-
-
-
-
-
     </div>
   )
-
-
 }
 
 export default CodingQuiz
