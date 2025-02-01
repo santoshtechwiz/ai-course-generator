@@ -14,6 +14,7 @@ export async function GET(_: Request, props: { params:Promise< { slug: string }>
         slug: slug
       },
       select: {
+        id: true,
        isFavorite: true,
          isPublic: true,
          topic: true,
@@ -37,7 +38,7 @@ export async function GET(_: Request, props: { params:Promise< { slug: string }>
       isFavorite: result.isFavorite ?? false,
       isPublic: result.isPublic ?? false,
       slug: slug,
-      quizId: result.slug,
+      quizId: +result.id,
       quizData: {
         title: result.topic,
         questions: result.questions.map(q => ({

@@ -21,7 +21,7 @@ interface PageProps {
   params: { slug: string }
 }
 
-export async function generateMetadata({ params }: PageProps, parent: ResolvingMetadata): Promise<Metadata> {
+export async function generateMetadata({ params }:  PageProps, parent: ResolvingMetadata): Promise<Metadata> {
   const quizData = await getQuizData(params.slug)
 
   if (!quizData) {
@@ -68,8 +68,8 @@ export default async function Page({ params }: PageProps) {
       slug={quizData.slug}
       isFavorite={quizData.isFavorite}
       isPublic={quizData.isPublic}
-      userId={quizData.userId}
-      ownerId={quizData.ownerId}
+      userId={quizData.userId || ""}
+      ownerId={quizData.ownerId || ""}
       quizData={quizData.quizData}
     />
   )

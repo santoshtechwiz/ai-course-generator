@@ -253,7 +253,7 @@ export enum QuizType{
   MultipleChoice = 'mcq',
   OpenEnded = 'openended',
   Code='code',
-  FillInTheBlanks='fillintheblanks'
+  FillInTheBlanks='fill-blanks'
 }
 
 export interface CodeChallenge  {
@@ -276,7 +276,7 @@ export interface CodingQuizProps {
   isFavorite: boolean
   isPublic: boolean
   slug: string
-  quizId: string
+  quizId: number
   userId?: string
   ownerId?: string
   quizData: {
