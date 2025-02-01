@@ -46,7 +46,7 @@ async function generateMCQs(courseTitle, transcript, numQuestions = 5) {
   
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'GPT-4o mini ',
         messages: [
           { role: 'system', content: 'You are an expert in creating multiple-choice questions.' },
           { role: 'user', content: `Generate ${numQuestions} multiple-choice questions for the course titled "${courseTitle}" based on the following transcript: ${transcript}. Each question should have one correct answer and three incorrect options.` }

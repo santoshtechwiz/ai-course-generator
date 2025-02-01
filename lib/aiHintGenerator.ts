@@ -7,7 +7,7 @@ const openai = new OpenAI({
 export async function generateHint(question: string, answer: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo-0613",
+      model: "gpt-3.5-turbo-1106",
       messages: [
         {
           role: "system",

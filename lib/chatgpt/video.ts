@@ -43,7 +43,7 @@ export async function generateCourseContent(
 
   for (const unit of units) {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "GPT-4o mini ",
       messages: [
         {
           role: "system",

@@ -36,7 +36,7 @@ export default async function generateMultipleChoiceQuestions(
   if (!courseTitle || !transcript) {
     throw new Error("Course title and transcript are required");
   }
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-0613" : "gpt-4o-mini";
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini";
 
   const functions: FunctionDefinition[] = [
     {
