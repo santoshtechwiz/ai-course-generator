@@ -11,7 +11,7 @@ export async function generateCodingMCQs(
   userType: "FREE" | "BASIC" | "PREMIUM" = "FREE",
 ): Promise<CodeChallenge[]> {
   try {
-    const model = userType === "PREMIUM" ? "gpt-4" : "gpt-3.5-turbo-1106"
+    const model = userType === "PREMIUM" ? "GPT-4o mini " : "gpt-3.5-turbo-1106"
     const codingQuestionCount = Math.ceil(questionCount * 0.9)
 
     const response = await openai.chat.completions.create({

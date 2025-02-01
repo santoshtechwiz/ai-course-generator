@@ -8,7 +8,7 @@ interface OpenEndedQuestion {
 export const generateOpenEnded = async (
   topic: string,
   amount: number,
-  model: string="gpt-3.5-turbo-0613"
+  model: string="gpt-3.5-turbo-1106"
 ): Promise<OpenEndedQuestion[]> => {
   const functions = [
     {

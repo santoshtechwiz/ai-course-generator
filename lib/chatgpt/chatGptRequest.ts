@@ -22,7 +22,7 @@ export async function chatGptRequest(
   system_prompt: string,
   user_prompt: string,
   output_format: OutputFormat,
-  model: string = 'gpt-3.5-turbo-0613'
+  model: string = 'gpt-3.5-turbo-1106'
 ): Promise<OutputFormat> {
   const validate = ajv.compile(outputSchema);
 

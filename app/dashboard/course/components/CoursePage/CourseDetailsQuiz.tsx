@@ -17,10 +17,16 @@ import ComponentLoader from "../ComponentLoader"
 import { FullChapterType, FullCourseType } from "@/app/types"
 import { CourseQuiz } from "@prisma/client"
 
+type CourseQuestion = {
+  id: number
+  question: string
+  options: string[]
+  answer: string
+}
 type Props = {
   course: FullCourseType
   chapter: FullChapterType & {
-    questions: CourseQuiz[]
+    questions: CourseQuestion[]
   }
 }
 
@@ -38,7 +44,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
     isError,
     error,
     isLoading: isQuizLoading,
-  } = useQuery<CourseQuiz[]>({
+  } = useQuery<CourseQuestion[]>({
     queryKey: ["transcript", chapter?.id],
     queryFn: async () => {
       if (!chapter?.videoId || !chapter?.id) {

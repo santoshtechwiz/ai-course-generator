@@ -16,7 +16,7 @@ interface Quiz {
 
 
 export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficulty = "medium",userType="FREE"): Promise<Quiz> => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-0613" : "gpt-4o-mini";
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini";
   const functions = [
     {
       name: "createOpenEndedQuiz",
@@ -97,7 +97,7 @@ export const generateOpenEndedFillIntheBlanks = async (
   userType: string = "FREE"
 ): Promise<Quiz> => {
   const useDummyData = false; // Use dummy data for local testing
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-0613" : "gpt-4o-mini";
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini";
   if (useDummyData) {
     // Return dummy data if not making an actual API call
     return {
