@@ -46,7 +46,9 @@ const nextConfig: NextConfig = {
 
   compress: true, // Ensures Gzip compression for faster performance
 
-
+  experimental: {
+    esmExternals: 'loose',
+  },
 };
 
 export default nextConfig;

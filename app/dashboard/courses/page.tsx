@@ -4,7 +4,7 @@ import CourseListSkeleton from "./components/CourseListSkeleton";
 import CourseList from "./components/CourseLists";
 
 export const dynamic = "force-dynamic";
-
+const url=process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000/dashboard/create";
 export default async function CoursesPage() {
   const courses = await fetchCourses();
 
@@ -14,7 +14,7 @@ export default async function CoursesPage() {
       <h1 className="text-4xl font-bold mb-8 text-center text-primary"> Available Courses</h1>
          
         <Suspense fallback={<CourseListSkeleton />}>
-          <CourseList initialCourses={courses} />
+          <CourseList initialCourses={courses} url={url} />
         </Suspense>
       </div>
     </div>

@@ -101,7 +101,7 @@ interface Question {
 }
 
 export interface QuizPDFProps {
-  disabled?: boolean,
+  disabled?: boolean
   quizData: {
     title: string
     description?: string
@@ -117,7 +117,6 @@ export interface QuizPDFProps {
 const ConfigurableQuizPDF: React.FC<QuizPDFProps> = ({ quizData, config = {} }) => {
   const { showOptions = true, showAnswerSpace = true, answerSpaceHeight = 40 } = config
 
-  // Memoizing the parsed options for performance
   const questionsWithParsedOptions = useMemo(() => {
     return quizData?.questions.map((q) => ({
       ...q,

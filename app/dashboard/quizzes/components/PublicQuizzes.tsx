@@ -7,7 +7,7 @@ import { Search } from "lucide-react"
 import { PublicQuizCardListing } from "./PublicQuizCardListing"
 import type { QuizListItem } from "@/app/types"
 import { useInView } from "react-intersection-observer"
-import { CreateQuizCard } from "@/app/components/CreateQuizCard"
+import { CreateCard } from "@/app/components/CreateCard"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { Button } from "@/components/ui/button"
@@ -72,7 +72,7 @@ export function PublicQuizzes({ initialQuizzesData }: PublicQuizzesProps) {
           </div>
 
           {/* Create Quiz Button */}
-          <CreateQuizCard compact title="Quick Create" animationDuration={2.0} />
+          <CreateCard compact title="Quick Create" animationDuration={2.0} />
         </div>
       </div>
 
@@ -86,7 +86,7 @@ export function PublicQuizzes({ initialQuizzesData }: PublicQuizzesProps) {
             className="text-center py-8 px-4"
           >
             <p className="text-xl text-muted-foreground mb-4">No quizzes found. Why not create your own?</p>
-            <CreateQuizCard
+            <CreateCard
               title="Start Fresh"
               description="Be the first to create a quiz on this topic! It's easy and fun."
               animationDuration={2.0}
@@ -125,7 +125,7 @@ export function PublicQuizzes({ initialQuizzesData }: PublicQuizzesProps) {
             exit={{ opacity: 0, y: 50 }}
             className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-20"
           >
-            <CreateQuizCard floating title="Create New Quiz" animationDuration={2.0} />
+            <CreateCard floating title="Create New Quiz" animationDuration={2.0} />
           </motion.div>
         )}
       </AnimatePresence>
