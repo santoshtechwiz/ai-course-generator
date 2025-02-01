@@ -10,7 +10,7 @@ interface QuizQuestion {
 
 
 export const generateMcqForUserInput = async (topic: string, amount: number, difficulty: string = 'hard', userType) => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo" : "gpt-4o-mini";
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-0613" : "gpt-4o-mini";
   const functions = [
     {
       name: 'createMCQ',
@@ -65,7 +65,7 @@ export const generateOpenEndedQuestions = async (
   difficulty: string = 'medium',
   userType: string = 'FREE'
 ): Promise<QuizQuestion[]> => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo" : "gpt-4o-mini";
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-0613" : "gpt-4o-mini";
   const functions = [
     {
       name: 'createOpenEndedQuiz',

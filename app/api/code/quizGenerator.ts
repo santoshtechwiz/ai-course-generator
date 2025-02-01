@@ -1,4 +1,4 @@
-import { CodeChallenge } from "@/app/types"
+import type { CodeChallenge } from "@/app/types"
 import OpenAI from "openai"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -7,28 +7,25 @@ export async function generateCodingMCQs(
   language: string,
   subtopic: string,
   difficulty: string,
-  questionCount: number = 2,
-  userType: "FREE" | "BASIC" | "PREMIUM" = "FREE"
+  questionCount = 2,
+  userType: "FREE" | "BASIC" | "PREMIUM" = "FREE",
 ): Promise<CodeChallenge[]> {
   try {
-    const model = userType === "PREMIUM" ? "gpt-4o-mini" : "gpt-3.5-turbo"
-    const codingQuestionCount = Math.ceil(questionCount * 0.9) // 90% of questions should be coding
+    const model = userType === "PREMIUM" ? "gpt-4" : "gpt-3.5-turbo-1106"
+    const codingQuestionCount = Math.ceil(questionCount * 0.9)
 
     const response = await openai.chat.completions.create({
       model: model,
       messages: [
         {
           role: "system",
-          content: `You are an AI that generates multiple-choice coding questions.`
+          content: `You are an AI that generates multiple-choice coding questions. Ensure that only code snippets are wrapped in triple backticks (\`\`\`). The rest of the text (questions, answers, and options) should be plain text. The code snippet should be included in the 'codeSnippet' field and not duplicated in the 'question' field.`,
         },
         {
           role: "user",
           content: `Generate ${questionCount} ${difficulty} multiple-choice questions about ${language} ${subtopic}. 
-          At least ${codingQuestionCount} questions should involve coding problems.
-          Each question should have one correct answer and three incorrect options.
-          If the question involves code, put the code in a separate codeSnippet field.
-          Ensure all code is properly formatted and indented.`
-        }
+          Include at least ${codingQuestionCount} coding problems.`,
+        },
       ],
       functions: [
         {
@@ -42,14 +39,19 @@ export async function generateCodingMCQs(
                   type: "object",
                   properties: {
                     question: { type: "string" },
-                    codeSnippet: { type: "string" },
-                    answer: { type: "string", description: "Correct answer, max 15 words" },
-                    option1: { type: "string", description: "Incorrect option, max 15 words" },
-                    option2: { type: "string", description: "Incorrect option, max 15 words" },
-                    option3: { type: "string", description: "Incorrect option, max 15 words" },
+                    codeSnippet: { type: "string", description: "Code snippet wrapped in triple backticks (\`\`\`)" },
+                    answer: { type: "string", description: "Correct answer, wrapped in triple backticks (\`\`\`) if it's code" },
+                    options: {
+                      type: "array",
+                      items: { type: "string", description: "Incorrect options, wrapped in triple backticks (\`\`\`) if they are code" },
+                      minItems: 3,
+                      maxItems: 3,
+                    },
                   },
-                  required: ["question", "answer", "option1", "option2", "option3"],
+                  required: ["question", "answer", "options"],
                 },
+                minItems: questionCount, // Ensure exactly `questionCount` questions
+                maxItems: questionCount,
               },
             },
             required: ["questions"],
@@ -62,22 +64,44 @@ export async function generateCodingMCQs(
     const functionCall = response.choices[0].message.function_call
     if (!functionCall) throw new Error("Function call failed")
 
-    const result = JSON.parse(functionCall.arguments || '{}')
+    const result = JSON.parse(functionCall.arguments || "{}")
 
     if (!result.questions || !Array.isArray(result.questions)) {
-      throw new Error('Invalid response format: questions array is missing.')
+      throw new Error("Invalid response format: questions array is missing.")
     }
 
-    const quizzes: CodeChallenge[] = result.questions.map((q: any) => ({
-      question: q.question,
-      codeSnippet: q.codeSnippet || null,
-      options: [q.answer, q.option1, q.option2, q.option3].map(option => option.replace(/^[A-D]\.\s*/, '').trim()),
-      correctAnswer: q.answer.replace(/^[A-D]\.\s*/, '').trim(),
-    }))
+    const quizzes: CodeChallenge[] = result.questions.map((q: any) => {
+      // Ensure the correct answer is not already in the options
+      const uniqueOptions = q.options.filter((option: string) => option !== q.answer)
+      // Add the correct answer to the options array
+      const options = [...uniqueOptions, q.answer]
+      // Shuffle the options to randomize the correct answer's position
+      const shuffledOptions = shuffleArray(options)
 
-    return quizzes;
+      return {
+        question: removeCodeFromQuestion(q.question),
+        codeSnippet: q.codeSnippet || null,
+        options: shuffledOptions,
+        correctAnswer: q.answer
+      }
+    })
+
+    return quizzes
   } catch (error) {
     console.error("MCQ generation failed:", error)
     return []
   }
+}
+
+// Helper function to shuffle an array
+function shuffleArray(array: any[]) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[array[i], array[j]] = [array[j], array[i]]
+  }
+  return array
+}
+function removeCodeFromQuestion(question:string){
+  return question.replace(/```/g, '')
+
 }
