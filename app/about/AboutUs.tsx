@@ -21,9 +21,9 @@ const sections = [
     color: "bg-green-500",
   },
   {
-    title: "Meet the Founder",
+    title: "Our Team",
     description:
-      "Hi, I'm a seasoned software developer with 13 years of experience. I've always been passionate about learning new things, but I often found online courses to be very costly. This inspired me to create a platform where anyone can instantly generate quizzes on any topic to check their knowledge.",
+      "We are a team of passionate professionals with extensive experience in software development, AI, and education. Our diverse expertise allows us to create innovative solutions that make learning more effective and enjoyable for everyone.",
     icon: UsersIcon,
     color: "bg-purple-500",
   },
@@ -39,8 +39,6 @@ const sections = [
 const AboutUs = () => {
   return (
     <section className="py-12 px-4 max-w-5xl mx-auto space-y-12">
-      
-
       <motion.div
         className="grid gap-8 md:grid-cols-2"
         initial="hidden"
@@ -62,15 +60,15 @@ const AboutUs = () => {
             }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-              <CardContent className="p-6 space-y-4">
+            <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 h-full">
+              <CardContent className="p-6 space-y-4 h-full flex flex-col">
                 <div className="flex items-center space-x-4">
                   <div className={`p-2 rounded-full ${section.color} bg-opacity-20`}>
                     <section.icon className={`w-6 h-6 ${section.color.replace("bg-", "text-")}`} />
                   </div>
                   <h2 className="text-xl font-semibold">{section.title}</h2>
                 </div>
-                <p className="text-muted-foreground">{section.description}</p>
+                <p className="text-muted-foreground flex-grow">{section.description}</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -92,4 +90,3 @@ const AboutUs = () => {
 }
 
 export default AboutUs
-
