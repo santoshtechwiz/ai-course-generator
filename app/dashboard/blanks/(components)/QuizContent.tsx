@@ -61,10 +61,8 @@ export function QuizContent({ slug }: { slug: string }) {
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const [score, setScore] = useState(false)
-  const [showHelp, setShowHelp] = useState(true)
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false)
 
-  const toggleHelp = () => setShowHelp(!showHelp)
   const fetchQuizData = useCallback(async () => {
     try {
       const response = await fetch(`/api/oquiz/${slug}`)
