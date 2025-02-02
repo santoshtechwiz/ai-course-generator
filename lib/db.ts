@@ -1,5 +1,5 @@
 
-import { MultipleChoiceQuestion, QuizType,OpenEndedQuestion, CodeChallenge } from '@/app/types';
+import { MultipleChoiceQuestion, QuizType,OpenEndedQuestion, CodeChallenge } from '@/app/types/types';
 import { Prisma, PrismaClient } from '@prisma/client';
 
 // Create a global object to store the Prisma client instance (for Next.js Fast Refresh)
@@ -177,7 +177,7 @@ export async function slugToId(slug: string): Promise<number | null> {
     return null;
   }
 }
-export async function fetchSlug(type: "course" | "mcq" | 'openended', id: string): Promise<string | null> {
+export async function fetchSlug(type: "course" | "mcq" | 'openended' |'code', id: string): Promise<string | null> {
   try {
     if (type === "course") {
       const course = await prisma.course.findUnique({
@@ -186,7 +186,7 @@ export async function fetchSlug(type: "course" | "mcq" | 'openended', id: string
       });
       return course?.slug || null;
     }
-    if (type === "mcq" || type === "openended") {
+    if (type === "mcq" || type === "openended" || type==='code') {
       const quiz = await prisma.userQuiz.findUnique({
         where: { id: parseInt(id, 10) },
         select: { slug: true },

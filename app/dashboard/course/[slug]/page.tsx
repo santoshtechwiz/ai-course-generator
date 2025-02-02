@@ -26,10 +26,10 @@ function LoadingSkeleton() {
 
 // Generate dynamic metadata for SEO
 export async function generateMetadata(
-  { params }: { params: { slug: string } },
+  { params }: { params: Promise<{ slug: string }> },
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const course = await getCourseData(params.slug)
+  const course = await getCourseData((await params).slug)
 
   if (!course) {
     return {
@@ -41,7 +41,7 @@ export async function generateMetadata(
 
   const previousImages = (await parent).openGraph?.images || []
 
-  const courseUrl = `${SITE_URL}/courses/${params.slug}`
+  const courseUrl = `${SITE_URL}/courses/${(await params).slug}`
   const imageUrl = course.imageUrl || `${SITE_URL}/default-thumbnail.png`
 
   return {

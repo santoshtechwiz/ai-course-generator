@@ -7,7 +7,7 @@ import { authOptions } from "@/lib/authOptions"
 import PlayQuiz from "../components/PlayQuiz"
 import { QuizActions } from "../components/QuizActions"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { Question } from "@/app/types"
+import type { Question } from "@/app/types/types"
 import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {

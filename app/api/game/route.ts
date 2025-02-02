@@ -2,7 +2,7 @@ import { createQuestions, createUserQuiz, prisma, updateTopicCount, updateUserCr
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import axios from "axios";
-import { MultipleChoiceQuestion, OpenEndedQuestion, QuizType } from "@/app/types";
+import { MultipleChoiceQuestion, OpenEndedQuestion, QuizType } from "@/app/types/types";
 import { getAuthSession } from "@/lib/authOptions";
 import { quizCreationSchema } from "@/schema/schema";
 import { generateSlug } from "@/lib/utils";
@@ -12,86 +12,7 @@ const cache = new NodeCache({ stdTTL: 600 }); // Cache for 10 minutes
 
 export const dynamic = "force-dynamic";
 
-// async function createUserQuiz(userId: string, topic: string, type: string, slug: string) {
-//   let uniqueSlug = slug;
-//   let counter = 1;
 
-//   while (true) {
-//     try {
-//       return await prisma.userQuiz.create({
-//         data: {
-//           quizType: type,
-//           timeStarted: new Date(),
-//           userId,
-//           isPublic: false,
-//           topic,
-//           slug: uniqueSlug,
-//         },
-//       });
-//     } catch (error: any) {
-//       if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
-//         uniqueSlug = `${slug}-${counter}`;
-//         counter++;
-//       } else {
-//         throw error;
-//       }
-//     }
-//   }
-// }
-
-// async function createQuestions(questions: MultipleChoiceQuestion[] | OpenEndedQuestion[], userQuizId: number, type: QuizType) {
-//   const data = questions.map((question) => {
-//     if (type === 'mcq') {
-//       const mcqQuestion = question as MultipleChoiceQuestion;
-//       const options = [mcqQuestion.answer, mcqQuestion.option1, mcqQuestion.option2, mcqQuestion.option3].sort(() => Math.random() - 0.5);
-//       return {
-        
-//         question: mcqQuestion.question,
-//         answer: mcqQuestion.answer,
-//         options: JSON.stringify(options),
-//         userQuizId,
-//         questionType: "mcq" as const,
-//       };
-//     } else {
-//       const openEndedQuestion = question as OpenEndedQuestion;
-//       return {
-//         question: openEndedQuestion.question,
-//         answer: openEndedQuestion.answer,
-//         userQuizId,
-//         questionType: "openended" as const,
-//       };
-//     }
-//   });
-
-//   await prisma.userQuizQuestion.createMany({ data });
-// }
-
-// async function updateTopicCount(topic: string) {
-//   return prisma.topicCount.upsert({
-//     where: { topic },
-//     create: { topic, count: 1 },
-//     update: { count: { increment: 1 } },
-//   });
-// }
-// async function updateUserCredits(userId: string, type: QuizType): Promise<void> {
-//   const user = await prisma.user.findUnique({
-//     where: { id: userId },
-//     include: { subscriptions: true },
-//   });
-
-//   if (!user) {
-//     throw new Error(`User with id ${userId} not found`);
-//   }
-
-//   if (user.credits <= 0) {
-//     throw new Error("User does not have enough credits");
-//   }
-
-//   await prisma.user.update({
-//     where: { id: userId },
-//     data: { credits: { decrement: 1 } },
-//   });
-// }
 
 async function fetchQuizQuestions(amount: number, topic: string, type: QuizType, difficulty: string,userType) {
   const { data } = await axios.post<MultipleChoiceQuestion[] | OpenEndedQuestion[]>(

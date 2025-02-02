@@ -13,7 +13,7 @@ import { QuizActions } from "../../mcq/components/QuizActions"
 import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { useRouter } from "next/navigation"
-import { CodeChallenge } from "@/app/types"
+import { CodeChallenge } from "@/app/types/types"
 
 interface QuizQuestion {
   question: string

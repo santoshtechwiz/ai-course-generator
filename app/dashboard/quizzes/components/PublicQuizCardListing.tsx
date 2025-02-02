@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { QuizCard } from "@/app/components/shared/QuizCard"
 
 import type React from "react" // Import React
-import { QuizListItem } from "@/app/types"
+import { QuizListItem } from "@/app/types/types"
 
 interface PublicQuizCardListingProps {
   quiz: QuizListItem

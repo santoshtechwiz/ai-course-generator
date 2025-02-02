@@ -1,5 +1,5 @@
 import pLimit from 'p-limit';
-import { MultipleChoiceQuestion } from '@/app/types';
+import { MultipleChoiceQuestion } from '@/app/types/types';
 
 import { getTranscript, searchYoutube } from './youtubeService';
 import generateMultipleChoiceQuestions from '@/lib/chatgpt/videoQuiz';

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import type { CourseDetails } from "@/app/types"
+import type { CourseDetails } from "@/app/types/types"
 
 interface PopularCoursesProps {
   courseDetails: CourseDetails[]

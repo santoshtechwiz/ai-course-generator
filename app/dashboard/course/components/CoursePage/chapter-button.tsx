@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from "@/lib/utils"
 import { Lock, CheckCircle, BookOpen, PlayCircle } from 'lucide-react'
-import { Chapter } from "@/app/types"
+import { Chapter } from "@/app/types/types"
 
 interface ChapterButtonProps {
   chapter: Chapter

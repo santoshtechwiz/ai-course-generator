@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Book, Clock, ArrowRight, Trophy, Target, Brain, BarChart } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import type { CourseProgress as CourseProgressType, UserStats } from "@/app/types"
+import type { CourseProgress as CourseProgressType, UserStats } from "@/app/types/types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 

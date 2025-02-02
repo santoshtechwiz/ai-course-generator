@@ -1,21 +1,23 @@
-import { openai } from "./gpt";
+import { OpenAIMessage, Quiz } from "@/app/types/types";
 
-interface QuizQuestion {
-  question: string;
-  correct_answer: string;
-  hints: string[];
-  difficulty: string;
-  tags: string[];
-}
+import { generateQuizFlexible } from "./openaiUtils";
 
-interface Quiz {
-  quiz_title: string;
-  questions: QuizQuestion[];
-}
+// interface QuizQuestion {
+//   question: string;
+//   correct_answer: string;
+//   hints: string[];
+//   difficulty: string;
+//   tags: string[];
+// }
+
+// interface Quiz {
+//   quiz_title: string;
+//   questions: QuizQuestion[];
+// }
 
 
 
-export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficulty = "medium",userType="FREE"): Promise<Quiz> => {
+export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficulty = "medium", userType = "FREE"): Promise<Quiz> => {
   const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini";
   const functions = [
     {
@@ -65,30 +67,47 @@ export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficult
     },
   ]
 
-  const response = await openai.chat.completions.create({
-    model: model,
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are an AI that generates concise, engaging open-ended quizzes. Create short questions with brief, easy-to-type answers. Focus on key concepts and avoid overly complex language. Aim for questions that can be answered in a few words.",
-      },
-      {
-        role: "user",
-        content: `Generate a concise open-ended quiz about ${topic} with ${amount} questions. The quiz should have a short title. Each question should be brief (max 150 words) with a concise answer (max 200 words), two short hints (max 8 words each), a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions. Prioritize questions that can be answered with a single word or a very short phrase.`,
-      },
-    ],
+  const messages:OpenAIMessage[] = [
+    {
+      role: "system",
+      content:
+        "You are an AI that generates concise, engaging open-ended quizzes. Create short questions with brief, easy-to-type answers. Focus on key concepts and avoid overly complex language. Aim for questions that can be answered in a few words.",
+    },
+    {
+      role: "user",
+      content: `Generate a concise open-ended quiz about ${topic} with ${amount} questions. The quiz should have a short title. Each question should be brief (max 150 words) with a concise answer (max 200 words), two short hints (max 8 words each), a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions. Prioritize questions that can be answered with a single word or a very short phrase.`,
+    },
+  ];
+  // const response = await openai.chat.completions.create({
+  //   model: model,
+  //   messages: [
+  //     {
+  //       role: "system",
+  //       content:
+  //         "You are an AI that generates concise, engaging open-ended quizzes. Create short questions with brief, easy-to-type answers. Focus on key concepts and avoid overly complex language. Aim for questions that can be answered in a few words.",
+  //     },
+  //     {
+  //       role: "user",
+  //       content: `Generate a concise open-ended quiz about ${topic} with ${amount} questions. The quiz should have a short title. Each question should be brief (max 150 words) with a concise answer (max 200 words), two short hints (max 8 words each), a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions. Prioritize questions that can be answered with a single word or a very short phrase.`,
+  //     },
+  //   ],
+  //   functions,
+  //   function_call: { name: "createOpenEndedQuiz" },
+  // })
+
+  // const result = JSON.parse(response.choices[0].message?.function_call?.arguments || "{}")
+
+  // if (!result.quiz_title || !result.questions || !Array.isArray(result.questions)) {
+  //   throw new Error("Invalid response format: quiz_title or questions array is missing.")
+  // }
+
+  // return result as Quiz
+  return generateQuizFlexible({
+    model,
+    messages,
     functions,
-    function_call: { name: "createOpenEndedQuiz" },
+    functionCall: { name: "createOpenEndedQuiz" },
   })
-
-  const result = JSON.parse(response.choices[0].message?.function_call?.arguments || "{}")
-
-  if (!result.quiz_title || !result.questions || !Array.isArray(result.questions)) {
-    throw new Error("Invalid response format: quiz_title or questions array is missing.")
-  }
-
-  return result as Quiz
 }
 
 export const generateOpenEndedFillIntheBlanks = async (
@@ -96,25 +115,10 @@ export const generateOpenEndedFillIntheBlanks = async (
   amount: number,
   userType: string = "FREE"
 ): Promise<Quiz> => {
-  const useDummyData = false; // Use dummy data for local testing
+ 
   const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini";
-  if (useDummyData) {
-    // Return dummy data if not making an actual API call
-    return {
-      quiz_title: `Quiz on ${topic}`,
-      questions: Array.from({ length: amount }, (_, index) => ({
-        question: `Fill in the blank: The key concept in ${topic} is _____.`,
-        correct_answer: "learning",
-        hints: [
-          "It's related to acquiring knowledge.",
-          "Common in studying any subject."
-        ],
-        difficulty: index % 3 === 0 ? "easy" : index % 3 === 1 ? "medium" : "hard",
-        tags: ["fill-in-the-blank", topic.toLowerCase()],
-      })),
-    };
-  }
 
+ 
   const functions = [
     {
       name: "createBlankQuiz",
@@ -153,30 +157,46 @@ export const generateOpenEndedFillIntheBlanks = async (
       },
     },
   ];
-  
-  const response = await openai.chat.completions.create({
-    model:model,
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are an AI that generates fill-in-the-blanks type quizzes with multiple questions, hints, difficulty levels, and tags.",
-      },
-      {
-        role: "user",
-        content: `Generate a quiz on ${topic} with ${amount} fill-in-the-blank questions.`,
-      },
-    ],
+  const messages:OpenAIMessage[]= [
+    {
+      role: "system",
+      content:
+        "You are an AI that generates fill-in-the-blanks type quizzes with multiple questions, hints, difficulty levels, and tags.",
+    },
+    {
+      role: "user",
+      content: `Generate a quiz on ${topic} with ${amount} fill-in-the-blank questions.`,
+    },
+  ];
+  // const response = await openai.chat.completions.create({
+  //   model: model,
+  //   messages: [
+  //     {
+  //       role: "system",
+  //       content:
+  //         "You are an AI that generates fill-in-the-blanks type quizzes with multiple questions, hints, difficulty levels, and tags.",
+  //     },
+  //     {
+  //       role: "user",
+  //       content: `Generate a quiz on ${topic} with ${amount} fill-in-the-blank questions.`,
+  //     },
+  //   ],
+  //   functions,
+  //   function_call: { name: "createBlankQuiz" },
+  // });
+
+
+  // const result = JSON.parse(response.choices[0]?.message?.function_call?.arguments || '{}');
+
+  // if (!result.quiz_title || !result.questions || !Array.isArray(result.questions)) {
+  //   throw new Error('Invalid response format: quiz_title or questions array is missing.');
+  // }
+
+  // return result as Quiz;
+  return generateQuizFlexible({
+    model,
+    messages,
     functions,
-    function_call: { name: "createBlankQuiz" },
-  });
-  
-
-  const result = JSON.parse(response.choices[0]?.message?.function_call?.arguments || '{}');
-
-  if (!result.quiz_title || !result.questions || !Array.isArray(result.questions)) {
-    throw new Error('Invalid response format: quiz_title or questions array is missing.');
-  }
-
-  return result as Quiz;
+    functionCall: { name: "createBlankQuiz" },
+  })
 };

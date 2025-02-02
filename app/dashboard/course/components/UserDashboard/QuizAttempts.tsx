@@ -7,7 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, XCircle, Clock, TrendingUp, Award, Book, BarChart, HelpCircle } from "lucide-react"
-import type { UserQuizAttempt } from "@/app/types"
+import type { UserQuizAttempt } from "@/app/types/types"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 

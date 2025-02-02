@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { TooltipProvider, TooltipContent, TooltipTrigger, Tooltip } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
-import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types"
+import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 

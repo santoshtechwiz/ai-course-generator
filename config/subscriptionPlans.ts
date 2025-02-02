@@ -1,23 +1,23 @@
-import { Zap, Rocket, Star, Crown } from 'lucide-react'
+import { Zap, Rocket, Star, Crown } from 'lucide-react';
 
 export const SUBSCRIPTION_PLANS = [
   {
     name: "FREE",
     icon: Zap,
     options: [{ duration: 1, price: 0 }],
-    tokens: 3,
+    tokens: 5,
     limits: {
       courses: 3,
       totalQuestions: 3,
+      maxQuestionsPerQuiz: 3,
     },
     features: [
       "3 courses",
-      "Up to 3 questions (combined across MCQs, open-ended, and coding quizzes)",
-      "Basic features ",
+      "Up to 3 questions across all quizzes",
+      "Basic AI accuracy",
       "Video transcripts",
       "No Video Quiz",
       "No PDF downloads",
-      "Low AI accuracy",
     ],
   },
   {
@@ -27,16 +27,17 @@ export const SUBSCRIPTION_PLANS = [
       { duration: 1, price: 9.99 },
       { duration: 6, price: 49.99 },
     ],
-    tokens: 10,
+    tokens: 20,
     limits: {
       courses: 10,
-      totalQuestions: 5,
+      totalQuestions: 10,
+      maxQuestionsPerQuiz: 5,
     },
     features: [
       "10 courses",
-      "Up to 5 questions combined across MCQ, open-ended, and coding quizzes",
+      "Up to 5 questions per quiz",
+      "Better AI accuracy",
       "Video transcripts",
-      "Improved AI-generated content accuracy",
     ],
   },
   {
@@ -46,16 +47,17 @@ export const SUBSCRIPTION_PLANS = [
       { duration: 1, price: 19.99 },
       { duration: 6, price: 99.99 },
     ],
-    tokens: 50,
+    tokens: 60,
     limits: {
       courses: 50,
-      totalQuestions: 10,
+      totalQuestions: 20,
+      maxQuestionsPerQuiz: 10,
     },
     features: [
       "50 courses",
-      "Up to 10 questions combined across MCQ, open-ended, and coding quizzes",
-      "Advanced features and PDF downloads",
+      "Up to 10 questions per quiz",
       "High AI accuracy",
+      "PDF downloads",
       "Video Quiz",
       "Priority support",
     ],
@@ -64,25 +66,26 @@ export const SUBSCRIPTION_PLANS = [
     name: "ULTIMATE",
     icon: Crown,
     options: [
-      { duration: 1, price: 39.99 },
-      { duration: 6, price: 199.99 },
+      { duration: 1, price: 34.99 },
+      { duration: 6, price: 179.99 },
     ],
-    tokens: 100,
+    tokens: 150,
     limits: {
       courses: 100,
-      totalQuestions: 15,
+      totalQuestions: 30,
+      maxQuestionsPerQuiz: 15,
     },
     features: [
       "100 courses",
-      "Up to 15 questions combined across MCQ, open-ended, and coding quizzes",
-      "Expert features and PDF downloads",
+      "Up to 15 questions per quiz",
       "Highest AI accuracy",
-      "coding quizzes",
+      "Coding quizzes",
       "Video Quiz",
       "Priority support",
     ],
   },
 ] as const;
+
 
 
 

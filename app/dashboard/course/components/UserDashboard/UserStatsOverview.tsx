@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Clock, Award, TrendingUp, BookOpen, Calendar } from "lucide-react"
-import type { UserStats } from "@/app/types"
+import type { UserStats } from "@/app/types/types"
 
 interface UserStatsOverviewProps {
   stats: UserStats

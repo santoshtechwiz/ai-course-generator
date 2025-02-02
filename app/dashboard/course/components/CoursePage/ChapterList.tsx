@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { Chapter, FullCourseType } from "@/app/types"
+import type { Chapter, FullCourseType } from "@/app/types/types"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface ChapterListProps {

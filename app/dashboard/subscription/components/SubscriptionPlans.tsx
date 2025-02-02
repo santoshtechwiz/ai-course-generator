@@ -250,6 +250,7 @@ function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubs
   )
 }
 
+
 function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
   return (
     <motion.div
@@ -257,54 +258,93 @@ function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
     >
-      <h2 className="text-2xl font-bold mb-4">Compare Plans</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Compare Plans</h2>
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="min-w-full border border-gray-200">
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Feature</TableHead>
+            <TableRow className="bg-gray-100">
+              <TableHead className="w-48 font-semibold text-left">Feature</TableHead>
               {plans.map((plan) => (
-                <TableHead key={plan.name}>{plan.name}</TableHead>
+                <TableHead key={plan.name} className="text-center">
+                  {plan.name}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
+            {/* Tokens / Credits */}
             <TableRow>
               <TableCell className="font-medium">Credits</TableCell>
               {plans.map((plan) => (
-                <TableCell key={plan.name}>{plan.tokens}</TableCell>
+                <TableCell key={plan.name} className="text-center">
+                  {plan.tokens}
+                </TableCell>
               ))}
             </TableRow>
+
+            {/* Monthly Price */}
             <TableRow>
               <TableCell className="font-medium">Monthly Price</TableCell>
               {plans.map((plan) => (
-                <TableCell key={plan.name}>
+                <TableCell key={plan.name} className="text-center">
                   {plan.options[0].price === 0 ? "Free" : `$${plan.options[0].price}`}
                 </TableCell>
               ))}
             </TableRow>
+
+            {/* Bi-Annual Price */}
             <TableRow>
               <TableCell className="font-medium">Bi-Annual Price</TableCell>
               {plans.map((plan) => (
-                <TableCell key={plan.name}>
-                  {plan.options[1]?.price === 0 ? "Free" : `$${plan.options[1]?.price ?? "N/A"}`}
+                <TableCell key={plan.name} className="text-center">
+                  {plan.options[1]?.price ? `$${plan.options[1].price}` : "N/A"}
                 </TableCell>
               ))}
             </TableRow>
+
+            {/* Max Questions Per Quiz */}
             <TableRow>
-              <TableCell className="font-medium">Support</TableCell>
+              <TableCell className="font-medium">Max Questions Per Quiz</TableCell>
               {plans.map((plan) => (
-                <TableCell key={plan.name}>
-                  {plan.features.find((f) => f.toLowerCase().includes("support"))?.split(",")[0] || "N/A"}
+                <TableCell key={plan.name} className="text-center">
+                  {plan.limits.maxQuestionsPerQuiz}
                 </TableCell>
               ))}
+            </TableRow>
+
+            {/* Course Limit */}
+            <TableRow>
+              <TableCell className="font-medium">Courses Limit</TableCell>
+              {plans.map((plan) => (
+                <TableCell key={plan.name} className="text-center">
+                  {plan.limits.courses}
+                </TableCell>
+              ))}
+            </TableRow>
+
+            {/* Support */}
+            <TableRow>
+              <TableCell className="font-medium">Support</TableCell>
+              {plans.map((plan) => {
+                const supportFeature = plan.features.find((f) =>
+                  f.toLowerCase().includes("support")
+                );
+                return (
+                  <TableCell key={plan.name} className="text-center">
+                    {supportFeature ? supportFeature : "Standard Support"}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           </TableBody>
         </Table>
       </div>
     </motion.div>
-  )
+  );
 }
+
+
+
 
 function FAQSection() {
   return (
