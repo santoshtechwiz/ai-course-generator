@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { CalendarIcon } from 'lucide-react'
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
-import { UserSubscription } from "@prisma/client"
+import { UserSubscription } from "@/app/types/types"
+
 
 
 
