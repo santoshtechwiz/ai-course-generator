@@ -1,11 +1,15 @@
-'use client';
-import { Control, Controller, FieldErrors, UseFormSetValue, UseFormWatch } from "react-hook-form"
+"use client"
 
+import { type Control, Controller, type FieldErrors, type UseFormSetValue, type UseFormWatch } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, X } from 'lucide-react'
+import { Label } from "@/components/ui/label"
+import { Plus, Trash2 } from "lucide-react"
+
+import type { CreateCourseInput } from "@/schema/schema"
+import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { CreateCourseInput } from "./schema"
 
 interface ContentStepProps {
   control: Control<CreateCourseInput>
@@ -31,43 +35,58 @@ export function ContentStep({ control, errors, watch, setValue }: ContentStepPro
   }
 
   const handleRemoveUnit = (index: number) => {
-    setValue("units", units.filter((_, i) => i !== index))
+    setValue(
+      "units",
+      units.filter((_, i) => i !== index),
+    )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">Course Units</h2>
+        <p className="text-sm text-muted-foreground">Add up to 3 units for your course.</p>
+      </div>
+
       {units.map((unit, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <div className="flex-1">
-            <Controller
-              name={`units.${index}`}
-              control={control}
-              render={({ field }) => (
-                <Input
-                  id={`unit-${index}`}
-                  placeholder="Enter unit title"
-                  className="h-12 text-lg text-gray-900"
-                  {...field}
-                  spellCheck="true"
+        <Card key={index} className={cn("transition-all duration-200", errors.units?.[index] && "border-destructive")}>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor={`unit-${index}`} className="text-base font-medium">
+                  Unit {index + 1}
+                </Label>
+                <Controller
+                  name={`units.${index}`}
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id={`unit-${index}`}
+                      placeholder="Enter unit title"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-ring"
+                      {...field}
+                      spellCheck="true"
+                    />
+                  )}
                 />
-              )}
-            />
-            {errors.units?.[index] && (
-              <p className="text-sm text-red-500 mt-1">{errors.units[index]?.message}</p>
-            )}
-          </div>
-          <Button
-            type="button"
-            variant="destructive"
-            size="icon"
-            onClick={() => handleRemoveUnit(index)}
-            disabled={units.length === 1}
-            className="shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+                {errors.units?.[index] && <p className="text-sm text-destructive">{errors.units[index]?.message}</p>}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => handleRemoveUnit(index)}
+                disabled={units.length === 1}
+                className="shrink-0"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Remove unit</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ))}
+
       <Button
         type="button"
         onClick={handleAddUnit}
