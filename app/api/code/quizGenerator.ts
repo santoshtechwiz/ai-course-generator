@@ -67,6 +67,9 @@ export async function generateCodingMCQs(
       if (Array.isArray(q.options)) {
         q.options = q.options.map(option => option.replace(/^[A-D]\.\s*/, '').trim())
       }
+      if(q.correctAnswer){
+        q.correctAnswer=q.correctAnswer.replace(/^[A-D]\.\s*/, '').trim();
+      }
       return q
     })
   } catch (error) {
