@@ -3,8 +3,14 @@ import { Cpu, Brain, Sparkles, Zap, CreditCard } from 'lucide-react'
 
 export const navItems = [
   { 
-    name: "Dashboard", 
+    name: "Explore", 
     href: "/dashboard",
+    icon: Sparkles,
+    subItems: []
+  },
+  { 
+    name: "Dashboard", 
+    href: "/dashboard/dashboard",
     icon: Cpu,
     subItems: []
   },

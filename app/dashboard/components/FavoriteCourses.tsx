@@ -65,7 +65,7 @@ export default function FavoriteCourses({ favorites }: FavoriteCoursesProps) {
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                       <div className="flex items-center">
                         <Book className="mr-1 h-4 w-4" />
-                        <span>{course.category.name}</span>
+                        <span>{course.category?.name}</span>
                       </div>
                     </div>
                     <p className="line-clamp-1 text-sm text-muted-foreground">
