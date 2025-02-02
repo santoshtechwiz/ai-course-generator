@@ -1,4 +1,4 @@
-import { Course, UserQuiz } from "@/app/types";
+import { Course, UserQuiz } from "@/app/types/types";
 
 
 

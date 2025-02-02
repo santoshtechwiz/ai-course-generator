@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { Course, CourseProgress, UserQuizAttempt } from "@/app/types"
+import { Course, CourseProgress, UserQuizAttempt } from "@/app/types/types"
 
 
 interface AIRecommendationsProps {

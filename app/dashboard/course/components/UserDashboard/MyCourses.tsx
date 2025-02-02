@@ -7,7 +7,7 @@ import { ArrowRight, BookOpen, Plus } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { Course } from "@/app/types"
+import type { Course } from "@/app/types/types"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface MyCoursesProps {

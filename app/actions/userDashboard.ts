@@ -9,7 +9,7 @@ import type {
   Favorite,
   UserQuizAttempt,
   TopicPerformance,
-} from "../types"
+} from "../types/types"
 
 export async function getUserData(userId: string): Promise<DashboardUser | null> {
   try {

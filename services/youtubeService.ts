@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { YoutubeGrabTool } from '@/lib/youtubetranscript';
-import { YoutubeSearchResponse, TranscriptItem, TranscriptResponse } from '@/app/types';
+import { YoutubeSearchResponse, TranscriptItem, TranscriptResponse } from '@/app/types/types';
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const MAX_RETRIES = 3;

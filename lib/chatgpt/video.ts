@@ -39,11 +39,11 @@ export async function generateCourseContent(
     },
   ];
 
-  const output_units: UnitContent[] = [];
+  const unitContent: UnitContent[] = [];
 
   for (const unit of units) {
     const response = await openai.chat.completions.create({
-      model: "GPT-4o mini ",
+      model: "gpt-3.5-turbo-1106",
       messages: [
         {
           role: "system",
@@ -62,8 +62,8 @@ export async function generateCourseContent(
     const result: UnitContent = JSON.parse(
       response.choices[0].message?.function_call?.arguments || "{}"
     );
-    output_units.push(result);
+    unitContent.push(result);
   }
 
-  return output_units;
+  return unitContent;
 }

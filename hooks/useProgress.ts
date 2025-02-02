@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { CourseProgress } from '@/app/types';
+import { CourseProgress } from '@/app/types/types';
 
 export interface UseProgressProps {
   courseId: number;

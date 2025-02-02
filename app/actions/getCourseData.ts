@@ -1,7 +1,7 @@
 'use server'
 
 import prisma from "@/lib/db";
-import { FullCourseType } from "../types";
+import { FullCourseType } from "../types/types";
 
 export async function getCourseData(slug: string): Promise<FullCourseType | null> {
     const course = await prisma.course.findFirst({

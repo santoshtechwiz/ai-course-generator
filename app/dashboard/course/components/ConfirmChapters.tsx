@@ -20,17 +20,20 @@ export type CourseProps = {
 
 const ConfirmChapters = ({ course }: CourseProps) => {
   const [loading, setLoading] = React.useState(false)
-  const chapterRefs: Record<string, React.RefObject<ChapterCardHandler>> = {}
-  const refs = React.useMemo(() => {
-    const refs: Record<string, React.RefObject<ChapterCardHandler>> = {}
+  const chapterRefs = React.useRef<Record<string, React.RefObject<ChapterCardHandler>>>({})
+  const [completedChapters, setCompletedChapters] = React.useState<Set<number>>(new Set())
+
+  // Initialize refs for all chapters
+  React.useEffect(() => {
     course.units.forEach((unit) => {
       unit.chapters.forEach((chapter) => {
-        refs[chapter.id] = React.useRef(null)
+        if (!chapterRefs.current[chapter.id]) {
+          chapterRefs.current[chapter.id] = React.createRef()
+        }
       })
     })
-    return refs
   }, [course])
-  const [completedChapters, setCompletedChapters] = React.useState<Set<number>>(new Set())
+
   const totalChaptersCount = React.useMemo(() => {
     return course.units.reduce((acc, unit) => {
       return acc + unit.chapters.length
@@ -68,7 +71,7 @@ const ConfirmChapters = ({ course }: CourseProps) => {
                   <ChapterCard
                     onComplete={completedChapters}
                     setCompletedChapters={setCompletedChapters}
-                    ref={refs[chapter.id]}
+                    ref={chapterRefs.current[chapter.id]}
                     key={chapter.id}
                     chapter={chapter}
                     chapterIndex={chapterIndex}
@@ -107,7 +110,7 @@ const ConfirmChapters = ({ course }: CourseProps) => {
               disabled={loading}
               onClick={() => {
                 setLoading(true)
-                Object.values(refs).forEach((ref) => {
+                Object.values(chapterRefs.current).forEach((ref) => {
                   ref.current?.triggerLoad()
                 })
               }}

@@ -285,3 +285,44 @@ export interface CodingQuizProps {
     questions: CodeChallenge[]
   }
 }
+
+/* CHAT GPT */
+
+
+export interface QuizQuestion {
+  question: string
+  correct_answer: string
+  hints: string[]
+  difficulty: string
+  tags: string[]
+}
+
+export interface Quiz {
+  quiz_title: string
+  questions: QuizQuestion[]
+}
+
+export interface OpenAIFunction {
+  name: string
+  description: string
+  parameters: {
+    type: string
+    properties: {
+      [key: string]: any
+    }
+    required: string[]
+  }
+}
+
+export interface OpenAIMessage {
+  role: "system" | "user" | "assistant"
+  content: string
+}
+
+export interface QuizGenerationParams {
+  model: string
+  messages: OpenAIMessage[]
+  functions: OpenAIFunction[]
+  functionCall: { name: string }
+}
+

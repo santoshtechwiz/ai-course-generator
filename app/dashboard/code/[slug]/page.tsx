@@ -2,7 +2,7 @@ import type { Metadata, ResolvingMetadata } from "next"
 import { notFound } from "next/navigation"
 import CodingQuiz from "../components/CodingQuiz"
 import axios from "axios"
-import type { CodingQuizProps } from "@/app/types"
+import type { CodingQuizProps } from "@/app/types/types"
 import { getAuthSession } from "@/lib/authOptions"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {

@@ -1,4 +1,4 @@
-import type { CodingQuizProps } from "@/app/types"
+import type { CodingQuizProps } from "@/app/types/types"
 import prisma from "@/lib/db"
 import { NextResponse } from "next/server"
 

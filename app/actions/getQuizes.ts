@@ -1,6 +1,6 @@
 "use server"
 import prisma from "@/lib/db"
-import type { QuizListItem } from "../types"
+import type { QuizListItem } from "../types/types"
 
 export async function getQuizzes(
   page = 1,

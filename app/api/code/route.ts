@@ -1,6 +1,6 @@
 
 
-import { CodeChallenge, QuizType } from "@/app/types"
+import { CodeChallenge, QuizType } from "@/app/types/types"
 import { getAuthSession } from "@/lib/authOptions";
 import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
 import { titleSubTopicToSlug } from "@/lib/slug";

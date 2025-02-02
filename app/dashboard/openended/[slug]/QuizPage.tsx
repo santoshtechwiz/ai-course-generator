@@ -3,7 +3,7 @@
 import type React from "react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
-import { CourseAIErrors } from "@/app/types";
+import { CourseAIErrors } from "@/app/types/types";
 import { QuizActions } from "../../mcq/components/QuizActions";
 import { useSession } from "next-auth/react";
 import { SignInPrompt } from "@/app/components/SignInPrompt";

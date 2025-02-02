@@ -1,5 +1,5 @@
 
-import { CodeChallenge } from "@/app/types"
+import { CodeChallenge } from "@/app/types/types"
 import OpenAI from "openai"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })

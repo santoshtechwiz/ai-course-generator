@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress"
 
 import QuizBackground from "./QuizBackground"
 import ComponentLoader from "../ComponentLoader"
-import { FullChapterType, FullCourseType } from "@/app/types"
+import { FullChapterType, FullCourseType } from "@/app/types/types"
 import { CourseQuiz } from "@prisma/client"
 
 type CourseQuestion = {

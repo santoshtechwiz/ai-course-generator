@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { BrainCircuit, Clock, Target, Trophy, BookOpen, CheckCircle2 } from "lucide-react"
-import type { UserQuiz, QuizType } from "@/app/types"
+import type { UserQuiz, QuizType } from "@/app/types/types"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface MyQuizzesProps {

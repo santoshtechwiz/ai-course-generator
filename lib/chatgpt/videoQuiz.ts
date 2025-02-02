@@ -1,4 +1,4 @@
-import { MultipleChoiceQuestion } from "@/app/types";
+import { MultipleChoiceQuestion } from "@/app/types/types";
 import { openai } from "./gpt";
 
 interface FunctionDefinition {

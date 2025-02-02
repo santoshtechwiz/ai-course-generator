@@ -1,6 +1,6 @@
 'use client'
 
-import { VideoProgress } from '@/app/types'
+import { VideoProgress } from '@/app/types/types'
 import { useCallback, useState, useEffect, useRef } from 'react'
 
 

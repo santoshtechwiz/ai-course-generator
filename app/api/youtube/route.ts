@@ -1,4 +1,4 @@
-import { Question, RequestBody } from "@/app/types";
+import { Question, RequestBody } from "@/app/types/types";
 import { prisma } from "@/lib/db";
 import Semaphore from "@/lib/semaphore";
 
