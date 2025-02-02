@@ -27,17 +27,7 @@ model Account {
   @@index([userId])
 }
 
-// model Session {
-//   id           Int      @id @default(autoincrement())
-//   sessionToken String   @unique
-//   userId       String   @map("user_id")
-//   expires      DateTime
-//   isAdmin      Boolean  @default(false)
-//   lastUsed     DateTime @default(now())
-//   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-//   @@index([userId])
-// }
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
@@ -205,18 +195,7 @@ model CourseProgress {
   @@index([courseId])
 }
 
-// model UserSubscription {
-//   id                   String   @id @default(cuid())
-//   userId               String   @unique @map("user_id")
-//   user                 User     @relation(fields: [userId], references: [id])
-//   planId               String
-//   status               String
-//   currentPeriodStart   DateTime
-//   currentPeriodEnd     DateTime
-//   cancelAtPeriodEnd    Boolean  @default(false)
-//   stripeSubscriptionId String?  @unique
-//   stripeCustomerId     String?
-// }
+
 model UserSubscription {
   id                   String   @id @default(cuid())
   userId               String   @unique

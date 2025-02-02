@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { Lock, Unlock } from "lucide-react"
+import { SUBSCRIPTION_PLANS, type SubscriptionPlanType } from "@/config/subscriptionPlans"
 
 interface SubscriptionSliderProps {
   value: number
@@ -21,26 +22,14 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
 }) => {
   const { subscriptionStatus } = useSubscriptionStore()
 
-  const subscriptionLimits = {
-    FREE: 3,
-    BASIC: 5,
-    PRO: 15,
-    PREMIUM: 30,
-  }
+  const currentPlan =
+    SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionStatus?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
+  const maxQuestions = currentPlan.limits.totalQuestions
+  const isMaxPlan = currentPlan.name === "ULTIMATE"
 
-  const getMaxQuestions = () => {
-    return subscriptionStatus?.subscriptionPlan
-      ? subscriptionLimits[subscriptionStatus.subscriptionPlan]
-      : subscriptionLimits.FREE
-  }
-
-  const maxQuestions = getMaxQuestions()
-  const isMaxPlan = subscriptionStatus?.subscriptionPlan === "PREMIUM"
-
-  const getNextPlan = () => {
-    const plans = Object.keys(subscriptionLimits)
-    const currentIndex = plans.indexOf(subscriptionStatus?.subscriptionPlan || "FREE")
-    return plans[currentIndex + 1]
+  const getNextPlan = (): SubscriptionPlanType => {
+    const currentIndex = SUBSCRIPTION_PLANS.findIndex((plan) => plan.name === currentPlan.name)
+    return SUBSCRIPTION_PLANS[currentIndex + 1]?.name || currentPlan.name
   }
 
   const nextPlan = getNextPlan()
@@ -53,7 +42,7 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
             <TooltipTrigger asChild>
               <Badge variant={isMaxPlan ? "secondary" : "outline"} className="cursor-help">
                 {isMaxPlan ? <Unlock className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}
-                {subscriptionStatus?.subscriptionPlan || "FREE"}
+                {currentPlan.name}
               </Badge>
             </TooltipTrigger>
             <TooltipContent>

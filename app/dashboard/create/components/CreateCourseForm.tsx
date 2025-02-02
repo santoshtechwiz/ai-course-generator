@@ -23,8 +23,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
 import { useTheme } from "next-themes"
-import { useSubscription } from "@/hooks/useSubscription"
+
 import { PlanAwareButton } from "@/app/components/PlanAwareButton"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 interface CourseCreationFormProps {
   topic: string
@@ -36,7 +37,7 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
 
-  const { subscriptionStatus, isLoading } = useSubscription()
+  const { subscriptionStatus, isLoading } = useSubscriptionStore()
   const { data: session, status: authStatus } = useSession()
   const router = useRouter()
   const { toast } = useToast()

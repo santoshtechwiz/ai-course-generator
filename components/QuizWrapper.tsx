@@ -6,9 +6,10 @@ import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm
 import TopicForm from "@/app/dashboard/openended/components/TopicForm"
 import CreateQuizForm from "@/app/dashboard/quiz/components/CreateQuizForm"
 import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
-import { useSubscription } from "@/hooks/useSubscription"
+
 
 import CodeQuizForm from "@/app/dashboard/code/components/CodeQuizForm"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"|'code';
@@ -18,7 +19,7 @@ interface QuizWrapperProps {
 }
 
 export function QuizWrapper({ type }: QuizWrapperProps) {
-  const { subscriptionStatus, isLoading } = useSubscription()
+  const { subscriptionStatus, isLoading } = useSubscriptionStore()
   const { data: session } = useSession()
 
 
@@ -29,11 +30,11 @@ export function QuizWrapper({ type }: QuizWrapperProps) {
   const getMaxQuestions = () => {
     switch (type) {
       case "mcq":
-        return plan?.limits.mcq || 0
+        return plan?.limits.totalQuestions || 0
       case "openended":
-        return plan?.limits.openEnded || 0
+        return plan?.limits.totalQuestions || 0
       case "fill-in-the-blanks":
-        return plan?.limits.fillInTheBlanks || 0
+        return plan?.limits.totalQuestions || 0
       case "course":
         return plan?.limits.courses || 0
       default:

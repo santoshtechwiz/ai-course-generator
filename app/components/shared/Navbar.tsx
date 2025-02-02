@@ -19,10 +19,11 @@ import { navItems } from "@/constants/navItems"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import SearchModal from "./SearchModal"
-import { useSubscription } from "@/hooks/useSubscription"
+
 import { Badge } from "@/components/ui/badge"
 import MobileMenu from "./MobileMenu"
 import Link from "next/link"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 const NavItems = () => {
   const pathname = usePathname()
@@ -62,8 +63,8 @@ export default function Navbar() {
   const { data: session, status } = useSession()
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const router = useRouter()
-  const [scrolled, setScrolled] = useState(false)
-  const { subscriptionStatus, isLoading: isLoadingSubscription } = useSubscription()
+  const [scrolled, setScrolled] = useState(false);
+  const { subscriptionStatus, isLoading: isLoadingSubscription } = useSubscriptionStore();
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 20)

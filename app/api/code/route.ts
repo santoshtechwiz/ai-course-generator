@@ -3,7 +3,7 @@
 import { CodeChallenge, QuizType } from "@/app/types"
 import { getAuthSession } from "@/lib/authOptions";
 import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
-import { titleSubTopicToSlug, titleToSlug } from "@/lib/slug";
+import { titleSubTopicToSlug } from "@/lib/slug";
 import { NextResponse } from "next/server";
 import { generateCodingMCQs } from "./quizGenerator";
 
@@ -84,12 +84,17 @@ export async function POST(req: Request) {
   try {
     const slug = titleSubTopicToSlug(language, subtopic);
     const userQuiz = await createUserQuiz(session.user.id, language, 'code', slug);
-    // Shuffle and slice to get random quizzes
+   
     try {
-      // 3. Create questions for the quiz
+    
 
       let quizzes = await generateCodingMCQs(language, subtopic, difficulty, questionCount);  //dummyQuizzes[language] || dummyQuizzes["JavaScript"]
-
+      if(quizzes.length === 0){
+        return NextResponse.json({
+          error: "No quizzes available for the selected topic"
+        }, { status: 404 });
+      }
+      
       quizzes = quizzes.sort(() => 0.5 - Math.random()).slice(0, 5)
       console.log(quizzes);
       // Add difficulty to each quiz (in a real scenario, you'd have different quizzes for each difficulty)

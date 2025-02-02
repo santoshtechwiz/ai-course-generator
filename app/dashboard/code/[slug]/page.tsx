@@ -7,7 +7,8 @@ import { getAuthSession } from "@/lib/authOptions"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
-    const response = await axios.get<CodingQuizProps>(`${process.env.NEXTAUTH_URL}/api/code/${slug}`)
+    const response = await axios.get<CodingQuizProps>
+    (`${process.env.NEXTAUTH_URL}/api/code/${slug}`)
     if (response.status !== 200) {
       throw new Error("Failed to fetch quiz data")
     }
@@ -64,15 +65,18 @@ export default async function Page({ params  }: { params: Promise<{ slug: string
   }
 
   return (
+    <>
+    {/* <p>{JSON.stringify(quizData)}</p> */}
     <CodingQuiz
       quizId={quizData.quizId}
       slug={quizData.slug}
       isFavorite={quizData.isFavorite}
       isPublic={quizData.isPublic}
-      userId={quizData.userId || ""}
+      userId={session?.user.id || ""}
       ownerId={quizData?.ownerId||""}
       quizData={quizData.quizData}
     />
+    </>
   )
 }
 
