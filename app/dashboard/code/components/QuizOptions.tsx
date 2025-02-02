@@ -28,7 +28,7 @@ const QuizOptions: React.FC<QuizOptionsProps> = ({
           onClick={() => onSelect(option)}
           disabled={disabled}
         >
-          <div className="flex items-center">
+          <div className="flex items-center w-full">
             <div className="pl-2 w-full">{renderOptionContent(option)}</div>
           </div>
         </Button>

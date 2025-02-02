@@ -20,7 +20,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { motion } from "framer-motion"
 
 import QuizPDFDownload from "../../course/components/QuizPDFDownload"
-import { useSubscription } from "@/hooks/useSubscription"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
+
 
 interface QuizActionsToolbarProps {
   quizId: string
@@ -47,7 +48,7 @@ export function QuizActions({
   const [isDeleteLoading, setIsDeleteLoading] = useState(false)
   const [data, setData] = useState<any | null>(null)
   const router = useRouter()
-  const { subscriptionStatus, isLoading } = useSubscription()
+  const { subscriptionStatus, isLoading } = useSubscriptionStore()
 
   useEffect(() => {
     const fetchQuizState = async () => {

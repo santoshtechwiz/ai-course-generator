@@ -269,7 +269,8 @@ export interface QuizQuestion {
   question: string
   options: string[]
   codeSnippet: string | null
-  language?: string
+  language?: string,
+  correctAnswer: string
 }
 
 export interface CodingQuizProps {
@@ -281,6 +282,6 @@ export interface CodingQuizProps {
   ownerId?: string
   quizData: {
     title: string
-    questions: QuizQuestion[]
+    questions: CodeChallenge[]
   }
 }
