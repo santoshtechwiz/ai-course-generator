@@ -10,7 +10,7 @@ export const getCourses = async (slug: string) => {
       include: {
         courseUnits: {
           include: {
-            chapters: true, // Ensure the chapter relationship is included
+            chapters: true,
           },
         },
       },

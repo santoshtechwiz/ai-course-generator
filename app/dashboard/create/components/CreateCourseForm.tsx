@@ -171,31 +171,8 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
             </p>
           </div>
 
-          <div className="px-2 sm:px-4 mb-6">
-            <div className="hidden md:block">
-              <StepIndicator currentStep={step} totalSteps={totalSteps} />
-            </div>
-            <div className="flex justify-between items-center md:hidden">
-              {stepIcons.map((icon, index) => (
-                <TooltipProvider key={index}>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <div
-                        className={`flex flex-col items-center justify-center ${
-                          step === index + 1 ? "text-primary" : "text-muted-foreground"
-                        }`}
-                      >
-                        {icon}
-                        <span className="text-xs mt-1">{`Step ${index + 1}`}</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>{index === 0 ? "Basic Info" : index === 1 ? "Content" : "Preview"}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
-            </div>
-            <Progress value={(step / totalSteps) * 100} className="mt-4" />
-          </div>
+          <StepIndicator currentStep={step} totalSteps={totalSteps} />
+          <Progress value={(step / totalSteps) * 100} className="mt-4" />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-6 px-2 sm:px-4">
