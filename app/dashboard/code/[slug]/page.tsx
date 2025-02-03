@@ -1,14 +1,15 @@
 import type { Metadata, ResolvingMetadata } from "next"
 import { notFound } from "next/navigation"
-import CodingQuiz from "../components/CodingQuiz"
+import { getAuthSession } from "@/lib/authOptions"
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query"
+
 import axios from "axios"
 import type { CodingQuizProps } from "@/app/types/types"
-import { getAuthSession } from "@/lib/authOptions"
+import CodingQuizWrapper from "../components/CodingQuizWrapper"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
-    const response = await axios.get<CodingQuizProps>
-    (`${process.env.NEXTAUTH_URL}/api/code/${slug}`)
+    const response = await axios.get<CodingQuizProps>(`${process.env.NEXTAUTH_URL}/api/code/${slug}`)
     if (response.status !== 200) {
       throw new Error("Failed to fetch quiz data")
     }
@@ -19,9 +20,11 @@ async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   }
 }
 
-
-export async function generateMetadata({ params  }: { params: Promise<{ slug: string }> }, parent: ResolvingMetadata): Promise<Metadata> {
-  const quizData = await getQuizData((await params).slug)
+export async function generateMetadata(
+  { params }: { params: { slug: string } },
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  const quizData = await getQuizData(params.slug)
 
   if (!quizData) {
     return notFound()
@@ -54,29 +57,21 @@ export async function generateMetadata({ params  }: { params: Promise<{ slug: st
   }
 }
 
-export default async function Page({ params  }: { params: Promise<{ slug: string }> }) {
-  const quizData = await getQuizData((await params).slug)
-  const session = await getAuthSession();
- 
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const session = await getAuthSession()
+  const queryClient = new QueryClient()
+  const slug = (await params).slug;
+  await queryClient.prefetchQuery({
+    queryKey: ["quizData", slug],
+    queryFn: () => getQuizData(slug),
+  })
 
-
-  if (!quizData) {
-    return notFound()
-  }
+  const dehydratedState = dehydrate(queryClient)
 
   return (
-    <>
-    {/* <p>{JSON.stringify(quizData)}</p> */}
-    <CodingQuiz
-      quizId={quizData.quizId}
-      slug={quizData.slug}
-      isFavorite={quizData.isFavorite}
-      isPublic={quizData.isPublic}
-      userId={session?.user.id || ""}
-      ownerId={quizData?.ownerId||""}
-      quizData={quizData.quizData}
-    />
-    </>
+    <HydrationBoundary state={dehydratedState}>
+      <CodingQuizWrapper slug={slug} userId={session?.user.id || ""} />
+    </HydrationBoundary>
   )
 }
 

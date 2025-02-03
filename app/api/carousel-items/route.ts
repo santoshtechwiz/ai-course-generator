@@ -4,18 +4,18 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const courses = await prisma.course.findMany({
+    const [courses, quizzes] = await Promise.all([
+      prisma.course.findMany({
       where: { isPublic: true },
       take: 5,
       select: {
         id: true,
-        slug:true,
+        slug: true,
         name: true,
         description: true,
       },
-    })
-
-    const quizzes = await prisma.userQuiz.findMany({
+      }),
+      prisma.userQuiz.findMany({
       where: { isPublic: true },
       take: 5,
       select: {
@@ -23,7 +23,8 @@ export async function GET() {
         id: true,
         topic: true,
       },
-    })
+      })
+    ])
 
     const carouselItems = [
       ...courses.map(course => ({

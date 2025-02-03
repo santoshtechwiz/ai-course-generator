@@ -33,13 +33,7 @@ export default function NotFound() {
   }
 
   const suggestedPages = [
-    { href: "/dashboard/courses", icon: BookOpen, title: "Courses", description: "Explore our wide range of courses" },
-    {
-      href: "/dashboard/quizzes",
-      icon: HelpCircle,
-      title: "Quizzes",
-      description: "Challenge yourself with our quizzes",
-    },
+  
     { href: "/dashboard/create", icon: PlusCircle, title: "Create", description: "Start creating your own content" },
     { href: "/dashboard/", icon: Compass, title: "Explore", description: "Discover new learning opportunities" },
   ]

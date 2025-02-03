@@ -1,23 +1,20 @@
-import { Zap, Rocket, Star, Crown } from 'lucide-react';
+import { Zap, Rocket, Star, Crown } from "lucide-react"
 
 export const SUBSCRIPTION_PLANS = [
   {
     name: "FREE",
     icon: Zap,
     options: [{ duration: 1, price: 0 }],
-    tokens: 5,
+    tokens: 3,
     limits: {
-      courses: 3,
       totalQuestions: 3,
       maxQuestionsPerQuiz: 3,
     },
     features: [
-      "3 courses",
-      "Up to 3 questions across all quizzes",
+      "5 tokens to use on courses or quizzes",
+      "Up to 3 questions per quiz",
       "Basic AI accuracy",
       "Video transcripts",
-      "No Video Quiz",
-      "No PDF downloads",
     ],
   },
   {
@@ -29,15 +26,15 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 20,
     limits: {
-      courses: 10,
       totalQuestions: 5,
       maxQuestionsPerQuiz: 5,
     },
     features: [
-      "10 courses",
+      "20 tokens to use on courses or quizzes",
       "Up to 5 questions per quiz",
       "Better AI accuracy",
       "Video transcripts",
+      "PDF downloads",
     ],
   },
   {
@@ -49,15 +46,13 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 60,
     limits: {
-      courses: 50,
       totalQuestions: 20,
       maxQuestionsPerQuiz: 10,
     },
     features: [
-      "50 courses",
+      "60 tokens to use on courses or quizzes",
       "Up to 10 questions per quiz",
       "High AI accuracy",
-      "PDF downloads",
       "Video Quiz",
       "Priority support",
     ],
@@ -71,12 +66,11 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 150,
     limits: {
-      courses: 100,
       totalQuestions: 30,
       maxQuestionsPerQuiz: 15,
     },
     features: [
-      "100 courses",
+      "150 tokens to use on courses or quizzes",
       "Up to 15 questions per quiz",
       "Highest AI accuracy",
       "Coding quizzes",
@@ -84,8 +78,7 @@ export const SUBSCRIPTION_PLANS = [
       "Priority support",
     ],
   },
-] as const;
-
+] as const
 
 
 

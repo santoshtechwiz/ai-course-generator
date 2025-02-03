@@ -35,12 +35,15 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
   const nextPlan = getNextPlan()
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <div className="flex items-center justify-between">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant={isMaxPlan ? "secondary" : "outline"} className="cursor-help">
+              <Badge
+                variant={isMaxPlan ? "secondary" : "default"}
+                className={`cursor-help ${isMaxPlan ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"} text-white`}
+              >
                 {isMaxPlan ? <Unlock className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}
                 {currentPlan.name}
               </Badge>
@@ -61,7 +64,7 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
         step={1}
         value={[value]}
         onValueChange={(values) => onValueChange(values[0])}
-        className="flex-grow"
+        className="w-full"
         aria-label={ariaLabel}
       />
       <div className="flex justify-between items-center text-sm text-muted-foreground">
