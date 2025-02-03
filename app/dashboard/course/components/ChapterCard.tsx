@@ -26,7 +26,7 @@ const ChapterCard = React.memo(
 
     useEffect(() => {
       if (state.videoStatus === "success" && !isCompleted) {
-        onChapterComplete(chapter.id)
+        onChapterComplete(chapter.id.toString())
       }
     }, [state.videoStatus, isCompleted, onChapterComplete, chapter.id])
 
@@ -46,9 +46,9 @@ const ChapterCard = React.memo(
     const cardClassName = useMemo(
       () =>
         cn("transition-all duration-300", {
-          "bg-secondary": !isSuccess && !isError,
-          "border-red-300 bg-red-50": isError,
-          "border-green-300 bg-green-50": isSuccess,
+          "bg-card": !isSuccess && !isError,
+          "border-destructive/50 bg-destructive/10": isError,
+          "border-success/50 bg-success/10": isSuccess,
         }),
       [isSuccess, isError],
     )
@@ -82,7 +82,7 @@ const CompletionIcon: React.FC = () => (
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger>
-        <CheckCircle className="h-5 w-5 text-green-600" />
+        <CheckCircle className="h-5 w-5 text-success" />
       </TooltipTrigger>
       <TooltipContent>
         <p>Chapter completed</p>
@@ -129,9 +129,9 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = React.memo(({ icon: Icon
     () =>
       cn("h-5 w-5", {
         "text-muted-foreground": status === "idle",
-        "text-blue-600 animate-pulse": status === "processing",
-        "text-green-600": status === "success",
-        "text-red-600": status === "error",
+        "text-primary animate-pulse": status === "processing",
+        "text-success": status === "success",
+        "text-destructive": status === "error",
       }),
     [status],
   )
