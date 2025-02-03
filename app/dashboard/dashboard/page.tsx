@@ -109,7 +109,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Zap className="h-5 w-5" />
-                  <span className="font-semibold">{userData.subscriptions?.[0]?.planId || "FREE"}</span>
+                  <span className="font-semibold">{userData.subscriptions?.planId || "FREE"}</span>
                 </div>
               </div>
             </Card>
@@ -173,7 +173,7 @@ export default function DashboardPage() {
             </Suspense>
 
             <Suspense fallback={<LoadingCard />}>
-              <SubscriptionStatus subscription={userData.subscriptions[0]} />
+              <SubscriptionStatus subscription={userData.subscriptions} />
             </Suspense>
           </div>
         </div>

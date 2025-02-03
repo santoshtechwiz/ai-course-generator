@@ -5,23 +5,25 @@ import { toast } from "@/hooks/use-toast"
 interface CourseStatus {
   isPublic: boolean
   isFavorite: boolean
+  rating: number | null
 }
 
 interface UseCourseActionsProps {
   slug: string
 }
 
-export default function useCourseActions({ slug }: UseCourseActionsProps) {
+export function useCourseActions({ slug }: UseCourseActionsProps) {
   const [loading, setLoading] = useState<string | null>(null)
-  const [status, setStatus] = useState<CourseStatus>({ isPublic: false, isFavorite: false })
+  const [status, setStatus] = useState<CourseStatus>({ isPublic: false, isFavorite: false, rating: null })
+
   const router = useRouter()
 
   const fetchCourseStatus = useCallback(async () => {
     try {
       const response = await fetch(`/api/course/${slug}`)
-      if (!response.ok) throw new Error('Failed to fetch course status')
+      if (!response.ok) throw new Error("Failed to fetch course status")
       const data = await response.json()
-      setStatus({ isPublic: data.isPublic, isFavorite: data.isFavorite })
+      setStatus({ isPublic: data.isPublic, isFavorite: data.isFavorite, rating: data.rating })
     } catch (error) {
       console.error("Error fetching course status:", error)
       toast({
@@ -36,65 +38,102 @@ export default function useCourseActions({ slug }: UseCourseActionsProps) {
     fetchCourseStatus()
   }, [fetchCourseStatus])
 
-  const handleAction = useCallback(async (action: 'privacy' | 'favorite' | 'delete') => {
-    setLoading(action)
-    try {
-      let response;
-      if (action === 'privacy' || action === 'favorite') {
-        const updateData = action === 'privacy'
-          ? { isPublic: !status.isPublic }
-          : { isFavorite: !status.isFavorite };
-        
-        response = await fetch(`/api/course/${slug}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updateData),
-        });
-      } else if (action === 'delete') {
-        response = await fetch(`/api/courses/${slug}`, {
-          method: 'DELETE',
-        });
-      }
+  const handleAction = useCallback(
+    async (action: "privacy" | "favorite" | "delete") => {
+      setLoading(action)
+      try {
+        let response
+        if (action === "privacy" || action === "favorite") {
+          const updateData = action === "privacy" ? { isPublic: !status.isPublic } : { isFavorite: !status.isFavorite }
 
-      if (!response.ok) {
-        throw new Error('Failed to perform action');
-      }
+          response = await fetch(`/api/course/${slug}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updateData),
+          })
+        } else if (action === "delete") {
+          response = await fetch(`/api/courses/${slug}`, {
+            method: "DELETE",
+          })
+        }
 
-      const result = await response.json();
+        if (!response.ok) {
+          throw new Error("Failed to perform action")
+        }
 
-      if (action === 'privacy') {
-        setStatus((prev) => ({ ...prev, isPublic: result.course.isPublic }))
+        const result = await response.json()
+
+        if (action === "privacy") {
+          setStatus((prev) => ({ ...prev, isPublic: result.course.isPublic }))
+          toast({
+            title: "Course Privacy Updated",
+            description: `Course is now ${result.course.isPublic ? "public" : "private"}.`,
+          })
+        } else if (action === "delete") {
+          toast({
+            title: "Course Deleted",
+            description: "The course has been successfully deleted.",
+          })
+          router.push("/courses")
+        } else if (action === "favorite") {
+          setStatus((prev) => ({ ...prev, isFavorite: result.course.isFavorite }))
+          toast({
+            title: "Favorite Status Updated",
+            description: `Course ${result.course.isFavorite ? "added to" : "removed from"} favorites.`,
+          })
+        }
+
+        router.refresh()
+      } catch (error) {
+        console.error("Error handling action:", error)
         toast({
-          title: "Course Privacy Updated",
-          description: `Course is now ${result.course.isPublic ? 'public' : 'private'}.`,
+          title: "Error",
+          description: `Failed to ${action} course. Please try again.`,
+          variant: "destructive",
         })
-      } else if (action === 'delete') {
-        toast({
-          title: "Course Deleted",
-          description: "The course has been successfully deleted.",
-        })
-        router.push('/courses')
-      } else if (action === 'favorite') {
-        setStatus((prev) => ({ ...prev, isFavorite: result.course.isFavorite }))
-        toast({
-          title: "Favorite Status Updated",
-          description: `Course ${result.course.isFavorite ? 'added to' : 'removed from'} favorites.`,
-        })
+      } finally {
+        setLoading(null)
       }
+    },
+    [slug, status.isPublic, status.isFavorite, router],
+  )
 
-      router.refresh()
-    } catch (error) {
-      console.error("Error handling action:", error)
-      toast({
-        title: "Error",
-        description: `Failed to ${action} course. Please try again.`,
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(null)
-    }
-  }, [slug, status, router])
+  const handleRating = useCallback(
+    async (rating: number) => {
+      setLoading("rating")
+      try {
+        const response = await fetch(`/api/rating`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "course", id: slug, rating }),
+        })
 
-  return { status, loading, handleAction }
+        if (!response.ok) {
+          throw new Error("Failed to update rating")
+        }
+
+        const result = await response.json()
+        setStatus((prev) => ({ ...prev, rating: result.data.rating }))
+        toast({
+          title: "Rating Updated",
+          description: "Your rating has been successfully updated.",
+        })
+
+        router.refresh()
+      } catch (error) {
+        console.error("Error updating rating:", error)
+        toast({
+          title: "Error",
+          description: "Failed to update rating. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(null)
+      }
+    },
+    [slug, router],
+  )
+
+  return { status, loading, handleAction, handleRating, fetchCourseStatus }
 }
 

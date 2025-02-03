@@ -1,4 +1,4 @@
-import { Course, FullCourseType } from "@/app/types/types";
+import {  FullCourseType } from "@/app/types/types";
 
 
 interface CourseStructuredDataProps {

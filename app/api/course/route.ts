@@ -126,8 +126,6 @@ async function createCourseWithUnits(
       slug: courseData.slug,
       isPublic: false,
       viewCount: 0,
-      totalRatings: 0,
-      averageRating: 0,
     },
   });
 
