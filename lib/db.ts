@@ -408,7 +408,7 @@ export async function updateTopicCount(topic: string) {
 export async function updateUserCredits(userId: string, type: QuizType): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { subscriptions: true },
+    include: { subscription: true },
   });
 
   if (!user) {

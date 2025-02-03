@@ -1,11 +1,10 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeSanitize from "rehype-sanitize"
-import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import ComponentLoader from "../ComponentLoader"
@@ -14,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import AIEmoji from "../AIEmoji"
 import PDFGenerator from "@/app/components/shared/PDFGenerator"
+import { useChapterSummary } from "@/hooks/useChapterSummary"
 
 interface CourseAISummaryProps {
   chapterId: number
@@ -21,61 +21,16 @@ interface CourseAISummaryProps {
   onSummaryReady: (isReady: boolean) => void
 }
 
-interface SummaryResponse {
-  success: boolean
-  data?: string
-  message?: string
-}
-
-const MAX_RETRIES = 3
-const RETRY_INTERVAL = 60000 // 1 minute
-
-const fetchChapterSummary = async (chapterId: number): Promise<SummaryResponse> => {
-  const response = await axios.post<SummaryResponse>(`/api/summary`, { chapterId })
-  return response.data
-}
-
 const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSummaryReady }) => {
-  const [data, setData] = useState<SummaryResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [retryCount, setRetryCount] = useState(0)
-  const [error, setError] = useState<Error | null>(null)
-  const [retryCountdown, setRetryCountdown] = useState(0)
   const [showAIEmoji, setShowAIEmoji] = useState(true)
-
-  const fetchSummary = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await fetchChapterSummary(chapterId)
-      onSummaryReady(response.success && !!response.data)
-      setData(response)
-      setShowAIEmoji(false)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("An unknown error occurred"))
-      if (retryCount < MAX_RETRIES) {
-        setRetryCountdown(RETRY_INTERVAL / 1000)
-        const countdownInterval = setInterval(() => {
-          setRetryCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(countdownInterval)
-              setRetryCount((prevRetry) => prevRetry + 1)
-              return 0
-            }
-            return prev - 1
-          })
-        }, 1000)
-      } else {
-        setShowAIEmoji(false)
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [chapterId, onSummaryReady, retryCount])
+  const { data, isLoading, isError, error, refetch } = useChapterSummary(chapterId)
 
   useEffect(() => {
-    fetchSummary()
-  }, [fetchSummary])
+    if (data?.success && data.data) {
+      onSummaryReady(true)
+      setShowAIEmoji(false)
+    }
+  }, [data, onSummaryReady])
 
   const content = useMemo(() => {
     if (showAIEmoji) {
@@ -94,11 +49,11 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
       )
     }
 
-    if (isLoading || (!data?.success && retryCount < MAX_RETRIES)) {
+    if (isLoading) {
       return <ComponentLoader size="sm" />
     }
 
-    if (error || (retryCount >= MAX_RETRIES && (!data?.success || !data?.data))) {
+    if (isError) {
       return (
         <motion.div
           initial={{ opacity: 0 }}
@@ -114,13 +69,9 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
           <p className="text-muted-foreground">
             We're having trouble retrieving the content. Please check your connection and try again.
           </p>
-          {retryCountdown > 0 ? (
-            <p className="text-sm text-muted-foreground">Retrying in {retryCountdown} seconds...</p>
-          ) : (
-            <Button variant="secondary" onClick={fetchSummary}>
-              Retry Now
-            </Button>
-          )}
+          <Button variant="secondary" onClick={() => refetch()}>
+            Retry Now
+          </Button>
         </motion.div>
       )
     }
@@ -191,20 +142,18 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
         className="space-y-4"
       >
         <p className="text-muted-foreground">No content available at the moment. Please try again later.</p>
-        <Button variant="secondary" onClick={fetchSummary}>
+        <Button variant="secondary" onClick={() => refetch()}>
           Retry
         </Button>
       </motion.div>
     )
-  }, [isLoading, error, data, retryCount, name, fetchSummary, showAIEmoji, retryCountdown])
+  }, [isLoading, isError, data, name, refetch, showAIEmoji])
 
   return (
     <div className="relative space-y-4">
       <AnimatePresence mode="wait">
         <motion.div
-          key={
-            showAIEmoji ? "ai-emoji" : isLoading || (!data?.success && retryCount < MAX_RETRIES) ? "loading" : "content"
-          }
+          key={showAIEmoji ? "ai-emoji" : isLoading ? "loading" : "content"}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

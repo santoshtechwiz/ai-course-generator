@@ -16,19 +16,19 @@ export class SubscriptionService {
     }
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { subscriptions: true },
+      include: { subscription: true },
     })
 
     if (!user) throw new Error("User not found")
 
-    if (user.subscriptions && user.subscriptions.status === "ACTIVE") {
+    if (user.subscription && user.subscription.status === "ACTIVE") {
       throw new Error("User already has an active subscription")
     }
     const option = plan.options.find((o) => o.duration === duration)
     if (!option) {
       throw new Error("Invalid duration for the selected plan")
     }
-    let stripeCustomer = user.subscriptions?.stripeCustomerId
+    let stripeCustomer = user.subscription?.stripeCustomerId
     if (!stripeCustomer) {
       const customer = await stripe.customers.create({
         email: user.email!,

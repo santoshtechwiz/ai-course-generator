@@ -100,6 +100,7 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
 
       const { slug } = await response.json()
       router.push(`/dashboard/code/${slug}`)
+      setIsLoading(true)
     } catch (err) {
       console.error("Error generating quiz:", err)
       setError("Failed to generate quiz. Please try again.")
@@ -295,15 +296,7 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
                 {questionCount}
               </motion.span>
             </Label>
-            {/* <Slider
-              id="questionCount"
-              min={1}
-              max={maxQuestions}
-              step={1}
-              value={[questionCount]}
-              onValueChange={(values) => setQuestionCount(values[0])}
-              className="w-full"
-            /> */}
+          
             <SubscriptionSlider
               value={questionCount}
               onValueChange={setQuestionCount}
