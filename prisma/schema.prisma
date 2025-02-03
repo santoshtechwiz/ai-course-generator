@@ -97,6 +97,7 @@ model Course {
   categoryId     Int?
   isCompleted    Boolean?         @default(false)
   isPublic       Boolean          @default(false)
+
   slug           String?          @unique
   difficulty     String?
   estimatedHours Float?
@@ -113,6 +114,7 @@ model Course {
   @@index([name])
   @@index([categoryId])
   @@index([userId])
+    @@index([isPublic])
 }
 
 model CourseUnit {
@@ -270,6 +272,8 @@ model UserQuiz {
 
   @@index([userId])
   @@index([topic])
+  @@index([quizType])
+  @@index([isPublic])
 }
 
 model UserQuizAttempt {

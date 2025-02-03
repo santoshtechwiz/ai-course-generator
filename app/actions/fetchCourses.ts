@@ -1,9 +1,5 @@
 
 'use server'
-
-import prisma from "@/lib/db";
-import { Prisma } from "@prisma/client";
-
 export async function fetchCourses(filters = {}, userId?: string) {
   const baseQuery = {
     where: filters,
@@ -63,7 +59,7 @@ export async function fetchCourses(filters = {}, userId?: string) {
     unitCount: course.courseUnits.length,
     lessonCount: course.courseUnits.reduce((acc, unit) => acc + unit._count.chapters, 0),
     quizCount: course.courseUnits.reduce((acc, unit) =>
-      acc + unit.chapters.reduce((chapterAcc: any, chapter: { _count: { courseQuizzes: any; }; }) => chapterAcc + chapter._count.courseQuizzes, 0), 0
+      acc + unit.chapters.reduce((chapterAcc, chapter) => chapterAcc + chapter._count.courseQuizzes, 0), 0
     ),
     userId: course.userId,
   }))

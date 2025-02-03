@@ -9,29 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Book, Clock, BarChart, Star, Search, Loader2 } from "lucide-react"
+import { Course, QuizListItem } from "../types/types"
+import { QuizCard } from "../components/shared/QuizCard"
+import { CourseCard } from "./courses/components/CourseCard"
 
-interface Course {
-  id: number
-  name: string
-  description: string
-  image: string
-  difficulty: string
-  estimatedHours: number
-  averageRating: number
-  category: string
-}
 
-interface Quiz {
-  id: number
-  topic: string
-  difficulty: string
-  bestScore: number
-  lastAttempted: string
-}
 
 const fetchCourses = async ({ queryKey }: { queryKey: [string, string, string, string] }) => {
   const [_, searchTerm, sortBy, filterDifficulty] = queryKey
@@ -43,7 +28,7 @@ const fetchCourses = async ({ queryKey }: { queryKey: [string, string, string, s
 
 const fetchQuizzes = async ({ queryKey }: { queryKey: [string, string, string, string] }) => {
   const [_, searchTerm, sortBy, filterDifficulty] = queryKey
-  const { data } = await axios.get<Quiz[]>("/api/public/quiz", {
+  const { data } = await axios.get<QuizListItem[]>("/api/public/quiz", {
     params: { search: searchTerm, sort: sortBy, difficulty: filterDifficulty },
   })
   return data
@@ -89,12 +74,14 @@ export default function PublicCoursesAndQuizzes() {
       <h1 className="text-3xl font-bold mb-8 text-center">Explore Courses and Quizzes</h1>
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1">
-          <Input
-            placeholder="Search courses and quizzes..."
-            onChange={handleSearchChange}
-            className="w-full"
-            icon={<Search className="w-4 h-4 text-gray-500" />}
-          />
+          <div className="relative w-full">
+            <Input
+              placeholder="Search courses and quizzes..."
+              onChange={handleSearchChange}
+              className="w-full pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+          </div>
         </div>
         <Select value={sortBy} onValueChange={setSortBy}>
           <SelectTrigger className="w-full md:w-[180px]">
@@ -125,38 +112,15 @@ export default function PublicCoursesAndQuizzes() {
             ) : courses && courses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
                 {courses.map((course) => (
-                  <motion.div key={course.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <Card className="h-full flex flex-col">
-                      <img
-                        src={course.image || "/placeholder.svg"}
-                        alt={course.name}
-                        className="w-full h-48 object-cover rounded-t-lg"
-                      />
-                      <CardHeader>
-                        <CardTitle>{course.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="flex-grow">
-                        <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
-                        <div className="flex justify-between items-center mb-2">
-                          <Badge variant="secondary">{course.category}</Badge>
-                          <div className="flex items-center">
-                            <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                            <span className="text-sm">{course.averageRating.toFixed(1)}</span>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center">
-                            <Book className="w-4 h-4 mr-1 text-blue-500" />
-                            <span className="text-sm">{course.difficulty}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1 text-green-500" />
-                            <span className="text-sm">{course.estimatedHours} hours</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                  <CourseCard name={course.name} key={course.id}
+                   description={course.description}
+                    image={course.image} 
+                    rating={course.rating} 
+                    slug={course.slug} 
+                    unitCount={course.unitCount} 
+                    lessonCount={course.lessonCount} 
+                    quizCount={course.quizCount} userId={""} />
+
                 ))}
               </div>
             ) : (
@@ -175,33 +139,13 @@ export default function PublicCoursesAndQuizzes() {
             ) : quizzes && quizzes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
                 {quizzes.map((quiz) => (
-                  <motion.div key={quiz.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <Card className="h-full flex flex-col">
-                      <CardHeader>
-                        <CardTitle>{quiz.topic}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="flex-grow">
-                        <div className="flex justify-between items-center mb-4">
-                          <Badge variant="secondary">{quiz.difficulty}</Badge>
-                          <div className="flex items-center">
-                            <BarChart className="w-4 h-4 text-blue-500 mr-1" />
-                            <span className="text-sm">Best Score: {quiz.bestScore}%</span>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1 text-green-500" />
-                            <span className="text-sm">
-                              Last Attempted: {new Date(quiz.lastAttempted).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
-                      <div className="p-4 mt-auto">
-                        <Button className="w-full">Take Quiz</Button>
-                      </div>
-                    </Card>
-                  </motion.div>
+                  <QuizCard key={quiz.id} title={quiz.topic}
+
+                  questionCount={quiz.questionCount}
+                  quizType={quiz.quizType as "code" | "mcq" | "openended" | "fill-blanks"}
+                  slug={quiz.slug} description={""}
+                  />
+                
                 ))}
               </div>
             ) : (
