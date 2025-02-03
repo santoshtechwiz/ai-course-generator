@@ -192,9 +192,7 @@ export default function CourseActions({ slug }: CourseActionsProps) {
             </AlertDialog>
 
             <div className="col-span-1 sm:col-span-2 md:col-span-1">
-              <Label htmlFor="rating" className="text-sm font-medium">
-                Rate Course
-              </Label>
+     
               <div className="flex items-center mt-1">
                 {[1, 2, 3, 4, 5].map((value) => (
                   <Star
