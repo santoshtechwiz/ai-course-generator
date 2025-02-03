@@ -5,7 +5,7 @@ export const SUBSCRIPTION_PLANS = [
     name: "FREE",
     icon: Zap,
     options: [{ duration: 1, price: 0 }],
-    tokens: 3,
+    tokens: 5,
     limits: {
       totalQuestions: 3,
       maxQuestionsPerQuiz: 3,
@@ -80,42 +80,25 @@ export const SUBSCRIPTION_PLANS = [
   },
 ] as const
 
-
-
-
-
+export const TOKEN_USAGE = {
+  course: 1,
+  quiz: 1,
+}
 
 export const FAQ_ITEMS = [
   {
-    question: "What's included in each course?",
+    question: "How do tokens work?",
     answer:
-      "Each course can include video content, transcripts, various types of quizzes (MCQ, Fill-in-the-Blank, open-ended), and sections to organize your content. The number and complexity of these features depend on your subscription plan.",
+      "Tokens are a flexible currency you can use across different features. One token can be used to create one course or one quiz. The number of questions per quiz is limited based on your plan.",
   },
   {
-    question: "Can I upgrade my plan?",
+    question: "What are the quiz limits?",
     answer:
-      "Yes, you can upgrade your plan at any time. Your new benefits will be available immediately after upgrading.",
+      "Each plan has a limit on the total number of questions you can create across all quizzes, as well as a maximum number of questions per individual quiz. Check the plan details for specific limits.",
   },
-  {
-    question: "What happens if I reach my quiz or section limit?",
-    answer:
-      "If you reach your plan's limit for quizzes or sections, you'll need to upgrade to a higher tier plan to add more. Existing content will remain accessible.",
-  },
-  {
-    question: "Is there a refund policy?",
-    answer:
-      "We offer a 14-day money-back guarantee for paid plans. If you're not satisfied, you can request a full refund within this period.",
-  },
-] as const
+  // Add more FAQ items as needed
+]
 
 export type SubscriptionPlanType = (typeof SUBSCRIPTION_PLANS)[number]["name"]
-
-export const SUBSCRIPTION_STATUSES = {
-  ACTIVE: "ACTIVE",
-  INACTIVE: "INACTIVE",
-  PAST_DUE: "PAST_DUE",
-  CANCELED: "CANCELED",
-} as const
-
-export type SubscriptionStatusType = keyof typeof SUBSCRIPTION_STATUSES
+export type SubscriptionStatusType = "active" | "canceled" | "expired" | null
 
