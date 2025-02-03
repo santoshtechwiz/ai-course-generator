@@ -61,10 +61,10 @@ export default function QuizQuestion({ question, onAnswer, questionNumber, total
 
     return [...contextualHints, ...structuralHints, ...detailedHints]
   }, [
-    question.openEndedQuestion.hints,
+    question.openEndedQuestion?.hints,
     question.answer,
-    question.openEndedQuestion.tags,
-    question.openEndedQuestion.difficulty,
+    question.openEndedQuestion?.tags,
+    question.openEndedQuestion?.difficulty,
   ])
 
   const tags = Array.isArray(question.openEndedQuestion.tags)

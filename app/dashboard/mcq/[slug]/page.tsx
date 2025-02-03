@@ -144,6 +144,7 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
             quizSlug={result.slug}
             initialIsPublic={result.isPublic || false}
             initialIsFavorite={result.isFavorite || false}
+            quizType="mcq"
           />
                 <PlayQuiz questions={questions} quizId={result.id} slug={slug} />
               </Suspense>

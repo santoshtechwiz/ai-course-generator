@@ -220,6 +220,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
         ownerId={quizData?.userId || ""}
         initialIsPublic={false}
         initialIsFavorite={false} 
+        quizType="openended"
         
       />
       <h1 className="text-3xl font-bold mb-4 text-gradient">Open Ended Quiz: {quizData?.topic || "Unknown"}</h1>
