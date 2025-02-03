@@ -30,7 +30,7 @@ export async function GET(request: Request) {
         isAdmin: true,
         email: true,
         name: true,
-        subscriptions: {
+        subscription: {
           select: {
             status: true,
             planId: true,
@@ -48,9 +48,9 @@ export async function GET(request: Request) {
     const userData = {
       credits: user.credits,
       isAdmin: user.isAdmin,
-      subscriptionStatus: user.subscriptions?.status || 'none',
-      subscriptionEnd: user.subscriptions?.currentPeriodEnd || null,
-      planId: user.subscriptions?.planId || null,
+      subscriptiontatus: user.subscription?.status || 'none',
+      subscriptionEnd: user.subscription?.currentPeriodEnd || null,
+      planId: user.subscription?.planId || null,
     };
 
     // Store in cache

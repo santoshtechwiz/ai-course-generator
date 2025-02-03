@@ -108,7 +108,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             },
           },
         },
-        subscriptions: {
+        subscription: {
           select: {
             id: true,
             status: true,
@@ -186,13 +186,13 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
     const dashboardUser: DashboardUser = {
       ...user,
       courses: user.courses as Course[],
-      subscriptions: user.subscriptions as unknown as UserSubscription[],
+      subscriptions: user.subscription as unknown as UserSubscription,
       userQuizzes: user.userQuizzes.map((quiz) => ({
         ...quiz,
         percentageCorrect: quiz.bestScore ?? 0,
         totalAttempts: quiz.attempts.length,
       })) as unknown as UserQuiz[],
-      courseProgress: user.courseProgress as CourseProgress[],
+      courseProgress: user.courseProgress as unknown as CourseProgress[],
       favorites: user.favorites as Favorite[],
       quizAttempts: user.userQuizAttempts as UserQuizAttempt[],
       engagementScore: 0,
@@ -203,7 +203,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
     return dashboardUser
   } catch (error) {
     console.error("Error fetching user data:", error)
-    throw new Error("Failed to fetch user data")
+    return null;
   }
 }
 

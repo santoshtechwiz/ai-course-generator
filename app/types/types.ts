@@ -1,11 +1,11 @@
 import { Prisma, User, UserQuizQuestion } from "@prisma/client"
-import exp from "constants"
+
 
 export interface DashboardUser extends User {
   courses: Course[]
   courseProgress: CourseProgress[]
   userQuizzes: UserQuiz[]
-  subscriptions: UserSubscription[]
+  subscriptions: UserSubscription
   favorites: Favorite[]
   quizAttempts: UserQuizAttempt[]
   engagementScore: number
@@ -46,16 +46,7 @@ export interface Chapter {
   questions?: CourseQuiz[]
 }
 
-export interface CourseProgress {
-  id: number
-  progress: number
-  currentChapterId: number
-  completedChapters: string|string[]
-  timeSpent: number
-  isCompleted: boolean
-  lastAccessedAt: Date
-  course: Course
-}
+
 
 export interface UserQuiz {
   id: number
@@ -161,44 +152,18 @@ export class CourseAIErrors{
 }
 
 export interface FullChapterType {
-  id: number;
-  name: string;
-  description?: string;
-  videoId?: string;
-  content?: string;
-  order: number;
-  isPublished: boolean;
-  isFree: boolean;
-  courseUnitId: number;
-  createdAt: Date;
-  updatedAt: Date;
+ chapterId: number;
+ description: string;
+
+
+
+
 }
 
-export interface CourseUnitType {
-  id: number;
-  name: string;
-  order: number;
-  courseId: number;
-  chapters: FullChapterType[];
-  createdAt: Date;
-  updatedAt: Date;
-}
 
-export interface FullCourseType {
-  id: number;
-  name: string;
-  description: string;
-  imageUrl?: string;
-  price: number;
-  isPublished: boolean;
-  categoryId?: number;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  courseUnits?: CourseUnitType[];
-  
-  slug?: string;
-}
+
+
+
 export type Question = {
   id: number;
   question: string;
@@ -337,3 +302,94 @@ export interface QuizGenerationParams {
   functionCall: { name: string }
 }
 
+export interface FullCourseType {
+  id: number;
+  name: string;
+  description: string | null;
+  image: string;
+  viewCount: number;
+  userId: string;
+  categoryId: number | null;
+  isCompleted: boolean | null;
+  isPublic: boolean;
+  slug: string | null;
+  difficulty: string | null;
+  estimatedHours: number | null;
+  category: {
+    id: number;
+    name: string;
+  } | null;
+  ratings: CourseRating[];
+  courseUnits: FullCourseUnit[];
+  courseProgress: CourseProgress[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CourseRating {
+  id: number;
+  courseId: number;
+  userId: string;
+  rating: number;
+  reviewText: string | null;
+  createdAt: Date;
+}
+
+export interface FullCourseUnit {
+  id: number;
+  courseId: number;
+  name: string;
+  isCompleted: boolean | null;
+ 
+  chapters: FullChapter[];
+}
+
+export interface FullChapter {
+  id: number;
+  name: string;
+ 
+  order: number | null;
+  isCompleted: boolean | null;
+ 
+}
+
+export interface FullCourseQuiz {
+  id: number;
+  question: string;
+  answer: string;
+  attempts: CourseQuizAttempt[];
+}
+
+export interface CourseProgress {
+  id: number;
+  userId: string;
+  courseId: number;
+  currentChapterId: number;
+  currentUnitId: number | null;
+  completedChapters: string;
+  progress: number;
+  lastAccessedAt: Date;
+  timeSpent: number;
+  isCompleted: boolean;
+  completionDate: Date | null;
+  quizProgress: string | null;
+  notes: string | null;
+  bookmarks: string | null;
+  lastInteractionType: string | null;
+  interactionCount: number;
+  engagementScore: number;
+  
+}
+
+export interface CourseQuizAttempt {
+  id: number;
+  userId: string;
+  courseQuizId: number;
+  score: number | null;
+  timeSpent: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+  improvement: number | null;
+  accuracy: number | null;
+  
+}

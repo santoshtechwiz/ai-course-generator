@@ -1,26 +1,20 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { motion } from "framer-motion"
 import { debounce } from "lodash"
 import axios from "axios"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Book, Clock, BarChart, Star, Search, Loader2 } from "lucide-react"
-import { Course, QuizListItem } from "../types/types"
+import { Search, Loader2 } from "lucide-react"
+import type { PublicCourse, QuizListItem } from "../types/types"
 import { QuizCard } from "../components/shared/QuizCard"
 import { CourseCard } from "./courses/components/CourseCard"
 
-
-
 const fetchCourses = async ({ queryKey }: { queryKey: [string, string, string, string] }) => {
   const [_, searchTerm, sortBy, filterDifficulty] = queryKey
-  const { data } = await axios.get<Course[]>("/api/public/course", {
+  const { data } = await axios.get<PublicCourse[]>("/api/public/course", {
     params: { search: searchTerm, sort: sortBy, difficulty: filterDifficulty },
   })
   return data
@@ -39,7 +33,6 @@ export default function PublicCoursesAndQuizzes() {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState("name")
 
-
   const debouncedSearch = useCallback(
     debounce((value: string) => setSearchTerm(value), 300),
     [],
@@ -50,9 +43,9 @@ export default function PublicCoursesAndQuizzes() {
     isLoading: isLoadingCourses,
     isError: isErrorCourses,
   } = useQuery({
-    queryKey: ["courses", searchTerm, sortBy],
+    queryKey: ["courses", searchTerm, sortBy, ""],
     queryFn: fetchCourses,
-    enabled: activeTab === "courses",
+    staleTime: 60000, // 1 minute
   })
 
   const {
@@ -60,14 +53,31 @@ export default function PublicCoursesAndQuizzes() {
     isLoading: isLoadingQuizzes,
     isError: isErrorQuizzes,
   } = useQuery({
-    queryKey: ["quizzes", searchTerm, sortBy],
+    queryKey: ["quizzes", searchTerm, sortBy, ""],
     queryFn: fetchQuizzes,
-    enabled: activeTab === "quizzes",
+    staleTime: 60000, // 1 minute
   })
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     debouncedSearch(e.target.value)
   }
+
+  useEffect(() => {
+    if (searchTerm) {
+      const courseResults = courses?.filter(
+        (course) =>
+          course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+      const quizResults = quizzes?.filter((quiz) => quiz.topic.toLowerCase().includes(searchTerm.toLowerCase()))
+
+      if (courseResults?.length && !quizResults?.length) {
+        setActiveTab("courses")
+      } else if (!courseResults?.length && quizResults?.length) {
+        setActiveTab("quizzes")
+      }
+    }
+  }, [searchTerm, courses, quizzes])
 
   return (
     <div className="container mx-auto py-8">
@@ -75,11 +85,7 @@ export default function PublicCoursesAndQuizzes() {
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1">
           <div className="relative w-full">
-            <Input
-              placeholder="Search courses and quizzes..."
-              onChange={handleSearchChange}
-              className="w-full pl-10"
-            />
+            <Input placeholder="Search courses and quizzes..." onChange={handleSearchChange} className="w-full pl-10" />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
           </div>
         </div>
@@ -94,64 +100,62 @@ export default function PublicCoursesAndQuizzes() {
             </SelectItem>
           </SelectContent>
         </Select>
-        
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
         </TabsList>
         <TabsContent value="courses">
-          <ScrollArea className="h-[600px]">
-            {isLoadingCourses ? (
-              <div className="flex justify-center items-center h-full">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
-            ) : isErrorCourses ? (
-              <div className="text-center text-red-500">Error loading courses. Please try again later.</div>
-            ) : courses && courses.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-                {courses.map((course) => (
-                  <CourseCard name={course.name} key={course.id}
-                   description={course.description}
-                    image={course.image} 
-                    rating={course.rating} 
-                    slug={course.slug} 
-                    unitCount={course.unitCount} 
-                    lessonCount={course.lessonCount} 
-                    quizCount={course.quizCount} userId={""} />
-
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground">No courses found.</div>
-            )}
-          </ScrollArea>
+          {isLoadingCourses ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+          ) : isErrorCourses ? (
+            <div className="text-center text-red-500">Error loading courses. Please try again later.</div>
+          ) : courses && courses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {courses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  name={course.name}
+                  description={course.description ?? ""}
+                  image={course.image}
+                  rating={course.rating || 0}
+                  slug={course.slug ?? ""}
+                  unitCount={course.unitCount || 0}
+                  lessonCount={course.lessonCount || 0}
+                  quizCount={course.quizCount || 0}
+                  userId={""} id={""}                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground">No courses found.</div>
+          )}
         </TabsContent>
         <TabsContent value="quizzes">
-          <ScrollArea className="h-[600px]">
-            {isLoadingQuizzes ? (
-              <div className="flex justify-center items-center h-full">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
-            ) : isErrorQuizzes ? (
-              <div className="text-center text-red-500">Error loading quizzes. Please try again later.</div>
-            ) : quizzes && quizzes.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-                {quizzes.map((quiz) => (
-                  <QuizCard key={quiz.id} title={quiz.topic}
-
+          {isLoadingQuizzes ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+          ) : isErrorQuizzes ? (
+            <div className="text-center text-red-500">Error loading quizzes. Please try again later.</div>
+          ) : quizzes && quizzes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {quizzes.map((quiz) => (
+                <QuizCard
+                  key={quiz.id}
+                  title={quiz.topic}
                   questionCount={quiz.questionCount}
                   quizType={quiz.quizType as "code" | "mcq" | "openended" | "fill-blanks"}
-                  slug={quiz.slug} description={""}
-                  />
-                
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground">No quizzes found.</div>
-            )}
-          </ScrollArea>
+                  slug={quiz.slug}
+                  description={""}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground">No quizzes found.</div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

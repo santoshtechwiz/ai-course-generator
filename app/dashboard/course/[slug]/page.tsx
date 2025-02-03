@@ -42,7 +42,7 @@ export async function generateMetadata(
   const previousImages = (await parent).openGraph?.images || []
 
   const courseUrl = `${SITE_URL}/courses/${(await params).slug}`
-  const imageUrl = course.imageUrl || `${SITE_URL}/default-thumbnail.png`
+  const imageUrl = course.image || `${SITE_URL}/default-thumbnail.png`
 
   return {
     title: `${course.name} | Online Course | ${SITE_NAME}`,
@@ -79,7 +79,7 @@ export async function generateMetadata(
     other: {
       "og:locale": "en_US",
       "og:type": "course",
-      "og:price:amount": course.price?.toString() || "0",
+      "og:price:amount":  "0",
       "og:price:currency": "USD",
     },
   }

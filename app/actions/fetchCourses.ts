@@ -1,5 +1,9 @@
 
 'use server'
+
+import prisma from "@/lib/db";
+import { Prisma } from "@prisma/client";
+
 export async function fetchCourses(filters = {}, userId?: string) {
   const baseQuery = {
     where: filters,
@@ -8,7 +12,7 @@ export async function fetchCourses(filters = {}, userId?: string) {
       name: true,
       description: true,
       image: true,
-      averageRating: true,
+      
       slug: true,
       userId: true,
       courseUnits: {
@@ -32,29 +36,38 @@ export async function fetchCourses(filters = {}, userId?: string) {
     ? { ...baseQuery, where: { ...baseQuery.where, userId } }
     : { ...baseQuery, where: { ...baseQuery.where, isPublic: true } as Prisma.CourseWhereInput };
 
-  const courses = await prisma.course.findMany({
+  const course = await prisma.course.findFirst({
     ...query,
     select: {
       ...query.select,
+      ratings: {
+      select: { rating: true }
+      },
       courseUnits: {
+      select: {
+        _count: true,
+        chapters: {
         select: {
           _count: true,
-          chapters: {
-            select: {
-              _count: true,
-            },
-          },
+        },
         },
       },
+      },
     },
-  });
+    });
 
-  return courses.map((course: { id: { toString: () => any; }; name: any; description: any; image: any; averageRating: any; slug: any; courseUnits: any[]; userId: any; }) => ({
+  if (!course) {
+    return null;
+  }
+
+  const courses = [course];
+
+  return courses.map(course=> ({
     id: course.id.toString(),
     name: course.name,
     description: course.description || "No description available",
     image: course.image,
-    rating: course.averageRating,
+    rating: course.ratings[0]?.rating || 0,
     slug: course.slug || "",
     unitCount: course.courseUnits.length,
     lessonCount: course.courseUnits.reduce((acc, unit) => acc + unit._count.chapters, 0),

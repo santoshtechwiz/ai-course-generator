@@ -21,6 +21,7 @@ import { motion } from "framer-motion"
 
 import QuizPDFDownload from "../../course/components/QuizPDFDownload"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { Rating } from "@/components/ui/rating"
 
 
 interface QuizActionsToolbarProps {
@@ -49,16 +50,25 @@ export function QuizActions({
   const [data, setData] = useState<any | null>(null)
   const router = useRouter()
   const { subscriptionStatus, isLoading } = useSubscriptionStore()
-
+  const [rating, setRating] = useState<number | null>(null)
   useEffect(() => {
     const fetchQuizState = async () => {
       try {
-        const response = await fetch(`/api/quiz/${quizSlug}`)
-        if (response.ok) {
-          const quizData = await response.json()
+        const [quizResponse, ratingResponse] = await Promise.all([
+          fetch(`/api/quiz/${quizSlug}`),
+          fetch(`/api/rating?type=quiz&id=${quizId}`),
+        ])
+
+        if (quizResponse.ok) {
+          const quizData = await quizResponse.json()
           setData(quizData.quizData)
           setIsPublic(quizData.isPublic)
           setIsFavorite(quizData.isFavorite)
+        }
+
+        if (ratingResponse.ok) {
+          const ratingData = await ratingResponse.json()
+          setRating(ratingData.data?.rating || null)
         }
       } catch (error) {
         console.error("Error fetching quiz state:", error)
@@ -71,7 +81,33 @@ export function QuizActions({
   if (!userId || !ownerId || userId !== ownerId) {
     return null
   }
+  const handleRatingChange = async (newRating: number) => {
+    try {
+      const response = await fetch("/api/rating", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "quiz", id: quizId, rating: newRating }),
+      })
 
+      if (response.ok) {
+        setRating(newRating)
+        toast({
+          title: "Rating updated",
+          description: "Your rating has been successfully updated.",
+          variant: "success",
+        })
+      } else {
+        throw new Error("Failed to update rating")
+      }
+    } catch (error) {
+      console.error("Error updating rating:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update rating. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
   const updateQuiz = async (data: { isPublic?: boolean; isFavorite?: boolean }) => {
     const loadingState = data.isPublic !== undefined ? setIsPublicLoading : setIsFavoriteLoading
     loadingState(true)
@@ -269,6 +305,7 @@ export function QuizActions({
             </Tooltip>
           </TooltipProvider>
         )}
+        
 
         {/* Delete Button */}
         <AlertDialog>
@@ -302,6 +339,18 @@ export function QuizActions({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Rating value={rating} onValueChange={handleRatingChange} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Rate this quiz</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </motion.div>
   )
