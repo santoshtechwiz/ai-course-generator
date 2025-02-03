@@ -21,10 +21,11 @@ async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
 }
 
 export async function generateMetadata(
-  { params }: { params: { slug: string } },
+  { params }: { params: Promise< { slug: string }> },
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const quizData = await getQuizData(params.slug)
+  const slug=(await params).slug;
+  const quizData = await getQuizData(slug)
 
   if (!quizData) {
     return notFound()
@@ -59,19 +60,11 @@ export async function generateMetadata(
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const session = await getAuthSession()
-  const queryClient = new QueryClient()
+
   const slug = (await params).slug;
-  await queryClient.prefetchQuery({
-    queryKey: ["quizData", slug],
-    queryFn: () => getQuizData(slug),
-  })
 
-  const dehydratedState = dehydrate(queryClient)
 
-  return (
-    <HydrationBoundary state={dehydratedState}>
-      <CodingQuizWrapper slug={slug} userId={session?.user.id || ""} />
-    </HydrationBoundary>
-  )
+
+  return <CodingQuizWrapper slug={slug} userId={session?.user.id || ""} />
 }
 
