@@ -74,7 +74,7 @@ async function SubscriptionPlansWrapper({
   subscriptionData,
   isProd
 }: { 
-  userId: string | undefined, 
+  userId: string | null, 
   subscriptionData: { 
     currentPlan: SubscriptionPlanType | null, 
     subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | null

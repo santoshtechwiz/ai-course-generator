@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Check, Loader2, AlertTriangle } from "lucide-react"
+import { Check, Loader2, AlertTriangle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -141,7 +141,21 @@ function TokenUsageExplanation() {
   )
 }
 
-function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubscribe, duration }) {
+function PlanCards({
+  plans,
+  currentPlan,
+  subscriptionStatus,
+  loading,
+  handleSubscribe,
+  duration,
+}: {
+  plans: typeof SUBSCRIPTION_PLANS;
+  currentPlan: SubscriptionPlanType | null;
+  subscriptionStatus: SubscriptionStatusType | null;
+  loading: SubscriptionPlanType | null;
+  handleSubscribe: (planName: SubscriptionPlanType, duration: number) => Promise<void>;
+  duration: "monthly" | "biannual";
+}) {
   const isSubscribed = currentPlan && subscriptionStatus?.toUpperCase() === "ACTIVE"
   const durationValue = duration === "monthly" ? 1 : 6
 
@@ -209,10 +223,10 @@ function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubs
                   {isSubscribed
                     ? "You already have an active subscription. Contact support to change plans."
                     : currentPlan === plan.name && isSubscribed
-                      ? "This is your current plan"
-                      : plan.name === "FREE"
-                        ? "Start using the free plan"
-                        : "Click to subscribe to this plan"}
+                    ? "This is your current plan"
+                    : plan.name === "FREE"
+                    ? "Start using the free plan"
+                    : "Click to subscribe to this plan"}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -223,7 +237,7 @@ function PlanCards({ plans, currentPlan, subscriptionStatus, loading, handleSubs
   )
 }
 
-function ComparisonTable({ plans }) {
+function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
