@@ -1,14 +1,15 @@
 "use client"
 
-import React from "react"
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
-import ChapterCard, { type ChapterCardHandler } from "./ChapterCardHandler"
+
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Course, CourseUnit, Chapter } from "@prisma/client"
+import ChapterCard, { ChapterCardHandler } from "./ChapterCardHandler"
 
 export type CourseProps = {
   course: Course & {
@@ -19,12 +20,12 @@ export type CourseProps = {
 }
 
 const ConfirmChapters = ({ course }: CourseProps) => {
-  const [loading, setLoading] = React.useState(false)
-  const chapterRefs = React.useRef<Record<string, React.RefObject<ChapterCardHandler>>>({})
-  const [completedChapters, setCompletedChapters] = React.useState<Set<number>>(new Set())
+  const [loading, setLoading] = useState(false)
+  const chapterRefs = useRef<Record<string, React.RefObject<ChapterCardHandler>>>({})
+  const [completedChapters, setCompletedChapters] = useState<Set<string>>(new Set())
 
   // Initialize refs for all chapters
-  React.useEffect(() => {
+  useEffect(() => {
     course.units.forEach((unit) => {
       unit.chapters.forEach((chapter) => {
         if (!chapterRefs.current[chapter.id]) {
@@ -34,13 +35,26 @@ const ConfirmChapters = ({ course }: CourseProps) => {
     })
   }, [course])
 
-  const totalChaptersCount = React.useMemo(() => {
+  const totalChaptersCount = useMemo(() => {
     return course.units.reduce((acc, unit) => {
       return acc + unit.chapters.length
     }, 0)
   }, [course.units])
 
   const progress = (completedChapters.size / totalChaptersCount) * 100
+
+  const handleChapterComplete = useCallback((chapterId: string) => {
+    setCompletedChapters((prev) => new Set(prev).add(chapterId))
+  }, [])
+
+  const allChaptersCompleted = completedChapters.size === totalChaptersCount
+
+  const handleGenerateAll = useCallback(() => {
+    setLoading(true)
+    Object.values(chapterRefs.current).forEach((ref) => {
+      ref.current?.triggerLoad()
+    })
+  }, [])
 
   return (
     <div className="w-full h-full flex flex-col bg-background">
@@ -69,12 +83,12 @@ const ConfirmChapters = ({ course }: CourseProps) => {
               <div className="space-y-3">
                 {unit.chapters.map((chapter, chapterIndex) => (
                   <ChapterCard
-                    onComplete={completedChapters}
-                    setCompletedChapters={setCompletedChapters}
-                    ref={chapterRefs.current[chapter.id]}
                     key={chapter.id}
+                    ref={chapterRefs.current[chapter.id]}
                     chapter={chapter}
                     chapterIndex={chapterIndex}
+                    onChapterComplete={handleChapterComplete}
+                    isCompleted={completedChapters.has(chapter.id.toString())}
                   />
                 ))}
               </div>
@@ -93,7 +107,7 @@ const ConfirmChapters = ({ course }: CourseProps) => {
             <ChevronLeft className="w-4 h-4 mr-2" />
             Back
           </Link>
-          {totalChaptersCount === completedChapters.size ? (
+          {allChaptersCompleted ? (
             <Link
               className={buttonVariants({
                 className: "font-semibold",
@@ -104,18 +118,8 @@ const ConfirmChapters = ({ course }: CourseProps) => {
               <ChevronRight className="w-4 h-4 ml-2" />
             </Link>
           ) : (
-            <Button
-              type="button"
-              className="font-semibold"
-              disabled={loading}
-              onClick={() => {
-                setLoading(true)
-                Object.values(chapterRefs.current).forEach((ref) => {
-                  ref.current?.triggerLoad()
-                })
-              }}
-            >
-              {loading ? "Generating..." : "Generate"}
+            <Button type="button" className="font-semibold" disabled={loading} onClick={handleGenerateAll}>
+              {loading ? "Generating..." : "Generate All"}
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           )}
