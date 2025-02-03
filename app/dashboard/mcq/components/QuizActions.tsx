@@ -31,6 +31,7 @@ interface QuizActionsToolbarProps {
   initialIsFavorite: boolean
   userId: string
   ownerId: string
+  quizType?: string
 }
 
 export function QuizActions({
@@ -40,6 +41,7 @@ export function QuizActions({
   initialIsFavorite,
   userId,
   ownerId,
+  quizType
 }: QuizActionsToolbarProps) {
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
@@ -180,7 +182,7 @@ export function QuizActions({
     setIsShareLoading(true)
     setTimeout(() => {
       if (isPublic) {
-        const shareUrl = `${window.location.origin}/dashboard/openended/${quizSlug}`
+        const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
         navigator.clipboard.writeText(shareUrl)
         toast({
           title: "Share link copied",

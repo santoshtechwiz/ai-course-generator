@@ -316,6 +316,7 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
           initialIsPublic={isPublic}
           userId={userId}
           ownerId={ownerId}
+          quizType="code"
         />
       </div>
 

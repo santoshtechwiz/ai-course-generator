@@ -5,7 +5,7 @@ export const SUBSCRIPTION_PLANS = [
     name: "FREE",
     icon: Zap,
     options: [{ duration: 1, price: 0 }],
-    tokens: 5,
+    tokens: 3,
     limits: {
       totalQuestions: 3,
       maxQuestionsPerQuiz: 3,
@@ -46,7 +46,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 60,
     limits: {
-      totalQuestions: 20,
+      totalQuestions: 60,
       maxQuestionsPerQuiz: 10,
     },
     features: [
@@ -66,7 +66,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 150,
     limits: {
-      totalQuestions: 30,
+      totalQuestions: 150,
       maxQuestionsPerQuiz: 15,
     },
     features: [

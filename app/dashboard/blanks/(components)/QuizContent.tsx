@@ -11,9 +11,7 @@ import { QuizActions } from "../../mcq/components/QuizActions"
 import QuizResults from "../../openended/components/QuizResults"
 import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
 import { GlobalLoader } from "@/app/components/GlobalLoader"
-import HelpSection from "@/app/components/HelpSection"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AnimatePresence, motion } from "framer-motion"
+
 import { HelpModal } from "@/app/components/HelpModal"
 
 interface Question {
@@ -213,6 +211,7 @@ export function QuizContent({ slug }: { slug: string }) {
         ownerId={quizData.userId}
         quizId={quizData.id.toString()}
         quizSlug={slug}
+        quizType="blanks"
         initialIsPublic={false}
         initialIsFavorite={false}
       />
