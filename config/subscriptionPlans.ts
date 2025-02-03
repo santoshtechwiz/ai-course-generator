@@ -30,7 +30,7 @@ export const SUBSCRIPTION_PLANS = [
     tokens: 20,
     limits: {
       courses: 10,
-      totalQuestions: 10,
+      totalQuestions: 5,
       maxQuestionsPerQuiz: 5,
     },
     features: [

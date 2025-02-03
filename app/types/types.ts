@@ -1,4 +1,5 @@
 import { Prisma, User, UserQuizQuestion } from "@prisma/client"
+import exp from "constants"
 
 export interface DashboardUser extends User {
   courses: Course[]
@@ -11,8 +12,13 @@ export interface DashboardUser extends User {
   streakDays: number
   lastStreakDate: Date | null
 }
+export interface CourseMetadata{
+  averageRating?: number
+  difficulty?:string| null
+  estimatedHours?: number
+}
 
-export interface Course {
+export interface Course extends CourseMetadata {
   id: number
   name: string
   description: string | null
@@ -24,6 +30,8 @@ export interface Course {
     id: number
     name: string
   }
+
+
 }
 
 export interface CourseUnit {
@@ -225,6 +233,9 @@ export interface QuizListItem {
   isPublic: boolean
   quizType: string
   tags: string[]
+  difficulty?: string,
+  bestScore?: number | null,
+  lastAttempted?: Date | null
 }
 export interface CreateQuizCardConfig {
   title?: string

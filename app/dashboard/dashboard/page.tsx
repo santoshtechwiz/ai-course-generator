@@ -1,29 +1,30 @@
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import dynamic from "next/dynamic";
+"use client"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Zap, Sparkles } from "lucide-react";
-import { getAuthSession } from "@/lib/authOptions";
-import { getUserData, getUserStats } from "@/app/actions/userDashboard";
-import UserNotFound from "@/components/UserNotFound";
-import FavoriteCourses from "../components/FavoriteCourses";
-import QuizHistory from "../components/QuizHistory";
-import UserProfile from "../components/UserProfile";
-import CourseProgress from "../course/components/CoursePage/CourseProgress";
-import { MyCourses } from "../course/components/UserDashboard/MyCourses";
-import { MyQuizzes } from "../course/components/UserDashboard/MyQuizzes";
-import { QuizAttempts } from "../course/components/UserDashboard/QuizAttempts";
-import SubscriptionStatus from "../course/components/UserDashboard/SubscriptionStatus";
-import { UserStatsOverview } from "../course/components/UserDashboard/UserStatsOverview";
+import { Suspense } from "react"
+import { useRouter } from "next/navigation"
+import dynamic from "next/dynamic"
+import { useSession } from "next-auth/react"
 
+
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { CreditCard, Zap, Sparkles } from "lucide-react"
+import UserNotFound from "@/components/UserNotFound"
+import FavoriteCourses from "../components/FavoriteCourses"
+import QuizHistory from "../components/QuizHistory"
+import UserProfile from "../components/UserProfile"
+import CourseProgress from "../course/components/CoursePage/CourseProgress"
+import { MyCourses } from "../course/components/UserDashboard/MyCourses"
+import { MyQuizzes } from "../course/components/UserDashboard/MyQuizzes"
+import { QuizAttempts } from "../course/components/UserDashboard/QuizAttempts"
+import SubscriptionStatus from "../course/components/UserDashboard/SubscriptionStatus"
+import { UserStatsOverview } from "../course/components/UserDashboard/UserStatsOverview"
+import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
 
 // Lazy load heavy components
 const AIRecommendations = dynamic(() => import("../components/Recommendations"), {
-
-});
-
+  loading: () => <LoadingCard />,
+})
 
 // Skeleton loading components
 function LoadingCard() {
@@ -37,28 +38,46 @@ function LoadingCard() {
         <Skeleton className="h-4 w-3/4" />
       </CardContent>
     </Card>
-  );
+  )
 }
 
-export default async function DashboardPage() {
-  const session = await getAuthSession();
-  if (!session?.user) {
-    redirect("/dashboard/courses");
+export default function DashboardPage() {
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const { data: userData, isLoading: isLoadingUserData, error: userDataError } = useUserData(session?.user?.id ?? "")
+  const {
+    data: userStats,
+    isLoading: isLoadingUserStats,
+    error: userStatsError,
+  } = useUserStats(session?.user?.id ?? "")
+
+  if (status === "loading") {
+    return <LoadingCard />
   }
 
-  const userData = await getUserData(session.user.id);
-  const userStats = await getUserStats(session.user.id);
+  if (status === "unauthenticated") {
+    router.push("/dashboard")
+    return null
+  }
+
+  if (isLoadingUserData || isLoadingUserStats) {
+    return <LoadingCard />
+  }
+
+  if (userDataError || userStatsError) {
+    return <div>Error loading user data. Please try again later.</div>
+  }
 
   if (!userData) {
-    return <UserNotFound />;
+    return <UserNotFound />
   }
 
   const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
+    const hour = new Date().getHours()
+    if (hour < 12) return "Good morning"
+    if (hour < 18) return "Good afternoon"
+    return "Good evening"
+  }
 
   const getMotivationalMessage = () => {
     const messages = [
@@ -66,9 +85,9 @@ export default async function DashboardPage() {
       "Your journey to knowledge continues!",
       "Every quiz brings you closer to mastery.",
       "Embrace the challenge of learning!",
-    ];
-    return messages[Math.floor(Math.random() * messages.length)];
-  };
+    ]
+    return messages[Math.floor(Math.random() * messages.length)]
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -80,9 +99,7 @@ export default async function DashboardPage() {
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-foreground">
                 {getGreeting()}, {userData.name || "User"}!
               </h1>
-              <p className="text-muted-foreground text-base sm:text-lg">
-                {getMotivationalMessage()}
-              </p>
+              <p className="text-muted-foreground text-base sm:text-lg">{getMotivationalMessage()}</p>
             </div>
             <Card className="w-full sm:w-auto bg-primary text-primary-foreground p-4 shadow-md hover:shadow-lg transition-shadow">
               <div className="flex items-center justify-between space-x-4">
@@ -92,9 +109,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Zap className="h-5 w-5" />
-                  <span className="font-semibold">
-                    {userData.subscriptions?.[0]?.planId || "FREE"}
-                  </span>
+                  <span className="font-semibold">{userData.subscriptions?.[0]?.planId || "FREE"}</span>
                 </div>
               </div>
             </Card>
@@ -119,10 +134,7 @@ export default async function DashboardPage() {
             </Suspense>
 
             <Suspense fallback={<LoadingCard />}>
-              <CourseProgress
-                courses={userData.courseProgress}
-                stats={userStats}
-              />
+              {userStats && <CourseProgress courses={userData.courseProgress} stats={userStats} />}
             </Suspense>
 
             <Suspense fallback={<LoadingCard />}>
@@ -141,7 +153,7 @@ export default async function DashboardPage() {
           {/* Right Column */}
           <div className="space-y-4 sm:space-y-6">
             <Suspense fallback={<LoadingCard />}>
-              <UserStatsOverview stats={userStats} />
+              {userStats && <UserStatsOverview stats={userStats} />}
             </Suspense>
 
             <Suspense fallback={<LoadingCard />}>
@@ -161,11 +173,12 @@ export default async function DashboardPage() {
             </Suspense>
 
             <Suspense fallback={<LoadingCard />}>
-              <SubscriptionStatus subscription={userData.subscriptions} />
+              <SubscriptionStatus subscription={userData.subscriptions[0]} />
             </Suspense>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
+
