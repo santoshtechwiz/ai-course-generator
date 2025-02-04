@@ -212,7 +212,8 @@ export default function MainContent(props: MainContentProps) {
             <div className="w-full lg:w-auto flex flex-wrap justify-end gap-2">
               <ErrorBoundary FallbackComponent={ErrorFallback}>
                 <Suspense fallback={<LoadingFallback message="Loading actions..." />}>
-                  <CourseActionsWithErrorBoundary slug={props.course.slug || ""} quizData={undefined} />
+                  <CourseActionsWithErrorBoundary slug={props.course.slug || ""} 
+                 />
                 </Suspense>
               </ErrorBoundary>
             </div>
