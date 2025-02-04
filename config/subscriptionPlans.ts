@@ -1,13 +1,14 @@
 import { Zap, Rocket, Star, Crown } from "lucide-react"
 
-export const SUBSCRIPTION_PLANS = [
+
+const SUBSCRIPTION_PLANS = [
   {
     name: "FREE",
     icon: Zap,
     options: [{ duration: 1, price: 0 }],
     tokens: 3,
     limits: {
-      totalQuestions: 3,
+    
       maxQuestionsPerQuiz: 3,
     },
     features: [
@@ -26,7 +27,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 20,
     limits: {
-      totalQuestions: 5,
+    
       maxQuestionsPerQuiz: 5,
     },
     features: [
@@ -46,8 +47,8 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 60,
     limits: {
-      totalQuestions: 60,
-      maxQuestionsPerQuiz: 10,
+     
+      maxQuestionsPerQuiz: 15,
     },
     features: [
       "60 tokens to use on courses or quizzes",
@@ -66,8 +67,8 @@ export const SUBSCRIPTION_PLANS = [
     ],
     tokens: 150,
     limits: {
-      totalQuestions: 150,
-      maxQuestionsPerQuiz: 15,
+     
+      maxQuestionsPerQuiz: 20,
     },
     features: [
       "150 tokens to use on courses or quizzes",
@@ -80,25 +81,30 @@ export const SUBSCRIPTION_PLANS = [
   },
 ] as const
 
-export const TOKEN_USAGE = {
-  course: 1,
-  quiz: 1,
-}
 
-export const FAQ_ITEMS = [
+
+const FAQ_ITEMS = [
   {
-    question: "How do tokens work?",
+    question: "What are tokens and how do they work?",
     answer:
-      "Tokens are a flexible currency you can use across different features. One token can be used to create one course or one quiz. The number of questions per quiz is limited based on your plan.",
+      "Tokens are our platform's currency for creating courses and quizzes. Each token allows you to create one course or generate one quiz, with the number of questions limited by your plan.",
   },
   {
-    question: "What are the quiz limits?",
+    question: "Can I upgrade or downgrade my plan?",
     answer:
-      "Each plan has a limit on the total number of questions you can create across all quizzes, as well as a maximum number of questions per individual quiz. Check the plan details for specific limits.",
+      "Yes, you can change your plan at any time. If you upgrade, you'll have immediate access to the new features. If you downgrade, the changes will take effect at the start of your next billing cycle.",
   },
-  // Add more FAQ items as needed
+  {
+    question: "What happens if I use all my tokens?",
+    answer:
+      "If you use all your tokens, you can purchase additional tokens or wait for your next billing cycle when your tokens will be refreshed.",
+  },
+  {
+    question: "Is there a refund policy?",
+    answer:
+      "We offer a 14-day money-back guarantee for all paid plans. If you're not satisfied with our service, you can request a full refund within this period.",
+  },
 ]
-
-export type SubscriptionPlanType = (typeof SUBSCRIPTION_PLANS)[number]["name"]
-export type SubscriptionStatusType = "active" | "canceled" | "expired" | null
-
+type SubscriptionPlanType = (typeof SUBSCRIPTION_PLANS)[number]["name"]
+type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "CANCELLED"
+export { SUBSCRIPTION_PLANS, FAQ_ITEMS, }

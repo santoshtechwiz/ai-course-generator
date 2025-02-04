@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button"
 import ComponentLoader from "../ComponentLoader"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle } from 'lucide-react'
 import AIEmoji from "../AIEmoji"
 import PDFGenerator from "@/app/components/shared/PDFGenerator"
 import { useChapterSummary } from "@/hooks/useChapterSummary"
+import { processMarkdown } from "@/lib/markdownProcessor"
+
 
 interface CourseAISummaryProps {
   chapterId: number
@@ -31,6 +33,13 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
       setShowAIEmoji(false)
     }
   }, [data, onSummaryReady])
+
+  const processedContent = useMemo(() => {
+    if (data?.success && data.data) {
+      return processMarkdown(data.data)
+    }
+    return ""
+  }, [data])
 
   const content = useMemo(() => {
     if (showAIEmoji) {
@@ -76,7 +85,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
       )
     }
 
-    if (data?.success && data.data) {
+    if (processedContent) {
       return (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -124,11 +133,11 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
                   ),
                 }}
               >
-                {data.data}
+                {processedContent}
               </ReactMarkdown>
             </CardContent>
           </Card>
-          <PDFGenerator markdown={data.data} chapterName={name} />
+          <PDFGenerator markdown={processedContent} chapterName={name} />
         </motion.div>
       )
     }
@@ -147,7 +156,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
         </Button>
       </motion.div>
     )
-  }, [isLoading, isError, data, name, refetch, showAIEmoji])
+  }, [isLoading, isError, processedContent, name, refetch, showAIEmoji])
 
   return (
     <div className="relative space-y-4">
@@ -167,4 +176,3 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
 }
 
 export default CourseAISummary
-

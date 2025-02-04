@@ -26,7 +26,7 @@ export async function generateQuestions(req: unknown): Promise<{ questions: Ques
 
     // Generate questions based on the type
     const questions = type === 'mcq'
-      ? await generateMcqForUserInput(topic, amount,difficulty,userType)
+      ? await generateMcqForUserInput(topic, amount, difficulty, userType || '')
       : await generateOpenEndedQuiz(topic, amount,userType);
 
    

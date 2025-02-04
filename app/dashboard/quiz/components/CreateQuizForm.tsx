@@ -67,6 +67,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
 
   const createQuizMutation = useMutation({
     mutationFn: async (data: QuizFormData) => {
+      setValue("userType", subscriptionStatus?.subscriptionPlan);
       const response = await axios.post("/api/game", data)
       return response.data
     },

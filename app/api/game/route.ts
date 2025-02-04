@@ -14,10 +14,10 @@ export const dynamic = "force-dynamic";
 
 
 
-async function fetchQuizQuestions(amount: number, topic: string, type: QuizType, difficulty: string,userType) {
+async function fetchQuizQuestions(amount: number, topic: string, type: QuizType, difficulty: string, userType:string) {
   const { data } = await axios.post<MultipleChoiceQuestion[] | OpenEndedQuestion[]>(
-    `${process.env.NEXTAUTH_URL}/api/quiz`,
-    { amount, topic, type, difficulty,userType },
+    `${process.env.NEXT_PUBLIC_URL}/api/quiz`,
+    { amount, topic, type, difficulty, userType },
     { headers: { 'Content-Type': 'application/json' } }
   );
   return data;
@@ -36,11 +36,17 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { topic, type, amount, difficulty,userType } = quizCreationSchema.parse(body);
+    const { topic, type, amount, difficulty, userType } = quizCreationSchema.parse(body);
     const slug = generateSlug(topic);
-
+    let quizType = QuizType.MultipleChoice;
+    if (type === "open_ended") {
+      quizType = QuizType.OpenEnded;
+    }
+    if (type === "mcq") {
+      quizType = QuizType.MultipleChoice;
+    }
     // 1. First fetch questions to ensure we can create a quiz
-    const questions = await fetchQuizQuestions(amount, topic, type, difficulty,userType);
+    const questions = await fetchQuizQuestions(amount, topic, quizType, difficulty, userType);
     if (questions.length === 0) {
       return NextResponse.json(
         { error: "No questions were generated for the given topic." },
@@ -53,13 +59,13 @@ export async function POST(req: Request) {
 
     try {
       // 3. Create questions for the quiz
-      await createQuestions(questions, userQuiz.id, type);
+      await createQuestions(questions, userQuiz.id, quizType);
 
       // 4. Update topic count
       await updateTopicCount(topic);
 
       // 5. Only deduct credits if everything else succeeded
-      await updateUserCredits(session.user.id, type);
+      await updateUserCredits(session.user.id, quizType);
 
       return NextResponse.json({
         userQuizId: userQuiz.id,
