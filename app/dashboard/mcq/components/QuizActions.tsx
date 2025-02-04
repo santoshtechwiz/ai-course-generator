@@ -23,7 +23,6 @@ import QuizPDFDownload from "../../course/components/QuizPDFDownload"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { Rating } from "@/components/ui/rating"
 
-
 interface QuizActionsToolbarProps {
   quizId: string
   quizSlug: string
@@ -41,7 +40,7 @@ export function QuizActions({
   initialIsFavorite,
   userId,
   ownerId,
-  quizType
+  quizType,
 }: QuizActionsToolbarProps) {
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
@@ -53,6 +52,7 @@ export function QuizActions({
   const router = useRouter()
   const { subscriptionStatus, isLoading } = useSubscriptionStore()
   const [rating, setRating] = useState<number | null>(null)
+
   useEffect(() => {
     const fetchQuizState = async () => {
       try {
@@ -83,6 +83,7 @@ export function QuizActions({
   if (!userId || !ownerId || userId !== ownerId) {
     return null
   }
+
   const handleRatingChange = async (newRating: number) => {
     try {
       const response = await fetch("/api/rating", {
@@ -110,6 +111,7 @@ export function QuizActions({
       })
     }
   }
+
   const updateQuiz = async (data: { isPublic?: boolean; isFavorite?: boolean }) => {
     const loadingState = data.isPublic !== undefined ? setIsPublicLoading : setIsFavoriteLoading
     loadingState(true)
@@ -217,7 +219,7 @@ export function QuizActions({
                 size="sm"
                 onClick={togglePublic}
                 disabled={isPublicLoading}
-                className="transition-all duration-300"
+                className="transition-all duration-300 w-[100px] justify-center"
               >
                 {isPublicLoading ? (
                   <span className="loader"></span>
@@ -246,7 +248,7 @@ export function QuizActions({
                 size="sm"
                 onClick={toggleFavorite}
                 disabled={isFavoriteLoading}
-                className="transition-all duration-300"
+                className="transition-all duration-300 w-[100px] justify-center"
               >
                 {isFavoriteLoading ? (
                   <span className="loader"></span>
@@ -276,7 +278,7 @@ export function QuizActions({
                 size="sm"
                 onClick={handleShare}
                 disabled={isShareLoading}
-                className="transition-all duration-300"
+                className="transition-all duration-300 w-[100px] justify-center"
               >
                 {isShareLoading ? (
                   <span className="loader"></span>
@@ -307,7 +309,6 @@ export function QuizActions({
             </Tooltip>
           </TooltipProvider>
         )}
-        
 
         {/* Delete Button */}
         <AlertDialog>
@@ -316,7 +317,7 @@ export function QuizActions({
               variant="destructive"
               size="sm"
               disabled={isDeleteLoading}
-              className="transition-all duration-300"
+              className="transition-all duration-300 w-[100px] justify-center"
             >
               {isDeleteLoading ? (
                 <span className="loader"></span>
@@ -357,3 +358,4 @@ export function QuizActions({
     </motion.div>
   )
 }
+
