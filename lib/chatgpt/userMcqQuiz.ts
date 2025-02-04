@@ -4,8 +4,8 @@ import { openai } from "./gpt";
 
 
 
-export const generateMcqForUserInput = async (topic: string, amount: number, difficulty: string = 'hard', userType) => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini ";
+export const generateMcqForUserInput = async (topic: string, amount: number, difficulty: string = 'hard', userType:string) => {
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "gpt-3.5-turbo-1106";
   const functions = [
     {
       name: 'createMCQ',

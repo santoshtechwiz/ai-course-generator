@@ -1,7 +1,6 @@
 "use client"
 
-import { type FC, useState } from "react"
-import Link from "next/link"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   CheckSquare,
@@ -15,9 +14,12 @@ import {
   PenLine,
   Puzzle,
   ArrowRight,
+  Loader2,
 } from "lucide-react"
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 interface QuizCardProps {
@@ -38,26 +40,10 @@ const quizTypeIcons = {
 }
 
 const quizTypeColors = {
-  mcq: {
-    gradient: "from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800",
-    badge: "bg-blue-500",
-    text: "text-blue-600 dark:text-blue-400",
-  },
-  openended: {
-    gradient: "from-green-400 to-green-600 dark:from-green-600 dark:to-green-800",
-    badge: "bg-green-500",
-    text: "text-green-600 dark:text-green-400",
-  },
-  "fill-blanks": {
-    gradient: "from-purple-400 to-purple-600 dark:from-purple-600 dark:to-purple-800",
-    badge: "bg-purple-500",
-    text: "text-purple-600 dark:text-purple-400",
-  },
-  code: {
-    gradient: "from-yellow-400 to-yellow-600 dark:from-yellow-600 dark:to-yellow-800",
-    badge: "bg-yellow-500",
-    text: "text-yellow-600 dark:text-yellow-400",
-  },
+  mcq: "text-blue-500 dark:text-blue-400",
+  openended: "text-green-500 dark:text-green-400",
+  "fill-blanks": "text-purple-500 dark:text-purple-400",
+  code: "text-yellow-500 dark:text-yellow-400",
 }
 
 const quizTypeLabels = {
@@ -94,7 +80,7 @@ const quizTypeDescriptions = {
   },
 }
 
-export const QuizCard: FC<QuizCardProps> = ({
+export const QuizCard: React.FC<QuizCardProps> = ({
   title,
   questionCount,
   slug,
@@ -103,111 +89,118 @@ export const QuizCard: FC<QuizCardProps> = ({
   description,
   isPublic = false,
 }) => {
-  const [isFlipped, setIsFlipped] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const QuizTypeIcon = quizTypeIcons[quizType]
   const quizTypeInfo = quizTypeDescriptions[quizType]
   const TypeBenefitIcon = quizTypeInfo.icon
   const colors = quizTypeColors[quizType]
 
+  const handleStartQuiz = () => {
+    setIsLoading(true)
+    // Simulate loading for 1 second before navigating
+    setTimeout(() => {
+      setIsLoading(false)
+      // Navigate to the quiz page
+      window.location.href = `/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`
+    }, 1000)
+  }
+
   return (
-    <motion.div
-      className="relative w-full max-w-xs mx-auto cursor-pointer"
-      style={{ perspective: "1000px" }} // Add perspective for 3D effect
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
+    <Card
+      className={cn(
+        "w-full max-w-sm mx-auto transition-all duration-300 hover:shadow-lg",
+        isExpanded ? "shadow-lg" : "shadow",
+      )}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
     >
-      <motion.div
-        className="relative w-full h-80" // Fixed height for consistent size
-        animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.6, ease: "easeInOut" }}
-        style={{ transformStyle: "preserve-3d" }} // Enable 3D transformations
-      >
-        {/* Front Card */}
-        <motion.div
-          className="absolute w-full h-full"
-          style={{ backfaceVisibility: "hidden" }} // Hide the back of the card
-        >
-          <Card
-            className={cn(
-              "h-full overflow-hidden",
-              "transition-all duration-300",
-              "hover:shadow-lg hover:scale-105",
-              "bg-gradient-to-br",
-              colors.gradient,
-            )}
-          >
-            <CardHeader className="relative p-4 pb-0">
-              <div className="flex items-center justify-between mb-2">
-                <Badge className={cn("font-medium text-white px-2 py-1 text-xs", colors.badge)}>
-                  <QuizTypeIcon className="w-3 h-3 mr-1" />
-                  {quizTypeLabels[quizType]}
-                </Badge>
-                <div className="flex items-center gap-1 text-xs text-white">
-                  <Clock className="w-3 h-3" />
+      <CardHeader>
+        <div className="flex items-center justify-between mb-2">
+          <Badge variant="secondary" className={cn("font-medium", colors)}>
+            <QuizTypeIcon className="w-4 h-4 mr-1" />
+            {quizTypeLabels[quizType]}
+          </Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Clock className="w-4 h-4" />
                   {estimatedTime}
                 </div>
-              </div>
-              <CardTitle className="text-lg font-bold text-white">{title}</CardTitle>
-            </CardHeader>
-
-            <CardContent className="p-4 pt-2 space-y-3">
-              <div className="flex flex-col items-start gap-2">
-                <div className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-white/20 text-white">
-                  <HelpCircle className="w-3 h-3" />
-                  <span className="font-medium">{questionCount} Questions</span>
-                </div>
-                <div className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-white/20 text-white">
-                  <Zap className="w-3 h-3" />
-                  <span className="font-medium">Boost Knowledge</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-white/90 line-clamp-2">{description}</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Back Card */}
-        <motion.div
-          className="absolute w-full h-full"
-          style={{ rotateY: 180, backfaceVisibility: "hidden" }} // Flip and hide the front
-        >
-          <Card className={cn("h-full overflow-hidden bg-white dark:bg-gray-800 shadow-lg")}>
-            <CardContent className="flex flex-col items-center justify-center h-full p-4 text-center space-y-3">
-              <TypeBenefitIcon className={cn("w-8 h-8 mb-1", colors.text)} />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Estimated completion time</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <HelpCircle className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{questionCount} Questions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Boost Knowledge</span>
+          </div>
+        </div>
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <div>
-                <h2 className={cn("text-base font-semibold mb-1", colors.text)}>{quizTypeInfo.title}</h2>
-                <p className="text-xs mb-2 text-gray-600 dark:text-gray-300">{quizTypeInfo.description}</p>
+                <h3 className={cn("text-lg font-semibold mb-2", colors)}>{quizTypeInfo.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{quizTypeInfo.description}</p>
+                <ul className="space-y-2">
+                  {quizTypeInfo.benefits.map((benefit, index) => (
+                    <li key={index} className="flex items-center gap-2 text-sm">
+                      <CheckSquare className={cn("w-4 h-4", colors)} />
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              <ul className="space-y-1 text-xs text-gray-600 dark:text-gray-300">
-                {quizTypeInfo.benefits.map((benefit, index) => (
-                  <li key={index} className="flex items-center gap-1">
-                    <CheckSquare className={cn("w-3 h-3 flex-shrink-0", colors.text)} />
-                    {benefit}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}
-                className={cn(
-                  "inline-flex items-center px-3 py-2",
-                  "text-white text-sm font-medium",
-                  "rounded-md shadow-lg whitespace-nowrap",
-                  "transition-colors hover:opacity-90",
-                  "group/button",
-                  colors.badge,
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CardContent>
+      <CardFooter className="flex justify-end">
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button onClick={handleStartQuiz} disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading
+                  </>
+                ) : (
+                  <>
+                    Start Quiz
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
                 )}
-                aria-label={`Start ${title} Quiz`}
-              >
-                Start Quiz
-                <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover/button:translate-x-1" />
-              </Link>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
-    </motion.div>
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CardFooter>
+    </Card>
   )
 }
+
