@@ -105,6 +105,7 @@ const FAQ_ITEMS = [
       "We offer a 14-day money-back guarantee for all paid plans. If you're not satisfied with our service, you can request a full refund within this period.",
   },
 ]
-type SubscriptionPlanType = (typeof SUBSCRIPTION_PLANS)[number]["name"]
-type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "CANCELLED"
-export { SUBSCRIPTION_PLANS, FAQ_ITEMS, }
+ type SubscriptionPlanType = (typeof SUBSCRIPTION_PLANS)[number]["name"]
+ type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "CANCELLED"
+export { SUBSCRIPTION_PLANS, FAQ_ITEMS }
+export type { SubscriptionPlanType, SubscriptionStatusType }

@@ -26,9 +26,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       const session = await getAuthSession()
       const userId = session?.user.id
 
-      // if (!userId || userId !== quiz.userId) {
-      //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      // }
+      if (!userId || userId !== quiz.userId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
     }
 
     const result = await prisma.userQuiz.findFirst({

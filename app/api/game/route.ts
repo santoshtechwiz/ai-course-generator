@@ -15,12 +15,14 @@ export const dynamic = "force-dynamic";
 
 
 async function fetchQuizQuestions(amount: number, topic: string, type: QuizType, difficulty: string, userType:string) {
-  const { data } = await axios.post<MultipleChoiceQuestion[] | OpenEndedQuestion[]>(
-    `${process.env.NEXT_PUBLIC_URL}/api/quiz`,
-    { amount, topic, type, difficulty, userType },
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  return data;
+  // const { data } = await axios.post<MultipleChoiceQuestion[] | OpenEndedQuestion[]>(
+  //   `${process.env.NEXT_PUBLIC_URL}/api/quiz`,
+  //   { amount, topic, type, difficulty, userType },
+  //   { headers: { 'Content-Type': 'application/json' } }
+  // );
+  // return data;
+  await new Promise(resolve => setTimeout(resolve, 51000));
+  return [];
 }
 
 
