@@ -5,7 +5,6 @@ import { Brain, HelpCircle, Timer, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useMutation } from "@tanstack/react-query"
@@ -54,10 +53,11 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<QuizFormData>({
     resolver: zodResolver(quizSchema),
     defaultValues: formData,
+    mode: "onChange",
   })
 
   React.useEffect(() => {
@@ -67,7 +67,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
 
   const createQuizMutation = useMutation({
     mutationFn: async (data: QuizFormData) => {
-      setValue("userType", subscriptionStatus?.subscriptionPlan);
+     
       const response = await axios.post("/api/game", data)
       return response.data
     },
@@ -119,6 +119,8 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
+
+  const isDisabled = React.useMemo(() => !isValid || isLoading || credits < 1, [isValid, isLoading, credits])
 
   return (
     <motion.div
@@ -209,22 +211,11 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 name="amount"
                 control={control}
                 render={({ field }) => (
-                  // <Slider
-                  //   value={[field.value]}
-                  //   onValueChange={(value) => field.onChange(value[0])}
-                  //   max={maxQuestions}
-                  //   min={1}
-                  //   step={1}
-                  //   className="py-4"
-                  //   aria-label="Number of questions"
-                  // />
                   <SubscriptionSlider
                     value={field.value}
                     onValueChange={(value) => field.onChange(value)}
                     ariaLabel="Select number of questions"
                   />
-
-
                 )}
               />
               <p className="text-sm text-muted-foreground text-center">Select between 1 and {maxQuestions} questions</p>
@@ -281,7 +272,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 label="Generate Quiz"
                 onClick={handleSubmit(onSubmit)}
                 isLoggedIn={isLoggedIn}
-                isEnabled={!errors.topic && !errors.amount && !errors.difficulty}
+                isEnabled={!errors.topic && !errors.amount && !errors.difficulty && !isLoading}
                 hasCredits={credits > 0}
                 loadingLabel="Generating..."
                 className="w-full transition-all duration-300 hover:shadow-lg"
@@ -290,8 +281,8 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                     tooltip: "Click to generate your quiz",
                   },
                   notEnabled: {
-                    label: "Complete the form",
-                    tooltip: "Please fill out all required fields",
+                    label: "Enter a topic to generate",
+                    tooltip: "Please enter a topic before generating the quiz",
                   },
                   noCredits: {
                     label: "Out of credits",

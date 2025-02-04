@@ -1,6 +1,8 @@
+'use client'
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
+import { SubscriptionPlanType, SubscriptionStatusType, SUBSCRIPTION_PLANS, FAQ_ITEMS } from "@/config/subscriptionPlans"
 import { useToast } from "@/hooks/use-toast"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@radix-ui/react-accordion"
 import { Progress } from "@radix-ui/react-progress"

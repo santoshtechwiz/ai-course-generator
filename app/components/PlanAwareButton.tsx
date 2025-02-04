@@ -4,9 +4,8 @@ import type React from "react"
 import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Lock, CheckCircle, User, Loader2, CreditCard } from "lucide-react"
+import { Lock, CheckCircle, User, Loader2, CreditCard } from 'lucide-react'
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-
 
 export interface PlanAwareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string
@@ -120,7 +119,7 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
     isLoggedIn === false ||
     !isEnabled ||
     hasCredits === false ||
-    (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0) || false
+    (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0)
 
   return (
     <TooltipProvider>
@@ -148,4 +147,3 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
 PlanAwareButton.displayName = "PlanAwareButton"
 
 export default PlanAwareButton
-

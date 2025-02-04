@@ -24,7 +24,7 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
 
   const currentPlan =
     SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionStatus?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
-  const maxQuestions = currentPlan.limits.totalQuestions
+  const maxQuestions = currentPlan.limits.maxQuestionsPerQuiz;
   const isMaxPlan = currentPlan.name === "ULTIMATE"
 
   const getNextPlan = (): SubscriptionPlanType => {
