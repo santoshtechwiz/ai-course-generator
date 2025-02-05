@@ -3,9 +3,8 @@ import "./globals.css"
 import type { Metadata } from "next"
 import { Providers } from "./providers/provider"
 import Script from "next/script"
-import { LoadingBar } from "./components/Loadingbar"
-import { NavigationEvents } from "./dashboard/NavigationEvents"
-import { LoadingProvider } from "./providers/loadingContext"
+
+
 import { Suspense } from "react"
 
 const inter = Inter({
@@ -83,13 +82,11 @@ export default function RootLayout({
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body>
         <Providers>
-          <LoadingProvider>
-            <LoadingBar />
-            <NavigationEvents />
+         
             <Suspense>
             {children}
             </Suspense>
-          </LoadingProvider>
+        
         </Providers>
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}

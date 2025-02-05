@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+
 import { cn } from "@/lib/utils"
 import { useCourseActions } from "@/hooks/useCourseActions"
 
@@ -100,7 +100,7 @@ export default function CourseActions({ slug }: CourseActionsProps) {
 
   return (
     <TooltipProvider>
-      <Card className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg">
+      <Card className="bg-gradient-to-r flex justify-between w-full from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg">
         <CardContent className="p-4">
           <motion.div
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"

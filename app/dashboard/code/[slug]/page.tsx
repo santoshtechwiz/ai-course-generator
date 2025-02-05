@@ -6,6 +6,7 @@ import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query
 import axios from "axios"
 import type { CodingQuizProps } from "@/app/types/types"
 import CodingQuizWrapper from "../components/CodingQuizWrapper"
+import AnimatedQuizHighlight from "@/app/components/RanomQuiz"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
@@ -65,6 +66,37 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
 
 
-  return <CodingQuizWrapper slug={slug} userId={session?.user.id || ""} />
+  return <div>
+
+{/* 
+    <HydrationBoundary>
+      <CodingQuizWrapper slug={slug} userId={session?.user?.id || ""} />
+      <div>
+        <AnimatedQuizHighlight></AnimatedQuizHighlight>
+      </div>
+    </HydrationBoundary> */}
+      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+            {/* <div className="p-6 space-y-4">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{result.topic} Quiz</h1>
+             
+            </div> */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                <CodingQuizWrapper slug={slug} userId={session?.user?.id || ""} />
+                  
+                </div>
+                <div className="lg:col-span-1">
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6">
+                    
+                    <AnimatedQuizHighlight />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  </div>
 }
 

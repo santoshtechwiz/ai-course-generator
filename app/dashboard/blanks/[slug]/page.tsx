@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { QuizContent } from "../(components)/QuizContent"
+import { BlankQuizMainContainer } from "../(components)/BlankQuizMainContainer"
 import { Skeleton } from "@/components/ui/skeleton"
 
 function QuizSkeleton() {
@@ -15,7 +15,7 @@ export default async function BlankQuizPage({ params  }: { params: Promise<{ slu
   const {slug} = (await params)
   return (
     <Suspense fallback={<QuizSkeleton />}>
-      <QuizContent slug={slug} />
+      <BlankQuizMainContainer slug={slug} />
     </Suspense>
   )
 }

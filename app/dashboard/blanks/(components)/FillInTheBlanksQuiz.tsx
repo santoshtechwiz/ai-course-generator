@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AlertCircle, CheckCircle2, HelpCircle, Clock, BookOpen, Lightbulb } from "lucide-react"
+import { AlertCircle, CheckCircle2, Clock, BookOpen, Lightbulb } from "lucide-react"
 
 interface Question {
   id: number
@@ -22,7 +22,7 @@ interface Question {
   }
 }
 
-interface ImprovedFillInTheBlanksQuizProps {
+interface FillInTheBlanksQuizProps {
   question: Question
   onAnswer: (answer: string) => void
   questionNumber: number
@@ -34,7 +34,7 @@ export function FillInTheBlanksQuiz({
   onAnswer,
   questionNumber,
   totalQuestions,
-}: ImprovedFillInTheBlanksQuizProps) {
+}: FillInTheBlanksQuizProps) {
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [submitted, setSubmitted] = useState(false)

@@ -5,6 +5,7 @@ import axios from "axios"
 import { notFound } from "next/navigation"
 import CodingQuiz from "../components/CodingQuiz"
 import type { CodingQuizProps } from "@/app/types/types"
+import { GlobalLoader } from "@/app/components/GlobalLoader"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
@@ -35,7 +36,7 @@ export default function CodingQuizWrapper({ slug, userId }: CodingQuizWrapperPro
   })
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <GlobalLoader />
   }
 
   if (isError || !quizData) {

@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast"
 import { useSession, signIn } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { submitQuizData } from "@/app/actions/actions"
-import { GlobalLoader } from "@/app/components/GlobalLoader"
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 type Question = {
@@ -256,7 +256,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     }
   }, [isAuthenticated, slug, saveQuizResults])
 
-  if (loading) return <GlobalLoader loading={loading} />
+
 
   if (hasError) {
     return (

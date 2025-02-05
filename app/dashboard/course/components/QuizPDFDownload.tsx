@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import ConfigurableQuizPDF from "./ConfigurableQuizPDF"
 import { SiAdobe } from "react-icons/si"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { GlobalLoader } from "@/app/components/GlobalLoader"
 
 const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
   const [isClient, setIsClient] = useState(false)
@@ -53,7 +54,7 @@ const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
     <Button
       onClick={handleDownload}
       disabled={isDownloading || isDisabled}
-      
+
       variant="outline"
       className="flex items-center gap-2"
       aria-label={isDisabled ? "Upgrade to Download" : "Download PDF"}
@@ -68,7 +69,7 @@ const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
           <span>{isDisabled ? "Upgrade to Download" : "Download PDF"}</span>
         </>
       ) : (
-        <span>Loading...</span>
+        <GlobalLoader></GlobalLoader>
       )}
     </Button>
   )

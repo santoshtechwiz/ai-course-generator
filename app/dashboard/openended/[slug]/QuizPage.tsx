@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import QuizResultsOpenEnded from "../components/QuizResultsOpenEnded";
 import QuizQuestion from "../components/QuizQuestion";
 import { submitQuizData } from "@/app/actions/actions";
-import { GlobalLoader } from "@/app/components/GlobalLoader";
+
 import { useLoaderContext } from "@/app/providers/loadingContext";
 
 
@@ -180,7 +180,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
   );
 
 
-  if (loading) return <div><GlobalLoader loading={loading}></GlobalLoader></div>
+ 
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
