@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import axios from "axios";
 import https from 'https';
+import { GlobalLoader } from "../GlobalLoader";
 interface ImageFetcherProps {
   topic: string;
 }
@@ -34,7 +35,7 @@ function ImageFetcher({ topic }: ImageFetcherProps) {
   return (
     <div>
       {loading ? (
-        <p>Loading...</p>
+        <GlobalLoader />
       ) : imageUrl ? (
         <Image
           src={imageUrl}

@@ -167,13 +167,13 @@ export default function Navbar() {
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <Link href="/dashboard" className="flex items-center">
+                        <Link href="/dashboard" replace className="flex items-center">
                           <User className="mr-2 h-4 w-4" />
                           <span>Profile</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href="/dashboard/subscription" className="flex items-center">
+                        <Link href="/dashboard/subscription" replace className="flex items-center">
                           <Crown className="mr-2 h-4 w-4" />
                           <span>Subscription</span>
                         </Link>

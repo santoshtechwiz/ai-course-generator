@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { submitQuizData } from "@/app/actions/actions"
 import { useRouter } from "next/navigation"
+import { GlobalLoader } from "@/app/components/GlobalLoader"
 
 interface QuizResultProps {
   correctCount: number
@@ -75,7 +76,7 @@ const QuizResult: React.FC<QuizResultProps> = ({
   }
 
   if (status === "loading" || isSubmitting) {
-    return <div>Loading...</div>
+    return <GlobalLoader></GlobalLoader>
   }
 
   if (status === "unauthenticated") {

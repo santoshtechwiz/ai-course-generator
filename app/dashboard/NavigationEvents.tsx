@@ -1,32 +1,53 @@
-"use client";
+"use client"
 
-import { useEffect, useRef } from "react";
-import { useLoaderContext } from "../providers/loadingContext";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react"
+import { usePathname, useSearchParams } from "next/navigation"
+import { useLoaderContext } from "../providers/loadingContext"
 
 export function NavigationEvents() {
-  const pathname = usePathname();
-  const { startNavigation, completeNavigation } = useLoaderContext();
-  const previousPathnameRef = useRef<string | null>(null);
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { startNavigation, completeNavigation } = useLoaderContext()
 
   useEffect(() => {
-    // Check if the pathname has changed
-    if (previousPathnameRef.current !== pathname) {
-      // Trigger the loader when the pathname changes
-      startNavigation();
+    let isNavigating = false
+    let timeoutId: NodeJS.Timeout
 
-      // Simulate a delay for the loader to complete
-      const timer = setTimeout(() => {
-        completeNavigation();
-      }, 300); // Adjust the delay as needed
-
-      // Update the previous pathname
-      previousPathnameRef.current = pathname;
-
-      // Cleanup the timer
-      return () => clearTimeout(timer);
+    const handleStartNavigation = () => {
+      // Prevent multiple navigation starts
+      if (!isNavigating) {
+        isNavigating = true
+        startNavigation()
+      }
     }
-  }, [pathname, startNavigation, completeNavigation]);
 
-  return null;
+    const handleCompleteNavigation = () => {
+      // Clear any existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+
+      // Add a small delay to prevent flickering for fast navigations
+      timeoutId = setTimeout(() => {
+        isNavigating = false
+        completeNavigation()
+      }, 300) // Increased delay for better UX
+    }
+
+    // Start navigation
+    handleStartNavigation()
+
+    // Complete navigation after the route change is processed
+    handleCompleteNavigation()
+
+    return () => {
+      // Clean up timeout on unmount or route change
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [startNavigation, completeNavigation])
+
+  return null
 }
+

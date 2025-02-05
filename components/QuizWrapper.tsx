@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from "next-auth/react"
-import FillInTheBlankQuizForm from "@/app/dashboard/components/BlankQuizForm"
+
 import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm"
 import TopicForm from "@/app/dashboard/openended/components/TopicForm"
 import CreateQuizForm from "@/app/dashboard/quiz/components/CreateQuizForm"
@@ -10,6 +10,7 @@ import CreateQuizForm from "@/app/dashboard/quiz/components/CreateQuizForm"
 import CodeQuizForm from "@/app/dashboard/code/components/CodeQuizForm"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
+import FillInTheBlankQuizForm from "@/app/dashboard/blanks/(components)/BlankQuizForm"
 
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"|'code';

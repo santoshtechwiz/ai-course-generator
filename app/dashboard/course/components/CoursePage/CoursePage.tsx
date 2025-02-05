@@ -14,7 +14,7 @@ import { useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Menu, VideotapeIcon, X } from "lucide-react"
-import { GlobalLoader } from "@/app/components/GlobalLoader"
+
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -364,7 +364,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <nav className="sticky top-0 z-50 w-full bg-background border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 max-w-screen-2xl items-center">
+        <div className="container flex w-full   h-14 max-w-screen-2xl items-center">
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-lg font-semibold md:hidden">{course.name}</h1>
             <Button

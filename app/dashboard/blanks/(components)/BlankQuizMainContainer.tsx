@@ -8,11 +8,12 @@ import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { useSession } from "next-auth/react"
 import { submitQuizData } from "@/app/actions/actions"
 import { QuizActions } from "../../mcq/components/QuizActions"
-import QuizResults from "../../openended/components/QuizResults"
-import { FillInTheBlanksQuiz } from "../../components/FillInTheBlanksQuiz"
-import { GlobalLoader } from "@/app/components/GlobalLoader"
 
-import { HelpModal } from "@/app/components/HelpModal"
+
+
+import { GuidedHelp } from "@/app/components/HelpModal"
+import BlankQuizResults from "./BlankQuizResults"
+import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
 
 interface Question {
   id: number
@@ -47,7 +48,7 @@ const loadQuizState = () => {
   return null
 }
 
-export function QuizContent({ slug }: { slug: string }) {
+export function BlankQuizMainContainer({ slug }: { slug: string }) {
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<{ answer: string; timeSpent: number; hintsUsed: boolean }[]>([])
@@ -60,6 +61,7 @@ export function QuizContent({ slug }: { slug: string }) {
   const isAuthenticated = status === "authenticated"
   const [score, setScore] = useState(false)
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false)
+  const [showGuidedHelp, setShowGuidedHelp] = useState(false)
 
   const fetchQuizData = useCallback(async () => {
     try {
@@ -103,7 +105,9 @@ export function QuizContent({ slug }: { slug: string }) {
       }
     }
   }, [isAuthenticated])
-
+  const handleCloseGuidedHelp = () => {
+    setShowGuidedHelp(false)
+  }
   const handleAnswer = useCallback(
     (answer: string) => {
       const newAnswers = [...answers, { answer, timeSpent: elapsedTime, hintsUsed: false }]
@@ -162,12 +166,6 @@ export function QuizContent({ slug }: { slug: string }) {
     [isAuthenticated, quizData, slug, answers, elapsedTime],
   )
 
-  if (loading)
-    return (
-      <div>
-        <GlobalLoader loading={loading}></GlobalLoader>
-      </div>
-    )
 
   if (error) {
     return (
@@ -228,13 +226,15 @@ export function QuizContent({ slug }: { slug: string }) {
                 {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
               </span>
             </div>
-            <HelpModal isOpen={isHelpModalOpen} onOpenChange={setIsHelpModalOpen} />
+            <Button variant="ghost" size="icon" onClick={() => setShowGuidedHelp(true)}>
+              <HelpCircle className="w-5 h-5" />
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="px-6 py-4">
           {quizCompleted ? (
             isAuthenticated ? (
-              <QuizResults
+              <BlankQuizResults
                 answers={answers}
                 questions={quizData.questions}
                 onRestart={handleRestart}
@@ -261,6 +261,7 @@ export function QuizContent({ slug }: { slug: string }) {
           )}
         </CardContent>
       </Card>
+      <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
     </div>
   )
 }
