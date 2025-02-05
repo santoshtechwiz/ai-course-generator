@@ -1,14 +1,12 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
-import { motion, useAnimation, type Variants } from "framer-motion"
+import { useRef, useState, useEffect, useCallback } from "react"
+import { motion, type Variants } from "framer-motion"
 import { Element } from "react-scroll"
 import { ArrowUp } from "lucide-react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { useInView } from "framer-motion"
-import type React from "react" // Added import for React
 
 import FeatureSections from "@/app/components/landing/FeatureSection"
 import HowItWorks from "@/app/components/landing/HowItWorks"
@@ -25,163 +23,142 @@ const AboutUs = dynamic(() => import("@/app/about/AboutUs"), { ssr: false })
 
 // Animation variants
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  hidden: { y: 60, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { type: "spring", stiffness: 100, damping: 20 },
+  },
 }
 
 const fadeInLeft: Variants = {
-  hidden: { opacity: 0, x: -50 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  hidden: { x: -60, opacity: 0 },
+  visible: {
+    x: 0,
+    opacity: 1,
+    transition: { type: "spring", stiffness: 100, damping: 20 },
+  },
 }
 
 const fadeInRight: Variants = {
-  hidden: { opacity: 0, x: 50 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  hidden: { x: 60, opacity: 0 },
+  visible: {
+    x: 0,
+    opacity: 1,
+    transition: { type: "spring", stiffness: 100, damping: 20 },
+  },
 }
 
 const stagger: Variants = {
+  hidden: { opacity: 0 },
   visible: {
-    transition: {
-      staggerChildren: 0.1,
-    },
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
   },
 }
 
 // Type definitions
-type SectionKey = "how-it-works" | "features" | "showcase" | "testimonials" | "faq" | "cta" | "about"
-
-type SectionRefs = {
-  [key in SectionKey]: React.RefObject<HTMLElement>
-}
-
 type SectionConfig = {
-  key: SectionKey
+  key: string
   title: string
   description: string
   Component: React.ComponentType<any>
-  props?: Record<string, any>
+  props?: any
 }
 
 type LandingComponentProps = {
   sections?: SectionConfig[]
 }
 
-export default function LandingComponent({ sections }: LandingComponentProps) {
+const defaultSections: SectionConfig[] = [
+ 
+  {
+    key: "features",
+    title: "Features",
+    description: "",
+    Component: FeatureSections,
+  },
+  {
+    key: "how-it-works",
+    title: "How it Works",
+    description: "Learn how it all works.",
+    Component: HowItWorks,
+  },
+  {
+    key: "showcase",
+    title: "Explore Our Platform",
+    description: "Discover a world of interactive courses and engaging quizzes designed to enhance your learning experience.",
+    Component: ShowcaseSection,
+  },
+  {
+    key: "testimonials",
+    title: "Testimonials",
+    description: "Hear what our customers say.",
+    Component: TestimonialsSection,
+  },
+  {
+    key: "about",
+    title: "About Us",
+    description: "Learn more about us.",
+    Component: AboutUs,
+  },
+  {
+    key: "faq",
+    title: "FAQ",
+    description: "Frequently Asked Questions",
+    Component: FAQSection,
+  },
+]
+
+export default function LandingComponent({ sections = defaultSections }: LandingComponentProps) {
   const router = useRouter()
   const [showScrollTop, setShowScrollTop] = useState(false)
-  const controls = useAnimation()
+  const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
-  // Default sections configuration
-  const defaultSections: SectionConfig[] = [
-    {
-      key: "how-it-works",
-      title: "How It Works",
-      description: "See how our AI transforms your ideas into a complete course",
-      Component: HowItWorks,
-    },
-    {
-      key: "features",
-      title: "Features",
-      description: "Discover the powerful features that make course creation effortless",
-      Component: FeatureSections,
-      props: { controls },
-    },
-    {
-      key: "showcase",
-      title: "Showcase",
-      description: "Explore some of the amazing courses created with our platform",
-      Component: ShowcaseSection,
-    },
-    {
-      key: "testimonials",
-      title: "Testimonials",
-      description: "Hear what our users have to say about their experience",
-      Component: TestimonialsSection,
-    },
-    {
-      key: "faq",
-      title: "Frequently Asked Questions",
-      description: "Find answers to commonly asked questions",
-      Component: FAQSection,
-    },
-    {
-      key: "about",
-      title: "About Us",
-      description: "Discover the story behind CourseAI",
-      Component: AboutUs,
-    },
-  ]
-
-  const sectionConfigs = sections || defaultSections
-
-  // Refs for sections
-  const sectionInViewRefs: SectionRefs = sectionConfigs.reduce((acc, section) => {
-    acc[section.key] = useRef(null)
-    return acc
-  }, {} as SectionRefs)
-
-  // Check if sections are in view
-  const sectionInView = sectionConfigs.reduce(
-    (acc, section) => {
-      acc[section.key] = useInView(sectionInViewRefs[section.key], { once: true, amount: 0.3 })
-      return acc
-    },
-    {} as Record<SectionKey, boolean>,
-  )
-
-  // Handle scroll to top button visibility
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300)
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
+  const handleScroll = useCallback(() => {
+    const scrollY = window.scrollY
+    setShowScrollTop(scrollY > 300)
   }, [])
 
-  // Handle topic submission
-  const handleTopicSubmit = (topic: string) => {
-    if (topic) {
-      router.push(`/dashboard/create?topic=${encodeURIComponent(topic)}`)
-    } else {
-      router.push("/dashboard/create")
-    }
-  }
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [handleScroll])
 
-  // Handle sign-in click
-  const handleSignInClick = () => {
-    router.push("/auth/signin?callbackUrl=/dashboard")
-  }
+  const handleTopicSubmit = useCallback((topic: string) => {
+    console.log("Topic submitted:", topic)
+  }, [])
+
+  const handleSignInClick = useCallback(() => {
+    router.push("/sign-in")
+  }, [router])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <LandingHeader />
-      <main className="space-y-24 pb-24">
+      <main className="space-y-16 pb-16">
         <LandingHero onTopicSubmit={handleTopicSubmit} />
 
-        {sectionConfigs.map((section, index) => (
+        {sections.map((section, index) => (
           <Element key={section.key} name={section.key}>
             <section
-              ref={sectionInViewRefs[section.key]}
-              className={`py-20 px-4 ${index % 2 === 1 ? "bg-muted/20" : ""}`}
+              ref={(el) => (sectionRefs.current[section.key] = el)}
+              className={`py-12 px-4 ${index % 2 === 1 ? "bg-muted/20" : ""}`}
             >
               <motion.div
                 className="container mx-auto max-w-6xl"
                 initial="hidden"
-                animate={sectionInView[section.key] ? "visible" : "hidden"}
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
                 variants={index % 2 === 0 ? fadeInLeft : fadeInRight}
               >
-                <motion.div variants={stagger} className="space-y-12">
+                <motion.div variants={stagger} className="space-y-8">
                   <motion.div variants={fadeInUp}>
-                    <motion.div variants={fadeInUp} className="text-center space-y-4 mb-12">
-                      <h2 className="text-3xl font-bold text-primary text-gradient capitalize">{section.title}</h2>
-                      <p className="text-muted-foreground max-w-2xl mx-auto">{section.description}</p>
+                    <motion.div variants={fadeInUp} className="text-center space-y-2 mb-8">
+                      <h2 className="text-2xl font-bold text-primary text-gradient capitalize">{section.title}</h2>
+                      <p className="text-muted-foreground max-w-2xl mx-auto text-sm">{section.description}</p>
                     </motion.div>
-                    <section.Component
-                      {...(section.props || {})}
-                      sectionRef={sectionInViewRefs[section.key]}
-                      handleSignInClick={handleSignInClick}
-                    />
+                    <section.Component {...(section.props || {})} handleSignInClick={handleSignInClick} />
                   </motion.div>
                 </motion.div>
               </motion.div>
@@ -189,26 +166,25 @@ export default function LandingComponent({ sections }: LandingComponentProps) {
           </Element>
         ))}
 
-        <section className="py-20 px-4">
+        <section className="py-12 px-4">
           <LandingCTA handleSignInClick={handleSignInClick} />
         </section>
       </main>
 
-      {/* Scroll to top button */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: showScrollTop ? 1 : 0 }}
         transition={{ duration: 0.3 }}
-        className="fixed bottom-8 right-8 z-50"
+        className="fixed bottom-4 right-4 z-50"
       >
         <Button
           variant="default"
-          size="icon"
+          size="sm"
           className="rounded-full shadow-lg"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           aria-label="Scroll to top"
         >
-          <ArrowUp className="h-6 w-6" />
+          <ArrowUp className="h-4 w-4" />
         </Button>
       </motion.div>
     </div>

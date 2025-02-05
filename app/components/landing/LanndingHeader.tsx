@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import Logo from "../shared/Logo"
-import { Menu, X } from "lucide-react"
+import { Menu, X } from 'lucide-react'
 
 const navItems = [
   { name: "Features", to: "features" },
@@ -30,13 +30,17 @@ export default function LandingHeader() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const handleGetStarted = () => {
+  const handleGetStarted = React.useCallback(() => {
     router.push("/dashboard")
-  }
+  }, [router])
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
+  const toggleMobileMenu = React.useCallback(() => {
+    setIsMobileMenuOpen((prev) => !prev)
+  }, [])
+
+  const closeMobileMenu = React.useCallback(() => {
+    setIsMobileMenuOpen(false)
+  }, [])
 
   return (
     <motion.header
@@ -49,16 +53,19 @@ export default function LandingHeader() {
       )}
     >
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <ScrollLink
-          to="hero"
-          spy={true}
-          smooth={true}
-          offset={-64}
-          duration={500}
-          className="flex items-center space-x-2 cursor-pointer"
-        >
+        <div className="flex items-center space-x-2 cursor-pointer">
+          <ScrollLink
+            to="hero"
+            spy={true}
+            smooth={true}
+            offset={-64}
+            duration={500}
+            className="flex items-center space-x-2"
+          >
+            <span className="sr-only">Scroll to top</span>
+          </ScrollLink>
           <Logo />
-        </ScrollLink>
+        </div>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
@@ -109,7 +116,7 @@ export default function LandingHeader() {
                   duration={500}
                   className="text-sm font-medium text-muted-foreground hover:text-primary cursor-pointer transition-colors duration-200"
                   activeClass="text-primary"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                 >
                   {item.name}
                 </ScrollLink>
@@ -124,4 +131,3 @@ export default function LandingHeader() {
     </motion.header>
   )
 }
-

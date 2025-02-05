@@ -5,17 +5,16 @@ import { motion, AnimatePresence } from "framer-motion"
 import {
   ChevronLeft,
   ChevronRight,
-  BookOpen,
+  GraduationCap,
   ListChecks,
   PenLine,
   FileText,
   Loader2,
-  GraduationCap,
   Timer,
   Brain,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -91,7 +90,11 @@ const getTypeStyles = (type: CarouselItem["type"]) => {
   }
 }
 
-export default function CourseQuizCarousel() {
+interface CourseQuizCarouselProps {
+  filter: "all" | "course" | "quiz"
+}
+
+export default function CourseQuizCarousel({ filter }: CourseQuizCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [items, setItems] = useState<CarouselItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -125,14 +128,20 @@ export default function CourseQuizCarousel() {
     fetchCarouselItems()
   }, [])
 
+  const filteredItems = items.filter((item) => {
+    if (filter === "all") return true
+    if (filter === "course") return item.type === "course"
+    return item.type !== "course"
+  })
+
   useEffect(() => {
-    if (items.length > 0) {
+    if (filteredItems.length > 0) {
       const interval = setInterval(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % items.length)
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredItems.length)
       }, 5000)
       return () => clearInterval(interval)
     }
-  }, [items])
+  }, [filteredItems])
 
   if (isLoading) {
     return (
@@ -142,7 +151,7 @@ export default function CourseQuizCarousel() {
     )
   }
 
-  if (items.length === 0) {
+  if (filteredItems.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <p className="text-muted-foreground">No items available.</p>
@@ -151,7 +160,7 @@ export default function CourseQuizCarousel() {
   }
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto px-4 py-8">
+    <div className="relative w-full max-w-4xl mx-auto">
       <motion.div
         className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
         whileHover={{ scale: 1.1 }}
@@ -161,7 +170,7 @@ export default function CourseQuizCarousel() {
           variant="secondary"
           size="icon"
           className="h-12 w-12 rounded-full shadow-lg bg-background/80 backdrop-blur-sm"
-          onClick={() => setCurrentIndex((prev) => (prev - 1 + items.length) % items.length)}
+          onClick={() => setCurrentIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length)}
         >
           <ChevronLeft className="h-6 w-6" />
           <span className="sr-only">Previous slide</span>
@@ -177,7 +186,7 @@ export default function CourseQuizCarousel() {
           variant="secondary"
           size="icon"
           className="h-12 w-12 rounded-full shadow-lg bg-background/80 backdrop-blur-sm"
-          onClick={() => setCurrentIndex((prev) => (prev + 1) % items.length)}
+          onClick={() => setCurrentIndex((prev) => (prev + 1) % filteredItems.length)}
         >
           <ChevronRight className="h-6 w-6" />
           <span className="sr-only">Next slide</span>
@@ -187,7 +196,7 @@ export default function CourseQuizCarousel() {
       <div className="overflow-hidden rounded-xl">
         <div className="relative min-h-[400px]">
           <AnimatePresence initial={false} mode="wait">
-            {items.map(
+            {filteredItems.map(
               (item, index) =>
                 index === currentIndex && (
                   <motion.div
@@ -269,14 +278,14 @@ export default function CourseQuizCarousel() {
       </div>
 
       <div className="flex justify-center gap-3 mt-6">
-        {items.map((item, index) => (
+        {filteredItems.map((item, index) => (
           <motion.button
             key={index}
             onClick={() => setCurrentIndex(index)}
             className={cn(
               "w-3 h-3 rounded-full transition-all duration-300",
               index === currentIndex
-                ? getTypeStyles(items[currentIndex].type).accent
+                ? getTypeStyles(filteredItems[currentIndex].type).accent
                 : "bg-primary/20 hover:bg-primary/40",
             )}
             whileHover={{ scale: 1.2 }}
