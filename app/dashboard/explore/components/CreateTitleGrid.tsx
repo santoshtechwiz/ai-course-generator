@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 
-interface TileProps {
+interface CreateTileGridProps {
   icon: LucideIcon
   title: string
   description: string
@@ -100,7 +100,7 @@ const tiles = [
   },
 ]
 
-function Tile({ icon: Icon, title, description, url, index, quotes, color }: TileProps) {
+function Tile({ icon: Icon, title, description, url, index, quotes, color }: CreateTileGridProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentQuote, setCurrentQuote] = useState(0)
 
@@ -219,7 +219,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color }: Til
   )
 }
 
-export function TileGrid() {
+export function CreateTileGrid() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl w-full p-6">
       {tiles.map((tile, index) => (

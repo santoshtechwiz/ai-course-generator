@@ -53,7 +53,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isSaving = useRef(false);
-  const { setLoading: toggleLoading } = useLoaderContext();
+
   const saveQuizResults = useCallback(
     async (
       finalAnswers: Array<{ answer: string; timeSpent: number; hintsUsed: boolean; isCorrect: boolean }>,
@@ -63,7 +63,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
       isSaving.current = true;
 
       try {
-        toggleLoading(true);
+      
        await submitQuizData({
           slug,
           quizId: quizData?.id,
@@ -74,7 +74,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
 
         }, () => {
 
-          toggleLoading(false)
+ 
         });
         toast({
           variant: "success",

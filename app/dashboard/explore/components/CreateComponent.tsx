@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TileGrid } from "./TileGrid";
+import { CreateTileGrid } from "./CreateTitleGrid";
 import { WavyBackground } from "./WavyBackground";
 import { FloatingShapes } from "./FloatingShapes";
 
@@ -37,7 +37,7 @@ export function CreateComponent() {
 
         {/* Tile Grid Section */}
         <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <TileGrid />
+          <CreateTileGrid />
         </div>
       </main>
     </div>

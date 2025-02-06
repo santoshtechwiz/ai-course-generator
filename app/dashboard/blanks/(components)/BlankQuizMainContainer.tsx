@@ -60,7 +60,7 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const [score, setScore] = useState(false)
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false)
+
   const [showGuidedHelp, setShowGuidedHelp] = useState(false)
 
   const fetchQuizData = useCallback(async () => {

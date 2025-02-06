@@ -1,14 +1,14 @@
 import type React from "react"
 import Editor from "@monaco-editor/react"
 
-interface CodeEditorProps {
+interface CodeQuizEditorProps {
   value: string
   language: string
   readOnly?: boolean
   onChange?: (value: string | undefined) => void
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ value, language, readOnly = false, onChange }) => {
+const CodeQuizEditor: React.FC<CodeQuizEditorProps> = ({ value, language, readOnly = false, onChange }) => {
   return (
     <div className="h-64 border rounded-md overflow-hidden">
       <Editor
@@ -28,5 +28,5 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, language, readOnly = fal
   )
 }
 
-export default CodeEditor
+export default CodeQuizEditor
 
