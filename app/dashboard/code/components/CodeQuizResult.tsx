@@ -12,7 +12,7 @@ import { submitQuizData } from "@/app/actions/actions"
 import { useRouter } from "next/navigation"
 import { GlobalLoader } from "@/app/components/GlobalLoader"
 
-interface QuizResultProps {
+interface CodeQuizResultProps {
   correctCount: number
   totalQuestions: number
   onRestartQuiz: () => void
@@ -28,17 +28,16 @@ interface QuizResultProps {
     elapsedTime: number
     score: number
     type: string
-  } | null // Allow null for cases where results might not be available
+  } | null
 }
 
-const QuizResult: React.FC<QuizResultProps> = ({
+const CodeQuizResult: React.FC<CodeQuizResultProps> = ({
   correctCount,
   totalQuestions: initialTotalQuestions,
   onRestartQuiz,
   isSubmitting,
   savedResults,
 }) => {
-  const percentage = savedResults?.score ?? Math.round((correctCount / initialTotalQuestions) * 100)
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -76,7 +75,7 @@ const QuizResult: React.FC<QuizResultProps> = ({
   }
 
   if (status === "loading" || isSubmitting) {
-    return <GlobalLoader></GlobalLoader>
+    return <GlobalLoader />
   }
 
   if (status === "unauthenticated") {
@@ -89,7 +88,7 @@ const QuizResult: React.FC<QuizResultProps> = ({
   }
 
   const totalQuestions = savedResults?.answers.length ?? initialTotalQuestions
-  const score = savedResults?.score ?? percentage
+  const percentage = savedResults?.score ?? Math.round((correctCount / totalQuestions) * 100)
 
   return (
     <motion.div
@@ -131,5 +130,5 @@ const QuizResult: React.FC<QuizResultProps> = ({
   )
 }
 
-export default QuizResult
+export default CodeQuizResult
 

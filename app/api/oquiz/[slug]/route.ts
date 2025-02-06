@@ -22,14 +22,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
 
-    if (!quiz.isPublic) {
-      const session = await getAuthSession()
-      const userId = session?.user.id
-
-      if (!userId || userId !== quiz.userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      }
-    }
+   
 
     const result = await prisma.userQuiz.findFirst({
       where: {

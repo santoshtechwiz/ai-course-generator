@@ -1,29 +1,21 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
-import { motion } from "framer-motion"
-import { RefreshCcw, Trophy } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { motion, AnimatePresence } from "framer-motion"
+import { RefreshCcw, Trophy, HelpCircle, ArrowRight, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import QuizOptions from "./QuizOptions"
+import QuizOptions from "./CodeQuizOptions"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { submitQuizData } from "@/app/actions/actions"
-import { QuizActions } from "../../mcq/components/QuizActions"
 import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { useRouter } from "next/navigation"
-import { CodeChallenge } from "@/app/types/types"
+import type { CodeChallenge } from "@/app/types/types"
+import { Progress } from "@/components/ui/progress"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-interface QuizQuestion {
-  question: string
-  options: string[]
-  correctAnswer: string // Add correctAnswer to the question interface
-  codeSnippet: string | null
-  language?: string
-}
-
-interface CodingQuizProps {
+interface CodeQuizProps {
   quizId: number
   slug: string
   isFavorite: boolean
@@ -36,7 +28,7 @@ interface CodingQuizProps {
   }
 }
 
-const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPublic, userId, ownerId, quizData }) => {
+const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPublic, userId, ownerId, quizData }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>(
     new Array(quizData.questions.length).fill(null),
@@ -59,14 +51,12 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
   const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : []
 
   useEffect(() => {
-    // Start timing for the first question
     setStartTimes((prev) => {
       const newStartTimes = [...prev]
       newStartTimes[0] = Date.now()
       return newStartTimes
     })
 
-    // Check for saved results in localStorage
     const savedResults = localStorage.getItem("quizResults")
     if (savedResults) {
       setQuizResults(JSON.parse(savedResults))
@@ -90,7 +80,6 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
   }, [selectedOptions, quizData.questions])
 
   const handleNextQuestion = useCallback(async () => {
-    // Calculate time spent on current question
     const currentTime = Date.now()
     const timeSpentOnQuestion = Math.round((currentTime - startTimes[currentQuestionIndex]) / 1000)
 
@@ -102,7 +91,6 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
 
     if (currentQuestionIndex < quizData.questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
-      // Start timing for the next question
       setStartTimes((prev) => {
         const newStartTimes = [...prev]
         newStartTimes[currentQuestionIndex + 1] = Date.now()
@@ -113,8 +101,6 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
       try {
         const correctCount = calculateScore()
         const score = (correctCount / quizData.questions.length) * 100
-
-        // Calculate the total time spent on all questions
         const totalTimeSpent =
           timeSpent.reduce((sum, time) => sum + time, 0) + (Date.now() - startTimes[currentQuestionIndex]) / 1000
 
@@ -137,7 +123,6 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
           const submittedResults = await submitQuizData(results, setIsSubmitting)
           setQuizResults(submittedResults)
         } else {
-          // Save results to localStorage if user is not signed in
           localStorage.setItem("quizResults", JSON.stringify(results))
           setQuizResults(results)
         }
@@ -159,7 +144,7 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
     status,
   ])
 
-  const restartQuiz = () => {
+  const restartQuiz = useCallback(() => {
     localStorage.removeItem("quizResults")
     setCurrentQuestionIndex(0)
     setSelectedOptions(new Array(quizData.questions.length).fill(null))
@@ -168,15 +153,13 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
     setQuizCompleted(false)
     setIsSubmitting(false)
     setQuizResults(null)
-  }
+  }, [quizData.questions.length])
 
-  const renderQuestionText = (text: string) => {
-    // First, split the text to separate the question from the code block
+  const renderQuestionText = useCallback((text: string) => {
     const [questionText, ...codeBlocks] = text.split("```")
-  
+
     return (
       <div className="space-y-4">
-        {/* Render the question text with inline code highlighting */}
         <div>
           {questionText.split(/`([^`]+)`/).map((part, index) =>
             index % 2 === 0 ? (
@@ -188,8 +171,6 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
             ),
           )}
         </div>
-  
-        {/* Render code blocks */}
         {codeBlocks.map((code, index) => (
           <pre key={index} className="bg-muted/50 p-4 rounded-lg overflow-x-auto">
             <code className="text-primary font-mono whitespace-pre">{code.trim()}</code>
@@ -197,10 +178,9 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
         ))}
       </div>
     )
-  }
-  
-  
-  const renderCode = (code: string, language = "javascript") => {
+  }, [])
+
+  const renderCode = useCallback((code: string, language = "javascript") => {
     const cleanCode = code.replace(/^```[\w]*\n?|\n?```$/g, "")
 
     return (
@@ -220,24 +200,27 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
         </SyntaxHighlighter>
       </div>
     )
-  }
+  }, [])
 
-  const renderOptionContent = (option: string) => {
-    const codeRegex = /```[\s\S]*?```/g
-    const parts = option.split(codeRegex)
-    const codes = option.match(codeRegex) || []
+  const renderOptionContent = useCallback(
+    (option: string) => {
+      const codeRegex = /```[\s\S]*?```/g
+      const parts = option.split(codeRegex)
+      const codes = option.match(codeRegex) || []
 
-    return (
-      <div className="w-full">
-        {parts.map((part, index) => (
-          <React.Fragment key={index}>
-            {part && <span className="block mb-2">{part.trim()}</span>}
-            {codes[index] && <div className="my-2">{renderCode(codes[index], currentQuestion.language)}</div>}
-          </React.Fragment>
-        ))}
-      </div>
-    )
-  }
+      return (
+        <div className="w-full">
+          {parts.map((part, index) => (
+            <React.Fragment key={index}>
+              {part && <span className="block mb-2">{part.trim()}</span>}
+              {codes[index] && <div className="my-2">{renderCode(codes[index], currentQuestion.language)}</div>}
+            </React.Fragment>
+          ))}
+        </div>
+      )
+    },
+    [currentQuestion.language, renderCode],
+  )
 
   useEffect(() => {
     const submitSavedResults = async () => {
@@ -255,25 +238,17 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
     submitSavedResults()
   }, [status, quizResults])
 
+  const formatTime = useCallback((seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+  }, [])
+
   if (quizCompleted) {
     const correctCount = calculateScore()
     const totalQuestions = quizData.questions.length
     const percentage = (correctCount / totalQuestions) * 100
     const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0)
-
-    console.log("Quiz Results:", {
-      selectedOptions,
-      correctAnswers: quizData.questions.map((q) => q.correctAnswer),
-      correctCount,
-      totalQuestions,
-      percentage,
-    })
-
-    const formatTime = (seconds: number): string => {
-      const minutes = Math.floor(seconds / 60)
-      const remainingSeconds = Math.floor(seconds % 60)
-      return `${minutes}m ${remainingSeconds}s`
-    }
 
     return (
       <motion.div
@@ -306,49 +281,87 @@ const CodingQuiz: React.FC<CodingQuizProps> = ({ quizId, slug, isFavorite, isPub
     )
   }
 
-  return (
-    <div className="flex flex-col items-center px-4 md:px-6 lg:px-8 w-full">
-      <div className="w-full max-w-2xl mb-4">
-        <QuizActions
-          quizId={quizId.toString()}
-          quizSlug={slug}
-          initialIsFavorite={isFavorite}
-          initialIsPublic={isPublic}
-          userId={userId}
-          ownerId={ownerId}
-          quizType="code"
-        />
-      </div>
+  const progress = ((currentQuestionIndex + 1) / quizData.questions.length) * 100
 
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="p-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-semibold">{renderQuestionText(currentQuestion.question)}</h3>
+  return (
+    <div className="w-full  w-[98%] md:max-w-3xl p-4 mx-auto dark:bg-gray-800 rounded-lg shadow-lg">
+      <div className="space-y-4 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold">Coding Quiz Challenge</h1>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-help">
+                  <Timer className="w-4 h-4" />
+                  {formatTime(timeSpent.reduce((a, b) => a + b, 0))}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Total time spent on the quiz</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <div className="space-y-2">
+          <Progress value={progress} className="h-2" />
+          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+            <span>Progress: {Math.round(progress)}%</span>
+            <span>
+              Question {currentQuestionIndex + 1} of {quizData.questions.length}
+            </span>
           </div>
-          {currentQuestion.codeSnippet && (
-            <div className="my-4">{renderCode(currentQuestion.codeSnippet, currentQuestion.language)}</div>
-          )}
-          <div className="my-4">
-            <QuizOptions
-              options={options}
-              selectedOption={selectedOptions[currentQuestionIndex]}
-              onSelect={handleSelectOption}
-              disabled={false}
-              renderOptionContent={renderOptionContent}
-            />
-          </div>
-          <Button
-            className="w-full"
-            onClick={handleNextQuestion}
-            disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
+        </div>
+      </div>
+      <div className="pb-6">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={currentQuestionIndex}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
           >
-            {currentQuestionIndex < quizData.questions.length - 1 ? "Next Question" : "Finish Quiz"}
-          </Button>
-          <div className="text-sm text-muted-foreground">
-            Question {currentQuestionIndex + 1} of {quizData.questions.length}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
+                <h2 className="text-lg sm:text-xl font-semibold">{renderQuestionText(currentQuestion.question)}</h2>
+              </div>
+              {currentQuestion.codeSnippet && (
+                <div className="my-4">{renderCode(currentQuestion.codeSnippet, currentQuestion.language)}</div>
+              )}
+              <QuizOptions
+                options={options}
+                selectedOption={selectedOptions[currentQuestionIndex]}
+                onSelect={handleSelectOption}
+                disabled={false}
+                renderOptionContent={renderOptionContent}
+              />
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      <div className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
+        <p className="text-sm text-muted-foreground">
+          Question time: {formatTime(timeSpent[currentQuestionIndex] || 0)}
+        </p>
+        <Button
+          onClick={handleNextQuestion}
+          disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
+          className="w-full sm:w-auto"
+        >
+          {isSubmitting ? (
+            "Submitting..."
+          ) : currentQuestionIndex === quizData.questions.length - 1 ? (
+            "Finish Quiz"
+          ) : (
+            <>
+              Next Question
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   )
 }

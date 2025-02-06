@@ -9,6 +9,7 @@ import { QuizActions } from "../components/QuizActions"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Question } from "@/app/types/types"
 import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
+import getMcqQuestions from "@/app/actions/getMcqQuestions"
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await props.params
@@ -75,83 +76,43 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
 
-  const result = await prisma.userQuiz.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      topic: true,
-      slug: true,
-      isPublic: true,
-      isFavorite: true,
-      userId: true,
-      questions: {
-        select: {
-          id: true,
-          question: true,
-          options: true,
-          answer: true,
-        },
-      },
-      user: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  })
-
+  const result = await getMcqQuestions(slug);
   if (!result) {
     notFound()
   }
 
-  const questions: Question[] = result.questions.map((question) => {
-    let options: string[] = []
-    if (question.options) {
-      try {
-        options = JSON.parse(question.options)
-      } catch (error) {
-        console.error("Error parsing options:", error)
-        options = ["Option 1", "Option 2", "Option 3"] // Default fallback
-      }
-    }
-    const [option1, option2, option3] = options
-
-    return {
-      id: question.id,
-      question: question.question,
-      answer: question.answer,
-      option1: option1 || "",
-      option2: option2 || "",
-      option3: option3 || "",
-    }
-  })
+  
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
         <div className="p-6 space-y-4">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{result.topic} Quiz</h1>
-         
+          {result?.result && (
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{result.result.topic} Quiz</h1>
+          )}
+
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <Suspense fallback={<QuizSkeleton />}>
-              <QuizActions
-            quizId={result.id.toString()}
-            userId={currentUserId || ""}
-            ownerId={result.user.id}
-            quizSlug={result.slug}
-            initialIsPublic={result.isPublic || false}
-            initialIsFavorite={result.isFavorite || false}
-            quizType="mcq"
-          />
-                <PlayQuiz questions={questions} quizId={result.id} slug={slug} />
+                {result.result && (
+                  <QuizActions
+                    quizId={result.result.id.toString()}
+                    userId={currentUserId || ""}
+                    ownerId={result.result.userId}
+                    quizSlug={result.result.slug}
+                    initialIsPublic={result.result.isPublic || false}
+                    initialIsFavorite={result.result.isFavorite || false}
+                    quizType="mcq"
+                  />
+                )}
+                {result.result && <PlayQuiz questions={result.questions} quizId={result.result.id} slug={slug} />}
               </Suspense>
             </div>
             <div className="lg:col-span-1">
               <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6">
-                
+
                 <AnimatedQuizHighlight />
               </div>
             </div>
