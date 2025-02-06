@@ -12,7 +12,6 @@ import QuizResultsOpenEnded from "../components/QuizResultsOpenEnded";
 import QuizQuestion from "../components/QuizQuestion";
 import { submitQuizData } from "@/app/actions/actions";
 
-import { useLoaderContext } from "@/app/providers/loadingContext";
 
 
 

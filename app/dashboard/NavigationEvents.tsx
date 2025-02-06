@@ -28,7 +28,7 @@ export function NavigationEvents() {
 
     router.push = (href, options) => {
       nProgress.start();
-      
+
       _push(href, options);
     };
   }, [])
