@@ -11,7 +11,7 @@ interface PublicQuizzesProps {
 
 export function PublicQuizzes({ quizzes }: PublicQuizzesProps) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 container mx-auto px-4">
       {/* Empty State */}
       <AnimatePresence>
         {quizzes.length === 0 && (
@@ -19,9 +19,11 @@ export function PublicQuizzes({ quizzes }: PublicQuizzesProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="text-center py-8 px-4"
+            className="text-center py-8"
           >
-            <p className="text-xl text-muted-foreground mb-4">No quizzes found. Why not create your own?</p>
+            <p className="text-xl text-muted-foreground mb-4">
+              No quizzes found. Why not create your own?
+            </p>
             <CreateCard
               title="Start Fresh"
               description="Be the first to create a quiz on this topic! It's easy and fun."
@@ -32,7 +34,10 @@ export function PublicQuizzes({ quizzes }: PublicQuizzesProps) {
       </AnimatePresence>
 
       {/* Quiz Grid Layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
+      <div
+        className="grid gap-6"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}
+      >
         {quizzes.map((quiz, index) => (
           <PublicQuizCardListing key={quiz.id} quiz={quiz} index={index} />
         ))}

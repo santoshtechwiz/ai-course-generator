@@ -13,11 +13,22 @@ export interface DashboardUser extends User {
   lastStreakDate: Date | null
 }
 export interface CourseMetadata{
-  averageRating?: number
+  rating?: number
   difficulty?:string| null
   estimatedHours?: number
 }
-
+export interface CourseCardProps {
+  id: string
+  name: string
+  description: string
+  image: string
+  rating: number
+  slug: string
+  unitCount: number
+  lessonCount: number
+  quizCount: number
+  userId: string
+}
 export interface Course extends CourseMetadata {
   id: number
   name: string
@@ -224,13 +235,7 @@ export interface OpenEndedQuestion{
   answer:string;
 
 }
-export enum QuizType{
-
-  MultipleChoice = 'mcq',
-  OpenEnded = 'openended',
-  Code='code',
-  FillInTheBlanks='fill-blanks'
-}
+export type QuizType = "mcq" | "openended" | "fill-blanks" | "code"
 
 export interface CodeChallenge  {
   question: string
@@ -392,4 +397,15 @@ export interface CourseQuizAttempt {
   improvement: number | null;
   accuracy: number | null;
   
+}
+export interface QuestionOpenEnded {
+  id: number;
+  question: string;
+  answer: string;
+  openEndedQuestion: {
+    hints: string;
+    difficulty: string;
+    tags: string;
+    inputType: string;
+  };
 }

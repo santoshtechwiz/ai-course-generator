@@ -1,32 +1,35 @@
-
-
-import { NextResponse } from "next/server"
+"use server"
 
 import { prisma } from "@/lib/db"
+import {  QuestionOpenEnded } from "../types/types"
 
+type Result={
+  id: number
+  userId: string
+  topic: string
+  questions: QuestionOpenEnded[] 
+}
 
-export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function getQuiz(slug: string): Promise<Result | null> {
   try {
-    const slug = (await params).slug;
-
     if (!slug) {
-      return NextResponse.json({ error: "Quiz slug is required" }, { status: 400 })
+      return null as any;
     }
 
+    // Fetch quiz metadata
     const quiz = await prisma.userQuiz.findFirst({
       where: { slug },
       select: { isPublic: true, userId: true },
     })
 
     if (!quiz) {
-      return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
+      return null;
     }
 
-
-
+    // Fetch full quiz details
     const result = await prisma.userQuiz.findFirst({
       where: {
-        slug: slug,
+        slug,
         OR: [{ isPublic: true }, { userId: quiz.userId }],
       },
       select: {
@@ -51,40 +54,39 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     })
 
     if (!result) {
-      return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
+      return null;
     }
 
+    // Transform questions
     const transformedQuestions = result.questions.map((question) => ({
       id: question.id,
       question: question.question,
       answer: question.answer,
       openEndedQuestion: question.openEndedQuestion
         ? {
-          hints: question.openEndedQuestion.hints.split("|"),
-          difficulty: question.openEndedQuestion.difficulty,
-          tags: question.openEndedQuestion.tags.split("|"),
-        }
+            hints: question.openEndedQuestion.hints.split("|"),
+            difficulty: question.openEndedQuestion.difficulty,
+            tags: question.openEndedQuestion.tags.split("|"),
+          }
         : null,
     }))
 
-    const response = {
+    // Return structured response
+    const response= {
       id: result.id,
-      userId: result.userId,
+      userId: result.userId as string,
       topic: result.topic,
       questions: transformedQuestions,
     }
 
-    // Serialize dates to ISO strings
     const serializedResult = JSON.parse(
       JSON.stringify(response, (key, value) =>
         typeof value === "bigint" ? value.toString() : value instanceof Date ? value.toISOString() : value,
       ),
     )
-
-    return NextResponse.json(serializedResult)
+    return serializedResult as Result;
   } catch (error) {
     console.error("Error fetching quiz:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return null;
   }
 }
-

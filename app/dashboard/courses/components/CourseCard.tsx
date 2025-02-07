@@ -3,21 +3,13 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Book, Users, FileQuestion } from "lucide-react"
+import Image from "next/image"
+import type React from "react" // Added import for React
+import { CourseCardProps } from "@/app/types/types"
 
-interface CourseCardProps {
-  id: string
-  name: string
-  description: string
-  image: string
-  rating: number
-  slug: string
-  unitCount: number
-  lessonCount: number
-  quizCount: number
-  userId: string
-}
 
-export const CourseCard = ({
+
+export const CourseCard: React.FC<CourseCardProps> = ({
   name,
   description,
   image,
@@ -26,11 +18,13 @@ export const CourseCard = ({
   unitCount,
   lessonCount,
   quizCount,
-}: CourseCardProps) => {
+}) => {
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg">
       <CardHeader className="p-0">
-        <img src={image || "/placeholder.svg"} alt={name} className="w-full h-48 object-cover" />
+        <div className="relative w-full h-48">
+          <Image src={image || "/placeholder.svg"} alt={name} layout="fill" objectFit="cover" />
+        </div>
       </CardHeader>
       <CardContent className="p-4">
         <h3 className="text-lg font-semibold mb-2">{name}</h3>
