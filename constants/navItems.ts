@@ -15,10 +15,10 @@ export interface SubItem {
 }
 
 export const navItems: NavItem[] = [
-  { name: "Explore", href: "/dashboard", icon: Compass, subItems: [], isPublic: true },
+  { name: "Home", href: "/", icon: BookOpen, subItems: [] },
   { name: "My Learning", href: "/dashboard/dashboard", icon: BookOpen, subItems: [] },
   { name: "Quizzes", href: "/dashboard/quizzes", icon: BrainCircuit, subItems: [], isPublic: true },
-  { name: "Courses", href: "/dashboard/courses", icon: BookOpen, subItems: [], isPublic: true },
+  { name: "Courses", href: "/dashboard", icon: Compass, subItems: [], isPublic: true },
   { name: "Create ", href: "/dashboard/explore", icon: PlusCircle, subItems: [] },
   { name: "Subscriptions", href: "/dashboard/subscription", icon: CreditCard, subItems: [] },
 ];
