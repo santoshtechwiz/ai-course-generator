@@ -3,7 +3,7 @@
 import type React from "react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
-import { CourseAIErrors } from "@/app/types/types";
+import { CourseAIErrors, QuestionOpenEnded } from "@/app/types/types";
 import { QuizActions } from "../../mcq/components/QuizActions";
 import { useSession } from "next-auth/react";
 import { SignInPrompt } from "@/app/components/SignInPrompt";
@@ -15,21 +15,10 @@ import { submitQuizData } from "@/app/actions/actions";
 
 
 
-interface Question {
-  id: number;
-  question: string;
-  answer: string;
-  openEndedQuestion: {
-    hints: string;
-    difficulty: string;
-    tags: string;
-    inputType: string;
-  };
-}
 
 interface QuizData {
   id: number;
-  questions: Question[];
+  questions: QuestionOpenEnded[];
   topic: string;
   userId: string;
 }

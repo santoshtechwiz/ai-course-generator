@@ -1,25 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import {
-  CheckSquare,
-  Clock,
-  HelpCircle,
-  Zap,
-  Brain,
-  Target,
-  Sparkles,
-  CheckCircle2,
-  PenLine,
-  Puzzle,
-  Play,
-} from "lucide-react"
-import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { motion } from "framer-motion"
+import { Clock, HelpCircle, ChevronRight, CheckCircle2, PenLine, Puzzle, Code, Lock, Unlock } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import Link from "next/link"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 interface QuizCardProps {
@@ -36,48 +24,21 @@ const quizTypeIcons = {
   mcq: CheckCircle2,
   openended: PenLine,
   "fill-blanks": Puzzle,
-  code: PenLine,
+  code: Code,
 }
 
 const quizTypeColors = {
-  mcq: "text-blue-500 dark:text-blue-400",
-  openended: "text-green-500 dark:text-green-400",
-  "fill-blanks": "text-purple-500 dark:text-purple-400",
-  code: "text-yellow-500 dark:text-yellow-400",
+  mcq: "bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100",
+  openended: "bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100",
+  "fill-blanks": "bg-purple-100 text-purple-700 dark:bg-purple-700 dark:text-purple-100",
+  code: "bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100",
 }
 
 const quizTypeLabels = {
   mcq: "Multiple Choice",
   openended: "Open-Ended",
   "fill-blanks": "Fill in the Blanks",
-  code: "Code",
-}
-
-const quizTypeDescriptions = {
-  mcq: {
-    title: "Test Your Knowledge",
-    description: "Choose from carefully crafted options to demonstrate your understanding.",
-    benefits: ["Quick assessment", "Immediate feedback", "Clear right/wrong answers"],
-    icon: Target,
-  },
-  openended: {
-    title: "Express Your Understanding",
-    description: "Articulate your knowledge in your own words for deeper learning.",
-    benefits: ["Deep understanding", "Creative thinking", "Detailed explanations"],
-    icon: Brain,
-  },
-  "fill-blanks": {
-    title: "Complete the Puzzle",
-    description: "Fill in missing pieces to strengthen your recall ability.",
-    benefits: ["Memory enhancement", "Context understanding", "Precise learning"],
-    icon: Sparkles,
-  },
-  code: {
-    title: "Code Challenge",
-    description: "Write and test your coding skills with hands-on exercises.",
-    benefits: ["Practical application", "Syntax mastery", "Problem-solving skills"],
-    icon: PenLine,
-  },
+  code: "Code Challenge",
 }
 
 export const QuizCard: React.FC<QuizCardProps> = ({
@@ -89,101 +50,61 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   description,
   isPublic = false,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
   const QuizTypeIcon = quizTypeIcons[quizType]
-  const quizTypeInfo = quizTypeDescriptions[quizType]
-  const TypeBenefitIcon = quizTypeInfo.icon
   const colors = quizTypeColors[quizType]
 
   return (
-    <Card
-      className={cn(
-        "w-full max-w-sm mx-auto transition-all duration-300 hover:shadow-lg",
-        "transform hover:-translate-y-1",
-        isExpanded ? "shadow-lg" : "shadow",
-      )}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300, damping: 10 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <CardHeader>
-        <div className="flex items-center justify-between mb-2">
-          <Badge variant="secondary" className={cn("font-medium transition-colors", colors)}>
-            <QuizTypeIcon className="w-4 h-4 mr-1 transition-transform group-hover:scale-110" />
-            {quizTypeLabels[quizType]}
-          </Badge>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  {estimatedTime}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Estimated completion time</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">{questionCount} Questions</span>
+      <Card className="w-full max-w-lg mx-auto overflow-hidden transition-all duration-300 hover:shadow-lg">
+        <CardContent className="p-0">
+          <div className={cn("p-6 transition-colors duration-300", colors)}>
+            <div className="flex items-center justify-between mb-4">
+              <Badge variant="secondary" className="text-xs font-semibold uppercase">
+                {quizTypeLabels[quizType]}
+              </Badge>
+              <QuizTypeIcon className="w-6 h-6" />
+            </div>
+            <h3 className="text-2xl font-bold mb-2 line-clamp-2">{title}</h3>
+            <p className="text-base opacity-90 mb-4 line-clamp-2">{description}</p>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center">
+                <HelpCircle className="w-4 h-4 mr-1" />
+                <span>{questionCount} Questions</span>
+              </div>
+              <div className="flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
+                <span>{estimatedTime}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Boost Knowledge</span>
+          <div className="p-6">
+            <div className="mb-4">
+              <div className="text-sm font-medium mb-1">Completion Rate</div>
+              <Progress value={33} className="h-2" />
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-muted-foreground">{isPublic ? <Unlock /> : <Lock />}</div>
+              <Link href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`} passHref>
+                <Button variant="ghost" className="p-0 h-auto">
+                  <span className="mr-2">Start Quiz</span>
+                  <motion.div
+                    animate={{ x: isHovered ? 5 : 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </motion.div>
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              className="space-y-4 overflow-hidden"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-            >
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 20, opacity: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <h3 className={cn("text-lg font-semibold mb-2", colors)}>{quizTypeInfo.title}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{quizTypeInfo.description}</p>
-                <ul className="space-y-2">
-                  {quizTypeInfo.benefits.map((benefit, index) => (
-                    <motion.li
-                      key={index}
-                      className="flex items-center gap-2 text-sm"
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
-                    >
-                      <CheckSquare className={cn("w-4 h-4", colors)} />
-                      {benefit}
-                    </motion.li>
-                  ))}
-                </ul>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </CardContent>
-      <CardFooter className="flex justify-end">
-        <Link href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`} passHref>
-          <Button className={cn("transition-colors", colors)}>
-            <Play className="w-4 h-4 mr-2" />
-            Start Quiz
-          </Button>
-        </Link>
-      </CardFooter>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
-

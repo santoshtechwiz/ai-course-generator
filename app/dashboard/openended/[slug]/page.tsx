@@ -2,13 +2,13 @@
 import type { Metadata, ResolvingMetadata } from "next"
 import { notFound } from "next/navigation"
 import QuizPage from "./QuizPage"
+import { getQuiz } from "@/app/actions/getQuiz"
 
 
 async function getQuizData(slug: string) {
   try {
 
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/oquiz/${slug}`)
-    const data = await response.json()
+    const data = await getQuiz(slug)
     return data
   } catch (error) {
     console.error("Error fetching quiz data:", error)
@@ -58,7 +58,8 @@ const Page = async ({ params }: { params: Promise<{ slug: string }> }) => {
   if (!quizData) {
     return notFound()
   }
-  return <QuizPage slug={slug}  quizData={quizData}/>
+
+  return <QuizPage slug={slug} quizData={quizData} />
 }
 
 export default Page
