@@ -14,8 +14,10 @@ import { toast } from "@/hooks/use-toast"
 import { CourseCard } from "./CourseCard"
 import { CourseSidebar } from "./CourseSidebar"
 import { SkeletonCard } from "./SkeletonCard"
-
-
+import { SearchBar } from "./SearchBar"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu } from "lucide-react"
 
 interface CourseListProps {
   url: string
@@ -88,7 +90,6 @@ const CourseList: React.FC<CourseListProps> = ({ url, userId }) => {
 
   const courses = data?.pages.flatMap((page) => page.courses) || []
 
-
   if (status === "error") {
     toast({
       title: "Error",
@@ -97,23 +98,39 @@ const CourseList: React.FC<CourseListProps> = ({ url, userId }) => {
     })
   }
 
-  return (
-    <div className="flex min-h-screen">
+  const sidebar = (
+    <div className="space-y-4">
+      <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} handleClearSearch={handleClearSearch} />
       <CourseSidebar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
         selectedCategory={selectedCategory}
         handleCategoryChange={handleCategoryChange}
-        handleClearSearch={handleClearSearch}
         resetFilters={resetFilters}
         isPending={isFetchingNextPage}
       />
+    </div>
+  )
 
-      <div className="flex-1 p-6">
+  return (
+    <div className="flex flex-col lg:flex-row gap-8 min-h-screen">
+      <div className="md:hidden mb-4">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Menu className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+            {sidebar}
+          </SheetContent>
+        </Sheet>
+      </div>
+      <div className="hidden md:block md:w-64 md:pr-4 space-y-4">{sidebar}</div>
+      <div className="flex-1 space-y-4">
+        
         <AnimatePresence mode="wait">
           {status === "pending" ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 8 }).map((_, index) => (
                   <SkeletonCard key={index} />
                 ))}
@@ -133,7 +150,7 @@ const CourseList: React.FC<CourseListProps> = ({ url, userId }) => {
             </motion.div>
           ) : (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {courses.map((course: CourseCardProps) => (
                   <motion.div
                     key={course.id}
@@ -148,13 +165,9 @@ const CourseList: React.FC<CourseListProps> = ({ url, userId }) => {
               </div>
               {hasNextPage && (
                 <div className="mt-8 flex justify-center">
-                  <button
-                    onClick={() => fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                  >
+                  <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
                     {isFetchingNextPage ? "Loading..." : "Load More"}
-                  </button>
+                  </Button>
                 </div>
               )}
             </motion.div>
