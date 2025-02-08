@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
   const page = Number.parseInt(searchParams.get("page") || "1", 10)
   const limit = Number.parseInt(searchParams.get("limit") || "20", 10)
 
-  console.log("API received params:", { search, category, userId, page, limit }) // Debug log
 
   try {
     const where: Prisma.CourseWhereInput = {

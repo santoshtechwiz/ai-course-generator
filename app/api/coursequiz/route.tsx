@@ -63,7 +63,7 @@ async function fetchTranscriptOrSummary(chapterId: number, videoId: string): Pro
     });
 
     if (chapter && chapter.summary) {
-      console.log("Returning existing summary for chapter:", chapterId);
+
       return chapter.summary;
     }
 
