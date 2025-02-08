@@ -18,7 +18,7 @@ interface RandomQuestionsProps {
 }
 
 export default function RandomQuestions({ questions }: RandomQuestionsProps) {
-  console.log('questions', questions);
+
   return (
    
     <>
