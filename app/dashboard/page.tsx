@@ -1,8 +1,9 @@
 import { Suspense } from "react"
 
 import { getAuthSession } from "@/lib/authOptions"
-import CourseListSkeleton from "./courses/components/CourseListSkeleton"
-import CourseList from "./courses/components/CourseLists"
+import CourseList from "../components/courses/CourseLists"
+import CourseListSkeleton from "../components/courses/CourseListSkeleton"
+
 
 
 export const dynamic = "force-dynamic"

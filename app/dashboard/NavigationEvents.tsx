@@ -27,15 +27,17 @@ export function NavigationEvents() {
     const _push = router.push.bind(router);
 
     router.push = (href, options) => {
-      nProgress.start();
+      if (pathname !== "/") {
+        nProgress.start();
 
-      _push(href, options);
+        _push(href, options);
+      }
     };
   }, [])
 
   useEffect(() => {
     nProgress.done();
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, router]);
 
   return null;
 }

@@ -61,14 +61,14 @@ export async function POST(req: NextRequest) {
           await updateChapterSummaryStatus(chapterId, 'no_summary_available');
         }
       } catch (error) {
-        console.error(`Error processing summary for chapter ${chapterId}:`, error);
+        console.warn(`Error processing summary for chapter ${chapterId}:`, error);
         await updateChapterSummaryStatus(chapterId, 'error');
       }
     });
 
     return NextResponse.json({ success: true, message: "Summary generation task queued." });
   } catch (error) {
-    console.error(`Error processing summary:`, error);
+    console.warn(`Error processing summary:`, error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: "Invalid request body" }, { status: 400 });
     }
@@ -87,7 +87,7 @@ async function fetchAndGenerateSummary(videoId: string): Promise<string | null> 
   try {
     return await generateSummaryWithChunking(transcriptResponse.transcript);
   } catch (error) {
-    console.error(`Error generating summary for video ID ${videoId}:`, error);
+    console.warn(`Error generating summary for video ID ${videoId}:`, error);
     return null;
   }
 }

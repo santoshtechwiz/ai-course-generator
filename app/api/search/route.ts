@@ -86,6 +86,7 @@ export async function GET(request: Request) {
           { name: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
         ],
+        AND: [{ isPublic: true }],
       },
       select: {
         id: true,
@@ -98,7 +99,9 @@ export async function GET(request: Request) {
     // Search games in the database (only in topic field)
     const games = await prisma.userQuiz.findMany({
       where: {
-        topic: { contains: query, mode: 'insensitive' },
+        OR: [{ topic: { contains: query, mode: 'insensitive' } }],
+        AND: [{ isPublic: true }],
+       
       },
       select: {
         id: true,

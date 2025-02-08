@@ -5,12 +5,12 @@ class TranscriptAPI {
   static async getTranscript(id, config = {}) {
     const url = new URL('https://youtubetranscript.com');
     url.searchParams.set('server_vid2', id);
-    
+
     const
       response = await axios.get(url, config),
       $ = cheerio.load(response.data, undefined, false),
       err = $('error');
-  
+
     if (err.length) throw new Error(err.text());
     return $('transcript text').map((i, elem) => {
       const $a = $(elem);
@@ -28,7 +28,7 @@ class TranscriptAPI {
     url.searchParams.set('v', id);
     url.searchParams.set('id', 0);
     url.searchParams.set('lang', 'en');
-    
+
     try {
       await axios.get(url, config);
       return !0;
@@ -52,7 +52,7 @@ export async function getTranscriptForVideo(videoId: string) {
 
     // Limit the number of transcript items (e.g., first 300 items)
     const limitedTranscript = transcript.slice(0, 300);
-    
+
     const transcriptText = limitedTranscript
       .map(item => item.text)
       .filter((text: string) => text.trim() !== '') // Remove empty strings
@@ -65,7 +65,12 @@ export async function getTranscriptForVideo(videoId: string) {
       transcript: transcriptText,
     };
   } catch (error) {
-    console.error("Error fetching transcript:", error);
-    throw new Error(`Error fetching transcript: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.warn("Error in getTranscriptForVideo:", error)
+    return {
+      status: 500,
+      message: `Error processing transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
+      transcript: null,
+    }
+
   }
 }

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 
 import FeatureSections from "@/app/components/landing/FeatureSection"
 import HowItWorks from "@/app/components/landing/HowItWorks"
-import LandingCTA from "@/app/components/landing/LandingCTA"
+
 import LandingHero from "./LandingHero"
 import FAQSection from "./FaqSection"
 import LandingHeader from "./LanndingHeader"
@@ -166,9 +166,7 @@ export default function LandingComponent({ sections = defaultSections }: Landing
           </Element>
         ))}
 
-        <section className="py-12 px-4">
-          <LandingCTA handleSignInClick={handleSignInClick} />
-        </section>
+       
       </main>
 
       <motion.div
