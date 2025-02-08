@@ -126,7 +126,6 @@ const CourseList: React.FC<CourseListProps> = ({ url, userId }) => {
       </div>
       <div className="hidden md:block md:w-64 md:pr-4 space-y-4">{sidebar}</div>
       <div className="flex-1 space-y-4">
-        
         <AnimatePresence mode="wait">
           {status === "pending" ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
