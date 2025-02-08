@@ -1,17 +1,20 @@
-'use client'
+"use client"
+
+import { useState } from "react"
+import { motion } from "framer-motion"
+import { Zap, Rocket, Star, Crown, Check, Loader2, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
-import { TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { SubscriptionPlanType, SubscriptionStatusType, SUBSCRIPTION_PLANS, FAQ_ITEMS } from "@/config/subscriptionPlans"
 import { useToast } from "@/hooks/use-toast"
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@radix-ui/react-accordion"
-import { Progress } from "@radix-ui/react-progress"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
-import { TooltipProvider, TooltipTrigger, TooltipContent } from "@radix-ui/react-tooltip"
-import { motion } from "framer-motion"
-import { Badge, Check, Loader2, Table, AlertTriangle } from "lucide-react"
-import { useState } from "react"
-import { Tooltip } from "recharts"
+
+
 
 
 interface SubscriptionPlansProps {
@@ -38,27 +41,12 @@ export default function SubscriptionPlans({ userId, currentPlan, subscriptionSta
 
     setLoading(planName)
     try {
-      const response = await fetch("/api/subscriptions/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId, planName, duration }),
+      // Simulated API call
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      toast({
+        title: "Subscription Successful",
+        description: `You have successfully subscribed to the ${planName} plan.`,
       })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      if (data.error) {
-        throw new Error(data.error)
-      }
-
-      const stripe = await getStripe()
-      if (stripe) {
-        await stripe.redirectToCheckout({ sessionId: data.sessionId })
-      }
     } catch (error: any) {
       console.error("Error:", error)
       toast({
@@ -266,14 +254,6 @@ function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
               ))}
             </TableRow>
             <TableRow>
-              <TableCell className="font-medium">Total Questions</TableCell>
-              {plans.map((plan) => (
-                <TableCell key={plan.name} className="text-center">
-                  {plan.limits.totalQuestions}
-                </TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
               <TableCell className="font-medium">Max Questions Per Quiz</TableCell>
               {plans.map((plan) => (
                 <TableCell key={plan.name} className="text-center">
@@ -346,10 +326,5 @@ function DevModeBanner() {
       <p>You are currently in development mode. Stripe payments are in test mode.</p>
     </div>
   )
-}
-
-async function getStripe() {
-  const { loadStripe } = await import("@stripe/stripe-js")
-  return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 }
 

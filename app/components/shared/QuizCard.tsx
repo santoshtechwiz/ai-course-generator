@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Clock, HelpCircle, ChevronRight, CheckCircle2, PenLine, Puzzle, Code, Lock, Unlock } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -61,36 +61,38 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Card className="w-full max-w-lg mx-auto overflow-hidden transition-all duration-300 hover:shadow-lg">
-        <CardContent className="p-0">
-          <div className={cn("p-6 transition-colors duration-300", colors)}>
-            <div className="flex items-center justify-between mb-4">
-              <Badge variant="secondary" className="text-xs font-semibold uppercase">
-                {quizTypeLabels[quizType]}
-              </Badge>
-              <QuizTypeIcon className="w-6 h-6" />
+      <Card className="flex flex-col h-[400px] overflow-hidden transition-all duration-300 hover:shadow-lg">
+        <CardContent className={cn("flex-grow p-6 transition-colors duration-300", colors)}>
+          <div className="flex items-center justify-between mb-4">
+            <Badge variant="secondary" className="text-xs font-semibold uppercase">
+              {quizTypeLabels[quizType]}
+            </Badge>
+            <QuizTypeIcon className="w-6 h-6" />
+          </div>
+          <h3 className="text-xl font-bold mb-2 line-clamp-2">{title}</h3>
+          <p className="text-sm opacity-90 mb-4 line-clamp-3 flex-grow">{description}</p>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center">
+              <HelpCircle className="w-4 h-4 mr-1" />
+              <span>{questionCount} Questions</span>
             </div>
-            <h3 className="text-2xl font-bold mb-2 line-clamp-2">{title}</h3>
-            <p className="text-base opacity-90 mb-4 line-clamp-2">{description}</p>
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center">
-                <HelpCircle className="w-4 h-4 mr-1" />
-                <span>{questionCount} Questions</span>
-              </div>
-              <div className="flex items-center">
-                <Clock className="w-4 h-4 mr-1" />
-                <span>{estimatedTime}</span>
-              </div>
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              <span>{estimatedTime}</span>
             </div>
           </div>
-          <div className="p-6">
+        </CardContent>
+        <CardFooter className="p-4 bg-background">
+          <div className="w-full">
             <div className="mb-4">
               <div className="text-sm font-medium mb-1">Completion Rate</div>
               <Progress value={33} className="h-2" />
             </div>
             <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">{isPublic ? <Unlock /> : <Lock />}</div>
-              <Link href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`} passHref>
+              <div className="text-sm text-muted-foreground">
+                {isPublic ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+              </div>
+              <Link href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}>
                 <Button variant="ghost" className="p-0 h-auto">
                   <span className="mr-2">Start Quiz</span>
                   <motion.div
@@ -103,8 +105,9 @@ export const QuizCard: React.FC<QuizCardProps> = ({
               </Link>
             </div>
           </div>
-        </CardContent>
+        </CardFooter>
       </Card>
     </motion.div>
   )
 }
+
