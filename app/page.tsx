@@ -1,15 +1,28 @@
-import React from 'react';
-import LandingComponent from './components/landing/LandingComponent';
+"use client"
 
+import { SparklesCore } from "./components/animations/sparkles"
+import LandingComponent from "./components/landing/LandingComponent"
 
-const Dashboard = () => {
+export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="flex-grow p-2 md:p-4">
-      <LandingComponent />
+    <main className="min-h-screen bg-background antialiased relative overflow-hidden">
+      {/* Ambient background with moving particles */}
+      <div className="h-full w-full absolute inset-0 z-0">
+        <SparklesCore
+          id="tsparticlesfullpage"
+          background="transparent"
+          minSize={0.6}
+          maxSize={1.4}
+          particleDensity={100}
+          className="w-full h-full"
+          particleColor="#FFFFFF"
+          theme="dark" 
+        />
       </div>
-    </div>
-  );
-};
 
-export default Dashboard;
+      <div className="relative z-10">
+        <LandingComponent />
+      </div>
+    </main>
+  )
+}

@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button"
 import FeatureSections from "@/app/components/landing/FeatureSection"
 import HowItWorks from "@/app/components/landing/HowItWorks"
 
-import LandingHero from "./LandingHero"
+
+
 import FAQSection from "./FaqSection"
-import LandingHeader from "./LanndingHeader"
+import Hero from "./hero"
+import Navbar from "./LandingNavbar"
 
-
-// Dynamically import heavy components
-const ShowcaseSection = dynamic(() => import("./ShowcaseSection"), { ssr: false })
+const ShowcaseSection = dynamic(() => import("./ShowCaseCarousel").then(mod => mod.default), { ssr: false })
 const TestimonialsSection = dynamic(() => import("./TestimonialsSection"), { ssr: false })
 const AboutUs = dynamic(() => import("@/app/about/AboutUs"), { ssr: false })
 
@@ -135,9 +135,9 @@ export default function LandingComponent({ sections = defaultSections }: Landing
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      <LandingHeader />
+      <Navbar />
       <main className="space-y-16 pb-16">
-        <LandingHero onTopicSubmit={handleTopicSubmit} />
+        <Hero  />
 
         {sections.map((section, index) => (
           <Element key={section.key} name={section.key}>
