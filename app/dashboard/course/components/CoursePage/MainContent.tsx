@@ -13,7 +13,6 @@ import { useSession } from "next-auth/react"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import type { CourseProgress } from "@prisma/client"
 import { useToast } from "@/hooks/use-toast"
-import { UseProgressProps } from "@/hooks/useProgress"
 
 const VideoPlayerEnhanced = dynamic(() => import("./VideoPlayerEnhanced"), {
   ssr: false,
@@ -247,4 +246,3 @@ export default function MainContent(props: MainContentProps) {
     </div>
   )
 }
-

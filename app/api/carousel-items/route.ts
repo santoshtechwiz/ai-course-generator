@@ -22,24 +22,27 @@ export async function GET() {
         slug: true,
         id: true,
         topic: true,
+        quizType: true,
       },
       })
     ])
 
     const carouselItems = [
       ...courses.map(course => ({
-        id: course.id,
-        name: course.name,
-        slug: course.slug,
-        description: course.description || 'No description available',
-        type: 'course' as const,
+      id: course.id,
+      name: course.name,
+      slug: course.slug,
+      quizType: 'course',
+      description: course.description || `Learn more about ${course.name} in this comprehensive course.`,
+      type: 'course' as const,
       })),
       ...quizzes.map(quiz => ({
-        id: quiz.id,
-        name: quiz.topic,
-        slug: quiz.slug,
-        description: 'Test your knowledge on this topic!',
-        type: 'quiz' as const,
+      id: quiz.id,
+      name: quiz.topic,
+      slug: quiz.slug,
+      description: `Test your knowledge on ${quiz.topic} with this engaging quiz.`,
+      quizType: quiz.quizType,
+      type: 'quiz' as const,
       })),
     ]
 

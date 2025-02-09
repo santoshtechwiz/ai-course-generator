@@ -32,7 +32,7 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium' }) => {
   };
 
   return (
-    <Link href="/" className="flex items-center space-x-2">
+   <div className='inline'>
       <motion.div
         initial="hidden"
         animate="visible"
@@ -105,7 +105,7 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium' }) => {
       >
         CourseAI
       </motion.span>
-    </Link>
+      </div>
   );
 };
 
