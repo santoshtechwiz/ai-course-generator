@@ -1,7 +1,7 @@
-import { getAuthSession } from "@/lib/authOptions"
 import { Suspense } from "react"
-import CourseList from "./(dahboard)/components/CourseLists"
-import CourseListSkeleton from "./(dahboard)/components/CourseListSkeleton"
+import { getAuthSession } from "@/lib/authOptions"
+import CourseListSkeleton from "./components/CourseListSkeleton"
+import CourseList from "./components/CourseLists"
 
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL

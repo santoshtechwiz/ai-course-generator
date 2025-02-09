@@ -22,11 +22,10 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
   handleCategoryChange,
   handleClearSearch,
   resetFilters,
-  
   courseTypes,
 }) => {
   return (
-    <div className="lg:w-1/4 space-y-6 p-4 bg-gray-100">
+    <div className="w-full lg:w-[300px] space-y-6 p-4 bg-gray-100 h-full">
       <CourseSearchBar
         search={searchQuery}
         onSearchChange={(e) => setSearchQuery(e.target.value)}

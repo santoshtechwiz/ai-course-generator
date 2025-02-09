@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server"
+import { NextResponse, URLPattern } from "next/server"
 import type { NextRequest } from "next/server"
 
 import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
 import { trackServerSideInteraction } from "@/lib/tracking"
-
-
+import { viewCountStore } from "./lib/viewCountStore"
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
@@ -50,12 +49,28 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-
   // Track user interaction
   const userId = req.cookies.get("userId")?.value
   if (userId) {
     const interactionType = "page_view"
     trackServerSideInteraction(userId, interactionType, pathname)
+  }
+
+  const coursePattern = new URLPattern({ pathname: "/dashboard/course/:slug" })
+  const match = coursePattern.exec(req.nextUrl)
+
+  if (match) {
+    const slug = match.pathname.groups.slug
+    if (slug) {
+      // Send a request to increment view count
+      fetch(`${req.nextUrl.origin}/api/increment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ slug }),
+      }).catch((error) => console.error("Error incrementing view count:", error))
+    }
   }
 
   const response = NextResponse.next()

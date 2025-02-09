@@ -79,7 +79,7 @@ model Course {
   name           String
   description    String?
   image          String
-  viewCount      Int      @default(0)
+  viewCount      Int      @default(1000)
   userId         String   @map("user_id")
   categoryId     Int?
   isCompleted    Boolean? @default(false)
