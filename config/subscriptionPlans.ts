@@ -92,7 +92,7 @@ const FAQ_ITEMS = [
   {
     question: "Can I upgrade or downgrade my plan?",
     answer:
-      "Yes, you can change your plan at any time. If you upgrade, you'll have immediate access to the new features. If you downgrade, the changes will take effect at the start of your next billing cycle.",
+      ", you can change your plan at any time. If you upgrade, you'll have immediate access to the new features. If you downgrade, the changes will take effect at the start of your next billing cycle.",
   },
   {
     question: "What happens if I use all my tokens?",
@@ -102,7 +102,7 @@ const FAQ_ITEMS = [
   {
     question: "Is there a refund policy?",
     answer:
-      "We offer a 14-day money-back guarantee for all paid plans. If you're not satisfied with our service, you can request a full refund within this period.",
+      "There is no refund policy for unused tokens. If you cancel your subscription, you'll have access to your plan until the end of the billing cycle.",
   },
 ]
  type SubscriptionPlanType = (typeof SUBSCRIPTION_PLANS)[number]["name"]
