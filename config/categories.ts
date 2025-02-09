@@ -115,7 +115,7 @@ import {
       icon: Activity,
       color: 'bg-teal-500/10 hover:bg-teal-500/20 border-teal-500/20 data-[state=checked]:border-teal-500 data-[state=checked]:text-teal-500'
     }
-  ] as const;
+  ] ;
   
   export type CategoryId = typeof categories[number]['id'];
   
