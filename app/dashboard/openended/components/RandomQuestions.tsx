@@ -30,7 +30,7 @@ export default function RandomQuestions({ questions }: RandomQuestionsProps) {
           description={question.description}
          
           questionCount={question.count}
-          isTrending={true}
+        
           slug={question.slug}
           quizType="openended" estimatedTime={''} />
       ))}
