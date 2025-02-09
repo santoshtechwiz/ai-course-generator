@@ -32,7 +32,8 @@ interface MainContentProps {
   onTimeUpdate: (time: number) => void
   progress?: Partial<CourseProgress> 
   onChapterComplete?: (chapterId: number) => void
-  planId?: string
+  planId?: string,
+  isLastVideo: boolean
 }
 
 interface ErrorFallbackProps {
@@ -75,6 +76,7 @@ interface VideoPlayerProps {
   onChapterComplete?: (chapterId: number) => void
   course: FullCourseType
   onVideoSelect: (videoId: string) => void
+  isLastVideo: boolean
 }
 
 const VideoPlayer = ({
@@ -86,6 +88,7 @@ const VideoPlayer = ({
   onChapterComplete,
   course,
   onVideoSelect,
+  isLastVideo
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLDivElement>(null)
   const [currentVideoId, setCurrentVideoId] = useState(initialVideoId)
@@ -233,6 +236,7 @@ export default function MainContent(props: MainContentProps) {
             onChapterComplete={props.onChapterComplete}
             course={props.course}
             onVideoSelect={props.onVideoSelect}
+            isLastVideo={props.isLastVideo}
           />
         </div>
 

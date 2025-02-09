@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
           image: true,
           slug: true,
           userId: true,
+          viewCount: true,
           category: {
             select: {
               id: true,
@@ -94,6 +95,7 @@ export async function GET(req: NextRequest) {
       image: course.image,
       rating: course.ratings[0]?.rating || 0,
       slug: course.slug || "",
+      viewCount: course.viewCount,
       categoryId: course.category?.name as CategoryId,
       category: course.category
         ? {

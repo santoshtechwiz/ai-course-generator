@@ -20,7 +20,8 @@ export interface CourseDetailsTabsProps {
   name: string
   course: FullCourseType
   chapter: FullChapterType
-}
+  planId?: string
+  }
 
 const CourseAISummary = dynamic(() => import("./CourseAISummary"), { ssr: false })
 const CourseDetailsQuiz = dynamic(() => import("./CourseDetailsQuiz"), { ssr: false })
