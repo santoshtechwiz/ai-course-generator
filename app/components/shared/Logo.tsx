@@ -1,7 +1,6 @@
 'use client'
 import React from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 
 interface LogoProps {
   size?: 'small' | 'medium' | 'large';
@@ -18,27 +17,23 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium' }) => {
 
   const draw = {
     hidden: { pathLength: 0, opacity: 0 },
-    visible: (i: number) => {
-      const delay = i * 0.5;
-      return {
-        pathLength: 1,
-        opacity: 1,
-        transition: {
-          pathLength: { delay, type: "spring", duration: 1.5, bounce: 0 },
-          opacity: { delay, duration: 0.01 },
-        },
-      };
-    },
+    visible: (i: number) => ({
+      pathLength: 1,
+      opacity: 1,
+      transition: {
+        pathLength: { delay: i * 0.5, type: 'spring', duration: 1.5, bounce: 0 },
+        opacity: { delay: i * 0.5, duration: 0.01 },
+      },
+    }),
   };
 
   return (
-   <div className='inline'>
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        className="relative"
-        style={{ width, height }}
-      >
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      className="flex items-center gap-2" // Ensures proper alignment
+    >
+      <div style={{ width, height }} className="flex-shrink-0">
         <svg
           width={width}
           height={height}
@@ -56,7 +51,7 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium' }) => {
             className="text-primary"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
           />
 
           {/* Neural network lines */}
@@ -79,10 +74,10 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium' }) => {
             custom={2}
           />
 
-          {/* AI text */}
+          {/* AI text inside the circle */}
           <motion.text
             x="50"
-            y="55"
+            y="58" /* Adjusted for proper centering */
             textAnchor="middle"
             fontSize="24"
             fontWeight="bold"
@@ -95,9 +90,11 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium' }) => {
             AI
           </motion.text>
         </svg>
-      </motion.div>
+      </div>
+
+      {/* CourseAI Text */}
       <motion.span
-        className={`font-bold text-primary tracking-tight`}
+        className="font-bold text-primary tracking-tight"
         style={{ fontSize: `${fontSize}px` }}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -105,9 +102,8 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium' }) => {
       >
         CourseAI
       </motion.span>
-      </div>
+    </motion.div>
   );
 };
 
 export default Logo;
-

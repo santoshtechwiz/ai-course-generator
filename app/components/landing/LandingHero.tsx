@@ -37,14 +37,14 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
 
   return (
     <Element name="hero">
-      <section className="pt-32 pb-20 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-12">
-            <div className="text-center space-y-8">
+      <section className="py-12 md:py-24 lg:py-32">
+        <div className="container px-4 md:px-6">
+          <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-8 md:space-y-12">
+            <div className="text-center space-y-4">
               <RevealAnimation>
-                <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
                   Create AI-Powered Courses
-                  <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                     {" "}
                     in Minutes
                   </span>
@@ -52,23 +52,22 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
               </RevealAnimation>
 
               <RevealAnimation delay={0.2}>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
                   Transform your knowledge into engaging courses with AI-generated content, interactive quizzes, and
                   personalized learning paths.
                 </p>
               </RevealAnimation>
 
               <RevealAnimation delay={0.4}>
-                <form onSubmit={handleTopicSubmit} className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
+                <form onSubmit={handleTopicSubmit} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
                   <Input
                     type="text"
                     placeholder="Enter a course topic..."
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    className="h-12 text-lg flex-grow"
-                    aria-label="Course topic"
+                    className="flex-grow"
                   />
-                  <Button type="submit" size="lg" className="h-12 px-8 w-full sm:w-auto">
+                  <Button type="submit" size="lg" className="w-full sm:w-auto">
                     Generate Course
                   </Button>
                 </form>
@@ -76,12 +75,8 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
             </div>
 
             <RevealAnimation delay={0.6}>
-              <div className="max-w-4xl mx-auto w-full">
-                <main className="min-h-screen bg-gradient-to-b from-background to-background/80 flex items-center justify-center p-4">
-                  <div className="w-full">
-                    <FeatureVideo />
-                  </div>
-                </main>
+              <div className="mx-auto max-w-5xl w-full">
+                <FeatureVideo />
               </div>
             </RevealAnimation>
           </motion.div>

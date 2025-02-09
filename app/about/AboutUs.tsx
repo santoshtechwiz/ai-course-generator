@@ -38,55 +38,58 @@ const sections = [
 
 const AboutUs = () => {
   return (
-    <section className="py-12 px-4 max-w-5xl mx-auto space-y-12">
-      <motion.div
-        className="grid gap-8 md:grid-cols-2"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          visible: {
-            transition: {
-              staggerChildren: 0.1,
+    <section className="py-4 md:py-24 lg:py-32 bg-gradient-to-b from-background to-secondary/20">
+      <div className="container px-4 md:px-6">
+        <motion.div
+          className="grid gap-8 md:grid-cols-2"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: {
+              transition: {
+                staggerChildren: 0.1,
+              },
             },
-          },
-        }}
-      >
-        {sections.map((section, index) => (
-          <motion.div
-            key={section.title}
-            variants={{
-              hidden: { opacity: 0, y: 20 },
-              visible: { opacity: 1, y: 0 },
-            }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 h-full">
-              <CardContent className="p-6 space-y-4 h-full flex flex-col">
-                <div className="flex items-center space-x-4">
-                  <div className={`p-2 rounded-full ${section.color} bg-opacity-20`}>
-                    <section.icon className={`w-6 h-6 ${section.color.replace("bg-", "text-")}`} />
+          }}
+        >
+          {sections.map((section, index) => (
+            <motion.div
+              key={section.title}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 },
+              }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 h-full">
+                <CardContent className="p-6 space-y-4 h-full flex flex-col">
+                  <div className="flex items-center space-x-4">
+                    <div className={`p-2 rounded-full ${section.color} bg-opacity-20`}>
+                      <section.icon className={`w-6 h-6 ${section.color.replace("bg-", "text-")}`} />
+                    </div>
+                    <h2 className="text-xl font-semibold">{section.title}</h2>
                   </div>
-                  <h2 className="text-xl font-semibold">{section.title}</h2>
-                </div>
-                <p className="text-muted-foreground flex-grow">{section.description}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </motion.div>
+                  <p className="text-muted-foreground flex-grow">{section.description}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
 
-      <motion.div
-        className="text-center"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
-      >
-        <Button size="lg" className="px-8 py-3 text-lg" onClick={() => window.location.href = "/contactus"}>
-          Get in Touch
-        </Button>
-      </motion.div>
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          <Button size="lg" className="px-8 py-3 text-lg" onClick={() => (window.location.href = "/contactus")}>
+            Get in Touch
+          </Button>
+        </motion.div>
+      </div>
     </section>
   )
 }
 
 export default AboutUs
+
