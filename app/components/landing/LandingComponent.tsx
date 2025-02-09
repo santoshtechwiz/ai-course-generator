@@ -3,49 +3,29 @@
 import { useRef, useState, useEffect, useCallback } from "react"
 import { motion, type Variants } from "framer-motion"
 import { Element } from "react-scroll"
-import { ArrowUp } from "lucide-react"
+import { ArrowUp, Sparkles, Lightbulb, Laptop, MessageSquare, Users, HelpCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import type React from "react"
 
 import FeatureSections from "@/app/components/landing/FeatureSection"
 import HowItWorks from "@/app/components/landing/HowItWorks"
-
-
-
 import FAQSection from "./FaqSection"
-import Hero from "./hero"
 import Navbar from "./LandingNavbar"
+import LandingHero from "./LandingHero"
 
-const ShowcaseSection = dynamic(() => import("./ShowCaseCarousel").then(mod => mod.default), { ssr: false })
+const ShowcaseSection = dynamic(() => import("./ShowCaseCarousel"), { ssr: false })
 const TestimonialsSection = dynamic(() => import("./TestimonialsSection"), { ssr: false })
 const AboutUs = dynamic(() => import("@/app/about/AboutUs"), { ssr: false })
 
-// Animation variants
 const fadeInUp: Variants = {
-  hidden: { y: 60, opacity: 0 },
+  hidden: { y: 40, opacity: 0 },
   visible: {
     y: 0,
     opacity: 1,
-    transition: { type: "spring", stiffness: 100, damping: 20 },
-  },
-}
-
-const fadeInLeft: Variants = {
-  hidden: { x: -60, opacity: 0 },
-  visible: {
-    x: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 100, damping: 20 },
-  },
-}
-
-const fadeInRight: Variants = {
-  hidden: { x: 60, opacity: 0 },
-  visible: {
-    x: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 100, damping: 20 },
+    transition: { type: "spring", stiffness: 80, damping: 15 },
   },
 }
 
@@ -57,13 +37,13 @@ const stagger: Variants = {
   },
 }
 
-// Type definitions
 type SectionConfig = {
   key: string
   title: string
   description: string
   Component: React.ComponentType<any>
   props?: any
+  icon: React.ElementType
 }
 
 type LandingComponentProps = {
@@ -71,53 +51,20 @@ type LandingComponentProps = {
 }
 
 const defaultSections: SectionConfig[] = [
- 
-  {
-    key: "features",
-    title: "Features",
-    description: "",
-    Component: FeatureSections,
-  },
-  {
-    key: "how-it-works",
-    title: "How it Works",
-    description: "Learn how it all works.",
-    Component: HowItWorks,
-  },
-  {
-    key: "showcase",
-    title: "Explore Our Platform",
-    description: "Discover a world of interactive courses and engaging quizzes designed to enhance your learning experience.",
-    Component: ShowcaseSection,
-  },
-  {
-    key: "testimonials",
-    title: "Testimonials",
-    description: "Hear what our customers say.",
-    Component: TestimonialsSection,
-  },
-  {
-    key: "about",
-    title: "About Us",
-    description: "Learn more about us.",
-    Component: AboutUs,
-  },
-  {
-    key: "faq",
-    title: "FAQ",
-    description: "Frequently Asked Questions",
-    Component: FAQSection,
-  },
+  { key: "features", title: "Features", description: "Discover unique platform features", Component: FeatureSections, icon: Sparkles },
+  { key: "how-it-works", title: "How it Works", description: "Learn how our platform empowers learning", Component: HowItWorks, icon: Lightbulb },
+  { key: "showcase", title: "Explore Our Platform", description: "Interactive courses and engaging quizzes", Component: ShowcaseSection, icon: Laptop },
+  { key: "testimonials", title: "Testimonials", description: "What our users say", Component: TestimonialsSection, icon: MessageSquare },
+  { key: "about", title: "About Us", description: "Meet our team", Component: AboutUs, icon: Users },
+  { key: "faq", title: "FAQ", description: "Answers to common questions", Component: FAQSection, icon: HelpCircle },
 ]
 
 export default function LandingComponent({ sections = defaultSections }: LandingComponentProps) {
   const router = useRouter()
   const [showScrollTop, setShowScrollTop] = useState(false)
-  const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   const handleScroll = useCallback(() => {
-    const scrollY = window.scrollY
-    setShowScrollTop(scrollY > 300)
+    setShowScrollTop(window.scrollY > 300)
   }, [])
 
   useEffect(() => {
@@ -125,67 +72,42 @@ export default function LandingComponent({ sections = defaultSections }: Landing
     return () => window.removeEventListener("scroll", handleScroll)
   }, [handleScroll])
 
-  const handleTopicSubmit = useCallback((topic: string) => {
-    console.log("Topic submitted:", topic)
-  }, [])
-
-  const handleSignInClick = useCallback(() => {
-    router.push("/sign-in")
-  }, [router])
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <Navbar />
-      <main className="space-y-16 pb-16">
-        <Hero  />
+      <main className="flex-grow">
+        <LandingHero onTopicSubmit={function (topic: string): void {
+          throw new Error("Function not implemented.")
+        } } />
 
         {sections.map((section, index) => (
           <Element key={section.key} name={section.key}>
-            <section
-              ref={(el) => (sectionRefs.current[section.key] = el)}
-              className={`py-12 px-4 ${index % 2 === 1 ? "bg-muted/20" : ""}`}
-            >
-              <motion.div
-                className="container mx-auto max-w-6xl"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={index % 2 === 0 ? fadeInLeft : fadeInRight}
-              >
-                <motion.div variants={stagger} className="space-y-8">
-                  <motion.div variants={fadeInUp}>
-                    <motion.div variants={fadeInUp} className="text-center space-y-2 mb-8">
-                      <h2 className="text-2xl font-bold text-primary text-gradient capitalize">{section.title}</h2>
-                      <p className="text-muted-foreground max-w-2xl mx-auto text-sm">{section.description}</p>
-                    </motion.div>
-                    <section.Component {...(section.props || {})} handleSignInClick={handleSignInClick} />
-                  </motion.div>
+            {index !== 0 && <Separator className="my-4 md:my-16" />}
+            <section className="py-4 md:py-16 lg:py-20 px-6 md:px-12 max-w-5xl mx-auto">
+              <motion.div initial={false} whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+                <motion.div variants={fadeInUp} className="text-center space-y-4 mb-6">
+                  <div className="flex justify-center items-center mb-3">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <section.icon className="w-6 h-6 text-primary" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl md:text-4xl font-bold text-primary">{section.title}</h2>
+                  <p className="text-muted-foreground text-lg sm:text-xl">{section.description}</p>
+                </motion.div>
+                <motion.div variants={fadeInUp}>
+                  <section.Component {...(section.props || {})} />
                 </motion.div>
               </motion.div>
             </section>
           </Element>
         ))}
-
-       
       </main>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showScrollTop ? 1 : 0 }}
-        transition={{ duration: 0.3 }}
-        className="fixed bottom-4 right-4 z-50"
-      >
-        <Button
-          variant="default"
-          size="sm"
-          className="rounded-full shadow-lg"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          aria-label="Scroll to top"
-        >
+      <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: showScrollTop ? 1 : 0, scale: showScrollTop ? 1 : 0.8 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="fixed bottom-4 right-4 z-50">
+        <Button variant="default" size="icon" className="rounded-full shadow-lg bg-primary hover:bg-primary/90" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
           <ArrowUp className="h-4 w-4" />
         </Button>
       </motion.div>
     </div>
   )
 }
-

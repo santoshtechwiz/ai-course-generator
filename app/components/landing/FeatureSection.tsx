@@ -79,7 +79,7 @@ const FeatureSections = () => {
 
   return (
     <Element name="features">
-      <section ref={sectionRef} className="py-20 px-4 bg-gradient-to-b from-background to-secondary/20">
+      <section ref={sectionRef} className="py-4 px-4 bg-gradient-to-b from-background to-secondary/20">
         <div className="container mx-auto max-w-6xl">
           <motion.div initial="hidden" animate={controls} variants={stagger} className="space-y-12">
             <motion.div variants={stagger} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
