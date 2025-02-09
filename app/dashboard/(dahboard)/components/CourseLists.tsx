@@ -1,36 +1,34 @@
-"use client"
+"use client";
 
-import React from "react"
-import { CourseSidebar } from "./CourseSidebar"
-import CoursesClient from "./CoursesClient"
-import { categories, type CategoryId } from "@/config/categories"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
-import { Menu } from "lucide-react"
+import React from "react";
+import { CourseSidebar } from "./CourseSidebar";
+import CoursesClient from "./CoursesClient";
+import { categories, type CategoryId } from "@/config/categories";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 
 interface CourseListProps {
-  url: string
-  userId?: string
+  url: string;
+  userId?: string;
 }
 
 const CourseList: React.FC<CourseListProps> = ({ url, userId }) => {
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [selectedCategory, setSelectedCategory] = React.useState<CategoryId | null>(null)
-  const [courseTypes] =
-    React.useState<Array<{ id: CategoryId; label: string; icon: React.ElementType; color: string }>>(categories)
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedCategory, setSelectedCategory] = React.useState<CategoryId | null>(null);
 
   const handleClearSearch = React.useCallback(() => {
-    setSearchQuery("")
-  }, [])
+    setSearchQuery("");
+  }, []);
 
   const handleCategoryChange = React.useCallback((categoryId: CategoryId | null) => {
-    setSelectedCategory(categoryId)
-  }, [])
+    setSelectedCategory(categoryId);
+  }, []);
 
   const resetFilters = React.useCallback(() => {
-    setSearchQuery("")
-    setSelectedCategory(null)
-  }, [])
+    setSearchQuery("");
+    setSelectedCategory(null);
+  }, []);
 
   return (
     <div className="flex min-h-screen">
@@ -49,7 +47,7 @@ const CourseList: React.FC<CourseListProps> = ({ url, userId }) => {
             handleClearSearch={handleClearSearch}
             resetFilters={resetFilters}
             isPending={false}
-            courseTypes={courseTypes}
+            courseTypes={categories}
           />
         </SheetContent>
       </Sheet>
@@ -62,13 +60,12 @@ const CourseList: React.FC<CourseListProps> = ({ url, userId }) => {
           handleClearSearch={handleClearSearch}
           resetFilters={resetFilters}
           isPending={false}
-          courseTypes={courseTypes}
+          courseTypes={categories}
         />
       </div>
-      <CoursesClient url={url} userId={userId} searchQuery={searchQuery} />
+      <CoursesClient url={url} userId={userId} searchQuery={searchQuery} selectedCategory={selectedCategory} />
     </div>
-  )
-}
+  );
+};
 
-export default CourseList
-
+export default CourseList;

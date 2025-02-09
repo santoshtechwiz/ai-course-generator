@@ -9,14 +9,13 @@ import useProgress from "@/hooks/useProgress"
 import type { FullChapterType, FullCourseType } from "@/app/types/types"
 import { useUser } from "@/app/providers/userContext"
 import throttle from "lodash.throttle"
-import PriorityQueue from "@/lib/PriorityQueue"
 import { useSearchParams } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Menu, VideotapeIcon, X } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
+import { VideotapeIcon, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AnimatePresence, motion } from "framer-motion"
 
 interface State {
   selectedVideoId: string | undefined
@@ -74,98 +73,41 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   })
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSmallScreen, setIsSmallScreen] = useState(false)
+  const [isLastVideo, setIsLastVideo] = useState(false)
   const { data: session } = useSession()
   const { toast } = useToast()
   const isInitialMount = useRef(true)
   const hasSetInitialVideo = useRef(false)
 
-  const videoQueue = useMemo(() => {
-    const queue = new PriorityQueue<{
-      videoId: string
-      chapterId: number
-      unitId: number
-      chapter: FullChapterType
-    }>()
+  const videoPlaylist = useMemo(() => {
+    const playlist: { videoId: string; chapter: FullChapterType }[] = []
 
-    course.courseUnits?.forEach((unit, unitIndex) => {
+    course.courseUnits?.forEach((unit) => {
       unit.chapters
         .filter(
           (chapter): chapter is FullChapterType & { videoId: string } =>
             "videoId" in chapter && Boolean(chapter.videoId),
         )
-        .forEach((chapter, chapterIndex) => {
-          queue.enqueue(
-            {
-              videoId: chapter.videoId,
-              chapterId: chapter.id,
-              unitId: unit.id,
-              chapter,
-            },
-            unitIndex * 1000 + chapterIndex,
-          )
+        .forEach((chapter) => {
+          playlist.push({ videoId: chapter.videoId, chapter })
         })
     })
 
-    return queue
+    return playlist
   }, [course.courseUnits])
 
   const findChapterByVideoId = useCallback(
     (videoId: string): FullChapterType | undefined => {
-      let foundChapter: FullChapterType | undefined
-      const tempQueue = new PriorityQueue<{
-        videoId: string
-        chapterId: number
-        unitId: number
-        chapter: FullChapterType
-      }>()
-
-      while (!videoQueue.isEmpty()) {
-        const entry = videoQueue.dequeue()!
-        if (entry.videoId === videoId) {
-          foundChapter = entry.chapter
-        }
-        tempQueue.enqueue(entry, 0)
-      }
-
-      while (!tempQueue.isEmpty()) {
-        const entry = tempQueue.dequeue()!
-        videoQueue.enqueue(entry, 0)
-      }
-
-      return foundChapter
+      return videoPlaylist.find((entry) => entry.videoId === videoId)?.chapter
     },
-    [videoQueue],
+    [videoPlaylist],
   )
 
   useEffect(() => {
-    if (!videoQueue.isEmpty() && !state.selectedVideoId && !hasSetInitialVideo.current) {
-      const chapterId = initialChapterId
-      let initialVideo
-
-      if (chapterId) {
-        const tempQueue = new PriorityQueue<{
-          videoId: string
-          chapterId: number
-          unitId: number
-          chapter: FullChapterType
-        }>()
-        while (!videoQueue.isEmpty()) {
-          const entry = videoQueue.dequeue()!
-          if (String(entry.chapterId) === chapterId) {
-            initialVideo = entry
-            break
-          }
-          tempQueue.enqueue(entry, 0)
-        }
-        while (!tempQueue.isEmpty()) {
-          videoQueue.enqueue(tempQueue.dequeue()!, 0)
-        }
-      }
-
-      if (!initialVideo) {
-        initialVideo = videoQueue.dequeue()
-        videoQueue.enqueue(initialVideo!, 0)
-      }
+    if (!state.selectedVideoId && !hasSetInitialVideo.current) {
+      const initialVideo = initialChapterId
+        ? videoPlaylist.find((entry) => entry.chapter.id.toString() === initialChapterId)
+        : videoPlaylist[0]
 
       if (initialVideo) {
         dispatch({
@@ -175,35 +117,13 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         hasSetInitialVideo.current = true
       }
     }
-  }, [videoQueue, state.selectedVideoId, initialChapterId])
+  }, [videoPlaylist, state.selectedVideoId, initialChapterId])
 
   useEffect(() => {
     if (!isInitialMount.current && state.selectedVideoId) {
-      const tempQueue = new PriorityQueue<{
-        videoId: string
-        chapterId: number
-        unitId: number
-        chapter: FullChapterType
-      }>()
-      let currentIndex = -1
-      let nextVideo, prevVideo
-
-      while (!videoQueue.isEmpty()) {
-        const entry = videoQueue.dequeue()!
-        if (entry.videoId === state.selectedVideoId) {
-          currentIndex = tempQueue.isEmpty() ? -1 : tempQueue.getHeap().length - 1
-        }
-        tempQueue.enqueue(entry, 0)
-      }
-
-      if (currentIndex !== -1) {
-        nextVideo = tempQueue.getHeap()[currentIndex + 1]?.item.videoId
-        prevVideo = currentIndex > 0 ? tempQueue.getHeap()[currentIndex - 1]?.item.videoId : undefined
-      }
-
-      while (!tempQueue.isEmpty()) {
-        videoQueue.enqueue(tempQueue.dequeue()!, 0)
-      }
+      const currentIndex = videoPlaylist.findIndex((entry) => entry.videoId === state.selectedVideoId)
+      const nextVideo = currentIndex < videoPlaylist.length - 1 ? videoPlaylist[currentIndex + 1]?.videoId : undefined
+      const prevVideo = currentIndex > 0 ? videoPlaylist[currentIndex - 1]?.videoId : undefined
 
       dispatch({
         type: "SET_NAVIGATION",
@@ -215,7 +135,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     } else {
       isInitialMount.current = false
     }
-  }, [state.selectedVideoId, videoQueue])
+  }, [state.selectedVideoId, videoPlaylist])
 
   const { progress, isLoading, updateProgress } = useProgress({
     courseId: +course.id,
@@ -249,7 +169,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
     if (!updatedCompletedChapters.includes(+state.currentChapter.id)) {
       updatedCompletedChapters.push(+state.currentChapter.id)
-      const totalChapters = videoQueue.size()
+      const totalChapters = videoPlaylist.length
       const newProgress = Math.round((updatedCompletedChapters.length / totalChapters) * 100)
 
       throttledUpdateProgress({
@@ -258,7 +178,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         progress: newProgress,
       })
     }
-  }, [state.currentChapter, progress, throttledUpdateProgress, videoQueue.size()])
+  }, [state.currentChapter, progress, throttledUpdateProgress, videoPlaylist.length])
 
   const handleVideoEnd = useCallback(() => {
     markChapterAsCompleted()
@@ -266,26 +186,24 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     if (state.nextVideoId) {
       const nextChapter = findChapterByVideoId(state.nextVideoId)
       if (nextChapter) {
-        const nextVideoEntry = videoQueue.find((entry) => entry.videoId === state.nextVideoId)
-        if (nextVideoEntry) {
-          dispatch({
-            type: "SET_VIDEO",
-            payload: { videoId: state.nextVideoId, chapter: nextChapter },
-          })
-          throttledUpdateProgress({
-            currentChapterId: Number(nextChapter.id),
-            currentUnitId: Number(nextVideoEntry.unitId),
-          })
-        }
+        dispatch({
+          type: "SET_VIDEO",
+          payload: { videoId: state.nextVideoId, chapter: nextChapter },
+        })
+        throttledUpdateProgress({
+          currentChapterId: Number(nextChapter.id),
+        })
       }
     } else {
-      const allChaptersCompleted = videoQueue.size() === progress?.completedChapters.length
+      const allChaptersCompleted = videoPlaylist.length === progress?.completedChapters.length
       if (allChaptersCompleted) {
+        setIsLastVideo(true)
         throttledUpdateProgress({
           currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
           isCompleted: true,
           progress: 100,
         })
+       
         toast({
           title: "Course Completed",
           description: "Congratulations! You've completed all videos in this course.",
@@ -296,7 +214,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   }, [
     state.nextVideoId,
     state.currentChapter,
-    videoQueue,
+    videoPlaylist,
     findChapterByVideoId,
     throttledUpdateProgress,
     toast,
@@ -312,21 +230,17 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
       const selectedChapter = findChapterByVideoId(videoId)
       if (selectedChapter) {
-        const selectedVideoEntry = videoQueue.find((entry) => entry.videoId === videoId)
-        if (selectedVideoEntry) {
-          dispatch({
-            type: "SET_VIDEO",
-            payload: { videoId, chapter: selectedChapter },
-          })
-          throttledUpdateProgress({
-            currentChapterId: Number(selectedChapter.id),
-            currentUnitId: Number(selectedVideoEntry.unitId),
-            lastAccessedAt: new Date(),
-          })
-        }
+        dispatch({
+          type: "SET_VIDEO",
+          payload: { videoId, chapter: selectedChapter },
+        })
+        throttledUpdateProgress({
+          currentChapterId: Number(selectedChapter.id),
+          lastAccessedAt: new Date(),
+        })
       }
     },
-    [state.currentChapter, findChapterByVideoId, throttledUpdateProgress, videoQueue, markChapterAsCompleted, dispatch],
+    [state.currentChapter, findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, dispatch],
   )
 
   useEffect(() => {
@@ -364,7 +278,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <nav className="sticky top-0 z-50 w-full bg-background border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex w-full   h-14 max-w-screen-2xl items-center">
+        <div className="container flex w-full h-14 max-w-screen-2xl items-center">
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-lg font-semibold md:hidden">{course.name}</h1>
             <Button
@@ -392,7 +306,6 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
             currentChapter={state.currentChapter}
             currentTime={0}
             onTimeUpdate={(time: number) => {
-              console.log("Time update", time)
               if (state.currentChapter && session) {
                 throttledUpdateProgress({
                   currentChapterId: Number(state.currentChapter.id),
@@ -402,6 +315,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
             progress={progress || undefined}
             onChapterComplete={markChapterAsCompleted}
             planId={user?.planId}
+            isLastVideo={isLastVideo}
           />
         </div>
 
@@ -441,6 +355,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                 progress={progress || null}
                 nextVideoId={state.nextVideoId}
                 prevVideoId={state.prevVideoId}
+               
                 completedChapters={progress?.completedChapters || []}
               />
             </motion.div>

@@ -1,26 +1,23 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useCallback, useEffect } from "react"
-import { useInfiniteQuery } from "@tanstack/react-query"
-import { motion, AnimatePresence } from "framer-motion"
-
-import { CreateCard } from "@/app/components/CreateCard"
-import { useDebounce } from "@/hooks/useDebounce"
-
-import type { CourseCardProps } from "@/app/types/types"
-import type { CategoryId } from "@/config/categories"
-import { toast } from "@/hooks/use-toast"
-import { CourseCard } from "./CourseCard"
-import { SkeletonCard } from "./SkeletonCard"
+import React, { useCallback, useEffect } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import { CreateCard } from "@/app/components/CreateCard";
+import { useDebounce } from "@/hooks/useDebounce";
+import { toast } from "@/hooks/use-toast";
+import { CourseCard } from "./CourseCard";
+import { SkeletonCard } from "./SkeletonCard";
+import { CategoryId } from "@/config/categories";
 
 interface CoursesClientProps {
-  url: string
-  userId?: string
-  searchQuery: string
+  url: string;
+  userId?: string;
+  searchQuery: string;
+  selectedCategory: CategoryId | null;
 }
 
-const ITEMS_PER_PAGE = 20
+const ITEMS_PER_PAGE = 20;
 
 const fetchCourses = async ({
   pageParam = 1,
@@ -28,10 +25,10 @@ const fetchCourses = async ({
   category,
   userId,
 }: {
-  pageParam?: number
-  search?: string
-  category?: CategoryId
-  userId?: string
+  pageParam?: number;
+  search?: string;
+  category?: CategoryId;
+  userId?: string;
 }) => {
   const params = new URLSearchParams({
     page: pageParam.toString(),
@@ -39,16 +36,15 @@ const fetchCourses = async ({
     ...(search && { search }),
     ...(category && { category }),
     ...(userId && { userId }),
-  })
+  });
 
-  const res = await fetch(`/api/courses?${params.toString()}`)
-  if (!res.ok) throw new Error("Failed to fetch courses")
-  return res.json()
-}
+  const res = await fetch(`/api/courses?${params.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch courses");
+  return res.json();
+};
 
-const CoursesClient: React.FC<CoursesClientProps> = ({ url, userId, searchQuery }) => {
-  const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null)
-  const debouncedSearchQuery = useDebounce(searchQuery, 300)
+const CoursesClient: React.FC<CoursesClientProps> = ({ url, userId, searchQuery, selectedCategory }) => {
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, refetch } = useInfiniteQuery({
     queryKey: ["courses", { search: debouncedSearchQuery, category: selectedCategory, userId }],
@@ -61,32 +57,23 @@ const CoursesClient: React.FC<CoursesClientProps> = ({ url, userId, searchQuery 
         userId,
       }),
     getNextPageParam: (lastPage, pages) => {
-      const totalFetched = pages.reduce((total, page) => total + page.courses.length, 0)
-      return totalFetched < lastPage.totalCount ? pages.length + 1 : undefined
+      const totalFetched = pages.reduce((total, page) => total + page.courses.length, 0);
+      return totalFetched < lastPage.totalCount ? pages.length + 1 : undefined;
     },
-  })
+  });
 
   useEffect(() => {
-    refetch()
-  }, [refetch])
+    refetch();
+  }, [refetch, debouncedSearchQuery, selectedCategory]);
 
-  const handleCategoryChange = useCallback((categoryId: CategoryId | null) => {
-    setSelectedCategory(categoryId)
-  }, [])
-
-  const resetFilters = useCallback(() => {
-    //setSearchQuery("") //Removed
-    setSelectedCategory(null)
-  }, [])
-
-  const courses = data?.pages.flatMap((page) => page.courses) || []
+  const courses = data?.pages.flatMap((page) => page.courses) || [];
 
   if (status === "error") {
     toast({
       title: "Error",
       description: (error as Error).message,
       variant: "destructive",
-    })
+    });
   }
 
   return (
@@ -115,7 +102,7 @@ const CoursesClient: React.FC<CoursesClientProps> = ({ url, userId, searchQuery 
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {courses.map((course: CourseCardProps) => (
+              {courses.map((course) => (
                 <motion.div
                   key={course.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -142,8 +129,7 @@ const CoursesClient: React.FC<CoursesClientProps> = ({ url, userId, searchQuery 
         )}
       </AnimatePresence>
     </div>
-  )
-}
+  );
+};
 
-export default CoursesClient
-
+export default React.memo(CoursesClient);

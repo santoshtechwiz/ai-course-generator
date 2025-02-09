@@ -15,7 +15,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Maximize2, Minimize2, Settings } from 'lucide-react'
+import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Maximize2, Minimize2, Settings, Loader2 } from 'lucide-react'
 import { formatTime, getVideoQualityOptions, PLAYBACK_SPEEDS } from '@/lib/utils'
 import Logo from '@/app/components/shared/Logo'
 
@@ -26,6 +26,7 @@ interface VideoPlayerProps {
   onProgress?: (progress: number) => void
   initialTime?: number
   brandLogo?: string
+  isLastVideo?: boolean // Add this prop to check if it's the last video
 }
 
 const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -34,7 +35,8 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   autoPlay = false,
   onProgress,
   initialTime = 0,
-  brandLogo = <Logo></Logo>
+  brandLogo = <Logo></Logo>,
+  isLastVideo = false // Default to false
 }) => {
   const [playing, setPlaying] = useState(autoPlay)
   const [volume, setVolume] = useState(0.8)
@@ -47,6 +49,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [availableQualities, setAvailableQualities] = useState<string[]>([])
   const [showNextVideoOverlay, setShowNextVideoOverlay] = useState(false)
+  const [isBuffering, setIsBuffering] = useState(false)
   const playerRef = useRef<ReactPlayer>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -77,14 +80,20 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
     setPlayed(newPlayed[0])
     playerRef.current?.seekTo(newPlayed[0])
   }
-  const handleProgress = (state: { played: number; playedSeconds: number }) => {
+  const handleProgress = (state: { played: number; playedSeconds: number; loaded: number }) => {
     if (!playerRef.current?.getInternalPlayer()?.seeking) {
       setPlayed(state.played)
       onProgress?.(state.played)
 
       // Show "Moving to next video" overlay 15 seconds before the end
-      if (duration - state.playedSeconds <= 15 && !showNextVideoOverlay) {
-        setShowNextVideoOverlay(true)
+      if (!showNextVideoOverlay && duration - state.playedSeconds <= 15) {
+        if (!isLastVideo) {
+          // Show overlay for moving to the next video
+          setShowNextVideoOverlay(true);
+        } else {
+          // Optionally, show a different overlay or message for the last video
+          setShowNextVideoOverlay(false);
+        }
       }
     }
   }
@@ -117,6 +126,9 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
     onEnded()
   }
 
+  const handleBuffer = () => setIsBuffering(true)
+  const handleBufferEnd = () => setIsBuffering(false)
+
   return (
     <TooltipProvider>
       <div
@@ -138,6 +150,8 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
           onDuration={handleDuration}
           onEnded={handleVideoEnd}
           onReady={handleReady}
+          onBuffer={handleBuffer}
+          onBufferEnd={handleBufferEnd}
           progressInterval={1000}
           playbackRate={playbackSpeed}
           config={{
@@ -153,9 +167,16 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
 
         {/* Next Video Overlay */}
-        {showNextVideoOverlay && (
+        {showNextVideoOverlay  && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50">
             <div className="text-white text-2xl font-bold">Moving to next video...</div>
+          </div>
+        )}
+
+        {/* Buffering Spinner */}
+        {isBuffering && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-40">
+            <Loader2 className="h-8 w-8 animate-spin text-white" />
           </div>
         )}
 

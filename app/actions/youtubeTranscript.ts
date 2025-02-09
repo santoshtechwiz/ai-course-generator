@@ -47,7 +47,12 @@ export async function getTranscriptForVideo(videoId: string) {
     const transcript = await TranscriptAPI.getTranscript(videoId);
 
     if (!transcript || transcript.length === 0) {
-      throw new Error("No transcript available.");
+      console.warn("No transcript available.");
+      return {
+        status: 404,
+        message: "No transcript available.",
+        transcript: null,
+      };
     }
 
     // Limit the number of transcript items (e.g., first 300 items)

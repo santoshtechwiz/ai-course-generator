@@ -12,9 +12,9 @@ export interface DashboardUser extends User {
   streakDays: number
   lastStreakDate: Date | null
 }
-export interface CourseMetadata{
+export interface CourseMetadata {
   rating?: number
-  difficulty?:string| null
+  difficulty?: string | null
   estimatedHours?: number
 }
 export interface CourseCardProps {
@@ -28,6 +28,7 @@ export interface CourseCardProps {
   lessonCount: number
   quizCount: number
   userId: string
+  viewCount: number
 }
 export interface Course extends CourseMetadata {
   id: number
@@ -145,28 +146,35 @@ export interface CourseQuiz {
   question: string
   answer: string
 }
-export interface RandomQuizProps{
+export interface RandomQuizProps {
 
-  
-}
-export interface CourseDetails{
 
-  id:number,
-  courseName:string,
-  category:string,
-  totalChapters:number,
-  totalUnits:number,
-  slug:string
 }
-export class CourseAIErrors{
-  constructor(public message:string){}
+export interface CourseDetails {
+
+  id: number,
+  courseName: string,
+  category: string,
+  totalChapters: number,
+  totalUnits: number,
+  slug: string
+}
+export class CourseAIErrors {
+  constructor(public message: string) { }
 }
 
 export interface FullChapterType {
- chapterId: number;
- description: string;
+  id: number,
+  videoId: string,
+  chapterId: number;
+  description: string;
 
+  name: string;
+  order: number;
+  courseId: number;
+  isCompleted: boolean;
 
+  chapter: FullChapterType
 
 
 }
@@ -196,7 +204,7 @@ export interface QuizCardProps {
 export type QuizWithQuestionsAndTags = Prisma.UserQuizGetPayload<{
   include: {
     questions: true
-    
+
   }
 }>
 
@@ -221,27 +229,27 @@ export interface CreateQuizCardConfig {
   className?: string
 }
 
-export interface MultipleChoiceQuestion{
-  question:string;
-  answer:string;
-  option1:string;
-  option2:string;
-  option3:string;
+export interface MultipleChoiceQuestion {
+  question: string;
+  answer: string;
+  option1: string;
+  option2: string;
+  option3: string;
 
 }
-export interface OpenEndedQuestion{
+export interface OpenEndedQuestion {
 
-  question:string;
-  answer:string;
+  question: string;
+  answer: string;
 
 }
 export type QuizType = "mcq" | "openended" | "fill-blanks" | "code"
 
-export interface CodeChallenge  {
+export interface CodeChallenge {
   question: string
   codeSnippet?: string
   language?: string
-  options: string |string[]
+  options: string | string[]
   correctAnswer: string
 }
 
@@ -345,17 +353,17 @@ export interface FullCourseUnit {
   courseId: number;
   name: string;
   isCompleted: boolean | null;
- 
+
   chapters: FullChapter[];
 }
 
 export interface FullChapter {
   id: number;
   name: string;
- 
+  videoId: string;
   order: number | null;
   isCompleted: boolean | null;
- 
+
 }
 
 export interface FullCourseQuiz {
@@ -383,7 +391,7 @@ export interface CourseProgress {
   lastInteractionType: string | null;
   interactionCount: number;
   engagementScore: number;
-  
+
 }
 
 export interface CourseQuizAttempt {
@@ -396,7 +404,7 @@ export interface CourseQuizAttempt {
   updatedAt: Date;
   improvement: number | null;
   accuracy: number | null;
-  
+
 }
 export interface QuestionOpenEnded {
   id: number;
