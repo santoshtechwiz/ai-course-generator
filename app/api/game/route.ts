@@ -1,12 +1,14 @@
 import { createQuestions, createUserQuiz, prisma, updateTopicCount, updateUserCredits } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import axios from "axios";
+
 import { MultipleChoiceQuestion, OpenEndedQuestion, QuizType } from "@/app/types/types";
+
 import { getAuthSession } from "@/lib/authOptions";
 import { quizCreationSchema } from "@/schema/schema";
 import { generateSlug } from "@/lib/utils";
 import NodeCache from 'node-cache';
+import axios from "axios";
 
 const cache = new NodeCache({ stdTTL: 600 }); // Cache for 10 minutes
 
@@ -15,14 +17,13 @@ export const dynamic = "force-dynamic";
 
 
 async function fetchQuizQuestions(amount: number, topic: string, type: QuizType, difficulty: string, userType:string) {
-  // const { data } = await axios.post<MultipleChoiceQuestion[] | OpenEndedQuestion[]>(
-  //   `${process.env.NEXT_PUBLIC_URL}/api/quiz`,
-  //   { amount, topic, type, difficulty, userType },
-  //   { headers: { 'Content-Type': 'application/json' } }
-  // );
-  // return data;
-  await new Promise(resolve => setTimeout(resolve, 51000));
-  return [];
+  const { data } = await axios.post<MultipleChoiceQuestion[] | OpenEndedQuestion[]>(
+    `${process.env.NEXT_PUBLIC_URL}/api/quiz`,
+    { amount, topic, type, difficulty, userType },
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+  return data;
+  
 }
 
 
@@ -40,13 +41,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { topic, type, amount, difficulty, userType } = quizCreationSchema.parse(body);
     const slug = generateSlug(topic);
-    let quizType = QuizType.MultipleChoice;
-    if (type === "open_ended") {
-      quizType = QuizType.OpenEnded;
-    }
-    if (type === "mcq") {
-      quizType = QuizType.MultipleChoice;
-    }
+    const quizType: QuizType = type === "open_ended" ? "openended" : "mcq";
     // 1. First fetch questions to ensure we can create a quiz
     const questions = await fetchQuizQuestions(amount, topic, quizType, difficulty, userType);
     if (questions.length === 0) {
