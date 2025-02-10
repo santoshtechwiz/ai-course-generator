@@ -71,7 +71,7 @@ const ShowCaseCarousel = () => {
   }
 
   return (
-    <section className="py-4 md:py-24 lg:py-32 bg-gradient-to-b from-background to-secondary/20">
+    <section className="py-4 md:py-12 lg:py-20">
       <div className="container px-4 md:px-6">
         <div className="relative">
           <Button
@@ -101,22 +101,22 @@ const ShowCaseCarousel = () => {
                 exit={{ opacity: 0, x: -100 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               >
-                <Card className="w-full overflow-hidden">
+                <Card className="w-full overflow-hidden bg-card">
                   <div className="relative h-48 bg-gradient-to-r from-primary to-primary-foreground">
                     {items[currentIndex].type === "course" ? (
-                      <PlayCircle className="absolute inset-0 m-auto h-32 w-32 text-background opacity-50" />
+                      <PlayCircle className="absolute inset-0 m-auto h-32 w-32 text-card opacity-50" />
                     ) : (
-                      <HelpCircle className="absolute inset-0 m-auto h-32 w-32 text-background opacity-50" />
+                      <HelpCircle className="absolute inset-0 m-auto h-32 w-32 text-card opacity-50" />
                     )}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <h3 className="text-4xl font-bold text-background">
+                      <h3 className="text-4xl font-bold text-card">
                         {items[currentIndex].type === "course" ? "Interactive Course" : "Engaging Quiz"}
                       </h3>
                     </div>
                   </div>
                   <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <CardTitle className="text-2xl">{items[currentIndex].name}</CardTitle>
+                      <CardTitle className="text-2xl text-primary">{items[currentIndex].name}</CardTitle>
                       <div className="flex flex-wrap gap-2">
                         <Badge variant={items[currentIndex].type === "course" ? "default" : "secondary"}>
                           {items[currentIndex].type === "course" ? "Course" : "Quiz"}
