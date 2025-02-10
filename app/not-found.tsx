@@ -1,8 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { BookOpen, HelpCircle, PlusCircle, ArrowLeft, Compass } from "lucide-react"
-import Image from "next/image"
+import { Home, PlusCircle, Compass, HelpCircle, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -33,13 +32,14 @@ export default function NotFound() {
   }
 
   const suggestedPages = [
-  
+    { href: "/", icon: Home, title: "Home", description: "Return to the main page" },
     { href: "/dashboard/create", icon: PlusCircle, title: "Create", description: "Start creating your own content" },
     { href: "/dashboard/", icon: Compass, title: "Explore", description: "Discover new learning opportunities" },
+    { href: "/dashboard/quizzes", icon: HelpCircle, title: "Help", description: "Discover new " },
   ]
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted">
+    <div className="flex flex-col min-h-screen bg-background">
       <Navbar />
       <main className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <motion.div
@@ -48,19 +48,23 @@ export default function NotFound() {
           initial="hidden"
           animate="visible"
         >
-        
+          <motion.div variants={itemVariants}>
+            <h1 className="text-6xl font-bold text-primary mb-2">404</h1>
+            <p className="text-2xl font-semibold text-foreground">Page Not Found</p>
+          </motion.div>
+
           <motion.p className="text-lg text-muted-foreground max-w-2xl mx-auto" variants={itemVariants}>
             Oops! It seems you've ventured into uncharted territory. Don't worry, though – there's still plenty to
-            explore!
+            explore in our digital realm!
           </motion.p>
 
           <motion.div variants={itemVariants}>
             <h2 className="text-2xl font-semibold text-foreground mb-6">Where to next?</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {suggestedPages.map((item) => (
                 <motion.div key={item.href} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Link href={item.href} className="block h-full">
-                    <Card className="h-full hover:shadow-lg transition-all duration-300 bg-card/50 backdrop-blur-sm border-primary/10">
+                    <Card className="h-full hover:shadow-md transition-all duration-300">
                       <CardContent className="flex flex-col items-center justify-center p-6 h-full">
                         <item.icon className="h-12 w-12 text-primary mb-4" />
                         <h3 className="font-semibold text-lg text-foreground mb-2">{item.title}</h3>
@@ -74,7 +78,7 @@ export default function NotFound() {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button asChild size="lg" variant="default">
               <Link href="/">
                 <ArrowLeft className="mr-2 h-5 w-5" /> Return to Home
               </Link>

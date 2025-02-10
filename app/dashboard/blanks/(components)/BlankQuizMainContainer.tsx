@@ -14,6 +14,7 @@ import { QuizActions } from "../../mcq/components/QuizActions"
 import { GuidedHelp } from "@/app/components/HelpModal"
 import BlankQuizResults from "./BlankQuizResults"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
+import SectionWrapper from "@/components/SectionWrapper"
 
 interface Question {
   id: number
@@ -204,6 +205,7 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
+      <SectionWrapper>
       <QuizActions
         userId={session?.user?.id || ""}
         ownerId={quizData.userId}
@@ -213,6 +215,8 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
         initialIsPublic={false}
         initialIsFavorite={false}
       />
+      </SectionWrapper>
+      <SectionWrapper>
       <Card className="mb-8 shadow-md">
         <CardHeader className="flex flex-row items-center justify-between px-6 py-4 border-b">
           <CardTitle className="flex items-center text-2xl font-bold">
@@ -262,6 +266,7 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
         </CardContent>
       </Card>
       <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
+      </SectionWrapper>
     </div>
   )
 }
