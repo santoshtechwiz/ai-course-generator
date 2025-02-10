@@ -188,6 +188,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn }: TopicFormProps) {
               onClick={generateQuiz}
               isLoggedIn={isLoggedIn}
               isEnabled={isFormValid}
+              isLoading={isLoading}
               hasCredits={credits > 0}
               loadingLabel="Generating..."
               className="w-full transition-all duration-300 hover:shadow-lg"

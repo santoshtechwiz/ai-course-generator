@@ -52,7 +52,12 @@ export function QuizActions({
   const router = useRouter()
   const { subscriptionStatus, isLoading } = useSubscriptionStore()
   const [rating, setRating] = useState<number | null>(null)
-
+  const pdfConfig = {
+    showOptions: true,
+    showAnswerSpace: true,
+    answerSpaceHeight: 40,
+    showAnswers: true, // Set to true if you want to show answers in the PDF
+  }
   useEffect(() => {
     const fetchQuizState = async () => {
       try {
@@ -301,7 +306,7 @@ export function QuizActions({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <QuizPDFDownload quizData={data} />
+                <QuizPDFDownload quizData={data} config={pdfConfig} />
               </TooltipTrigger>
               <TooltipContent>
                 <p>Download - Click to download as PDF</p>

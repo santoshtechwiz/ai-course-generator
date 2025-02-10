@@ -152,6 +152,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
               select: {
                 id: true,
                 questionId: true,
+                
                 userAnswer: true,
                 isCorrect: true,
                 timeSpent: true,
@@ -161,6 +162,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
               select: {
                 id: true,
                 topic: true,
+                
                 questions: {
                   select: {
                     id: true,

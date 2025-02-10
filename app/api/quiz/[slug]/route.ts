@@ -95,7 +95,8 @@ export async function GET(req: Request, props: { params: Promise<{ slug: string 
       questions: {
         select: {
           question: true,
-          options: true
+          options: true,
+          answer: true
         }
       }
     }

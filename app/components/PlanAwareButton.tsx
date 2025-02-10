@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Lock, CheckCircle, User, Loader2, CreditCard } from 'lucide-react'
+import { Lock, CheckCircle, User, Loader2, CreditCard } from "lucide-react"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 export interface PlanAwareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,6 +15,7 @@ export interface PlanAwareButtonProps extends React.ButtonHTMLAttributes<HTMLBut
   hasCredits?: boolean
   loadingLabel?: string
   disableInternalCreditCheck?: boolean
+  isLoading?: boolean
   customStates?: {
     default?: Partial<ButtonState>
     loading?: Partial<ButtonState>
@@ -72,12 +73,15 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
   hasCredits,
   loadingLabel = "Processing...",
   disableInternalCreditCheck = false,
+  isLoading: externalIsLoading = false,
   customStates = {},
   className = "",
   ...props
 }) => {
-  const [isLoading, setIsLoading] = useState(false)
+  const [internalIsLoading, setInternalIsLoading] = useState(false)
   const { subscriptionStatus } = useSubscriptionStore()
+
+  const isLoading = externalIsLoading || internalIsLoading
 
   const currentState = useMemo(() => {
     if (isLoading) return { ...defaultStates.loading, ...customStates.loading }
@@ -104,13 +108,13 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
     if (isLoading || isLoggedIn === false || !isEnabled || hasCredits === false || !onClick) return
     if (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0) return
 
-    setIsLoading(true)
+    setInternalIsLoading(true)
     try {
       await onClick(e)
     } catch (error) {
       console.error("Error in PlanAwareButton handleClick:", error)
     } finally {
-      setIsLoading(false)
+      setInternalIsLoading(false)
     }
   }
 
@@ -119,7 +123,7 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
     isLoggedIn === false ||
     !isEnabled ||
     hasCredits === false ||
-    (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0)
+    (!disableInternalCreditCheck && subscriptionStatus?.credits !== undefined && subscriptionStatus.credits <= 0)
 
   return (
     <TooltipProvider>
@@ -147,3 +151,4 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
 PlanAwareButton.displayName = "PlanAwareButton"
 
 export default PlanAwareButton
+
