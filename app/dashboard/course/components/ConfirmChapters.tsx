@@ -8,8 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import type { Course, CourseUnit, Chapter } from "@prisma/client"
-import ChapterCard, { ChapterCardHandler } from "./ChapterCard"
-
+import ChapterCard, { type ChapterCardHandler } from "./ChapterCard"
 
 export type CourseProps = {
   course: Course & {
@@ -21,6 +20,7 @@ export type CourseProps = {
 
 const ConfirmChapters = ({ course }: CourseProps) => {
   const [loading, setLoading] = useState(false)
+  const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null)
   const chapterRefs = useRef<Record<string, React.RefObject<ChapterCardHandler>>>({})
   const [completedChapters, setCompletedChapters] = useState<Set<string>>(new Set())
 
@@ -38,7 +38,10 @@ const ConfirmChapters = ({ course }: CourseProps) => {
     return course.units.reduce((acc, unit) => acc + unit.chapters.length, 0)
   }, [course.units])
 
-  const progress = (completedChapters.size / totalChaptersCount) * 100
+  const progress = useMemo(
+    () => (completedChapters.size / totalChaptersCount) * 100,
+    [completedChapters.size, totalChaptersCount],
+  )
 
   const handleChapterComplete = useCallback((chapterId: string) => {
     setCompletedChapters((prev) => new Set(prev).add(chapterId))
@@ -46,12 +49,32 @@ const ConfirmChapters = ({ course }: CourseProps) => {
 
   const allChaptersCompleted = completedChapters.size === totalChaptersCount
 
-  const handleGenerateAll = useCallback(() => {
+  const handleGenerateAll = useCallback(async () => {
     setLoading(true)
-    Object.values(chapterRefs.current).forEach((ref) => {
-      ref.current?.triggerLoad()
-    })
-  }, [])
+    const allChapters = course.units.flatMap((unit) => unit.chapters)
+
+    for (let i = 0; i < allChapters.length; i++) {
+      const chapter = allChapters[i]
+      if (!completedChapters.has(chapter.id)) {
+        setCurrentGeneratingIndex(i)
+        try {
+          await chapterRefs.current[chapter.id].current?.triggerLoad()
+        } catch (error) {
+          console.error(`Error generating chapter ${chapter.id}:`, error)
+          // Continue with the next chapter even if there's an error
+        }
+      }
+    }
+
+    setLoading(false)
+    setCurrentGeneratingIndex(null)
+  }, [course.units, completedChapters])
+
+  useEffect(() => {
+    if (!loading && completedChapters.size < totalChaptersCount) {
+      handleGenerateAll()
+    }
+  }, [loading, completedChapters.size, totalChaptersCount, handleGenerateAll]) // Added missing dependencies
 
   return (
     <div className="flex flex-col h-full">
@@ -87,7 +110,8 @@ const ConfirmChapters = ({ course }: CourseProps) => {
                     chapter={chapter}
                     chapterIndex={chapterIndex}
                     onChapterComplete={handleChapterComplete}
-                    isCompleted={completedChapters.has(chapter.id.toString())}
+                    isCompleted={completedChapters.has(chapter.id)}
+                    isGenerating={currentGeneratingIndex === chapterIndex}
                   />
                 ))}
               </CardContent>
@@ -112,7 +136,7 @@ const ConfirmChapters = ({ course }: CourseProps) => {
             </Button>
           ) : (
             <Button onClick={handleGenerateAll} disabled={loading}>
-              {loading ? "Generating..." : "Generate All"}
+              {loading ? `Generating ${completedChapters.size}/${totalChaptersCount}` : "Generate All"}
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           )}

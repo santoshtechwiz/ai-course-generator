@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useCallback, useEffect, useRef } from "react"
 import { useMutation } from "@tanstack/react-query"
 import axios from "axios"
@@ -28,7 +30,7 @@ export const useChapterProcessing = (chapter: Chapter) => {
     return () => closeEventSource()
   }, [closeEventSource])
 
-  const { mutate: generateVideo, status } = useMutation({
+  const { mutateAsync: generateVideo, status } = useMutation({
     mutationFn: async () => {
       const response = await axios.post("/api/video", { chapterId: chapter.id })
       return response.data
@@ -79,9 +81,9 @@ export const useChapterProcessing = (chapter: Chapter) => {
     },
   })
 
-  const triggerProcessing = useCallback(() => {
+  const triggerProcessing = useCallback(async () => {
     if (state.videoStatus === "idle" || state.videoStatus === "error") {
-      generateVideo()
+      await generateVideo()
     }
   }, [state.videoStatus, generateVideo])
 
