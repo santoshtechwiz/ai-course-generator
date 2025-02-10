@@ -20,7 +20,7 @@ interface RandomQuestionsProps {
 export default function RandomQuestions({ questions }: RandomQuestionsProps) {
 
   return (
-   
+
     <>
       {questions.map((question) => (
 
@@ -28,9 +28,9 @@ export default function RandomQuestions({ questions }: RandomQuestionsProps) {
           key={question.slug}
           title={question.topic}
           description={question.description}
-         
+
           questionCount={question.count}
-        
+
           slug={question.slug}
           quizType="openended" estimatedTime={''} />
       ))}

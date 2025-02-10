@@ -9,6 +9,7 @@ import { QuizActions } from "../components/QuizActions"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
+import SectionWrapper from "@/components/SectionWrapper"
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await props.params
@@ -94,8 +95,10 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
+              
               <Suspense fallback={<QuizSkeleton />}>
                 {result.result && (
+                  <SectionWrapper>
                   <QuizActions
                     quizId={result.result.id.toString()}
                     userId={currentUserId || ""}
@@ -105,8 +108,12 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
                     initialIsFavorite={result.result.isFavorite || false}
                     quizType="mcq"
                   />
+                  </SectionWrapper>
                 )}
-                {result.result && <PlayQuiz questions={result.questions} quizId={result.result.id} slug={slug} />}
+                
+                {result.result && 
+                 <SectionWrapper>
+                <PlayQuiz questions={result.questions} quizId={result.result.id} slug={slug} /> </SectionWrapper>}
               </Suspense>
             </div>
             <div className="lg:col-span-1">
