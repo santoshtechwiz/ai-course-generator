@@ -100,17 +100,17 @@ export default function CourseActions({ slug }: CourseActionsProps) {
 
   return (
     <TooltipProvider>
-      <Card className="w-full bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg overflow-hidden">
-        <CardContent className="p-4 w-full">
+      <Card className="bg-gradient-to-r flex justify-between w-full from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg overflow-hidden">
+        <CardContent className="p-4">
           <motion.div
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-full">
+                <div>
                   <ActionButton
                     onClick={handlePrivacyToggle}
                     isLoading={loading === "privacy"}
@@ -131,7 +131,7 @@ export default function CourseActions({ slug }: CourseActionsProps) {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-full">
+                <div>
                   <ActionButton
                     onClick={handleFavoriteToggle}
                     isLoading={loading === "favorite"}
@@ -149,9 +149,72 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                 <p>{status.isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
               </TooltipContent>
             </Tooltip>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 border-red-300 dark:border-red-700"
+                  >
+                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Delete Course</span>
+                  </Button>
+                </div>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Course?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete your course and all its content. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    disabled={loading === "delete"}
+                    className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                  >
+                    {loading === "delete" ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Deleting...</span>
+                      </div>
+                    ) : (
+                      "Delete"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+              
+              <div className="flex items-center justify-center mt-2">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <Star
+                    key={value}
+                    className={cn(
+                      "h-6 w-6 cursor-pointer transition-all duration-200",
+                      value <= (status.rating || 0)
+                        ? "text-yellow-400 fill-yellow-400 hover:text-yellow-500 hover:fill-yellow-500"
+                        : "text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500",
+                    )}
+                    onClick={() => handleRating(value)}
+                  />
+                ))}
+                {loading === "rating" && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
+                {!loading && status?.rating !== null && (
+                  <span className="ml-2 text-sm font-medium">{status?.rating?.toFixed(1)}</span>
+                )}
+              </div>
+            </div>
           </motion.div>
         </CardContent>
       </Card>
     </TooltipProvider>
   )
 }
+

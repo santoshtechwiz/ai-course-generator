@@ -14,7 +14,8 @@ const navItems = [
   { name: "Features", to: "features" },
   { name: "How It Works", to: "how-it-works" },
   { name: "Showcase", to: "showcase" },
-  { name: "About", to: "about" },
+  { name: "About", to: "about-us" },
+  { name: 'Testimonials', to: 'testimonials' },
   { name: "FAQ", to: "faq" },
 ]
 
@@ -31,7 +32,7 @@ export default function Navbar() {
   }, [])
 
   const handleGetStarted = useCallback(() => {
-    router.push("/dashboard")
+    router.push("/dashboard/explore")
   }, [router])
 
   return (
@@ -64,7 +65,7 @@ export default function Navbar() {
       </div>
 
       <div className="hidden md:flex items-center space-x-4">
-        <Button variant="ghost" onClick={() => signIn()}>
+        <Button variant="ghost" onClick={() => signIn(undefined, { callbackUrl: "/dashboard" })}>
           Sign In
         </Button>
         <Button onClick={handleGetStarted}>Get Started</Button>

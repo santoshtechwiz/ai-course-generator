@@ -4,18 +4,16 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
 import { Search, LogIn, User, Crown, LogOut } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { navItems } from "@/constants/navItems"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import SearchModal from "./SearchModal"
-
 import { Badge } from "@/components/ui/badge"
 import MobileMenu from "./MobileMenu"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-
 import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { UserMenu } from "./UserMenu"
@@ -27,16 +25,22 @@ const NavItems = () => {
   return (
     <nav className="flex items-center space-x-4 lg:space-x-6">
       {navItems.map((item) => (
-        <Button
+        <motion.div
           key={item.name}
-          variant="link"
-          className={`text-sm font-medium transition-colors hover:text-primary ${
-            pathname === item.href ? "text-foreground" : "text-muted-foreground"
-          }`}
-          onClick={() => router.push(item.href)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          {item.name}
-        </Button>
+          <Button
+            variant="link"
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              pathname === item.href ? "text-foreground" : "text-muted-foreground"
+            }`}
+            onClick={() => router.push(item.href)}
+          >
+            {item.name}
+          </Button>
+        </motion.div>
       ))}
     </nav>
   )
@@ -142,23 +146,28 @@ export default function Navbar() {
               </DropdownMenuContent>
             </UserMenu>
           ) : (
-            <Button variant="secondary" size="sm" onClick={handleSignIn}>
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In
-            </Button>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="secondary" size="sm" onClick={handleSignIn}>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+            </motion.div>
           )}
         </div>
       </div>
 
-      <SearchModal
-        isOpen={isSearchModalOpen}
-        setIsOpen={setIsSearchModalOpen}
-        onResultClick={(url) => {
-          router.push(url)
-          setIsSearchModalOpen(false)
-        }}
-      />
+      <AnimatePresence>
+        {isSearchModalOpen && (
+          <SearchModal
+            isOpen={isSearchModalOpen}
+            setIsOpen={setIsSearchModalOpen}
+            onResultClick={(url) => {
+              router.push(url)
+              setIsSearchModalOpen(false)
+            }}
+          />
+        )}
+      </AnimatePresence>
     </motion.header>
   )
 }
-
