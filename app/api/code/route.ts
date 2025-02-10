@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       }
       
       quizzes = quizzes.sort(() => 0.5 - Math.random()).slice(0, 5)
-      console.log(quizzes);
+  
       // Add difficulty to each quiz (in a real scenario, you'd have different quizzes for each difficulty)
       quizzes = quizzes.map((quiz) => ({ ...quiz, difficulty }))
 
