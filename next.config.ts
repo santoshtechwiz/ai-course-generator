@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: false,
   distDir: '.next',
-  output: 'standalone',
+
   env: {
     DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || 'no-static',
   },
@@ -46,9 +46,7 @@ const nextConfig: NextConfig = {
 
   compress: true, // Ensures Gzip compression for faster performance
 
-  experimental: {
-    esmExternals: 'loose',
-  },
+ 
 };
 
 export default nextConfig;
