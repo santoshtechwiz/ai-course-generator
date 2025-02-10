@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { Button } from "@/components/ui/button"
 import { PublicQuizzes } from "./PublicQuizzes"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
@@ -9,23 +10,23 @@ interface QuizListProps {
   isLoading: boolean
   isError: boolean
   isFetching: boolean
-  isFetchingNextPage: boolean
-  hasNextPage: boolean | undefined
-  loadMore: () => void
+  hasMore: boolean
+  currentPage: number
+  onPageChange: (page: number) => void
   isSearching: boolean
 }
 
-export function QuizList({
+function QuizList({
   quizzes,
   isLoading,
   isError,
   isFetching,
-  isFetchingNextPage,
-  hasNextPage,
-  loadMore,
+  hasMore,
+  currentPage,
+  onPageChange,
   isSearching,
 }: QuizListProps) {
-  if (isFetching && !isFetchingNextPage) {
+  if (isFetching && !isLoading) {
     return (
       <div className="flex justify-center items-center h-12">
         <Loader2 className="w-6 h-6 animate-spin" />
@@ -52,14 +53,17 @@ export function QuizList({
   return (
     <>
       <PublicQuizzes quizzes={quizzes} />
-      {hasNextPage && (
-        <div className="mt-6 flex justify-center">
-          <Button onClick={loadMore} disabled={isFetchingNextPage}>
-            {isFetchingNextPage ? "Loading more..." : "Load More"}
-          </Button>
-        </div>
-      )}
+      <div className="mt-6 flex justify-center gap-2">
+        <Button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
+          Previous
+        </Button>
+        <Button onClick={() => onPageChange(currentPage + 1)} disabled={!hasMore}>
+          Next
+        </Button>
+      </div>
     </>
   )
 }
+
+export default memo(QuizList)
 

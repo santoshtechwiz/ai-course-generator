@@ -1,12 +1,15 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
-import { useInfiniteQuery } from "@tanstack/react-query"
+import React, { useState, useCallback, useMemo, Suspense } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { QuizSidebar } from "./QuizSidebar"
-import { QuizList } from "./QuizList"
+
 import type { QuizListItem, QuizType } from "@/app/types/types"
+import { ErrorBoundary } from "./ErrorBoundary"
+
+const LazyQuizList = React.lazy(() => import("./QuizList"))
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -19,44 +22,41 @@ interface QuizzesClientProps {
 export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps) {
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
+  const [page, setPage] = useState(1)
   const debouncedSearch = useDebounce(search, 300)
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch, isFetching } =
-    useInfiniteQuery({
-      queryKey: ["quizzes", debouncedSearch, userId, selectedTypes],
-      queryFn: ({ pageParam = 1 }) =>
-        getQuizzes(pageParam, 12, debouncedSearch, userId, selectedTypes.length > 0 ? selectedTypes : null),
-      getNextPageParam: (lastPage, allPages) => (lastPage.hasMore ? allPages.length + 1 : undefined),
-      initialPageParam: 1,
-      initialData: {
-        pages: [initialQuizzesData],
-        pageParams: [1],
-      },
-    })
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["quizzes", debouncedSearch, userId, selectedTypes, page],
+    queryFn: () => getQuizzes(page, 12, debouncedSearch, userId, selectedTypes.length > 0 ? selectedTypes : null),
+    initialData: initialQuizzesData,
+    keepPreviousData: true,
+  })
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
+    setPage(1)
   }, [])
 
   const handleClearSearch = useCallback(() => {
     setSearch("")
     setSelectedTypes([])
+    setPage(1)
     refetch()
   }, [refetch])
 
   const toggleQuizType = useCallback((type: QuizType) => {
-    setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
+    setSelectedTypes((prev) => {
+      const newTypes = prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+      setPage(1)
+      return newTypes
+    })
   }, [])
 
-  const loadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage()
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage)
+  }, [])
 
-  const quizzes = useMemo(() => {
-    return data?.pages.flatMap((page) => page.quizzes) || []
-  }, [data?.pages])
+  const quizzes = useMemo(() => data?.quizzes || [], [data?.quizzes])
 
   const isSearching = debouncedSearch.trim() !== "" || selectedTypes.length > 0
 
@@ -71,16 +71,20 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         toggleQuizType={toggleQuizType}
       />
       <div className="lg:w-3/4 space-y-8">
-        <QuizList
-          quizzes={quizzes}
-          isLoading={isLoading}
-          isError={isError}
-          isFetching={isFetching}
-          isFetchingNextPage={isFetchingNextPage}
-          hasNextPage={hasNextPage}
-          loadMore={loadMore}
-          isSearching={isSearching}
-        />
+        <ErrorBoundary fallback={<div>Error loading quizzes. Please try again later.</div>}>
+          <Suspense fallback={<div>Loading...</div>}>
+            <LazyQuizList
+              quizzes={quizzes}
+              isLoading={isLoading}
+              isError={isError}
+              isFetching={isFetching}
+              hasMore={data?.hasMore || false}
+              currentPage={page}
+              onPageChange={handlePageChange}
+              isSearching={isSearching}
+            />
+          </Suspense>
+        </ErrorBoundary>
       </div>
     </div>
   )
