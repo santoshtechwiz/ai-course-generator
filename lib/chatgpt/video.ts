@@ -1,4 +1,4 @@
-import { openai } from "./gpt";
+import openai from "./openAI";
 
 interface Chapter {
   chapter_title: string;
