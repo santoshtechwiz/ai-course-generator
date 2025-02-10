@@ -17,6 +17,7 @@ interface QuizAttemptsProps {
 }
 
 export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
+  console.log(quizAttempts)
   const [selectedQuestion, setSelectedQuestion] = useState<UserQuizAttempt["attemptQuestions"][0] | null>(null)
 
   if (!quizAttempts || quizAttempts.length === 0) {
@@ -52,7 +53,7 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                     </h4>
                     <motion.div className="flex items-center" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Badge
-                        variant={attempt.score >= 80 ? "success" : attempt.score >= 60 ? "warning" : "destructive"}
+                        variant={(attempt.score ?? 0) >= 80 ? "success" : (attempt.score ?? 0) >= 60 ? "warning" : "destructive"}
                       >
                         <BarChart className="w-4 h-4 mr-1" />
                         {attempt.score}%

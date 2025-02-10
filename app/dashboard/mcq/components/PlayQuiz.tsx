@@ -1,16 +1,16 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { ArrowRight, RefreshCcw, AlertTriangle, Trophy, Timer, HelpCircle } from "lucide-react"
+import { CheckCircle2, XCircle, ArrowRight, RefreshCcw, AlertTriangle, Trophy, Timer, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import confetti from "canvas-confetti"
 import { toast } from "@/hooks/use-toast"
-import { useSession } from "next-auth/react"
+import { useSession, signIn } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { submitQuizData } from "@/app/actions/actions"
 
@@ -256,9 +256,11 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     }
   }, [isAuthenticated, slug, saveQuizResults])
 
+
+
   if (hasError) {
     return (
-      <div className="min-h-screen flex items-center justify-center ">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-2xl p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg text-center">
           <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Question Error</h2>
@@ -272,14 +274,14 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-primary">Interactive Quiz Challenge</h1>
+    <div className="w-full max-w-[95%] md:max-w-3xl mx-auto p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+      <div className="space-y-4 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold">Interactive Quiz Challenge</h1>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full cursor-help">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-help">
                   <Timer className="w-4 h-4" />
                   {formatTime(timeSpent)}
                 </div>
@@ -292,7 +294,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
         </div>
         <div className="space-y-2">
           <Progress value={progress} className="h-2" />
-          <div className="flex justify-between text-sm text-muted-foreground">
+          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
             <span>Progress: {Math.round(progress)}%</span>
             <span>
               Question {currentQuestionIndex + 1} of {questions.length}
@@ -300,7 +302,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
           </div>
         </div>
       </div>
-      <div className="mt-8">
+      <div className="pb-6">
         <AnimatePresence mode="wait" initial={false}>
           {!quizCompleted ? (
             <motion.div
@@ -309,17 +311,17 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="space-y-8"
+              className="space-y-6"
             >
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
                   <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                  <h2 className="text-xl sm:text-2xl font-semibold">{currentQuestion?.question}</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold">{currentQuestion?.question}</h2>
                 </div>
                 <RadioGroup
                   onValueChange={(value) => setSelectedAnswer(value)}
                   value={selectedAnswer || ""}
-                  className="space-y-4"
+                  className="space-y-3"
                 >
                   {uniqueOptions.map((option, index) => (
                     <motion.div
@@ -330,17 +332,16 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
                     >
                       <div
                         className={cn(
-                          "flex items-center space-x-3 p-4 rounded-lg transition-all",
-                          "hover:bg-muted/60 cursor-pointer",
-                          "border-2",
-                          selectedAnswer === option ? "border-primary bg-primary/10" : "border-transparent",
+                          "flex items-center space-x-2 p-3 sm:p-4 rounded-lg transition-all",
+                          "hover:bg-muted",
+                          "border-2 border-transparent",
+                          selectedAnswer === option && "border-primary",
                         )}
-                        onClick={() => setSelectedAnswer(option)}
                       >
                         <RadioGroupItem value={option} id={`option-${index}`} />
                         <Label
                           htmlFor={`option-${index}`}
-                          className="flex-grow cursor-pointer font-medium text-base sm:text-lg"
+                          className="flex-grow cursor-pointer font-medium text-sm sm:text-base"
                         >
                           {option}
                         </Label>
@@ -354,17 +355,17 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-8 space-y-6"
+              className="text-center py-4 sm:py-8 space-y-4 sm:space-y-6"
             >
-              <Trophy className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-yellow-500" />
+              <Trophy className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-yellow-500" />
               <div className="space-y-2">
-                <h2 className="text-2xl sm:text-3xl font-bold text-primary">Quiz Completed!</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">Quiz Completed!</h2>
                 <p className="text-muted-foreground">Time taken: {formatTime(timeSpent)}</p>
               </div>
               {isAuthenticated ? (
                 <>
-                  <div className="bg-muted rounded-lg p-6 space-y-4">
-                    <div className="text-4xl sm:text-5xl font-bold text-primary">
+                  <div className="bg-muted rounded-lg p-4 sm:p-6 space-y-4">
+                    <div className="text-3xl sm:text-4xl font-bold">
                       {Math.round((score / questions.length) * 100)}%
                     </div>
                     <p className="text-muted-foreground">
@@ -384,16 +385,12 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
         </AnimatePresence>
       </div>
       {!quizCompleted && (
-        <div className="flex justify-between items-center gap-4 border-t mt-8 pt-6">
+        <div className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
           <p className="text-sm text-muted-foreground">
             Question time:{" "}
             {formatTime(timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0))}
           </p>
-          <Button
-            onClick={nextQuestion}
-            disabled={!selectedAnswer || isSubmitting}
-            className="w-full sm:w-auto px-6 py-3 text-lg"
-          >
+          <Button onClick={nextQuestion} disabled={!selectedAnswer || isSubmitting} className="w-full sm:w-auto">
             {isSubmitting ? (
               "Submitting..."
             ) : currentQuestionIndex === questions.length - 1 ? (
@@ -401,7 +398,7 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
             ) : (
               <>
                 Next Question
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </>
             )}
           </Button>
@@ -410,4 +407,3 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     </div>
   )
 }
-

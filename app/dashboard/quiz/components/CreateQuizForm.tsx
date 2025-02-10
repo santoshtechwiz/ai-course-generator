@@ -20,11 +20,13 @@ import { signIn, useSession } from "next-auth/react"
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { motion } from "framer-motion"
 import { SignInBanner } from "./SignInBanner"
-import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+import PlanAwareButton from "@/app/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/app/components/SubscriptionSlider"
 
-type QuizFormData = z.infer<typeof quizSchema>
+type QuizFormData = z.infer<typeof quizSchema> & {
+  userType?: string
+}
 
 interface Props {
   credits: number
@@ -45,7 +47,6 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
     amount: maxQuestions,
     difficulty: "medium",
   })
-  formData.userType = subscriptionStatus?.subscriptionPlan
 
   const {
     control,
@@ -65,9 +66,9 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
 
-  const createQuizMutation = useMutation({
+  const { mutateAsync: createQuizMutation, status: mutationStatus } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-     
+      data.userType = subscriptionStatus?.subscriptionPlan
       const response = await axios.post("/api/game", data)
       return response.data
     },
@@ -89,6 +90,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
         return
       }
 
+      setIsLoading(true)
       setIsConfirmDialogOpen(true)
     },
     [isLoading, isLoggedIn],
@@ -96,10 +98,9 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
 
   const handleConfirm = React.useCallback(async () => {
     setIsConfirmDialogOpen(false)
-    setIsLoading(true)
 
     try {
-      const response = await createQuizMutation.mutateAsync(watch())
+      const response = await createQuizMutation(watch())
       const userQuizId = response?.userQuizId
 
       if (!userQuizId) throw new Error("userQuizId ID not found")
@@ -119,9 +120,13 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
+  const topic = watch("topic")
 
-  const isDisabled = React.useMemo(() => !isValid || isLoading || credits < 1, [isValid, isLoading, credits])
+  const isFormValid = React.useMemo(() => {
+    return !!topic && !!amount && !!difficulty && isValid
+  }, [topic, amount, difficulty, isValid])
 
+  const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -272,9 +277,10 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
                 label="Generate Quiz"
                 onClick={handleSubmit(onSubmit)}
                 isLoggedIn={isLoggedIn}
-                isEnabled={!errors.topic && !errors.amount && !errors.difficulty && !isLoading}
+                isEnabled={!isDisabled}
+                isLoading={isLoading}
                 hasCredits={credits > 0}
-                loadingLabel="Generating..."
+                loadingLabel="Generating Quiz..."
                 className="w-full transition-all duration-300 hover:shadow-lg"
                 customStates={{
                   default: {

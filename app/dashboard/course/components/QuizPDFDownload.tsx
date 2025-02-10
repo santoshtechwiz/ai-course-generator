@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import type React from "react"
+import { useState, useEffect, useMemo } from "react"
 import { pdf } from "@react-pdf/renderer"
 import type { QuizPDFProps } from "./ConfigurableQuizPDF"
 import { Button } from "@/components/ui/button"
@@ -9,21 +10,41 @@ import { SiAdobe } from "react-icons/si"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { GlobalLoader } from "@/app/components/GlobalLoader"
 
-const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
+interface QuizPDFDownloadProps extends QuizPDFProps {
+  config?: {
+    showOptions?: boolean
+    showAnswerSpace?: boolean
+    answerSpaceHeight?: number
+    showAnswers?: boolean
+  }
+}
+
+const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) => {
   const [isClient, setIsClient] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
-  const quizSlug = quizData?.title ? `${quizData.title}.pdf` : "quiz.pdf"
   const { subscriptionStatus } = useSubscriptionStore()
 
   useEffect(() => {
     setIsClient(true)
   }, [])
 
-  const isDisabled =
-    !isClient ||
-    !subscriptionStatus ||
-    subscriptionStatus.subscriptionPlan === "FREE" ||
-    subscriptionStatus.subscriptionPlan === "BASIC"
+  const isDataReady = useMemo(() => {
+    return quizData && Object.keys(quizData).length > 0
+  }, [quizData])
+
+  const quizSlug = useMemo(() => {
+    return isDataReady ? `${quizData.title}.pdf` : "quiz.pdf"
+  }, [isDataReady, quizData])
+
+  const isDisabled = useMemo(() => {
+    return (
+      !isClient ||
+      !isDataReady ||
+      !subscriptionStatus ||
+      subscriptionStatus.subscriptionPlan === "FREE" ||
+      subscriptionStatus.subscriptionPlan === "BASIC"
+    )
+  }, [isClient, isDataReady, subscriptionStatus])
 
   const handleDownload = async () => {
     if (isDownloading || isDisabled) return
@@ -32,15 +53,13 @@ const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
     let url = ""
 
     try {
-      const blob = await pdf(<ConfigurableQuizPDF quizData={quizData} />).toBlob()
+      const blob = await pdf(<ConfigurableQuizPDF quizData={quizData} config={config} />).toBlob()
       url = URL.createObjectURL(blob)
 
       const link = document.createElement("a")
       link.href = url
       link.download = quizSlug
-      document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
     } catch (error) {
       console.error("Error in download process:", error)
       alert("Failed to download the PDF. Please try again.")
@@ -50,29 +69,27 @@ const QuizPDFDownload: React.FC<QuizPDFProps> = ({ quizData }) => {
     }
   }
 
+  if (!isClient) {
+    return <GlobalLoader />
+  }
+
   return (
     <Button
       onClick={handleDownload}
       disabled={isDownloading || isDisabled}
-
       variant="outline"
       className="flex items-center gap-2"
       aria-label={isDisabled ? "Upgrade to Download" : "Download PDF"}
     >
-      {isClient ? (
-        <>
-          {isDownloading ? (
-            <span className="animate-spin border-2 border-t-transparent border-gray-600 rounded-full w-4 h-4"></span>
-          ) : (
-            <SiAdobe className="h-5 w-5" />
-          )}
-          <span>{isDisabled ? "Upgrade to Download" : "Download PDF"}</span>
-        </>
+      {isDownloading ? (
+        <span className="animate-spin border-2 border-t-transparent border-gray-600 rounded-full w-4 h-4"></span>
       ) : (
-        <GlobalLoader></GlobalLoader>
+        <SiAdobe className="h-5 w-5" />
       )}
+      <span>{isDisabled ? "Upgrade to Download" : "Download PDF"}</span>
     </Button>
   )
 }
 
 export default QuizPDFDownload
+

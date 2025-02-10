@@ -75,6 +75,12 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E5E7EB",
     marginTop: 10,
   },
+  answer: {
+    fontSize: 12,
+    color: "#10B981", // Green color for the answer
+    marginTop: 10,
+    fontWeight: 500,
+  },
   footer: {
     position: "absolute",
     bottom: 30,
@@ -98,6 +104,7 @@ const styles = StyleSheet.create({
 interface Question {
   question: string
   options?: string[] | null
+  answer?: string
 }
 
 export interface QuizPDFProps {
@@ -111,11 +118,12 @@ export interface QuizPDFProps {
     showOptions?: boolean
     showAnswerSpace?: boolean
     answerSpaceHeight?: number
+    showAnswers?: boolean
   }
 }
 
 const ConfigurableQuizPDF: React.FC<QuizPDFProps> = ({ quizData, config = {} }) => {
-  const { showOptions = true, showAnswerSpace = true, answerSpaceHeight = 40 } = config
+  const { showOptions = true, showAnswerSpace = true, answerSpaceHeight = 40, showAnswers = false } = config
 
   const questionsWithParsedOptions = useMemo(() => {
     return quizData?.questions.map((q) => ({
@@ -147,6 +155,7 @@ const ConfigurableQuizPDF: React.FC<QuizPDFProps> = ({ quizData, config = {} }) 
             {showAnswerSpace && (!q.options || !showOptions) && (
               <View style={[styles.answerSpace, { height: answerSpaceHeight }]} />
             )}
+            {showAnswers && q.answer && <Text style={styles.answer}>Answer: {q.answer}</Text>}
           </View>
         ))}
         <View style={styles.footer}>

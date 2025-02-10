@@ -42,11 +42,27 @@ export default function SubscriptionPlans({ userId, currentPlan, subscriptionSta
     setLoading(planName)
     try {
       // Simulated API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      toast({
-        title: "Subscription Successful",
-        description: `You have successfully subscribed to the ${planName} plan.`,
+      const response = await fetch("/api/subscriptions/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId, planName, duration }),
       })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      const stripe = await getStripe()
+      if (stripe) {
+        await stripe.redirectToCheckout({ sessionId: data.sessionId })
+      }
     } catch (error: any) {
       console.error("Error:", error)
       toast({
@@ -326,5 +342,10 @@ function DevModeBanner() {
       <p>You are currently in development mode. Stripe payments are in test mode.</p>
     </div>
   )
+}
+
+async function getStripe() {
+  const { loadStripe } = await import("@stripe/stripe-js")
+  return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 }
 

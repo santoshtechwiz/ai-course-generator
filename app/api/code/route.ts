@@ -1,93 +1,69 @@
-import axios from "axios"
-import * as cheerio from "cheerio"
 
-class TranscriptAPI {
-  static async getTranscript(id: string, config = {}) {
-    const url = new URL("https://youtubetranscript.com")
-    url.searchParams.set("server_vid2", id)
+import { getAuthSession } from "@/lib/authOptions";
+import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
+import { titleSubTopicToSlug } from "@/lib/slug";
+import { NextResponse } from "next/server";
+import { generateCodingMCQs } from "./quizGenerator";
 
-    try {
-      const response = await axios.get(url.toString(), config)
-      const $ = cheerio.load(response.data, undefined, false)
-      const err = $("error")
 
-      if (err.length) {
-        return null // Return null instead of throwing an error
-      }
-
-      return $("transcript text")
-        .map((i, elem) => {
-          const $a = $(elem)
-          return {
-            text: $a.text(),
-            start: Number($a.attr("start")),
-            duration: Number($a.attr("dur")),
-          }
-        })
-        .toArray()
-    } catch (error) {
-      console.warn(`Error fetching transcript: ${error instanceof Error ? error.message : "Unknown error"}`)
-      return null // Return null on any error
-    }
+export async function POST(req: Request) {
+  let { language, subtopic, difficulty, questionCount } = await req.json();
+  const session = await getAuthSession();
+  if (!session?.user) {
+    return NextResponse.json(
+      { error: "You must be logged in to create a quiz." },
+      { status: 401 }
+    );
   }
 
-  static async validateID(id: string, config = {}) {
-    const url = new URL("https://video.google.com/timedtext")
-    url.searchParams.set("type", "track")
-    url.searchParams.set("v", id)
-    url.searchParams.set("id", "0")
-    url.searchParams.set("lang", "en")
-
-    try {
-      await axios.get(url.toString(), config)
-      return true
-    } catch (_) {
-      return false
-    }
-  }
-}
-
-export async function getTranscriptForVideo(videoId: string) {
-  if (!videoId) {
-    return {
-      status: 400,
-      message: "Missing videoId parameter",
-      transcript: null,
-    }
-  }
 
   try {
-    const transcript = await TranscriptAPI.getTranscript(videoId)
+    const slug = titleSubTopicToSlug(language, subtopic);
+    const userQuiz = await createUserQuiz(session.user.id, language, 'code', slug);
+   
+    try {
+    
 
-    if (!transcript || transcript.length === 0) {
-      return {
-        status: 404,
-        message: "No transcript available for this video.",
-        transcript: null,
+      let quizzes = await generateCodingMCQs(language, subtopic, difficulty, questionCount);  //dummyQuizzes[language] || dummyQuizzes["JavaScript"]
+      if(quizzes.length === 0){
+        return NextResponse.json({
+          error: "No quizzes available for the selected topic"
+        }, { status: 404 });
       }
+      
+      quizzes = quizzes.sort(() => 0.5 - Math.random()).slice(0, 5)
+      console.log(quizzes);
+      // Add difficulty to each quiz (in a real scenario, you'd have different quizzes for each difficulty)
+      quizzes = quizzes.map((quiz) => ({ ...quiz, difficulty }))
+
+      await createQuestions(quizzes, userQuiz.id,"code");
+
+      // 4. Update topic count
+      await updateTopicCount(language);
+
+      // 5. Only deduct credits if everything else succeeded
+      await updateUserCredits(session.user.id,"code");
+
+      return NextResponse.json({
+        userQuizId: userQuiz.id,
+        slug: userQuiz.slug
+      }, { status: 200 });
+    } catch (error) {
+      // If anything fails after quiz creation, try to delete the quiz
+      await prisma.userQuiz.delete({
+        where: { id: userQuiz.id }
+      }).catch(() => {
+        // Ignore deletion errors
+        console.error('Failed to cleanup quiz after error:', userQuiz.id);
+      });
+      throw error;
     }
-
-    // Limit the number of transcript items (e.g., first 300 items)
-    const limitedTranscript = transcript.slice(0, 300)
-
-    const transcriptText = limitedTranscript
-      .map((item) => item?.text ?? "")
-      .filter((text: string) => text.trim() !== "")
-      .join(" ")
-      .replace(/\n/g, " ")
-
-    return {
-      status: 200,
-      message: "Transcript fetched successfully (limited to 300 items).",
-      transcript: transcriptText,
-    }
+    //  return Response.json(quizzes)
   } catch (error) {
-    console.warn("Error in getTranscriptForVideo:", error)
-    return {
-      status: 500,
-      message: `Error processing transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
-      transcript: null,
-    }
+    console.error(error)
+    return Response.json({ error: "Failed to generate quizzes" }, { status: 500 })
   }
 }
+
+
 

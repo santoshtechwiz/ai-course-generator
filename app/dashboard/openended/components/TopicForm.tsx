@@ -241,6 +241,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPla
               label="Generate Quiz"
               onClick={generateQuiz}
               isLoggedIn={isLoggedIn}
+              isLoading={isLoading}
               isEnabled={!isDisabled}
               hasCredits={credits > 0}
               loadingLabel="Generating..."

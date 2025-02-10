@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { RefreshCcw, Trophy, HelpCircle, ArrowRight, Timer } from "lucide-react"
+import { RefreshCcw, Trophy, HelpCircle, ArrowRight, Timer } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import QuizOptions from "./CodeQuizOptions"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
@@ -31,7 +31,7 @@ interface CodeQuizProps {
 const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPublic, userId, ownerId, quizData }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>(
-    new Array(quizData.questions.length).fill(null),
+    new Array(quizData.questions.length).fill(null)
   )
   const [startTimes, setStartTimes] = useState<number[]>(new Array(quizData.questions.length).fill(Date.now()))
   const [timeSpent, setTimeSpent] = useState<number[]>(new Array(quizData.questions.length).fill(0))
@@ -106,6 +106,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
 
         const answers = selectedOptions.map((answer, index) => ({
           answer: answer || "",
+          isCorrect: answer === quizData.questions[index].correctAnswer,
           timeSpent: index === currentQuestionIndex ? (Date.now() - startTimes[index]) / 1000 : timeSpent[index],
           hintsUsed: false,
         }))
@@ -120,7 +121,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
         }
 
         if (status === "authenticated") {
-          const submittedResults = await submitQuizData(results, setIsSubmitting)
+          const submittedResults = await submitQuizData(results)
           setQuizResults(submittedResults)
         } else {
           localStorage.setItem("quizResults", JSON.stringify(results))
@@ -129,12 +130,13 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
         setQuizCompleted(true)
       } catch (error) {
         console.error("Error submitting quiz data:", error)
+      } finally {
         setIsSubmitting(false)
       }
     }
   }, [
     currentQuestionIndex,
-    quizData.questions.length,
+    quizData.questions,
     quizId,
     selectedOptions,
     calculateScore,
@@ -168,7 +170,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
               <code key={index} className="bg-muted/50 text-primary font-mono px-1.5 py-0.5 rounded-md">
                 {part}
               </code>
-            ),
+            )
           )}
         </div>
         {codeBlocks.map((code, index) => (
@@ -219,14 +221,14 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
         </div>
       )
     },
-    [currentQuestion.language, renderCode],
+    [currentQuestion.language, renderCode]
   )
 
   useEffect(() => {
     const submitSavedResults = async () => {
       if (status === "authenticated" && quizResults && !quizResults.submitted) {
         try {
-          const submittedResults = await submitQuizData(quizResults, setIsSubmitting)
+          const submittedResults = await submitQuizData(quizResults)
           setQuizResults(submittedResults)
           localStorage.removeItem("quizResults")
         } catch (error) {
@@ -284,7 +286,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
   const progress = ((currentQuestionIndex + 1) / quizData.questions.length) * 100
 
   return (
-    <div className="w-full  w-[98%] md:max-w-3xl p-4 mx-auto dark:bg-gray-800 rounded-lg shadow-lg">
+    <div className="w-full w-[98%] md:max-w-3xl p-4 mx-auto dark:bg-gray-800 rounded-lg shadow-lg">
       <div className="space-y-4 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">Coding Quiz Challenge</h1>
@@ -367,4 +369,3 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
 }
 
 export default CodingQuiz
-
