@@ -1,28 +1,23 @@
+import { YoutubeGrabTool } from "@/lib/youtubetranscript";
 import axios from "axios";
-import * as cheerio from "cheerio";
+
 
 class TranscriptAPI {
   static async getTranscript(id, config = {}) {
-    const url = new URL('https://youtubetranscript.com');
-    url.searchParams.set('server_vid2', id);
+        const result = await YoutubeGrabTool.fetchTranscript(id, config);
 
-    const
-      response = await axios.get(url, config),
-      $ = cheerio.load(response.data, undefined, false),
-      err = $('error');
+        if (!result) {
+          throw new Error("Failed to fetch transcript.");
+        }
 
-    if (err.length) throw new Error(err.text());
-    return $('transcript text').map((i, elem) => {
-      const $a = $(elem);
-      return {
-        text: $a.text(),
-        start: Number($a.attr('start')),
-        duration: Number($a.attr('dur'))
-      };
-    }).toArray();
+        const transcriptText = result
+          .map(item => item.text);
+         
+
+        return transcriptText;
   }
 
- 
+
 }
 
 export async function getTranscriptForVideo(videoId: string) {
@@ -39,9 +34,9 @@ export async function getTranscriptForVideo(videoId: string) {
 
     // Limit the number of transcript items (e.g., first 300 items)
     const limitedTranscript = transcript.slice(0, 300);
-
+    
     const transcriptText = limitedTranscript
-      .map(item => item.text)
+      .map(item => item)
       .filter((text: string) => text.trim() !== '') // Remove empty strings
       .join(' ')
       .replace(/\n/g, ' ');
@@ -58,6 +53,6 @@ export async function getTranscriptForVideo(videoId: string) {
       message: `Error processing transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
       transcript: null,
     }
-
+    
   }
 }
