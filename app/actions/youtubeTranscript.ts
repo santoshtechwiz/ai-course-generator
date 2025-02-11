@@ -1,10 +1,10 @@
-import { YoutubeGrabTool } from "@/lib/youtubetranscript";
+import { YoutubeTranscript } from "@/lib/youtubetranscript";
 import axios from "axios";
 
 
 class TranscriptAPI {
   static async getTranscript(id, config = {}) {
-        const result = await YoutubeGrabTool.fetchTranscript(id, config);
+        const result = await YoutubeTranscript.fetchTranscript(id, config);
 
         if (!result) {
           throw new Error("Failed to fetch transcript.");
