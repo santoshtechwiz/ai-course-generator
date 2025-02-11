@@ -1,10 +1,8 @@
 import pLimit from 'p-limit';
 import { MultipleChoiceQuestion } from '@/app/types/types';
 
-import { searchYoutube } from './youtubeService';
+import { getTranscript, searchYoutube } from './youtubeService';
 import generateMultipleChoiceQuestions from '@/lib/chatgpt/videoQuiz';
-import { getTranscriptForVideo } from '@/app/actions/youtubeTranscript';
-import { YoutubeGrabTool } from '@/lib/youtubetranscript';
 
 
 const limit = pLimit(1); // Limit concurrency to 1
@@ -31,29 +29,12 @@ export async function processVideoAndGenerateQuestions(
     return null;
   }
 
-  const transcript = await YoutubeGrabTool.fetchTranscript(videoId);
-  if (!transcript) {
-    console.log(`Failed to get transcript: ${transcript}`);
-    return null;
-  }
-  const transcriptResponse = processTranscript(transcript);
-  if (!transcriptResponse) {
-    console.log(`Failed to get transcript: ${transcriptResponse}`);
+  const transcriptResponse = await getTranscript(videoId);
+  if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
+    console.log(`Failed to get transcript: ${transcriptResponse.message}`);
     return null;
   }
 
-  return getQuestionsFromTranscript(transcriptResponse, courseTitle);
+  return getQuestionsFromTranscript(transcriptResponse.transcript, courseTitle);
 }
 
-function processTranscript(transcriptResponse: {
-  text: string;
-  offset: number;
-  duration: number;
-}[], limit = 300): string {
-  return transcriptResponse
-    .slice(0, limit)
-    .map((item) => item.text.trim())
-    .filter((text) => text !== "")
-    .join(" ")
-    .replace(/\s+/g, " ");
-}

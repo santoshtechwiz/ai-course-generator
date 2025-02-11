@@ -417,3 +417,29 @@ export interface QuestionOpenEnded {
     inputType: string;
   };
 }
+
+
+export interface YoutubeSearchResponse {
+
+  items: Array<{
+    id: {
+
+      videoId: string;
+
+    };
+
+  }>;
+
+}
+
+export interface TranscriptItem {
+  text: string;
+  start: number;
+  duration: number;
+}
+export interface TranscriptResponse{
+  
+  status: number;
+  message: string;
+  
+}
