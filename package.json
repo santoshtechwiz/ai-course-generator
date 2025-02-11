@@ -111,8 +111,7 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "ts-retry-promise": "^0.8.1",
-    "youtube-transcript": "^1.2.1",
-    "youtube-video-transcript": "^1.0.6",
+    "yt-transcript": "^0.0.2",
     "ytdl-core": "npm:@distube/ytdl-core@^4.15.8",
     "zod": "^3.23.8",
     "zustand": "^5.0.3"

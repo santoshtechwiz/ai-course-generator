@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from "axios"
-import Transcriptor, { type Transcription } from "youtube-video-transcript"
-import Server from "youtube-video-transcript"
+import { YtTranscript } from 'yt-transcript';
+
 import { Supadata } from "@supadata/js"
 export interface YoutubeSearchResponse {
   items: Array<{
@@ -37,12 +37,7 @@ class YoutubeService {
     this.supadata = new Supadata({
       apiKey: process.env.SUPDATA_KEY || "",
     })
-    Server.setProxy({
-      url: "https://spys.one/",
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-      },
-    })
+ 
   }
 
   static async searchYoutube(searchQuery: string): Promise<string | null> {
@@ -108,23 +103,18 @@ class YoutubeService {
 
   static async fetchTranscript(videoId: string): Promise<{ transcript: string } | null> {
     try {
-      const result: Transcription | Transcription[] = await Transcriptor.getTranscript(videoId)
-
-      if (!result) {
-        throw new Error("Failed to fetch transcript.")
+      const transcript = await  new YtTranscript({ videoId }).getTranscript();
+  
+      if (!transcript || transcript.length === 0) {
+        throw new Error("No captions available for this video.");
       }
-
-      if (Array.isArray(result)) {
-        return {
-          transcript: result.map((t) => t.data).join(" "),
-        }
-      }
+  
       return {
-        transcript: result.data.map((item) => item.text).join(" "),
-      }
+        transcript: transcript.map((item) => item.text).join(" "),
+      };
     } catch (error) {
-      console.error("Failed to fetch transcript:", error)
-      return null
+      console.error("Failed to fetch transcript:", error);
+      return null;
     }
   }
 
