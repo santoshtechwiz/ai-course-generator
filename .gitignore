@@ -47,3 +47,5 @@ docker-compose.yaml
 /app/dashboard/deep.js
 migrate.mjs
 /app/api/public/course
+a.html
+a.mjs
