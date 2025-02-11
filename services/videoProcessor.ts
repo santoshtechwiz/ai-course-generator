@@ -1,7 +1,7 @@
 import pLimit from 'p-limit';
 import { MultipleChoiceQuestion } from '@/app/types/types';
 
-import { getTranscript, searchYoutube } from './youtubeService';
+import { searchYoutube } from './youtubeService';
 import generateMultipleChoiceQuestions from '@/lib/chatgpt/videoQuiz';
 import { getTranscriptForVideo } from '@/app/actions/youtubeTranscript';
 

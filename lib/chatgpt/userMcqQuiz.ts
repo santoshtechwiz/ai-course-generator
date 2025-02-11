@@ -1,7 +1,4 @@
-import { openai } from "./gpt";
-
-
-
+import openai from "./openAI";
 
 
 export const generateMcqForUserInput = async (topic: string, amount: number, difficulty: string = 'hard', userType:string) => {

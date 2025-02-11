@@ -1,4 +1,4 @@
-import { Question, RequestBody } from "@/app/types/types";
+import { Question } from "@/app/types/types";
 import { prisma } from "@/lib/db";
 import Semaphore from "@/lib/semaphore";
 
@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    const body: RequestBody = await req.json();
+    const body = await req.json();
     const { videoId, chapterId, chapterName } = body;
 
     let questions = await getQuestionForChapter(chapterId);
