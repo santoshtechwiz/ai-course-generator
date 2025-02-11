@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useRouter } from "next/navigation"
 
 const CourseAISummary = React.lazy(() => import("./CourseAISummary"))
 const CourseDetailsQuiz = React.lazy(() => import("./CourseDetailsQuiz"))
@@ -24,7 +25,7 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
   const [activeTab, setActiveTab] = useState<"summary" | "quiz">("summary")
   const [isSummaryLoading, setIsSummaryLoading] = useState(true)
   const { subscriptionStatus } = useSubscriptionStore()
-  const { theme } = useTheme()
+  const router=useRouter();
   const isPremium =
     subscriptionStatus?.subscriptionPlan === "PRO" || subscriptionStatus?.subscriptionPlan === "ULTIMATE"
 
@@ -37,13 +38,16 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
   const handleSummaryReady = () => {
     setIsSummaryLoading(false)
   }
+  const upgradetoPremium = () => {
+      router.push("/dashboard/subscription")
+  }
 
   const PremiumFeatureOverlay = () => (
     <div className="flex flex-col items-center justify-center p-6 text-center">
       <Lock className="w-12 h-12 text-muted-foreground mb-4" />
       <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
       <p className="text-muted-foreground mb-4">Upgrade to Premium to access AI-powered summaries and quizzes.</p>
-      <Button variant="default">Upgrade to Premium</Button>
+      <Button onClick={upgradetoPremium} variant="default">Upgrade to Premium</Button>
     </div>
   )
 
