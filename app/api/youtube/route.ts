@@ -2,8 +2,9 @@ import { Question } from "@/app/types/types";
 import { prisma } from "@/lib/db";
 import Semaphore from "@/lib/semaphore";
 
-import { YoutubeGrabTool } from "@/lib/youtubetranscript";
+
 import { getQuestionsFromTranscript } from "@/services/videoProcessor";
+import YoutubeService from "@/services/youtubeService";
 import { NextResponse } from "next/server";
 
 
@@ -35,11 +36,11 @@ async function fetchAndGenerateQuiz(
   chapterName: string
 ): Promise<string> {
   try {
-    const transcriptArr = await YoutubeGrabTool.fetchTranscript(videoId, { lang: "en" });
+    const transcriptArr = await YoutubeService.fetchTranscript(videoId);
 
     if (!transcriptArr) return "";
 
-    const transcript = transcriptArr.map((t) => t.text).join(" ").trim();
+    const transcript = transcriptArr.transcript;
 
     if (!transcript) return "";
 
