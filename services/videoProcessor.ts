@@ -3,6 +3,7 @@ import { MultipleChoiceQuestion } from '@/app/types/types';
 
 import { getTranscript, searchYoutube } from './youtubeService';
 import generateMultipleChoiceQuestions from '@/lib/chatgpt/videoQuiz';
+import { getTranscriptForVideo } from '@/app/actions/youtubeTranscript';
 
 
 const limit = pLimit(1); // Limit concurrency to 1
@@ -29,7 +30,7 @@ export async function processVideoAndGenerateQuestions(
     return null;
   }
 
-  const transcriptResponse = await getTranscript(videoId);
+  const transcriptResponse = await getTranscriptForVideo(videoId);
   if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
     console.log(`Failed to get transcript: ${transcriptResponse.message}`);
     return null;
