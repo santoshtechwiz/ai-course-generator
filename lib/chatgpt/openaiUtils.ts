@@ -1,5 +1,6 @@
 import { Quiz, QuizGenerationParams } from "@/app/types/types"
-import { openai } from "./gpt"
+import openai from "./openAI"
+
 
 
 
