@@ -1,93 +1,99 @@
 import axios from "axios"
 import * as cheerio from "cheerio"
+import { YoutubeTranscript } from "youtube-transcript"
+
+interface TranscriptItem {
+  text: string
+  start: number
+  duration: number
+}
+
+interface TranscriptResponse {
+  status: number
+  message: string
+  transcript: string
+}
 
 class TranscriptAPI {
-  static async getTranscript(id: string, config = {}) {
+  static async getTranscript(id: string, config = {}): Promise<TranscriptItem[]> {
     const url = new URL("https://youtubetranscript.com")
     url.searchParams.set("server_vid2", id)
 
-    try {
-      const response = await axios.get(url.toString(), config)
-      const $ = cheerio.load(response.data, undefined, false)
-      const err = $("error")
+    const response = await axios.get(url.toString(), config)
+    const $ = cheerio.load(response.data, undefined, false)
+    const err = $("error")
 
-      if (err.length) {
-        return null // Return null instead of throwing an error
-      }
+    if (err.length) throw new Error(err.text())
 
-      return $("transcript text")
-        .map((i, elem) => {
-          const $a = $(elem)
-          return {
-            text: $a.text(),
-            start: Number($a.attr("start")),
-            duration: Number($a.attr("dur")),
-          }
-        })
-        .toArray()
-    } catch (error) {
-      console.warn(`Error fetching transcript: ${error instanceof Error ? error.message : "Unknown error"}`)
-      return null // Return null on any error
-    }
-  }
-
-  static async validateID(id: string, config = {}) {
-    const url = new URL("https://video.google.com/timedtext")
-    url.searchParams.set("type", "track")
-    url.searchParams.set("v", id)
-    url.searchParams.set("id", "0")
-    url.searchParams.set("lang", "en")
-
-    try {
-      await axios.get(url.toString(), config)
-      return true
-    } catch (_) {
-      return false
-    }
+    return $("transcript text")
+      .map((_, elem) => {
+        const $a = $(elem)
+        return {
+          text: $a.text(),
+          start: Number($a.attr("start")),
+          duration: Number($a.attr("dur")),
+        }
+      })
+      .get()
   }
 }
 
-export async function getTranscriptForVideo(videoId: string) {
-  if (!videoId) {
-    return {
-      status: 400,
-      message: "Missing videoId parameter",
-      transcript: null,
-    }
+async function getTranscriptUsingLibrary(videoId: string): Promise<TranscriptResponse> {
+  const transcript = await YoutubeTranscript.fetchTranscript(videoId)
+  const processedTranscript = processTranscript(transcript)
+
+  return {
+    status: 200,
+    message: "Transcript fetched successfully using library method.",
+    transcript: processedTranscript,
   }
+}
+
+async function getTranscriptUsingCustomAPI(videoId: string): Promise<TranscriptResponse> {
+  const transcript = await TranscriptAPI.getTranscript(videoId)
+  const processedTranscript = processTranscript(transcript)
+
+  return {
+    status: 200,
+    message: "Transcript fetched successfully using custom API method.",
+    transcript: processedTranscript,
+  }
+}
+
+function processTranscript(transcript: TranscriptItem[], limit = 300): string {
+  return transcript
+    .slice(0, limit)
+    .map((item) => item.text.trim())
+    .filter((text) => text !== "")
+    .join(" ")
+    .replace(/\s+/g, " ")
+}
+
+export async function getTranscriptForVideo(videoId: string): Promise<TranscriptResponse> {
+  if (!videoId) {
+    throw new Error("Missing videoId parameter")
+  }
+
+  let transcriptResponse: TranscriptResponse
 
   try {
-    const transcript = await TranscriptAPI.getTranscript(videoId)
-
-    if (!transcript || transcript.length === 0) {
-      return {
-        status: 404,
-        message: "No transcript available for this video.",
-        transcript: null,
-      }
-    }
-
-    // Limit the number of transcript items (e.g., first 300 items)
-    const limitedTranscript = transcript.slice(0, 300)
-
-    const transcriptText = limitedTranscript
-      .map((item) => item?.text ?? "")
-      .filter((text: string) => text.trim() !== "")
-      .join(" ")
-      .replace(/\n/g, " ")
-
-    return {
-      status: 200,
-      message: "Transcript fetched successfully (limited to 300 items).",
-      transcript: transcriptText,
-    }
-  } catch (error) {
-    console.warn("Error in getTranscriptForVideo:", error)
-    return {
-      status: 500,
-      message: `Error processing transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
-      transcript: null,
+    // Try using the library first
+    transcriptResponse = await getTranscriptUsingLibrary(videoId)
+  } catch (libraryError) {
+    console.warn("Library method failed, falling back to custom API:", libraryError)
+    try {
+      // Fallback to custom API
+      transcriptResponse = await getTranscriptUsingCustomAPI(videoId)
+    } catch (apiError) {
+      console.error("Both transcript fetching methods failed:", apiError)
+      throw new Error("Failed to fetch transcript using both methods")
     }
   }
+
+  if (!transcriptResponse.transcript) {
+    throw new Error("No transcript available.")
+  }
+
+  return transcriptResponse
 }
 

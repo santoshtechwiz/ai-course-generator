@@ -63,7 +63,7 @@ export async function middleware(req: NextRequest) {
     const slug = match.pathname.groups.slug
     if (slug) {
       // Send a request to increment view count
-      fetch(`${req.nextUrl.origin}/api/increment`, {
+      fetch(`${process.env.NEXT_PUBLIC_URL}/api/increment`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
