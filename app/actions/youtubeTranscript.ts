@@ -4,17 +4,17 @@ import axios from "axios";
 
 class TranscriptAPI {
   static async getTranscript(id, config = {}) {
-        const result = await YoutubeTranscript.fetchTranscript(id, config);
+    const result = await YoutubeTranscript.fetchTranscript(id, config);
 
-        if (!result) {
-          throw new Error("Failed to fetch transcript.");
-        }
+    if (!result) {
+      throw new Error("Failed to fetch transcript.");
+    }
 
-        const transcriptText = result
-          .map(item => item.text);
-         
+    const transcriptText = result
+      .map(item => item.text);
 
-        return transcriptText;
+
+    return transcriptText;
   }
 
 
@@ -22,19 +22,19 @@ class TranscriptAPI {
 
 export async function getTranscriptForVideo(videoId: string) {
   if (!videoId) {
-    throw new Error("Missing videoId parameter");
+    console.warn("No videoId provided to getTranscriptForVideo");
   }
 
   try {
     const transcript = await TranscriptAPI.getTranscript(videoId);
 
     if (!transcript || transcript.length === 0) {
-      throw new Error("No transcript available.");
+      console.warn("No transcript found for video", videoId);
     }
 
     // Limit the number of transcript items (e.g., first 300 items)
     const limitedTranscript = transcript.slice(0, 300);
-    
+
     const transcriptText = limitedTranscript
       .map(item => item)
       .filter((text: string) => text.trim() !== '') // Remove empty strings
@@ -53,6 +53,6 @@ export async function getTranscriptForVideo(videoId: string) {
       message: `Error processing transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
       transcript: null,
     }
-    
+
   }
 }
