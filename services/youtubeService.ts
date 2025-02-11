@@ -25,7 +25,7 @@ class YoutubeService {
   private static YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
   private static MAX_RETRIES = 3
   private static RETRY_DELAY = 1000 // 1 second
-  private static MAX_TRANSCRIPT_ITEMS = 300
+  private static MAX_TRANSCRIPT_ITEMS = 500
   private static processedVideoIds = new Set<string>()
   private static supadata: Supadata
   private static youtubeClient: AxiosInstance = axios.create({
@@ -104,7 +104,7 @@ class YoutubeService {
   static async fetchTranscript(videoId: string): Promise<{ transcript: string } | null> {
     let transcript: any[] | null = null;
     try {
-      throw new Error("No captions available for this video.");
+   
        transcript = await new YtTranscript({ videoId }).getTranscript();
 
       if (!transcript || transcript.length === 0) {
