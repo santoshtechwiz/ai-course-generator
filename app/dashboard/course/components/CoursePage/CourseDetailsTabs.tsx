@@ -58,7 +58,9 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
                   <TabsTrigger
                     value="summary"
                     disabled={!isPremium}
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative"
+                    className={`data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative ${
+                      activeTab === "summary" ? "border-b-2 border-primary" : ""
+                    }`}
                   >
                     <FileText className="w-4 h-4 mr-2 text-blue-500" />
                     Summary
@@ -76,7 +78,9 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
                   <TabsTrigger
                     value="quiz"
                     disabled={!isPremium || isSummaryLoading}
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative"
+                    className={`data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative ${
+                      activeTab === "quiz" ? "border-b-2 border-primary" : ""
+                    }`}
                   >
                     <ClipboardList className="w-4 h-4 mr-2 text-green-500" />
                     Quiz

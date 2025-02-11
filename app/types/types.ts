@@ -173,13 +173,19 @@ export interface FullChapterType {
   order: number;
   courseId: number;
   isCompleted: boolean;
+  questions: CourseQuestion[]
 
   chapter: FullChapterType
 
 
 }
 
-
+export type CourseQuestion = {
+  id: number
+  question: string
+  options: string[]
+  answer: string
+}
 
 
 

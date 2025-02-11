@@ -14,15 +14,10 @@ import { Progress } from "@/components/ui/progress"
 
 import QuizBackground from "./QuizBackground"
 import ComponentLoader from "../ComponentLoader"
-import { FullChapterType, FullCourseType } from "@/app/types/types"
+import { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import { CourseQuiz } from "@prisma/client"
 
-type CourseQuestion = {
-  id: number
-  question: string
-  options: string[]
-  answer: string
-}
+
 type Props = {
   course: FullCourseType
   chapter: FullChapterType & {
