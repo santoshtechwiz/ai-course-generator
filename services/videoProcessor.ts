@@ -1,8 +1,8 @@
 import pLimit from 'p-limit';
 import { MultipleChoiceQuestion } from '@/app/types/types';
 
-import { getTranscript, searchYoutube } from './youtubeService';
 import generateMultipleChoiceQuestions from '@/lib/chatgpt/videoQuiz';
+import YoutubeService from './youtubeService';
 
 
 const limit = pLimit(1); // Limit concurrency to 1
@@ -23,13 +23,13 @@ export async function processVideoAndGenerateQuestions(
   searchQuery: string,
   courseTitle: string
 ): Promise<MultipleChoiceQuestion[] | null> {
-  const videoId = await searchYoutube(searchQuery);
+  const videoId = await YoutubeService.searchYoutube(searchQuery);
   if (!videoId) {
     console.log('No suitable video found');
     return null;
   }
 
-  const transcriptResponse = await getTranscript(videoId);
+  const transcriptResponse = await YoutubeService.getTranscript(videoId);
   if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
     console.log(`Failed to get transcript: ${transcriptResponse.message}`);
     return null;

@@ -5,7 +5,8 @@ import { z } from "zod";
 import PQueue from 'p-queue';
 import pRetry from 'p-retry';
 import delay from 'delay';
-import { searchYoutube } from "@/services/youtubeService";
+
+import YoutubeService from "@/services/youtubeService";
 
 const queue = new PQueue({ concurrency: 1 });
 
@@ -96,7 +97,7 @@ async function fetchVideoIdWithRetry(youtubeSearchQuery: string): Promise<string
     async () => {
       console.log("Fetching video ID...");
       await delay(1000);
-      const videoId = await searchYoutube(youtubeSearchQuery);
+      const videoId = await YoutubeService.searchYoutube(youtubeSearchQuery);
       if (!videoId) throw new Error("Failed to fetch video ID");
       return videoId;
     },
