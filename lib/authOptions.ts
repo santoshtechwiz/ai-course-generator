@@ -12,6 +12,7 @@ declare module "next-auth" {
     user: {
       id: string
       credits: number
+      accessToken: string
       isAdmin: boolean
       userType: string
       subscriptionPlan: string | null
@@ -74,6 +75,7 @@ export const authOptions: NextAuthOptions = {
 
         session.user.subscriptionPlan = subscription?.planId || null
         session.user.subscriptionStatus = subscription?.status || null
+        session.user.accessToken =  session.user.accessToken;
       }
       return session
     },
@@ -103,7 +105,15 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          scope:
+            "openid email profile https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/youtubepartner",
+        },
+      },
     }),
+
+   
     GithubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,

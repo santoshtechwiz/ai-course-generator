@@ -5,7 +5,8 @@ import PQueue from 'p-queue';
 import {  generateVideoSummary } from "@/lib/chatgptAndGoogleAi";
 import NodeCache from 'node-cache';
 import { prisma } from "@/lib/db";
-import { getTranscriptForVideo } from "@/app/actions/youtubeTranscript";
+import YoutubeService from "@/services/youtubeService";
+
 
 const summaryCache = new NodeCache({ stdTTL: 3600 }); // Cache summaries for 1 hour
 const queue = new PQueue({ concurrency: 1 });
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function fetchAndGenerateSummary(videoId: string): Promise<string | null> {
-  const transcriptResponse = await getTranscriptForVideo(videoId);
+  const transcriptResponse = await YoutubeService.getTranscriptForVideo(videoId);
 
   if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
     console.log(`No valid transcript for video ID ${videoId}.`);
