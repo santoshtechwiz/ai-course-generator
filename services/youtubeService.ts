@@ -37,7 +37,7 @@ class YoutubeService {
     this.supadata = new Supadata({
       apiKey: process.env.SUPDATA_KEY || "",
     })
- 
+
   }
 
   static async searchYoutube(searchQuery: string): Promise<string | null> {
@@ -102,20 +102,23 @@ class YoutubeService {
   }
 
   static async fetchTranscript(videoId: string): Promise<{ transcript: string } | null> {
+    let transcript: any[] | null = null;
     try {
-      const transcript = await  new YtTranscript({ videoId }).getTranscript();
-  
+       transcript = await new YtTranscript({ videoId }).getTranscript();
+
       if (!transcript || transcript.length === 0) {
         throw new Error("No captions available for this video.");
       }
-  
+
       return {
         transcript: transcript.map((item) => item.text).join(" "),
       };
     } catch (error) {
-      console.error("Failed to fetch transcript:", error);
-      return null;
+      console.warn("Failed to fetch transcript:", error);
+      transcript = await this.getTranscriptV2(videoId);
+      
     }
+    return transcript ? { transcript: transcript.join(" ") } : null;
   }
 
   private static async getCaptionTracks(videoId: string): Promise<CaptionTrack[]> {
@@ -167,7 +170,7 @@ class YoutubeService {
       }
     }
   }
-  static async getTranscriptV2(videoId: string): Promise<string | null> {
+  static async getTranscriptV2(videoId: string): Promise<string[] | null> {
     try {
       const transcript = await this.supadata.youtube.transcript({
         videoId: videoId,
@@ -180,7 +183,7 @@ class YoutubeService {
 
       // Assuming the transcript is an array of objects with 'text' property
       if (Array.isArray(transcript)) {
-        return transcript.map((item) => item.text).join(" ")
+        return transcript.map((item) => item.text);
       }
 
       // If it's already a string, return it directly
