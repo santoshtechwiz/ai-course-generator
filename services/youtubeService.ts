@@ -1,7 +1,7 @@
 import axios, { type AxiosInstance } from "axios"
 import { YtTranscript } from 'yt-transcript';
 
-import { Supadata } from "@supadata/js"
+import { Supadata, TranscriptChunk } from "@supadata/js"
 export interface YoutubeSearchResponse {
   items: Array<{
     id: {
@@ -104,6 +104,7 @@ class YoutubeService {
   static async fetchTranscript(videoId: string): Promise<{ transcript: string } | null> {
     let transcript: any[] | null = null;
     try {
+      throw new Error("No captions available for this video.");
        transcript = await new YtTranscript({ videoId }).getTranscript();
 
       if (!transcript || transcript.length === 0) {
@@ -182,8 +183,8 @@ class YoutubeService {
       }
 
       // Assuming the transcript is an array of objects with 'text' property
-      if (Array.isArray(transcript)) {
-        return transcript.map((item) => item.text);
+      if (Array.isArray(transcript.content)) {
+        return transcript.content.map((item:TranscriptChunk) => item.text);
       }
 
       // If it's already a string, return it directly
