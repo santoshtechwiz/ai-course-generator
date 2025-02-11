@@ -1,6 +1,7 @@
-import { getTranscriptForVideo } from "@/app/actions/youtubeTranscript";
+
 import { prisma } from "@/lib/db";
 import { getQuestionsFromTranscript } from "@/services/videoProcessor";
+import YoutubeService from "@/services/youtubeService";
 import { NextResponse } from "next/server";
 import NodeCache from "node-cache";
 
@@ -69,9 +70,9 @@ async function fetchTranscriptOrSummary(chapterId: number, videoId: string): Pro
 
     // If no summary exists, fetch the transcript
     console.log("Fetching transcript for video:", videoId);
-    const transcriptArr = await getTranscriptForVideo(videoId);
-
-    if (!transcriptArr || transcriptArr?.transcript.length === 0) {
+    const transcriptArr = await YoutubeService.getTranscriptForVideo(videoId);
+    
+    if (!transcriptArr || !transcriptArr.transcript || transcriptArr.transcript.length === 0) {
       console.error("Failed to fetch transcript");
       return null;
     }
