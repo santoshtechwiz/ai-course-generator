@@ -1,5 +1,6 @@
 import { MultipleChoiceQuestion } from "@/app/types/types";
-import { openai } from "./gpt";
+import openai from "./openAI";
+
 
 interface FunctionDefinition {
   name: string;
