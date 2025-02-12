@@ -210,7 +210,7 @@ export async function getUserWithCourses(userId: string) {
             courseUnits: true,
           },
         },
-        subscriptions: true,
+        subscription: true,
       },
     })
 
@@ -237,9 +237,9 @@ export async function getUserWithCourses(userId: string) {
       image: user.image,
       credits: user.credits,
       courses: coursesWithProgress,
-      subscription: user.subscriptions ? {
-        userType: user.subscriptions.userId,
-        stripeCurrentPeriodEnd: user.subscriptions.currentPeriodEnd,
+      subscription: user.subscription ? {
+        userType: user.subscription.userId,
+        stripeCurrentPeriodEnd: user.subscription.currentPeriodEnd,
       } : null,
     }
   } catch (error) {

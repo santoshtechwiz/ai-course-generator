@@ -12,17 +12,23 @@ export async function generateCodingMCQs(
 ): Promise<CodeChallenge[]> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-3.5-turbo-1106",
       messages: [
         {
           role: "system",
-          content: `Generate ${questionCount} coding MCQs on ${subtopic} in ${language} at ${difficulty} level.
-              Each MCQ must include:
-              - A clear question without code snippets.
-              - A code snippet in the "codeSnippet" field if needed for the question.
-              - Four answer options without labels (A, B, C, D). Options may contain code snippets if necessary.
-              - One correct answer.
-              Ensure all code is properly formatted and indented. Use triple backticks (\`\`\`) to enclose code snippets in options.`
+          content: `Generate precisely ${questionCount} multiple-choice coding questions on ${subtopic} in ${language} at a ${difficulty} level, ensuring that 90% of the questions focus on coding.
+          **Format each question as follows:**
+          - "question": A concise, clear question. Do NOT include code here.
+          - "codeSnippet": A code snippet if required (else empty).
+          - "options": A list of exactly four distinct answer choices. Wrap code snippets in triple backticks (\`\`\`).
+          - "correctAnswer": The exact text of the correct answer (must match one of the options).
+    
+          **Rules:**
+          - Ensure consistent and proper formatting.
+          - No explanations, just structured questions.
+          - No duplicate or ambiguous answers.
+          - Code should be syntactically correct and relevant to the question.
+          `
         },
       ],
       functions: [
@@ -52,7 +58,8 @@ export async function generateCodingMCQs(
         },
       ],
       function_call: { name: "create_coding_mcqs" },
-    })
+    });
+    
 
     const functionCall = response.choices[0].message.function_call
     if (!functionCall) throw new Error("Function call failed")
