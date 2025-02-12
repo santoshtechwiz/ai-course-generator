@@ -1,44 +1,92 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import nProgress from "nprogress";
-import "nprogress/nprogress.css";
 import { useEffect } from "react";
-nProgress.configure({
-  showSpinner: true,
-  speed: 500,
-  minimum: 0.3,
+import { usePathname, useSearchParams } from "next/navigation";
+import NProgress from "nprogress";
+import { useTheme } from "next-themes";
 
-  template: `
-       <div class="fixed top-0 left-0 w-full h-1 bg-primary/80 shadow-md shadow-primary/40" role="bar">
-        <div class="nprogress-bar absolute left-0 top-0 h-full w-full bg-primary transition-all"></div>
-      </div>
-      <div class="spinner fixed top-2 right-4 hidden" role="spinner">
-        <div class="spinner-icon w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-  `,
+// Remove default styles
+import "nprogress/nprogress.css";
+
+// Custom styles
+const npProgressStyles = `
+  #nprogress {
+    pointer-events: none;
+  }
+  
+  #nprogress .bar {
+    background: hsl(var(--primary));
+    position: fixed;
+    z-index: 1031;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+  }
+  
+  #nprogress .peg {
+    display: block;
+    position: absolute;
+    right: 0px;
+    width: 100px;
+    height: 100%;
+    box-shadow: 0 0 10px hsl(var(--primary)), 0 0 5px hsl(var(--primary));
+    opacity: 1.0;
+    transform: rotate(3deg) translate(0px, -4px);
+  }
+
+  #nprogress::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(to right, transparent, hsl(var(--primary)), transparent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+  }
+
+  .dark #nprogress .bar,
+  .dark #nprogress::after {
+    box-shadow: 0 0 10px hsl(var(--primary)), 0 0 5px hsl(var(--primary));
+  }
+`;
+
+NProgress.configure({
+  minimum: 0.3,
+  easing: 'ease',
+  speed: 500,
+  showSpinner: false,
 });
+
 export function NavigationEvents() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const { theme } = useTheme();
 
   useEffect(() => {
-    const _push = router.push.bind(router);
-
-    router.push = (href, options) => {
-      if (pathname !== "/") {
-        nProgress.start();
-
-        _push(href, options);
-      }
+    NProgress.done();
+    return () => {
+      NProgress.start();
     };
-  }, [])
+  }, [pathname, searchParams]);
 
   useEffect(() => {
-    nProgress.done();
-  }, [pathname, searchParams, router]);
+    // Apply custom styles
+    const styleElement = document.createElement("style");
+    styleElement.textContent = npProgressStyles;
+    document.head.appendChild(styleElement);
+
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
   return null;
 }
-
