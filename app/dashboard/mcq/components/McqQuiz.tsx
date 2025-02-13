@@ -288,7 +288,7 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
   }
 
   return (
-    <div className="w-full  md:max-w-3xl   dark:bg-gray-800 rounded-lg shadow-lg">
+    <div className="w-full  md:max-w-3xl p-4  dark:bg-gray-800 rounded-lg shadow-lg">
       <div className="space-y-4 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">Interactive Quiz Challenge</h1>

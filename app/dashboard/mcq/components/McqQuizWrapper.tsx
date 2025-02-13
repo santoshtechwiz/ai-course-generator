@@ -13,7 +13,7 @@ interface McqContainerProps {
 const McqQuizWrapper = ({ slug, currentUserId, result }: McqContainerProps) => {
     return (
 
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 ">
             <Suspense fallback={<QuizSkeleton />}>
                 {result && result.result && (
                     <QuizActions
