@@ -13,9 +13,9 @@ const SUBSCRIPTION_PLANS = [
     },
     features: [
       "5 tokens to use on courses or quizzes",
-      "Up to 3 questions per quiz",
+      
       "Basic AI accuracy",
-      "Video transcripts",
+      
     ],
   },
   {
@@ -32,9 +32,8 @@ const SUBSCRIPTION_PLANS = [
     },
     features: [
       "20 tokens to use on courses or quizzes",
-      "Up to 5 questions per quiz",
+     
       "Better AI accuracy",
-      "Video transcripts",
       "PDF downloads",
     ],
   },
@@ -52,9 +51,12 @@ const SUBSCRIPTION_PLANS = [
     },
     features: [
       "60 tokens to use on courses or quizzes",
-      "Up to 10 questions per quiz",
+  
       "High AI accuracy",
+      "Video transcripts",
       "Video Quiz",
+      "Code Quiz",
+      "PDF downloads",
       "Priority support",
     ],
   },
@@ -72,10 +74,13 @@ const SUBSCRIPTION_PLANS = [
     },
     features: [
       "150 tokens to use on courses or quizzes",
-      "Up to 15 questions per quiz",
+  
       "Highest AI accuracy",
       "Coding quizzes",
+      "Video transcripts",
       "Video Quiz",
+      "PDF downloads",
+      "Code Quiz",
       "Priority support",
     ],
   },

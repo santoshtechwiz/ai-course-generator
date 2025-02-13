@@ -87,7 +87,7 @@ export default function TestimonialsSection() {
   return (
     <section className="py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-secondary/20">
       <div className="container px-4 md:px-6">
-        <h2 className="text-3xl font-bold text-center mb-8 text-primary">What Our Users Say</h2>
+       
         <div className="relative">
           <div className="overflow-hidden">
             <motion.div

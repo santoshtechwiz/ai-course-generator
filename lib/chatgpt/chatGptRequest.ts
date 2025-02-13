@@ -1,6 +1,7 @@
 
 import Ajv from 'ajv';
-import { openai } from './gpt';
+import openai from './openaiUtils';
+
 
 
 const ajv = new Ajv();

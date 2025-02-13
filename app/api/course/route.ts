@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getUnsplashImage } from "@/lib/unsplash";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/authOptions";
-import { generateCourseContent } from "@/lib/chatgpt/video";
+import { generateCourseContent } from "@/lib/chatgpt/generateCourseContent";
 import { createChaptersSchema } from "@/schema/schema";
 import { generateSlug } from "@/lib/utils";
 import NodeCache from 'node-cache';

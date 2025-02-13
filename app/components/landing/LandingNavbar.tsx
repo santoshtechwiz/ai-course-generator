@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Link as ScrollLink } from "react-scroll"
 import Logo from "../shared/Logo"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 
 const navItems = [
   { name: "Features", to: "features" },
@@ -23,7 +23,7 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
-
+ 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10)
@@ -76,9 +76,7 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="ghost" onClick={() => signIn(undefined, { callbackUrl: "/dashboard" })}>
-            Sign In
-          </Button>
+        
           <Button onClick={handleGetStarted}>Get Started</Button>
         </div>
 
@@ -121,16 +119,7 @@ export default function Navbar() {
                 ))}
               </div>
               <div className="mt-auto p-4 border-t border-border">
-                <Button
-                  variant="ghost"
-                  className="w-full mb-2"
-                  onClick={() => {
-                    signIn(undefined, { callbackUrl: "/dashboard" })
-                    closeMobileMenu()
-                  }}
-                >
-                  Sign In
-                </Button>
+           
                 <Button
                   className="w-full"
                   onClick={() => {

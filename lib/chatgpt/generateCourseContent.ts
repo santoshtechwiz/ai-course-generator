@@ -1,4 +1,5 @@
-import openai from "./openAI";
+import openai from "./openaiUtils";
+
 
 interface Chapter {
   chapter_title: string;
