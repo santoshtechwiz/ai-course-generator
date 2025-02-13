@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import openai from "./chatgpt/openAI";
+import openai from "./chatgpt/openaiUtils";
+
 
 // Initialize Google Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
