@@ -249,11 +249,6 @@ export async function getUserWithCourses(userId: string) {
 }
 
 
-
-
-
-
-
 export async function getRandomQuestions(count: number = 5) {
   const randomQuestions = await prisma.userQuiz.findMany({
     where: {
