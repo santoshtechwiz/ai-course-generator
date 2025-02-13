@@ -49,7 +49,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
   return (
 
     <div className="flex flex-col gap-4">
-      <SectionWrapper>
+     
         <QuizActions
           quizId={quizData.quizId.toString()}
           quizSlug={quizData.slug}
@@ -58,8 +58,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
           userId={userId}
           ownerId={quizData?.ownerId || ""}
         />
-      </SectionWrapper>
-      <SectionWrapper>
+   
         <CodingQuiz
           quizId={quizData.quizId}
           slug={quizData.slug}
@@ -69,7 +68,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
           ownerId={quizData?.ownerId || ""}
           quizData={quizData.quizData}
         />
-      </SectionWrapper>
+     
     </div>
 
   )
