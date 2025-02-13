@@ -48,7 +48,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
 
   return (
 
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-4 ">
      
         <QuizActions
           quizId={quizData.quizId.toString()}

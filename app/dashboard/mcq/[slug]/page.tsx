@@ -88,7 +88,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
         <QuizHeader topic={result.result.topic} />
       )}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 ">
           <Suspense fallback={<QuizSkeleton />}>
             <McqQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
           </Suspense>
