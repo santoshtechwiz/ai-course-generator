@@ -1,20 +1,18 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, XCircle, ArrowRight, RefreshCcw, AlertTriangle, Trophy, Timer, HelpCircle } from "lucide-react"
+import { ArrowRight, AlertTriangle, Timer, HelpCircle, RefreshCcw, Trophy } from "lucide-react"
 import { cn } from "@/lib/utils"
-import confetti from "canvas-confetti"
 import { toast } from "@/hooks/use-toast"
-import { useSession, signIn } from "next-auth/react"
-import { SignInPrompt } from "@/app/components/SignInPrompt"
+import { useSession } from "next-auth/react"
 import { submitQuizData } from "@/app/actions/actions"
-
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { SignInPrompt } from "@/app/components/SignInPrompt"
 
 type Question = {
   id: number
@@ -25,13 +23,13 @@ type Question = {
   option3: string
 }
 
-interface PlayQuizProps {
+interface McqQuizProps {
   questions: Question[]
   quizId: number
   slug: string
 }
 
-export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
+export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [score, setScore] = useState(0)
@@ -82,11 +80,6 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     const finalQuestionTimes = [...questionTimes, currentTime]
 
     setQuizCompleted(true)
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    })
 
     const finalScore = finalUserAnswers.filter((answer, index) => answer === questions[index].answer).length
     setScore(finalScore)
@@ -211,17 +204,6 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     timeSpent,
   ])
 
-  const resetQuiz = useCallback(() => {
-    setCurrentQuestionIndex(0)
-    setSelectedAnswer(null)
-    setScore(0)
-    setQuizCompleted(false)
-    setHasError(false)
-    setTimeSpent(0)
-    setUserAnswers([])
-    setQuestionTimes([])
-  }, [])
-
   const formatTime = useCallback((seconds: number) => {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
@@ -256,8 +238,6 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     }
   }, [isAuthenticated, slug, saveQuizResults])
 
-
-
   if (hasError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -273,8 +253,42 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
     )
   }
 
+  if (quizCompleted) {
+    const percentage = (score / questions.length) * 100
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center min-h-screen p-4 bg-background"
+      >
+        <div className="max-w-2xl w-full text-center space-y-6">
+          <Trophy className="w-16 h-16 mx-auto text-yellow-500" />
+          <h2 className="text-2xl font-bold">Quiz Completed!</h2>
+          <p className="text-muted-foreground">Time taken: {formatTime(timeSpent)}</p>
+          {isAuthenticated ? (
+            <>
+              <div className="bg-muted rounded-lg p-6 space-y-4">
+                <div className="text-4xl font-bold">{Math.round(percentage).toFixed(2)}%</div>
+                <p className="text-muted-foreground">
+                  You got {score} out of {questions.length} questions correct
+                </p>
+              </div>
+              <Button onClick={() => window.location.reload()} className="w-full sm:w-auto">
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Retake Quiz
+              </Button>
+            </>
+          ) : (
+            <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />
+          )}
+        </div>
+      </motion.div>
+    )
+  }
+
   return (
-    <div className="w-full max-w-[95%] md:max-w-3xl mx-auto p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+    <div className="w-full  md:max-w-3xl   dark:bg-gray-800 rounded-lg shadow-lg">
       <div className="space-y-4 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">Interactive Quiz Challenge</h1>
@@ -304,106 +318,73 @@ export default function PlayQuiz({ questions, quizId, slug }: PlayQuizProps) {
       </div>
       <div className="pb-6">
         <AnimatePresence mode="wait" initial={false}>
-          {!quizCompleted ? (
-            <motion.div
-              key={currentQuestionIndex}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                  <h2 className="text-lg sm:text-xl font-semibold">{currentQuestion?.question}</h2>
-                </div>
-                <RadioGroup
-                  onValueChange={(value) => setSelectedAnswer(value)}
-                  value={selectedAnswer || ""}
-                  className="space-y-3"
-                >
-                  {uniqueOptions.map((option, index) => (
-                    <motion.div
-                      key={`${index}-${option}`}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
+          <motion.div
+            key={currentQuestionIndex}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+          >
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
+                <h2 className="text-lg sm:text-xl font-semibold">{currentQuestion?.question}</h2>
+              </div>
+              <RadioGroup
+                onValueChange={(value) => setSelectedAnswer(value)}
+                value={selectedAnswer || ""}
+                className="space-y-3"
+              >
+                {uniqueOptions.map((option, index) => (
+                  <motion.div
+                    key={`${index}-${option}`}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center space-x-2 p-3 sm:p-4 rounded-lg transition-all",
+                        "hover:bg-muted",
+                        "border-2 border-transparent",
+                        selectedAnswer === option && "border-primary",
+                      )}
                     >
-                      <div
-                        className={cn(
-                          "flex items-center space-x-2 p-3 sm:p-4 rounded-lg transition-all",
-                          "hover:bg-muted",
-                          "border-2 border-transparent",
-                          selectedAnswer === option && "border-primary",
-                        )}
+                      <RadioGroupItem value={option} id={`option-${index}`} />
+                      <Label
+                        htmlFor={`option-${index}`}
+                        className="flex-grow cursor-pointer font-medium text-sm sm:text-base"
                       >
-                        <RadioGroupItem value={option} id={`option-${index}`} />
-                        <Label
-                          htmlFor={`option-${index}`}
-                          className="flex-grow cursor-pointer font-medium text-sm sm:text-base"
-                        >
-                          {option}
-                        </Label>
-                      </div>
-                    </motion.div>
-                  ))}
-                </RadioGroup>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-4 sm:py-8 space-y-4 sm:space-y-6"
-            >
-              <Trophy className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-yellow-500" />
-              <div className="space-y-2">
-                <h2 className="text-xl sm:text-2xl font-bold">Quiz Completed!</h2>
-                <p className="text-muted-foreground">Time taken: {formatTime(timeSpent)}</p>
-              </div>
-              {isAuthenticated ? (
-                <>
-                  <div className="bg-muted rounded-lg p-4 sm:p-6 space-y-4">
-                    <div className="text-3xl sm:text-4xl font-bold">
-                      {Math.round((score / questions.length) * 100)}%
+                        {option}
+                      </Label>
                     </div>
-                    <p className="text-muted-foreground">
-                      You got {score} out of {questions.length} questions correct
-                    </p>
-                  </div>
-                  <Button onClick={resetQuiz} className="w-full sm:w-auto">
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                    Retake Quiz
-                  </Button>
-                </>
-              ) : (
-                <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />
-              )}
-            </motion.div>
-          )}
+                  </motion.div>
+                ))}
+              </RadioGroup>
+            </div>
+          </motion.div>
         </AnimatePresence>
       </div>
-      {!quizCompleted && (
-        <div className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
-          <p className="text-sm text-muted-foreground">
-            Question time:{" "}
-            {formatTime(timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0))}
-          </p>
-          <Button onClick={nextQuestion} disabled={!selectedAnswer || isSubmitting} className="w-full sm:w-auto">
-            {isSubmitting ? (
-              "Submitting..."
-            ) : currentQuestionIndex === questions.length - 1 ? (
-              "Finish Quiz"
-            ) : (
-              <>
-                Next Question
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
-            )}
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
+        <p className="text-sm text-muted-foreground">
+          Question time:{" "}
+          {formatTime(timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0))}
+        </p>
+        <Button onClick={nextQuestion} disabled={!selectedAnswer || isSubmitting} className="w-full sm:w-auto">
+          {isSubmitting ? (
+            "Submitting..."
+          ) : currentQuestionIndex === questions.length - 1 ? (
+            "Finish Quiz"
+          ) : (
+            <>
+              Next Question
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   )
 }
+

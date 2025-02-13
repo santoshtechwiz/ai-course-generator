@@ -6,8 +6,9 @@ import { notFound } from "next/navigation"
 import CodingQuiz from "./CodeQuiz"
 import type { CodingQuizProps } from "@/app/types/types"
 import { GlobalLoader } from "@/app/components/GlobalLoader"
-import { QuizActions } from "../../mcq/components/QuizActions"
+
 import SectionWrapper from "@/components/SectionWrapper"
+import { QuizActions } from "@/app/components/QuizActions"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
@@ -47,8 +48,8 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
 
   return (
 
-    <div className="flex flex-col gap-8">
-     
+    <div className="flex flex-col gap-4">
+      <SectionWrapper>
         <QuizActions
           quizId={quizData.quizId.toString()}
           quizSlug={quizData.slug}
@@ -57,7 +58,8 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
           userId={userId}
           ownerId={quizData?.ownerId || ""}
         />
-     
+      </SectionWrapper>
+      <SectionWrapper>
         <CodingQuiz
           quizId={quizData.quizId}
           slug={quizData.slug}
@@ -67,7 +69,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
           ownerId={quizData?.ownerId || ""}
           quizData={quizData.quizData}
         />
-     
+      </SectionWrapper>
     </div>
 
   )
