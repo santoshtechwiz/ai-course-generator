@@ -1,87 +1,23 @@
 "use client"
 
-import type React from "react"
 import { useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { Loader2, Star, Trash2, Eye, EyeOff } from "lucide-react"
+import { Star, Trash2, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogCancel,
   AlertDialogAction,
-  AlertDialogHeader,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { useCourseActions } from "@/hooks/useCourseActions"
-
-interface ActionButtonProps {
-  onClick: () => void
-  isLoading: boolean
-  icon: React.ElementType
-  activeIcon: React.ElementType
-  label: string
-  activeLabel: string
-  isActive: boolean
-  activeClass: string
-  inactiveClass: string
-}
-
-const ActionButton: React.FC<ActionButtonProps> = ({
-  onClick,
-  isLoading,
-  icon: Icon,
-  activeIcon: ActiveIcon,
-  label,
-  activeLabel,
-  isActive,
-  activeClass,
-  inactiveClass,
-}) => {
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      className={cn("relative w-full transition-all duration-200 ease-in-out", isActive ? activeClass : inactiveClass)}
-      onClick={onClick}
-      disabled={isLoading}
-    >
-      <AnimatePresence mode="wait" initial={false}>
-        {isLoading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <Loader2 className="h-4 w-4 animate-spin" />
-          </motion.div>
-        ) : (
-          <motion.div
-            key={isActive ? "active" : "inactive"}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
-            className="flex items-center justify-center gap-2"
-          >
-            {isActive ? <ActiveIcon className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-            <span className="hidden sm:inline text-sm font-medium">{isActive ? activeLabel : label}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Button>
-  )
-}
 
 interface CourseActionsProps {
   slug: string
@@ -100,68 +36,113 @@ export default function CourseActions({ slug }: CourseActionsProps) {
 
   return (
     <TooltipProvider>
-      <Card className="bg-gradient-to-r flex justify-between w-full from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg overflow-hidden">
-        <CardContent className="p-4">
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+      <div className="max-w-[1200px] mx-auto w-full">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Tooltip>
               <TooltipTrigger asChild>
-                <div>
-                  <ActionButton
-                    onClick={handlePrivacyToggle}
-                    isLoading={loading === "privacy"}
-                    icon={EyeOff}
-                    activeIcon={Eye}
-                    label="Make Public"
-                    activeLabel="Make Private"
-                    isActive={status.isPublic}
-                    activeClass="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800 border-green-300 dark:border-green-700"
-                    inactiveClass="bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-800 border-yellow-300 dark:border-yellow-700"
-                  />
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrivacyToggle}
+                  disabled={loading === "privacy"}
+                  className={cn(
+                    "w-full transition-all duration-200",
+                    status.isPublic
+                      ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900"
+                      : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-900",
+                  )}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {loading === "privacy" ? (
+                      <motion.span
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center justify-center gap-2"
+                      >
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="content"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center justify-center gap-2"
+                      >
+                        {status.isPublic ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        <span className="hidden sm:inline">{status.isPublic ? "Make Private" : "Make Public"}</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">
+              <TooltipContent>
                 <p>{status.isPublic ? "Make course private" : "Make course public"}</p>
               </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <div>
-                  <ActionButton
-                    onClick={handleFavoriteToggle}
-                    isLoading={loading === "favorite"}
-                    icon={Star}
-                    activeIcon={Star}
-                    label="Add to Favorites"
-                    activeLabel="Remove from Favorites"
-                    isActive={status.isFavorite}
-                    activeClass="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 border-blue-300 dark:border-blue-700"
-                    inactiveClass="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600"
-                  />
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFavoriteToggle}
+                  disabled={loading === "favorite"}
+                  className={cn(
+                    "w-full transition-all duration-200",
+                    status.isFavorite
+                      ? "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+                  )}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {loading === "favorite" ? (
+                      <motion.span
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center justify-center gap-2"
+                      >
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="content"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center justify-center gap-2"
+                      >
+                        <Star className={cn("h-4 w-4", status.isFavorite && "fill-current")} />
+                        <span className="hidden sm:inline">
+                          {status.isFavorite ? "Remove Favorite" : "Add Favorite"}
+                        </span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">
+              <TooltipContent>
                 <p>{status.isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
               </TooltipContent>
             </Tooltip>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 border-red-300 dark:border-red-700"
-                  >
-                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900"
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Trash2 className="h-4 w-4" />
                     <span className="hidden sm:inline">Delete Course</span>
-                  </Button>
-                </div>
+                  </span>
+                </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -175,13 +156,13 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                   <AlertDialogAction
                     onClick={handleDelete}
                     disabled={loading === "delete"}
-                    className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                    className="bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-800"
                   >
                     {loading === "delete" ? (
-                      <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Deleting...</span>
-                      </div>
+                        Deleting...
+                      </span>
                     ) : (
                       "Delete"
                     )}
@@ -189,31 +170,31 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </div>
 
-            <div className="col-span-1 sm:col-span-2 lg:col-span-1">
-              
-              <div className="flex items-center justify-center mt-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <Star
-                    key={value}
-                    className={cn(
-                      "h-6 w-6 cursor-pointer transition-all duration-200",
-                      value <= (status.rating || 0)
-                        ? "text-yellow-400 fill-yellow-400 hover:text-yellow-500 hover:fill-yellow-500"
-                        : "text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500",
-                    )}
-                    onClick={() => handleRating(value)}
-                  />
-                ))}
-                {loading === "rating" && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-                {!loading && status?.rating !== null && (
-                  <span className="ml-2 text-sm font-medium">{status?.rating?.toFixed(1)}</span>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </CardContent>
-      </Card>
+          <div className="flex items-center justify-center sm:justify-end gap-1">
+            {[1, 2, 3, 4, 5].map((value) => (
+              <motion.button
+                key={value}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => handleRating(value)}
+                className="p-1"
+              >
+                <Star
+                  className={cn(
+                    "h-5 w-5 transition-colors",
+                    value <= (status.rating || 0)
+                      ? "fill-yellow-400 text-yellow-400 hover:fill-yellow-500 hover:text-yellow-500"
+                      : "text-muted-foreground hover:text-muted-foreground/80",
+                  )}
+                />
+              </motion.button>
+            ))}
+            {loading === "rating" && <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />}
+          </div>
+        </div>
+      </div>
     </TooltipProvider>
   )
 }

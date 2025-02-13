@@ -206,43 +206,53 @@ export default function MainContent(props: MainContentProps) {
   const isOwner = session?.user?.id === props.course.userId
 
   return (
-    <div className="min-h-full bg-background w-full overflow-y-auto">
+    <div className="min-h-full flex flex-col bg-background">
       <ChapterInfo course={props.course} />
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-4">
-          {isOwner && (
-            <div className="w-full lg:w-auto flex flex-wrap justify-end gap-2">
-              <ErrorBoundary FallbackComponent={ErrorFallback}>
-                <Suspense fallback={<LoadingFallback message="Loading actions..." />}>
-                  <CourseActionsWithErrorBoundary slug={props.course.slug || ""} 
-                 />
-                </Suspense>
-              </ErrorBoundary>
+      
+      <div className="flex-1">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container px-4">
+            {isOwner && (
+              <div className="py-4">
+                <ErrorBoundary FallbackComponent={ErrorFallback}>
+                  <Suspense fallback={<LoadingFallback message="Loading actions..." />}>
+                    <CourseActionsWithErrorBoundary 
+                      slug={props.course.slug || ""} 
+                    />
+                  </Suspense>
+                </ErrorBoundary>
+              </div>
+            )}
+          </div>
+        </header>
+
+        <main className="container px-4 py-6 flex flex-col gap-6">
+          <div className="max-w-[1200px] mx-auto w-full space-y-6">
+            <div className="aspect-video overflow-hidden rounded-lg bg-muted shadow-sm w-full">
+              <VideoPlayer
+                key={props.initialVideoId}
+                initialVideoId={props.initialVideoId}
+                currentChapter={props.currentChapter}
+                onVideoEnd={props.onVideoEnd}
+                currentTime={props.currentTime}
+                onTimeUpdate={props.onTimeUpdate}
+                onChapterComplete={props.onChapterComplete}
+                course={props.course}
+                onVideoSelect={props.onVideoSelect}
+                isLastVideo={props.isLastVideo}
+              />
             </div>
-          )}
-        </div>
-      </header>
 
-      <main className="container py-6 px-4 space-y-6 sm:space-y-8 w-full mt-16 lg:mt-0">
-        <div className="aspect-video overflow-hidden rounded-lg bg-muted shadow-sm w-full">
-          <VideoPlayer
-            key={props.initialVideoId}
-            initialVideoId={props.initialVideoId}
-            currentChapter={props.currentChapter}
-            onVideoEnd={props.onVideoEnd}
-            currentTime={props.currentTime}
-            onTimeUpdate={props.onTimeUpdate}
-            onChapterComplete={props.onChapterComplete}
-            course={props.course}
-            onVideoSelect={props.onVideoSelect}
-            isLastVideo={props.isLastVideo}
-          />
-        </div>
-
-        <div className="rounded-lg bg-card text-card-foreground shadow-sm w-full">
-          <QuizSectionTabs course={props.course} currentChapter={props.currentChapter} planId={props.planId} />
-        </div>
-      </main>
+            <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+              <QuizSectionTabs 
+                course={props.course} 
+                currentChapter={props.currentChapter} 
+                planId={props.planId} 
+              />
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

@@ -3,7 +3,7 @@ import prisma from "@/lib/db";
 import { Question } from "../types/types";
 
 // Define return type
-interface McqQuestionsResponse {
+export interface McqQuestionsResponse {
   result: {
     id: number;
     topic: string;
