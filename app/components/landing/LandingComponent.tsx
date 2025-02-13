@@ -26,7 +26,7 @@ const defaultSections = [
   {
     key: "features",
     title: "Features",
-    description: "Discover the key features that make our product stand out.",
+    description: "Discover the key features that make our website stand out.",
     icon: Sparkles,
     Component: FeatureSections,
   },
@@ -40,14 +40,14 @@ const defaultSections = [
   {
     key: "showcase",
     title: "Showcase",
-    description: "See our product in action with real-world examples.",
+    description: "See our courses and quiz in action.",
     icon: Laptop,
     Component: ShowcaseSection,
   },
   {
     key: "testimonials",
     title: "Testimonials",
-    description: "Hear what our satisfied customers have to say.",
+    description: "Hear what our satisfied users have to say.",
     icon: MessageSquare,
     Component: TestimonialsSection,
   },

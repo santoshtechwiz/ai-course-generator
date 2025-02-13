@@ -2,10 +2,10 @@
 import { z } from "zod";
 
 
-import { generateMcqForUserInput } from "./userMcqQuiz";
+import { generateMcqForUserInput, generateOpenEndedQuiz } from "./userMcqQuiz";
 
 import { getQuestionsSchema } from "@/schema/schema";
-import { generateOpenEndedQuiz } from "./quizGenerator";
+
 import { Question } from "@/app/types/types";
 
 

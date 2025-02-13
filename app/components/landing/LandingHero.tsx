@@ -26,14 +26,6 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
   const [topic, setTopic] = useState("")
   const router = useRouter()
 
-  const handleTopicSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (topic) {
-      onTopicSubmit(topic)
-    } else {
-      router.push("/dashboard/create")
-    }
-  }
 
   return (
     <Element name="hero">
@@ -59,18 +51,12 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
               </RevealAnimation>
 
               <RevealAnimation delay={0.4}>
-                <form onSubmit={handleTopicSubmit} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
-                  <Input
-                    type="text"
-                    placeholder="Enter a course topic..."
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    className="flex-grow"
-                  />
-                  <Button type="submit" size="lg" className="w-full sm:w-auto">
-                    Generate Course
-                  </Button>
-                </form>
+
+
+                <Button type="submit" size="lg" className="w-full sm:w-auto">
+                  Generate Course
+                </Button>
+
               </RevealAnimation>
             </div>
 

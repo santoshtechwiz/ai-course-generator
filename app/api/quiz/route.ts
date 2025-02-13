@@ -1,4 +1,4 @@
-import { generateQuestions } from '@/lib/chatgpt/gpt';
+import { generateQuestions } from '@/lib/chatgpt/generateQuestions';
 import { getQuestionsSchema } from '@/schema/schema';
 
 import { NextResponse } from 'next/server';

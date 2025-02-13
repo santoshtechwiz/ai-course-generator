@@ -1,5 +1,16 @@
 import { Quiz, QuizGenerationParams } from "@/app/types/types"
-import openai from "./openAI"
+import { OpenAI } from "openai";
+import https from "https";
+
+
+const agent = new https.Agent({  
+  rejectUnauthorized: false
+});
+ const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  httpAgent: agent,
+  dangerouslyAllowBrowser: true
+});
 
 
 
@@ -23,3 +34,4 @@ export const generateQuizFlexible = async (params: QuizGenerationParams): Promis
   return result as Quiz
 }
 
+export default  openai; 
