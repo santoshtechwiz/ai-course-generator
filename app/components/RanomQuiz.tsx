@@ -15,11 +15,13 @@ const iconMap = {
   mcq: CheckCircle2,
   openended: FileQuestion,
   "fill-blanks": AlignJustify,
+  code: Sparkles,
 }
 
 const quizTypeRoutes = {
   mcq: "dashboard/mcq",
   openended: "dashboard/openended",
+  code: "dashboard/code",
   "fill-blanks": "dashboard/blanks",
 }
 

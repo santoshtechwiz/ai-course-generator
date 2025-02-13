@@ -200,8 +200,8 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <SectionWrapper>
+    <div className="flex flex-col gap-8">
+    
       <QuizActions
         quizId={quizData?.id?.toString() || ""}
         quizSlug={slug}
@@ -212,8 +212,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
         quizType="openended"
         
       />
-      </SectionWrapper>
-      <SectionWrapper>
+      
       <h1 className="text-3xl font-bold mb-4 text-gradient">Open Ended Quiz: {quizData?.topic || "Unknown"}</h1>
       {quizData && quizData.questions && quizData.questions.length > 0 ? (
         <QuizQuestion
@@ -225,7 +224,7 @@ const QuizPage: React.FC<QuizPageProps> = ({ slug, quizData }) => {
       ) : (
         <p className="text-gray-500">No questions available for this quiz.</p>
       )}
-      </SectionWrapper>
+   
     </div>
   );
 };
