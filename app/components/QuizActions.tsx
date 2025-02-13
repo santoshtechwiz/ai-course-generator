@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
 
-import QuizPDFDownload from "../../course/components/QuizPDFDownload"
+import QuizPDFDownload from "../dashboard/course/components/QuizPDFDownload"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { Rating } from "@/components/ui/rating"
 

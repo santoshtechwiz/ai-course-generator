@@ -78,15 +78,15 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) =
       onClick={handleDownload}
       disabled={isDownloading || isDisabled}
       variant="outline"
-      className="flex items-center gap-2"
+      className="flex items-center gap-2 sm:px-4 sm:py-2 p-2"
       aria-label={isDisabled ? "Upgrade to Download" : "Download PDF"}
     >
       {isDownloading ? (
-        <span className="animate-spin border-2 border-t-transparent border-gray-600 rounded-full w-4 h-4"></span>
+        <span className="animate-spin border-2 border-t-transparent border-gray-600 rounded-full w-5 h-5"></span>
       ) : (
         <SiAdobe className="h-5 w-5" />
       )}
-      <span>{isDisabled ? "Upgrade to Download" : "Download PDF"}</span>
+      <span className="hidden sm:inline">{isDisabled ? "Upgrade to Download" : "Download PDF"}</span>
     </Button>
   )
 }

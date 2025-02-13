@@ -7,8 +7,9 @@ import { authOptions } from "@/lib/authOptions"
 
 import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
-import McqContainer from "../components/McqContainer"
+import McqQuizWrapper from "../components/McqQuizWrapper"
 import { QuizSkeleton } from "../components/QuizSkeleton"
+import QuizHeader from "@/app/components/shared/QuizHeader"
 
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -69,7 +70,7 @@ export async function generateStaticParams() {
   return quizzes.filter((quiz) => quiz.slug).map((quiz) => ({ slug: quiz.slug }))
 }
 
-const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
+const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   const params = await props.params
   const { slug } = params
 
@@ -82,28 +83,22 @@ const QuizPage = async (props: { params: Promise<{ slug: string }> }) => {
   }
 
   return (
-    <div className="  py-8 px-4 sm:px-6 lg:px-8 bg-red-500">
-      <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden p-6">
-        {result?.result && (
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">{result.result.topic} Quiz</h1>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3  ">
-          {/* Left Side - Quiz Content */}
-          <div className="md:col-span-2">
-            <Suspense fallback={<QuizSkeleton />}>
-              <McqContainer slug={slug} currentUserId={currentUserId || ""} result={result} />
-            </Suspense>
-          </div>
-
-          {/* Right Side - Additional Content */}
-          <div className="lg:col-span-1">
-            <AnimatedQuizHighlight />
-          </div>
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {result?.result && (
+        <QuizHeader topic={result.result.topic} />
+      )}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <Suspense fallback={<QuizSkeleton />}>
+            <McqQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
+          </Suspense>
+        </div>
+        <div className="lg:col-span-1">
+          <AnimatedQuizHighlight />
         </div>
       </div>
     </div>
   )
 }
 
-export default QuizPage
+export default McqPage

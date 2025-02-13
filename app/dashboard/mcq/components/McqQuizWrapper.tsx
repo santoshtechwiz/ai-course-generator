@@ -1,6 +1,6 @@
 import { Suspense } from "react"
-import { QuizActions } from "./QuizActions"
-import PlayQuiz from "./PlayQuiz"
+import { QuizActions } from "../../../components/QuizActions"
+import McqQuiz from "./McqQuiz"
 import { QuizSkeleton } from "./QuizSkeleton"
 import type { McqQuestionsResponse } from "@/app/actions/getMcqQuestions"
 
@@ -10,7 +10,7 @@ interface McqContainerProps {
     result: McqQuestionsResponse
 }
 
-const McqContainer = ({ slug, currentUserId, result }: McqContainerProps) => {
+const McqQuizWrapper = ({ slug, currentUserId, result }: McqContainerProps) => {
     return (
 
         <div className="flex flex-col gap-8">
@@ -28,12 +28,12 @@ const McqContainer = ({ slug, currentUserId, result }: McqContainerProps) => {
                 )}
             </Suspense>
             {result.result && result.questions && (
-                <PlayQuiz questions={result.questions} quizId={Number(result.result?.id) || 0} slug={slug} />
+                <McqQuiz questions={result.questions} quizId={Number(result.result?.id) || 0} slug={slug} />
             )}
         </div>
 
     )
 }
 
-export default McqContainer
+export default McqQuizWrapper
 

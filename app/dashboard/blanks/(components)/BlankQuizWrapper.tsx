@@ -1,20 +1,16 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Book, AlertCircle, Clock, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { useSession } from "next-auth/react"
 import { submitQuizData } from "@/app/actions/actions"
-import { QuizActions } from "../../mcq/components/QuizActions"
-
-
-
 import { GuidedHelp } from "@/app/components/HelpModal"
 import BlankQuizResults from "./BlankQuizResults"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
-import SectionWrapper from "@/components/SectionWrapper"
+import { QuizActions } from "@/app/components/QuizActions"
 
 interface Question {
   id: number
@@ -35,6 +31,12 @@ interface QuizData {
   userId: string
 }
 
+interface QuizAnswer {
+  answer: string
+  timeSpent: number
+  hintsUsed: boolean
+}
+
 const saveQuizState = (state: any) => {
   if (typeof window !== "undefined") {
     localStorage.setItem("quizState", JSON.stringify(state))
@@ -49,10 +51,10 @@ const loadQuizState = () => {
   return null
 }
 
-export function BlankQuizMainContainer({ slug }: { slug: string }) {
+export function BlankQuizWrapper({ slug }: { slug: string }) {
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState<{ answer: string; timeSpent: number; hintsUsed: boolean }[]>([])
+  const [answers, setAnswers] = useState<QuizAnswer[]>([])
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -61,7 +63,6 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const [score, setScore] = useState(false)
-
   const [showGuidedHelp, setShowGuidedHelp] = useState(false)
 
   const fetchQuizData = useCallback(async () => {
@@ -106,9 +107,11 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
       }
     }
   }, [isAuthenticated])
+
   const handleCloseGuidedHelp = () => {
     setShowGuidedHelp(false)
   }
+
   const handleAnswer = useCallback(
     (answer: string) => {
       const newAnswers = [...answers, { answer, timeSpent: elapsedTime, hintsUsed: false }]
@@ -167,7 +170,6 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
     [isAuthenticated, quizData, slug, answers, elapsedTime],
   )
 
-
   if (error) {
     return (
       <Card className="max-w-md mx-auto mt-8">
@@ -204,8 +206,7 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <SectionWrapper>
+    <>
       <QuizActions
         userId={session?.user?.id || ""}
         ownerId={quizData.userId}
@@ -215,8 +216,6 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
         initialIsPublic={false}
         initialIsFavorite={false}
       />
-      </SectionWrapper>
-      <SectionWrapper>
       <Card className="mb-8 shadow-md">
         <CardHeader className="flex flex-row items-center justify-between px-6 py-4 border-b">
           <CardTitle className="flex items-center text-2xl font-bold">
@@ -264,9 +263,9 @@ export function BlankQuizMainContainer({ slug }: { slug: string }) {
             </p>
           )}
         </CardContent>
+        <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
       </Card>
-      <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
-      </SectionWrapper>
-    </div>
+    </>
   )
 }
+
