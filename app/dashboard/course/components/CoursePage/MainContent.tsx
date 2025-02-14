@@ -1,6 +1,6 @@
 "use client"
 
-import React, { Suspense, useCallback, useState, useEffect, useRef } from "react"
+import { Suspense, useCallback, useState, useEffect, useRef } from "react"
 import dynamic from "next/dynamic"
 import { ErrorBoundary } from "react-error-boundary"
 import { Button } from "@/components/ui/button"
@@ -29,9 +29,9 @@ interface MainContentProps {
   currentChapter?: FullChapterType
   currentTime: number
   onTimeUpdate: (time: number) => void
-  progress?: Partial<CourseProgress> 
+  progress?: Partial<CourseProgress>
   onChapterComplete?: (chapterId: number) => void
-  planId?: string,
+  planId?: string
   isLastVideo: boolean
 }
 
@@ -87,21 +87,24 @@ const VideoPlayer = ({
   onChapterComplete,
   course,
   onVideoSelect,
-  isLastVideo
+  isLastVideo,
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLDivElement>(null)
   const [currentVideoId, setCurrentVideoId] = useState(initialVideoId)
   const { toast } = useToast()
 
   useEffect(() => {
+    setCurrentVideoId(initialVideoId)
+  }, [initialVideoId])
+
+  useEffect(() => {
     if (videoRef.current) {
       const player = videoRef.current.querySelector("video")
       if (player) {
-        player.currentTime = 0
-        player.play()
+        player.currentTime = currentTime
       }
     }
-  }, [currentVideoId])
+  }, [currentTime])
 
   const handleVideoEnd = useCallback(() => {
     if (currentChapter && onChapterComplete) {
@@ -123,6 +126,7 @@ const VideoPlayer = ({
           if (nextChapter.videoId) {
             setCurrentVideoId(nextChapter.videoId)
             onVideoSelect(nextChapter.videoId)
+            return
           }
         } else {
           const nextUnitIndex = currentUnitIndex + 1
@@ -132,22 +136,26 @@ const VideoPlayer = ({
             if (firstChapterWithVideo && firstChapterWithVideo.videoId) {
               setCurrentVideoId(firstChapterWithVideo.videoId)
               onVideoSelect(firstChapterWithVideo.videoId)
+              return
             }
-          } else {
-            toast({
-              title: "Course Completed",
-              description: "Congratulations! You've completed all videos in this course.",
-              variant: "default",
-            })
           }
         }
       }
     }
 
+    // If we've reached this point, it means there are no more videos to play
+    if (isLastVideo) {
+      toast({
+        title: "Course Completed",
+        description: "Congratulations! You've completed all videos in this course.",
+        variant: "default",
+      })
+    }
+
     if (onVideoEnd) {
       onVideoEnd()
     }
-  }, [currentVideoId, currentChapter, course, onChapterComplete, onVideoSelect, onVideoEnd, toast])
+  }, [currentVideoId, currentChapter, course, onChapterComplete, onVideoSelect, onVideoEnd, toast, isLastVideo])
 
   return currentVideoId ? (
     <Card className="mb-8 overflow-hidden">
@@ -161,6 +169,7 @@ const VideoPlayer = ({
                 autoPlay={true}
                 initialTime={currentTime}
                 onProgress={onTimeUpdate}
+                isLastVideo={isLastVideo}
               />
             </Suspense>
           </ErrorBoundary>
@@ -208,7 +217,7 @@ export default function MainContent(props: MainContentProps) {
   return (
     <div className="min-h-full flex flex-col bg-background">
       <ChapterInfo course={props.course} />
-      
+
       <div className="flex-1">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container px-4">
@@ -216,9 +225,7 @@ export default function MainContent(props: MainContentProps) {
               <div className="py-4">
                 <ErrorBoundary FallbackComponent={ErrorFallback}>
                   <Suspense fallback={<LoadingFallback message="Loading actions..." />}>
-                    <CourseActionsWithErrorBoundary 
-                      slug={props.course.slug || ""} 
-                    />
+                    <CourseActionsWithErrorBoundary slug={props.course.slug || ""} />
                   </Suspense>
                 </ErrorBoundary>
               </div>
@@ -244,11 +251,7 @@ export default function MainContent(props: MainContentProps) {
             </div>
 
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-              <QuizSectionTabs 
-                course={props.course} 
-                currentChapter={props.currentChapter} 
-                planId={props.planId} 
-              />
+              <QuizSectionTabs course={props.course} currentChapter={props.currentChapter} planId={props.planId} />
             </div>
           </div>
         </main>
@@ -256,3 +259,4 @@ export default function MainContent(props: MainContentProps) {
     </div>
   )
 }
+
