@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { toast } from "@/hooks/use-toast"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
-import QuizQuestion from "./QuizQuestion"
+import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import { submitQuizData } from "@/app/actions/actions"
 import { QuizActions } from "@/app/components/QuizActions"
 
@@ -196,7 +196,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
           </div>
         )
       ) : quizData && quizData.questions && quizData.questions.length > 0 ? (
-        <QuizQuestion
+        <OpenEndedQuizQuestion
           question={quizData.questions[currentQuestion]}
           onAnswer={handleAnswer}
           questionNumber={currentQuestion + 1}

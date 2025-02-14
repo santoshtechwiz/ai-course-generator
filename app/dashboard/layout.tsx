@@ -15,6 +15,7 @@ export default function DashboardLayout({
     <ClientLayoutWrapper>
       <div className="flex min-h-screen flex-col">
         <Navbar />
+      
         <main className="flex-grow flex flex-col">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex-grow py-8">
             <Suspense >{children}</Suspense>
