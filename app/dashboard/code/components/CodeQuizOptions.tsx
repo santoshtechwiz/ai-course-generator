@@ -30,7 +30,7 @@ const QuizOptions: React.FC<QuizOptionsProps> = ({
         >
           <div
             className={cn(
-              "flex items-center space-x-2 p-3 sm:p-4 rounded-lg transition-all",
+              "flex w-full items-center space-x-2 p-3 sm:p-4 rounded-lg transition-all",
               "hover:bg-muted",
               "border-2 border-transparent",
               selectedOption === option && "border-primary",

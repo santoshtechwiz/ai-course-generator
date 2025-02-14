@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation"
 import type { CodeChallenge } from "@/app/types/types"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 
 interface CodeQuizProps {
   quizId: number
@@ -253,18 +254,14 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
     const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0)
 
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center min-h-screen p-4 bg-background"
-      >
-        <div className="max-w-2xl w-full text-center space-y-6">
-          <Trophy className="w-16 h-16 mx-auto text-yellow-500" />
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
+          <Trophy className="w-16 h-16 text-primary" />
           <h2 className="text-2xl font-bold">Quiz Completed!</h2>
           <p className="text-muted-foreground">Time taken: {formatTime(totalTime)}</p>
           {status === "authenticated" ? (
             <>
-              <div className="bg-muted rounded-lg p-6 space-y-4">
+              <div className="bg-muted rounded-lg p-6 space-y-4 w-full">
                 <div className="text-4xl font-bold">{Math.round(percentage).toFixed(2)}%</div>
                 <p className="text-muted-foreground">
                   You got {correctCount} out of {totalQuestions} questions correct
@@ -278,16 +275,16 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
           ) : (
             <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} />
           )}
-        </div>
-      </motion.div>
+        </CardContent>
+      </Card>
     )
   }
 
   const progress = ((currentQuestionIndex + 1) / quizData.questions.length) * 100
 
   return (
-    <div className="w-full w-[98%] md:max-w-3xl p-4 mx-auto dark:bg-gray-800 rounded-lg shadow-lg">
-      <div className="space-y-4 pb-4">
+    <Card className="w-full">
+      <CardHeader className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">Coding Quiz Challenge</h1>
           <TooltipProvider>
@@ -306,15 +303,15 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
         </div>
         <div className="space-y-2">
           <Progress value={progress} className="h-2" />
-          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex justify-between text-sm text-muted-foreground">
             <span>Progress: {Math.round(progress)}%</span>
             <span>
               Question {currentQuestionIndex + 1} of {quizData.questions.length}
             </span>
           </div>
         </div>
-      </div>
-      <div className="pb-6">
+      </CardHeader>
+      <CardContent>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentQuestionIndex}
@@ -330,7 +327,9 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
                 <h2 className="text-lg sm:text-xl font-semibold">{renderQuestionText(currentQuestion.question)}</h2>
               </div>
               {currentQuestion.codeSnippet && (
-                <div className="my-4">{renderCode(currentQuestion.codeSnippet, currentQuestion.language)}</div>
+                <div className="my-4 overflow-x-auto">
+                  {renderCode(currentQuestion.codeSnippet, currentQuestion.language)}
+                </div>
               )}
               <QuizOptions
                 options={options}
@@ -342,8 +341,8 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
             </div>
           </motion.div>
         </AnimatePresence>
-      </div>
-      <div className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
+      </CardContent>
+      <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
         <p className="text-sm text-muted-foreground">
           Question time: {formatTime(timeSpent[currentQuestionIndex] || 0)}
         </p>
@@ -363,9 +362,10 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
             </>
           )}
         </Button>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   )
 }
 
 export default CodingQuiz
+

@@ -214,7 +214,7 @@ export function QuizActions({
       transition={{ duration: 0.3 }}
       className="space-y-4"
     >
-      <div className="flex items-center justify-between space-x-2 bg-muted p-2 rounded-md overflow-x-hidden">
+      <div className="flex items-center w-full justify-between  bg-muted rounded-md overflow-x-hidden">
         {/* Public/Private Button */}
         <TooltipProvider>
           <Tooltip>

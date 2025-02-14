@@ -31,7 +31,7 @@ const SectionWrapper: React.FC<SectionWrapperProps> = ({
       className={cn(
         "w-full",
         container && "px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16",
-        container && "max-w-8xl mx-auto",
+        container && "max-w-8xl ",
         spacingClasses[spacing],
         className,
       )}
