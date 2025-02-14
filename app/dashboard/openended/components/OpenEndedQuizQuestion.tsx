@@ -26,7 +26,12 @@ interface QuizQuestionProps {
   totalQuestions: number
 }
 
-export default function QuizQuestion({ question, onAnswer, questionNumber, totalQuestions }: QuizQuestionProps) {
+export default function OpenEndedQuizQuestion({
+  question,
+  onAnswer,
+  questionNumber,
+  totalQuestions,
+}: QuizQuestionProps) {
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,26 +45,38 @@ export default function QuizQuestion({ question, onAnswer, questionNumber, total
 
     const correctAnswer = question.answer.toLowerCase()
     const words = correctAnswer.split(/\s+/)
-    const sentenceCount = correctAnswer.split(/[.!?]+/).length
+    const sentences = correctAnswer.split(/[.!?]+/).filter(Boolean)
+
+    const generateKeyConcepts = () => {
+      const concepts = words.filter((word) => word.length > 5)
+      return concepts.slice(0, Math.min(5, concepts.length))
+    }
+
+    const keyConcepts = generateKeyConcepts()
 
     const contextualHints = [
       `This answer relates to ${Array.isArray(question.openEndedQuestion.tags) ? question.openEndedQuestion.tags.join(", ") : question.openEndedQuestion.tags}.`,
-      `The response is approximately ${words.length} words long.`,
-      `The answer consists of ${sentenceCount} sentence${sentenceCount > 1 ? "s" : ""}.`,
-      `Key concepts to consider: ${baseHints[0]}`,
-      `Think about the ${question.openEndedQuestion.difficulty} level terminology related to this topic.`,
+      `The response is approximately ${words.length} words long and consists of ${sentences.length} sentence${sentences.length > 1 ? "s" : ""}.`,
+      `Key concepts to consider: ${keyConcepts.join(", ")}.`,
+      `The answer covers topics at a ${question.openEndedQuestion.difficulty} level.`,
     ]
 
-    const structuralHints = [
-      `The first sentence starts with "${words[0]}".`,
-      `The last sentence ends with "${words[words.length - 1]}".`,
-      `Important phrases in the answer include: "${words.slice(Math.floor(words.length / 3), Math.floor(words.length / 3) + 3).join(" ")}"`,
-      `Another key phrase is: "${words.slice(Math.floor((words.length * 2) / 3), Math.floor((words.length * 2) / 3) + 3).join(" ")}"`,
-    ]
+    const structuralHints = sentences.map((sentence, index) => {
+      const words = sentence.trim().split(/\s+/)
+      return `Sentence ${index + 1} (${words.length} words): "${words[0]} ... ${words[words.length - 1]}"`
+    })
 
-    const detailedHints = baseHints.slice(1).map((hint) => `Additional information: ${hint}`)
+    const conceptHints = keyConcepts.map((concept) => {
+      const regex = new RegExp(`\\b${concept}\\b`, "i")
+      const sentenceWithConcept = sentences.find((sentence) => regex.test(sentence))
+      return sentenceWithConcept
+        ? `About "${concept}": "${sentenceWithConcept}"`
+        : `The answer includes the concept "${concept}".`
+    })
 
-    return [...contextualHints, ...structuralHints, ...detailedHints]
+    const detailedHints = baseHints.map((hint) => `Additional information: ${hint}`)
+
+    return [...contextualHints, ...structuralHints, ...conceptHints, ...detailedHints]
   }, [
     question.openEndedQuestion?.hints,
     question.answer,

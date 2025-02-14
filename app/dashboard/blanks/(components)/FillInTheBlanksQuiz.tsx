@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import levenshtein from "js-levenshtein"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,12 +29,7 @@ interface FillInTheBlanksQuizProps {
   totalQuestions: number
 }
 
-export function FillInTheBlanksQuiz({
-  question,
-  onAnswer,
-  questionNumber,
-  totalQuestions,
-}: FillInTheBlanksQuizProps) {
+export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQuestions }: FillInTheBlanksQuizProps) {
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [submitted, setSubmitted] = useState(false)
@@ -48,13 +43,16 @@ export function FillInTheBlanksQuiz({
 
   const progressiveHints = useMemo(() => {
     const correctAnswer = question.answer.toLowerCase()
-    return [
-      `The answer starts with "${correctAnswer[0]}".`,
-      `The answer has ${correctAnswer.length} characters.`,
-      `The answer ends with "${correctAnswer[correctAnswer.length - 1]}".`,
-      ...question.openEndedQuestion.hints,
-    ]
-  }, [question.answer])
+    const hintSteps = Math.ceil(correctAnswer.length / 3)
+    const hints = []
+
+    for (let i = 1; i <= hintSteps; i++) {
+      const revealedLength = Math.floor((i / hintSteps) * correctAnswer.length)
+      hints.push(correctAnswer.slice(0, revealedLength).padEnd(correctAnswer.length, "_"))
+    }
+
+    return [`The answer has ${correctAnswer.length} characters.`, ...hints, ...question.openEndedQuestion.hints]
+  }, [question.answer, question.openEndedQuestion.hints]) // Added missing dependency
 
   useEffect(() => {
     setAnswer("")
@@ -91,10 +89,6 @@ export function FillInTheBlanksQuiz({
     } else {
       setIsValidInput(false)
     }
-  }
-
-  const toggleHint = (hintIndex: number) => {
-    setShowHints((prev) => prev.map((show, idx) => (idx === hintIndex ? !show : show)))
   }
 
   const handleSubmit = () => {
