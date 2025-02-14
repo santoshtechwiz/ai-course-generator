@@ -72,7 +72,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
       />
       <div className="lg:w-3/4 space-y-8">
         <ErrorBoundary fallback={<div>Error loading quizzes. Please try again later.</div>}>
-          <Suspense fallback={<div>Loading...</div>}>
+          
             <LazyQuizList
               quizzes={quizzes}
               isLoading={isLoading}
@@ -83,7 +83,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
               onPageChange={handlePageChange}
               isSearching={isSearching}
             />
-          </Suspense>
+         
         </ErrorBoundary>
       </div>
     </div>

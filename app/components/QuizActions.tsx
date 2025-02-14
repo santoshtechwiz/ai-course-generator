@@ -214,7 +214,7 @@ export function QuizActions({
       transition={{ duration: 0.3 }}
       className="space-y-4"
     >
-      <div className="flex items-center w-full justify-between  bg-muted rounded-md overflow-x-hidden">
+      <div className="flex flex-wrap items-center justify-start gap-2 bg-muted p-2 rounded-md">
         {/* Public/Private Button */}
         <TooltipProvider>
           <Tooltip>
@@ -224,14 +224,14 @@ export function QuizActions({
                 size="sm"
                 onClick={togglePublic}
                 disabled={isPublicLoading}
-                className="transition-all duration-300 w-[100px] justify-center"
+                className="w-[100px] h-[36px] justify-center"
               >
                 {isPublicLoading ? (
                   <span className="loader"></span>
                 ) : (
                   <>
-                    <Eye className="h-4 w-4 md:mr-2" />
-                    <span className="hidden md:inline">{isPublic ? "Public" : "Private"}</span>
+                    <Eye className="h-4 w-4" />
+                    <span className="hidden sm:inline-block sm:ml-2">{isPublic ? "Public" : "Private"}</span>
                   </>
                 )}
               </Button>
@@ -249,18 +249,18 @@ export function QuizActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={isFavorite ? "link" : "secondary"}
+                variant={isFavorite ? "secondary" : "outline"}
                 size="sm"
                 onClick={toggleFavorite}
                 disabled={isFavoriteLoading}
-                className="transition-all duration-300 w-[100px] justify-center"
+                className="w-[100px] h-[36px] justify-center"
               >
                 {isFavoriteLoading ? (
                   <span className="loader"></span>
                 ) : (
                   <>
-                    <Star className={`h-4 w-4 md:mr-2 ${isFavorite ? "fill-current" : ""}`} />
-                    <span className="hidden md:inline">{isFavorite ? "Favorited" : "Favorite"}</span>
+                    <Star className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+                    <span className="hidden sm:inline-block sm:ml-2">{isFavorite ? "Favorited" : "Favorite"}</span>
                   </>
                 )}
               </Button>
@@ -283,14 +283,14 @@ export function QuizActions({
                 size="sm"
                 onClick={handleShare}
                 disabled={isShareLoading}
-                className="transition-all duration-300 w-[100px] justify-center"
+                className="w-[100px] h-[36px] justify-center"
               >
                 {isShareLoading ? (
                   <span className="loader"></span>
                 ) : (
                   <>
-                    <Share2 className="h-4 w-4 md:mr-2" />
-                    <span className="hidden md:inline">Share</span>
+                    <Share2 className="h-4 w-4" />
+                    <span className="hidden sm:inline-block sm:ml-2">Share</span>
                   </>
                 )}
               </Button>
@@ -306,7 +306,9 @@ export function QuizActions({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <QuizPDFDownload quizData={data} config={pdfConfig} />
+                <div className="w-[100px] h-[36px]">
+                  <QuizPDFDownload quizData={data} config={pdfConfig} />
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Download - Click to download as PDF</p>
@@ -322,14 +324,14 @@ export function QuizActions({
               variant="destructive"
               size="sm"
               disabled={isDeleteLoading}
-              className="transition-all duration-300 w-[100px] justify-center"
+              className="w-[100px] h-[36px] justify-center"
             >
               {isDeleteLoading ? (
                 <span className="loader"></span>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Delete</span>
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline-block sm:ml-2">Delete</span>
                 </>
               )}
             </Button>
@@ -347,10 +349,12 @@ export function QuizActions({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Rating */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div>
+              <div className="w-[100px] h-[36px] flex items-center justify-center">
                 <Rating value={rating} onValueChange={handleRatingChange} />
               </div>
             </TooltipTrigger>

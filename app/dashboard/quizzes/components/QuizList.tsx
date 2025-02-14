@@ -1,9 +1,19 @@
-import { memo } from "react"
+"use client"
+
+import { memo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { PublicQuizzes } from "./PublicQuizzes"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
-import { Loader2 } from "lucide-react"
+import NProgress from "nprogress"
+
 import type { QuizListItem } from "@/app/types/types"
+
+NProgress.configure({
+  minimum: 0.3,
+  easing: "ease",
+  speed: 500,
+  showSpinner: false,
+})
 
 interface QuizListProps {
   quizzes: QuizListItem[]
@@ -26,13 +36,17 @@ function QuizList({
   onPageChange,
   isSearching,
 }: QuizListProps) {
-  if (isFetching && !isLoading) {
-    return (
-      <div className="flex justify-center items-center h-12">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (isFetching) {
+      NProgress.start()
+    } else {
+      NProgress.done()
+    }
+
+    return () => {
+      NProgress.done()
+    }
+  }, [isFetching])
 
   if (isLoading) {
     return <QuizzesSkeleton />

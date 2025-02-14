@@ -101,7 +101,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
           </div>
           <div className="mb-2">
             <div className="text-sm font-medium mb-1">Completion Rate</div>
-            <Progress value={completionRate} className="h-2 bg-background/60" indicatorClassName="bg-background" />
+            <Progress value={completionRate} className="h-2 bg-background/60"  />
           </div>
         </CardContent>
         <CardFooter className="p-6 pt-0">

@@ -1,26 +1,19 @@
-import { useState } from "react"
+"use client"
 import { Star } from "lucide-react"
 
 interface RatingProps {
   value: number | null
   onValueChange: (value: number) => void
+  className?: string
 }
 
-export function Rating({ value, onValueChange }: RatingProps) {
-  const [hoverValue, setHoverValue] = useState<number | null>(null)
-
+export function Rating({ value = 0, onValueChange, className = "" }: RatingProps) {
   return (
-    <div className="flex">
+    <div className={`ml-2 flex items-center gap-1 ${className}`}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={`w-5 h-5 cursor-pointer ${
-            (hoverValue || value || 0) >= star ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-          }`}
-          onMouseEnter={() => setHoverValue(star)}
-          onMouseLeave={() => setHoverValue(null)}
-          onClick={() => onValueChange(star)}
-        />
+        <button key={star} onClick={() => onValueChange(star)} className="focus:outline-none">
+          <Star className={`h-5 w-5 ${(value || 0) >= star ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} />
+        </button>
       ))}
     </div>
   )

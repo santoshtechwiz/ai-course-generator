@@ -25,48 +25,47 @@ const AboutUs = dynamic(() => import("@/app/about/AboutUs"), { ssr: false })
 const defaultSections = [
   {
     key: "features",
-    title: "Features",
-    description: "Discover the key features that make our website stand out.",
+    title: "AI-Powered Learning",
+    description: "Explore how our AI transforms course creation and quiz generation.",
     icon: Sparkles,
     Component: FeatureSections,
   },
   {
     key: "how-it-works",
-    title: "How it Works",
-    description: "Learn how our product simplifies your workflow.",
+    title: "Effortless Course Building",
+    description: "See how easily you can create engaging courses and diverse quizzes with AI.",
     icon: Lightbulb,
     Component: HowItWorks,
   },
   {
     key: "showcase",
-    title: "Showcase",
-    description: "See our courses and quiz in action.",
+    title: "Interactive Demo",
+    description: "Experience our AI-generated courses and multi-format quizzes firsthand.",
     icon: Laptop,
     Component: ShowcaseSection,
   },
   {
     key: "testimonials",
-    title: "Testimonials",
-    description: "Hear what our satisfied users have to say.",
+    title: "Educator Success Stories",
+    description: "Discover how AI is revolutionizing education for our users.",
     icon: MessageSquare,
     Component: TestimonialsSection,
   },
   {
     key: "about-us",
-    title: "About Us",
-    description: "Learn more about our team and mission.",
+    title: "Our EdTech Vision",
+    description: "Learn about our mission to empower educators with AI technology.",
     icon: Users,
     Component: AboutUs,
   },
   {
     key: "faq",
-    title: "FAQ",
-    description: "Find answers to frequently asked questions.",
+    title: "Common Questions",
+    description: "Get answers about AI course creation and quiz generation.",
     icon: HelpCircle,
     Component: FAQSection,
   },
-]
-
+];
 type Section = {
   key: string
   title: string
