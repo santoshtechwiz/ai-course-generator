@@ -50,6 +50,7 @@ const NavItems = () => {
 export default function Navbar() {
   const { data: session, status } = useSession()
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const { subscriptionStatus, isLoading: isLoadingSubscription } = useSubscriptionStore()
@@ -80,6 +81,10 @@ export default function Navbar() {
         {plan}
       </Badge>
     )
+  }
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen)
   }
 
   return (
@@ -172,6 +177,7 @@ export default function Navbar() {
             <Button
               variant="ghost"
               size="icon"
+              onClick={toggleMobileMenu}
               className="text-foreground hover:bg-primary/10 dark:text-foreground dark:hover:bg-primary/20"
             >
               <Menu className="h-[1.2rem] w-[1.2rem]" />
@@ -193,6 +199,31 @@ export default function Navbar() {
           />
         )}
       </AnimatePresence>
+
+      {isMobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="md:hidden bg-background border-t p-4"
+        >
+          <nav className="flex flex-col space-y-2">
+            {navItems.map((item) => (
+              <Button
+                key={item.name}
+                variant="ghost"
+                className="justify-start"
+                onClick={() => {
+                  router.push(item.href)
+                  setIsMobileMenuOpen(false)
+                }}
+              >
+                {item.name}
+              </Button>
+            ))}
+          </nav>
+        </motion.div>
+      )}
     </motion.header>
   )
 }

@@ -16,18 +16,24 @@ export async function generateCodingMCQs(
       messages: [
         {
           role: "system",
-          content: `Generate precisely ${questionCount} multiple-choice coding questions on ${subtopic} in ${language} at a ${difficulty} level, ensuring that 90% of the questions focus on coding.
-          **Format each question as follows:**
-          - "question": A concise, clear question. Do NOT include code here.
-          - "codeSnippet": A code snippet if required (else empty).
-          - "options": A list of exactly four distinct answer choices. Wrap code snippets in triple backticks (\`\`\`).
-          - "correctAnswer": The exact text of the correct answer (must match one of the options).
+          content: `Generate precisely ${questionCount} multiple-choice coding questions on ${subtopic} in ${language} at a ${difficulty} level.
     
+          **Output Format:**
+          Each question must follow this JSON structure:
+          {
+            "question": "A concise coding-related question.",
+            "codeSnippet": "Python/JavaScript/etc. code snippet if needed, else empty string.",
+            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+            "correctAnswer": "Exact text matching one of the options."
+          }
+          
           **Rules:**
-          - Ensure consistent and proper formatting.
-          - No explanations, just structured questions.
-          - No duplicate or ambiguous answers.
-          - Code should be syntactically correct and relevant to the question.
+          - Each question must be **strictly about coding** (90% must include code snippets).
+          - Ensure **options are unique, meaningful, and well-formatted** (no duplicates).
+          - **Do not include code inside 'question'**; use 'codeSnippet' instead.
+          - The 'correctAnswer' **must exactly match one of the options**.
+          - Do NOT add prefixes (A., B., C., D.) to options.
+          - Ensure **consistent formatting** across all responses.
           `
         },
       ],

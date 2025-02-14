@@ -86,7 +86,7 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) =
       ) : (
         <SiAdobe className="h-5 w-5" />
       )}
-      <span className="hidden sm:inline">{isDisabled ? "Upgrade to Download" : "Download PDF"}</span>
+      <span className="hidden sm:inline">{isDisabled ? "Upgrade to Download" : " PDF"}</span>
     </Button>
   )
 }
