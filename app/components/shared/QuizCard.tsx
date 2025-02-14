@@ -18,6 +18,7 @@ interface QuizCardProps {
   estimatedTime?: string
   description: string
   isPublic?: boolean
+  completionRate: number
 }
 
 const quizTypeIcons = {
@@ -27,18 +28,18 @@ const quizTypeIcons = {
   code: Code,
 }
 
-const quizTypeColors = {
-  mcq: "bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100",
-  openended: "bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100",
-  "fill-blanks": "bg-purple-100 text-purple-700 dark:bg-purple-700 dark:text-purple-100",
-  code: "bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100",
-}
-
 const quizTypeLabels = {
   mcq: "Multiple Choice",
   openended: "Open-Ended",
   "fill-blanks": "Fill in the Blanks",
   code: "Code Challenge",
+}
+
+const quizTypeColors = {
+  mcq: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100",
+  openended: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100",
+  "fill-blanks": "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-100",
+  code: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-100",
 }
 
 export const QuizCard: React.FC<QuizCardProps> = ({
@@ -49,10 +50,11 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   estimatedTime = "5 min",
   description,
   isPublic = false,
+  completionRate,
 }) => {
   const [isHovered, setIsHovered] = useState(false)
   const QuizTypeIcon = quizTypeIcons[quizType]
-  const colors = quizTypeColors[quizType]
+  const quizColor = quizTypeColors[quizType]
 
   return (
     <motion.div
@@ -61,50 +63,63 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Card className="flex flex-col h-[400px] overflow-hidden transition-all duration-300 hover:shadow-lg">
-        <CardContent className={cn("flex-grow p-6 transition-colors duration-300", colors)}>
+      <Card
+        className={cn(
+          "flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-lg w-full sm:max-w-md",
+          quizColor,
+        )}
+      >
+        <CardContent className="flex-grow flex flex-col p-6">
           <div className="flex items-center justify-between mb-4">
-            <Badge variant="secondary" className="text-xs font-semibold uppercase">
-              {quizTypeLabels[quizType]}
+            <Badge variant="secondary" className="px-2 py-1 bg-background/80 backdrop-blur-sm">
+              <QuizTypeIcon className="w-4 h-4 mr-1 inline-block" />
+              <span className="font-medium">{quizTypeLabels[quizType]}</span>
             </Badge>
-            <QuizTypeIcon className="w-6 h-6" />
+            {isPublic ? (
+              <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
+                <Unlock className="w-4 h-4 mr-1 inline-block" /> Public
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
+                <Lock className="w-4 h-4 mr-1 inline-block" /> Private
+              </Badge>
+            )}
           </div>
-          <h3 className="text-xl font-bold mb-2 line-clamp-2">{title}</h3>
+          <h3 className="text-xl font-semibold mb-2 line-clamp-2">{title}</h3>
           <p className="text-sm opacity-90 mb-4 line-clamp-3 flex-grow">{description}</p>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center">
-              <HelpCircle className="w-4 h-4 mr-1" />
-              <span>{questionCount} Questions</span>
+          <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+            <div className="flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-md p-2">
+              <HelpCircle className="w-5 h-5 mb-1" />
+              <span className="font-medium">{questionCount}</span>
+              <span className="text-xs opacity-75">Questions</span>
             </div>
-            <div className="flex items-center">
-              <Clock className="w-4 h-4 mr-1" />
-              <span>{estimatedTime}</span>
+            <div className="flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-md p-2">
+              <Clock className="w-5 h-5 mb-1" />
+              <span className="font-medium">{estimatedTime}</span>
+              <span className="text-xs opacity-75">Est. Time</span>
             </div>
+          </div>
+          <div className="mb-2">
+            <div className="text-sm font-medium mb-1">Completion Rate</div>
+            <Progress value={completionRate} className="h-2 bg-background/60" indicatorClassName="bg-background" />
           </div>
         </CardContent>
-        <CardFooter className="p-4 bg-background">
-          <div className="w-full">
-            <div className="mb-4">
-              <div className="text-sm font-medium mb-1">Completion Rate</div>
-              <Progress value={33} className="h-2" />
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                {isPublic ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-              </div>
-              <Link href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}>
-                <Button variant="ghost" className="p-0 h-auto">
-                  <span className="mr-2">Start Quiz</span>
-                  <motion.div
-                    animate={{ x: isHovered ? 5 : 0 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </motion.div>
-                </Button>
-              </Link>
-            </div>
-          </div>
+        <CardFooter className="p-6 pt-0">
+          <Link href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`} className="w-full">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full group bg-background/80 backdrop-blur-sm hover:bg-background/90"
+            >
+              <span className="mr-2">Start Quiz</span>
+              <motion.div
+                animate={{ x: isHovered ? 5 : 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </motion.div>
+            </Button>
+          </Link>
         </CardFooter>
       </Card>
     </motion.div>
