@@ -5,7 +5,7 @@ import axios from "axios"
 import { notFound } from "next/navigation"
 import CodingQuiz from "./CodeQuiz"
 import type { CodingQuizProps } from "@/app/types/types"
-import { GlobalLoader } from "@/app/components/GlobalLoader"
+
 
 import SectionWrapper from "@/components/SectionWrapper"
 import { QuizActions } from "@/app/components/QuizActions"
@@ -38,9 +38,9 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     queryFn: () => getQuizData(slug),
   })
 
-  if (isLoading) {
-    return <GlobalLoader />
-  }
+  // if (isLoading) {
+  //   return <GlobalLoader />
+  // }
 
   if (isError || !quizData) {
     return notFound()

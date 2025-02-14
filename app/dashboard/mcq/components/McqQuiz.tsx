@@ -260,9 +260,9 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center min-h-screen p-4 bg-background"
+        className="flex flex-col items-center justify-center min-h-screen p-4 bg-background w-full"
       >
-        <div className="max-w-2xl w-full text-center space-y-6">
+        <div className="max-w-full w-full text-center space-y-6 md:max-w-2xl">
           <Trophy className="w-16 h-16 mx-auto text-yellow-500" />
           <h2 className="text-2xl font-bold">Quiz Completed!</h2>
           <p className="text-muted-foreground">Time taken: {formatTime(timeSpent)}</p>
@@ -288,7 +288,7 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
   }
 
   return (
-    <div className="w-full  md:max-w-3xl p-4  dark:bg-gray-800 rounded-lg shadow-lg">
+    <div className="w-full max-w-full p-4 dark:bg-gray-800 rounded-lg shadow-lg">
       <div className="space-y-4 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">Interactive Quiz Challenge</h1>
@@ -307,7 +307,7 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
           </TooltipProvider>
         </div>
         <div className="space-y-2">
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-2 w-full" />
           <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
             <span>Progress: {Math.round(progress)}%</span>
             <span>
@@ -334,7 +334,7 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
               <RadioGroup
                 onValueChange={(value) => setSelectedAnswer(value)}
                 value={selectedAnswer || ""}
-                className="space-y-3"
+                className="space-y-4 w-full"
               >
                 {uniqueOptions.map((option, index) => (
                   <motion.div
@@ -345,7 +345,7 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
                   >
                     <div
                       className={cn(
-                        "flex items-center space-x-2 p-3 sm:p-4 rounded-lg transition-all",
+                        "flex items-center space-x-2 p-4 rounded-lg transition-all w-full",
                         "hover:bg-muted",
                         "border-2 border-transparent",
                         selectedAnswer === option && "border-primary",
@@ -366,12 +366,12 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
           </motion.div>
         </AnimatePresence>
       </div>
-      <div className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
+      <div className="flex justify-between items-center gap-4 border-t pt-6 w-full md:flex-row flex-col-reverse">
         <p className="text-sm text-muted-foreground">
           Question time:{" "}
           {formatTime(timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0))}
         </p>
-        <Button onClick={nextQuestion} disabled={!selectedAnswer || isSubmitting} className="w-full sm:w-auto">
+        <Button onClick={nextQuestion} disabled={!selectedAnswer || isSubmitting} className="w-full md:w-auto">
           {isSubmitting ? (
             "Submitting..."
           ) : currentQuestionIndex === questions.length - 1 ? (

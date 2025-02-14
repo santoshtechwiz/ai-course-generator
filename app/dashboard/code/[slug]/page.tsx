@@ -32,9 +32,9 @@ export async function generateMetadata(
   const slug = (await params).slug;
   const quizData = await getQuizData(slug);
 
-  if (!quizData) {
-    return notFound();
-  }
+  // if (!quizData) {
+  //   return notFound();
+  // }
 
   const previousImages = (await parent).openGraph?.images || [];
 
