@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { AnimatePresence } from "framer-motion"
 import { motion } from "framer-motion"
-import { Zap, Rocket, Star, Crown, Check, Loader2, AlertTriangle } from "lucide-react"
+import { Check, Lock, Loader2, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
@@ -11,11 +12,22 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { SubscriptionPlanType, SubscriptionStatusType, SUBSCRIPTION_PLANS, FAQ_ITEMS } from "@/config/subscriptionPlans"
 import { useToast } from "@/hooks/use-toast"
+import {
+  type SubscriptionPlanType,
+  type SubscriptionStatusType,
+  SUBSCRIPTION_PLANS,
+  FAQ_ITEMS,
+} from "@/config/subscriptionPlans"
+import { staggerChildren, scaleIn, fadeIn } from "@/lib/animation"
 
 
-
+const planColors = {
+  FREE: "bg-secondary hover:bg-secondary/90",
+  BASIC: "bg-blue-500 hover:bg-blue-600",
+  PRO: "bg-green-500 hover:bg-green-600",
+  ENTERPRISE: "bg-purple-500 hover:bg-purple-600",
+}
 
 interface SubscriptionPlansProps {
   userId: string | null
@@ -67,7 +79,7 @@ export default function SubscriptionPlans({ userId, currentPlan, subscriptionSta
       console.error("Error:", error)
       toast({
         title: "Subscription Error",
-        description: "There was an error processing your subscription. Please try again.",
+        description: error.message || "There was an error processing your subscription. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -144,89 +156,105 @@ function PlanCards({
   const isSubscribed = currentPlan && subscriptionStatus?.toUpperCase() === "ACTIVE"
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-      {plans.map((plan) => (
-        <Card key={plan.name} className={`flex flex-col h-full ${currentPlan === plan.name ? "border-primary" : ""}`}>
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              <div className="flex items-center">
-                <plan.icon className="h-5 w-5 mr-2" />
-                {plan.name}
-              </div>
-              {currentPlan === plan.name && <Badge variant="secondary">Current Plan</Badge>}
-            </CardTitle>
-            <CardDescription>
-              {plan.options[0].price === 0
-                ? "Free forever"
-                : `$${plan.options.find((o) => o.duration === duration)?.price}/${duration === 1 ? "month" : "6 months"}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <div className="mb-4">
-              <p className="text-2xl font-semibold">{plan.tokens} tokens</p>
-              <Progress value={(plan.tokens / 150) * 100} className="h-2 mt-2" />
-            </div>
-            <ul className="space-y-2">
-              <li className="flex items-center">
-                <Check className="h-5 w-5 text-primary mr-2" />
-                <span>Max {plan.limits.maxQuestionsPerQuiz} questions per quiz</span>
-              </li>
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <Check className="h-5 w-5 text-primary mr-2" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => handleSubscribe(plan.name, duration)}
-                    disabled={isSubscribed || loading === plan.name || plan.name === "FREE"}
-                    className="w-full"
-                    variant={currentPlan === plan.name ? "secondary" : "default"}
-                  >
-                    {loading === plan.name ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : currentPlan === plan.name && isSubscribed ? (
-                      "Current Plan"
-                    ) : plan.name === "FREE" ? (
-                      "Start for Free"
-                    ) : (
-                      "Subscribe"
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isSubscribed
-                    ? "You already have an active subscription. Contact support to change plans."
-                    : currentPlan === plan.name && isSubscribed
-                      ? "This is your current plan"
-                      : plan.name === "FREE"
-                        ? "Start using the free plan"
-                        : "Click to subscribe to this plan"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
+    <AnimatePresence>
+      <motion.div
+        variants={staggerChildren}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+      >
+        {plans.map((plan) => (
+          <motion.div key={plan.name} variants={scaleIn}>
+            <Card className={`flex flex-col h-full ${currentPlan === plan.name ? "border-2 border-primary" : ""}`}>
+              <CardHeader>
+                <CardTitle className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <plan.icon className="h-5 w-5 mr-2" />
+                    {plan.name}
+                  </div>
+                  {currentPlan === plan.name && <Badge variant="secondary">Current Plan</Badge>}
+                </CardTitle>
+                <CardDescription>
+                  {plan.options[0].price === 0
+                    ? "Free forever"
+                    : `$${plan.options.find((o) => o.duration === duration)?.price}/${duration === 1 ? "month" : "6 months"}`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="mb-4">
+                  <p className="text-2xl font-semibold">{plan.tokens} tokens</p>
+                  <Progress value={(plan.tokens / 500) * 100} className="h-2 mt-2" />
+                </div>
+                <ul className="space-y-2">
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-primary mr-2" />
+                    <span>Max {plan.limits.maxQuestionsPerQuiz} questions per quiz</span>
+                  </li>
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-center">
+                      {feature.available ? (
+                        <Check className="h-5 w-5 text-primary mr-2" />
+                      ) : (
+                        <Lock className="h-5 w-5 text-muted-foreground mr-2" />
+                      )}
+                      <span className={feature.available ? "" : "text-muted-foreground"}>{feature.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-full">
+                        <Button
+                          onClick={() => handleSubscribe(plan.name as SubscriptionPlanType, duration)}
+                          disabled={(isSubscribed && currentPlan === plan.name) || plan.name === currentPlan}
+                          className={`w-full text-primary-foreground ${planColors[plan.name as SubscriptionPlanType]}`}
+                        >
+                          {loading === plan.name ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : currentPlan === plan.name ? (
+                            "Current Plan"
+                          ) : plan.name === "FREE" ? (
+                            "Start for Free"
+                          ) : (
+                            "Subscribe"
+                          )}
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {currentPlan === plan.name
+                        ? isSubscribed
+                          ? "This is your current active plan"
+                          : "This is your current plan, but it's not active"
+                        : plan.name === "FREE"
+                          ? "Start using the free plan"
+                          : "Click to subscribe to this plan"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </CardFooter>
+            </Card>
+          </motion.div>
+        ))}
+      </motion.div>
+    </AnimatePresence>
   )
 }
 
 function TokenUsageExplanation() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
+      variants={fadeIn}
+      initial="initial"
+      animate="animate"
+      exit="exit"
       className="bg-secondary p-6 rounded-lg mb-8"
     >
       <h3 className="text-xl font-semibold mb-4">How to Use Your Tokens</h3>
@@ -242,11 +270,7 @@ function TokenUsageExplanation() {
 
 function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.3 }}
-    >
+    <motion.div variants={fadeIn} initial="initial" animate="animate" exit="exit">
       <h2 className="text-2xl font-bold mb-4 text-center">Compare Plans</h2>
       <div className="overflow-x-auto">
         <Table>
@@ -282,28 +306,22 @@ function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
               {plans.map((plan) => (
                 <TableCell key={plan.name} className="text-center">
                   {plan.features
-                    .find((f) => f.includes("AI accuracy"))
-                    ?.split("AI accuracy")[0]
+                    .find((f) => f.name.includes("AI accuracy"))
+                    ?.name.split("AI accuracy")[0]
                     .trim()}
                 </TableCell>
               ))}
             </TableRow>
-            <TableRow>
-              <TableCell className="font-medium">Video Quiz</TableCell>
-              {plans.map((plan) => (
-                <TableCell key={plan.name} className="text-center">
-                  {plan.features.includes("Video Quiz") ? <Check className="mx-auto" /> : "-"}
-                </TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-medium">Coding Quiz</TableCell>
-              {plans.map((plan) => (
-                <TableCell key={plan.name} className="text-center">
-                  {plan.features.includes("Coding quizzes") ? <Check className="mx-auto" /> : "-"}
-                </TableCell>
-              ))}
-            </TableRow>
+            {["PDF downloads", "Video transcripts", "Video Quiz", "Code Quiz", "Priority support"].map((feature) => (
+              <TableRow key={feature}>
+                <TableCell className="font-medium">{feature}</TableCell>
+                {plans.map((plan) => (
+                  <TableCell key={plan.name} className="text-center">
+                    {plan.features.find((f) => f.name === feature)?.available ? <Check className="mx-auto" /> : "-"}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
@@ -313,12 +331,7 @@ function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
 
 function FAQSection() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.4 }}
-      className="mt-12"
-    >
+    <motion.div variants={fadeIn} initial="initial" animate="animate" exit="exit" className="mt-12">
       <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
       <Accordion type="single" collapsible className="w-full">
         {FAQ_ITEMS.map((item, index) => (
@@ -348,4 +361,7 @@ async function getStripe() {
   const { loadStripe } = await import("@stripe/stripe-js")
   return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 }
+
+export { SUBSCRIPTION_PLANS, FAQ_ITEMS }
+export type { SubscriptionPlanType, SubscriptionStatusType }
 
