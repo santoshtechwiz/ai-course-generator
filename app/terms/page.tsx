@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
 export default function TermsAndConditions() {
   return (
@@ -8,7 +8,7 @@ export default function TermsAndConditions() {
       <p className="mb-4">Last updated: {new Date().toLocaleDateString('en-US')}</p>
       
       <p className="mb-4">
-        Please read these Terms and Conditions ("Terms", "Terms and Conditions") carefully before using the [Your Website URL] website (the "Service") operated by CourseAI ("us", "we", or "our").
+        Please read these Terms and Conditions ("Terms", "Terms and Conditions") carefully before using the courseai.dev website (the "Service") operated by CourseAI ("us", "we", or "our").
       </p>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4">1. Acceptance of Terms</h2>
@@ -27,12 +27,17 @@ export default function TermsAndConditions() {
         <li>These third-party services are subject to their own terms and conditions and privacy policies.</li>
         <li>CourseAI is not responsible for any interruptions, errors, or issues arising from the use of these third-party services.</li>
         <li>We do not guarantee the accuracy, completeness, or availability of content provided through these services.</li>
+        <li>Users must comply with the terms of service of any third-party provider while using our Service.</li>
       </ul>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4">3. Content and Intellectual Property</h2>
       
       <p className="mb-4">
         The content displayed on our Service, including videos and educational materials, is primarily sourced from YouTube and other third-party platforms. CourseAI does not claim ownership of this content and respects the intellectual property rights of the content creators.
+      </p>
+      
+      <p className="mb-4">
+        If you believe that any content on our Service infringes upon your intellectual property rights, please contact us immediately with the relevant details.
       </p>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4">4. AI-Generated Content</h2>
@@ -42,9 +47,9 @@ export default function TermsAndConditions() {
       </p>
       
       <ul className="list-disc pl-8 mb-4">
-        <li>AI-generated content may contain errors or inaccuracies.</li>
-        <li>Users should not rely solely on AI-generated content for critical decisions.</li>
-        <li>CourseAI is not liable for any consequences resulting from the use of or reliance on AI-generated content.</li>
+        <li>AI-generated content may contain errors, biases, or inaccuracies.</li>
+        <li>Users should not rely solely on AI-generated content for critical decisions, including but not limited to legal, medical, financial, or educational matters.</li>
+        <li>CourseAI does not guarantee the accuracy or reliability of AI-generated content and is not liable for any damages arising from reliance on such content.</li>
       </ul>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4">5. Limitation of Liability</h2>
@@ -58,6 +63,7 @@ export default function TermsAndConditions() {
         <li>Any conduct or content of any third party on the Service.</li>
         <li>Unauthorized access, use, or alteration of your transmissions or content.</li>
         <li>Reliance on AI-generated content or third-party API services.</li>
+        <li>Any security vulnerabilities or unauthorized access to user data.</li>
       </ul>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4">6. User Responsibilities</h2>
@@ -71,6 +77,7 @@ export default function TermsAndConditions() {
         <li>Not engage in any activity that interferes with or disrupts the Service.</li>
         <li>Not attempt to gain unauthorized access to any portion of the Service.</li>
         <li>Respect the intellectual property rights of content creators and third-party services.</li>
+        <li>Not use the Service for any unlawful, fraudulent, or malicious purposes.</li>
       </ul>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4">7. Modifications to the Service</h2>
@@ -88,13 +95,13 @@ export default function TermsAndConditions() {
       <h2 className="text-2xl font-semibold mt-6 mb-4">9. Changes to These Terms</h2>
       
       <p className="mb-4">
-        We reserve the right to update or change our Terms and Conditions at any time. We will notify you of any changes by posting the new Terms and Conditions on this page.
+        We reserve the right to update or change our Terms and Conditions at any time. We will notify you of any changes by posting the new Terms and Conditions on this page. Your continued use of the Service after any modifications constitutes acceptance of the new Terms.
       </p>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4">10. Contact Us</h2>
       
       <p className="mb-4">
-        If you have any questions about these Terms, please contact us at [Your Contact Email].
+        If you have any questions about these Terms, please contact us at support@courseai.dev.
       </p>
       
       <p className="mt-8">
@@ -103,6 +110,5 @@ export default function TermsAndConditions() {
         </Link>
       </p>
     </div>
-  )
+  );
 }
-

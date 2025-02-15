@@ -245,7 +245,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   )
 
   const handleWatchAnotherCourse = useCallback(() => {
-    router.push("/dashboard/courses")
+    router.push("/dashboard")
   }, [router])
 
   useEffect(() => {
