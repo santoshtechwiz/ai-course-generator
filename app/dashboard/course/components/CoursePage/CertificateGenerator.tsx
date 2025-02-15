@@ -78,7 +78,11 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({ courseName 
       document={<Certificate userName={userName} courseName={courseName} />}
       fileName={`${courseName.replace(/\s+/g, "_")}_Certificate.pdf`}
     >
-      {({ blob, url, loading, error }) => (loading ? "Generating certificate..." : "Download Certificate")}
+      {({ blob, url, loading, error }) => (
+        <>
+          {loading ? "Generating certificate..." : "Download Certificate"}
+        </>
+      )}
     </PDFDownloadLink>
   )
 }

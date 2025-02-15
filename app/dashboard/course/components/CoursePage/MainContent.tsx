@@ -34,7 +34,6 @@ interface MainContentProps {
   planId?: string
   isLastVideo: boolean
   onWatchAnotherCourse: () => void
-  onDownloadCertificate: () => void
 }
 
 interface ErrorFallbackProps {
@@ -79,7 +78,6 @@ interface VideoPlayerProps {
   onVideoSelect: (videoId: string) => void
   isLastVideo: boolean
   onWatchAnotherCourse: () => void
-  onDownloadCertificate: () => void
 }
 
 const VideoPlayer = ({
@@ -93,7 +91,6 @@ const VideoPlayer = ({
   onVideoSelect,
   isLastVideo,
   onWatchAnotherCourse,
-  onDownloadCertificate,
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLDivElement>(null)
   const [currentVideoId, setCurrentVideoId] = useState(initialVideoId)
@@ -102,6 +99,12 @@ const VideoPlayer = ({
   useEffect(() => {
     setCurrentVideoId(initialVideoId)
   }, [initialVideoId])
+
+  useEffect(() => {
+    if (isLastVideo) {
+      setShowCompletionOverlay(true)
+    }
+  }, [isLastVideo])
 
   useEffect(() => {
     if (videoRef.current) {
@@ -149,15 +152,18 @@ const VideoPlayer = ({
       }
     }
 
-    // If we've reached this point, it means there are no more videos to play
-    if (isLastVideo) {
-      setShowCompletionOverlay(true)
-    }
-
     if (onVideoEnd) {
       onVideoEnd()
     }
+
+    if (isLastVideo) {
+      setShowCompletionOverlay(true)
+    }
   }, [currentVideoId, currentChapter, course, onChapterComplete, onVideoSelect, onVideoEnd, isLastVideo])
+
+  const handleCloseOverlay = () => {
+    setShowCompletionOverlay(false)
+  }
 
   return (
     <Card className="mb-8 overflow-hidden">
@@ -173,10 +179,13 @@ const VideoPlayer = ({
                 onProgress={onTimeUpdate}
                 isLastVideo={isLastVideo}
               />
-             {showCompletionOverlay && (
-                  <CourseCompletionOverlay onWatchAnotherCourse={onWatchAnotherCourse} courseName={course.name} />
-                )}
-              
+              {showCompletionOverlay && (
+                <CourseCompletionOverlay
+                  onClose={handleCloseOverlay}
+                  onWatchAnotherCourse={onWatchAnotherCourse}
+                  courseName={course.name}
+                />
+              )}
             </Suspense>
           </ErrorBoundary>
         </div>
@@ -254,7 +263,6 @@ export default function MainContent(props: MainContentProps) {
                 onVideoSelect={props.onVideoSelect}
                 isLastVideo={props.isLastVideo}
                 onWatchAnotherCourse={props.onWatchAnotherCourse}
-                onDownloadCertificate={props.onDownloadCertificate}
               />
             </div>
 

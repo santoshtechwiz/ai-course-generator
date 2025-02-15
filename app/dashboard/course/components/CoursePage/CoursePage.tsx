@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useReducer, useEffect, useMemo, useCallback, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import MainContent from "./MainContent"
@@ -75,6 +76,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   const [isLastVideo, setIsLastVideo] = useState(false)
   const { data: session } = useSession()
   const { toast } = useToast()
+  const router = useRouter()
   const isInitialMount = useRef(true)
   const hasSetInitialVideo = useRef(false)
 
@@ -158,7 +160,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
       },
       5000,
     ),
-    [updateProgress, session],
+    [updateProgress, session], // Added session as a dependency
   )
 
   const markChapterAsCompleted = useCallback(() => {
@@ -202,7 +204,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
           isCompleted: true,
           progress: 100,
         })
-       
+
         toast({
           title: "Course Completed",
           description: "Congratulations! You've completed all videos in this course.",
@@ -239,8 +241,12 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         })
       }
     },
-    [state.currentChapter, findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, dispatch],
+    [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, dispatch, state.currentChapter], // Added state.currentChapter as a dependency
   )
+
+  const handleWatchAnotherCourse = useCallback(() => {
+    router.push("/courses")
+  }, [router])
 
   useEffect(() => {
     const handleResize = () => {
@@ -304,6 +310,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
             onVideoSelect={handleVideoSelect}
             currentChapter={state.currentChapter}
             currentTime={0}
+            onWatchAnotherCourse={handleWatchAnotherCourse}
             onTimeUpdate={(time: number) => {
               if (state.currentChapter && session) {
                 throttledUpdateProgress({
@@ -323,7 +330,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
             <motion.div
               className={cn(
                 "w-full lg:w-1/4 bg-background overflow-hidden flex flex-col fixed inset-y-0 right-0 z-50 lg:relative lg:translate-x-0",
-                isSmallScreen && "shadow-lg"
+                isSmallScreen && "shadow-lg",
               )}
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
@@ -354,7 +361,6 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                 progress={progress || null}
                 nextVideoId={state.nextVideoId}
                 prevVideoId={state.prevVideoId}
-               
                 completedChapters={progress?.completedChapters || []}
               />
             </motion.div>
@@ -364,3 +370,4 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     </div>
   )
 }
+
