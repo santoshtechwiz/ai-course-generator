@@ -56,8 +56,9 @@ export function QuizActions({
     showOptions: true,
     showAnswerSpace: true,
     answerSpaceHeight: 40,
-    showAnswers: true, // Set to true if you want to show answers in the PDF
+    showAnswers: true,
   }
+
   useEffect(() => {
     const fetchQuizState = async () => {
       try {
@@ -204,7 +205,7 @@ export function QuizActions({
         })
       }
       setIsShareLoading(false)
-    }, 500) // Simulate a short delay for better UX
+    }, 500)
   }
 
   return (
@@ -214,8 +215,7 @@ export function QuizActions({
       transition={{ duration: 0.3 }}
       className="space-y-4"
     >
-      <div className="flex flex-wrap items-center justify-start gap-2 bg-muted p-2 rounded-md">
-        {/* Public/Private Button */}
+      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-1 sm:gap-x-2 gap-y-2 bg-muted p-2 sm:p-4 rounded-md">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -224,7 +224,7 @@ export function QuizActions({
                 size="sm"
                 onClick={togglePublic}
                 disabled={isPublicLoading}
-                className="w-[100px] h-[36px] justify-center"
+                className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
               >
                 {isPublicLoading ? (
                   <span className="loader"></span>
@@ -244,7 +244,6 @@ export function QuizActions({
           </Tooltip>
         </TooltipProvider>
 
-        {/* Favorite/Unfavorite Button */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -253,7 +252,7 @@ export function QuizActions({
                 size="sm"
                 onClick={toggleFavorite}
                 disabled={isFavoriteLoading}
-                className="w-[100px] h-[36px] justify-center"
+                className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
               >
                 {isFavoriteLoading ? (
                   <span className="loader"></span>
@@ -274,7 +273,6 @@ export function QuizActions({
           </Tooltip>
         </TooltipProvider>
 
-        {/* Share Button */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -283,7 +281,7 @@ export function QuizActions({
                 size="sm"
                 onClick={handleShare}
                 disabled={isShareLoading}
-                className="w-[100px] h-[36px] justify-center"
+                className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
               >
                 {isShareLoading ? (
                   <span className="loader"></span>
@@ -301,12 +299,11 @@ export function QuizActions({
           </Tooltip>
         </TooltipProvider>
 
-        {/* PDF Download Button (PRO only) */}
         {subscriptionStatus?.subscriptionPlan === "PRO" && !isLoading && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-[100px] h-[36px]">
+                <div className="w-10 h-10 sm:w-auto sm:h-auto">
                   <QuizPDFDownload quizData={data} config={pdfConfig} />
                 </div>
               </TooltipTrigger>
@@ -317,14 +314,13 @@ export function QuizActions({
           </TooltipProvider>
         )}
 
-        {/* Delete Button */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="destructive"
               size="sm"
               disabled={isDeleteLoading}
-              className="w-[100px] h-[36px] justify-center"
+              className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
             >
               {isDeleteLoading ? (
                 <span className="loader"></span>
@@ -350,11 +346,10 @@ export function QuizActions({
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Rating */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-[100px] h-[36px] flex items-center justify-center">
+              <div className="w-10 h-10 sm:w-auto sm:h-auto flex items-center justify-center">
                 <Rating value={rating} onValueChange={handleRatingChange} />
               </div>
             </TooltipTrigger>
