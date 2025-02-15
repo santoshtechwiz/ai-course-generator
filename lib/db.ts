@@ -301,6 +301,9 @@ export async function clearExpiredSessions() {
 export async function fetchRandomQuizzes(count: number = 3) {
   try {
     const quizzes = await prisma.userQuiz.findMany({
+      where: {
+        isPublic: true,
+      },
       select: {
         id: true,
         topic: true,

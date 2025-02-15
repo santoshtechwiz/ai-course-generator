@@ -179,7 +179,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
         initialIsFavorite={false}
         quizType="openended"
       />
-      <h1 className="text-3xl font-bold mb-4 text-gradient">Open Ended Quiz: {quizData?.topic || "Unknown"}</h1>
+     
       {quizCompleted || (isAuthenticated && finalScore !== null) ? (
         isAuthenticated ? (
           <QuizResultsOpenEnded

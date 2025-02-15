@@ -3,13 +3,21 @@
 import prisma from "@/lib/db"
 import type { QuizListItem, QuizType } from "../types/types"
 
-export async function getQuizzes(
+interface GetQuizzesParams {
+  page: number
+  limit: number
+  searchTerm?: string
+  userId?: string
+  quizTypes?: QuizType[] | null
+}
+
+export async function getQuizzes({
   page = 1,
-  limit = 20,
+  limit = 10,
   searchTerm = "",
-  userId?: string,
-  quizTypes?: QuizType[] | null,
-): Promise<{ quizzes: QuizListItem[]; hasMore: boolean }> {
+  userId,
+  quizTypes,
+}: GetQuizzesParams): Promise<{ quizzes: QuizListItem[]; nextCursor: number | null }> {
   try {
     const skip = (page - 1) * limit
 
@@ -23,8 +31,7 @@ export async function getQuizzes(
                     contains: searchTerm,
                     mode: "insensitive" as const,
                   },
-                }
-                
+                },
               ],
             }
           : {},
@@ -71,17 +78,18 @@ export async function getQuizzes(
         slug: quiz.slug,
         questionCount: quiz._count.questions,
         isPublic: quiz.isPublic ?? true,
-        quizType: quiz.quizType as QuizType, // Type assertion here
-        tags: [], // Assuming tags are not implemented yet
-        questions: [], // Assuming we don't need to fetch questions here
-      })
+        quizType: quiz.quizType as QuizType,
+        tags: [],
+        questions: [],
+      }),
     )
 
-    const hasMore = totalCount > skip + limit
+    const nextCursor = totalCount > skip + limit ? page + 1 : null
 
-    return { quizzes: quizListItems, hasMore }
+    return { quizzes: quizListItems, nextCursor }
   } catch (error) {
     console.error("Failed to fetch quizzes:", error)
-    return { quizzes: [], hasMore: false }
+    return { quizzes: [], nextCursor: null }
   }
 }
+

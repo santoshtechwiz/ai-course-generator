@@ -1,7 +1,6 @@
 "use client"
 
 import { memo, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { PublicQuizzes } from "./PublicQuizzes"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import NProgress from "nprogress"
@@ -19,25 +18,14 @@ interface QuizListProps {
   quizzes: QuizListItem[]
   isLoading: boolean
   isError: boolean
-  isFetching: boolean
-  hasMore: boolean
-  currentPage: number
-  onPageChange: (page: number) => void
+  isFetchingNextPage: boolean
+  hasNextPage: boolean | undefined
   isSearching: boolean
 }
 
-function QuizList({
-  quizzes,
-  isLoading,
-  isError,
-  isFetching,
-  hasMore,
-  currentPage,
-  onPageChange,
-  isSearching,
-}: QuizListProps) {
+function QuizList({ quizzes, isLoading, isError, isFetchingNextPage, hasNextPage, isSearching }: QuizListProps) {
   useEffect(() => {
-    if (isFetching) {
+    if (isFetchingNextPage) {
       NProgress.start()
     } else {
       NProgress.done()
@@ -46,7 +34,7 @@ function QuizList({
     return () => {
       NProgress.done()
     }
-  }, [isFetching])
+  }, [isFetchingNextPage])
 
   if (isLoading) {
     return <QuizzesSkeleton />
@@ -67,14 +55,8 @@ function QuizList({
   return (
     <>
       <PublicQuizzes quizzes={quizzes} />
-      <div className="mt-6 flex justify-center gap-2">
-        <Button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
-          Previous
-        </Button>
-        <Button onClick={() => onPageChange(currentPage + 1)} disabled={!hasMore}>
-          Next
-        </Button>
-      </div>
+      {isFetchingNextPage && <QuizzesSkeleton />}
+      {!hasNextPage && <div className="text-center mt-4">No more quizzes to load.</div>}
     </>
   )
 }

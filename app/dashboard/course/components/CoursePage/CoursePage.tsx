@@ -4,12 +4,11 @@ import React, { useReducer, useEffect, useMemo, useCallback, useRef, useState } 
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import MainContent from "./MainContent"
-import RightSidebar from "./RightSidebar"
+import VideoNavigationSidebar from "./VideoNavigationSidebar"
 import useProgress from "@/hooks/useProgress"
 import type { FullChapterType, FullCourseType } from "@/app/types/types"
 import { useUser } from "@/app/providers/userContext"
 import throttle from "lodash.throttle"
-import { useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { VideotapeIcon, X } from "lucide-react"
@@ -61,7 +60,7 @@ interface CoursePageProps {
 }
 
 const MemoizedMainContent = React.memo(MainContent)
-const MemoizedRightSidebar = React.memo(RightSidebar)
+const MemoizedRightSidebar = React.memo(VideoNavigationSidebar)
 
 export default function CoursePage({ course, initialChapterId }: CoursePageProps) {
   const { user, loading: isProfileLoading, error } = useUser()

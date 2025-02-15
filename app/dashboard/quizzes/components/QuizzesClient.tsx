@@ -1,20 +1,22 @@
 "use client"
 
-import React, { useState, useCallback, useMemo, Suspense } from "react"
-import { useQuery } from "@tanstack/react-query"
+import React, { useState, useCallback, useMemo } from "react"
+import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
-import { getQuizzes } from "@/app/actions/getQuizes"
+
 import { QuizSidebar } from "./QuizSidebar"
+import { useInView } from "react-intersection-observer"
 
 import type { QuizListItem, QuizType } from "@/app/types/types"
 import { ErrorBoundary } from "./ErrorBoundary"
+import { getQuizzes } from "@/app/actions/getQuizes"
 
 const LazyQuizList = React.lazy(() => import("./QuizList"))
 
 interface QuizzesClientProps {
   initialQuizzesData: {
     quizzes: QuizListItem[]
-    hasMore: boolean
+    nextCursor: number | null
   }
   userId?: string
 }
@@ -22,41 +24,51 @@ interface QuizzesClientProps {
 export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps) {
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
-  const [page, setPage] = useState(1)
   const debouncedSearch = useDebounce(search, 300)
+  const { ref, inView } = useInView()
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["quizzes", debouncedSearch, userId, selectedTypes, page],
-    queryFn: () => getQuizzes(page, 12, debouncedSearch, userId, selectedTypes.length > 0 ? selectedTypes : null),
-    initialData: initialQuizzesData,
-    keepPreviousData: true,
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
+    queryKey: ["quizzes", debouncedSearch, userId, selectedTypes],
+    queryFn: ({ pageParam = 1 }) =>
+      getQuizzes({
+        page: pageParam,
+        limit: 5,
+        searchTerm: debouncedSearch,
+        userId,
+        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
+      }),
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: 1,
+    initialData: {
+      pages: [initialQuizzesData],
+      pageParams: [1],
+    },
   })
+
+  React.useEffect(() => {
+    if (inView && hasNextPage) {
+      fetchNextPage()
+    }
+  }, [inView, fetchNextPage, hasNextPage])
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
-    setPage(1)
   }, [])
 
   const handleClearSearch = useCallback(() => {
     setSearch("")
     setSelectedTypes([])
-    setPage(1)
     refetch()
   }, [refetch])
 
   const toggleQuizType = useCallback((type: QuizType) => {
     setSelectedTypes((prev) => {
       const newTypes = prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-      setPage(1)
       return newTypes
     })
   }, [])
 
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage)
-  }, [])
-
-  const quizzes = useMemo(() => data?.quizzes || [], [data?.quizzes])
+  const quizzes = useMemo(() => data?.pages.flatMap((page) => page.quizzes) || [], [data?.pages])
 
   const isSearching = debouncedSearch.trim() !== "" || selectedTypes.length > 0
 
@@ -72,18 +84,15 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
       />
       <div className="lg:w-3/4 space-y-8">
         <ErrorBoundary fallback={<div>Error loading quizzes. Please try again later.</div>}>
-          
-            <LazyQuizList
-              quizzes={quizzes}
-              isLoading={isLoading}
-              isError={isError}
-              isFetching={isFetching}
-              hasMore={data?.hasMore || false}
-              currentPage={page}
-              onPageChange={handlePageChange}
-              isSearching={isSearching}
-            />
-         
+          <LazyQuizList
+            quizzes={quizzes}
+            isLoading={isLoading}
+            isError={isError}
+            isFetchingNextPage={isFetchingNextPage}
+            hasNextPage={hasNextPage}
+            isSearching={isSearching}
+          />
+          <div ref={ref} className="h-10" />
         </ErrorBoundary>
       </div>
     </div>

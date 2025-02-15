@@ -12,7 +12,7 @@ import CourseActionsWithErrorBoundary from "./CourseActions"
 import { useSession } from "next-auth/react"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import type { CourseProgress } from "@prisma/client"
-import { useToast } from "@/hooks/use-toast"
+import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
 
 const VideoPlayerEnhanced = dynamic(() => import("./VideoPlayerEnhanced"), {
   ssr: false,
@@ -33,6 +33,8 @@ interface MainContentProps {
   onChapterComplete?: (chapterId: number) => void
   planId?: string
   isLastVideo: boolean
+  onWatchAnotherCourse: () => void
+  onDownloadCertificate: () => void
 }
 
 interface ErrorFallbackProps {
@@ -76,6 +78,8 @@ interface VideoPlayerProps {
   course: FullCourseType
   onVideoSelect: (videoId: string) => void
   isLastVideo: boolean
+  onWatchAnotherCourse: () => void
+  onDownloadCertificate: () => void
 }
 
 const VideoPlayer = ({
@@ -88,10 +92,12 @@ const VideoPlayer = ({
   course,
   onVideoSelect,
   isLastVideo,
+  onWatchAnotherCourse,
+  onDownloadCertificate,
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLDivElement>(null)
   const [currentVideoId, setCurrentVideoId] = useState(initialVideoId)
-  const { toast } = useToast()
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
 
   useEffect(() => {
     setCurrentVideoId(initialVideoId)
@@ -145,38 +151,38 @@ const VideoPlayer = ({
 
     // If we've reached this point, it means there are no more videos to play
     if (isLastVideo) {
-      toast({
-        title: "Course Completed",
-        description: "Congratulations! You've completed all videos in this course.",
-        variant: "default",
-      })
+      setShowCompletionOverlay(true)
     }
 
     if (onVideoEnd) {
       onVideoEnd()
     }
-  }, [currentVideoId, currentChapter, course, onChapterComplete, onVideoSelect, onVideoEnd, toast, isLastVideo])
+  }, [currentVideoId, currentChapter, course, onChapterComplete, onVideoSelect, onVideoEnd, isLastVideo])
 
-  return currentVideoId ? (
+  return (
     <Card className="mb-8 overflow-hidden">
       <CardContent className="p-0">
         <div ref={videoRef} className="relative">
           <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {}}>
             <Suspense fallback={<VideoPlayerSkeleton />}>
               <VideoPlayerEnhanced
-                videoId={currentVideoId}
+                videoId={currentVideoId || ""}
                 onEnded={handleVideoEnd}
                 autoPlay={true}
                 initialTime={currentTime}
                 onProgress={onTimeUpdate}
                 isLastVideo={isLastVideo}
               />
+             {showCompletionOverlay && (
+                  <CourseCompletionOverlay onWatchAnotherCourse={onWatchAnotherCourse} courseName={course.name} />
+                )}
+              
             </Suspense>
           </ErrorBoundary>
         </div>
       </CardContent>
     </Card>
-  ) : null
+  )
 }
 
 interface QuizSectionTabsProps {
@@ -194,7 +200,7 @@ const QuizSectionTabs = ({ course, currentChapter, planId }: QuizSectionTabsProp
           name={currentChapter?.name || "Chapter Details"}
           course={course}
           chapter={currentChapter as FullChapterType}
-          planId={planId}
+          planId={planId ?? ""}
         />
       </CardContent>
     </Card>
@@ -247,11 +253,17 @@ export default function MainContent(props: MainContentProps) {
                 course={props.course}
                 onVideoSelect={props.onVideoSelect}
                 isLastVideo={props.isLastVideo}
+                onWatchAnotherCourse={props.onWatchAnotherCourse}
+                onDownloadCertificate={props.onDownloadCertificate}
               />
             </div>
 
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-              <QuizSectionTabs course={props.course} currentChapter={props.currentChapter} planId={props.planId} />
+              <QuizSectionTabs
+                course={props.course}
+                currentChapter={props.currentChapter}
+                planId={props.planId ?? ""}
+              />
             </div>
           </div>
         </main>
