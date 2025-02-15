@@ -93,6 +93,8 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
         } else {
           // Optionally, show a different overlay or message for the last video
           setShowNextVideoOverlay(false);
+          //pause the video also
+          setPlaying(false);
         }
       }
     }
