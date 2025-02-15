@@ -24,7 +24,6 @@ function LoadingSkeleton() {
   );
 }
 
-// Generate dynamic metadata for SEO
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> },
   parent: ResolvingMetadata,
@@ -33,8 +32,8 @@ export async function generateMetadata(
 
   if (!course) {
     return {
-      title: "Course Not Found",
-      description: "The course you are looking for does not exist.",
+      title: "Course Not Found | CourseAI",
+      description: "The requested course is not available. Explore our other AI-powered courses at CourseAI.",
       robots: "noindex, nofollow",
     }
   }
@@ -42,17 +41,30 @@ export async function generateMetadata(
   const previousImages = (await parent).openGraph?.images || []
 
   const courseUrl = `${SITE_URL}/courses/${(await params).slug}`
-  const imageUrl = course.image || `${SITE_URL}/default-thumbnail.png`
+  const imageUrl = course.image || `${SITE_URL}/default-course-thumbnail.png`
+
+ 
+  const defaultKeywords = [
+    "AI-powered learning",
+    "personalized education",
+    "online course",
+    "e-learning",
+    "skill development",
+    "interactive learning",
+  ]
+
+  const courseDescription =
+    course.description ||
+    `Master ${course.name} with our AI-powered, personalized online course. Gain practical skills, complete interactive quizzes, and earn a certificate.`
 
   return {
-    title: `${course.name} | Online Course | ${SITE_NAME}`,
-    description: `${course.description || "Learn more with this detailed course."} Enroll now at ${SITE_NAME}.`,
-    keywords: [course.name, "online course", "e-learning", SITE_NAME],
-    authors: [{ name: course.description || SITE_NAME }],
-    category:  "Education",
+    title: `${course.name} | AI-Powered Online Course | ${SITE_NAME}`,
+    description: `${courseDescription.slice(0, 155)}... Enroll now at ${SITE_NAME} for a personalized learning experience.`,
+    keywords: [...new Set([ ...defaultKeywords, course.name, SITE_NAME])],
+    category: "Education",
     openGraph: {
-      title: `${course.name} - Online Course | ${SITE_NAME}`,
-      description: course.description || `Enhance your skills with our ${course.name} course. Join ${SITE_NAME} now!`,
+      title: `Master ${course.name} - AI-Powered Online Course | ${SITE_NAME}`,
+      description: courseDescription,
       url: courseUrl,
       siteName: SITE_NAME,
       type: "website",
@@ -61,17 +73,17 @@ export async function generateMetadata(
           url: imageUrl,
           width: 1200,
           height: 630,
-          alt: `${course.name} Course Thumbnail`,
+          alt: `${course.name} Course Thumbnail - AI-Powered Learning`,
         },
         ...previousImages,
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${course.name} | ${SITE_NAME}`,
-      description: `${course.description || `Learn ${course.name} online`} - Enroll now at ${SITE_NAME}!`,
+      title: `Learn ${course.name} with AI | ${SITE_NAME}`,
+      description: `${courseDescription.slice(0, 180)}... Enroll now for personalized, AI-driven learning!`,
       images: [imageUrl],
-      creator: "@codeguru",
+      creator: "@courseai",
     },
     alternates: {
       canonical: courseUrl,
@@ -79,19 +91,17 @@ export async function generateMetadata(
     other: {
       "og:locale": "en_US",
       "og:type": "course",
-      "og:price:amount":  "0",
       "og:price:currency": "USD",
     },
   }
 }
 
-// Main Course Page Component
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const slug = (await params).slug;
-  const course = await getCourseData(slug);
+  const slug = (await params).slug
+  const course = await getCourseData(slug)
 
   if (!course) {
-    notFound();
+    notFound()
   }
 
   return (
@@ -99,5 +109,5 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <CourseStructuredData course={course} />
       <CoursePage course={course} />
     </Suspense>
-  );
+  )
 }
