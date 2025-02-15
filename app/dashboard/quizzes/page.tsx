@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 const QuizPage = async () => {
   const session = await getAuthSession()
   const userId = session?.user?.id
-  const initialQuizzesData = await getQuizzes(1, 12, "", userId)
+  const initialQuizzesData = await getQuizzes(1, 5, "", userId)
 
   return (
     <div className="container mx-auto px-4 py-8">

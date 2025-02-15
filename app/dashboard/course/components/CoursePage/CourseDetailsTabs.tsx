@@ -19,9 +19,10 @@ export interface CourseDetailsTabsProps {
   name: string
   course: FullCourseType
   chapter: FullChapterType
+  planId:string
 }
 
-const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, course, chapter }) => {
+const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, course, chapter,planId }) => {
   const [activeTab, setActiveTab] = useState<"summary" | "quiz">("summary")
   const [isSummaryLoading, setIsSummaryLoading] = useState(true)
   const { subscriptionStatus } = useSubscriptionStore()

@@ -9,6 +9,7 @@ import type { CodingQuizProps } from "@/app/types/types"
 
 import SectionWrapper from "@/components/SectionWrapper"
 import { QuizActions } from "@/app/components/QuizActions"
+import PageLoader from "@/components/ui/loader"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
@@ -38,9 +39,9 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     queryFn: () => getQuizData(slug),
   })
 
-  // if (isLoading) {
-  //   return <GlobalLoader />
-  // }
+  if (isLoading) {
+    return <PageLoader />
+  }
 
   if (isError || !quizData) {
     return notFound()

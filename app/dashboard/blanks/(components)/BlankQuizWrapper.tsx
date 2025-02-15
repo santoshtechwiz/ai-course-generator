@@ -11,6 +11,7 @@ import { GuidedHelp } from "@/app/components/HelpModal"
 import BlankQuizResults from "./BlankQuizResults"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
 import { QuizActions } from "@/app/components/QuizActions"
+import PageLoader from "@/components/ui/loader"
 
 interface Question {
   id: number
@@ -186,6 +187,11 @@ export function BlankQuizWrapper({ slug }: { slug: string }) {
           </Button>
         </CardContent>
       </Card>
+    )
+  }
+  if(loading){
+    return (
+        <PageLoader></PageLoader>
     )
   }
 

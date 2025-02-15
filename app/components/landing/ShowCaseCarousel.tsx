@@ -28,10 +28,11 @@ const buildLinks = (items: CarouselItem[]) => {
     if (item.quizType === "openended") {
       return `/quiz/openended/${item.slug}`;
     }
+
     if (item.quizType === "fill-blanks") {
       return `/quiz/blanks/${item.slug}`;
     }
-    return `/quiz/${item.slug}`;
+    return `/quiz/code/${item.slug}`;
   });
 };
 

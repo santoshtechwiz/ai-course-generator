@@ -167,8 +167,8 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
 
         {/* Next Video Overlay */}
-        {showNextVideoOverlay  && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50">
+        {showNextVideoOverlay && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-50">
             <div className="text-white text-2xl font-bold">Moving to next video...</div>
           </div>
         )}

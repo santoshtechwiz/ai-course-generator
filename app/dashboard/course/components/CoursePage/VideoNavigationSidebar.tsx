@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-interface RightSidebarProps {
+interface VideoNavigationSidebarProps {
   course: FullCourseType
   currentChapter?: FullChapterType
   courseId: string
@@ -29,7 +29,7 @@ interface RightSidebarProps {
 
 
 
-function RightSidebar({
+function VideoNavigationSidebar({
   course,
   currentChapter,
   onVideoSelect,
@@ -40,7 +40,7 @@ function RightSidebar({
   progress,
   nextVideoId,
   prevVideoId,
-}: RightSidebarProps) {
+}: VideoNavigationSidebarProps) {
   const { data: session } = useSession()
   const router = useRouter()
   const isOwner = session?.user?.id === courseOwnerId
@@ -178,5 +178,5 @@ function VideoPlaylist(props: VideoPlaylistProps) {
   </div>);
 }
 
-export default React.memo(RightSidebar)
+export default React.memo(VideoNavigationSidebar)
 
