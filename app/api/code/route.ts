@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   try {
     const slug = titleSubTopicToSlug(language, subtopic);
-    const userQuiz = await createUserQuiz(session.user.id, language, 'code', slug);
+    const userQuiz = await createUserQuiz(session.user.id, `${language} ${subtopic}`, 'code', slug);
    
     try {
     

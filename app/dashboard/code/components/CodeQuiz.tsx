@@ -286,7 +286,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
     <Card className="w-full">
       <CardHeader className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold">Coding Quiz Challenge</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Coding Quiz Challenge {quizData.title}</h1>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

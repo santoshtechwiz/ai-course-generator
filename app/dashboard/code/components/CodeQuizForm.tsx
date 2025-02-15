@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Check, ChevronsUpDown, Info, AlertCircle, Code2 } from "lucide-react"
@@ -38,6 +38,7 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
   const [openInfo, setOpenInfo] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [customSubtopics, setCustomSubtopics] = useState<Record<string, string[]>>({})
   const router = useRouter()
 
   const handleLanguageSelect = useCallback((selectedLanguage: string) => {
@@ -55,9 +56,16 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
     (e: React.FormEvent) => {
       e.preventDefault()
       if (customLanguage.trim()) {
-        setLanguage(customLanguage.trim())
+        const newLanguage = {
+          name: customLanguage.trim(),
+          icon: ({ className }: { className?: string }) => <Code2 className={className} />,
+          category: "Custom",
+        }
+        setLanguage(newLanguage.name)
         setOpenLanguage(false)
         setCustomLanguage("")
+        // Add the custom language to the languages array
+        languages.push(newLanguage)
       }
     },
     [customLanguage],
@@ -70,9 +78,14 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
         setSubtopic(customSubtopic.trim())
         setOpenSubtopic(false)
         setCustomSubtopic("")
+        // Add the custom subtopic to the subtopics array for the current language
+        const currentSubtopics = getSubtopics(language)
+        if (!currentSubtopics.includes(customSubtopic.trim())) {
+          currentSubtopics.push(customSubtopic.trim())
+        }
       }
     },
-    [customSubtopic],
+    [customSubtopic, language],
   )
 
   const getDifficultyLabel = useCallback((value: number) => {
@@ -113,6 +126,12 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
     () => isLoading || credits < 1 || !language.trim() || !subtopic.trim(),
     [isLoading, credits, language, subtopic],
   )
+
+  useEffect(() => {
+    if (language && !customSubtopics[language]) {
+      setCustomSubtopics((prev) => ({ ...prev, [language]: [] }))
+    }
+  }, [language, customSubtopics])
 
   return (
     <motion.div
@@ -223,7 +242,7 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
                     <CommandInput placeholder="Search subtopic..." />
                     <CommandList>
                       <CommandEmpty>No subtopic found.</CommandEmpty>
-                      {getSubtopics(language).map((topic) => (
+                      {[...getSubtopics(language), ...(customSubtopics[language] || [])].map((topic) => (
                         <CommandItem key={topic} onSelect={() => handleSubtopicSelect(topic)}>
                           <Check className={cn("mr-2 h-4 w-4", subtopic === topic ? "opacity-100" : "opacity-0")} />
                           {topic}
@@ -296,7 +315,7 @@ const CodeQuizForm: React.FC<CodeQuizFormProps> = ({ credits, maxQuestions, isLo
                 {questionCount}
               </motion.span>
             </Label>
-          
+
             <SubscriptionSlider
               value={questionCount}
               onValueChange={setQuestionCount}
