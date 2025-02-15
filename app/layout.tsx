@@ -1,10 +1,9 @@
+import type React from "react"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Providers } from "./providers/provider"
 import Script from "next/script"
-
-
 import { Suspense } from "react"
 
 const inter = Inter({
@@ -16,22 +15,28 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"),
   title: {
-    default: process.env.NEXT_PUBLIC_SITE_NAME || "Course AI",
+    default: process.env.NEXT_PUBLIC_SITE_NAME || "Course AI: AI-Powered Course Creation & Quiz Generation",
     template: `%s | ${process.env.NEXT_PUBLIC_SITE_NAME || "Course AI"}`,
   },
   description:
-    "Revolutionize your learning experience with our AI-powered course creation and personalized education platform",
+    "Create custom courses, generate quizzes, and transform video content into interactive learning materials with our AI-powered education platform. Revolutionize your learning experience with personalized course creation.",
   keywords: [
-    "AI education",
+    "AI course creation",
     "personalized learning",
     "online courses",
     "adaptive learning",
-    "course creation",
+    "quiz generation",
     "e-learning platform",
     "artificial intelligence in education",
     "smart tutoring",
     "interactive lessons",
     "skill development",
+    "video transcript analysis",
+    "PDF quiz download",
+    "multiple choice questions",
+    "open-ended questions",
+    "coding quizzes",
+    "educational technology",
   ],
   authors: [{ name: process.env.NEXT_PUBLIC_AUTHOR_NAME, url: process.env.NEXT_PUBLIC_AUTHOR_URL }],
   creator: process.env.NEXT_PUBLIC_CREATOR,
@@ -39,25 +44,25 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_SITE_URL,
-    title: process.env.NEXT_PUBLIC_SITE_NAME,
+    title: process.env.NEXT_PUBLIC_SITE_NAME || "Course AI: AI-Powered Course Creation & Quiz Generation",
     description:
-      "Revolutionize your learning experience with our AI-powered course creation and personalized education platform",
+      "Create custom courses, generate quizzes, and transform video content into interactive learning materials. Our AI-powered platform revolutionizes course creation and personalized education.",
     siteName: process.env.NEXT_PUBLIC_SITE_NAME,
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_SITE_URL}/default-thumbnail.png`,
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: `${process.env.NEXT_PUBLIC_SITE_NAME} Open Graph Image`,
+        alt: `${process.env.NEXT_PUBLIC_SITE_NAME} - AI-Powered Course Creation Platform`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: process.env.NEXT_PUBLIC_SITE_NAME,
+    title: process.env.NEXT_PUBLIC_SITE_NAME || "Course AI: AI-Powered Course Creation & Quiz Generation",
     description:
-      "Revolutionize your learning experience with our AI-powered course creation and personalized education platform",
-    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/default-thumbnail.png`],
+      "Create custom courses, generate quizzes, and transform video content into interactive learning materials. Our AI-powered platform revolutionizes course creation and personalized education.",
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/twitter-card.png`],
     creator: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
   },
   robots: {
@@ -80,13 +85,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <link rel="canonical" href={process.env.NEXT_PUBLIC_SITE_URL} />
+      </head>
       <body>
         <Providers>
-         
-            <Suspense>
-            {children}
-            </Suspense>
-        
+          <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
         </Providers>
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}

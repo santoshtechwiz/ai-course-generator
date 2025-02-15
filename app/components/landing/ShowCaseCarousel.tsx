@@ -20,7 +20,7 @@ interface CarouselItem {
 const buildLinks = (items: CarouselItem[]) => {
   return items.map((item) => {
     if (item.type === "course") {
-      return `/courses/dashboard/${item.slug}`;
+      return `/dashboard/course/${item.slug}`;
     }
     if (item.quizType === "mcq") {
       return `/quiz/mcq/${item.slug}`;
