@@ -12,9 +12,9 @@ export interface SubscriptionStatus {
   expirationDate?: string
   lastUpdated?: string
   usageStats?: {
-    coursesCreated: number
-    questionsAsked: number
-    pdfDownloads: number
+    coursesCreated?: number
+    questionsAsked?: number
+    pdfDownloads?: number
   }
 }
 
