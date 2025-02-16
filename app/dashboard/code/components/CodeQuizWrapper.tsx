@@ -5,9 +5,6 @@ import axios from "axios"
 import { notFound } from "next/navigation"
 import CodingQuiz from "./CodeQuiz"
 import type { CodingQuizProps } from "@/app/types/types"
-
-
-import SectionWrapper from "@/components/SectionWrapper"
 import { QuizActions } from "@/app/components/QuizActions"
 import PageLoader from "@/components/ui/loader"
 

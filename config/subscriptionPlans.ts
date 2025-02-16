@@ -1,6 +1,6 @@
 import { Star, Rocket, Zap, Crown } from "lucide-react"
 
-export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ENTERPRISE"
+export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE"
 
 export type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "PENDING" | "CANCELLED"
 
@@ -57,7 +57,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
   },
   {
-    name: "ENTERPRISE",
+    name: "ULTIMATE",
     icon: Crown,
     tokens: 150,
     options: [

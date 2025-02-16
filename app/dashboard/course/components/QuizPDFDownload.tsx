@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import ConfigurableQuizPDF from "./ConfigurableQuizPDF";
 import { SiAdobe } from "react-icons/si";
 import useSubscriptionStore from "@/store/useSubscriptionStore";
-import { GlobalLoader } from "@/app/components/GlobalLoader";
+import PageLoader from "@/components/ui/loader";
+
 
 interface QuizPDFDownloadProps extends QuizPDFProps {
   config?: {
@@ -66,7 +67,7 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) =
   };
 
   if (!isClient) {
-    return <GlobalLoader />;
+    return <PageLoader />;
   }
 
   return (

@@ -1,7 +1,6 @@
 import type { Metadata, ResolvingMetadata } from "next";
 import { notFound } from "next/navigation";
 import { getAuthSession } from "@/lib/authOptions";
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 
 import axios from "axios";
 import type { CodingQuizProps } from "@/app/types/types";
@@ -69,7 +68,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   return (
 
-    <div className="py-8 sm:px-6 lg:px-8">
+    <div className="py-8 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6 ">

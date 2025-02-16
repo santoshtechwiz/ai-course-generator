@@ -13,9 +13,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
 
 import QuizBackground from "./QuizBackground"
-import ComponentLoader from "../ComponentLoader"
 import { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import { CourseQuiz } from "@prisma/client"
+import PageLoader from "@/components/ui/loader"
 
 
 type Props = {
@@ -119,7 +119,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
   }
 
   if (isQuizLoading) {
-    return <ComponentLoader size="sm" loadingSteps={loadingSteps} />
+    return <PageLoader/>
   }
 
   if (!questions || questions.length === 0) {

@@ -61,7 +61,7 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
               showAtBottom={false}
             />
             <Suspense>
-              <main className="flex-1 p-4 overflow-auto">{children}</main>
+              <main className="flex-1 overflow-auto">{children}</main>
             </Suspense>
           </div>
         </SubscriptionProvider>

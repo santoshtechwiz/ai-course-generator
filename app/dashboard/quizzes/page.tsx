@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic"
 const QuizPage = async () => {
   const session = await getAuthSession()
   const userId = session?.user?.id
-  const initialQuizzesData = await getQuizzes(1, 5, "", userId)
-
+  const initialQuizzesData = await getQuizzes({ page: 1, limit: 5, searchTerm: "", userId: userId, quizTypes: [] });
+  console.log(initialQuizzesData);
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-center text-primary">Explore Quizzes</h1>

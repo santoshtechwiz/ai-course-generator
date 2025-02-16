@@ -58,6 +58,7 @@ export async function getQuizzes({
           slug: true,
           isPublic: true,
           quizType: true,
+          bestScore: true,
           _count: {
             select: { questions: true },
           },
@@ -79,6 +80,7 @@ export async function getQuizzes({
         questionCount: quiz._count.questions,
         isPublic: quiz.isPublic ?? true,
         quizType: quiz.quizType as QuizType,
+        bestScore: quiz.bestScore || 0,
         tags: [],
         questions: [],
       }),
