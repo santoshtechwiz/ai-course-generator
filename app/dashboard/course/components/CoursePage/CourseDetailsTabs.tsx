@@ -7,7 +7,7 @@ import { Lock, FileText, ClipboardList } from "lucide-react"
 import type { FullChapterType, FullCourseType } from "@/app/types/types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
-import { useTheme } from "next-themes"
+
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { useRouter } from "next/navigation"
 
@@ -28,7 +28,8 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
   const { subscriptionStatus } = useSubscriptionStore()
   const router=useRouter();
   const isPremium =
-    subscriptionStatus?.subscriptionPlan === "PRO" || subscriptionStatus?.subscriptionPlan === "ULTIMATE"
+    subscriptionStatus?.subscriptionPlan === "PRO" 
+    || subscriptionStatus?.subscriptionPlan === "ULTIMATE"
 
   const handleTabChange = (value: string) => {
     if (isPremium && (value === "summary" || !isSummaryLoading)) {

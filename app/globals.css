@@ -3,7 +3,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+body {
+  pointer-events: auto !important;
+}
 @layer base {
   :root {
     --font-sans:

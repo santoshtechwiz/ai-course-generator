@@ -72,7 +72,7 @@ export default function Navbar() {
 
   const getSubscriptionBadge = () => {
     if (isLoadingSubscription || !subscriptionStatus) return null
-    const plan = subscriptionStatus.subscriptionPlan as "PRO" | "BASIC" | "FREE"
+    const plan = subscriptionStatus.subscriptionPlan as "PRO" | "BASIC" | "FREE" | "ULTIMATE"
     return (
       <Badge
         variant={plan === "PRO" ? "default" : plan === "BASIC" ? "secondary" : "outline"}
@@ -89,7 +89,7 @@ export default function Navbar() {
 
   return (
     <motion.header
-      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
+      className={`sticky top-0 z-1 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
         scrolled ? "shadow-md" : ""
       }`}
       initial={{ opacity: 0, y: -100 }}
@@ -160,7 +160,7 @@ export default function Navbar() {
               </DropdownMenuContent>
             </UserMenu>
           ) : (
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden md:block">
               <Button
                 variant="default"
                 size="sm"
@@ -221,6 +221,48 @@ export default function Navbar() {
                 {item.name}
               </Button>
             ))}
+            {status === "authenticated" ? (
+              <>
+                <Button
+                  variant="ghost"
+                  className="justify-start"
+                  onClick={() => {
+                    router.push("/dashboard")
+                    setIsMobileMenuOpen(false)
+                  }}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="justify-start"
+                  onClick={() => {
+                    router.push("/dashboard/subscription")
+                    setIsMobileMenuOpen(false)
+                  }}
+                >
+                  <Crown className="mr-2 h-4 w-4" />
+                  Subscription
+                </Button>
+                <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="default"
+                className="justify-start"
+                onClick={() => {
+                  handleSignIn()
+                  setIsMobileMenuOpen(false)
+                }}
+              >
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+            )}
           </nav>
         </motion.div>
       )}

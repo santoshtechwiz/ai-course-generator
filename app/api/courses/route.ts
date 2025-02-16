@@ -14,7 +14,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const where: Prisma.CourseWhereInput = {
-      ...(userId ? { userId } : { isPublic: true }),
+      OR: [
+        { isPublic: true },  // Public courses
+        { userId: userId },  // Courses created by the user
+      ],
       ...(search
         ? {
             OR: [
@@ -30,10 +33,9 @@ export async function GET(req: NextRequest) {
             },
           }
         : {}),
-    }
+    };
 
-    console.log("Prisma where clause:", JSON.stringify(where, null, 2)) // Debug log
-
+  
     const [courses, totalCount] = await Promise.all([
       prisma.course.findMany({
         where,

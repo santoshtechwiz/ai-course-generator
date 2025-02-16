@@ -81,4 +81,3 @@ export function UserMenu({ children }: UserMenuProps) {
     </DropdownMenu>
   )
 }
-

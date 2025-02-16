@@ -44,8 +44,7 @@ export default function Footer() {
           </motion.div>
         </div>
 
-        <Separator className="my-6" />
-
+       
         {/* Disclaimer */}
         <motion.div
           className="text-xs text-muted-foreground"

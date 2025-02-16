@@ -30,13 +30,15 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
     queryKey: ["quizzes", debouncedSearch, userId, selectedTypes],
     queryFn: ({ pageParam = 1 }) =>
-      getQuizzes({
-        page: pageParam,
-        limit: 5,
-        searchTerm: debouncedSearch,
-        userId,
-        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
-      }),
+      getQuizzes(
+        {
+          page: pageParam,
+          limit: 5,
+          searchTerm: debouncedSearch,
+          userId,
+          quizTypes: selectedTypes.length > 0 ? selectedTypes : null
+        }
+      ),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: 1,
     initialData: {

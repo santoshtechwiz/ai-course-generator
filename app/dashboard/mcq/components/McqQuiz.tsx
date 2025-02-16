@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react"
 import { submitQuizData } from "@/app/actions/actions"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
+import PageLoader from "@/components/ui/loader"
 
 type Question = {
   id: number
@@ -252,6 +253,12 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
       </div>
     )
   }
+  if(loading) {
+    return (
+      <PageLoader></PageLoader>
+    )
+  }
+  
 
   if (quizCompleted) {
     const percentage = (score / questions.length) * 100

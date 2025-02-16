@@ -11,7 +11,7 @@ import "nprogress/nprogress.css";
 // Custom styles
 const npProgressStyles = `
   #nprogress {
-    pointer-events: none;
+    
   }
   
   #nprogress .bar {

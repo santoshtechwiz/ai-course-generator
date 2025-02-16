@@ -10,7 +10,7 @@ import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/components/SignInPrompt"
 import { submitQuizData } from "@/app/actions/actions"
 import { useRouter } from "next/navigation"
-import { GlobalLoader } from "@/app/components/GlobalLoader"
+import PageLoader from "@/components/ui/loader"
 
 interface CodeQuizResultProps {
   correctCount: number
@@ -75,7 +75,7 @@ const CodeQuizResult: React.FC<CodeQuizResultProps> = ({
   }
 
   if (status === "loading" || isSubmitting) {
-    return <GlobalLoader />
+    return <PageLoader />
   }
 
   if (status === "unauthenticated") {

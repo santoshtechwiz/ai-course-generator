@@ -17,7 +17,7 @@ export default function DashboardLayout({
         <Navbar />
       
         <main className="flex-grow flex flex-col">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex-grow py-8">
+          <div className=" flex-grow py-8">
             <Suspense >{children}</Suspense>
           </div>
         </main>

@@ -25,6 +25,7 @@ export const PublicQuizCardListing: React.FC<PublicQuizCardListingProps> = ({ qu
         slug={quiz.slug}
         quizType={quiz.quizType as "mcq" | "openended" | "fill-blanks" | "code"}
         estimatedTime={`${Math.ceil(quiz.questionCount * 0.5)} min`}
+        completionRate={quiz.bestScore||0}
       />
     </motion.div>
   )

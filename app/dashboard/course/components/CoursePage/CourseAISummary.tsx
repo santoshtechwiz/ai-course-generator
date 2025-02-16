@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm"
 import rehypeSanitize from "rehype-sanitize"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import ComponentLoader from "../ComponentLoader"
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from 'lucide-react'
@@ -15,6 +15,7 @@ import AIEmoji from "../AIEmoji"
 import PDFGenerator from "@/app/components/shared/PDFGenerator"
 import { useChapterSummary } from "@/hooks/useChapterSummary"
 import { processMarkdown } from "@/lib/markdownProcessor"
+import PageLoader from "@/components/ui/loader"
 
 
 interface CourseAISummaryProps {
@@ -59,7 +60,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
     }
 
     if (isLoading) {
-      return <ComponentLoader size="sm" />
+      return <PageLoader/>
     }
 
     if (isError) {

@@ -4,7 +4,7 @@ const CourseListSkeleton = () => {
   return (
     <div>
       <Skeleton className="h-12 max-w-md mx-auto mb-8" />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="space-y-4">
             <Skeleton className="h-48 w-full" />
