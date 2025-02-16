@@ -152,7 +152,10 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
                         </div>
                       }
                     >
-                      <CourseDetailsQuiz chapter={chapter} course={course} />
+                      <CourseDetailsQuiz 
+                        isPremium={isPremium}
+                        isPublicCourse={isPublicCourse}
+                      chapter={chapter} course={course} />
                     </React.Suspense>
                   </TabsContent>
                 )}
