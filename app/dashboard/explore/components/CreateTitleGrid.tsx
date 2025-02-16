@@ -58,7 +58,7 @@ const tiles = [
       "Unlock creativity with questions that have no limits.",
       "Explore the depths of knowledge with openended prompts.",
     ],
-    isPremium: false,
+    isPremium: true,
   },
   {
     icon: AlignLeft,
@@ -73,7 +73,7 @@ const tiles = [
       "Bridge the gaps in knowledge with clever fill-in-the-blank questions.",
       "Enhance vocabulary and comprehension through interactive exercises.",
     ],
-    isPremium: true,
+    isPremium: false,
   },
   {
     icon: BookOpen,
@@ -88,7 +88,7 @@ const tiles = [
       "Transform your knowledge into a structured learning experience.",
       "Craft a course that leaves a lasting impact on learners.",
     ],
-    isPremium: true,
+    isPremium: false,
   },
   {
     icon: Code,

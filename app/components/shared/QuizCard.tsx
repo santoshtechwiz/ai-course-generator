@@ -59,9 +59,10 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       <Card className={cn("overflow-hidden w-full h-full bg-gradient-to-br", quizColor)}>
         <Link href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`} className="block h-full">
           <CardContent className="flex flex-col h-full p-6 text-white relative">
+            {/* Public/Private Badge */}
             <Badge
               variant="outline"
-              className="absolute top-2 right-2 bg-white/20 backdrop-blur-sm border-white/40 text-white whitespace-nowrap"
+              className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm border-white/40 text-white whitespace-nowrap"
             >
               {isPublic ? (
                 <Unlock className="w-4 h-4 mr-1 flex-shrink-0" />
@@ -70,6 +71,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({
               )}
               {isPublic ? "Public" : "Private"}
             </Badge>
+
+            {/* Quiz Type Badge */}
             <div className="mb-4">
               <Badge
                 variant="secondary"
@@ -79,8 +82,12 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                 <span className="truncate">{quizTypeLabels[quizType]}</span>
               </Badge>
             </div>
+
+            {/* Title and Description */}
             <h3 className="text-xl font-bold mb-2 line-clamp-2">{title}</h3>
             <p className="text-sm opacity-90 mb-4 line-clamp-3 flex-grow">{description}</p>
+
+            {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-4 text-sm mb-6">
               <div className="flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-lg p-2">
                 <HelpCircle className="w-5 h-5 mr-2 flex-shrink-0" />
@@ -97,10 +104,14 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Completion Rate */}
             <div className="mb-4">
               <div className="text-sm font-medium mb-1">Completion Rate</div>
-              <Progress value={completionRate} className="h-2" />
+              <Progress value={completionRate} className="h-2 bg-white/20" />
             </div>
+
+            {/* Start Quiz Button */}
             <div
               className={cn(
                 "py-3 px-4 bg-white text-black font-semibold rounded-lg",
@@ -119,4 +130,3 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     </motion.div>
   )
 }
-
