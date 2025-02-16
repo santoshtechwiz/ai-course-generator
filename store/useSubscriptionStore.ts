@@ -1,14 +1,13 @@
 "use client"
 
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
+import { createJSONStorage, persist } from "zustand/middleware"
 import type { SubscriptionPlanType } from "@/config/subscriptionPlans"
 
 export interface SubscriptionStatus {
   credits: number
   isSubscribed: boolean
   subscriptionPlan: SubscriptionPlanType | "FREE"
-  // New fields (optional)
   expirationDate?: string
   lastUpdated?: string
   usageStats?: {
@@ -24,7 +23,6 @@ interface SubscriptionState {
   setSubscriptionStatus: (status: SubscriptionStatus | null) => void
   setIsLoading: (loading: boolean) => void
   canDownloadPDF: () => boolean
-  // New functions
   signOut: () => void
   updateUsageStats: (stats: Partial<NonNullable<SubscriptionStatus["usageStats"]>>) => void
 }
@@ -35,24 +33,21 @@ const useSubscriptionStore = create<SubscriptionState>()(
       subscriptionStatus: null,
       isLoading: true,
       setSubscriptionStatus: (status) =>
-        set({
+        set((state) => ({
           subscriptionStatus: status
             ? {
                 ...status,
                 lastUpdated: new Date().toISOString(),
               }
             : null,
-        }),
+        })),
       setIsLoading: (loading) => set({ isLoading: loading }),
       canDownloadPDF: () => {
         const { subscriptionStatus } = get()
-        return (
-          subscriptionStatus !== null &&
-          subscriptionStatus.subscriptionPlan !== "FREE" &&
-          subscriptionStatus.subscriptionPlan !== "BASIC"
-        )
+        // Ensure that the subscriptionStatus is not null and the plan is not "FREE" or "BASIC"
+        return subscriptionStatus !== null && subscriptionStatus.subscriptionPlan
+         !== "FREE"
       },
-      // New functions
       signOut: () => {
         set({ subscriptionStatus: null })
         sessionStorage.removeItem("subscription-storage")
@@ -74,9 +69,9 @@ const useSubscriptionStore = create<SubscriptionState>()(
     {
       name: "subscription-storage",
       storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({ subscriptionStatus: state.subscriptionStatus }),
     },
   ),
 )
 
 export default useSubscriptionStore
-

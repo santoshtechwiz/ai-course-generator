@@ -44,7 +44,7 @@ export function QuizSidebar({
         </div>
       )}
 
-      <ScrollArea className="h-[calc(100vh-12rem)]">
+      {/* <ScrollArea className="h-[calc(100vh-12rem)]"> */}
         <div className="space-y-2">
           {quizTypes.map((type) => (
             <Button
@@ -65,7 +65,7 @@ export function QuizSidebar({
             </Button>
           ))}
         </div>
-      </ScrollArea>
+      {/* </ScrollArea> */}
     </div>
   )
 }

@@ -23,7 +23,7 @@ interface QuizPDFDownloadProps extends QuizPDFProps {
 const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) => {
   const [isClient, setIsClient] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const { subscriptionStatus } = useSubscriptionStore();
+  const { subscriptionStatus,canDownloadPDF } = useSubscriptionStore();
 
   useEffect(() => {
     setIsClient(true);
@@ -38,8 +38,7 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) =
       !isClient ||
       !isDataReady ||
       !subscriptionStatus ||
-      subscriptionStatus.subscriptionPlan === "FREE" ||
-      subscriptionStatus.subscriptionPlan === "BASIC",
+      canDownloadPDF(),
     [isClient, isDataReady, subscriptionStatus]
   );
 

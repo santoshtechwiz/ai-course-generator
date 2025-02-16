@@ -20,6 +20,7 @@ import {
   FAQ_ITEMS,
 } from "@/config/subscriptionPlans"
 import { staggerChildren, scaleIn, fadeIn } from "@/lib/animation"
+import { Separator } from "@radix-ui/react-separator"
 
 
 const planColors = {
@@ -179,6 +180,8 @@ function PlanCards({
                   {plan.options[0].price === 0
                     ? "Free forever"
                     : `$${plan.options.find((o) => o.duration === duration)?.price}/${duration === 1 ? "month" : "6 months"}`}
+                <Separator orientation="horizontal" className="my-2" />
+                <p className="text-sm text-muted-foreground">{plan.tokens} tokens can be used for quizzes and courses</p>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
