@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, ChevronRight, AlertCircle, ChevronLeft } from "lucide-react"
+import { CheckCircle, ChevronRight, AlertCircle, ChevronLeft, Lock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,20 +13,21 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
 
 import QuizBackground from "./QuizBackground"
-import type { CourseQuestion, FullChapter, FullCourseType } from "@/app/types/types"
+
+import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { CourseQuiz } from "@prisma/client"
 import PageLoader from "@/components/ui/loader"
 
 type Props = {
   course: FullCourseType
-  chapter: FullChapter & {
+  chapter: FullChapterType & {
     questions: CourseQuestion[]
   }
+  isPremium: boolean
+  isPublicCourse: boolean
 }
 
-const loadingSteps = ["Analyzing content", "Generating Quiz", "Preparing response", "Finalizing results"]
-
-export default function CourseDetailsQuiz({ chapter }: Props) {
+export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublicCourse }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [quizCompleted, setQuizCompleted] = useState(false)
@@ -39,11 +40,8 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
     error,
     isLoading: isQuizLoading,
   } = useQuery<CourseQuestion[]>({
-    queryKey: ["quiz", chapter?.id],
+    queryKey: ["transcript", chapter?.id],
     queryFn: async () => {
-      if (chapter?.questions && chapter.questions.length > 0) {
-        return chapter.questions
-      }
       if (!chapter?.videoId || !chapter?.id) {
         throw new Error("Required chapter data is missing.")
       }
@@ -62,6 +60,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
     },
     retry: 3,
     staleTime: 5 * 60 * 1000,
+    enabled: isPremium, // Only fetch if user is premium
   })
 
   const currentQuestion = useMemo(
@@ -81,7 +80,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
   const checkAnswer = useCallback(() => {
     if (currentQuestion) {
       const userAnswer = answers[currentQuestion.id]
-      const isCorrect = userAnswer?.trim().toLowerCase() === currentQuestion.answer?.trim().toLowerCase()
+      const isCorrect = userAnswer?.trim() === currentQuestion.answer?.trim()
 
       if (isCorrect) {
         setScore((prev) => prev + 1)
@@ -106,6 +105,18 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
   const handleShowResults = useCallback(() => {
     setShowResults(true)
   }, [])
+
+  if (!isPremium) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardContent className="flex flex-col items-center justify-center h-40 text-center">
+          <Lock className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
+          <p className="text-muted-foreground mb-4">Upgrade to Premium to access quizzes.</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   if (isError) {
     return (
