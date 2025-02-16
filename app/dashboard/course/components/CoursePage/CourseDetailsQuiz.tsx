@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
@@ -13,14 +13,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
 
 import QuizBackground from "./QuizBackground"
-import { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
-import { CourseQuiz } from "@prisma/client"
+import type { CourseQuestion, FullChapter, FullCourseType } from "@/app/types/types"
+import type { CourseQuiz } from "@prisma/client"
 import PageLoader from "@/components/ui/loader"
-
 
 type Props = {
   course: FullCourseType
-  chapter: FullChapterType & {
+  chapter: FullChapter & {
     questions: CourseQuestion[]
   }
 }
@@ -40,8 +39,11 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
     error,
     isLoading: isQuizLoading,
   } = useQuery<CourseQuestion[]>({
-    queryKey: ["transcript", chapter?.id],
+    queryKey: ["quiz", chapter?.id],
     queryFn: async () => {
+      if (chapter?.questions && chapter.questions.length > 0) {
+        return chapter.questions
+      }
       if (!chapter?.videoId || !chapter?.id) {
         throw new Error("Required chapter data is missing.")
       }
@@ -79,7 +81,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
   const checkAnswer = useCallback(() => {
     if (currentQuestion) {
       const userAnswer = answers[currentQuestion.id]
-      const isCorrect = userAnswer?.trim() === currentQuestion.answer?.trim()
+      const isCorrect = userAnswer?.trim().toLowerCase() === currentQuestion.answer?.trim().toLowerCase()
 
       if (isCorrect) {
         setScore((prev) => prev + 1)
@@ -119,7 +121,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
   }
 
   if (isQuizLoading) {
-    return <PageLoader/>
+    return <PageLoader />
   }
 
   if (!questions || questions.length === 0) {

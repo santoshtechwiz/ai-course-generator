@@ -25,7 +25,7 @@ class YoutubeService {
   private static YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
   private static MAX_RETRIES = 3
   private static RETRY_DELAY = 1000 // 1 second
-  private static MAX_TRANSCRIPT_ITEMS = 500
+  private static MAX_TRANSCRIPT_ITEMS = 1000
   private static processedVideoIds = new Set<string>()
   private static supadata: Supadata
   private static youtubeClient: AxiosInstance = axios.create({
@@ -116,7 +116,7 @@ class YoutubeService {
       };
     } catch (error) {
       console.warn("Failed to fetch transcript:", error);
-      transcript = await this.getTranscriptV2(videoId);
+     // transcript = await this.getTranscriptV2(videoId);
       
     }
     return transcript ? { transcript: transcript.join(" ") } : null;

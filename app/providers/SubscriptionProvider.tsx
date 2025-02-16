@@ -6,7 +6,6 @@ import { useSession } from "next-auth/react"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import type { SubscriptionPlanType } from "@/config/subscriptionPlans"
 
-
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const { setSubscriptionStatus, setIsLoading } = useSubscriptionStore()
@@ -20,6 +19,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         credits,
         isSubscribed: subscriptionPlan !== "FREE",
         subscriptionPlan,
+        
       })
       setIsLoading(false)
     } else if (status === "unauthenticated") {
@@ -35,11 +35,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   }, [session, status, setSubscriptionStatus, setIsLoading])
 
-  return (
-    <>
-    
-      {children}
-    </>
-  )
+  return <>{children}</>
 }
 

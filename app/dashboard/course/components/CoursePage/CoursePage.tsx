@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import MainContent from "./MainContent"
 import VideoNavigationSidebar from "./VideoNavigationSidebar"
 import useProgress from "@/hooks/useProgress"
-import type { FullChapterType, FullCourseType } from "@/app/types/types"
+import type { FullChapter, FullCourseType } from "@/app/types/types"
 import { useUser } from "@/app/providers/userContext"
 import throttle from "lodash.throttle"
 
@@ -19,13 +19,13 @@ import { AnimatePresence, motion } from "framer-motion"
 
 interface State {
   selectedVideoId: string | undefined
-  currentChapter: FullChapterType | undefined
+  currentChapter: FullChapter | undefined
   nextVideoId: string | undefined
   prevVideoId: string | undefined
 }
 
 type Action =
-  | { type: "SET_VIDEO"; payload: { videoId: string; chapter: FullChapterType } }
+  | { type: "SET_VIDEO"; payload: { videoId: string; chapter: FullChapter } }
   | { type: "SET_NAVIGATION"; payload: { next?: string; prev?: string } }
   | { type: "RESET" }
 
@@ -81,12 +81,12 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   const hasSetInitialVideo = useRef(false)
 
   const videoPlaylist = useMemo(() => {
-    const playlist: { videoId: string; chapter: FullChapterType }[] = []
+    const playlist: { videoId: string; chapter: FullChapter }[] = []
 
     course.courseUnits?.forEach((unit) => {
       unit.chapters
         .filter(
-          (chapter): chapter is FullChapterType & { videoId: string } =>
+          (chapter): chapter is FullChapter & { videoId: string; summary: string | null } =>
             "videoId" in chapter && Boolean(chapter.videoId),
         )
         .forEach((chapter) => {
@@ -98,7 +98,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   }, [course.courseUnits])
 
   const findChapterByVideoId = useCallback(
-    (videoId: string): FullChapterType | undefined => {
+    (videoId: string): FullChapter | undefined => {
       return videoPlaylist.find((entry) => entry.videoId === videoId)?.chapter
     },
     [videoPlaylist],

@@ -29,8 +29,8 @@ export function UserMenu({ children }: UserMenuProps) {
 
   const getSubscriptionBadge = () => {
     if (isLoadingSubscription || !subscriptionStatus) return null
-    const plan = subscriptionStatus.subscriptionPlan as "PRO" | "BASIC" | "FREE"
-    return <Badge variant={plan === "PRO" ? "default" : plan === "BASIC" ? "secondary" : "outline"}>{plan}</Badge>
+    const plan = subscriptionStatus.subscriptionPlan as "PRO" | "BASIC" | "FREE" | "ULTIMATE"
+    return <Badge variant={plan === "PRO" ? "default" : plan === "BASIC" ? "secondary" : plan === "ULTIMATE" ? "success" : "outline"}>{plan}</Badge>
   }
 
   if (!session) return null
