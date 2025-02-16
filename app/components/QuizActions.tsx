@@ -299,7 +299,7 @@ export function QuizActions({
           </Tooltip>
         </TooltipProvider>
 
-        {subscriptionStatus?.subscriptionPlan === "PRO" && !isLoading && (
+       
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -312,7 +312,7 @@ export function QuizActions({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-        )}
+       
 
         <AlertDialog>
           <AlertDialogTrigger asChild>

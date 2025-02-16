@@ -4,24 +4,31 @@ export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE"
 
 export type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "PENDING" | "CANCELLED"
 
+
 export const SUBSCRIPTION_PLANS = [
   {
-    name: "FREE",
+    name: "Free Plan",
+    id: "FREE",
     icon: Star,
     tokens: 3,
     options: [{ duration: 1, price: 0 }],
     limits: { maxQuestionsPerQuiz: 3 },
     features: [
-      { name: "PDF downloads", available: false },
-      { name: "Video transcripts", available: false },
-      { name: "Video Quiz", available: false },
+      
+      { name: "MCQ Generator", available: true },
+      { name: "Fill in the Blanks", available: true },
+      { name: "Open-ended Questions", available: false },
       { name: "Code Quiz", available: false },
-      { name: "AI accuracy", available: false },
-      { name: "Priority support", available: false },
+      { name: "Video Quiz", available: false },
+      { name: "PDF Downloads", available: false },
+      { name: "Video Transcripts", available: false },
+      { name: "AI Accuracy", available: false },
+      { name: "Priority Support", available: false },
     ],
   },
   {
-    name: "BASIC",
+    name: "Basic Plan",
+    id: "BASIC",
     icon: Rocket,
     tokens: 20,
     options: [
@@ -30,16 +37,20 @@ export const SUBSCRIPTION_PLANS = [
     ],
     limits: { maxQuestionsPerQuiz: 5 },
     features: [
-      { name: "PDF downloads", available: true },
-      { name: "Video transcripts", available: true },
-      { name: "Video Quiz", available: false },
+      { name: "MCQ Generator", available: true },
+      { name: "Fill in the Blanks", available: true },
+      { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: false },
-      { name: "AI accuracy", available: true },
-      { name: "Priority support", available: false },
+      { name: "Video Quiz", available: false },
+      { name: "PDF Downloads", available: true },
+      { name: "Video Transcripts", available: true },
+      { name: "AI Accuracy", available: true },
+      { name: "Priority Support", available: false },
     ],
   },
   {
-    name: "PRO",
+    name: "Pro Plan",
+    id: "PRO",
     icon: Zap,
     tokens: 60,
     options: [
@@ -48,16 +59,20 @@ export const SUBSCRIPTION_PLANS = [
     ],
     limits: { maxQuestionsPerQuiz: 15 },
     features: [
-      { name: "PDF downloads", available: true },
-      { name: "Video transcripts", available: true },
-      { name: "Video Quiz", available: true },
+      { name: "MCQ Generator", available: true },
+      { name: "Fill in the Blanks", available: true },
+      { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
-      { name: "AI accuracy", available: true },
-      { name: "Priority support", available: true },
+      { name: "Video Quiz", available: true },
+      { name: "PDF Downloads", available: true },
+      { name: "Video Transcripts", available: true },
+      { name: "AI Accuracy", available: true },
+      { name: "Priority Support", available: true },
     ],
   },
   {
-    name: "ULTIMATE",
+    name: "Ultimate Plan",
+    id: "ULTIMATE",
     icon: Crown,
     tokens: 150,
     options: [
@@ -66,15 +81,19 @@ export const SUBSCRIPTION_PLANS = [
     ],
     limits: { maxQuestionsPerQuiz: 20 },
     features: [
-      { name: "PDF downloads", available: true },
-      { name: "Video transcripts", available: true },
-      { name: "Video Quiz", available: true },
+      { name: "MCQ Generator", available: true },
+      { name: "Fill in the Blanks", available: true },
+      { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
-      { name: "AI accuracy", available: true },
-      { name: "Priority support", available: true },
+      { name: "Video Quiz", available: true },
+      { name: "PDF Downloads", available: true },
+      { name: "Video Transcripts", available: true },
+      { name: "AI Accuracy", available: true },
+      { name: "Priority Support", available: true },
     ],
   },
-]
+];
+
 
 export const FAQ_ITEMS = [
   {

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
-import { FileQuestion, BookOpen, PenTool, AlignLeft, X, Code } from "lucide-react"
+import { FileQuestion, BookOpen, PenTool, AlignLeft, Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 interface CreateTileGridProps {
   icon: LucideIcon
@@ -25,6 +26,7 @@ interface CreateTileGridProps {
   index: number
   quotes: string[]
   color: string
+  isPremium: boolean
 }
 
 const tiles = [
@@ -41,6 +43,7 @@ const tiles = [
       "Test knowledge and critical thinking with well-crafted MCQs.",
       "Create a quiz that both challenges and enlightens.",
     ],
+    isPremium: false,
   },
   {
     icon: PenTool,
@@ -55,6 +58,7 @@ const tiles = [
       "Unlock creativity with questions that have no limits.",
       "Explore the depths of knowledge with openended prompts.",
     ],
+    isPremium: false,
   },
   {
     icon: AlignLeft,
@@ -69,6 +73,7 @@ const tiles = [
       "Bridge the gaps in knowledge with clever fill-in-the-blank questions.",
       "Enhance vocabulary and comprehension through interactive exercises.",
     ],
+    isPremium: true,
   },
   {
     icon: BookOpen,
@@ -83,6 +88,7 @@ const tiles = [
       "Transform your knowledge into a structured learning experience.",
       "Craft a course that leaves a lasting impact on learners.",
     ],
+    isPremium: true,
   },
   {
     icon: Code,
@@ -97,12 +103,14 @@ const tiles = [
       "Create a coding challenge that both tests and teaches.",
       "Inspire the next generation of programmers with your quizzes.",
     ],
+    isPremium: true,
   },
 ]
 
-function Tile({ icon: Icon, title, description, url, index, quotes, color }: CreateTileGridProps) {
+function Tile({ icon: Icon, title, description, url, index, quotes, color, isPremium }: CreateTileGridProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentQuote, setCurrentQuote] = useState(0)
+  const subscriptionStatus = useSubscriptionStore((state) => state.subscriptionStatus)
 
   const quoteInterval = useMemo(() => {
     if (isOpen) {
@@ -119,18 +127,22 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color }: Cre
     }
   }, [quoteInterval])
 
+  const isDisabled = isPremium && (subscriptionStatus?.subscriptionPlan === "BASIC" || subscriptionStatus?.subscriptionPlan === "FREE")
+
   return (
     <>
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={isDisabled ? {} : { scale: 1.05 }}
+        whileTap={isDisabled ? {} : { scale: 0.95 }}
       >
         <Card
-          className={`cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:bg-${color}-100 dark:hover:bg-${color}-900 group`}
-          onClick={() => setIsOpen(true)}
+          className={`cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:bg-${color}-100 dark:hover:bg-${color}-900 group ${
+            isDisabled ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          onClick={() => !isDisabled && setIsOpen(true)}
         >
           <CardHeader>
             <CardTitle className="flex items-center justify-center text-2xl group-hover:text-primary">
@@ -159,7 +171,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color }: Cre
         </Card>
       </motion.div>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen && !isDisabled} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[90vw] sm:h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className={`flex items-center text-4xl text-${color}-500`}>
@@ -223,7 +235,7 @@ export function CreateTileGrid() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl w-full p-6">
       {tiles.map((tile, index) => (
-        <Tile key={index} {...tile} index={index} />
+        <Tile key={index} {...tile} index={index} isPremium={tile.isPremium} />
       ))}
     </div>
   )
