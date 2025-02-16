@@ -29,6 +29,7 @@ export interface CourseCardProps {
   quizCount: number
   userId: string
   viewCount: number
+  category?: string
 }
 export interface Course extends CourseMetadata {
   id: number
