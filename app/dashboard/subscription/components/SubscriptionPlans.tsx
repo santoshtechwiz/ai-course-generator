@@ -23,11 +23,12 @@ import { staggerChildren, scaleIn, fadeIn } from "@/lib/animation"
 import { Separator } from "@radix-ui/react-separator"
 
 
-const planColors = {
+const planColors: Record<SubscriptionPlanType, string> = {
   FREE: "bg-secondary hover:bg-secondary/90",
   BASIC: "bg-blue-500 hover:bg-blue-600",
   PRO: "bg-green-500 hover:bg-green-600",
-  ENTERPRISE: "bg-purple-500 hover:bg-purple-600",
+
+  ULTIMATE: "bg-red-500 hover:bg-red-600", // Add any other plan types here
 }
 
 interface SubscriptionPlansProps {

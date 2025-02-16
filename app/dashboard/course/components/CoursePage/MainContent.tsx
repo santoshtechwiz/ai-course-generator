@@ -10,7 +10,7 @@ import { AlertTriangle, Loader2 } from "lucide-react"
 import CourseDetailsTabs from "./CourseDetailsTabs"
 import CourseActionsWithErrorBoundary from "./CourseActions"
 import { useSession } from "next-auth/react"
-import type { FullCourseType, FullChapterType } from "@/app/types/types"
+import type { FullCourseType, FullChapter } from "@/app/types/types"
 import type { CourseProgress } from "@prisma/client"
 import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
 
@@ -26,7 +26,7 @@ interface MainContentProps {
   prevVideoId?: string
   onVideoEnd?: () => void
   onVideoSelect: (videoId: string) => void
-  currentChapter?: FullChapterType
+  currentChapter?: FullChapter
   currentTime: number
   onTimeUpdate: (time: number) => void
   progress?: Partial<CourseProgress>
@@ -69,7 +69,7 @@ const ChapterInfo = ({ course }: { course: FullCourseType }) => (
 
 interface VideoPlayerProps {
   initialVideoId?: string
-  currentChapter?: FullChapterType
+  currentChapter?: FullChapter
   onVideoEnd?: () => void
   currentTime: number
   onTimeUpdate: (time: number) => void
@@ -196,7 +196,7 @@ const VideoPlayer = ({
 
 interface QuizSectionTabsProps {
   course: FullCourseType
-  currentChapter?: FullChapterType
+  currentChapter?: FullChapter
   planId?: string
 }
 
@@ -205,11 +205,12 @@ const QuizSectionTabs = ({ course, currentChapter, planId }: QuizSectionTabsProp
     <Card className="mt-8">
       <CardContent className="p-0">
         <CourseDetailsTabs
+
           chapterId={currentChapter?.id ?? 0}
           name={currentChapter?.name || "Chapter Details"}
           course={course}
-          chapter={currentChapter as FullChapterType}
-          planId={planId ?? ""}
+          chapter={currentChapter as FullChapter}
+         
         />
       </CardContent>
     </Card>

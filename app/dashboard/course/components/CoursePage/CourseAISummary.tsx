@@ -1,48 +1,41 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeSanitize from "rehype-sanitize"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle } from "lucide-react"
 import AIEmoji from "../AIEmoji"
 import PDFGenerator from "@/app/components/shared/PDFGenerator"
 import { useChapterSummary } from "@/hooks/useChapterSummary"
 import { processMarkdown } from "@/lib/markdownProcessor"
 import PageLoader from "@/components/ui/loader"
 
-
 interface CourseAISummaryProps {
   chapterId: number
   name: string
-  onSummaryReady: (isReady: boolean) => void
+  existingSummary: string | null
+  isPremium: boolean
 }
 
-const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSummaryReady }) => {
-  const [showAIEmoji, setShowAIEmoji] = useState(true)
-  const { data, isLoading, isError, error, refetch } = useChapterSummary(chapterId)
+const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, existingSummary, isPremium }) => {
+  const [showAIEmoji, setShowAIEmoji] = useState(false)
+  const { data, isLoading, isError, error, refetch } = useChapterSummary(chapterId, Boolean(existingSummary))
 
   useEffect(() => {
-    if (data?.success && data.data) {
-      onSummaryReady(true)
-      setShowAIEmoji(false)
+    if (!existingSummary && !isPremium) {
+      setShowAIEmoji(true)
     }
-  }, [data, onSummaryReady])
+  }, [existingSummary, isPremium])
 
-  const processedContent = useMemo(() => {
-    if (data?.success && data.data) {
-      return processMarkdown(data.data)
-    }
-    return ""
-  }, [data])
+  const processedContent = existingSummary || (data?.success && data.data ? processMarkdown(data.data) : "")
 
-  const content = useMemo(() => {
+  const content = () => {
     if (showAIEmoji) {
       return (
         <motion.div
@@ -59,11 +52,11 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
       )
     }
 
-    if (isLoading) {
-      return <PageLoader/>
+    if (isLoading && !existingSummary) {
+      return <PageLoader />
     }
 
-    if (isError) {
+    if (isError && !existingSummary) {
       return (
         <motion.div
           initial={{ opacity: 0 }}
@@ -157,7 +150,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
         </Button>
       </motion.div>
     )
-  }, [isLoading, isError, processedContent, name, refetch, showAIEmoji])
+  }
 
   return (
     <div className="relative space-y-4">
@@ -169,7 +162,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {content}
+          {content()}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -177,3 +170,4 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, onSu
 }
 
 export default CourseAISummary
+

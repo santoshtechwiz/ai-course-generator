@@ -1,7 +1,7 @@
 "use server"
 
 import prisma from "@/lib/db"
-import { FullCourseType } from "../types/types"
+import { FullCourseType, CourseProgress } from "../types/types"
 
 
 export async function getCourseData(slug: string): Promise<FullCourseType | null> {
@@ -55,9 +55,32 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
       ...unit,
     chapters: unit.chapters.map((chapter) => ({
       ...chapter,
-    
+      questions: chapter.courseQuizzes.map((quiz) => ({
+        ...quiz,
+        options: quiz.options.split(','), // Assuming options are stored as a comma-separated string
+        attempts: quiz.attempts.map((attempt) => ({
+          ...attempt,
+          user: {
+            ...attempt.user,
+          },
+        })),
+      })),
+      courseQuizzes: chapter.courseQuizzes.map((quiz) => ({
+        ...quiz,
+        attempts: quiz.attempts.map((attempt) => ({
+          ...attempt,
+          user: {
+            ...attempt.user,
+          },
+        })),
+      })),
     })),
     })),
+    courseProgress: course.courseProgress.map((progress) => ({
+      ...progress,
+      quizProgress: progress.quizProgress as string | null,
+    })),
+
   }
 
   return fullCourse

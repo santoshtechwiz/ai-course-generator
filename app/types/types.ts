@@ -163,7 +163,6 @@ export interface CourseDetails {
 export class CourseAIErrors {
   constructor(public message: string) { }
 }
-
 export interface FullChapterType {
   id: number,
   videoId: string,
@@ -175,7 +174,7 @@ export interface FullChapterType {
   courseId: number;
   isCompleted: boolean;
   questions: CourseQuestion[]
-
+  summary: string
   chapter: FullChapterType
 
 
@@ -189,6 +188,12 @@ export type CourseQuestion = {
 }
 
 
+export type UserQuizQuestion = {
+  id: number
+  question: string
+  options: string[]
+  answer: string
+}
 
 export type Question = {
   id: number;
@@ -367,9 +372,11 @@ export interface FullCourseUnit {
 export interface FullChapter {
   id: number;
   name: string;
-  videoId: string;
+  videoId: string | null;
   order: number | null;
   isCompleted: boolean | null;
+  summary: string | null;
+  questions:  CourseQuestion[];
 
 }
 

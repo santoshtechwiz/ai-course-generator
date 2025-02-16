@@ -60,6 +60,8 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
           type: "mcq",
         })
         setLoading(false)
+        // Clear the stored results after successful submission
+        localStorage.removeItem("quizResults")
       } catch (error) {
         console.error("Failed to update quiz score:", error)
         setLoading(false)
@@ -233,7 +235,6 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
           setUserAnswers(savedUserAnswers)
           setQuestionTimes(savedQuestionTimes)
           saveQuizResults(quizData)
-          localStorage.removeItem("quizResults")
         }
       }
     }
@@ -253,12 +254,9 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
       </div>
     )
   }
-  if(loading) {
-    return (
-      <PageLoader></PageLoader>
-    )
+  if (loading) {
+    return <PageLoader></PageLoader>
   }
-  
 
   if (quizCompleted) {
     const percentage = (score / questions.length) * 100

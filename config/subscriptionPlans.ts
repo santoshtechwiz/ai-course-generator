@@ -7,7 +7,7 @@ export type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "PENDING" | "CANCEL
 
 export const SUBSCRIPTION_PLANS = [
   {
-    name: "Free Plan",
+    name: "FREE",
     id: "FREE",
     icon: Star,
     tokens: 3,
@@ -27,7 +27,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
   },
   {
-    name: "Basic Plan",
+    name: "BASIC",
     id: "BASIC",
     icon: Rocket,
     tokens: 20,
@@ -49,7 +49,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
   },
   {
-    name: "Pro Plan",
+    name: "PRO",
     id: "PRO",
     icon: Zap,
     tokens: 60,
@@ -71,7 +71,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
   },
   {
-    name: "Ultimate Plan",
+    name: "ULTIMATE",
     id: "ULTIMATE",
     icon: Crown,
     tokens: 150,
