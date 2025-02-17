@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: cachedSummary })
     }
 
-    // Check if the summary is already being processed
+    // Use processingCache as a lock
     if (processingCache.get<boolean>(chapter.videoId)) {
       return NextResponse.json({ success: true, message: "Summary generation in progress", status: "processing" })
     }
@@ -52,22 +52,13 @@ export async function POST(req: NextRequest) {
     // Set processing status in cache
     processingCache.set(chapter.videoId, true)
 
-    // Start the summary generation process asynchronously
-    const summaryPromise = generateAndSaveSummary(chapter.id, chapter.videoId)
-
-    // Set a timeout for summary generation
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Summary generation timed out")), SUMMARY_GENERATION_TIMEOUT),
-    )
-
+    // Generate summary
     try {
-      const summary = await Promise.race([summaryPromise, timeoutPromise])
+      const summary = await generateAndSaveSummary(chapterId, chapter.videoId)
       return NextResponse.json({ success: true, data: summary })
     } catch (error) {
-      console.error(`Error or timeout in summary generation for chapter ${chapterId}:`, error)
-      processingCache.del(chapter.videoId)
-      await updateChapterSummaryStatus(chapterId, "error")
-      return NextResponse.json({ success: false, message: "Summary generation failed or timed out", status: "error" })
+      console.error(`Error in summary generation for chapter ${chapterId}:`, error)
+      return NextResponse.json({ success: false, message: "Summary generation failed", status: "error" })
     }
   } catch (error) {
     console.error(`Error processing summary:`, error)
@@ -91,7 +82,7 @@ async function generateAndSaveSummary(chapterId: number, videoId: string): Promi
   } catch (error) {
     console.error(`Error processing summary for chapter ${chapterId}:`, error)
     await updateChapterSummaryStatus(chapterId, "error")
-    throw error // Re-throw the error to be caught in the main function
+    throw error
   } finally {
     processingCache.del(videoId)
   }
@@ -114,17 +105,20 @@ async function fetchAndGenerateSummary(videoId: string): Promise<string | null> 
 }
 
 async function generateSummaryWithChunking(transcript: string): Promise<string> {
-  const chunkSize = 4000 // Reduced chunk size to lower token usage
+  const chunkSize = 4000
   const chunks = transcript.match(new RegExp(`.{1,${chunkSize}}`, "g")) || []
 
-  const summaries = await Promise.all(chunks.map((chunk) => generateVideoSummary(chunk)))
-  const combinedSummary = summaries.join(" ")
-
-  if (combinedSummary.length > chunkSize) {
-    return generateSummaryWithChunking(combinedSummary)
+  let summary = ""
+  for (const chunk of chunks) {
+    const chunkSummary = await generateVideoSummary(chunk)
+    summary += chunkSummary + " "
   }
 
-  return combinedSummary
+  if (summary.length > chunkSize) {
+    return generateVideoSummary(summary)
+  }
+
+  return summary.trim()
 }
 
 async function updateChapterSummary(chapterId: number, summary: string) {

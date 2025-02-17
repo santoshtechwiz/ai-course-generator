@@ -158,11 +158,7 @@ class YoutubeService {
     return transcript ? transcript.map((item) => item.text).join(" ") : null
   }
 
-  static async summarizeTranscript(transcript: string): Promise<string> {
-    // Implement your summarization logic here
-    // This is a placeholder implementation
-    return transcript.slice(0, 500) + "..."
-  }
+
 }
 
 export default YoutubeService
