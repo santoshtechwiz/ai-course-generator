@@ -59,17 +59,12 @@ export function UserMenu({ children }: UserMenuProps) {
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/dashboard" className="flex items-center">
+              <Link href="/dashboard/profile" className="flex items-center">
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/subscription" className="flex items-center">
-                <Crown className="mr-2 h-4 w-4" />
-                <span>Subscription</span>
-              </Link>
-            </DropdownMenuItem>
+          
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="flex items-center">
               <LogOut className="mr-2 h-4 w-4" />
