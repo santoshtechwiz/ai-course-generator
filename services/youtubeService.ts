@@ -21,21 +21,35 @@ export interface TranscriptResult {
 
 class YoutubeService {
   private static YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
+  private static SUPDATA_KEY = process.env.SUPDATA_KEY
+  private static SUPDATA_KEY1 = process.env.SUPDATA_KEY1
   private static MAX_RETRIES = 3
   private static TIMEOUT = 30000 // 30 seconds
 
   private static processedVideoIds = new Set<string>()
   private static transcriptCache = new Map<string, string>()
   private static supadata: Supadata
+  private static currentSupadataKey: string
   private static youtubeClient: AxiosInstance = axios.create({
     baseURL: "https://www.googleapis.com/youtube/v3",
     params: { key: YoutubeService.YOUTUBE_API_KEY },
   })
 
   static {
+    this.currentSupadataKey = this.SUPDATA_KEY || ""
+    this.initializeSupadata()
+  }
+
+  private static initializeSupadata() {
     this.supadata = new Supadata({
-      apiKey: process.env.SUPDATA_KEY || "",
+      apiKey: this.currentSupadataKey,
     })
+  }
+
+  private static switchSupadataKey() {
+    this.currentSupadataKey =
+      this.currentSupadataKey === this.SUPDATA_KEY ? this.SUPDATA_KEY1 || "" : this.SUPDATA_KEY || ""
+    this.initializeSupadata()
   }
 
   static async searchYoutube(searchQuery: string): Promise<string | null> {
@@ -83,7 +97,12 @@ class YoutubeService {
         () => pTimeout(this.fetchTranscript(videoId), { milliseconds: this.TIMEOUT }),
         {
           retries: this.MAX_RETRIES,
-        }
+          onFailedAttempt: (error) => {
+            if (error.message.includes("Supadata API key error")) {
+              this.switchSupadataKey()
+            }
+          },
+        },
       )
 
       if (transcriptResult.transcript) {
@@ -101,7 +120,7 @@ class YoutubeService {
   }
 
   private static async fetchTranscript(videoId: string): Promise<TranscriptResult> {
-    const methods = [this.getYtTranscript,this.getLangchainTranscript, this.getSupadataTranscript]
+    const methods = [this.getYtTranscript, this.getLangchainTranscript, this.getSupadataTranscript]
 
     for (const method of methods) {
       try {
@@ -115,6 +134,9 @@ class YoutubeService {
         }
       } catch (error) {
         console.warn(`Error fetching transcript using ${method.name}:`, error)
+        if (method.name === "getSupadataTranscript" && error instanceof Error && error.message.includes("API key")) {
+          throw new Error("Supadata API key error")
+        }
       }
     }
 
@@ -157,8 +179,6 @@ class YoutubeService {
     const transcript = await new YtTranscript({ videoId }).getTranscript()
     return transcript ? transcript.map((item) => item.text).join(" ") : null
   }
-
-
 }
 
 export default YoutubeService
