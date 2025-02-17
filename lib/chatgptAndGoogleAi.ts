@@ -6,7 +6,7 @@ import { generateText } from "ai"
 import { google } from "@ai-sdk/google"
 
 // Initialize Google Gemini
-const genAI = new GoogleGenerativeAI({apiKey: process.env.GOOGLE_API_KEY!});
+const genAI = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY! })
 
 // Constants
 const MAX_SUMMARY_TOKENS = 300
@@ -74,6 +74,24 @@ async function summarizeWithOpenAI(text: string): Promise<string> {
   return ensureMarkdownFormat(response.choices[0]?.message?.content?.trim() || "")
 }
 
+// Function to summarize locally
+function summarizeLocally(text: string): string {
+  const sentences = text.match(/[^.!?]+[.!?]/g) || []
+  const importantSentences = sentences
+    .filter((sentence) => {
+      const words = sentence.toLowerCase().split(/\s+/)
+      return words.some((word) => ["important", "significant", "key", "main", "crucial", "essential"].includes(word))
+    })
+    .slice(0, 5)
+
+  if (importantSentences.length === 0) {
+    importantSentences.push(...sentences.slice(0, 3))
+  }
+
+  const summary = importantSentences.join(" ")
+  return `# Summary\n\n- ${summary.replace(/\.\s+/g, ".\n- ")}`
+}
+
 // Main function to generate a summary
 export async function generateVideoSummary(transcript: string): Promise<string> {
   const sampledTranscript = sampleTranscript(transcript)
@@ -92,13 +110,18 @@ export async function generateVideoSummary(transcript: string): Promise<string> 
         return await summarizeWithGemini(sampledTranscript)
       } catch (geminiError) {
         console.warn("Gemini failed:", geminiError)
-        return await summarizeWithOpenAI(sampledTranscript)
+        try {
+          return await summarizeWithOpenAI(sampledTranscript)
+        } catch (openaiError) {
+          console.warn("OpenAI failed:", openaiError)
+          return summarizeLocally(sampledTranscript)
+        }
       }
     },
     {
       retries: MAX_RETRIES,
       onFailedAttempt: (error) => {
-        console.error(`Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`)
+        console.warn(`Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`)
       },
     },
   )
