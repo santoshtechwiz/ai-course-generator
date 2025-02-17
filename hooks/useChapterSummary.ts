@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import axios from 'axios'
+import { useQuery } from "@tanstack/react-query"
+import axios from "axios"
 
 interface SummaryResponse {
   success: boolean
@@ -14,7 +14,7 @@ const fetchChapterSummary = async (chapterId: number): Promise<SummaryResponse> 
 
 export const useChapterSummary = (chapterId: number) => {
   return useQuery({
-    queryKey: ['chapterSummary', chapterId],
+    queryKey: ["chapterSummary", chapterId],
     queryFn: () => fetchChapterSummary(chapterId),
     retry: 3,
     retryDelay: 60000, // 1 minute
@@ -22,3 +22,4 @@ export const useChapterSummary = (chapterId: number) => {
     refetchInterval: false, // Disable automatic refetching
   })
 }
+

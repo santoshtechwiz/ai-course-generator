@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle, Edit, Trash2 } from 'lucide-react'
+import { AlertCircle, Edit, Trash2 } from "lucide-react"
 import AIEmoji from "../AIEmoji"
 import PDFGenerator from "@/app/components/shared/PDFGenerator"
 import { useChapterSummary } from "@/hooks/useChapterSummary"
@@ -165,7 +165,12 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
                       )
                     },
                     a: ({ href, children }) => (
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
                         {children}
                       </a>
                     ),
@@ -215,3 +220,4 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
 }
 
 export default CourseAISummary
+
