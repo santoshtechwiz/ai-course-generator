@@ -37,7 +37,7 @@ function VideoNavigationSidebar({
   const { data: session } = useSession()
   const router = useRouter()
 
-  const showFullContent = course.isPublic && isAuthenticated
+  const showFullContent = course.isPublic || isAuthenticated; 
 
   return (
     <div className="flex flex-col h-full">

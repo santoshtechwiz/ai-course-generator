@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Edit, Trash2 } from 'lucide-react'
 import AIEmoji from "../AIEmoji"
 import PDFGenerator from "@/app/components/shared/PDFGenerator"
 import { useChapterSummary } from "@/hooks/useChapterSummary"
@@ -21,19 +21,43 @@ interface CourseAISummaryProps {
   name: string
   existingSummary: string | null
   isPremium: boolean
+  isAdmin: boolean
 }
 
-const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, existingSummary, isPremium }) => {
+const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, existingSummary, isPremium, isAdmin }) => {
   const [showAIEmoji, setShowAIEmoji] = useState(false)
-  const { data, isLoading, isError, error, refetch } = useChapterSummary(chapterId)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedSummary, setEditedSummary] = useState(existingSummary || "")
+  const { data, isLoading, isError, error, refetch, isFetching } = useChapterSummary(chapterId)
 
   useEffect(() => {
     if (!existingSummary && !isPremium) {
       setShowAIEmoji(true)
+      const timer = setTimeout(() => {
+        setShowAIEmoji(false)
+        refetch()
+      }, 60000) // 1 minute delay
+      return () => clearTimeout(timer)
     }
-  }, [existingSummary, isPremium])
+  }, [existingSummary, isPremium, refetch])
 
   const processedContent = existingSummary || (data?.success && data.data ? processMarkdown(data.data) : "")
+
+  const handleEdit = () => {
+    setIsEditing(true)
+  }
+
+  const handleSave = async () => {
+    // Implement API call to save edited summary
+    // For example: await axios.put(`/api/summary/${chapterId}`, { summary: editedSummary })
+    setIsEditing(false)
+  }
+
+  const handleDelete = async () => {
+    // Implement API call to delete summary
+    // For example: await axios.delete(`/api/summary/${chapterId}`)
+    // Then refetch or update local state
+  }
 
   const content = () => {
     if (showAIEmoji) {
@@ -52,7 +76,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
       )
     }
 
-    if (isLoading && !existingSummary) {
+    if (isLoading || isFetching) {
       return <PageLoader />
     }
 
@@ -88,47 +112,68 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
           className="space-y-4"
         >
           <h2 className="text-3xl font-bold mb-6">{name}</h2>
+          {isAdmin && (
+            <div className="flex space-x-2 mb-4">
+              <Button onClick={handleEdit} variant="outline" size="sm">
+                <Edit className="mr-2 h-4 w-4" /> Edit
+              </Button>
+              <Button onClick={handleDelete} variant="outline" size="sm">
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </Button>
+            </div>
+          )}
           <Card className="bg-card">
             <CardContent className="p-6">
-              <ReactMarkdown
-                className="prose lg:prose-xl dark:prose-invert max-w-none"
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeSanitize]}
-                components={{
-                  p: ({ children }) => <div className="mb-4 leading-relaxed text-base">{children}</div>,
-                  h3: ({ children }) => (
-                    <h3 className="text-xl font-semibold mb-3 mt-6 text-primary border-b border-primary pb-2">
-                      {children}
-                    </h3>
-                  ),
-                  ul: ({ children }) => <ul className="list-disc pl-5 mb-4 space-y-2">{children}</ul>,
-                  li: ({ children }) => <li className="text-base">{children}</li>,
-                  strong: ({ children }) => {
-                    if (typeof children === "string" && children.toLowerCase() === "main points:") {
-                      return <h4 className="text-lg font-semibold mb-2 text-secondary">Main Points:</h4>
-                    }
-                    return (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <strong className="font-bold text-primary cursor-help">{children}</strong>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Important concept</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )
-                  },
-                  a: ({ href, children }) => (
-                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      {children}
-                    </a>
-                  ),
-                }}
-              >
-                {processedContent}
-              </ReactMarkdown>
+              {isEditing ? (
+                <div className="space-y-4">
+                  <textarea
+                    value={editedSummary}
+                    onChange={(e) => setEditedSummary(e.target.value)}
+                    className="w-full h-64 p-2 border rounded"
+                  />
+                  <Button onClick={handleSave}>Save</Button>
+                </div>
+              ) : (
+                <ReactMarkdown
+                  className="prose lg:prose-xl dark:prose-invert max-w-none"
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeSanitize]}
+                  components={{
+                    p: ({ children }) => <div className="mb-4 leading-relaxed text-base">{children}</div>,
+                    h3: ({ children }) => (
+                      <h3 className="text-xl font-semibold mb-3 mt-6 text-primary border-b border-primary pb-2">
+                        {children}
+                      </h3>
+                    ),
+                    ul: ({ children }) => <ul className="list-disc pl-5 mb-4 space-y-2">{children}</ul>,
+                    li: ({ children }) => <li className="text-base">{children}</li>,
+                    strong: ({ children }) => {
+                      if (typeof children === "string" && children.toLowerCase() === "main points:") {
+                        return <h4 className="text-lg font-semibold mb-2 text-secondary">Main Points:</h4>
+                      }
+                      return (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <strong className="font-bold text-primary cursor-help">{children}</strong>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Important concept</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
+                    },
+                    a: ({ href, children }) => (
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
+                  {processedContent}
+                </ReactMarkdown>
+              )}
             </CardContent>
           </Card>
           <PDFGenerator markdown={processedContent} chapterName={name} />
@@ -170,4 +215,3 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
 }
 
 export default CourseAISummary
-
