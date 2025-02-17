@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server"
 import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
 import { trackServerSideInteraction } from "@/lib/tracking"
-import { viewCountStore } from "./lib/viewCountStore"
+
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],

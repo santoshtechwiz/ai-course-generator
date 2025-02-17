@@ -18,5 +18,7 @@ export const useChapterSummary = (chapterId: number) => {
     queryFn: () => fetchChapterSummary(chapterId),
     retry: 3,
     retryDelay: 60000, // 1 minute
+    enabled: false, // Disable automatic fetching
+    refetchInterval: false, // Disable automatic refetching
   })
 }
