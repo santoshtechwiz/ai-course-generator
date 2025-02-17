@@ -70,7 +70,7 @@ async function fetchTranscriptOrSummary(chapterId: number, videoId: string): Pro
 
     // If no summary exists, fetch the transcript
     console.log("Fetching transcript for video:", videoId);
-    const transcriptArr = await YoutubeService.getTranscriptForVideo(videoId);
+    const transcriptArr = await YoutubeService.getTranscript(videoId);
     
     if (!transcriptArr || !transcriptArr.transcript || transcriptArr.transcript.length === 0) {
       console.error("Failed to fetch transcript");
