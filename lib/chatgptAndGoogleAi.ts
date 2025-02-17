@@ -9,110 +9,121 @@ const MAX_SUMMARY_TOKENS = 300;
 const SAMPLE_RATIO = 0.3;
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
+const CIRCUIT_BREAKER_THRESHOLD = 5; // Stops retries if repeated failures occur
 
-// Helper function to estimate tokens
-function estimateTokens(text: string): number {
-  return Math.ceil(text.split(/\s+/).length * 1.3);
-}
+// Track API failures to implement circuit breaker
+const apiFailureCount = new WeakMap<object, number>();
 
-// Function to sample the transcript
+// Function to sample the transcript (avoiding mid-sentence cuts)
 function sampleTranscript(transcript: string): string {
-  const sentences = transcript.split(/[.!?]+/);
+  const sentences = transcript.match(/[^.!?]+[.!?]/g) || [transcript];
   const sampleSize = Math.ceil(sentences.length * SAMPLE_RATIO);
-  const sampledSentences = sentences
-    .sort(() => 0.5 - Math.random())
-    .slice(0, sampleSize);
-  return sampledSentences.join('. ') + '.';
+  const sampledSentences = new Set<string>();
+
+  while (sampledSentences.size < sampleSize) {
+    const randomSentence = sentences[Math.floor(Math.random() * sentences.length)];
+    sampledSentences.add(randomSentence.trim());
+  }
+
+  return [...sampledSentences].join(" ");
 }
 
-// Exponential backoff function
+// Exponential backoff with jitter
 async function exponentialBackoff(attempt: number): Promise<void> {
-  const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-  await new Promise(resolve => setTimeout(resolve, delay));
+  const jitter = Math.random() * 500; // Random jitter up to 500ms
+  const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt) + jitter;
+  await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
-// Function to ensure Markdown formatting
+// Ensure Markdown formatting
 function ensureMarkdownFormat(text: string): string {
-  // Add Markdown formatting if not present
-  if (!text.includes('#') && !text.includes('-')) {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    return `# Summary\n\n${lines.map(line => `- ${line}`).join('\n')}`;
+  if (!text.includes("#") && !text.includes("-")) {
+    return `# Summary\n\n- ${text.replace(/\n+/g, "\n- ")}`;
   }
   return text;
 }
 
-// Function to summarize using Google Gemini with retry logic
+// Function to summarize using Google Gemini
 async function summarizeWithGemini(text: string): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const model = genAI.getGenerativeModel({
+    model: "gemini-pro",
+    generationConfig: { temperature: 0.5 },
+  });
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (apiFailureCount.get(genAI) ?? 0 >= CIRCUIT_BREAKER_THRESHOLD) break;
+
     try {
-      const prompt = `Summarize the following text concisely, focusing on the main points. Format the summary in Markdown with a title and bullet points:\n\n${text}`;
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return ensureMarkdownFormat(response.text());
+      const result = await model.generateContent(
+        `Summarize the following text concisely, focusing on the main points. Format the summary in Markdown with a title and bullet points:\n\n${text}`
+      );
+
+      return ensureMarkdownFormat(await result.response.text());
     } catch (error: any) {
       console.error(`Gemini attempt ${attempt + 1} failed:`, error.message);
+
+      // Track failure count
+      apiFailureCount.set(genAI, (apiFailureCount.get(genAI) || 0) + 1);
+
       if (attempt === MAX_RETRIES - 1) {
         throw new Error("Unable to generate summary with Gemini after multiple attempts.");
       }
       await exponentialBackoff(attempt);
     }
   }
+
   throw new Error("Unexpected error in summarizeWithGemini");
 }
 
-// Function to summarize using OpenAI with retry logic
+// Function to summarize using OpenAI
 async function summarizeWithOpenAI(text: string): Promise<string> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (apiFailureCount.get(openai) ?? 0 >= CIRCUIT_BREAKER_THRESHOLD) break;
+
     try {
       const response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo-1106",
         messages: [
-          {
-            role: "system",
-            content: "Summarize the following text concisely, focusing on main points. Provide the output in Markdown format with a title and bullet points."
-          },
-          { role: "user", content: text }
+          { role: "system", content: "Summarize the following text concisely, focusing on main points. Provide the output in Markdown format with a title and bullet points." },
+          { role: "user", content: text },
         ],
         max_tokens: MAX_SUMMARY_TOKENS,
         temperature: 0.5,
       });
 
-      const summary = response.choices[0]?.message?.content?.trim() || '';
-      return ensureMarkdownFormat(summary);
+      return ensureMarkdownFormat(response.choices[0]?.message?.content?.trim() || "");
     } catch (error: any) {
       console.error(`OpenAI attempt ${attempt + 1} failed:`, error.message);
+
+      // Track failure count
+      apiFailureCount.set(openai, (apiFailureCount.get(openai) || 0) + 1);
+
       if (attempt === MAX_RETRIES - 1) {
         throw new Error("Unable to generate summary with OpenAI after multiple attempts.");
       }
       await exponentialBackoff(attempt);
     }
   }
+
   throw new Error("Unexpected error in summarizeWithOpenAI");
 }
 
-// Main function to generate summary
+// Main function to generate a summary
 export async function generateVideoSummary(transcript: string): Promise<string> {
   const sampledTranscript = sampleTranscript(transcript);
 
   // Try Gemini first
-  for (let geminiAttempt = 0; geminiAttempt < 3; geminiAttempt++) {
-    try {
-      return await summarizeWithGemini(sampledTranscript);
-    } catch (geminiError: any) {
-      console.error(`Gemini attempt ${geminiAttempt + 1} failed:`, geminiError.message);
-      if (geminiAttempt < 2) {
-        await exponentialBackoff(geminiAttempt);
-      }
-    }
+  try {
+    return await summarizeWithGemini(sampledTranscript);
+  } catch (geminiError: any) {
+    console.warn("Gemini failed:", geminiError.message);
   }
 
-  // If Gemini fails after 3 attempts, try OpenAI
+  // If Gemini fails, try OpenAI
   try {
     return await summarizeWithOpenAI(sampledTranscript);
   } catch (openAIError: any) {
-    console.error("Error generating summary with OpenAI:", openAIError.message);
+    console.warn("OpenAI failed:", openAIError.message);
     return "# Summary Generation Failed\n\n- Unable to generate summary due to API errors.\n- Please try again later.";
   }
 }
