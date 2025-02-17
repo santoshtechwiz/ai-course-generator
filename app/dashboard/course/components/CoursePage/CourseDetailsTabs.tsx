@@ -140,6 +140,7 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
                       name={name}
                       existingSummary={chapter.summary}
                       isPremium={isPremium}
+                      isAdmin={session?.user?.isAdmin ?? false}
                     />
                   </React.Suspense>
                 </TabsContent>
