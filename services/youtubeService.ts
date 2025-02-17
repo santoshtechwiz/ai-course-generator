@@ -65,7 +65,7 @@
 //       console.log("All videos in the search results have been processed")
 //       return null
 //     } catch (error) {
-//       console.error("Error in YouTube search:", error)
+//       console.warn("Error in YouTube search:", error)
 //       return null
 //     }
 //   }
@@ -89,7 +89,7 @@
 //         return { status: 200, message: "Transcript fetched successfully.", transcript: transcriptResult.transcript }
 //       } catch (error) {
 //         if (attempt === this.MAX_RETRIES) {
-//           console.error(`Error fetching transcript for video ${videoId}:`, error)
+//           console.warn(`Error fetching transcript for video ${videoId}:`, error)
 //           return {
 //             status: 500,
 //             message: `Error fetching transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -167,7 +167,7 @@
 //         transcript: transcriptText,
 //       }
 //     } catch (error) {
-//       console.error("Error in getTranscriptForVideo:", error)
+//       console.warn("Error in getTranscriptForVideo:", error)
 //       return {
 //         status: 500,
 //         message: `Error processing transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -211,7 +211,7 @@
 //       console.warn(`Unexpected transcript format for video ID: ${videoId}`)
 //       return null
 //     } catch (error) {
-//       console.error(`Error fetching transcript for video ID ${videoId}:`, error)
+//       console.warn(`Error fetching transcript for video ID ${videoId}:`, error)
 //       return null
 //     }
 //   }
@@ -287,7 +287,7 @@ class YoutubeService {
       console.log("All videos in the search results have been processed");
       return null;
     } catch (error) {
-      console.error("Error in YouTube search:", error);
+      console.warn("Error in YouTube search:", error);
       return null;
     }
   }
@@ -299,7 +299,7 @@ class YoutubeService {
         return transcriptResult;
       } catch (error) {
         if (attempt === this.MAX_RETRIES) {
-          console.error(`Error fetching transcript for video ${videoId}:`, error);
+          console.warn(`Error fetching transcript for video ${videoId}:`, error);
           return {
             status: 500,
             message: `Error fetching transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -353,7 +353,7 @@ class YoutubeService {
 
       return null;
     } catch (error) {
-      console.error("Error fetching production transcript:", error);
+      console.warn("Error fetching production transcript:", error);
       return null;
     }
   }
@@ -363,7 +363,7 @@ class YoutubeService {
       const transcript = await new YtTranscript({ videoId }).getTranscript();
       return transcript ? transcript.map((item) => item.text).join(" ") : null;
     } catch (error) {
-      console.error("Error fetching development transcript:", error);
+      console.warn("Error fetching development transcript:", error);
       return null;
     }
   }
@@ -378,7 +378,7 @@ class YoutubeService {
       const docs = await loader.load();
       return docs.map((doc) => typeof doc.pageContent === 'string' ? doc.pageContent : '').join(" ");
     } catch (error) {
-      console.error("Error fetching Langchain transcript:", error);
+      console.warn("Error fetching Langchain transcript:", error);
       return null;
     }
   }
@@ -405,7 +405,7 @@ class YoutubeService {
       console.warn(`Unexpected transcript format for video ID: ${videoId}`);
       return null;
     } catch (error) {
-      console.error(`Error fetching Supadata transcript for video ID ${videoId}:`, error);
+      console.warn(`Error fetching Supadata transcript for video ID ${videoId}:`, error);
       return null;
     }
   }
