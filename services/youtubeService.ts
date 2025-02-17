@@ -372,7 +372,7 @@ class YoutubeService {
     try {
       const loader = YoutubeLoader.createFromUrl(`https://youtu.be/${videoId}`, {
         language: "en",
-        addVideoInfo: true,
+        addVideoInfo: false,
       });
       
       const docs = await loader.load();
@@ -387,6 +387,8 @@ class YoutubeService {
     try {
       const transcript = await this.supadata.youtube.transcript({
         videoId: videoId,
+        lang:'en',
+        text:true
       });
 
       if (!transcript) {
