@@ -25,7 +25,7 @@ interface CourseAISummaryProps {
 
 const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, existingSummary, isPremium }) => {
   const [showAIEmoji, setShowAIEmoji] = useState(false)
-  const { data, isLoading, isError, error, refetch } = useChapterSummary(chapterId, Boolean(existingSummary))
+  const { data, isLoading, isError, error, refetch } = useChapterSummary(chapterId)
 
   useEffect(() => {
     if (!existingSummary && !isPremium) {

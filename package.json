@@ -18,6 +18,8 @@
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "@hookform/resolvers": "^3.9.1",
+    "@langchain/community": "^0.3.30",
+    "@langchain/core": "^0.3.40",
     "@monaco-editor/react": "^4.6.0",
     "@neondatabase/serverless": "^0.10.4",
     "@next-auth/prisma-adapter": "^1.0.7",
@@ -114,6 +116,7 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "ts-retry-promise": "^0.8.1",
+    "youtubei.js": "^13.0.0",
     "yt-transcript": "^0.0.2",
     "ytdl-core": "npm:@distube/ytdl-core@^4.15.8",
     "zod": "^3.23.8",

@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import MainContent from "./MainContent"
 import VideoNavigationSidebar from "./VideoNavigationSidebar"
 import useProgress from "@/hooks/useProgress"
-import type { FullChapter, FullCourseType } from "@/app/types/types"
+import type { FullChapter, FullCourseType, FullChapterType } from "@/app/types/types"
 import { useUser } from "@/app/providers/userContext"
 import throttle from "lodash.throttle"
 
@@ -19,7 +19,7 @@ import { AnimatePresence, motion } from "framer-motion"
 
 interface State {
   selectedVideoId: string | undefined
-  currentChapter: FullChapter | undefined
+  currentChapter: FullChapterType | undefined
   nextVideoId: string | undefined
   prevVideoId: string | undefined
 }
@@ -98,7 +98,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   }, [course.courseUnits])
 
   const findChapterByVideoId = useCallback(
-    (videoId: string): FullChapter | undefined => {
+    (videoId: string): FullChapterType | undefined => {
       return videoPlaylist.find((entry) => entry.videoId === videoId)?.chapter
     },
     [videoPlaylist],
@@ -266,7 +266,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     }
   }, [])
 
-  const isSubscribed = session?.user?.userType !== "Free"
+  const isSubscribed = session?.user?.userType !== "Free" || course.isPublic===true;
 
   if (isLoading || isProfileLoading) {
     return (
@@ -356,8 +356,8 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                 }}
                 currentVideoId={state.selectedVideoId || ""}
                 isAuthenticated={!!session}
-                courseOwnerId={course.userId}
-                isSubscribed={isSubscribed}
+                // courseOwnerId={course.userId}
+                // isSubscribed={isSubscribed}
                 progress={progress || null}
                 nextVideoId={state.nextVideoId}
                 prevVideoId={state.prevVideoId}

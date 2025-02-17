@@ -376,6 +376,7 @@ export interface FullChapter {
   order: number | null;
   isCompleted: boolean | null;
   summary: string | null;
+  description: string | null;
   questions:  CourseQuestion[];
 
 }
