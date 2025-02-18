@@ -4,7 +4,7 @@ import pRetry from "p-retry"
 import { LRUCache } from "lru-cache"
 
 // Initialize Google Gemini
-const genAI = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY! })
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 // Constants
 const MAX_SUMMARY_TOKENS = 300
