@@ -97,28 +97,11 @@ async function fetchAndGenerateSummary(videoId: string): Promise<string | null> 
   }
 
   try {
-    return await generateSummaryWithChunking(transcriptResponse.transcript)
+    return await generateVideoSummary(transcriptResponse.transcript.slice(0, 10000));
   } catch (error) {
     console.error(`Error generating summary for video ID ${videoId}:`, error)
     return null
   }
-}
-
-async function generateSummaryWithChunking(transcript: string): Promise<string> {
-  const chunkSize = 4000
-  const chunks = transcript.match(new RegExp(`.{1,${chunkSize}}`, "g")) || []
-
-  let summary = ""
-  for (const chunk of chunks) {
-    const chunkSummary = await generateVideoSummary(chunk)
-    summary += chunkSummary + " "
-  }
-
-  if (summary.length > chunkSize) {
-    return generateVideoSummary(summary)
-  }
-
-  return summary.trim()
 }
 
 async function updateChapterSummary(chapterId: number, summary: string) {
