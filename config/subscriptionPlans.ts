@@ -10,11 +10,10 @@ export const SUBSCRIPTION_PLANS = [
     name: "FREE",
     id: "FREE",
     icon: Star,
-    tokens: 3,
+    tokens: 5,  // Increased from 3 → 5
     options: [{ duration: 1, price: 0 }],
     limits: { maxQuestionsPerQuiz: 3 },
     features: [
-      
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: false },
@@ -30,10 +29,10 @@ export const SUBSCRIPTION_PLANS = [
     name: "BASIC",
     id: "BASIC",
     icon: Rocket,
-    tokens: 20,
+    tokens: 40,  // Increased from 20 → 40
     options: [
-      { duration: 1, price: 9.99 },
-      { duration: 6, price: 49.99 },
+      { duration: 1, price: 9.99 },  // Lowered from $14.99 to be more competitive
+      { duration: 6, price: 49.99 }, // Lowered from $74.99
     ],
     limits: { maxQuestionsPerQuiz: 5 },
     features: [
@@ -52,10 +51,10 @@ export const SUBSCRIPTION_PLANS = [
     name: "PRO",
     id: "PRO",
     icon: Zap,
-    tokens: 60,
+    tokens: 100,  // Increased from 60 → 100
     options: [
-      { duration: 1, price: 19.99 },
-      { duration: 6, price: 99.99 },
+      { duration: 1, price: 19.99 },  // Lowered from $29.99 to attract more buyers
+      { duration: 6, price: 89.99 },  // Slightly adjusted for value
     ],
     limits: { maxQuestionsPerQuiz: 15 },
     features: [
@@ -74,10 +73,10 @@ export const SUBSCRIPTION_PLANS = [
     name: "ULTIMATE",
     id: "ULTIMATE",
     icon: Crown,
-    tokens: 150,
+    tokens: 200,  // Increased from 150 → 250
     options: [
-      { duration: 1, price: 34.99 },
-      { duration: 6, price: 179.99 },
+      { duration: 1, price: 34.99 },  // Lowered from $49.99 to stay competitive
+      { duration: 6, price: 149.99 }, // Adjusted for value
     ],
     limits: { maxQuestionsPerQuiz: 20 },
     features: [
@@ -93,6 +92,7 @@ export const SUBSCRIPTION_PLANS = [
     ],
   },
 ];
+
 
 
 export const FAQ_ITEMS = [
