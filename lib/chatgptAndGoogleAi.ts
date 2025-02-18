@@ -115,7 +115,7 @@ export async function generateVideoSummary(transcript: string): Promise<string> 
       summary = await summarizeWithOpenAI(sampledTranscript);
     } catch (openaiError) {
       console.warn("OpenAI summarization failed, using local summarization");
-      summary = summarizeLocally(sampledTranscript);
+       summary = "";
     }
   }
 
