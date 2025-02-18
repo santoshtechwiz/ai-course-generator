@@ -17,7 +17,7 @@ interface QuizAttemptsProps {
 }
 
 export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
-  console.log(quizAttempts)
+
   const [selectedQuestion, setSelectedQuestion] = useState<UserQuizAttempt["attemptQuestions"][0] | null>(null)
 
   if (!quizAttempts || quizAttempts.length === 0) {

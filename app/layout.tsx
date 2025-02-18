@@ -5,6 +5,7 @@ import type { Metadata } from "next"
 import { Providers } from "./providers/provider"
 import Script from "next/script"
 import { Suspense } from "react"
+import { ThemeProvider } from "./providers/theme-provider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -87,25 +88,31 @@ export default function RootLayout({
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <link rel="canonical" href={process.env.NEXT_PUBLIC_SITE_URL} />
+        <meta name="msvalidate.01" content="DF1C94243684F320757FDFABA3480C17" />
       </head>
       <body>
-        <Providers>
-          <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-        </Providers>
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={true} disableTransitionOnChange>
+
+          <Providers>
+            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+          </Providers>
+
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
           `}
-        </Script>
+          </Script>
+        </ThemeProvider>
       </body>
-    </html>
+
+    </html >
   )
 }
 

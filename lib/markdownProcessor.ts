@@ -10,13 +10,7 @@ const processor = unified()
   .use(strip, {
     keep: ["heading", "list", "listItem", "strong", "emphasis", "link", "blockquote", "code", "inlineCode"],
   })
-  .use(remarkStringify, {
-    bullet: "-",
-    emphasis: "_",
-    strong: "**",
-    listItemIndent: "one",
-    rule: "-",
-  })
+  .use(remarkStringify);
 
 export function cleanMarkdown(markdown: string): string {
   // Remove any HTML tags

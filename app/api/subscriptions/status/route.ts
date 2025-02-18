@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { SubscriptionService } from '@/services/subscriptionService'
+import { getAuthSession } from '@/lib/authOptions'
 
 export async function GET(req: Request) {
-  const url = new URL(req.url)
-  const userId = url.searchParams.get('userId')
+  const session=await getAuthSession();
+  if (!session) {
+    return NextResponse.json({ error: 'User is not authenticated' }, { status: 401 })
+  }
+  const userId = session.user.id;
   
   if (!userId) {
     return NextResponse.json({ error: 'User ID is required' }, { status: 400 })

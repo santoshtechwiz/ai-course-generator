@@ -5,7 +5,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Element } from "react-scroll"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+
 import { useRouter } from "next/navigation"
 import FeatureVideo from "@/app/components/animations/FeatureVideo"
 import RevealAnimation from "../shared/RevealAnimation"
@@ -53,7 +53,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
               <RevealAnimation delay={0.4}>
 
 
-                <Button type="submit" size="lg" className="w-full sm:w-auto">
+                <Button onClick={() => onTopicSubmit(topic)} type="submit" size="lg" className="w-full sm:w-auto">
                   Generate Course
                 </Button>
 

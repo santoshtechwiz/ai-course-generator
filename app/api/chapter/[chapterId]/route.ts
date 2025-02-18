@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 export async function PUT(request: Request, { params }: { params: { chapterId: string } }) {
   const { chapterId } = params
   const { summary } = await request.json()
-  console.log("Received PUT request:", { chapterId, summary })
+
 
   try {
     const updatedChapter = await prisma.chapter.update({
@@ -18,8 +18,8 @@ export async function PUT(request: Request, { params }: { params: { chapterId: s
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { chapterId: string } }) {
-  const { chapterId } = params
+export async function DELETE(request: Request, { params }: { params: Promise< { chapterId: string }> }) {
+  const { chapterId } =await  params
   console.log("Received DELETE request:", { chapterId })
 
   try {

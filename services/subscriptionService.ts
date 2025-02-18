@@ -92,7 +92,7 @@ export class SubscriptionService {
     const userSubscription = await prisma.userSubscription.findUnique({
       where: { userId },
     })
-
+    console.log(userSubscription);
     if (!userSubscription) {
       return {
         plan: "FREE",

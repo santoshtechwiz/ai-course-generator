@@ -1,212 +1,212 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { ChevronLeft, ChevronRight, PlayCircle, HelpCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+import { useState, useEffect, useMemo, useCallback } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+
+const VideoIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-24 h-24 md:w-32 md:h-32 text-primary"
+  >
+    <polygon points="23 7 16 12 23 17 23 7" />
+    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+  </svg>
+)
+
+const QuizIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-24 h-24 md:w-32 md:h-32 text-primary"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+)
 
 interface CarouselItem {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  quizType?: "mcq" | "openended" | "fill-blanks" | "code";
-  type: "course" | "quiz";
+  id: string
+  name: string
+  slug: string
+  description: string
+  tagline: string
+  quizType?: "mcq" | "openended" | "fill-blanks" | "code"
+  type: "course" | "quiz"
 }
 
 const buildLinks = (items: CarouselItem[]) => {
   return items.map((item) => {
     if (item.type === "course") {
-      return `/dashboard/course/${item.slug}`;
+      return `/dashboard/course/${item.slug}`
     }
     if (item.quizType === "mcq") {
-      return `/quiz/mcq/${item.slug}`;
+      return `/quiz/mcq/${item.slug}`
     }
     if (item.quizType === "openended") {
-      return `/quiz/openended/${item.slug}`;
+      return `/quiz/openended/${item.slug}`
     }
-
     if (item.quizType === "fill-blanks") {
-      return `/quiz/blanks/${item.slug}`;
+      return `/quiz/blanks/${item.slug}`
     }
-    return `/quiz/code/${item.slug}`;
-  });
-};
+    return `/quiz/code/${item.slug}`
+  })
+}
 
 const ShowCaseCarousel = () => {
-  const [items, setItems] = useState<CarouselItem[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [items, setItems] = useState<CarouselItem[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
 
-  // Precompute links using useMemo so it doesn't recalc on every render
-  const links = useMemo(() => buildLinks(items), [items]);
+  const links = useMemo(() => buildLinks(items), [items])
 
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const response = await fetch("/api/carousel-items");
-        if (!response.ok) throw new Error("Failed to fetch carousel items");
-        const data = await response.json();
-        setItems(data);
+        const response = await fetch("/api/carousel-items")
+        if (!response.ok) throw new Error("Failed to fetch carousel items")
+        const data = await response.json()
+        setItems(data)
       } catch (error) {
-        console.error("Error fetching carousel items:", error);
+        console.error("Error fetching carousel items:", error)
       }
-    };
+    }
 
-    fetchItems();
-  }, []);
+    fetchItems()
+  }, [])
 
-  // Next slide function
   const nextSlide = useCallback(() => {
     if (items.length > 0) {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % items.length);
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % items.length)
     }
-  }, [items]);
+  }, [items])
 
-  // Previous slide function
   const prevSlide = useCallback(() => {
     if (items.length > 0) {
-      setCurrentIndex((prevIndex) => (prevIndex - 1 + items.length) % items.length);
+      setCurrentIndex((prevIndex) => (prevIndex - 1 + items.length) % items.length)
     }
-  }, [items]);
+  }, [items])
 
-  // Keyboard navigation support
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowRight") {
-        nextSlide();
+        nextSlide()
       } else if (event.key === "ArrowLeft") {
-        prevSlide();
+        prevSlide()
       }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nextSlide, prevSlide]);
-
-  // Handle drag end for swipe gestures
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const threshold = 50; // Minimum distance in pixels to trigger the slide change
-    if (info.offset.x < -threshold) {
-      nextSlide();
-    } else if (info.offset.x > threshold) {
-      prevSlide();
     }
-  };
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [nextSlide, prevSlide])
 
   if (items.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center text-lg">Loading...</div>
       </div>
-    );
+    )
   }
 
   return (
-    <section className="py-4 md:py-12 lg:py-20" aria-label="Showcase Carousel">
+    <section className="py-8 md:py-12" aria-label="Showcase Carousel">
       <div className="container px-4 md:px-6">
-        <div className="relative">
-          {/* Navigation Buttons */}
+        <div className="relative max-w-3xl mx-auto">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             aria-label="Previous Slide"
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/70 hover:bg-white transition md:left-[-2rem]"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 md:-left-12"
             onClick={prevSlide}
             disabled={items.length === 0}
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-8 w-8" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             aria-label="Next Slide"
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/70 hover:bg-white transition md:right-[-2rem]"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 md:-right-12"
             onClick={nextSlide}
             disabled={items.length === 0}
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-8 w-8" />
           </Button>
 
-          {/* Carousel Slide */}
           <div className="overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIndex}
-                drag="x"
-                onDragEnd={handleDragEnd}
                 initial={{ opacity: 0, x: 100 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -100 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               >
-                <Card className="w-full overflow-hidden bg-card shadow-lg">
-                  <div className="relative h-48 md:h-64 lg:h-80 bg-gradient-to-r from-primary to-primary-foreground">
-                    {items[currentIndex].type === "course" ? (
-                      <PlayCircle
-                        className="absolute inset-0 m-auto h-24 md:h-32 lg:h-40 w-24 md:w-32 lg:w-40 text-card opacity-50"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <HelpCircle
-                        className="absolute inset-0 m-auto h-24 md:h-32 lg:h-40 w-24 md:w-32 lg:w-40 text-card opacity-50"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <h3 className="text-2xl md:text-4xl font-bold text-card">
-                        {items[currentIndex].type === "course" ? "Interactive Course" : "Engaging Quiz"}
-                      </h3>
-                    </div>
-                  </div>
-                  <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <CardTitle className="text-xl md:text-2xl text-primary">
-                        {items[currentIndex].name}
-                      </CardTitle>
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant={items[currentIndex].type === "course" ? "default" : "secondary"}>
-                          {items[currentIndex].type === "course" ? "Course" : "Quiz"}
-                        </Badge>
-                        {items[currentIndex].type !== "course" && (
-                          <Badge variant="outline">
-                            {items[currentIndex].quizType === "mcq"
-                              ? "Multiple Choice"
-                              : items[currentIndex].quizType === "openended"
-                              ? "Open Ended"
-                              : items[currentIndex].quizType === "fill-blanks"
-                              ? "Fill in the Blank"
-                              : "Code"}
+                <Card className="w-full overflow-hidden">
+                  <CardContent className="p-6 md:p-8">
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+                      <div className="flex-shrink-0 w-32 h-32 md:w-40 md:h-40">
+                        {items[currentIndex].type === "course" ? <VideoIcon /> : <QuizIcon />}
+                      </div>
+                      <div className="flex flex-col gap-4 text-center md:text-left">
+                        <div>
+                          <h3 className="text-2xl md:text-3xl font-semibold text-primary mb-2">
+                            {items[currentIndex].name}
+                          </h3>
+                          <p className="text-lg md:text-xl text-muted-foreground italic">
+                            {items[currentIndex].tagline}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                          <Badge variant={items[currentIndex].type === "course" ? "default" : "secondary"}>
+                            {items[currentIndex].type === "course" ? "Course" : "Quiz"}
                           </Badge>
-                        )}
+                          {items[currentIndex].type !== "course" && (
+                            <Badge variant="outline">
+                              {items[currentIndex].quizType === "mcq"
+                                ? "Multiple Choice"
+                                : items[currentIndex].quizType === "openended"
+                                  ? "Open Ended"
+                                  : items[currentIndex].quizType === "fill-blanks"
+                                    ? "Fill in the Blank"
+                                    : "Code"}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm md:text-base text-muted-foreground">{items[currentIndex].description}</p>
+                        <Link href={links[currentIndex]} className="mt-2">
+                          <Button variant="default" className="w-full md:w-auto">
+                            {items[currentIndex].type === "course" ? "Start Course" : "Take Quiz"}
+                          </Button>
+                        </Link>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm md:text-base text-muted-foreground">
-                      {items[currentIndex].description}
-                    </p>
                   </CardContent>
-                  <CardFooter>
-                    <Link href={links[currentIndex]}>
-                      <Button variant="default" size="lg" className="w-full">
-                        {items[currentIndex].type === "course" ? "Start Course" : "Take Quiz"}
-                      </Button>
-                    </Link>
-                  </CardFooter>
                 </Card>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* Dot Navigation */}
           <div className="flex justify-center mt-4 space-x-2">
             {items.map((_, index) => (
-              <Link
+              <button
                 key={index}
-                href={links[index]}
+                onClick={() => setCurrentIndex(index)}
                 aria-label={`Go to slide ${index + 1}`}
                 className={`w-3 h-3 rounded-full transition-colors ${
                   index === currentIndex ? "bg-primary" : "bg-secondary"
@@ -217,7 +217,8 @@ const ShowCaseCarousel = () => {
         </div>
       </div>
     </section>
-  );
-};
+  )
+}
 
-export default ShowCaseCarousel;
+export default ShowCaseCarousel
+

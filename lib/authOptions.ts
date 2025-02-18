@@ -17,6 +17,7 @@ declare module "next-auth" {
       userType: string
       subscriptionPlan: string | null
       subscriptionStatus: string | null
+      subscriptionExpirationDate?: string
     } & DefaultSession["user"]
   }
 
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
           credits: userSubscription?.planId || 0,
           subscriptionPlan: userSubscription?.planId || "FREE",
           subscriptionStatus: userSubscription?.status || null,
+          subscriptionExpirationDate: userSubscription?.currentPeriodEnd?.toISOString(),
         }
       }
    
