@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 interface CreateTileGridProps {
@@ -32,76 +33,80 @@ interface CreateTileGridProps {
 const tiles = [
   {
     icon: FileQuestion,
-    title: "Create MCQ",
-    description: "Design multiple-choice questions with options, correct answers, and explanations.",
+    title: "AI-Powered MCQ Generator",
+    description: "Create intelligent multiple-choice questions with AI assistance for adaptive learning experiences.",
     url: "/dashboard/quiz",
     color: "blue",
     quotes: [
-      "Challenge minds with thought-provoking MCQs!",
-      "Craft questions that spark curiosity and learning.",
-      "Design a quiz that engages and educates simultaneously.",
-      "Test knowledge and critical thinking with well-crafted MCQs.",
-      "Create a quiz that both challenges and enlightens.",
+      "Craft AI-generated MCQs that adapt to student performance!",
+      "Design quizzes that evolve with each learner's progress.",
+      "Leverage AI to create challenging yet fair multiple-choice questions.",
+      "Automate your quiz creation process with intelligent algorithms.",
+      "Enhance learning outcomes with AI-optimized MCQs.",
     ],
     isPremium: false,
   },
   {
     icon: PenTool,
-    title: "Open Ended",
-    description: "Create questions that allow students to provide detailed written responses.",
+    title: "AI Essay Question Creator",
+    description:
+      "Generate thought-provoking open-ended questions using AI to stimulate critical thinking and creativity.",
     url: "/dashboard/openended",
     color: "green",
     quotes: [
-      "Inspire deep thinking with openended questions!",
-      "Encourage students to express their ideas freely.",
-      "Foster critical thinking through thoughtful inquiries.",
-      "Unlock creativity with questions that have no limits.",
-      "Explore the depths of knowledge with openended prompts.",
+      "Inspire deep analysis with AI-crafted open-ended questions!",
+      "Let AI help you create questions that spark innovative thinking.",
+      "Generate essay prompts that challenge and engage learners.",
+      "Harness AI to design questions that encourage unique perspectives.",
+      "Create AI-powered prompts that adapt to various subject matters.",
     ],
     isPremium: true,
   },
   {
     icon: AlignLeft,
-    title: "Fill in the Blanks",
-    description: "Create exercises where students complete sentences by filling in missing words.",
+    title: "Smart Fill-in-the-Blanks",
+    description:
+      "Use AI to generate contextually relevant fill-in-the-blank exercises for enhanced vocabulary and comprehension.",
     url: "/dashboard/blanks",
     color: "pink",
     quotes: [
-      "Craft a fill-in-the-blanks activity to spark curiosity!",
-      "Challenge learners with engaging word puzzles.",
-      "Create exercises that make learning interactive and fun.",
-      "Bridge the gaps in knowledge with clever fill-in-the-blank questions.",
-      "Enhance vocabulary and comprehension through interactive exercises.",
+      "Let AI craft clever fill-in-the-blanks to boost engagement!",
+      "Create adaptive exercises that grow with your students' skills.",
+      "Generate context-aware blanks that challenge and educate.",
+      "Use AI to identify key concepts for impactful learning.",
+      "Design intelligent gap-filling activities with AI assistance.",
     ],
     isPremium: false,
   },
   {
     icon: BookOpen,
-    title: "Course",
-    description: "Build comprehensive courses with multiple lessons and content types.",
+    title: "AI Course Builder",
+    description:
+      "Leverage AI to structure and create comprehensive courses with dynamic content and personalized learning paths.",
     url: "/dashboard/create",
     color: "purple",
     quotes: [
-      "Why not create your own course?",
-      "Share your expertise through an engaging course!",
-      "Design a learning journey that inspires and educates.",
-      "Transform your knowledge into a structured learning experience.",
-      "Craft a course that leaves a lasting impact on learners.",
+      "Build AI-powered courses that adapt to each learner!",
+      "Create intelligent learning journeys with AI assistance.",
+      "Design courses that evolve based on student performance.",
+      "Let AI help you craft engaging and effective curriculum.",
+      "Develop smart, interactive courses for the future of education.",
     ],
     isPremium: false,
   },
   {
     icon: Code,
-    title: "Code Quiz",
-    description: "Create coding challenges and quizzes to test programming skills.",
+    title: "AI Coding Challenge Creator",
+    description:
+      "Generate diverse coding challenges and quizzes using AI to test and improve programming skills across languages.",
     url: "/dashboard/code",
     color: "red",
     quotes: [
-      "Challenge coders with intriguing problems!",
-      "Craft coding quizzes that sharpen programming skills.",
-      "Design puzzles that push the boundaries of logical thinking.",
-      "Create a coding challenge that both tests and teaches.",
-      "Inspire the next generation of programmers with your quizzes.",
+      "Create AI-generated coding challenges that adapt to skill levels!",
+      "Design intelligent programming quizzes with AI assistance.",
+      "Let AI craft coding problems that push logical boundaries.",
+      "Generate language-specific challenges with AI precision.",
+      "Develop adaptive coding tests that grow with your students.",
     ],
     isPremium: true,
   },
@@ -127,7 +132,8 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
     }
   }, [quoteInterval])
 
-  const isDisabled = isPremium && (subscriptionStatus?.subscriptionPlan === "BASIC" || subscriptionStatus?.subscriptionPlan === "FREE")
+  const isDisabled =
+    isPremium && (subscriptionStatus?.subscriptionPlan === "BASIC" || subscriptionStatus?.subscriptionPlan === "FREE")
 
   return (
     <>
@@ -135,83 +141,113 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
-        whileHover={isDisabled ? {} : { scale: 1.05 }}
-        whileTap={isDisabled ? {} : { scale: 0.95 }}
+        whileHover={isDisabled ? {} : { scale: 1.03, y: -5 }}
+        whileTap={isDisabled ? {} : { scale: 0.98 }}
       >
         <Card
-          className={`cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:bg-${color}-100 dark:hover:bg-${color}-900 group ${
+          className={`cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:shadow-lg ${
             isDisabled ? "opacity-50 cursor-not-allowed" : ""
           }`}
           onClick={() => !isDisabled && setIsOpen(true)}
         >
           <CardHeader>
-            <CardTitle className="flex items-center justify-center text-2xl group-hover:text-primary">
+            <CardTitle className="flex items-center justify-center text-xl sm:text-2xl">
               <motion.div
                 initial={{ rotate: 0 }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.5 }}
-                className={`text-${color}-500 group-hover:text-primary`}
+                className={`text-${color}-500`}
               >
-                <Icon className="h-12 w-12 mr-3" />
+                <Icon className="h-8 w-8 sm:h-12 sm:w-12 mr-2 sm:mr-3" />
               </motion.div>
-              {title}
+              <motion.span
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                {title}
+              </motion.span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg text-muted-foreground text-center group-hover:text-foreground">{description}</p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="text-base sm:text-lg text-muted-foreground text-center"
+            >
+              {description}
+            </motion.p>
           </CardContent>
           <CardFooter className="justify-center">
-            <Badge
-              variant="secondary"
-              className={`text-lg py-2 px-4 bg-${color}-200 dark:bg-${color}-800 group-hover:bg-primary group-hover:text-primary-foreground`}
-            >
-              Click to explore
-            </Badge>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Badge
+                variant="secondary"
+                className={`text-sm sm:text-base py-1 px-2 sm:py-2 sm:px-4 bg-${color}-100 dark:bg-${color}-800 text-${color}-700 dark:text-${color}-200`}
+              >
+                Explore AI Magic
+              </Badge>
+            </motion.div>
           </CardFooter>
         </Card>
       </motion.div>
 
       <Dialog open={isOpen && !isDisabled} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[90vw] sm:h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className={`flex items-center text-4xl text-${color}-500`}>
-              <motion.div initial={{ rotate: 0 }} animate={{ rotate: 360 }} transition={{ duration: 0.5 }}>
-                <Icon className="h-12 w-12 mr-3" />
-              </motion.div>
-              {title}
-            </DialogTitle>
-            <DialogDescription asChild>
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={currentQuote}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="text-2xl italic mt-6"
+          <ScrollArea className="h-full">
+            <DialogHeader>
+              <DialogTitle className={`flex items-center text-2xl sm:text-4xl text-${color}-500`}>
+                <motion.div
+                  initial={{ rotate: 0, scale: 0 }}
+                  animate={{ rotate: 360, scale: 1 }}
+                  transition={{ duration: 0.5, type: "spring" }}
                 >
-                  "{quotes[currentQuote]}"
-                </motion.p>
-              </AnimatePresence>
-            </DialogDescription>
-          </DialogHeader>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex-grow flex flex-col justify-center items-center text-center"
-          >
-            <p className="text-xl mb-10">{description}</p>
+                  <Icon className="h-8 w-8 sm:h-12 sm:w-12 mr-2 sm:mr-3" />
+                </motion.div>
+                <motion.span
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  {title}
+                </motion.span>
+              </DialogTitle>
+              <DialogDescription asChild>
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={currentQuote}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.5 }}
+                    className="text-lg sm:text-2xl italic mt-4 sm:mt-6"
+                  >
+                    "{quotes[currentQuote]}"
+                  </motion.p>
+                </AnimatePresence>
+              </DialogDescription>
+            </DialogHeader>
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex-grow flex flex-col justify-center items-center text-center py-6 sm:py-10"
             >
-              <Icon className={`h-40 w-40 text-${color}-500`} />
+              <p className="text-base sm:text-xl mb-6 sm:mb-10">{description}</p>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+              >
+                <Icon className={`h-24 w-24 sm:h-40 sm:w-40 text-${color}-500`} />
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </ScrollArea>
           <DialogFooter>
-            <Button asChild className={`w-full text-xl h-14 bg-${color}-500 hover:bg-${color}-600 text-white`}>
+            <Button
+              asChild
+              className={`w-full text-base sm:text-xl h-12 sm:h-14 bg-${color}-500 hover:bg-${color}-600 text-white`}
+            >
               <Link href={url}>
                 <motion.span
                   initial={{ opacity: 0 }}
@@ -220,7 +256,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Start Creating
+                  Start Creating with AI
                 </motion.span>
               </Link>
             </Button>
@@ -233,10 +269,13 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
 
 export function CreateTileGrid() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl w-full p-6">
-      {tiles.map((tile, index) => (
-        <Tile key={index} {...tile} index={index} isPremium={tile.isPremium} />
-      ))}
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+        {tiles.map((tile, index) => (
+          <Tile key={index} {...tile} index={index} isPremium={tile.isPremium} />
+        ))}
+      </div>
     </div>
   )
 }

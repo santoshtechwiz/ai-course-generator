@@ -17,7 +17,6 @@ import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/
 import Link from "next/link"
 import { UserMenu } from "./UserMenu"
 
-
 const NavItems = () => {
   const pathname = usePathname()
   const router = useRouter()
@@ -33,14 +32,15 @@ const NavItems = () => {
         >
           <Button
             variant="ghost"
-            className={`text-sm font-medium transition-colors hover:text-primary ${
+            className={`text-sm font-medium transition-colors hover:text-primary flex items-center space-x-2 ${
               pathname === item.href
                 ? "bg-primary text-primary-foreground dark:bg-primary dark:text-primary-foreground"
                 : "text-foreground hover:bg-primary/10 dark:text-foreground dark:hover:bg-primary/20"
             }`}
             onClick={() => router.push(item.href)}
           >
-            {item.name}
+            <item.icon className="h-4 w-4 mr-2" />
+            <span>{item.name}</span>
           </Button>
         </motion.div>
       ))}
@@ -90,7 +90,7 @@ export default function Navbar() {
 
   return (
     <motion.header
-      className={`sticky top-0 z-1 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
+      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
         scrolled ? "shadow-md" : ""
       }`}
       initial={{ opacity: 0, y: -100 }}
@@ -100,8 +100,8 @@ export default function Navbar() {
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-4">
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95, rotate: -5 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             <Logo />
@@ -147,7 +147,7 @@ export default function Navbar() {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="flex items-center">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -196,72 +196,76 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      {isMobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="md:hidden bg-background border-t p-4"
-        >
-          <nav className="flex flex-col space-y-2">
-            {navItems.map((item) => (
-              <Button
-                key={item.name}
-                variant="ghost"
-                className="justify-start"
-                onClick={() => {
-                  router.push(item.href)
-                  setIsMobileMenuOpen(false)
-                }}
-              >
-                {item.name}
-              </Button>
-            ))}
-            {status === "authenticated" ? (
-              <>
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="md:hidden bg-background border-t overflow-hidden"
+          >
+            <nav className="flex flex-col space-y-2 p-4">
+              {navItems.map((item) => (
                 <Button
+                  key={item.name}
                   variant="ghost"
                   className="justify-start"
                   onClick={() => {
-                    router.push("/dashboard")
+                    router.push(item.href)
                     setIsMobileMenuOpen(false)
                   }}
                 >
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
+                  <item.icon className="mr-2 h-4 w-4" />
+                  {item.name}
                 </Button>
+              ))}
+              {status === "authenticated" ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      router.push("/dashboard")
+                      setIsMobileMenuOpen(false)
+                    }}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      router.push("/dashboard/subscription")
+                      setIsMobileMenuOpen(false)
+                    }}
+                  >
+                    <Crown className="mr-2 h-4 w-4" />
+                    Subscription
+                  </Button>
+                  <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </Button>
+                </>
+              ) : (
                 <Button
-                  variant="ghost"
+                  variant="default"
                   className="justify-start"
                   onClick={() => {
-                    router.push("/dashboard/subscription")
+                    handleSignIn()
                     setIsMobileMenuOpen(false)
                   }}
                 >
-                  <Crown className="mr-2 h-4 w-4" />
-                  Subscription
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
                 </Button>
-                <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="default"
-                className="justify-start"
-                onClick={() => {
-                  handleSignIn()
-                  setIsMobileMenuOpen(false)
-                }}
-              >
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign In
-              </Button>
-            )}
-          </nav>
-        </motion.div>
-      )}
+              )}
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.header>
   )
 }
