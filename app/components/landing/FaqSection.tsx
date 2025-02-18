@@ -68,6 +68,11 @@ const faqData = [
     answer:
       "Our platform is designed to assist with educational content creation, but we do not guarantee the accuracy or completeness of generated materials. Users are advised to review and verify all course content before use.",
   },
+  {
+    question: "Does the video transcript always generate?",
+    answer: "No, our platform uses YouTube. If a video transcript is available, only then can our platform generate a summary and quiz.",
+  }
+  
 ]
 
 export default function FAQSection() {
