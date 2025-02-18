@@ -99,7 +99,7 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
       })),
     }
 
-    console.log("Quiz data:", quizData)
+
     if (isAuthenticated) {
       saveQuizResults(quizData)
     } else {

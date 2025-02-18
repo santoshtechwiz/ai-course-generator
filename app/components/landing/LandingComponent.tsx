@@ -123,7 +123,7 @@ export default function LandingComponent({ sections = defaultSections }: Landing
       <main className="flex-grow relative z-10">
         <LandingHero
           onTopicSubmit={(topic: string): void => {
-            throw new Error("Function not implemented.")
+            router.push(`/dashboard/create`);
           }}
         />
 

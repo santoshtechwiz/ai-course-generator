@@ -13,8 +13,8 @@ function QuizSkeleton() {
   )
 }
 
-export default async function BlankQuizPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
+export default async function BlankQuizPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
 
   return (
     <div className="py-8 sm:px-6 lg:px-8">

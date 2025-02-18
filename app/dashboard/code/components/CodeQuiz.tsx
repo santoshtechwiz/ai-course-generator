@@ -58,7 +58,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
       return newStartTimes
     })
 
-    const savedResults = localStorage.getItem("quizResults")
+    const savedResults = localStorage.getItem(`quizResults-${userId}`)
     if (savedResults) {
       setQuizResults(JSON.parse(savedResults))
       setQuizCompleted(true)
@@ -125,7 +125,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, isFavorite, isPubli
           const submittedResults = await submitQuizData(results)
           setQuizResults(submittedResults)
         } else {
-          localStorage.setItem("quizResults", JSON.stringify(results))
+          localStorage.setItem(`quizResults-${userId}`, JSON.stringify(results))
           setQuizResults(results)
         }
         setQuizCompleted(true)

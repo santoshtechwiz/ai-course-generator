@@ -12,6 +12,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
+      
       const credits = session.user.credits ?? 0
       const subscriptionPlan = (session.user.subscriptionPlan as SubscriptionPlanType) || "FREE"
 
@@ -19,7 +20,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         credits,
         isSubscribed: subscriptionPlan !== "FREE",
         subscriptionPlan,
-        
+        expirationDate: session.user.subscriptionExpirationDate,
       })
       setIsLoading(false)
     } else if (status === "unauthenticated") {
