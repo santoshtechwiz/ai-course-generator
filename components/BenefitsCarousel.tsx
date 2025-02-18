@@ -6,36 +6,37 @@ import { useInterval } from "@/hooks/useInterval";
 
 const benefits = [
   {
-    title: "Create Custom Courses",
-    description: "Generate personalized courses on any topic of your choice with AI assistance.",
-    icon: "🎯",
+    title: "Video Transcript to Course",
+    description: "Transform any video transcript into a comprehensive course with ease.",
+    icon: "🎥",
   },
   {
-    title: "Smart Knowledge Checks",
-    description: "Automatic generation of quizzes and assessments to test your understanding.",
-    icon: "🧠",
+    title: "Custom Quiz Creation",
+    description: "Design personalized quizzes to reinforce learning from video content.",
+    icon: "📝",
   },
   {
     title: "Multiple Question Types",
-    description: "Create diverse assessments with MCQs, openended questions, and more.",
+    description: "Create diverse assessments with MCQs, open-ended questions, and fill-in-the-blanks.",
     icon: "❓",
   },
   {
-    title: "AI-Powered Learning",
-    description: "Leverage AI to create comprehensive course content and learning materials.",
-    icon: "🤖",
-  },
-  {
-    title: "Track Your Progress",
-    description: "Monitor your learning journey with detailed progress tracking and analytics.",
+    title: "Progress Tracking",
+    description: "Monitor learner engagement and performance with detailed progress analytics.",
     icon: "📊",
   },
   {
-    title: "Flexible Learning Path",
-    description: "Choose your topics, set your pace, and learn exactly what you want to learn.",
-    icon: "🛣️",
+    title: "AI-Powered Content Generation",
+    description: "Leverage AI to automatically generate course content and quizzes from transcripts.",
+    icon: "🤖",
   },
-];
+  {
+    title: "Flexible Learning Paths",
+    description: "Customize learning experiences based on individual user progress and preferences.",
+    icon: "🛤️",
+  },
+]
+
 
 export const BenefitsCarousel: React.FC = () => {
   const [currentIndex, setCurrentIndex] = React.useState(0);

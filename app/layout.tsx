@@ -6,6 +6,8 @@ import { Providers } from "./providers/provider"
 import Script from "next/script"
 import { Suspense } from "react"
 import { ThemeProvider } from "./providers/theme-provider"
+import PageLoader from "@/components/ui/loader"
+
 
 const inter = Inter({
   subsets: ["latin"],
@@ -94,7 +96,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={true} disableTransitionOnChange>
 
           <Providers>
-            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+            <Suspense fallback={<PageLoader />}>
+              {children}
+            </Suspense>
           </Providers>
 
           <Script
