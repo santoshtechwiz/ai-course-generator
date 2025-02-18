@@ -35,10 +35,8 @@ export async function getQuizzes({
               ],
             }
           : {},
-        {
-          OR: userId ? [{ userId: userId }, { isPublic: true }] : [{ isPublic: true }],
-        },
       ],
+      OR: userId ? [{ userId: userId }, { isPublic: true }] : [{ isPublic: true }],
     }
 
     if (quizTypes && quizTypes.length > 0) {

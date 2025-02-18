@@ -58,6 +58,7 @@ export function QuizActions({
     answerSpaceHeight: 40,
     showAnswers: true,
   }
+  const isOwner = userId === ownerId
 
   useEffect(() => {
     const fetchQuizState = async () => {
@@ -85,10 +86,6 @@ export function QuizActions({
 
     fetchQuizState()
   }, [quizSlug, quizId])
-
-  if (!userId || !ownerId || userId !== ownerId) {
-    return null
-  }
 
   const handleRatingChange = async (newRating: number) => {
     try {
@@ -208,6 +205,10 @@ export function QuizActions({
     }, 500)
   }
 
+  if (!isOwner) {
+    return null
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -299,20 +300,18 @@ export function QuizActions({
           </Tooltip>
         </TooltipProvider>
 
-       
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="w-10 h-10 sm:w-auto sm:h-auto">
-                  <QuizPDFDownload quizData={data} config={pdfConfig} />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Download - Click to download as PDF</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-       
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-10 h-10 sm:w-auto sm:h-auto">
+                <QuizPDFDownload quizData={data} config={pdfConfig} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Download - Click to download as PDF</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         <AlertDialog>
           <AlertDialogTrigger asChild>

@@ -77,7 +77,8 @@ export default function HowItWorks() {
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <Input 
-              value={topic}
+              value={topic} 
+              disabled={true}
               readOnly
               className="font-mono flex-grow"
             />
@@ -163,7 +164,7 @@ export default function HowItWorks() {
                 </ul>
               </CardContent>
               <CardFooter className="flex justify-center">
-                <Button className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto" disabled={true}>
                   Begin Your Journey
                 </Button>
               </CardFooter>
