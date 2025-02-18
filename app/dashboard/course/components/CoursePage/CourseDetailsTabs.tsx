@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 
 const CourseAISummary = React.lazy(() => import("./CourseAISummary"))
 const CourseDetailsQuiz = React.lazy(() => import("./CourseDetailsQuiz"))
@@ -47,9 +47,7 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
     router.push("/dashboard/subscription")
   }
 
-  const signIn = () => {
-    router.push("/auth/signin")
-  }
+
 
   const PremiumFeatureOverlay = () => (
     <div className="flex flex-col items-center justify-center p-6 text-center">
@@ -67,7 +65,7 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
       <Lock className="w-12 h-12 text-muted-foreground mb-4" />
       <h3 className="text-lg font-semibold mb-2">Sign In Required</h3>
       <p className="text-muted-foreground mb-4">Please sign in to access course content.</p>
-      <Button onClick={signIn} variant="default">
+      <Button onClick={() => signIn(undefined, { callbackUrl: window.location.href })} variant="default">
         Sign In
       </Button>
     </div>
