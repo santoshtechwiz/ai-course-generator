@@ -15,11 +15,11 @@ export interface SubItem {
 }
 
 export const navItems: NavItem[] = [
-  { name: "Home", href: "/", icon: BookOpen, subItems: [] },
-  { name: "My Learning", href: "/dashboard/dashboard", icon: BookOpen, subItems: [] },
+  { name: "Home", href: "/", icon: Home, subItems: [] },
+  { name: "Learning Path", href: "/dashboard/learning-path", icon: BookOpen, subItems: [] },
   { name: "Quizzes", href: "/dashboard/quizzes", icon: BrainCircuit, subItems: [], isPublic: true },
   { name: "Courses", href: "/dashboard", icon: Compass, subItems: [], isPublic: true },
-  { name: "Create ", href: "/dashboard/explore", icon: PlusCircle, subItems: [] },
-  { name: "Subscriptions", href: "/dashboard/subscription", icon: CreditCard, subItems: [] },
-];
+  { name: "Create", href: "/dashboard/create", icon: PlusCircle, subItems: [] },
+  { name: "Membership", href: "/dashboard/membership", icon: CreditCard, subItems: [] },
+]
 

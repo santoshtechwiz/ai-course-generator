@@ -3,10 +3,13 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Providers } from "./providers/provider"
-import Script from "next/script"
 import { Suspense } from "react"
 import { ThemeProvider } from "./providers/theme-provider"
 import PageLoader from "@/components/ui/loader"
+import Footer from "./components/shared/Footer"
+
+import { Toaster } from "@/components/ui/toaster"
+import { Analytics } from "./analytics"
 
 
 const inter = Inter({
@@ -87,36 +90,28 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} antialiased`} suppressHydrationWarning>
       <head>
         <link rel="canonical" href={process.env.NEXT_PUBLIC_SITE_URL} />
         <meta name="msvalidate.01" content="DF1C94243684F320757FDFABA3480C17" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={true} disableTransitionOnChange>
-
+      <body className="min-h-screen bg-background font-sans antialiased">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Providers>
-            <Suspense fallback={<PageLoader />}>
-              {children}
-            </Suspense>
+            <div className="relative flex min-h-screen flex-col">
+             
+              <main className="flex-1">
+                <Suspense fallback={<PageLoader />}>{children}</Suspense>
+              </main>
+              <Footer />
+            </div>
+            <Toaster />
           </Providers>
-
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-            strategy="afterInteractive"
-          />
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
-          `}
-          </Script>
         </ThemeProvider>
+        <Analytics />
       </body>
-
-    </html >
+    </html>
   )
 }
 

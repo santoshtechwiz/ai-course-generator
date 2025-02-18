@@ -21,7 +21,7 @@ export default function DashboardLayout({
             <Suspense >{children}</Suspense>
           </div>
         </main>
-        <Footer />
+        {/* <Footer /> */}
         <Toaster />
       </div>
     </ClientLayoutWrapper>
