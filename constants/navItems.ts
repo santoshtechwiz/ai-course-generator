@@ -20,6 +20,6 @@ export const navItems: NavItem[] = [
   { name: "Quizzes", href: "/dashboard/quizzes", icon: BrainCircuit, subItems: [], isPublic: true },
   { name: "Courses", href: "/dashboard", icon: Compass, subItems: [], isPublic: true },
   { name: "Create", href: "/dashboard/create", icon: PlusCircle, subItems: [] },
-  { name: "Membership", href: "/dashboard/membership", icon: CreditCard, subItems: [] },
+  { name: "Membership", href: "/dashboard/subscription", icon: CreditCard, subItems: [] },
 ]
 
