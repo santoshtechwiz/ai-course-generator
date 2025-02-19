@@ -79,14 +79,14 @@ export default function NotFound() {
 
           <motion.div variants={itemVariants}>
             <Button asChild size="lg" variant="default">
-              <Link href="/">
+              <Link href="/dashboard">
                 <ArrowLeft className="mr-2 h-5 w-5" /> Return to Home
               </Link>
             </Button>
           </motion.div>
         </motion.div>
       </main>
-      <Footer />
+    
     </div>
   )
 }
