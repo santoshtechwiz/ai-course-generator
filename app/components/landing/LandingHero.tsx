@@ -29,7 +29,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
 
   return (
     <Element name="hero">
-      <section className="py-12 md:py-24 lg:py-32">
+      <section className="py-16 md:py-24 lg:py-32">
         <div className="container px-4 md:px-6">
           <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-8 md:space-y-12">
             <div className="text-center space-y-4">

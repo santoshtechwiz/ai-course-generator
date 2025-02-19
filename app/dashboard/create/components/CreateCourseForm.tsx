@@ -8,24 +8,20 @@ import { useForm, type SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 import { signIn, useSession } from "next-auth/react"
-import { motion } from "framer-motion"
+import { Pencil, FileText, Eye } from "lucide-react"
 
-import { StepIndicator } from "./StepIndicator"
 import { BasicInfoStep } from "./BasicInfoStep"
 import { ContentStep } from "./ContentStep"
 import { PreviewStep } from "./PreviewStep"
 import { ConfirmationDialog } from "./ConfirmationDialog"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { BookOpen, Info, FileText, Eye } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
-import { SignInBanner } from "../../quiz/components/SignInBanner"
-import { useTheme } from "next-themes"
 
-import { PlanAwareButton } from "@/app/components/PlanAwareButton"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { SignInBanner } from "../../quiz/components/SignInBanner"
 
 interface CourseCreationFormProps {
   topic: string
@@ -37,12 +33,11 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
 
-  const { subscriptionStatus, isLoading } = useSubscriptionStore()
+  const { subscriptionStatus } = useSubscriptionStore()
   const { data: session, status: authStatus } = useSession()
   const router = useRouter()
   const { toast } = useToast()
   const [availableCredits, setAvailableCredits] = React.useState(subscriptionStatus?.credits)
-  const { theme } = useTheme()
 
   React.useEffect(() => {
     if (subscriptionStatus) {
@@ -144,86 +139,85 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
     createCourseMutation.status === "pending" ||
     showConfirmDialog
 
-  const stepIcons = [
-    <Info key="1" className="w-6 h-6" />,
-    <FileText key="2" className="w-6 h-6" />,
-    <Eye key="3" className="w-6 h-6" />,
+  const steps = [
+    { icon: <Pencil className="w-6 h-6" />, label: "Basic Info" },
+    { icon: <FileText className="w-6 h-6" />, label: "Content" },
+    { icon: <Eye className="w-6 h-6" />, label: "Preview" },
   ]
 
   return (
-    <div className="w-full bg-background">
-      <div className="w-full">
-        <div className="bg-background border border-border shadow-sm">
-          <SignInBanner isAuthenticated={authStatus === "authenticated"} />
-          <div className="text-center space-y-2 px-2 sm:px-4 py-4">
-            <div className="flex justify-center mb-4">
-              <motion.div
-                className="p-3 bg-primary/10 rounded-xl"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <BookOpen className="h-8 w-8 text-primary" />
-              </motion.div>
+    <div className="min-h-screen bg-background">
+      <SignInBanner isAuthenticated={authStatus === "authenticated"} />
+      <div className="container max-w-4xl mx-auto px-4 py-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Create a New Course</h1>
+          <p className="text-lg text-muted-foreground">
+            Fill in the details for your new course. Progress is automatically saved.
+          </p>
+        </div>
+
+        <div className="mt-12">
+          {/* Step Indicators */}
+          <div className="relative">
+            <div className="flex justify-between items-center relative z-10 px-8">
+              {steps.map((s, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex flex-col items-center",
+                    i + 1 === step ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors",
+                      i + 1 === step ? "bg-primary/10" : "bg-muted",
+                    )}
+                  >
+                    {s.icon}
+                  </div>
+                  <span className="text-sm font-medium">{s.label}</span>
+                </div>
+              ))}
             </div>
-            <h2 className="text-2xl font-semibold">Create a New Course</h2>
-            <p className="text-muted-foreground">
-              Fill in the details for your new course. Progress is automatically saved.
-            </p>
+
+            {/* Progress Bar */}
+            <div className="mt-8 px-8">
+              <Progress value={((step - 1) / (totalSteps - 1)) * 100} className="h-2 transition-all duration-300" />
+            </div>
           </div>
 
-          <StepIndicator currentStep={step} totalSteps={totalSteps} />
-          <Progress value={(step / totalSteps) * 100} className="mt-4" />
+          {/* Form Content */}
+          <div className="mt-12">
+            {step === 1 && <BasicInfoStep control={control} errors={errors} />}
+            {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
+            {step === 3 && <PreviewStep watch={watch} />}
+          </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-6 px-2 sm:px-4">
-              {step === 1 && <BasicInfoStep control={control} errors={errors} />}
-              {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
-              {step === 3 && <PreviewStep watch={watch} />}
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8">
+            <Button type="button" variant="outline" onClick={handleBack} disabled={step === 1}>
+              Back
+            </Button>
+
+            <div className="space-y-2">
+              {step < totalSteps ? (
+                <Button type="button" onClick={handleNext} disabled={!isStepValid() || maxQuestions === 0}>
+                  Continue
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isCreateDisabled} onClick={handleSubmit(onSubmit)}>
+                  {isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"}
+                </Button>
+              )}
+
+              {!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) > 0 && (
+                <p className="text-sm text-muted-foreground text-right">
+                  Available credits: {availableCredits} (This action will deduct 1 credit)
+                </p>
+              )}
             </div>
-
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 border-t px-2 sm:px-4 py-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                disabled={step === 1}
-                className="w-full md:w-auto"
-              >
-                Back
-              </Button>
-
-              <div className="flex flex-col items-center md:items-end space-y-4 w-full md:w-auto">
-                {step < totalSteps ? (
-                  <Button
-                    type="button"
-                    onClick={handleNext}
-                    disabled={!isStepValid() || maxQuestions === 0}
-                    className="w-full md:w-auto"
-                  >
-                    Continue
-                  </Button>
-                ) : (
-                  <PlanAwareButton
-                    type="submit"
-                    isLoggedIn={!!session}
-                    label={
-                      isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"
-                    }
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isCreateDisabled || showConfirmDialog}
-                    className="w-full md:w-auto disabled:opacity-50"
-                  />
-                )}
-
-                {!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) > 0 && (
-                  <p className="text-sm text-muted-foreground text-center md:text-right">
-                    Available credits: {availableCredits} <br className="md:hidden" />
-                    (This action will deduct 1 credit)
-                  </p>
-                )}
-              </div>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
 
