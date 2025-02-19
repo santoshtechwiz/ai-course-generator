@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Eye, Star, Trash2, Share2 } from "lucide-react"
+import { Eye, Star, Trash2, Share2, Facebook, Linkedin, Twitter, Copy } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,7 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 import QuizPDFDownload from "../dashboard/course/components/QuizPDFDownload"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
@@ -100,7 +101,6 @@ export function QuizActions({
         toast({
           title: "Rating updated",
           description: "Your rating has been successfully updated.",
-          variant: "success",
         })
       } else {
         throw new Error("Failed to update rating")
@@ -134,7 +134,6 @@ export function QuizActions({
           description: `Your quiz is now ${updatedQuiz.isPublic ? "public" : "private"}${
             data.isFavorite !== undefined ? ` and ${updatedQuiz.isFavorite ? "favorited" : "unfavorited"}` : ""
           }.`,
-          variant: "success",
         })
       } else {
         throw new Error("Failed to update quiz")
@@ -165,7 +164,6 @@ export function QuizActions({
         toast({
           title: "Quiz deleted",
           description: "Your quiz has been successfully deleted.",
-          variant: "success",
         })
         router.push("/dashboard/quizzes")
       } else {
@@ -183,26 +181,51 @@ export function QuizActions({
     }
   }
 
-  const handleShare = () => {
+  const handleShare = async (platform: "facebook" | "twitter" | "linkedin" | "copy") => {
+    if (!isPublic) {
+      toast({
+        title: "Cannot share private quiz",
+        description: "Make the quiz public to share it.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsShareLoading(true)
-    setTimeout(() => {
-      if (isPublic) {
-        const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
-        navigator.clipboard.writeText(shareUrl)
-        toast({
-          title: "Share link copied",
-          description: "The quiz link has been copied to your clipboard.",
-          variant: "success",
-        })
-      } else {
-        toast({
-          title: "Cannot share private quiz",
-          description: "Make the quiz public to share it.",
-          variant: "danger",
-        })
+    const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
+
+    try {
+      switch (platform) {
+        case "facebook":
+          window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank")
+          break
+        case "twitter":
+          window.open(
+            `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent("Check out this quiz!")}`,
+            "_blank",
+          )
+          break
+        case "linkedin":
+          window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank")
+          break
+        case "copy":
+          await navigator.clipboard.writeText(shareUrl)
+          toast({
+            title: "Share link copied",
+            description: "The quiz link has been copied to your clipboard.",
+          })
+          break
       }
+    } catch (error) {
+      console.error("Error sharing quiz:", error)
+      toast({
+        title: "Error",
+        description: "Failed to share quiz. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
       setIsShareLoading(false)
-    }, 500)
+    }
   }
 
   if (!isOwner) {
@@ -216,7 +239,7 @@ export function QuizActions({
       transition={{ duration: 0.3 }}
       className="space-y-4"
     >
-      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-1 sm:gap-x-2 gap-y-2 bg-muted p-2 sm:p-4 rounded-md">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-muted p-4 rounded-lg">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -225,14 +248,13 @@ export function QuizActions({
                 size="sm"
                 onClick={togglePublic}
                 disabled={isPublicLoading}
-                className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
               >
                 {isPublicLoading ? (
                   <span className="loader"></span>
                 ) : (
                   <>
-                    <Eye className="h-4 w-4" />
-                    <span className="hidden sm:inline-block sm:ml-2">{isPublic ? "Public" : "Private"}</span>
+                    <Eye className="h-4 w-4 mr-2" />
+                    {isPublic ? "Public" : "Private"}
                   </>
                 )}
               </Button>
@@ -253,14 +275,13 @@ export function QuizActions({
                 size="sm"
                 onClick={toggleFavorite}
                 disabled={isFavoriteLoading}
-                className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
               >
                 {isFavoriteLoading ? (
                   <span className="loader"></span>
                 ) : (
                   <>
-                    <Star className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
-                    <span className="hidden sm:inline-block sm:ml-2">{isFavorite ? "Favorited" : "Favorite"}</span>
+                    <Star className={`h-4 w-4 mr-2 ${isFavorite ? "fill-current" : ""}`} />
+                    {isFavorite ? "Favorited" : "Favorite"}
                   </>
                 )}
               </Button>
@@ -277,25 +298,41 @@ export function QuizActions({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShare}
-                disabled={isShareLoading}
-                className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
-              >
-                {isShareLoading ? (
-                  <span className="loader"></span>
-                ) : (
-                  <>
-                    <Share2 className="h-4 w-4" />
-                    <span className="hidden sm:inline-block sm:ml-2">Share</span>
-                  </>
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={isShareLoading}>
+                    {isShareLoading ? (
+                      <span className="loader"></span>
+                    ) : (
+                      <>
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleShare("facebook")}>
+                    <Facebook className="mr-2 h-4 w-4" />
+                    <span>Facebook</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare("twitter")}>
+                    <Twitter className="mr-2 h-4 w-4" />
+                    <span>Twitter</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare("linkedin")}>
+                    <Linkedin className="mr-2 h-4 w-4" />
+                    <span>LinkedIn</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare("copy")}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    <span>Copy Link</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Share - Click to copy share link</p>
+              <p>Share - Click to open sharing options</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -303,9 +340,7 @@ export function QuizActions({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-10 h-10 sm:w-auto sm:h-auto">
-                <QuizPDFDownload quizData={data} config={pdfConfig} />
-              </div>
+              <QuizPDFDownload quizData={data} config={pdfConfig} />
             </TooltipTrigger>
             <TooltipContent>
               <p>Download - Click to download as PDF</p>
@@ -315,18 +350,13 @@ export function QuizActions({
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={isDeleteLoading}
-              className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
-            >
+            <Button variant="destructive" size="sm" disabled={isDeleteLoading}>
               {isDeleteLoading ? (
                 <span className="loader"></span>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline-block sm:ml-2">Delete</span>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
                 </>
               )}
             </Button>
@@ -348,7 +378,7 @@ export function QuizActions({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-10 h-10 sm:w-auto sm:h-auto flex items-center justify-center">
+              <div className="flex items-center justify-center">
                 <Rating value={rating} onValueChange={handleRatingChange} />
               </div>
             </TooltipTrigger>
