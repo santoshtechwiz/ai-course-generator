@@ -1,4 +1,4 @@
-import { Prisma, User, UserQuizQuestion } from "@prisma/client"
+import { Prisma, User } from "@prisma/client"
 
 
 export interface DashboardUser extends User {
