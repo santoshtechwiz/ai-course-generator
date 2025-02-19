@@ -3,7 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: false,
   distDir: '.next',
-
+  async rewrites() {
+    return [
+      {
+        source: "/sitemap.xml",
+        destination: "/api/sitemap",
+      },
+    ];
+  },
   env: {
     DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || 'no-static',
   },

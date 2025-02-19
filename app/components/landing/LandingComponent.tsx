@@ -46,7 +46,7 @@ const defaultSections = [
   },
   {
     key: "testimonials",
-    title: "Educator Success Stories",
+    title: "Success Stories",
     description: "Discover how AI is revolutionizing education for our users.",
     icon: MessageSquare,
     Component: TestimonialsSection,
