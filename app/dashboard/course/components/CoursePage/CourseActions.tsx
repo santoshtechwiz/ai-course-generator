@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Star, Trash2, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Star, Trash2, Eye, EyeOff, Loader2, Share2, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -21,7 +21,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import { useCourseActions } from "@/hooks/useCourseActions"
 import { ShareOptions } from "./ShareOptions"
-
 
 interface CourseActionsProps {
   slug: string
@@ -40,13 +39,13 @@ export default function CourseActions({ slug }: CourseActionsProps) {
 
   return (
     <TooltipProvider>
-      <div className="flex justify-self-auto w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center gap-2">
           <ActionButton
             onClick={handlePrivacyToggle}
             loading={loading === "privacy"}
             icon={status.isPublic ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            text={status.isPublic ? " Private" : " Public"}
+            text={status.isPublic ? "Private" : "Public"}
             tooltip={status.isPublic ? "Make course private" : "Make course public"}
             className={cn(
               status.isPublic
@@ -58,23 +57,25 @@ export default function CourseActions({ slug }: CourseActionsProps) {
           <ActionButton
             onClick={handleFavoriteToggle}
             loading={loading === "favorite"}
-            icon={<Star className={cn("h-4 w-4", status.isFavorite && "fill-current")} />}
-            text={status.isFavorite ? "Remove Favorite" : "Add Favorite"}
+            icon={<Heart className={cn("h-4 w-4", status.isFavorite && "fill-current")} />}
+            text={status.isFavorite ? "Unfavorite" : "Favorite"}
             tooltip={status.isFavorite ? "Remove from favorites" : "Add to favorites"}
             className={cn(
               status.isFavorite
-                ? "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900"
+                ? "bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/50 dark:text-pink-300 dark:hover:bg-pink-900"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
             )}
           />
 
-          <ShareOptions slug={slug} />
+          <ShareOptions slug={slug}>
+           
+          </ShareOptions>
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <ActionButton
                 icon={<Trash2 className="h-4 w-4" />}
-                text="Course"
+                text="Delete"
                 tooltip="Delete this course"
                 className="bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900"
               />
@@ -105,36 +106,37 @@ export default function CourseActions({ slug }: CourseActionsProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        </div>
 
-          <div className="flex items-center">
-            {[1, 2, 3, 4, 5].map((value) => (
-              <Tooltip key={value}>
-                <TooltipTrigger asChild>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleRating(value)}
-                    className="p-1"
-                  >
-                    <Star
-                      className={cn(
-                        "h-5 w-5 transition-colors",
-                        value <= (status.rating || 0)
-                          ? "fill-yellow-400 text-yellow-400 hover:fill-yellow-500 hover:text-yellow-500"
-                          : "text-muted-foreground hover:text-muted-foreground/80",
-                      )}
-                    />
-                  </motion.button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    Rate {value} star{value !== 1 ? "s" : ""}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-            {loading === "rating" && <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />}
-          </div>
+        <div className="flex items-center">
+          <span className="mr-2 text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline"></span>
+          {[1, 2, 3, 4, 5].map((value) => (
+            <Tooltip key={value}>
+              <TooltipTrigger asChild>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleRating(value)}
+                  className="p-1"
+                >
+                  <Star
+                    className={cn(
+                      "h-5 w-5 transition-colors",
+                      value <= (status.rating || 0)
+                        ? "fill-yellow-400 text-yellow-400 hover:fill-yellow-500 hover:text-yellow-500"
+                        : "text-muted-foreground hover:text-muted-foreground/80",
+                    )}
+                  />
+                </motion.button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  Rate {value} star{value !== 1 ? "s" : ""}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+          {loading === "rating" && <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
       </div>
     </TooltipProvider>

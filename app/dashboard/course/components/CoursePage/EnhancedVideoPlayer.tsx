@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
@@ -31,9 +30,94 @@ import {
   Repeat,
   Download,
   List,
+  Share2,
 } from "lucide-react"
 import { formatTime, getVideoQualityOptions, PLAYBACK_SPEEDS } from "@/lib/utils"
 import Logo from "@/app/components/shared/Logo"
+import { Document, Page, Text, StyleSheet, PDFDownloadLink, Image } from "@react-pdf/renderer"
+import { useSession } from "next-auth/react"
+
+// Define styles for the PDF
+const styles = StyleSheet.create({
+  page: {
+    flexDirection: "column",
+    backgroundColor: "#FFFFFF",
+    padding: 30,
+  },
+  header: {
+    fontSize: 24,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#2C3E50",
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 42,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#2980B9",
+  },
+  content: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#34495E",
+  },
+  name: {
+    fontSize: 32,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#E74C3C",
+  },
+  courseName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#27AE60",
+  },
+  date: {
+    fontSize: 14,
+    marginTop: 30,
+    textAlign: "center",
+    color: "#7F8C8D",
+  },
+  footer: {
+    position: "absolute",
+    bottom: 30,
+    left: 30,
+    right: 30,
+    textAlign: "center",
+    color: "#7F8C8D",
+    fontSize: 10,
+  },
+})
+
+// Certificate component
+const Certificate = ({ userName, courseName }: { userName: string; courseName: string }) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      <Image src="/path/to/courseai-logo.png" style={styles.logo} />
+      <Text style={styles.header}>Certificate of Completion</Text>
+      <Text style={styles.title}>Congratulations!</Text>
+      <Text style={styles.content}>This is to certify that</Text>
+      <Text style={styles.name}>{userName}</Text>
+      <Text style={styles.content}>has successfully completed the course</Text>
+      <Text style={styles.courseName}>{courseName}</Text>
+      <Text style={styles.date}>{new Date().toLocaleDateString()}</Text>
+      <Text style={styles.footer}>
+        This certificate is proudly presented by CourseAI Verify this certificate at: https://courseai.com/verify
+      </Text>
+    </Page>
+  </Document>
+)
 
 interface VideoPlayerProps {
   videoId: string
@@ -52,6 +136,7 @@ interface VideoPlayerProps {
     showCertificateButton?: boolean
   }
   onVideoSelect: (videoId: string) => void
+  courseName: string
 }
 
 const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -71,6 +156,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
     showCertificateButton: false,
   },
   onVideoSelect,
+  courseName,
 }) => {
   const [playing, setPlaying] = useState(autoPlay)
   const [volume, setVolume] = useState(0.8)
@@ -87,6 +173,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showCourseAIVideos, setShowCourseAIVideos] = useState(false)
   const playerRef = useRef<ReactPlayer>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { data: session } = useSession()
 
   useEffect(() => {
     setPlaying(autoPlay)
@@ -206,8 +293,24 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   }
 
   const handleDownloadCertificate = () => {
-    onDownloadCertificate?.()
-    setShowCertificateOverlay(false)
+    setShowCertificateOverlay(true)
+  }
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${session?.user?.name}'s Certificate for ${courseName}`,
+          text: `Check out my certificate for completing ${courseName} on CourseAI!`,
+          url: `https://courseai.com/certificate/${encodeURIComponent(courseName)}`,
+        })
+      } else {
+        // Fallback for browsers that don't support the Web Share API
+        alert("Sharing is not supported on this browser. You can copy the certificate link manually.")
+      }
+    } catch (error) {
+      console.error("Error sharing certificate:", error)
+    }
   }
 
   return (
@@ -251,9 +354,21 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
           <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-50">
             <div className="text-white text-center">
               <h2 className="text-2xl font-bold mb-4">Congratulations! You've completed the course.</h2>
-              <div className="space-x-4">
-                <Button onClick={handleDownloadCertificate} className="bg-cyan-500 hover:bg-cyan-600">
-                  <Download className="mr-2 h-4 w-4" /> Download Certificate
+              <div className="space-y-4">
+                <PDFDownloadLink
+                  document={<Certificate userName={session?.user?.name || "Student"} courseName={courseName} />}
+                  fileName={`${courseName.replace(/\s+/g, "_")}_Certificate.pdf`}
+                >
+                  {({ blob, url, loading, error }) => (
+                    <Button disabled={loading} className="bg-cyan-500 hover:bg-cyan-600">
+                      <Download className="mr-2 h-4 w-4" />
+                      {loading ? "Generating certificate..." : "Download Certificate"}
+                    </Button>
+                  )}
+                </PDFDownloadLink>
+                <Button onClick={handleShare} className="bg-green-500 hover:bg-green-600">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share Certificate
                 </Button>
                 <Button onClick={() => setShowCertificateOverlay(false)} className="bg-gray-500 hover:bg-gray-600">
                   Close
@@ -461,7 +576,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowCertificateOverlay(true)}
+                      onClick={handleDownloadCertificate}
                       className="text-white hover:bg-white/20"
                     >
                       <Download className="h-4 w-4" />
