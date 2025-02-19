@@ -92,6 +92,7 @@
     "p-queue": "^8.0.1",
     "p-retry": "^6.2.1",
     "react": "^18.2.0",
+    "react-circular-progressbar": "^2.1.0",
     "react-confetti-explosion": "^2.1.2",
     "react-dom": "^18.2.0",
     "react-error-boundary": "^5.0.0",

@@ -14,7 +14,7 @@ import type { FullCourseType, FullChapter } from "@/app/types/types"
 import type { CourseProgress } from "@prisma/client"
 import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
 
-const VideoPlayerEnhanced = dynamic(() => import("./VideoPlayerEnhanced"), {
+const EnhancedVideoPlayer = dynamic(() => import("./EnhancedVideoPlayer"), {
   ssr: false,
   loading: () => <VideoPlayerSkeleton />,
 })
@@ -63,8 +63,11 @@ const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps) => (
 
 const VideoPlayerSkeleton = () => <Shimmer className="w-full aspect-video rounded-lg" />
 
-const ChapterInfo = ({ course }: { course: FullCourseType }) => (
-  <h1 className="text-2xl md:text-4xl font-bold text-primary flex-grow">{course.name}</h1>
+const ChapterInfo = ({ course, currentChapter }: { course: FullCourseType; currentChapter?: FullChapter }) => (
+  <div className="mb-4">
+    <h1 className="text-2xl md:text-4xl font-bold text-primary">{course.name}</h1>
+    {currentChapter && <p className="text-lg text-muted-foreground mt-2">{currentChapter.name}</p>}
+  </div>
 )
 
 interface VideoPlayerProps {
@@ -165,19 +168,35 @@ const VideoPlayer = ({
     setShowCompletionOverlay(false)
   }
 
+  const handleDownloadCertificate = () => {
+    console.log("Downloading certificate for course:", course.name)
+    alert(`Certificate for ${course.name} is being downloaded.`)
+  }
+
   return (
     <Card className="mb-8 overflow-hidden">
       <CardContent className="p-0">
         <div ref={videoRef} className="relative">
           <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {}}>
             <Suspense fallback={<VideoPlayerSkeleton />}>
-              <VideoPlayerEnhanced
+              <EnhancedVideoPlayer
                 videoId={currentVideoId || ""}
                 onEnded={handleVideoEnd}
                 autoPlay={true}
                 initialTime={currentTime}
                 onProgress={onTimeUpdate}
                 isLastVideo={isLastVideo}
+                onDownloadCertificate={handleDownloadCertificate}
+                onVideoSelect={onVideoSelect}
+                playerConfig={{
+                  showRelatedVideos: false,
+                  rememberPosition: true,
+                  rememberMute: true,
+                  showCertificateButton: isLastVideo,
+                }}
+                courseAIVideos={course.courseUnits.flatMap((unit) =>
+                  unit.chapters.map((chapter) => ({ id: chapter.videoId || "", title: chapter.name })),
+                )}
               />
               {showCompletionOverlay && (
                 <CourseCompletionOverlay
@@ -205,12 +224,10 @@ const QuizSectionTabs = ({ course, currentChapter, planId }: QuizSectionTabsProp
     <Card className="mt-8">
       <CardContent className="p-0">
         <CourseDetailsTabs
-
           chapterId={currentChapter?.id ?? 0}
           name={currentChapter?.name || "Chapter Details"}
           course={course}
           chapter={currentChapter as FullChapter}
-         
         />
       </CardContent>
     </Card>
@@ -232,7 +249,7 @@ export default function MainContent(props: MainContentProps) {
 
   return (
     <div className="min-h-full flex flex-col bg-background">
-      <ChapterInfo course={props.course} />
+      <ChapterInfo course={props.course} currentChapter={props.currentChapter} />
 
       <div className="flex-1">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

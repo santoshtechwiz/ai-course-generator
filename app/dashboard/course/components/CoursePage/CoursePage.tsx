@@ -160,7 +160,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
       },
       5000,
     ),
-    [updateProgress, session], // Added session as a dependency
+    [updateProgress, session], // Updated dependency array
   )
 
   const markChapterAsCompleted = useCallback(() => {
@@ -241,7 +241,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         })
       }
     },
-    [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, dispatch, state.currentChapter], // Added state.currentChapter as a dependency
+    [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, state.currentChapter], // Updated dependency array
   )
 
   const handleWatchAnotherCourse = useCallback(() => {
@@ -266,12 +266,12 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     }
   }, [])
 
-  const isSubscribed = session?.user?.userType !== "Free" || course.isPublic===true;
+  const isSubscribed = session?.user?.userType !== "Free" || course.isPublic === true
 
   if (isLoading || isProfileLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <Skeleton className="h-14 w-full sticky top-0 z-50" />
+        <Skeleton className="h-16 w-full sticky top-0 z-50" />
         <div className="flex flex-1 overflow-hidden">
           <Skeleton className="flex-grow lg:w-3/4" />
           <Skeleton className="w-1/4 hidden lg:block" />
@@ -283,9 +283,9 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <nav className="sticky top-0 z-50 w-full bg-background border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex w-full h-14 max-w-screen-2xl items-center">
+        <div className="container flex w-full h-16 max-w-screen-2xl items-center px-4">
           <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-lg font-semibold md:hidden">{course.name}</h1>
+            <h1 className="text-xl font-semibold md:text-2xl lg:hidden">{course.name}</h1>
             <Button
               variant="ghost"
               size="icon"
@@ -293,14 +293,14 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
               className="lg:hidden"
               aria-label="Open sidebar"
             >
-              <VideotapeIcon className="h-5 w-5" />
+              <VideotapeIcon className="h-6 w-6" />
             </Button>
           </div>
         </div>
       </nav>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-grow overflow-hidden lg:w-3/4 relative">
+        <div className="flex-grow overflow-hidden lg:w-3/4 relative p-4 lg:p-6">
           <MemoizedMainContent
             course={course}
             initialVideoId={state.selectedVideoId}
@@ -344,25 +344,25 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                 className="absolute top-4 right-4 lg:hidden"
                 aria-label="Close sidebar"
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               </Button>
-              <MemoizedRightSidebar
-                course={course}
-                currentChapter={state.currentChapter}
-                courseId={course.id.toString()}
-                onVideoSelect={(videoId) => {
-                  handleVideoSelect(videoId)
-                  if (isSmallScreen) setIsSidebarOpen(false)
-                }}
-                currentVideoId={state.selectedVideoId || ""}
-                isAuthenticated={!!session}
-                // courseOwnerId={course.userId}
-                // isSubscribed={isSubscribed}
-                progress={progress || null}
-                nextVideoId={state.nextVideoId}
-                prevVideoId={state.prevVideoId}
-                completedChapters={progress?.completedChapters || []}
-              />
+              <div className="p-4 lg:p-6 overflow-y-auto flex-grow">
+                <MemoizedRightSidebar
+                  course={course}
+                  currentChapter={state.currentChapter}
+                  courseId={course.id.toString()}
+                  onVideoSelect={(videoId) => {
+                    handleVideoSelect(videoId)
+                    if (isSmallScreen) setIsSidebarOpen(false)
+                  }}
+                  currentVideoId={state.selectedVideoId || ""}
+                  isAuthenticated={!!session}
+                  progress={progress || null}
+                  nextVideoId={state.nextVideoId}
+                  prevVideoId={state.prevVideoId}
+                  completedChapters={progress?.completedChapters || []}
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
