@@ -29,7 +29,7 @@ function createQuery(userMessage: string, field: string) {
         mode: "insensitive" as const,
       },
     },
-    take: 3,
+    take: 5, // Increased to get more relevant results
   };
 }
 
@@ -46,62 +46,38 @@ export async function POST(req: NextRequest) {
     const userMessage = messages[messages.length - 1].content;
     console.log("User message:", userMessage);
 
-    // First, try to find a matching category
-    const category = await prisma.category.findFirst({
-      where: {
-        name: {
-          contains: userMessage,
-          mode: "insensitive",
-        },
-      },
-    });
-
-    let courses = [];
-    let quizzes = [];
-
-    if (category) {
-      // If a category is found, fetch courses and quizzes for that category
-      [courses, quizzes] = await Promise.all([
-        prisma.course.findMany({
-          where: { categoryId: category.id },
-          take: 3,
-        }),
-        prisma.userQuiz.findMany({
-        
-          take: 3,
-        }),
-      ]);
-    } else {
-      // If no category is found, search courses and quizzes by name/topic
-      [courses, quizzes] = await Promise.all([
-        prisma.course.findMany(createQuery(userMessage, 'name')),
-        prisma.userQuiz.findMany(createQuery(userMessage, 'topic')),
-      ]);
-    }
+    // Search for courses, quizzes, and categories
+    const [courses, quizzes, categories] = await Promise.all([
+      prisma.course.findMany(createQuery(userMessage, 'name')),
+      prisma.userQuiz.findMany(createQuery(userMessage, 'topic')),
+      prisma.category.findMany(createQuery(userMessage, 'name')),
+    ]);
 
     console.log("Courses found:", courses);
     console.log("Quizzes found:", quizzes);
+    console.log("Categories found:", categories);
 
     let systemMessage: string;
-    if (courses.length || quizzes.length) {
-      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${userMessage}". Here are relevant resources:
+    if (courses.length || quizzes.length || categories.length) {
+      systemMessage = `You are an AI assistant for a learning platform. Your responses must strictly reference content available on our website. The user asked about "${userMessage}". Here are relevant resources:
 
-${category ? `**Category: ${category.name}**\n` : ''}
+${categories.length ? `**Related Categories**:\n${categories.map(c => `- ${c.name}`).join("\n")}\n` : ''}
 
-**Courses**:
-${courses.map(c => `- [${c.name}](https://www.courseai.dev/dashboard/course/${c.slug})`).join("\n")}
+${courses.length ? `**Relevant Courses**:\n${courses.map(c => `- [${c.name}](https://www.courseai.dev/dashboard/course/${c.slug})`).join("\n")}\n` : ''}
 
-**Quizzes**:
-${quizzes.map(q => `- [${q.topic}](https://www.courseai.dev/dashboard/${buildLinks(q.quizType as QuizType, q.slug)})`).join("\n")}
+${quizzes.length ? `**Related Quizzes**:\n${quizzes.map(q => `- [${q.topic}](https://www.courseai.dev/dashboard/${buildLinks(q.quizType as QuizType, q.slug)})`).join("\n")}\n` : ''}
 
-Summarize their relevance and encourage exploration. Use markdown.`;
+Summarize the relevance of these resources to the user's query. Encourage exploration of the courses and quizzes within our platform. Do not suggest or reference any external resources. If the results don't fully address the user's question, suggest creating new content on our platform. Use markdown formatting.`;
     } else {
-      systemMessage = `No direct matches for "${userMessage}". Suggest creating content:
+      systemMessage = `You are an AI assistant for a learning platform. Your responses must strictly reference content available on our website. The user asked about "${userMessage}", but we don't have any direct matches in our courses or quizzes. Your task is to:
 
-- [Create a Course](https://www.courseai.dev/dashboard/create/course)
-- [Create a Quiz](https://www.courseai.dev/dashboard/create/quiz)
+1. Acknowledge that we don't have specific content on this topic yet.
+2. Suggest how this topic might relate to software development or programming if applicable.
+3. Encourage the user to create their own content on this topic using our platform:
+   - [Create a Course](https://www.courseai.dev/dashboard/create/course)
+   - [Create a Quiz](https://www.courseai.dev/dashboard/create/quiz)
 
-Encourage contribution. Use markdown.`;
+Do not suggest or reference any external resources. Use markdown formatting in your response.`;
     }
 
     console.log("System message:", systemMessage);
@@ -113,7 +89,7 @@ Encourage contribution. Use markdown.`;
         ...messages
       ],
       temperature: 0.7,
-      maxTokens: 250,
+      maxTokens: 150, // Adjusted to optimize token usage
     });
 
     return result.toDataStreamResponse();
