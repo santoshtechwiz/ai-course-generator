@@ -3,9 +3,14 @@ import type { Metadata } from "next"
 import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
-import { Sparkles, BookOpen, Lightbulb } from "lucide-react"
-
-const Page = async () => {
+import {BookOpen, Lightbulb } from "lucide-react"
+interface PageProps {
+  searchParams: {
+    topic?: string
+  }
+}
+const Page = async ({ searchParams }: PageProps)=> {
+  const topic = searchParams.topic ? decodeURIComponent(searchParams.topic) : undefined;
   return (
     <div className="container mx-auto py-6 space-y-6">
       <RandomQuote />
@@ -23,7 +28,7 @@ const Page = async () => {
                 Pro tip: Be specific with your topic
               </div>
             </div>
-            <QuizWrapper type="mcq" />
+            <QuizWrapper type="mcq" topic={topic} />
           </div>
         </div>
 

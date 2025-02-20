@@ -91,6 +91,16 @@ function createQuizQuery(topic: string) {
   };
 }
 
+function suggestRelatedTopics(topic: string): string[] {
+  return [
+    `${topic} fundamentals`,
+    `Advanced ${topic}`,
+    `${topic} best practices`,
+    `${topic} for beginners`,
+    `${topic} interview questions`,
+  ]
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
@@ -152,7 +162,7 @@ Do not reference external resources. Use markdown.`;
         { role: 'system', content: systemMessage },
         ...messages
       ],
-      temperature: 0.7,
+  
       maxTokens: 150, // Adjusted to optimize token usage
     });
 

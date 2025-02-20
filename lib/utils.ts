@@ -9,6 +9,13 @@ export function cn(...inputs: ClassValue[]) {
 
 
 
+export function getBaseUrl() {
+  if (typeof window !== "undefined") return "" // browser should use relative url
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL // SSR should use NEXTAUTH_URL
+  return `http://localhost:${process.env.PORT ?? 3000}` // dev SSR should use localhost
+}
+
+
 export function formatTimeDelta(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds - hours * 3600) / 60);

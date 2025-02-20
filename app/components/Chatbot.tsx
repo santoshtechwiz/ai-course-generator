@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useChat } from "ai/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,59 +10,110 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MessageSquare, X, Send, Loader2, Sparkles, BrainCircuit, Crown, AlertCircle } from "lucide-react"
 import ReactMarkdown from "react-markdown"
-import type { Course, UserQuiz } from "@prisma/client"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import debounce from "lodash/debounce"
 
 interface ChatbotProps {
-  userId?: string
+  userId: string
 }
 
 export function Chatbot({ userId }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false)
-
   const [displayedContent, setDisplayedContent] = useState("")
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
+
   const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
     api: "/api/chat",
     body: { userId },
+    onResponse: (response) => {
+      // Cleanup any ongoing animation
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+      setDisplayedContent("")
+    },
+    onFinish: (message) => {
+      // Ensure clean state for new message
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+      setDisplayedContent(message.content)
+    },
   })
 
-  const toggleChat = () => setIsOpen(!isOpen)
+  const handleScroll = useCallback(
+    debounce(() => {
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          behavior: "smooth",
+        })
+      }
+    }, 100),
+    [],
+  )
 
-  // Typing animation effect
+  // Cleanup function to abort animations
+  const cleanupAnimations = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+  }, [])
+
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
       if (lastMessage.role === "assistant") {
+        // Create new abort controller for this animation
+        cleanupAnimations()
+        abortControllerRef.current = new AbortController()
+        const signal = abortControllerRef.current.signal
+
         setDisplayedContent("")
-        let i = 0
         const content = lastMessage.content
-        const chunkSize = 2 // Process 2 characters at a time for smoother animation
-        const typingInterval = setInterval(() => {
-          if (i < content.length) {
-            const chunk = content.slice(i, i + chunkSize)
+        const chunkSize = 3
+        let currentIndex = 0
+
+        const animateText = () => {
+          if (signal.aborted) return
+
+          if (currentIndex < content.length) {
+            const chunk = content.slice(currentIndex, currentIndex + chunkSize)
             setDisplayedContent((prev) => prev + chunk)
-            i += chunkSize
-          } else {
-            clearInterval(typingInterval)
+            currentIndex += chunkSize
+            animationFrameRef.current = requestAnimationFrame(animateText)
           }
-        }, 10) // Faster interval but processing more characters
-        return () => clearInterval(typingInterval)
+        }
+
+        animationFrameRef.current = requestAnimationFrame(animateText)
       }
     }
-  }, [messages])
 
-  // Auto-scroll effect
+    // Cleanup on unmount or when messages change
+    return cleanupAnimations
+  }, [messages, cleanupAnimations])
+
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-        behavior: "smooth",
-      })
-    }
-  }, [messages])
+    handleScroll()
+  }, [handleScroll])
 
+  // Cleanup animations on unmount
+  useEffect(() => {
+    return cleanupAnimations
+  }, [cleanupAnimations])
+
+  const toggleChat = () => setIsOpen(!isOpen)
+
+  // Rest of the component JSX remains the same
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <AnimatePresence>
@@ -212,7 +263,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                     value={input}
                     onChange={handleInputChange}
                     placeholder="Ask about your courses..."
-                    disabled={isLoading || userId === ""}
+                    disabled={isLoading || !userId}
                     className="flex-grow"
                   />
                   <Button type="submit" disabled={isLoading || !input.trim()} size="icon" className="shrink-0">
