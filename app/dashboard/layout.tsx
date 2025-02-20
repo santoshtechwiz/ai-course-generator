@@ -5,12 +5,16 @@ import Footer from "@/app/components/shared/Footer"
 import { ClientLayoutWrapper } from "../components/ClientLayoutWrapper"
 
 import type React from "react" // Added import for React
+import { Chatbot } from "../components/Chatbot"
 
-export default function DashboardLayout({
+import { getAuthSession } from "@/lib/authOptions"
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const session=await getAuthSession();
   return (
     <ClientLayoutWrapper>
       <div className="flex min-h-screen flex-col">
@@ -23,6 +27,7 @@ export default function DashboardLayout({
         </main>
         {/* <Footer /> */}
         <Toaster />
+        <Chatbot userId={session?.user?.id||""}></Chatbot>
       </div>
     </ClientLayoutWrapper>
   )
