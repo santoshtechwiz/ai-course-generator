@@ -22,12 +22,12 @@ export function Chatbot({ userId }: ChatbotProps) {
   const [suggestedQuizzes, setSuggestedQuizzes] = useState<UserQuiz[]>([])
   const [displayedContent, setDisplayedContent] = useState("")
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const {subscritpionStatus}=useSubscriptionStore();
+  const { subscriptionStatus } = useSubscriptionStore()
+
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: "/api/chat",
     body: { userId },
     onFinish: (message) => {
-      // Parse the message content to extract suggested courses and quizzes
       try {
         const content = message.content
         const coursesMatch = content.match(/Courses:([\s\S]*?)(?=\n\nQuizzes:|$)/)
@@ -76,7 +76,7 @@ export function Chatbot({ userId }: ChatbotProps) {
           } else {
             clearInterval(typingInterval)
           }
-        }, 20) // Adjust typing speed here
+        }, 20)
         return () => clearInterval(typingInterval)
       } else {
         setDisplayedContent("")
@@ -88,12 +88,12 @@ export function Chatbot({ userId }: ChatbotProps) {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
     }
-  }, [])
+  }, [messages])
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {isOpen ? (
-        <Card className="w-96 h-[500px] flex flex-col shadow-lg">
+        <Card className="w-96 h-[500px] flex flex-col shadow-lg bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-semibold">AI Learning Assistant</CardTitle>
             <Button variant="ghost" size="sm" onClick={toggleChat}>
@@ -133,6 +133,10 @@ export function Chatbot({ userId }: ChatbotProps) {
                               strong: ({ node, ...props }) => (
                                 <strong {...props} className="text-emerald-600 font-semibold" />
                               ),
+                              p: ({ node, ...props }) => <p {...props} className="text-sm" />,
+                              ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-5" />,
+                              ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-5" />,
+                              li: ({ node, ...props }) => <li {...props} className="text-sm" />,
                             }}
                           >
                             {index === messages.length - 1 && m.role === "assistant" ? displayedContent : m.content}
@@ -166,10 +170,9 @@ export function Chatbot({ userId }: ChatbotProps) {
             <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
               <Input
                 value={input}
-
                 onChange={handleInputChange}
                 placeholder="Ask a question..."
-                disabled={isLoading || subscritpionStatus==="FREE"}
+                disabled={isLoading || subscriptionStatus === "FREE"}
                 className="flex-grow"
               />
               <Button type="submit" disabled={isLoading} size="icon">
@@ -186,4 +189,3 @@ export function Chatbot({ userId }: ChatbotProps) {
     </div>
   )
 }
-
