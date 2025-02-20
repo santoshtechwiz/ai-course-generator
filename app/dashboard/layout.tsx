@@ -8,6 +8,7 @@ import type React from "react" // Added import for React
 import { Chatbot } from "../components/Chatbot"
 
 import { getAuthSession } from "@/lib/authOptions"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 export default async function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const session=await getAuthSession();
+
   return (
     <ClientLayoutWrapper>
       <div className="flex min-h-screen flex-col">

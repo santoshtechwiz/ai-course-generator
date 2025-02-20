@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageSquare, X, Send } from "lucide-react"
 import type { Course, UserQuiz } from "@/types/types"
 import ReactMarkdown from "react-markdown"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 interface ChatbotProps {
   userId: string
@@ -21,7 +22,7 @@ export function Chatbot({ userId }: ChatbotProps) {
   const [suggestedQuizzes, setSuggestedQuizzes] = useState<UserQuiz[]>([])
   const [displayedContent, setDisplayedContent] = useState("")
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-
+  const {subscritpionStatus}=useSubscriptionStore();
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: "/api/chat",
     body: { userId },
@@ -165,9 +166,10 @@ export function Chatbot({ userId }: ChatbotProps) {
             <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
               <Input
                 value={input}
+
                 onChange={handleInputChange}
                 placeholder="Ask a question..."
-                disabled={isLoading}
+                disabled={isLoading || subscritpionStatus==="FREE"}
                 className="flex-grow"
               />
               <Button type="submit" disabled={isLoading} size="icon">
