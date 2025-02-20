@@ -21,11 +21,27 @@ const buildLinks = (quizType: QuizType, slug: string): string => {
   }
 };
 
-function createQuery(userMessage: string, field: string) {
+function extractKeywords(userMessage: string): { type: 'course' | 'quiz' | 'both', topic: string } {
+  const lowerCaseMessage = userMessage.toLowerCase();
+  const isCourseQuery = lowerCaseMessage.includes('course');
+  const isQuizQuery = lowerCaseMessage.includes('quiz');
+
+  // Extract the topic by removing the query type words
+  const topic = lowerCaseMessage
+    .replace(/course|quiz|do you have|any|on/gi, '')
+    .trim();
+
+  return {
+    type: isCourseQuery && isQuizQuery ? 'both' : isCourseQuery ? 'course' : isQuizQuery ? 'quiz' : 'both',
+    topic,
+  };
+}
+
+function createQuery(topic: string, field: string) {
   return {
     where: {
       [field]: {
-        contains: userMessage,
+        contains: topic,
         mode: "insensitive" as const,
       },
     },
@@ -33,11 +49,11 @@ function createQuery(userMessage: string, field: string) {
   };
 }
 
-function createCategoryQuery(userMessage: string) {
+function createCategoryQuery(topic: string) {
   return {
     where: {
       name: {
-        contains: userMessage,
+        contains: topic,
         mode: "insensitive" as const,
       },
     },
@@ -47,13 +63,29 @@ function createCategoryQuery(userMessage: string) {
   };
 }
 
-function createCourseQuery(userMessage: string) {
+function parsePhrase(topic: string) {
+  const words = topic.split(' ');
+  return words.map(word => ({
+    name: {
+      contains: word,
+      mode: "insensitive" as const,
+    },
+  }));
+}
+
+function createCourseQuery(topic: string) {
   return {
     where: {
-      name: {
-        contains: userMessage,
-        mode: "insensitive" as const,
-      },
+      OR: parsePhrase(topic),
+    },
+    take: 5,
+  };
+}
+
+function createQuizQuery(topic: string) {
+  return {
+    where: {
+      OR: parsePhrase(topic),
     },
     take: 5,
   };
@@ -72,15 +104,18 @@ export async function POST(req: NextRequest) {
     const userMessage = messages[messages.length - 1].content;
     console.log("User message:", userMessage);
 
+    const { type, topic } = extractKeywords(userMessage);
+    console.log("Extracted type and topic:", type, topic);
+
     // Search for category ID
-    const category = await prisma.category.findFirst(createCategoryQuery(userMessage));
+    const category = await prisma.category.findFirst(createCategoryQuery(topic));
     const categoryId = category?.id;
 
-    // Search for courses and quizzes
+    // Search for courses and quizzes based on the type
     const [coursesByName, coursesByCategory, quizzes] = await Promise.all([
-      prisma.course.findMany(createCourseQuery(userMessage)),
-      categoryId ? prisma.course.findMany({ where: { categoryId } }) : [],
-      prisma.userQuiz.findMany(createQuery(userMessage, 'topic')),
+      type !== 'quiz' ? prisma.course.findMany(createCourseQuery(topic)) : [],
+      type !== 'quiz' && categoryId ? prisma.course.findMany({ where: { categoryId } }) : [],
+      type !== 'course' ? prisma.userQuiz.findMany(createQuery(topic, 'topic')) : [],
     ]);
 
     // Merge courses
@@ -91,15 +126,15 @@ export async function POST(req: NextRequest) {
 
     let systemMessage: string;
     if (courses.length || quizzes.length) {
-      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${userMessage}". Here are relevant resources:
+      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${topic}". Here are relevant resources:
 
-${courses.length ? `**Courses**:\n${courses.map(c => `- [${c.name}](https://www.courseai.dev/dashboard/course/${c.slug})`).join("\n")}\n` : ''}
+${courses.length ? `**Courses**:\n${courses.map(c => `- [${c.name}](https://www.courseai.dev/dashboard/course${c.slug})`).join("\n")}\n` : ''}
 
-${quizzes.length ? `**Quizzes**:\n${quizzes.map(q => `- [${q.topic}](https://www.courseai.dev/dashboard/${buildLinks(q.quizType as QuizType, q.slug)})`).join("\n")}\n` : ''}
+${quizzes.length ? `**Quizzes**:\n${quizzes.map(q => `- [${q.topic}](https://www.courseai.dev/dashboard${buildLinks(q.quizType as QuizType, q.slug)})`).join("\n")}\n` : ''}
 
 Summarize the relevance of these resources. Encourage exploration within our platform. Do not reference external resources. If results are insufficient, suggest creating new content. Use markdown.`;
     } else {
-      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${userMessage}", but we don't have specific content. 
+      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${topic}", but we don't have specific content. 
 
 1. Acknowledge the lack of content.
 2. Suggest creating content on our platform:
