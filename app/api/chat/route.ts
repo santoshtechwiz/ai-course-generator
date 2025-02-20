@@ -33,6 +33,32 @@ function createQuery(userMessage: string, field: string) {
   };
 }
 
+function createCategoryQuery(userMessage: string) {
+  return {
+    where: {
+      name: {
+        contains: userMessage,
+        mode: "insensitive" as const,
+      },
+    },
+    select: {
+      id: true,
+    },
+  };
+}
+
+function createCourseQuery(userMessage: string) {
+  return {
+    where: {
+      name: {
+        contains: userMessage,
+        mode: "insensitive" as const,
+      },
+    },
+    take: 5,
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
@@ -46,38 +72,41 @@ export async function POST(req: NextRequest) {
     const userMessage = messages[messages.length - 1].content;
     console.log("User message:", userMessage);
 
-    // Search for courses, quizzes, and categories
-    const [courses, quizzes, categories] = await Promise.all([
-      prisma.course.findMany(createQuery(userMessage, 'name')),
+    // Search for category ID
+    const category = await prisma.category.findFirst(createCategoryQuery(userMessage));
+    const categoryId = category?.id;
+
+    // Search for courses and quizzes
+    const [coursesByName, coursesByCategory, quizzes] = await Promise.all([
+      prisma.course.findMany(createCourseQuery(userMessage)),
+      categoryId ? prisma.course.findMany({ where: { categoryId } }) : [],
       prisma.userQuiz.findMany(createQuery(userMessage, 'topic')),
-      prisma.category.findMany(createQuery(userMessage, 'name')),
     ]);
+
+    // Merge courses
+    const courses = [...new Set([...coursesByName, ...coursesByCategory])];
 
     console.log("Courses found:", courses);
     console.log("Quizzes found:", quizzes);
-    console.log("Categories found:", categories);
 
     let systemMessage: string;
-    if (courses.length || quizzes.length || categories.length) {
-      systemMessage = `You are an AI assistant for a learning platform. Your responses must strictly reference content available on our website. The user asked about "${userMessage}". Here are relevant resources:
+    if (courses.length || quizzes.length) {
+      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${userMessage}". Here are relevant resources:
 
-${categories.length ? `**Related Categories**:\n${categories.map(c => `- ${c.name}`).join("\n")}\n` : ''}
+${courses.length ? `**Courses**:\n${courses.map(c => `- [${c.name}](https://www.courseai.dev/dashboard/course/${c.slug})`).join("\n")}\n` : ''}
 
-${courses.length ? `**Relevant Courses**:\n${courses.map(c => `- [${c.name}](https://www.courseai.dev/dashboard/course/${c.slug})`).join("\n")}\n` : ''}
+${quizzes.length ? `**Quizzes**:\n${quizzes.map(q => `- [${q.topic}](https://www.courseai.dev/dashboard/${buildLinks(q.quizType as QuizType, q.slug)})`).join("\n")}\n` : ''}
 
-${quizzes.length ? `**Related Quizzes**:\n${quizzes.map(q => `- [${q.topic}](https://www.courseai.dev/dashboard/${buildLinks(q.quizType as QuizType, q.slug)})`).join("\n")}\n` : ''}
-
-Summarize the relevance of these resources to the user's query. Encourage exploration of the courses and quizzes within our platform. Do not suggest or reference any external resources. If the results don't fully address the user's question, suggest creating new content on our platform. Use markdown formatting.`;
+Summarize the relevance of these resources. Encourage exploration within our platform. Do not reference external resources. If results are insufficient, suggest creating new content. Use markdown.`;
     } else {
-      systemMessage = `You are an AI assistant for a learning platform. Your responses must strictly reference content available on our website. The user asked about "${userMessage}", but we don't have any direct matches in our courses or quizzes. Your task is to:
+      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${userMessage}", but we don't have specific content. 
 
-1. Acknowledge that we don't have specific content on this topic yet.
-2. Suggest how this topic might relate to software development or programming if applicable.
-3. Encourage the user to create their own content on this topic using our platform:
-   - [Create a Course](https://www.courseai.dev/dashboard/create/course)
-   - [Create a Quiz](https://www.courseai.dev/dashboard/create/quiz)
+1. Acknowledge the lack of content.
+2. Suggest creating content on our platform:
+   - [Create a Course](https://courseai.dev/dashboard/create)
+   - [Create a Quiz](https://courseai.dev/dashboard/quiz)
 
-Do not suggest or reference any external resources. Use markdown formatting in your response.`;
+Do not reference external resources. Use markdown.`;
     }
 
     console.log("System message:", systemMessage);
