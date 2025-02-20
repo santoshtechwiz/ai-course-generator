@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     const authSession = await getAuthSession();
     const userId = authSession?.user?.id;
 
-    if (!userId) {
+    if (!userId || (authSession?.user?.credits ?? 0) < 3) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
