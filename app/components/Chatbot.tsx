@@ -8,10 +8,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageSquare, X, Send, Loader2 } from "lucide-react"
-import type { Course, UserQuiz } from "@/types/types"
+
 import ReactMarkdown from "react-markdown"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { motion, AnimatePresence } from "framer-motion"
+import { Course, UserQuiz } from "@prisma/client"
 
 interface ChatbotProps {
   userId: string
@@ -24,6 +25,7 @@ export function Chatbot({ userId }: ChatbotProps) {
   const [displayedContent, setDisplayedContent] = useState("")
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const { subscriptionStatus } = useSubscriptionStore()
+  const isAuthorized = subscriptionStatus?.subscriptionPlan !== "FREE"
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
     api: "/api/chat",
@@ -197,7 +199,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                     value={input}
                     onChange={handleInputChange}
                     placeholder="Ask a question..."
-                    disabled={isLoading || subscriptionStatus?.subscriptionPlan === "FREE"}
+                    disabled={isLoading || isAuthorized}
                     className="flex-grow"
                   />
                   <Button type="submit" disabled={isLoading} size="icon">
