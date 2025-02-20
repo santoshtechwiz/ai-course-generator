@@ -15,7 +15,9 @@ import FillInTheBlankQuizForm from "@/app/dashboard/blanks/(components)/BlankQui
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"|'code';
 
 interface QuizWrapperProps {
-  type: QuizType
+  type: QuizType;
+  // Add topic parameter
+  topic?: string;
 }
 
 export function QuizWrapper({ type }: QuizWrapperProps) {
