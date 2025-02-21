@@ -32,7 +32,7 @@ export async function generateMetadata(
 
   if (!course) {
     return {
-      title: "Course Not Found | CourseAI",
+      title: "Course Not Found ",
       description: "The requested course is not available. Explore our other AI-powered courses at CourseAI.",
       robots: "noindex, nofollow",
     }
@@ -58,12 +58,12 @@ export async function generateMetadata(
     `Master ${course.name} with our AI-powered, personalized online course. Gain practical skills, complete interactive quizzes, and earn a certificate.`
 
   return {
-    title: `${course.name} | AI-Powered Online Course | ${SITE_NAME}`,
+    title: `${course.name} | AI-Powered Online Course`,
     description: `${courseDescription.slice(0, 155)}... Enroll now at ${SITE_NAME} for a personalized learning experience.`,
     keywords: [...new Set([ ...defaultKeywords, course.name, SITE_NAME])],
     category: "Education",
     openGraph: {
-      title: `Master ${course.name} - AI-Powered Online Course | ${SITE_NAME}`,
+      title: `Master ${course.name} - AI-Powered Online Course `,
       description: courseDescription,
       url: courseUrl,
       siteName: SITE_NAME,

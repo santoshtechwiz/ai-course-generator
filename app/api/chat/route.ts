@@ -136,22 +136,21 @@ export async function POST(req: NextRequest) {
 
     let systemMessage: string;
     if (courses.length || quizzes.length) {
-      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${topic}". Here are relevant resources:
+      systemMessage = `Here are relevant resources for "${topic}":
 
 ${courses.length ? `**Courses**:\n${courses.map(c => `- [${c.name}](https://www.courseai.dev/dashboard/course${c.slug})`).join("\n")}\n` : ''}
 
 ${quizzes.length ? `**Quizzes**:\n${quizzes.map(q => `- [${q.topic}](https://www.courseai.dev/dashboard${buildLinks(q.quizType as QuizType, q.slug)})`).join("\n")}\n` : ''}
 
-Summarize the relevance of these resources. Encourage exploration within our platform. Do not reference external resources. If results are insufficient, suggest creating new content. Use markdown.`;
+Explore these resources to learn more.`;
     } else {
-      systemMessage = `You are an AI assistant for a learning platform. The user asked about "${topic}", but we don't have specific content. 
+      const suggestedTopic = suggestRelatedTopics(topic)[0];
+      systemMessage = `We don't have specific content on "${topic}". 
 
-1. Acknowledge the lack of content.
-2. Suggest creating content on our platform:
-   - [Create a Course](https://courseai.dev/dashboard/create)
-   - [Create a Quiz](https://courseai.dev/dashboard/quiz)
+Why not create a course or quiz on "${suggestedTopic}"?
 
-Do not reference external resources. Use markdown.`;
+- [Create a Course](https://courseai.dev/dashboard/create)
+- [Create a Quiz](https://courseai.dev/dashboard/quiz)`;
     }
 
     console.log("System message:", systemMessage);
@@ -162,8 +161,8 @@ Do not reference external resources. Use markdown.`;
         { role: 'system', content: systemMessage },
         ...messages
       ],
-  
-      maxTokens: 150, // Adjusted to optimize token usage
+      temperature: 0.7,
+      maxTokens: 150,
     });
 
     return result.toDataStreamResponse();

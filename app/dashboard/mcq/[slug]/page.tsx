@@ -30,7 +30,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     }
   }
 
-  const title = `${quiz.topic} Quiz | YourQuizApp`
+  const title = `${quiz.topic} Quiz `
   const description = `Test your knowledge with this ${quiz.topic} quiz created by ${quiz.user.name}. Challenge yourself and learn something new!`
 
   return {
