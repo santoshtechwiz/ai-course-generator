@@ -1,11 +1,11 @@
 export const courseSchema = {
   "@context": "https://schema.org",
   "@type": "Course",
-  name: "AI Course Generator",
+  name: "CourseAI Course Generator",
   description: "Generate professional courses and quizzes with AI technology",
   provider: {
     "@type": "Organization",
-    name: "Course AI",
+    name: "CourseAI",
     sameAs: process.env.NEXT_PUBLIC_SITE_URL,
   },
   hasCourseInstance: {
@@ -13,7 +13,7 @@ export const courseSchema = {
     courseMode: "online",
     educationalLevel: "Beginner to Advanced",
     inLanguage: "en",
-    courseWorkload: "10 hours per week", 
+    courseWorkload: "P10H", // ISO 8601 duration format for 10 hours
   },
   coursePrerequisites: "None",
   educationalLevel: "All",
@@ -26,5 +26,5 @@ export const courseSchema = {
     priceCurrency: "USD",
     url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`, // Added offers field
   },
+  category: "AI Technology", // Added category field
 }
-

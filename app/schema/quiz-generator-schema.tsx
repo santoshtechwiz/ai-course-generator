@@ -1,7 +1,7 @@
 export const quizGeneratorSchema = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Course AI Quiz Generator",
+  name: "CourseAI",
   applicationCategory: "EducationalApplication",
   description: "AI-powered quiz and course generation platform for educators",
   operatingSystem: "Web",
@@ -38,4 +38,3 @@ export const quizGeneratorSchema = {
     educationalRole: ["Teacher", "Instructor", "Trainer", "Student"],
   },
 }
-
