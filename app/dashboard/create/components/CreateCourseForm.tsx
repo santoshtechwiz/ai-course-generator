@@ -22,13 +22,15 @@ import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { SignInBanner } from "../../quiz/components/SignInBanner"
+import { QueryParams } from "@/app/types/types"
 
 interface CourseCreationFormProps {
   topic: string
-  maxQuestions: number
+  maxQuestions: number,
+  params: QueryParams
 }
 
-export default function CourseCreationForm({ topic, maxQuestions }: CourseCreationFormProps) {
+export default function CourseCreationForm({ topic, maxQuestions,params }: CourseCreationFormProps) {
   const [step, setStep] = React.useState(1)
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
@@ -54,7 +56,7 @@ export default function CourseCreationForm({ topic, maxQuestions }: CourseCreati
   } = useForm<CreateCourseInput>({
     resolver: zodResolver(createCourseSchema),
     defaultValues: {
-      title: topic || "",
+      title: params.topic || "",
       description: "",
       category: "",
       units: [""],

@@ -12,7 +12,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { z } from "zod"
 import axios from "axios"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ConfirmDialog } from "./ConfirmDialog"
 import { quizSchema } from "@/schema/schema"
@@ -23,6 +23,7 @@ import { SignInBanner } from "./SignInBanner"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import PlanAwareButton from "@/app/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/app/components/SubscriptionSlider"
+import { QueryParams } from "@/app/types/types"
 
 type QuizFormData = z.infer<typeof quizSchema> & {
   userType?: string
@@ -32,22 +33,31 @@ interface Props {
   credits: number
   isLoggedIn: boolean
   maxQuestions: number
+  params?: QueryParams
+
 }
 
-export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Props) {
+export default function CreateQuizForm({
+  isLoggedIn,
+  maxQuestions,
+  credits,
+  params
+
+}: Props) {
   const router = useRouter()
   const { toast } = useToast()
+
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
   const { subscriptionStatus } = useSubscriptionStore()
 
+  console.log("params", params);
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
-    topic: "",
-    amount: maxQuestions,
+    topic: params?.topic || "",
+    amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     difficulty: "medium",
   })
-
   const {
     control,
     register,
@@ -60,7 +70,19 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits }: Pr
     defaultValues: formData,
     mode: "onChange",
   })
+  React.useEffect(() => {
+    if (params?.topic) {
 
+      setValue("topic", params.topic)
+
+    }
+    if (params?.amount) {
+      const amount = Number.parseInt(params.amount, 10)
+      if (amount !== maxQuestions) {
+        setValue("amount", Math.min(amount, maxQuestions))
+      }
+    }
+  }, [params?.topic, params?.amount, maxQuestions, setValue])
   React.useEffect(() => {
     const subscription = watch((value) => setFormData(value as QuizFormData))
     return () => subscription.unsubscribe()

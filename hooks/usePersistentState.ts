@@ -16,7 +16,7 @@ export function usePersistentState<T>(key: string, initialValue: T): [T, (value:
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(key, JSON.stringify(state))
+     // window.localStorage.setItem(key, JSON.stringify(state))
     } catch (error) {
       console.error('Error writing to localStorage:', error)
     }
