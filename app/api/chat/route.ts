@@ -4,15 +4,13 @@ import { getAuthSession } from "@/lib/authOptions"
 import prisma from "@/lib/db"
 import { type NextRequest, NextResponse } from "next/server"
 
-
 const MIN_CREDITS_REQUIRED = 3
 const MAX_RESULTS = 5
 const TEMPERATURE = 0.7
 const MAX_TOKENS = 150
 
-const URL = process.env.NEXT_PUBLIC_SITE_URL
+const URL = process.env.NEXT_PUBLIC_URL
 
-// Enum for quiz types
 enum QuizType {
   MCQ = "mcq",
   OPEN_ENDED = "openended",
@@ -20,14 +18,12 @@ enum QuizType {
   CODE = "code"
 }
 
-// Enum for search types
 enum SearchType {
   COURSE = "course",
   QUIZ = "quiz",
   BOTH = "both"
 }
 
-// Constants for URL paths
 const URL_PATHS = {
   [QuizType.MCQ]: "/mcq/",
   [QuizType.OPEN_ENDED]: "/openended/",
@@ -66,7 +62,7 @@ function createQuery(topic: string, field: string) {
   }
 }
 
-function suggestRelatedTopics(topic: string): string[] {
+function suggestRelatedTopics(topic: string, existingTopics: string[]): string[] {
   const suggestions = [
     "fundamentals",
     "Advanced",
@@ -74,11 +70,12 @@ function suggestRelatedTopics(topic: string): string[] {
     "for beginners",
     "interview questions",
   ]
-  return suggestions.map(suggestion => 
-    suggestion.includes("Advanced") ? `${suggestion} ${topic}` : `${topic} ${suggestion}`
-  )
+  return suggestions
+    .map(suggestion => 
+      suggestion.includes("Advanced") ? `${suggestion} ${topic}` : `${topic} ${suggestion}`
+    )
+    .filter(suggestion => !existingTopics.includes(suggestion.toLowerCase()))
 }
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -93,7 +90,6 @@ export async function POST(req: NextRequest) {
     const userMessage = messages[messages.length - 1].content
     const { type, topic } = extractKeywords(userMessage)
 
-    // Search for courses and quizzes based on the type
     const [courses, quizzes] = await Promise.all([
       type !== SearchType.QUIZ ? prisma.course.findMany(createQuery(topic, "name")) : [],
       type !== SearchType.COURSE ? prisma.userQuiz.findMany(createQuery(topic, "topic")) : [],
@@ -121,12 +117,13 @@ export async function POST(req: NextRequest) {
 
       systemMessage += "Would you like to access any of these resources?"
     } else {
-      const suggestedTopics = suggestRelatedTopics(topic)
-      systemMessage = `I couldn't find any specific content on "${topic}". However, here are some related topics you might be interested in:\n\n`
+      const existingTopics = [...courses.map(c => c.name.toLowerCase()), ...quizzes.map(q => q.topic.toLowerCase())]
+      const suggestedTopics = suggestRelatedTopics(topic, existingTopics)
+      systemMessage = `I couldn't find any specific content on "${topic}". However, here are some related topics you might be interested in creating:\n\n`
       suggestedTopics.forEach((suggestedTopic) => {
         systemMessage += `- ${suggestedTopic}\n`
       })
-      systemMessage += `\nWould you like to explore any of these topics? You can also create a new course or quiz on these topics:
+      systemMessage += `\nWould you like to create new content on any of these topics?
 - [Create a Course](${URL}/dashboard/create?topic=${encodeURIComponent(topic)})
 - [Create a Quiz](${URL}/dashboard/quiz?topic=${encodeURIComponent(topic)})`
     }
@@ -137,7 +134,7 @@ export async function POST(req: NextRequest) {
         {
           role: "system",
           content:
-            "You are a helpful assistant for a learning platform. Your task is to guide users to relevant courses and quizzes or suggest creating new content if none exists.",
+            "You are a helpful assistant for our learning platform. Your task is to guide users to relevant courses and quizzes within our platform or suggest creating new content if none exists. Do not suggest or provide information about courses, quizzes, or AI content from outside our platform.",
         },
         { role: "system", content: systemMessage },
         ...messages,
