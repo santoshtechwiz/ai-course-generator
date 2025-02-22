@@ -16,7 +16,6 @@ type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"|'code';
 
 interface QuizWrapperProps {
   type: QuizType;
-  // Add topic parameter
   topic?: string;
 }
 

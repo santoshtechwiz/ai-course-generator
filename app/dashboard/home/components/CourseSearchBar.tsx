@@ -1,30 +1,41 @@
-import type React from "react"
+"use client"
+
+import type * as React from "react"
+import { Search, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface CourseSearchBarProps {
   search: string
-  onSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void
+  onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onClearSearch: () => void
   isSearching: boolean
 }
 
-export const CourseSearchBar: React.FC<CourseSearchBarProps> = ({
-  search,
-  onSearchChange,
-  onClearSearch,
-  isSearching,
-}) => {
+export function CourseSearchBar({ search, onSearchChange, onClearSearch, isSearching }: CourseSearchBarProps) {
   return (
     <div className="relative">
-      <Input type="text" placeholder="Search courses..." value={search} onChange={onSearchChange} className="pr-10" />
-      {isSearching ? (
-        <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-full" onClick={onClearSearch}>
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        value={search}
+        onChange={onSearchChange}
+        placeholder="Search courses..."
+        className={cn(
+          "pl-9 pr-9 bg-background",
+          "focus-visible:ring-1 focus-visible:ring-offset-0",
+          "transition-colors",
+        )}
+      />
+      {isSearching && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          onClick={onClearSearch}
+        >
           <X className="h-4 w-4" />
         </Button>
-      ) : (
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
       )}
     </div>
   )
