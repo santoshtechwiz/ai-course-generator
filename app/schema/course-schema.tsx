@@ -22,6 +22,7 @@ export const courseSchema = {
   learningResourceType: ["Course", "Quiz", "Assessment"],
   offers: {
     "@type": "Offer",
+    category: "AI Technology", // Added category field
     price: "0",
     priceCurrency: "USD",
     url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`, // Added offers field
