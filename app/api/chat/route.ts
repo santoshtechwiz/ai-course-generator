@@ -40,7 +40,9 @@ function extractKeywords(userMessage: string): { type: SearchType; topic: string
   const isCourseQuery = lowerCaseMessage.includes("course")
   const isQuizQuery = lowerCaseMessage.includes("quiz")
 
-  const topic = lowerCaseMessage.replace(/course|quiz|do you have|any|on/gi, "").trim()
+  const stopWords = ["course", "quiz", "do you have", "any", "on", "about", "related to", "regarding"]
+  const stopWordsRegex = new RegExp(stopWords.join("|"), "gi")
+  const topic = lowerCaseMessage.replace(stopWordsRegex, "").trim()
 
   return {
     type: isCourseQuery && isQuizQuery ? SearchType.BOTH : 
