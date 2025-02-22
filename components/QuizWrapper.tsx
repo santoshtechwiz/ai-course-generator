@@ -10,6 +10,8 @@ import CodeQuizForm from "@/app/dashboard/code/components/CodeQuizForm"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
 import FillInTheBlankQuizForm from "@/app/dashboard/blanks/(components)/BlankQuizForm"
+import { useSearchParams } from "next/navigation"
+import { QueryParams } from "@/app/types/types"
 
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"|'code';
@@ -17,11 +19,19 @@ type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"|'code';
 interface QuizWrapperProps {
   type: QuizType;
   topic?: string;
+  queryParams?: QueryParams
 }
 
-export function QuizWrapper({ type }: QuizWrapperProps) {
-  const { subscriptionStatus, isLoading } = useSubscriptionStore()
+export function QuizWrapper({ type, queryParams }: QuizWrapperProps) {
+  const { subscriptionStatus } = useSubscriptionStore()
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
+
+  // Merge URL search params with provided queryParams
+  const params: QueryParams = {
+    ...Object.fromEntries(searchParams?.entries() ?? []),
+    ...queryParams,
+  }
 
 
 
@@ -52,6 +62,7 @@ export function QuizWrapper({ type }: QuizWrapperProps) {
     subscriptionPlan,
     isLoggedIn,
     credits,
+    params,
     
   }
 

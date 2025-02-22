@@ -1,16 +1,21 @@
+"use client"
 
-import type { Metadata } from "next"
 import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
-import {BookOpen, Lightbulb } from "lucide-react"
-interface PageProps {
-  searchParams: {
-    topic?: string
-  }
-}
-const Page = async ({ searchParams }: PageProps)=> {
-  const topic = searchParams.topic ? decodeURIComponent(searchParams.topic) : undefined;
+import { BookOpen, Lightbulb } from "lucide-react"
+
+// Add this import for handling query parameters
+import { useSearchParams } from "next/navigation"
+
+const ClientPage = () => {
+  // Use the useSearchParams hook to get query parameters
+  const searchParams = useSearchParams()
+
+  // Extract 'topic' and 'amount' from query parameters
+  const topic = searchParams.get("topic") || ""
+  const amount = searchParams.get("amount") || "5" // Default to 5 if not provided
+  console.log(topic, amount)
   return (
     <div className="container mx-auto py-6 space-y-6">
       <RandomQuote />
@@ -28,7 +33,13 @@ const Page = async ({ searchParams }: PageProps)=> {
                 Pro tip: Be specific with your topic
               </div>
             </div>
-            <QuizWrapper type="mcq" topic={topic} />
+            <QuizWrapper
+              type="mcq"
+              queryParams={{
+                topic: topic,
+                amount: amount,
+              }}
+            />
           </div>
         </div>
 
@@ -43,10 +54,5 @@ const Page = async ({ searchParams }: PageProps)=> {
   )
 }
 
-export default Page
-
-export const metadata: Metadata = {
-  title: "Create & Play Quizzes",
-  description: "A platform to create and play quizzes.",
-}
+export default ClientPage
 

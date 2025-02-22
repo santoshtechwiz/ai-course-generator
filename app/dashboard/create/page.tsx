@@ -5,9 +5,11 @@ import RandomQuote from "@/components/RandomQuote";
 import { BookOpen, Lightbulb } from "lucide-react";
 import { getCourseDetails } from "@/app/actions/getCourseDetails";
 import { Card } from "@/components/ui/card";
+import { QueryParams } from "@/app/types/types";
 
-const Page = async ({ searchParams }: { searchParams: Promise<{ topic?: string }> }) => {
-  const topic = (await searchParams)?.topic || "";
+const Page = async ({  params }: { params: Promise<QueryParams> }) => {
+  const topic = (await params)?.topic || "";
+  const category=(await params)?.categoryAttachment || "";  
   const courseData = await getCourseDetails();
 
   return (
@@ -35,7 +37,9 @@ const Page = async ({ searchParams }: { searchParams: Promise<{ topic?: string }
                   Pro tip: Be specific with your topic
                 </div>
               </div>
-              <QuizWrapper type={"course"} />
+              <QuizWrapper type={"course"}  queryParams={
+                {topic: topic, category: category}
+              }/>
             </div>
           </Card>
         </div>

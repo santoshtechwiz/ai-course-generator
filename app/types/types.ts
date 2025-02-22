@@ -458,3 +458,15 @@ export interface TranscriptResponse{
   message: string;
   
 }
+
+export interface QueryParams {
+  topic?: string
+  categoryAttachment?: string
+  [key: string]: string | undefined
+}
+
+export interface QuizWrapperProps {
+  type: QuizType
+  queryParams?: QueryParams
+}
+

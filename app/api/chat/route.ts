@@ -1,40 +1,58 @@
-import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
-import { getAuthSession } from "@/lib/authOptions";
-import prisma from '@/lib/db';
-import { NextRequest, NextResponse } from 'next/server';
+import { openai } from "@ai-sdk/openai"
+import { streamText } from "ai"
+import { getAuthSession } from "@/lib/authOptions"
+import prisma from "@/lib/db"
+import { type NextRequest, NextResponse } from "next/server"
 
-export const maxDuration = 30;
+// Constants
+const MAX_DURATION = 30
+const MIN_CREDITS_REQUIRED = 3
+const MAX_RESULTS = 5
+const TEMPERATURE = 0.7
+const MAX_TOKENS = 150
 
-type QuizType = "mcq" | "openended" | "fill-blanks" | "code";
+const URL = process.env.NEXT_PUBLIC_SITE_URL
+
+// Enum for quiz types
+enum QuizType {
+  MCQ = "mcq",
+  OPEN_ENDED = "openended",
+  FILL_BLANKS = "fill-blanks",
+  CODE = "code"
+}
+
+// Enum for search types
+enum SearchType {
+  COURSE = "course",
+  QUIZ = "quiz",
+  BOTH = "both"
+}
+
+// Constants for URL paths
+const URL_PATHS = {
+  [QuizType.MCQ]: "/mcq/",
+  [QuizType.OPEN_ENDED]: "/openended/",
+  [QuizType.FILL_BLANKS]: "/blanks/",
+  [QuizType.CODE]: "/code/"
+}
 
 const buildLinks = (quizType: QuizType, slug: string): string => {
-  switch (quizType) {
-    case "mcq":
-      return `/mcq/${slug}`;
-    case "openended":
-      return `/openended/${slug}`;
-    case "fill-blanks":
-      return `/blanks/${slug}`;
-    default:
-      return `/code/${slug}`;
-  }
-};
+  return `${URL_PATHS[quizType]}${slug}`
+}
 
-function extractKeywords(userMessage: string): { type: 'course' | 'quiz' | 'both', topic: string } {
-  const lowerCaseMessage = userMessage.toLowerCase();
-  const isCourseQuery = lowerCaseMessage.includes('course');
-  const isQuizQuery = lowerCaseMessage.includes('quiz');
+function extractKeywords(userMessage: string): { type: SearchType; topic: string } {
+  const lowerCaseMessage = userMessage.toLowerCase()
+  const isCourseQuery = lowerCaseMessage.includes("course")
+  const isQuizQuery = lowerCaseMessage.includes("quiz")
 
-  // Extract the topic by removing the query type words
-  const topic = lowerCaseMessage
-    .replace(/course|quiz|do you have|any|on/gi, '')
-    .trim();
+  const topic = lowerCaseMessage.replace(/course|quiz|do you have|any|on/gi, "").trim()
 
   return {
-    type: isCourseQuery && isQuizQuery ? 'both' : isCourseQuery ? 'course' : isQuizQuery ? 'quiz' : 'both',
+    type: isCourseQuery && isQuizQuery ? SearchType.BOTH : 
+          isCourseQuery ? SearchType.COURSE : 
+          isQuizQuery ? SearchType.QUIZ : SearchType.BOTH,
     topic,
-  };
+  }
 }
 
 function createQuery(topic: string, field: string) {
@@ -45,129 +63,94 @@ function createQuery(topic: string, field: string) {
         mode: "insensitive" as const,
       },
     },
-    take: 5, // Increased to get more relevant results
-  };
-}
-
-function createCategoryQuery(topic: string) {
-  return {
-    where: {
-      name: {
-        contains: topic,
-        mode: "insensitive" as const,
-      },
-    },
-    select: {
-      id: true,
-    },
-  };
-}
-
-function parsePhrase(topic: string) {
-  const words = topic.split(' ');
-  return words.map(word => ({
-    name: {
-      contains: word,
-      mode: "insensitive" as const,
-    },
-  }));
-}
-
-function createCourseQuery(topic: string) {
-  return {
-    where: {
-      OR: parsePhrase(topic),
-    },
-    take: 5,
-  };
-}
-
-function createQuizQuery(topic: string) {
-  return {
-    where: {
-      OR: parsePhrase(topic),
-    },
-    take: 5,
-  };
+    take: MAX_RESULTS,
+  }
 }
 
 function suggestRelatedTopics(topic: string): string[] {
-  return [
-    `${topic} fundamentals`,
-    `Advanced ${topic}`,
-    `${topic} best practices`,
-    `${topic} for beginners`,
-    `${topic} interview questions`,
+  const suggestions = [
+    "fundamentals",
+    "Advanced",
+    "best practices",
+    "for beginners",
+    "interview questions",
   ]
+  return suggestions.map(suggestion => 
+    suggestion.includes("Advanced") ? `${suggestion} ${topic}` : `${topic} ${suggestion}`
+  )
 }
+
+export const maxDuration = MAX_DURATION
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
-    const authSession = await getAuthSession();
-    const userId = authSession?.user?.id;
+    const { messages } = await req.json()
+    const authSession = await getAuthSession()
+    const userId = authSession?.user?.id
 
-    if (!userId || (authSession?.user?.credits ?? 0) < 3) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    if (!userId || (authSession?.user?.credits ?? 0) < MIN_CREDITS_REQUIRED) {
+      return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const userMessage = messages[messages.length - 1].content;
-    console.log("User message:", userMessage);
-
-    const { type, topic } = extractKeywords(userMessage);
-    console.log("Extracted type and topic:", type, topic);
-
-    // Search for category ID
-    const category = await prisma.category.findFirst(createCategoryQuery(topic));
-    const categoryId = category?.id;
+    const userMessage = messages[messages.length - 1].content
+    const { type, topic } = extractKeywords(userMessage)
 
     // Search for courses and quizzes based on the type
-    const [coursesByName, coursesByCategory, quizzes] = await Promise.all([
-      type !== 'quiz' ? prisma.course.findMany(createCourseQuery(topic)) : [],
-      type !== 'quiz' && categoryId ? prisma.course.findMany({ where: { categoryId } }) : [],
-      type !== 'course' ? prisma.userQuiz.findMany(createQuery(topic, 'topic')) : [],
-    ]);
+    const [courses, quizzes] = await Promise.all([
+      type !== SearchType.QUIZ ? prisma.course.findMany(createQuery(topic, "name")) : [],
+      type !== SearchType.COURSE ? prisma.userQuiz.findMany(createQuery(topic, "topic")) : [],
+    ])
 
-    // Merge courses
-    const courses = [...new Set([...coursesByName, ...coursesByCategory])];
-
-    console.log("Courses found:", courses);
-    console.log("Quizzes found:", quizzes);
-
-    let systemMessage: string;
+    let systemMessage: string
     if (courses.length || quizzes.length) {
-      systemMessage = `Here are relevant resources for "${topic}":
+      systemMessage = `Here are relevant resources for "${topic}":\n\n`
 
-${courses.length ? `**Courses**:\n${courses.map(c => `- [${c.name}](https://www.courseai.dev/dashboard/course${c.slug})`).join("\n")}\n` : ''}
+      if (courses.length) {
+        systemMessage += "**Courses**:\n"
+        courses.forEach((course) => {
+          systemMessage += `- [${course.name}](${URL}/dashboard/course/${course.slug})\n`
+        })
+        systemMessage += "\n"
+      }
 
-${quizzes.length ? `**Quizzes**:\n${quizzes.map(q => `- [${q.topic}](https://www.courseai.dev/dashboard${buildLinks(q.quizType as QuizType, q.slug)})`).join("\n")}\n` : ''}
+      if (quizzes.length) {
+        systemMessage += "**Quizzes**:\n"
+        quizzes.forEach((quiz) => {
+          systemMessage += `- [${quiz.topic}](${URL}/dashboard/${buildLinks(quiz.quizType as QuizType, quiz.slug)})\n`
+        })
+        systemMessage += "\n"
+      }
 
-Explore these resources to learn more.`;
+      systemMessage += "Would you like to access any of these resources?"
     } else {
-      const suggestedTopic = suggestRelatedTopics(topic)[0];
-      systemMessage = `We don't have specific content on "${topic}". 
-
-Why not create a course or quiz on "${suggestedTopic}"?
-
-- [Create a Course](https://courseai.dev/dashboard/create)
-- [Create a Quiz](https://courseai.dev/dashboard/quiz)`;
+      const suggestedTopics = suggestRelatedTopics(topic)
+      systemMessage = `I couldn't find any specific content on "${topic}". However, here are some related topics you might be interested in:\n\n`
+      suggestedTopics.forEach((suggestedTopic) => {
+        systemMessage += `- ${suggestedTopic}\n`
+      })
+      systemMessage += `\nWould you like to explore any of these topics? You can also create a new course or quiz on these topics:
+- [Create a Course](${URL}/dashboard/create?topic=${encodeURIComponent(topic)})
+- [Create a Quiz](${URL}/dashboard/quiz?topic=${encodeURIComponent(topic)})`
     }
 
-    console.log("System message:", systemMessage);
-
     const result = streamText({
-      model: openai('gpt-3.5-turbo'),
+      model: openai("gpt-3.5-turbo"),
       messages: [
-        { role: 'system', content: systemMessage },
-        ...messages
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant for a learning platform. Your task is to guide users to relevant courses and quizzes or suggest creating new content if none exists.",
+        },
+        { role: "system", content: systemMessage },
+        ...messages,
       ],
-      temperature: 0.7,
-      maxTokens: 150,
-    });
+      temperature: TEMPERATURE,
+      maxTokens: MAX_TOKENS,
+    })
 
-    return result.toDataStreamResponse();
+    return result.toDataStreamResponse()
   } catch (error) {
-    console.error("Error in POST function:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.error("Error in POST function:", error)
+    return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
