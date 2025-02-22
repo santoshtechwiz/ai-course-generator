@@ -4,8 +4,7 @@ import { getAuthSession } from "@/lib/authOptions"
 import prisma from "@/lib/db"
 import { type NextRequest, NextResponse } from "next/server"
 
-// Constants
-const MAX_DURATION = 30
+
 const MIN_CREDITS_REQUIRED = 3
 const MAX_RESULTS = 5
 const TEMPERATURE = 0.7
@@ -80,7 +79,6 @@ function suggestRelatedTopics(topic: string): string[] {
   )
 }
 
-export const maxDuration = MAX_DURATION
 
 export async function POST(req: NextRequest) {
   try {
