@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
-import CourseStructuredData from "../components/CoursePage/CourseStructuredData";
-import { Skeleton } from "@/components/ui/skeleton";
-import CoursePage from "../components/CoursePage/CoursePage";
 import { getCourseData } from "@/app/actions/getCourseData";
 import type { Metadata, ResolvingMetadata } from "next";
+import CoursePage from "@/components/features/course/CoursePage/CoursePage";
+import CourseStructuredData from "@/components/features/course/CoursePage/CourseStructuredData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 const SITE_NAME = "CourseAI"

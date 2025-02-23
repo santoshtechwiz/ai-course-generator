@@ -5,14 +5,16 @@ import type { Metadata } from "next"
 import { Providers } from "./providers/provider"
 
 import { ThemeProvider } from "./providers/theme-provider"
-import PageLoader from "@/components/ui/loader"
-import Footer from "./components/shared/Footer"
+
 import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "./analytics"
 import { quizSchema } from "./schema/quiz-schema"
 import { courseSchema } from "./schema/course-schema"
 import {breadcrumbSchema} from "./schema/breadcrumb-schema"
 import { Suspense } from "react"
+import Footer from "@/components/shared/Footer"
+import PageLoader from "@/components/ui/loader"
+
 
 const inter = Inter({
   subsets: ["latin"],

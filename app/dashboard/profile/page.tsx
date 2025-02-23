@@ -1,11 +1,12 @@
 import { Suspense } from 'react'
 
 import { Skeleton } from "@/components/ui/skeleton"
-import ProfileHeader from './components/ProfileHeader'
-import ProfileCourses from './components/ProfileCourses'
-import ProfileQuizzes from './components/ProfileQuizzes'
-import ProfileStats from './components/ProfileStats'
-import ProfileSubscription from './components/ProfileSubscription'
+import ProfileHeader from '@/components/features/profile/ProfileHeader'
+import ProfileCourses from '@/components/features/profile/ProfileCourses'
+import ProfileQuizzes from '@/components/features/profile/ProfileQuizzes'
+import ProfileStats from '@/components/features/profile/ProfileStats'
+import ProfileSubscription from '@/components/features/profile/ProfileSubscription'
+
 
 export default function ProfilePage() {
   return (

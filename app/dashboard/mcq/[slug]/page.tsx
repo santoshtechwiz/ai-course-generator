@@ -5,11 +5,13 @@ import type { Metadata } from "next"
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/authOptions"
 
-import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
+
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
-import McqQuizWrapper from "../components/McqQuizWrapper"
-import { QuizSkeleton } from "../components/QuizSkeleton"
-import QuizHeader from "@/app/components/shared/QuizHeader"
+import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
+import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
+import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import QuizHeader from "@/components/shared/QuizHeader"
+
 
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {

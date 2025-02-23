@@ -1,10 +1,11 @@
-import CourseCreationVideo from "@/app/components/landing/CourseCreationVideo";
-import ConfirmChapters from "../../course/components/ConfirmChapters";
+
 import { getAuthSession } from "@/lib/authOptions";
 
 import { redirect } from "next/navigation";
 import React from "react";
 import { getCourses } from "@/app/actions/getCourses";
+import ConfirmChapters from "@/components/features/course/ConfirmChapters";
+import CourseCreationVideo from "@/components/landing/CourseCreationVideo";
 
 export const fetchCache = "force-no-store";
 type Props = {

@@ -1,9 +1,10 @@
 import type { Metadata, ResolvingMetadata } from "next"
 import { notFound } from "next/navigation"
 import { getQuiz } from "@/app/actions/getQuiz"
-import AnimatedQuizHighlight from "@/app/components/RanomQuiz"
-import QuizHeader from "@/app/components/shared/QuizHeader"
-import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
+import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
+import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import QuizHeader from "@/components/shared/QuizHeader"
+
 
 
 async function getQuizData(slug: string) {

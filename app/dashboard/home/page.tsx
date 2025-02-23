@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { getAuthSession } from "@/lib/authOptions";
-import CourseListSkeleton from "./components/CourseListSkeleton";
-import CourseList from "./components/CourseLists";
+import CourseList from "@/components/features/home/CourseLists";
+import CourseListSkeleton from "@/components/features/home/CourseListSkeleton";
+
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL
   ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/create`

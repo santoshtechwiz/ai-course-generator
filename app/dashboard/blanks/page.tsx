@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
-import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
+
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { BookOpen, Lightbulb } from "lucide-react"
+import AnimatedQuizHighlight from "@/components/RanomQuiz"
 
 
 const Page = async () => {

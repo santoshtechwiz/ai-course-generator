@@ -2,16 +2,16 @@
 
 import { useSession } from "next-auth/react"
 
-import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm"
-import TopicForm from "@/app/dashboard/openended/components/TopicForm"
-import CreateQuizForm from "@/app/dashboard/quiz/components/CreateQuizForm"
 
-import CodeQuizForm from "@/app/dashboard/code/components/CodeQuizForm"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
-import FillInTheBlankQuizForm from "@/app/dashboard/blanks/(components)/BlankQuizForm"
 import { useSearchParams } from "next/navigation"
 import { QueryParams } from "@/app/types/types"
+import CreateQuizForm from "./features/quiz/CreateQuizForm"
+import CodeQuizForm from "./features/code/CodeQuizForm"
+import TopicForm from "./features/openended/TopicForm"
+import CreateCourseForm from "./features/create/CreateCourseForm"
+import FillInTheBlankQuizForm from "./features/blanks/BlankQuizForm"
 
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course"|'code';
@@ -74,7 +74,7 @@ export function QuizWrapper({ type, queryParams }: QuizWrapperProps) {
     case "fill-in-the-blanks":
       return <FillInTheBlankQuizForm {...commonProps} />
     case "course":
-      return <CreateCourseForm topic="" {...commonProps} />
+      return <CreateCourseForm  {...commonProps} />
     case 'code':
       return <CodeQuizForm {...commonProps}  />
     default:

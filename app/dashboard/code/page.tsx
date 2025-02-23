@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import { QuizWrapper } from "@/components/QuizWrapper"
-import AnimatedQuizHighlight from "@/app/components/RanomQuiz"
-
+import AnimatedQuizHighlight from "@/components/RanomQuiz"
 
 export default function QuizPage() {
   const [loading, setLoading] = useState(false)

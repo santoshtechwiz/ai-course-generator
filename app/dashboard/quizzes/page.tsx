@@ -1,8 +1,10 @@
 import { Suspense } from "react"
 import { getAuthSession } from "@/lib/authOptions"
-import { QuizzesClient } from "./components/QuizzesClient"
+
 import { getQuizzes } from "@/app/actions/getQuizes"
-import { QuizzesSkeleton } from "./components/QuizzesSkeleton"
+import { QuizzesClient } from "@/components/features/quizzes/QuizzesClient"
+import { QuizzesSkeleton } from "@/components/features/quizzes/QuizzesSkeleton"
+
 
 export const dynamic = "force-dynamic"
 

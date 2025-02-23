@@ -1,5 +1,4 @@
-
-import LandingComponent from './components/landing/LandingComponent';
+import LandingComponent from "@/components/landing/LandingComponent";
 
 
 const Dashboard = () => {

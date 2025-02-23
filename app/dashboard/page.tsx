@@ -1,7 +1,7 @@
+import CourseList from "@/components/features/home/CourseLists"
+import CourseListSkeleton from "@/components/features/home/CourseListSkeleton"
 import { getAuthSession } from "@/lib/authOptions"
 import { Suspense } from "react"
-import CourseList from "./home/components/CourseLists"
-import CourseListSkeleton from "./home/components/CourseListSkeleton"
 
 
 
