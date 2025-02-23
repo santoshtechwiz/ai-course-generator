@@ -4,12 +4,11 @@ import { getAuthSession } from "@/lib/authOptions";
 
 import axios from "axios";
 import type { CodingQuizProps } from "@/app/types/types";
-
-import AnimatedQuizHighlight from "@/app/components/RanomQuiz";
-import CodeQuizWrapper from "../components/CodeQuizWrapper";
+import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper";
+import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton";
+import AnimatedQuizHighlight from "@/components/RanomQuiz";
 import { Suspense } from "react";
 
-import { QuizSkeleton } from "../../mcq/components/QuizSkeleton";
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {

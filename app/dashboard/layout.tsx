@@ -1,14 +1,12 @@
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
-import Navbar from "@/app/components/shared/Navbar"
-import Footer from "@/app/components/shared/Footer"
-import { ClientLayoutWrapper } from "../components/ClientLayoutWrapper"
 
-import type React from "react" // Added import for React
-import { Chatbot } from "../components/Chatbot"
 
 import { getAuthSession } from "@/lib/authOptions"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { Chatbot } from "@/components/Chatbot"
+import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
+import Navbar from "@/components/shared/Navbar"
 
 export default async function DashboardLayout({
   children,

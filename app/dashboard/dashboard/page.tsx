@@ -10,19 +10,20 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CreditCard, Zap, Sparkles } from "lucide-react"
 import UserNotFound from "@/components/UserNotFound"
-import FavoriteCourses from "../components/FavoriteCourses"
-import QuizHistory from "../components/QuizHistory"
-import UserProfile from "../components/UserProfile"
-import CourseProgress from "../course/components/CoursePage/CourseProgress"
-import { MyCourses } from "../course/components/UserDashboard/MyCourses"
-import { MyQuizzes } from "../course/components/UserDashboard/MyQuizzes"
-import { QuizAttempts } from "../course/components/UserDashboard/QuizAttempts"
-import SubscriptionStatus from "../course/components/UserDashboard/SubscriptionStatus"
-import { UserStatsOverview } from "../course/components/UserDashboard/UserStatsOverview"
+
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
+import FavoriteCourses from "@/components/FavoriteCourses"
+import QuizHistory from "@/components/QuizHistory"
+import UserProfile from "@/components/UserProfile"
+import CourseProgress from "@/components/features/course/CoursePage/CourseProgress"
+import { MyCourses } from "@/components/features/course/UserDashboard/MyCourses"
+import { MyQuizzes } from "@/components/features/course/UserDashboard/MyQuizzes"
+import { QuizAttempts } from "@/components/features/course/UserDashboard/QuizAttempts"
+import SubscriptionStatus from "@/components/features/course/UserDashboard/SubscriptionStatus"
+import { UserStatsOverview } from "@/components/features/course/UserDashboard/UserStatsOverview"
 
 // Lazy load heavy components
-const AIRecommendations = dynamic(() => import("../components/Recommendations"), {
+const AIRecommendations = dynamic(() => import("@/components/Recommendations"), {
   loading: () => <LoadingCard />,
 })
 

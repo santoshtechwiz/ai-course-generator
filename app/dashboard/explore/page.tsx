@@ -1,5 +1,5 @@
 
-import { CreateComponent } from "./components/CreateComponent";
+import { CreateComponent } from "@/components/features/explore/CreateComponent";
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {

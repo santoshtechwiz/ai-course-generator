@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
-import Image from "next/image"
-import Logo from "../components/shared/Logo"
+import Logo from "@/components/shared/Logo"
+
 
 export default function ImprovedContactForm() {
   const {

@@ -1,8 +1,9 @@
 import { Suspense } from "react"
-import AnimatedQuizHighlight from "@/app/components/RanomQuiz"
 
 import { Skeleton } from "@/components/ui/skeleton"
-import { BlankQuizWrapper } from "../(components)/BlankQuizWrapper"
+import { BlankQuizWrapper } from "@/components/features/blanks/BlankQuizWrapper"
+import AnimatedQuizHighlight from "@/components/RanomQuiz"
+
 
 function QuizSkeleton() {
   return (

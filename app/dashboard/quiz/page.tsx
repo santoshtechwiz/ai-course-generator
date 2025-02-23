@@ -1,8 +1,8 @@
 "use client"
 
-import { AnimatedQuizHighlight } from "@/app/components/RanomQuiz"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
+import AnimatedQuizHighlight from "@/components/RanomQuiz"
 import { BookOpen, Lightbulb } from "lucide-react"
 
 // Add this import for handling query parameters

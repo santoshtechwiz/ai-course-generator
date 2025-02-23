@@ -1,24 +1,30 @@
 import { QuizWrapper } from "@/components/QuizWrapper";
-import PopularCourses from "./components/PopularCourses";
-import RandomQuote from "@/components/RandomQuote";
 
-import { BookOpen, Lightbulb } from "lucide-react";
+import RandomQuote from "@/components/RandomQuote";
+import { BookOpen, Lightbulb } from 'lucide-react';
 import { getCourseDetails } from "@/app/actions/getCourseDetails";
 import { Card } from "@/components/ui/card";
 import { QueryParams } from "@/app/types/types";
+import PopularCourses from "@/components/features/create/PopularCourses";
 
-const Page = async ({  params }: { params: Promise<QueryParams> }) => {
-  const topic = (await params)?.topic || "";
-  const category=(await params)?.categoryAttachment || "";  
+const Page = async ({ 
+  params,
+  searchParams
+}: { 
+  params: QueryParams,
+  searchParams: { [key: string]: string | string[] | undefined }
+}) => {
+  console.log("Route params:", params);
+  console.log("Search params:", searchParams);
+
+  const topic = params?.topic || searchParams?.topic || "";
+  const category = params?.categoryAttachment || searchParams?.category || "";
   const courseData = await getCourseDetails();
 
   return (
-
     <div className="container mx-auto py-6 space-y-6 min-h-screen bg-background text-foreground">
       {/* RandomQuote Section */}
-    
-        <RandomQuote />
-    
+      <RandomQuote />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -37,9 +43,13 @@ const Page = async ({  params }: { params: Promise<QueryParams> }) => {
                   Pro tip: Be specific with your topic
                 </div>
               </div>
-              <QuizWrapper type={"course"}  queryParams={
-                {topic: topic, category: category}
-              }/>
+              <QuizWrapper 
+                type="course"  
+                queryParams={{
+                  topic: topic, 
+                  category: category
+                }}
+              />
             </div>
           </Card>
         </div>
@@ -49,7 +59,6 @@ const Page = async ({  params }: { params: Promise<QueryParams> }) => {
           <Card className="relative group overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-secondary/5 to-background rounded-xl -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
             <div className="relative bg-background/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-border/50">
-             
               <PopularCourses courseDetails={courseData} />
             </div>
           </Card>
