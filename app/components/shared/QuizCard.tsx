@@ -1,13 +1,13 @@
 "use client"
 
-import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import type * as React from "react"
 import { Clock, CheckCircle2, PenLine, Puzzle, Code, ChevronRight, HelpCircle, Star, Trophy } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 interface QuizCardProps {
   title: string
@@ -94,111 +94,74 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 }) => {
   const QuizTypeIcon = quizTypeIcons[quizType]
   const config = quizTypeConfig[quizType]
-  const difficulty = config.difficulty
-  const [isHovered, setIsHovered] = React.useState(false)
+  const difficulty: keyof typeof difficultyConfig = config.difficulty as "medium" | "easy" | "hard"
 
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="h-full pt-6"
+      className="h-full pt-6 flex"
     >
       <Link
         href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}
-        className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+        className="block w-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
       >
-        <div className="relative">
-          <motion.div
-            className={cn("absolute -top-6 left-6 p-3 rounded-xl shadow-lg z-10", config.icon)}
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <QuizTypeIcon className="w-5 h-5 text-white" />
-          </motion.div>
-
-          <Card className="relative flex flex-col h-full overflow-hidden group border-2 transition-colors hover:border-primary/50">
-            <div className={cn("absolute inset-0 opacity-100 transition-opacity duration-300", config.gradient)} />
-
-            <CardHeader className="relative space-y-3">
-              <div className="pt-2">
-                <Badge
-                  variant="outline"
-                  className={cn("px-2.5 py-0.5 text-xs font-medium rounded-lg transition-colors", config.badge)}
-                >
-                  {quizTypeLabels[quizType]}
-                </Badge>
+        <Card className="relative flex flex-col h-full overflow-hidden group border-2 transition-colors hover:border-primary/50">
+          <div className={cn("absolute inset-0 opacity-100 transition-opacity duration-300", config.gradient)} />
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <div className={cn("p-2 rounded-md", config.icon)}>
+                <QuizTypeIcon className="w-4 h-4 text-white" />
               </div>
-
-              <h3 className="text-xl font-semibold leading-tight tracking-tight group-hover:text-primary transition-colors">
-                {title}
-              </h3>
-            </CardHeader>
-
-            <CardContent className="flex-grow space-y-4">
-              <p className="text-sm text-muted-foreground line-clamp-2 group-hover:line-clamp-none transition-all">
-                {description}
-              </p>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  <span>{estimatedTime}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <HelpCircle className="w-4 h-4" />
-                  <span>{questionCount} questions</span>
-                </div>
+              <Badge variant="secondary" className={cn(config.badge)}>
+                {quizTypeLabels[quizType]}
+              </Badge>
+            </div>
+            <CardTitle className="mt-2">{title}</CardTitle>
+            <CardDescription className="line-clamp-2">{description}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col justify-between flex-grow space-y-4">
+            <p className="text-sm text-muted-foreground line-clamp-2 group-hover:line-clamp-none transition-all">
+              {description}
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>{estimatedTime}</span>
               </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium">Difficulty:</span>
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: difficultyConfig[difficulty].stars }).map((_, i) => (
-                        <Star key={i} className={cn("w-4 h-4 fill-current", difficultyConfig[difficulty].color)} />
-                      ))}
-                    </div>
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <HelpCircle className="w-4 h-4" />
+                <span>{questionCount} questions</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium">Difficulty:</span>
+                  <div className="flex">
+                    {Array.from({ length: difficultyConfig[difficulty].stars }).map((_, i) => (
+                      <Star key={i} className={cn("w-4 h-4 fill-current", difficultyConfig[difficulty].color)} />
+                    ))}
                   </div>
-                  {bestScore !== undefined && (
-                    <div className="flex items-center gap-1.5">
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                      <span className="text-sm font-medium">{bestScore}%</span>
-                    </div>
-                  )}
                 </div>
-
-                <div className="space-y-1.5">
-                  <Progress value={completionRate} className="h-2 bg-primary/10" />
-                  <div className="text-right text-xs text-muted-foreground">{completionRate}% complete</div>
-                </div>
+                {bestScore !== undefined && (
+                  <div className="flex items-center gap-1">
+                    <Trophy className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm font-medium">{bestScore}%</span>
+                  </div>
+                )}
               </div>
-            </CardContent>
-
-            <CardFooter>
-              <motion.div className="flex items-center gap-2 text-primary font-medium ml-auto" whileHover={{ x: 5 }}>
-                Start Quiz
-                <ChevronRight className="w-4 h-4" />
-              </motion.div>
-            </CardFooter>
-
-            <AnimatePresence>
-              {isHovered && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute inset-0 bg-gradient-to-t from-background/95 to-transparent flex items-end p-6"
-                >
-                  <p className="text-foreground text-sm font-medium text-center">
-                    Challenge yourself with this {quizTypeLabels[quizType].toLowerCase()} quiz!
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Card>
-        </div>
+              <Progress value={completionRate} className="h-2" />
+              <div className="text-right text-xs text-muted-foreground">{completionRate}% complete</div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <motion.div className="flex items-center gap-2 text-primary font-medium ml-auto" whileHover={{ x: 5 }}>
+              Start Quiz
+              <ChevronRight className="w-4 h-4" />
+            </motion.div>
+          </CardFooter>
+        </Card>
       </Link>
     </motion.div>
   )

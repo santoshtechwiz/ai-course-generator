@@ -62,7 +62,7 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
       <motion.div
         whileHover={{ scale: 1.02 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="h-[32rem] pt-6" // Fixed height for the container
+        className="h-full pt-6"
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
       >
@@ -83,7 +83,7 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
               <div className={cn("absolute inset-0 opacity-100 transition-opacity duration-300", config.gradient)} />
 
               <CardContent className="relative flex flex-col flex-grow p-6 space-y-4">
-                <div className="space-y-2 flex-shrink-0">
+                <div className="space-y-2">
                   <Badge
                     variant="outline"
                     className={cn("px-2.5 py-0.5 text-xs font-medium rounded-lg transition-colors", config.badge)}
@@ -96,7 +96,7 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                   </h3>
                 </div>
 
-                <div className="flex flex-wrap gap-2 flex-shrink-0">
+                <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                     <StarIcon className="w-3 h-3 mr-1 fill-current" />
                     {rating?.toFixed(1)}
@@ -113,18 +113,16 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                   )}
                 </div>
 
-                <div className="min-h-[3rem] flex-shrink-0">
-                  <p className="text-sm text-muted-foreground line-clamp-2 group-hover:line-clamp-none transition-all">
-                    {description}
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground line-clamp-2 group-hover:line-clamp-none transition-all flex-grow">
+                  {description}
+                </p>
 
-                <div className="space-y-1.5 flex-shrink-0">
+                <div className="space-y-1.5">
                   <Progress value={progress} className="h-2 bg-primary/10" />
                   <div className="text-right text-xs text-muted-foreground">{progress}% complete</div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+                <div className="grid grid-cols-3 gap-3">
                   {[
                     { icon: BookIcon, label: "Units", value: unitCount },
                     { icon: UsersIcon, label: "Lessons", value: lessonCount },
@@ -142,7 +140,7 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                 </div>
               </CardContent>
 
-              <CardFooter className="p-6 pt-0 flex-shrink-0">
+              <CardFooter className="p-6 pt-0">
                 <motion.div className="flex items-center gap-2 text-primary font-medium ml-auto" whileHover={{ x: 5 }}>
                   Start Learning
                   <ChevronRight className="w-4 h-4" />
