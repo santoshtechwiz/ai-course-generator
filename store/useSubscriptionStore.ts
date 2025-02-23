@@ -30,4 +30,3 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 }))
 
 export default useSubscriptionStore
-

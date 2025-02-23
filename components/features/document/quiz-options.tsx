@@ -5,22 +5,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 
-interface QuizOptionsProps {
-  onOptionsChange: (options: QuizOptions) => void
+interface DocumentQuizOptionsProps {
+  onOptionsChange: (options: DocumentQuizOptions) => void
 }
 
-export interface QuizOptions {
+export interface DocumentQuizOptions {
   numberOfQuestions: number
   difficulty: number
 }
 
-export function QuizOptions({ onOptionsChange }: QuizOptionsProps) {
-  const [options, setOptions] = useState<QuizOptions>({
+export function DocumentQuizOptions({ onOptionsChange }: DocumentQuizOptionsProps) {
+  const [options, setOptions] = useState<DocumentQuizOptions>({
     numberOfQuestions: 5,
     difficulty: 50,
   })
 
-  const handleChange = (key: keyof QuizOptions, value: number) => {
+  const handleChange = (key: keyof DocumentQuizOptions, value: number) => {
     const newOptions = { ...options, [key]: value }
     setOptions(newOptions)
     onOptionsChange(newOptions)

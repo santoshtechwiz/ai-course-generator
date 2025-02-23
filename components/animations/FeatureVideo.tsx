@@ -58,37 +58,7 @@ const FeatureShowcase: React.FC = () => {
   return (
     <div className="w-full max-w-[1400px] min-h-screen mx-auto">
       <div className="relative bg-background min-h-[600px] overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentFeature}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="relative flex flex-col items-center justify-center p-10 text-center z-10"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="relative mb-16"
-            >
-              {React.createElement(features[currentFeature].icon, {
-                className: cn(
-                  "w-56 h-56 relative",
-                  `bg-gradient-to-r ${features[currentFeature].gradient} bg-clip-text text-transparent`
-                ),
-              })}
-            </motion.div>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-8 text-foreground tracking-tight">
-              {features[currentFeature].title}
-            </h2>
-            <p className="text-xl sm:text-2xl md:text-3xl text-muted-foreground max-w-4xl leading-relaxed">
-              {features[currentFeature].description}
-            </p>
-          </motion.div>
-        </AnimatePresence>
-
+        {/* Background Animation */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-0 w-full h-40 -translate-y-1/2 overflow-hidden">
             <motion.div
@@ -122,6 +92,39 @@ const FeatureShowcase: React.FC = () => {
           </div>
         </div>
 
+        {/* Feature Content */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentFeature}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="relative flex flex-col items-center justify-center p-10 text-center z-10"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="relative mb-16"
+            >
+              {React.createElement(features[currentFeature].icon, {
+                className: cn(
+                  "w-56 h-56 relative",
+                  `bg-gradient-to-r ${features[currentFeature].gradient} bg-clip-text text-transparent`
+                ),
+              })}
+            </motion.div>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-8 text-foreground tracking-tight">
+              {features[currentFeature].title}
+            </h2>
+            <p className="text-xl sm:text-2xl md:text-3xl text-muted-foreground max-w-4xl leading-relaxed">
+              {features[currentFeature].description}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Progress Bar */}
         <div className="absolute bottom-0 left-0 w-full p-6">
           <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
             <motion.div

@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const Page=async ()=>{
   const session = await getAuthSession();
-  const userId = session?.user?.id;
+  const userId = session?.user?.id ?? null;
   const isProd = process.env.NODE_ENV === 'production';
 
   async function getSubscriptionData(): Promise<{ 
