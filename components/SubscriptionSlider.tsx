@@ -23,13 +23,13 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
   const { subscriptionStatus } = useSubscriptionStore()
 
   const currentPlan =
-    SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionStatus?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
+    SUBSCRIPTION_PLANS.find((plan) => plan.id === subscriptionStatus?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
   const maxQuestions = currentPlan.limits.maxQuestionsPerQuiz;
   const isMaxPlan = currentPlan.name === "ULTIMATE"
 
   const getNextPlan = (): SubscriptionPlanType => {
     const currentIndex = SUBSCRIPTION_PLANS.findIndex((plan) => plan.name === currentPlan.name)
-    return SUBSCRIPTION_PLANS[currentIndex + 1]?.name || currentPlan.name
+    return SUBSCRIPTION_PLANS[currentIndex + 1]?.id || currentPlan.id
   }
 
   const nextPlan = getNextPlan()

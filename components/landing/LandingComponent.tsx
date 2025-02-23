@@ -60,7 +60,7 @@ const defaultSections = [
   },
   {
     key: "faq",
-    title: "Common Questions",
+    title: "Frequently Asked Questions",
     description: "Get answers about AI course creation and quiz generation.",
     icon: HelpCircle,
     Component: FAQSection,

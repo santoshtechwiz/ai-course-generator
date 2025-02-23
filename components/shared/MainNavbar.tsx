@@ -45,7 +45,7 @@ const NavItems = () => {
   )
 }
 
-export default function Navbar() {
+export default function MainNavbar() {
   const { data: session, status } = useSession()
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -94,8 +94,8 @@ export default function Navbar() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center">
+      <div className="container mx-auto max-w-screen-xl flex h-16 items-center justify-between px-4">
+        <div className="flex items-center flex-shrink-0">
           <motion.div
             whileHover={{ scale: 1.05, rotate: 5 }}
             whileTap={{ scale: 0.95, rotate: -5 }}
@@ -106,14 +106,13 @@ export default function Navbar() {
           <NavItems />
         </div>
 
-        <div className="flex items-center space-x-2 md:space-x-4">
+        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
           <Button variant="ghost" size="icon" onClick={() => setIsSearchModalOpen(true)}>
             <Search className="h-4 w-4" />
             <span className="sr-only">Search</span>
           </Button>
 
           <NotificationsMenu initialCount={subscriptionStatus?.credits ?? 0} />
-
           <ThemeToggle />
 
           {status === "authenticated" ? (
@@ -133,14 +132,6 @@ export default function Navbar() {
                   )}
                   {getSubscriptionBadge()}
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile" className="flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="flex items-center">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -239,4 +230,3 @@ export default function Navbar() {
     </motion.header>
   )
 }
-

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
 import { motion } from "framer-motion"
-import Navbar from "@/components/shared/Navbar"
+import MainNavbar from "@/components/shared/MainNavbar"
 
 
 export default function NotFound() {
@@ -40,7 +40,7 @@ export default function NotFound() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Navbar />
+      <MainNavbar />
       <main className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <motion.div
           className="max-w-4xl w-full space-y-12 text-center"

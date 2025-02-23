@@ -3,10 +3,10 @@ import { Toaster } from "@/components/ui/toaster"
 
 
 import { getAuthSession } from "@/lib/authOptions"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+
 import { Chatbot } from "@/components/Chatbot"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
-import Navbar from "@/components/shared/Navbar"
+import MainNavbar from "@/components/shared/MainNavbar"
 
 export default async function DashboardLayout({
   children,
@@ -18,7 +18,7 @@ export default async function DashboardLayout({
   return (
     <ClientLayoutWrapper>
       <div className="flex min-h-screen flex-col">
-        <Navbar />
+        <MainNavbar />
       
         <main className="flex-grow flex flex-col">
           <div className=" flex-grow py-8">

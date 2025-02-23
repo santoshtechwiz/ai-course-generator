@@ -65,7 +65,18 @@ export default function SubscriptionPlans({ userId, currentPlan, subscriptionSta
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        if (response.status === 409) {
+          toast({
+            title: "Subscription Error",
+            description: "You already have an active subscription.",
+            variant: "destructive",
+          })
+          return;
+        }
+        else {
+
+          throw new Error("An unexpected error occurred");
+        }
       }
 
       const data = await response.json()
@@ -148,14 +159,14 @@ function PlanCards({
   handleSubscribe,
   duration,
 }: {
-  plans: typeof SUBSCRIPTION_PLANS
-  currentPlan: SubscriptionPlanType | null
-  subscriptionStatus: SubscriptionStatusType | null
-  loading: SubscriptionPlanType | null
-  handleSubscribe: (planName: SubscriptionPlanType, duration: number) => Promise<void>
-  duration: 1 | 6
+  plans: typeof SUBSCRIPTION_PLANS;
+  currentPlan: SubscriptionPlanType | null;
+  subscriptionStatus: SubscriptionStatusType | null;
+  loading: SubscriptionPlanType | null;
+  handleSubscribe: (planId: SubscriptionPlanType, duration: number) => Promise<void>;
+  duration: 1 | 6;
 }) {
-  const isSubscribed = currentPlan && subscriptionStatus?.toUpperCase() === "ACTIVE"
+  const isSubscribed = currentPlan && subscriptionStatus?.toUpperCase() === "ACTIVE";
 
   return (
     <AnimatePresence>
@@ -181,8 +192,8 @@ function PlanCards({
                   {plan.options[0].price === 0
                     ? "Free forever"
                     : `$${plan.options.find((o) => o.duration === duration)?.price}/${duration === 1 ? "month" : "6 months"}`}
-                <Separator orientation="horizontal" className="my-2" />
-                <p className="text-sm text-muted-foreground">{plan.tokens} tokens can be used for quizzes and courses</p>
+                  <Separator orientation="horizontal" className="my-2" />
+                  <p className="text-sm text-muted-foreground">{plan.tokens} tokens included</p>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -191,20 +202,24 @@ function PlanCards({
                   <Progress value={(plan.tokens / 500) * 100} className="h-2 mt-2" />
                 </div>
                 <ul className="space-y-2">
-                  <li className="flex items-center">
-                    <Check className="h-5 w-5 text-primary mr-2" />
-                    <span>Max {plan.limits.maxQuestionsPerQuiz} questions per quiz</span>
-                  </li>
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                      {feature.available ? (
-                        <Check className="h-5 w-5 text-primary mr-2" />
-                      ) : (
+                  {/* Available Features */}
+                  {plan.features
+                    .filter((feature) => feature.available)
+                    .map((feature, index) => (
+                      <li key={index} className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-2" />
+                        <span className="text-sm">{feature.name}</span>
+                      </li>
+                    ))}
+                  {/* Unavailable Features */}
+                  {plan.features
+                    .filter((feature) => !feature.available)
+                    .map((feature, index) => (
+                      <li key={index} className="flex items-center">
                         <Lock className="h-5 w-5 text-muted-foreground mr-2" />
-                      )}
-                      <span className={feature.available ? "" : "text-muted-foreground"}>{feature.name}</span>
-                    </li>
-                  ))}
+                        <span className="text-sm text-muted-foreground">{feature.name}</span>
+                      </li>
+                    ))}
                 </ul>
               </CardContent>
               <CardFooter>
@@ -213,7 +228,7 @@ function PlanCards({
                     <TooltipTrigger asChild>
                       <div className="w-full">
                         <Button
-                          onClick={() => handleSubscribe(plan.name as SubscriptionPlanType, duration)}
+                          onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
                           disabled={(isSubscribed && currentPlan === plan.name) || plan.name === currentPlan}
                           className={`w-full text-primary-foreground ${planColors[plan.name as SubscriptionPlanType]}`}
                         >
@@ -224,7 +239,7 @@ function PlanCards({
                             </>
                           ) : currentPlan === plan.name ? (
                             "Current Plan"
-                          ) : plan.name === "FREE" ? (
+                          ) : plan.name === "Starter" ? (
                             "Start for Free"
                           ) : (
                             "Subscribe"
@@ -237,9 +252,9 @@ function PlanCards({
                         ? isSubscribed
                           ? "This is your current active plan"
                           : "This is your current plan, but it's not active"
-                        : plan.name === "FREE"
-                          ? "Start using the free plan"
-                          : "Click to subscribe to this plan"}
+                        : plan.name === "Starter"
+                        ? "Start using the free plan"
+                        : "Click to subscribe to this plan"}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -249,7 +264,7 @@ function PlanCards({
         ))}
       </motion.div>
     </AnimatePresence>
-  )
+  );
 }
 
 function TokenUsageExplanation() {
@@ -305,32 +320,27 @@ function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
                 </TableCell>
               ))}
             </TableRow>
-            <TableRow>
-              <TableCell className="font-medium">AI Accuracy</TableCell>
-              {plans.map((plan) => (
-                <TableCell key={plan.name} className="text-center">
-                  {plan.features
-                    .find((f) => f.name.includes("AI accuracy"))
-                    ?.name.split("AI accuracy")[0]
-                    .trim()}
-                </TableCell>
-              ))}
-            </TableRow>
-            {["PDF downloads", "Video transcripts", "Video Quiz", "Code Quiz", "Priority support"].map((feature) => (
-              <TableRow key={feature}>
-                <TableCell className="font-medium">{feature}</TableCell>
-                {plans.map((plan) => (
-                  <TableCell key={plan.name} className="text-center">
-                    {plan.features.find((f) => f.name === feature)?.available ? <Check className="mx-auto" /> : "-"}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
+            {["MCQ Generator", "Fill in the Blanks", "Open-ended Questions", "Code Quiz", "Video Quiz", "PDF Downloads", "Video Transcripts", "AI Accuracy", "Priority Support"].map(
+              (feature) => (
+                <TableRow key={feature}>
+                  <TableCell className="font-medium">{feature}</TableCell>
+                  {plans.map((plan) => (
+                    <TableCell key={plan.name} className="text-center">
+                      {plan.features.find((f) => f.name === feature)?.available ? (
+                        <Check className="mx-auto h-5 w-5 text-green-500" />
+                      ) : (
+                        <Lock className="mx-auto h-5 w-5 text-muted-foreground" />
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              )
+            )}
           </TableBody>
         </Table>
       </div>
     </motion.div>
-  )
+  );
 }
 
 function FAQSection() {

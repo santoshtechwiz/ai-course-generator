@@ -1,15 +1,13 @@
 "use client"
 
 import { useState } from "react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
-import QuizOptions from "@/components/features/code/CodeQuizOptions"
-import { FileUpload } from "@/components/features/document/file-upload"
+
 import { QuizDisplay } from "@/components/features/document/quiz-display"
-
-
+import { DocumentQuizOptions } from "@/components/features/document/quiz-options"
+import { FileUpload } from "@/components/features/document/FileUpload"
 
 interface Question {
   id: string
@@ -17,10 +15,11 @@ interface Question {
   options: string[]
   correctAnswer: number
 }
+
 interface QuizOptionsType {
-    numberOfQuestions: number
-    difficulty: number
-    }
+  numberOfQuestions: number
+  difficulty: number
+}
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null)
@@ -111,18 +110,16 @@ export default function Home() {
 
   return (
     <main className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">AI Quiz Generator</h1>
+      {/* <h1 className="text-3xl font-bold mb-6">AI Quiz Generator</h1> */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Quiz Configuration</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <FileUpload onFileSelect={handleFileSelect} />
-            <div className="mt-4">
-              <QuizOptions onOptionsChange={handleOptionsChange} />
-            </div>
-            <Button onClick={handleGenerateQuiz} disabled={!file || isLoading} className="mt-4 w-full">
+            <DocumentQuizOptions onOptionsChange={handleOptionsChange} />
+            <Button onClick={handleGenerateQuiz} disabled={!file || isLoading} className="w-full">
               {isLoading ? "Generating..." : "Generate Quiz"}
             </Button>
           </CardContent>
@@ -143,4 +140,3 @@ export default function Home() {
     </main>
   )
 }
-

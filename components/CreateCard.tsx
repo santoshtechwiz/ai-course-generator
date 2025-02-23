@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import Link from "next/link"
 import { Sparkles, Rocket, Brain, PlusCircle, ArrowRight, Zap, Lightbulb } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
@@ -52,6 +52,7 @@ export const CreateCard: React.FC<CreateCardProps> = ({
             "text-base md:text-lg",
             className,
           )}
+          aria-label="Create Quiz"
         >
           <motion.span
             animate={{ rotate: isHovered ? 180 : 0 }}
@@ -123,7 +124,7 @@ export const CreateCard: React.FC<CreateCardProps> = ({
         <div className="relative inline-block">
           <PlusCircle
             className={cn(
-              "mx-auto mb-4 text-primary-foreground",
+              "mx-auto mb-4 text-primary",
               floating ? "w-12 h-12" : "w-16 h-16",
               "md:w-20 md:h-20",
             )}
@@ -138,18 +139,16 @@ export const CreateCard: React.FC<CreateCardProps> = ({
         </div>
       </motion.div>
 
-      <h3
-        className={cn(
-          "font-semibold mb-2 text-primary-foreground",
-          floating ? "text-lg md:text-xl" : "text-xl md:text-2xl",
+      <CardHeader className="p-0">
+        <CardTitle className={cn("font-semibold mb-2", floating ? "text-lg md:text-xl" : "text-xl md:text-2xl")}>
+          {title}
+        </CardTitle>
+        {!floating && (
+          <CardDescription className="text-muted-foreground mb-6 text-sm md:text-base max-w-xs mx-auto">
+            {description}
+          </CardDescription>
         )}
-      >
-        {title}
-      </h3>
-
-      {!floating && (
-        <p className="text-primary-foreground/90 mb-6 text-sm md:text-base max-w-xs mx-auto">{description}</p>
-      )}
+      </CardHeader>
 
       <Button
         size={floating ? "default" : "lg"}
@@ -161,6 +160,7 @@ export const CreateCard: React.FC<CreateCardProps> = ({
           "px-6 py-3 md:px-8 md:py-4",
           "shadow-lg hover:shadow-xl",
         )}
+        aria-label="Start Creating"
       >
         Start Creating
         <motion.span
@@ -193,8 +193,7 @@ export const CreateCard: React.FC<CreateCardProps> = ({
         "h-full flex flex-col justify-center items-center",
         "hover:shadow-xl transition-all duration-300",
         "transform hover:-translate-y-2",
-        "bg-gradient-to-br from-primary via-primary to-primary/90",
-        "text-primary-foreground border-2 border-primary-foreground/10",
+        "bg-background text-foreground border",
         "relative overflow-hidden",
         className,
       )}
@@ -246,4 +245,3 @@ export const CreateCard: React.FC<CreateCardProps> = ({
     </motion.div>
   )
 }
-
