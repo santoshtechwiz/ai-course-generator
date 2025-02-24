@@ -63,6 +63,14 @@ export function UserMenu({ children }: UserMenuProps) {
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
+              {session.user?.isAdmin && (
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/admin" className="flex items-center">
+                  <Crown className="mr-2 h-4 w-4" />
+                  <span>Admin</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
             </DropdownMenuItem>
           
             <DropdownMenuSeparator />

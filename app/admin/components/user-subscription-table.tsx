@@ -17,7 +17,7 @@ export function UserSubscriptionTable() {
 
   const fetchSubscriptions = async () => {
     try {
-      const response = await fetch("/api/subscriptions")
+      const response = await fetch("/api/subscriptions",{cache: "no-store"})
       if (!response.ok) {
         throw new Error("Failed to fetch subscriptions")
       }
