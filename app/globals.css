@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -10,49 +10,51 @@ body {
   :root {
     --font-sans:
       "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+      monospace;
 
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 20% 97%;
+    --foreground: 220 10% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 10% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --popover-foreground: 220 10% 10%;
+    --primary: 220 90% 50%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    --secondary: 220 20% 92%;
+    --secondary-foreground: 220 10% 10%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 40%;
+    --accent: 260 90% 65%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 220 90% 50%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 217.2 91.2% 59.8%;
+    --background: 220 40% 10%;
+    --foreground: 220 10% 95%;
+    --card: 220 40% 13%;
+    --card-foreground: 220 10% 95%;
+    --popover: 220 40% 13%;
+    --popover-foreground: 220 10% 95%;
+    --primary: 220 90% 60%;
+    --primary-foreground: 220 10% 10%;
+    --secondary: 220 30% 20%;
+    --secondary-foreground: 220 10% 95%;
+    --muted: 220 30% 20%;
+    --muted-foreground: 220 10% 70%;
+    --accent: 260 90% 70%;
+    --accent-foreground: 220 10% 10%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 220 10% 95%;
+    --border: 220 30% 25%;
+    --input: 220 30% 25%;
+    --ring: 220 90% 60%;
   }
 }
 
@@ -64,41 +66,41 @@ body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold tracking-tight;
+  }
+  h1 {
+    @apply text-4xl sm:text-5xl md:text-6xl;
+  }
+  h2 {
+    @apply text-3xl sm:text-4xl md:text-5xl;
+  }
+  h3 {
+    @apply text-2xl sm:text-3xl md:text-4xl;
+  }
+  h4 {
+    @apply text-xl sm:text-2xl md:text-3xl;
+  }
+  h5 {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+  h6 {
+    @apply text-base sm:text-lg md:text-xl;
+  }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent;
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary;
   }
 
   .hover-lift {
-    @apply transition-transform duration-300 ease-in-out hover:-translate-y-1;
-  }
-
-  .shadow-glow {
-    @apply shadow-lg;
-    box-shadow: 0 0 15px 5px hsl(var(--primary) / 0.5);
-  }
-}
-
-@layer components {
-  .loader {
-    @apply fixed top-0 left-0 w-full h-1 z-50 bg-muted overflow-hidden;
-  }
-
-  .loader::before {
-    content: "";
-    @apply absolute left-[-50%] w-1/2 h-full bg-primary;
-    animation: loading 1s linear infinite;
-  }
-}
-
-@keyframes loading {
-  from {
-    left: -50%;
-  }
-  to {
-    left: 100%;
+    @apply transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg;
   }
 }
 
@@ -113,20 +115,27 @@ body {
   100% {
     border-color: hsl(var(--primary));
   }
-  25% {
+  33% {
     border-color: hsl(var(--accent));
   }
-  50% {
+  66% {
     border-color: hsl(var(--secondary));
-  }
-  75% {
-    border-color: hsl(var(--muted));
   }
 }
 
 @keyframes pulse {
   50% {
     opacity: 0.5;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 
@@ -142,36 +151,27 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes blink {
-  0% {
-    opacity: 0.2;
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.2;
-  }
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
-.typing-indicator span {
-  animation-name: blink;
-  animation-duration: 1.4s;
-  animation-iteration-count: infinite;
-  animation-fill-mode: both;
-  width: 4px;
-  height: 4px;
-  background-color: #3b82f6;
-  display: inline-block;
-  border-radius: 50%;
-  margin: 0 1px;
+/* Accessibility improvements */
+.sr-only {
+  @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
 }
 
-.typing-indicator span:nth-child(2) {
-  animation-delay: .2s;
+.focus-visible\:ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
 }
 
-.typing-indicator span:nth-child(3) {
-  animation-delay: .4s;
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-friendly {
+    @apply text-black bg-white;
+  }
 }
 
