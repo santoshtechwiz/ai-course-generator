@@ -1,40 +1,39 @@
+import type React from "react"
 import { Star, Rocket, Zap, Crown } from "lucide-react"
 
-
-
 type SubscriptionPlan = {
-  name: string;
-  id: "FREE" | "BASIC" | "PRO" | "ULTIMATE";
-  icon: React.ComponentType;
-  tokens: number;
-  options: { duration: number; price: number }[];
-  limits: { maxQuestionsPerQuiz: number };
-  features: { name: string; available: boolean }[];
-};
+  name: string
+  id: "FREE" | "BASIC" | "PRO" | "ULTIMATE"
+  icon: React.ComponentType
+  tokens: number
+  options: { duration: number; price: number }[]
+  limits: { maxQuestionsPerQuiz: number }
+  features: { name: string; available: boolean; comingSoon?: boolean }[]
+}
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
-    name: "Starter",
+    name: "FREE",
     id: "FREE",
     icon: Star,
     tokens: 5,
     options: [{ duration: 1, price: 0 }],
     limits: { maxQuestionsPerQuiz: 3 },
     features: [
-      { name: "MCQ Generator", available: true },
-      { name: "Fill in the Blanks", available: true },
+      { name: "Multiple Choice Questions Generator", available: true },
+      { name: "Fill in the Blanks Questions", available: true },
       { name: "Open-ended Questions", available: false },
-      { name: "Code Quiz", available: false },
-      { name: "Video Quiz", available: false },
-      { name: "PDF Downloads", available: false },
+      { name: "Coding Quiz Generator", available: false },
+      { name: "Quiz from Video Transcript", available: false },
+      { name: "PDF Downloads (All Quizzes & Transcripts)", available: false },
       { name: "Video Transcripts", available: false },
-      { name: "Convert Document to Quiz", available: false },
-      { name: "AI Accuracy", available: false },
+      { name: "Document to Quiz Converter (Coming Soon)", available: false, comingSoon: true },
+      { name: "Enhanced AI Accuracy", available: false },
       { name: "Priority Support", available: false },
     ],
   },
   {
-    name: "Learner",
+    name: "BASIC",
     id: "BASIC",
     icon: Rocket,
     tokens: 40,
@@ -44,20 +43,20 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     ],
     limits: { maxQuestionsPerQuiz: 5 },
     features: [
-      { name: "MCQ Generator", available: true },
-      { name: "Fill in the Blanks", available: true },
+      { name: "Multiple Choice Questions Generator", available: true },
+      { name: "Fill in the Blanks Questions", available: true },
       { name: "Open-ended Questions", available: true },
-      { name: "Code Quiz", available: false },
-      { name: "Video Quiz", available: false },
-      { name: "PDF Downloads", available: true },
+      { name: "Coding Quiz Generator", available: false },
+      { name: "Quiz from Video Transcript", available: false },
+      { name: "PDF Downloads (All Quizzes & Transcripts)", available: true },
       { name: "Video Transcripts", available: true },
-      { name: "Convert Document to Quiz", available: false },
-      { name: "AI Accuracy", available: true },
+      { name: "Document to Quiz Converter (Coming Soon)", available: false, comingSoon: true },
+      { name: "Enhanced AI Accuracy", available: true },
       { name: "Priority Support", available: false },
     ],
   },
   {
-    name: "Pro",
+    name: "PRO",
     id: "PRO",
     icon: Zap,
     tokens: 100,
@@ -67,20 +66,20 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     ],
     limits: { maxQuestionsPerQuiz: 15 },
     features: [
-      { name: "MCQ Generator", available: true },
-      { name: "Fill in the Blanks", available: true },
+      { name: "Multiple Choice Questions Generator", available: true },
+      { name: "Fill in the Blanks Questions", available: true },
       { name: "Open-ended Questions", available: true },
-      { name: "Code Quiz", available: true },
-      { name: "Video Quiz", available: true },
-      { name: "PDF Downloads", available: true },
+      { name: "Coding Quiz Generator", available: true },
+      { name: "Quiz from Video Transcript", available: true },
+      { name: "PDF Downloads (All Quizzes & Transcripts)", available: true },
       { name: "Video Transcripts", available: true },
-      { name: "Convert Document to Quiz", available: false },
-      { name: "AI Accuracy", available: true },
+      { name: "Document to Quiz Converter (Coming Soon)", available: false, comingSoon: true },
+      { name: "Enhanced AI Accuracy", available: true },
       { name: "Priority Support", available: true },
     ],
   },
   {
-    name: "Ultimate",
+    name: "ULTIMATE",
     id: "ULTIMATE",
     icon: Crown,
     tokens: 200,
@@ -90,23 +89,23 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     ],
     limits: { maxQuestionsPerQuiz: 20 },
     features: [
-      { name: "MCQ Generator", available: true },
-      { name: "Fill in the Blanks", available: true },
+      { name: "Multiple Choice Questions Generator", available: true },
+      { name: "Fill in the Blanks Questions", available: true },
       { name: "Open-ended Questions", available: true },
-      { name: "Code Quiz", available: true },
-
-      { name: "PDF Downloads (All Quiz and Video Transcript)", available: true },
+      { name: "Coding Quiz Generator", available: true },
+      { name: "Quiz from Video Transcript", available: true },
+      { name: "PDF Downloads (All Quizzes & Transcripts)", available: true },
       { name: "Video Transcripts", available: true },
-      { name: "AI Accuracy", available: true },
-      { name: "Convert Document to Quiz", available: false },
+      { name: "Document to Quiz Converter (Coming Soon)", available: false, comingSoon: true },
+      { name: "Enhanced AI Accuracy", available: true },
       { name: "Priority Support", available: true },
     ],
   },
-];
+]
 
-export type SubscriptionPlanType = typeof SUBSCRIPTION_PLANS[number]['id'];
+export type SubscriptionPlanType = (typeof SUBSCRIPTION_PLANS)[number]["id"]
 
-export type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "PENDING" | "CANCELLED" | null;
+export type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "PENDING" | "CANCELLED" | null
 
 export const FAQ_ITEMS = [
   {

@@ -10,7 +10,6 @@ import PageLoader from "@/components/ui/loader"
 import { JsonLd } from "@/components/json-ld"
 import { Providers } from "./providers/provider"
 
-
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -88,13 +87,13 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
+
         <JsonLd />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
-          <div className="relative flex min-h-screen flex-col">
-            <main className="flex-1">
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-grow">
               <Suspense fallback={<PageLoader />}>{children}</Suspense>
             </main>
             <Footer />

@@ -8,7 +8,6 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Link as ScrollLink } from "react-scroll"
 import Logo from "../shared/Logo"
-import { signIn, useSession } from "next-auth/react"
 
 const navItems = [
   { name: "Features", to: "features" },
@@ -19,11 +18,24 @@ const navItems = [
   { name: "FAQ", to: "faq" },
 ]
 
+const navItemVariants = {
+  hidden: { opacity: 0, y: -10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  }),
+}
+
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
- 
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10)
@@ -49,40 +61,51 @@ export default function Navbar() {
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
+        transition={{ type: "spring", stiffness: 100, damping: 20 }}
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 backdrop-blur-sm border-b border-border w-full ${
           isScrolled ? "bg-background/80" : "bg-transparent"
         }`}
       >
-        <Link href="/" className="flex items-center space-x-2">
-          <Logo />
-        </Link>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Link href="/" className="flex items-center space-x-2">
+            <Logo />
+          </Link>
+        </motion.div>
 
         <div className="hidden md:flex items-center space-x-8">
-          {navItems.map((item) => (
-            <ScrollLink
-              key={item.to}
-              to={item.to}
-              spy={true}
-              smooth={true}
-              offset={-64}
-              duration={500}
-              className="text-muted-foreground hover:text-foreground transition-colors relative group cursor-pointer"
-              activeClass="text-primary"
-            >
-              {item.name}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
-            </ScrollLink>
+          {navItems.map((item, index) => (
+            <motion.div key={item.to} variants={navItemVariants} initial="hidden" animate="visible" custom={index}>
+              <ScrollLink
+                to={item.to}
+                spy={true}
+                smooth={true}
+                offset={-64}
+                duration={500}
+                className="text-muted-foreground hover:text-foreground transition-colors relative group cursor-pointer"
+                activeClass="text-primary"
+              >
+                {item.name}
+                <motion.span
+                  className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary"
+                  whileHover={{ width: "100%" }}
+                  transition={{ duration: 0.3 }}
+                />
+              </ScrollLink>
+            </motion.div>
           ))}
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
-        
-          <Button onClick={handleGetStarted}>Get Started</Button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button onClick={handleGetStarted}>Get Started</Button>
+          </motion.div>
         </div>
 
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleMobileMenu}>
-          <Menu className="w-6 h-6" />
-        </Button>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="md:hidden">
+          <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+            <Menu className="w-6 h-6" />
+          </Button>
+        </motion.div>
       </motion.nav>
 
       <AnimatePresence>
@@ -91,53 +114,77 @@ export default function Navbar() {
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "tween" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-y-0 right-0 z-50 w-64 bg-background shadow-lg md:hidden"
           >
             <div className="flex flex-col h-full">
               <div className="flex justify-between items-center p-4 border-b border-border">
                 <Logo />
-                <Button variant="ghost" size="icon" onClick={closeMobileMenu}>
-                  <X className="w-6 h-6" />
-                </Button>
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Button variant="ghost" size="icon" onClick={closeMobileMenu}>
+                    <X className="w-6 h-6" />
+                  </Button>
+                </motion.div>
               </div>
-              <div className="flex flex-col py-4">
-                {navItems.map((item) => (
-                  <ScrollLink
-                    key={item.to}
-                    to={item.to}
-                    spy={true}
-                    smooth={true}
-                    offset={-64}
-                    duration={500}
-                    className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
-                    activeClass="text-primary"
-                    onClick={closeMobileMenu}
-                  >
-                    {item.name}
-                  </ScrollLink>
+              <motion.div
+                className="flex flex-col py-4"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  visible: {
+                    transition: {
+                      staggerChildren: 0.1,
+                    },
+                  },
+                }}
+              >
+                {navItems.map((item, index) => (
+                  <motion.div key={item.to} variants={navItemVariants} custom={index}>
+                    <ScrollLink
+                      to={item.to}
+                      spy={true}
+                      smooth={true}
+                      offset={-64}
+                      duration={500}
+                      className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                      activeClass="text-primary"
+                      onClick={closeMobileMenu}
+                    >
+                      {item.name}
+                    </ScrollLink>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
               <div className="mt-auto p-4 border-t border-border">
-           
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    handleGetStarted()
-                    closeMobileMenu()
-                  }}
-                >
-                  Get Started
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      handleGetStarted()
+                      closeMobileMenu()
+                    }}
+                  >
+                    Get Started
+                  </Button>
+                </motion.div>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden" onClick={closeMobileMenu} />
-      )}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+            onClick={closeMobileMenu}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }
