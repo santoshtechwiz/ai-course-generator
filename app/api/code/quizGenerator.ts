@@ -1,8 +1,7 @@
+import { CodeChallenge } from "@/app/types/types";
+import OpenAI from "openai";
 
-import { CodeChallenge } from "@/app/types/types"
-import OpenAI from "openai"
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function generateCodingMCQs(
   language: string,
@@ -16,25 +15,29 @@ export async function generateCodingMCQs(
       messages: [
         {
           role: "system",
-          content: `Generate precisely ${questionCount} multiple-choice coding questions on ${subtopic} in ${language} at a ${difficulty} level.
-    
-          **Output Format:**
-          Each question must follow this JSON structure:
-          {
-            "question": "A concise coding-related question.",
-            "codeSnippet": "Python/JavaScript/etc. code snippet if needed, else empty string.",
-            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-            "correctAnswer": "Exact text matching one of the options."
-          }
+          content: `Generate a coding quiz for ${language} on the topic of ${subtopic} at a ${difficulty} difficulty level. 
+          Each quiz question must have:
+          1. A question that does not include any code.
+          2. A 'codeSnippet' field containing the code relevant to the question.
+          3. Four unlabeled answer options (without A, B, C, D labels).
+          4. Only one correct answer.
+
+          Requirements:
+          - Programming language: ${language}
+          - Difficulty level: ${difficulty}
+          - Question: Must be clear and not contain any code.
+          - Code snippet: Must contain relevant code that requires interpretation or analysis to answer the question. It MUST NOT directly reveal the answer.
+          - Options: Provide four unlabeled answer options with only one correct answer.
+
+          Steps:
+          1. Define the topic language and difficulty level for the quiz.
+          2. Create a clear title for the question without using any code.
+          3. Develop a code snippet related to the question that requires interpretation and does not reveal the answer.
+          4. Formulate four unlabeled answer options based on the code snippet, ensuring one of them is correct.
+          5. Double-check that the correct answer isn't immediately obvious from the code snippet alone.
           
-          **Rules:**
-          - Each question must be **strictly about coding** (90% must include code snippets).
-          - Ensure **options are unique, meaningful, and well-formatted** (no duplicates).
-          - **Do not include code inside 'question'**; use 'codeSnippet' instead.
-          - The 'correctAnswer' **must exactly match one of the options**.
-          - Do NOT add prefixes (A., B., C., D.) to options.
-          - Ensure **consistent formatting** across all responses.
-          `
+          Generate exactly ${questionCount} questions in this format.
+          `,
         },
       ],
       functions: [
@@ -48,12 +51,17 @@ export async function generateCodingMCQs(
                 items: {
                   type: "object",
                   properties: {
-                    question: { type: "string" },
-                    codeSnippet: { type: "string" },
-                    options: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-                    correctAnswer: { type: "string" },
+                    question: { type: "string" }, // Title for the question
+                    codeSnippet: { type: "string" }, // Code snippet for the question
+                    options: {
+                      type: "array",
+                      items: { type: "string" },
+                      minItems: 4,
+                      maxItems: 4,
+                    },
+                    correctAnswer: { type: "string" }, // Correct answer
                   },
-                  required: ["question", "options", "correctAnswer"],
+                  required: ["question", "codeSnippet", "options", "correctAnswer"],
                 },
                 minItems: questionCount,
                 maxItems: questionCount,
@@ -65,28 +73,21 @@ export async function generateCodingMCQs(
       ],
       function_call: { name: "create_coding_mcqs" },
     });
-    
 
-    const functionCall = response.choices[0].message.function_call
-    if (!functionCall) throw new Error("Function call failed")
+    const functionCall = response.choices[0].message.function_call;
+    if (!functionCall) throw new Error("Function call failed");
 
-    const quizData: { quizzes: CodeChallenge[] } = JSON.parse(functionCall.arguments)
+    const quizData: { quizzes: CodeChallenge[] } = JSON.parse(functionCall.arguments);
 
-    return quizData.quizzes.map((q) => {
-      if (q.codeSnippet && q.question.includes("```")) {
-        throw new Error(`Code in question, should be in codeSnippet: ${q.question}`)
-      }
-      // Remove any A., B., C., D. labels from options
-      if (Array.isArray(q.options)) {
-        q.options = q.options.map(option => option.replace(/^[A-D]\.\s*/, '').trim())
-      }
-      if(q.correctAnswer){
-        q.correctAnswer=q.correctAnswer.replace(/^[A-D]\.\s*/, '').trim();
-      }
-      return q
-    })
+    return quizData.quizzes.map((q) => ({
+      question: q.question, // Include the title field
+      codeSnippet: q.codeSnippet,
+      options: q.options,
+      language: language,
+      correctAnswer: q.correctAnswer,
+    }));
   } catch (error) {
-    console.error("MCQ generation failed:", error)
-    return []
+    console.error("MCQ generation failed:", error);
+    return [];
   }
 }
