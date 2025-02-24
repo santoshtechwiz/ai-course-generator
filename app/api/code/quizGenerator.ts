@@ -37,6 +37,7 @@ export async function generateCodingMCQs(
           5. Double-check that the correct answer isn't immediately obvious from the code snippet alone.
           
           Generate exactly ${questionCount} questions in this format.
+          Ensure that 90% of the questions are coding-related and 10% are concept-related.For concept-related questions, do not include a 'codeSnippet'. Each question should provide four unlabeled answer options, with only one correct answer.
           `,
         },
       ],
