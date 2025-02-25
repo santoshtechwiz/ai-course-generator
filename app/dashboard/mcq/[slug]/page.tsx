@@ -11,6 +11,7 @@ import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 import QuizHeader from "@/components/shared/QuizHeader"
+import { QuizStructuredData } from "@/components/withQuizStructuredData"
 
 
 
@@ -83,9 +84,25 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   if (!result) {
     notFound()
   }
+  if (!result.result) {
+    notFound()
+  }
 
+  const quizDetails = {
+    type: "mcq",
+    name: result.result.topic,
+    description: `Test your knowledge with this ${result.result.topic} quiz.`,
+    author: "Course AI",
+    datePublished: new Date().toISOString(),
+    numberOfQuestions: result.questions.length || 0,
+    timeRequired: 'PT30M', // Assuming 30 minutes, adjust as needed
+    educationalLevel: 'Beginner', // Adjust as needed
+  };
+
+ 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <QuizStructuredData quizDetails={quizDetails} />
       {result?.result && (
         <QuizHeader topic={result.result.topic} />
       )}

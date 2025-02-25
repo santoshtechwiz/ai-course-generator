@@ -4,6 +4,7 @@ import { getQuiz } from "@/app/actions/getQuiz"
 import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 import QuizHeader from "@/components/shared/QuizHeader"
+import { QuizStructuredData } from "@/components/withQuizStructuredData"
 
 
 
@@ -63,8 +64,19 @@ const OpenEndedQuizPage = async ({ params }: { params: Promise<{ slug: string }>
     return notFound()
   }
 
+  const quizDetails = {
+    type: 'mcq' as const,
+    name: quizData.topic,
+    description: `Test your knowledge with this ${quizData.topic} quiz.`,
+    author: "Course AI",
+    datePublished: new Date().toISOString(),
+    numberOfQuestions: quizData.questions.length || 0,
+    timeRequired: 'PT30M', // Assuming 30 minutes, adjust as needed
+    educationalLevel: 'Beginner', // Adjust as needed
+  };
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <QuizStructuredData quizDetails={quizDetails} />
       <QuizHeader topic={quizData.topic} />
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">

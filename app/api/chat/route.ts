@@ -5,7 +5,7 @@ import prisma from "@/lib/db"
 import { type NextRequest, NextResponse } from "next/server"
 
 const CONFIG = {
-  MIN_CREDITS_REQUIRED: 3,
+  MIN_CREDITS_REQUIRED: 1,
   MAX_RESULTS: 5,
   TEMPERATURE: 0.7,
   MAX_TOKENS: 150,
@@ -25,13 +25,13 @@ export async function POST(req: NextRequest) {
     const userMessage = messages[messages.length - 1].content
 
     // Extract potential keywords from the user message
-    const keywords = userMessage.toLowerCase().split(/\s+/).filter(word => word.length > 3)
+    const keywords = userMessage.toLowerCase().split(/\s+/).filter((word: string | any[]) => word.length > 3)
 
     // Fetch relevant courses and quizzes based on the keywords
     const [courses, quizzes] = await Promise.all([
       prisma.course.findMany({
         where: {
-          OR: keywords.map(keyword => ({
+          OR: keywords.map((keyword: any) => ({
             name: {
               contains: keyword,
               mode: 'insensitive',
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       }),
       prisma.userQuiz.findMany({
         where: {
-          OR: keywords.map(keyword => ({
+          OR: keywords.map((keyword: any) => ({
             topic: {
               contains: keyword,
               mode: 'insensitive',
