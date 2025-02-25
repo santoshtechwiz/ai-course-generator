@@ -1,5 +1,4 @@
 import { breadcrumbSchema } from "@/app/schema/breadcrumb-schema"
-import { courseSchema } from "@/app/schema/course-schema"
 import { quizSchema } from "@/app/schema/quiz-schema"
 
 export function JsonLd() {
@@ -46,12 +45,7 @@ export function JsonLd() {
           __html: JSON.stringify(quizSchema),
         }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(courseSchema),
-        }}
-      />
+    
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
