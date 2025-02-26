@@ -10,13 +10,14 @@ import useProgress from "@/hooks/useProgress"
 import type { FullChapter, FullCourseType, FullChapterType } from "@/app/types/types"
 import { useUser } from "@/app/providers/userContext"
 import throttle from "lodash.throttle"
-
 import { Button } from "@/components/ui/button"
-import { VideotapeIcon, X } from "lucide-react"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AnimatePresence, motion } from "framer-motion"
+import MobilePlayList from "./MobilePlayList"
 
+// State and Action Types
 interface State {
   selectedVideoId: string | undefined
   currentChapter: FullChapterType | undefined
@@ -29,6 +30,7 @@ type Action =
   | { type: "SET_NAVIGATION"; payload: { next?: string; prev?: string } }
   | { type: "RESET" }
 
+// Reducer Function
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "SET_VIDEO":
@@ -55,13 +57,33 @@ function reducer(state: State, action: Action): State {
   }
 }
 
+// Props Interface
 interface CoursePageProps {
   course: FullCourseType
   initialChapterId?: string
 }
 
+// Memoized Components
 const MemoizedMainContent = React.memo(MainContent)
-const MemoizedRightSidebar = React.memo(VideoNavigationSidebar)
+const MemoizedVideoNavigationSidebar = React.memo(VideoNavigationSidebar)
+
+// Custom Hook for Video Playlist
+function useVideoPlaylist(course: FullCourseType) {
+  return useMemo(() => {
+    const playlist: { videoId: string; chapter: FullChapter }[] = []
+    course.courseUnits?.forEach((unit) => {
+      unit.chapters
+        .filter(
+          (chapter): chapter is FullChapter & { videoId: string; summary: string | null } =>
+            "videoId" in chapter && Boolean(chapter.videoId),
+        )
+        .forEach((chapter) => {
+          playlist.push({ videoId: chapter.videoId, chapter })
+        })
+    })
+    return playlist
+  }, [course.courseUnits])
+}
 
 export default function CoursePage({ course, initialChapterId }: CoursePageProps) {
   const { user, loading: isProfileLoading, error } = useUser()
@@ -80,22 +102,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   const isInitialMount = useRef(true)
   const hasSetInitialVideo = useRef(false)
 
-  const videoPlaylist = useMemo(() => {
-    const playlist: { videoId: string; chapter: FullChapter }[] = []
-
-    course.courseUnits?.forEach((unit) => {
-      unit.chapters
-        .filter(
-          (chapter): chapter is FullChapter & { videoId: string; summary: string | null } =>
-            "videoId" in chapter && Boolean(chapter.videoId),
-        )
-        .forEach((chapter) => {
-          playlist.push({ videoId: chapter.videoId, chapter })
-        })
-    })
-
-    return playlist
-  }, [course.courseUnits])
+  const videoPlaylist = useVideoPlaylist(course)
 
   const findChapterByVideoId = useCallback(
     (videoId: string): FullChapterType | undefined => {
@@ -104,6 +111,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     [videoPlaylist],
   )
 
+  // Set Initial Video
   useEffect(() => {
     if (!state.selectedVideoId && !hasSetInitialVideo.current) {
       const initialVideo = initialChapterId
@@ -120,6 +128,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     }
   }, [videoPlaylist, state.selectedVideoId, initialChapterId])
 
+  // Update Navigation (Next/Prev Video)
   useEffect(() => {
     if (!isInitialMount.current && state.selectedVideoId) {
       const currentIndex = videoPlaylist.findIndex((entry) => entry.videoId === state.selectedVideoId)
@@ -160,7 +169,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
       },
       5000,
     ),
-    [updateProgress, session], // Updated dependency array
+    [updateProgress, session],
   )
 
   const markChapterAsCompleted = useCallback(() => {
@@ -241,13 +250,14 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         })
       }
     },
-    [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, state.currentChapter], // Updated dependency array
+    [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, state.currentChapter],
   )
 
   const handleWatchAnotherCourse = useCallback(() => {
     router.push("/dashboard")
   }, [router])
 
+  // Responsive Sidebar Handling
   useEffect(() => {
     const handleResize = () => {
       const smallScreen = window.innerWidth < 1024
@@ -260,94 +270,101 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
+  // Cleanup on Unmount
   useEffect(() => {
     return () => {
       dispatch({ type: "RESET" })
     }
   }, [])
 
-  const isSubscribed = session?.user?.userType !== "Free" || course.isPublic === true
-
   if (isLoading || isProfileLoading) {
     return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <Skeleton className="h-16 w-full sticky top-0 z-50" />
-        <div className="flex flex-1 overflow-hidden">
-          <Skeleton className="flex-grow lg:w-3/4" />
-          <Skeleton className="w-1/4 hidden lg:block" />
+      <div className="min-h-screen bg-background">
+        <div className="lg:hidden">
+          <Skeleton className="h-14 w-full" />
+        </div>
+        <div className="flex flex-col lg:flex-row">
+          <div className="flex-1">
+            <Skeleton className="aspect-video w-full" />
+            <div className="p-4 lg:p-6">
+              <Skeleton className="h-8 w-[200px] mb-4" />
+              <Skeleton className="h-4 w-full max-w-[600px]" />
+            </div>
+          </div>
+          <div className="hidden lg:block w-[400px] border-l">
+            <Skeleton className="h-full" />
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <nav className="sticky top-0 z-50 w-full bg-background border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex w-full h-16 max-w-screen-2xl items-center px-4">
-          <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-xl font-semibold md:text-2xl lg:hidden">{course.name}</h1>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden"
-              aria-label="Open sidebar"
-            >
-              <VideotapeIcon className="h-6 w-6" />
-            </Button>
+    <div className="min-h-screen bg-background">
+      <div className="lg:hidden">
+        <MobilePlayList courseName={course.name} onSidebarOpen={() => setIsSidebarOpen(true)} />
+      </div>
+
+      <div className="flex flex-col lg:flex-row">
+        <main className="flex-1 min-w-0">
+          <div className="relative">
+            <div className="aspect-video w-full bg-black">
+              <MemoizedMainContent
+                course={course}
+                initialVideoId={state.selectedVideoId}
+                nextVideoId={state.nextVideoId}
+                prevVideoId={state.prevVideoId}
+                onVideoEnd={handleVideoEnd}
+                onVideoSelect={handleVideoSelect}
+                currentChapter={state.currentChapter}
+                currentTime={0}
+                onWatchAnotherCourse={handleWatchAnotherCourse}
+                onTimeUpdate={(time: number) => {
+                  if (state.currentChapter && session) {
+                    throttledUpdateProgress({
+                      currentChapterId: Number(state.currentChapter.id),
+                    })
+                  }
+                }}
+                progress={progress || undefined}
+                onChapterComplete={markChapterAsCompleted}
+                planId={user?.planId}
+                isLastVideo={isLastVideo}
+              />
+            </div>
           </div>
-        </div>
-      </nav>
+        </main>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-grow overflow-hidden lg:w-3/4 relative p-4 lg:p-6">
-          <MemoizedMainContent
-            course={course}
-            initialVideoId={state.selectedVideoId}
-            nextVideoId={state.nextVideoId}
-            prevVideoId={state.prevVideoId}
-            onVideoEnd={handleVideoEnd}
-            onVideoSelect={handleVideoSelect}
-            currentChapter={state.currentChapter}
-            currentTime={0}
-            onWatchAnotherCourse={handleWatchAnotherCourse}
-            onTimeUpdate={(time: number) => {
-              if (state.currentChapter && session) {
-                throttledUpdateProgress({
-                  currentChapterId: Number(state.currentChapter.id),
-                })
-              }
-            }}
-            progress={progress || undefined}
-            onChapterComplete={markChapterAsCompleted}
-            planId={user?.planId}
-            isLastVideo={isLastVideo}
-          />
-        </div>
-
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {(isSidebarOpen || !isSmallScreen) && (
-            <motion.div
+            <motion.aside
               className={cn(
-                "w-full lg:w-1/4 bg-background overflow-hidden flex flex-col fixed inset-y-0 right-0 z-50 lg:relative lg:translate-x-0",
+                "fixed inset-y-0 right-0 z-50 flex w-full flex-col bg-background lg:relative",
+                "lg:w-[400px] lg:border-l",
+                "max-w-sm lg:max-w-none",
                 isSmallScreen && "shadow-lg",
               )}
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              transition={{ type: "spring", damping: 20, stiffness: 150 }}
             >
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsSidebarOpen(false)}
-                className="absolute top-4 right-4 lg:hidden"
-                aria-label="Close sidebar"
-              >
-                <X className="h-6 w-6" />
-              </Button>
-              <div className="p-4 lg:p-6 overflow-y-auto flex-grow">
-                <MemoizedRightSidebar
+              {isSmallScreen && (
+                <div className="border-b p-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="ml-auto"
+                    aria-label="Close sidebar"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex-1 overflow-hidden">
+                <MemoizedVideoNavigationSidebar
                   course={course}
                   currentChapter={state.currentChapter}
                   courseId={course.id.toString()}
@@ -363,11 +380,10 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                   completedChapters={progress?.completedChapters || []}
                 />
               </div>
-            </motion.div>
+            </motion.aside>
           )}
         </AnimatePresence>
       </div>
     </div>
   )
 }
-

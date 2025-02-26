@@ -5,7 +5,6 @@ import dynamic from "next/dynamic"
 import { ErrorBoundary } from "react-error-boundary"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Shimmer } from "@/components/ui/shimmer"
 import { AlertTriangle, Loader2 } from "lucide-react"
 import CourseDetailsTabs from "./CourseDetailsTabs"
 import CourseActionsWithErrorBoundary from "./CourseActions"
@@ -13,12 +12,17 @@ import { useSession } from "next-auth/react"
 import type { FullCourseType, FullChapter } from "@/app/types/types"
 import type { CourseProgress } from "@prisma/client"
 import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const EnhancedVideoPlayer = dynamic(() => import("./EnhancedVideoPlayer"), {
   ssr: false,
   loading: () => <VideoPlayerSkeleton />,
 })
 
+interface ChapterInfoProps{
+  course: FullCourseType
+  currentChapter?: FullChapter
+}
 interface MainContentProps {
   course: FullCourseType
   initialVideoId?: string
@@ -61,15 +65,22 @@ const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps) => (
   </Card>
 )
 
-const VideoPlayerSkeleton = () => <Shimmer className="w-full aspect-video rounded-lg" />
+const VideoPlayerSkeleton = () => <div className="aspect-video animate-pulse bg-muted rounded-lg" />
 
-const ChapterInfo = ({ course, currentChapter }: { course: FullCourseType; currentChapter?: FullChapter }) => (
-  <div className="mb-4">
-    <h1 className="text-2xl md:text-4xl font-bold text-primary">{course.name}</h1>
-    {currentChapter && <p className="text-lg text-muted-foreground mt-2">{currentChapter.name}</p>}
+const ChapterInfo = ({ course, currentChapter }: ChapterInfoProps) => (
+  <div className="space-y-2 p-4 lg:p-6">
+    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl lg:text-4xl">
+      {course.name}
+    </h1>
+    {currentChapter ? (
+      <p className="text-sm text-muted-foreground sm:text-base md:text-lg lg:text-xl">
+        {currentChapter.name}
+      </p>
+    ) : (
+      <Skeleton className="h-4 w-48" /> // Loading state
+    )}
   </div>
 )
-
 interface VideoPlayerProps {
   initialVideoId?: string
   currentChapter?: FullChapter
@@ -174,42 +185,34 @@ const VideoPlayer = ({
   }
 
   return (
-    <Card className="mb-8 overflow-hidden">
-      <CardContent className="p-0">
-        <div ref={videoRef} className="relative">
-          <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {}}>
-            <Suspense fallback={<VideoPlayerSkeleton />}>
-              <EnhancedVideoPlayer
-                videoId={currentVideoId || ""}
-                onEnded={handleVideoEnd}
-                autoPlay={true}
-                initialTime={currentTime}
-                onProgress={onTimeUpdate}
-                isLastVideo={isLastVideo}
-                onDownloadCertificate={handleDownloadCertificate}
-                onVideoSelect={onVideoSelect}
-                playerConfig={{
-                  showRelatedVideos: false,
-                  rememberPosition: true,
-                  rememberMute: true,
-                  showCertificateButton: isLastVideo,
-                }}
-                courseAIVideos={course.courseUnits.flatMap((unit) =>
-                  unit.chapters.map((chapter) => ({ id: chapter.videoId || "", title: chapter.name })),
-                )}
-              />
-              {showCompletionOverlay && (
-                <CourseCompletionOverlay
-                  onClose={handleCloseOverlay}
-                  onWatchAnotherCourse={onWatchAnotherCourse}
-                  courseName={course.name}
-                />
-              )}
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-      </CardContent>
-    </Card>
+    <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {}}>
+      <Suspense fallback={<VideoPlayerSkeleton />}>
+        <EnhancedVideoPlayer
+          videoId={currentVideoId || ""}
+          onEnded={handleVideoEnd}
+          autoPlay={true}
+          initialTime={currentTime}
+          onProgress={onTimeUpdate}
+          isLastVideo={isLastVideo}
+          onDownloadCertificate={handleDownloadCertificate}
+          onVideoSelect={onVideoSelect}
+          playerConfig={{
+            showRelatedVideos: false,
+            rememberPosition: true,
+            rememberMute: true,
+            showCertificateButton: isLastVideo,
+          }}
+          courseAIVideos={course.courseUnits.flatMap((unit) => unit.chapters.map((chapter) => ({ id: chapter.videoId || "", title: chapter.name }))
+          )} courseName={""}        />
+        {showCompletionOverlay && (
+          <CourseCompletionOverlay
+            onClose={handleCloseOverlay}
+            onWatchAnotherCourse={onWatchAnotherCourse}
+            courseName={course.name}
+          />
+        )}
+      </Suspense>
+    </ErrorBoundary>
   )
 }
 
@@ -227,7 +230,7 @@ const QuizSectionTabs = ({ course, currentChapter, planId }: QuizSectionTabsProp
           chapterId={currentChapter?.id ?? 0}
           name={currentChapter?.name || "Chapter Details"}
           course={course}
-          chapter={currentChapter as FullChapter}
+          chapter={currentChapter as unknown}
         />
       </CardContent>
     </Card>
@@ -236,8 +239,8 @@ const QuizSectionTabs = ({ course, currentChapter, planId }: QuizSectionTabsProp
 
 function LoadingFallback({ message }: { message: string }) {
   return (
-    <div className="flex items-center justify-center p-4">
-      <Loader2 className="h-6 w-4 animate-spin text-primary mr-2" />
+    <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       <span>{message}</span>
     </div>
   )
@@ -267,21 +270,23 @@ export default function MainContent(props: MainContentProps) {
         </header>
 
         <main className="container px-4 py-6 flex flex-col gap-6">
-          <div className="max-w-[1200px] mx-auto w-full space-y-6">
-            <div className="aspect-video overflow-hidden rounded-lg bg-muted shadow-sm w-full">
-              <VideoPlayer
-                key={props.initialVideoId}
-                initialVideoId={props.initialVideoId}
-                currentChapter={props.currentChapter}
-                onVideoEnd={props.onVideoEnd}
-                currentTime={props.currentTime}
-                onTimeUpdate={props.onTimeUpdate}
-                onChapterComplete={props.onChapterComplete}
-                course={props.course}
-                onVideoSelect={props.onVideoSelect}
-                isLastVideo={props.isLastVideo}
-                onWatchAnotherCourse={props.onWatchAnotherCourse}
-              />
+          <div className="mx-auto max-w-[1200px] w-full space-y-6">
+            <div className="overflow-hidden rounded-lg border bg-muted shadow-sm">
+              <div className="aspect-video relative">
+                <VideoPlayer
+                  key={props.initialVideoId}
+                  initialVideoId={props.initialVideoId}
+                  currentChapter={props.currentChapter}
+                  onVideoEnd={props.onVideoEnd}
+                  currentTime={props.currentTime}
+                  onTimeUpdate={props.onTimeUpdate}
+                  onChapterComplete={props.onChapterComplete}
+                  course={props.course}
+                  onVideoSelect={props.onVideoSelect}
+                  isLastVideo={props.isLastVideo}
+                  onWatchAnotherCourse={props.onWatchAnotherCourse}
+                />
+              </div>
             </div>
 
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
