@@ -27,7 +27,7 @@ export default async function DashboardLayout({
         </main>
         {/* <Footer /> */}
         <Toaster />
-        <Chatbot userId={session?.user?.id || ""}  />
+        <Chatbot userId={session?.user?.id || "" }  isSubscribed={!!session?.user?.subscriptionStatus} />
       </div>
     </ClientLayoutWrapper>
   )
