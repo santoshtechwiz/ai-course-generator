@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useChat } from "ai/react"
 import { Button } from "@/components/ui/button"
@@ -8,107 +10,58 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { MessageSquare, X, Send, Loader2, Sparkles, BrainCircuit, Crown, AlertCircle } from "lucide-react"
+import { MessageSquare, X, Send, Loader2, BrainCircuit, Crown, AlertCircle } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
-import debounce from "lodash/debounce"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 interface ChatbotProps {
   userId: string
 }
 
-const exampleQuestions = [
-  "What courses do you recommend for learning React?",
-  "Can you suggest a quiz to test my JavaScript skills?",
-  "How can I improve my web development skills?",
-  "What's the best way to learn about AI and machine learning?",
-  "Are there any courses on mobile app development?",
-]
-
 export function Chatbot({ userId }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [displayedContent, setDisplayedContent] = useState("")
-  const [currentExampleIndex, setCurrentExampleIndex] = useState(0)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
-  const animationFrameRef = useRef<number | null>(null)
+  const { subscriptionStatus, isLoading: isSubscriptionLoading } = useSubscriptionStore()
+  const [remainingQuestions, setRemainingQuestions] = useState(5)
+  const [lastQuestionTime, setLastQuestionTime] = useState(Date.now())
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
     api: "/api/chat",
     body: { userId },
-    onResponse: (response) => {
-      cleanupAnimations()
-      setDisplayedContent("")
-    },
-    onFinish: (message) => {
-      cleanupAnimations()
-      animateText(message.content)
+    onResponse: () => {
+      setRemainingQuestions((prev) => Math.max(0, prev - 1))
+      setLastQuestionTime(Date.now())
     },
   })
 
-  const handleScroll = useCallback(
-    debounce(() => {
-      if (scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTo({
-          top: scrollAreaRef.current.scrollHeight,
-          behavior: "smooth",
-        })
-      }
-    }, 100),
-    [],
-  )
-
-  const cleanupAnimations = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
-    }
-  }, [])
-
-  const animateText = useCallback(
-    (content: string) => {
-      cleanupAnimations()
-      abortControllerRef.current = new AbortController()
-      const signal = abortControllerRef.current.signal
-
-      setDisplayedContent("")
-      const chunkSize = 3
-      let currentIndex = 0
-
-      const animate = () => {
-        if (signal.aborted) return
-
-        if (currentIndex < content.length) {
-          const chunk = content.slice(currentIndex, currentIndex + chunkSize)
-          setDisplayedContent((prev) => prev + chunk)
-          currentIndex += chunkSize
-          animationFrameRef.current = requestAnimationFrame(animate)
-        }
-      }
-
-      animationFrameRef.current = requestAnimationFrame(animate)
-    },
-    [cleanupAnimations],
-  )
-
   useEffect(() => {
-    handleScroll()
-  }, [handleScroll])
-
-  useEffect(() => {
+    // Reset remaining questions every hour
     const interval = setInterval(() => {
-      setCurrentExampleIndex((prevIndex) => (prevIndex + 1) % exampleQuestions.length)
-    }, 5000)
+      if (Date.now() - lastQuestionTime >= 3600000) {
+        setRemainingQuestions(5)
+      }
+    }, 60000) // Check every minute
 
     return () => clearInterval(interval)
-  }, [])
+  }, [lastQuestionTime])
 
-  useEffect(() => {
-    return cleanupAnimations
-  }, [cleanupAnimations])
+  const canUseChat = useCallback(() => {
+    if (isSubscriptionLoading) return false
+    if (!subscriptionStatus?.isSubscribed) return false
+    return remainingQuestions > 0
+  }, [isSubscriptionLoading, subscriptionStatus, remainingQuestions])
+
+  const handleChatSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
+      if (canUseChat()) {
+        handleSubmit(e)
+      }
+    },
+    [canUseChat, handleSubmit],
+  )
 
   const toggleChat = () => setIsOpen(!isOpen)
 
@@ -136,22 +89,8 @@ export function Chatbot({ userId }: ChatbotProps) {
               <CardContent className="flex-grow overflow-hidden p-0">
                 <ScrollArea className="h-full px-4" ref={scrollAreaRef}>
                   <div className="space-y-4 pt-4 pb-4">
-                    {messages.length === 0 && (
-                      <div className="flex flex-col items-center justify-center h-32 gap-2 text-muted-foreground">
-                        <Sparkles className="h-8 w-8" />
-                        <p className="text-sm text-center px-4">
-                          Ask me anything about our courses, quizzes, or get personalized learning recommendations!
-                        </p>
-                      </div>
-                    )}
                     {messages.map((m, index) => (
-                      <motion.div
-                        key={m.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
-                      >
+                      <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
                         <div
                           className={cn(
                             "flex items-end gap-2 max-w-[80%]",
@@ -174,44 +113,12 @@ export function Chatbot({ userId }: ChatbotProps) {
                               m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
                             )}
                           >
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                              {m.role === "user" ? (
-                                <p className="text-sm">{m.content}</p>
-                              ) : (
-                                <ReactMarkdown
-                                  components={{
-                                    a: ({ node, ...props }) => (
-                                      <a
-                                        {...props}
-                                        className="text-primary hover:underline"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      />
-                                    ),
-                                    p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0" />,
-                                    ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-4 mb-2" />,
-                                    ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-4 mb-2" />,
-                                    li: ({ node, ...props }) => <li {...props} className="mb-1" />,
-                                    code: ({ node, inline, ...props }) =>
-                                      inline ? (
-                                        <code {...props} className="bg-primary/10 text-primary px-1 py-0.5 rounded" />
-                                      ) : (
-                                        <code
-                                          {...props}
-                                          className="block bg-primary/10 p-2 rounded my-2 overflow-x-auto"
-                                        />
-                                      ),
-                                  }}
-                                >
-                                  {index === messages.length - 1 && m.role === "assistant"
-                                    ? displayedContent
-                                    : m.content}
-                                </ReactMarkdown>
-                              )}
-                            </div>
+                            <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">
+                              {m.content}
+                            </ReactMarkdown>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                     {isLoading && (
                       <div className="flex justify-start">
@@ -237,19 +144,34 @@ export function Chatbot({ userId }: ChatbotProps) {
                         <AlertDescription>{error.message}</AlertDescription>
                       </Alert>
                     )}
+                    {!canUseChat() && (
+                      <Alert variant="destructive" className="mx-4 mt-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          {!subscriptionStatus?.isSubscribed
+                            ? "You need to subscribe to use the chatbot. Please upgrade your plan."
+                            : "You've reached the maximum number of questions for this hour. Please try again later."}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 </ScrollArea>
               </CardContent>
               <CardFooter className="border-t p-4">
-                <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
+                <form onSubmit={handleChatSubmit} className="flex w-full items-center space-x-2">
                   <Input
                     value={input}
                     onChange={handleInputChange}
-                    placeholder={exampleQuestions[currentExampleIndex]}
-                    disabled={isLoading || !userId}
+                    placeholder={canUseChat() ? "Ask a question..." : "Chatbot unavailable"}
+                    disabled={isLoading || !canUseChat()}
                     className="flex-grow"
                   />
-                  <Button type="submit" disabled={isLoading || !input.trim()} size="icon" className="shrink-0">
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !input.trim() || !canUseChat()}
+                    size="icon"
+                    className="shrink-0"
+                  >
                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </form>
