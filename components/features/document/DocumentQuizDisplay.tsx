@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { PDFDownloadLink } from "@react-pdf/renderer"
-import { QuizPDF } from "./quiz-pdf"
+import { DocumentQuizPDF } from "./DocumentQuizPdf"
 import { PlusCircle, Trash2 } from "lucide-react"
 
 interface Question {
@@ -16,13 +16,13 @@ interface Question {
   correctAnswer: number
 }
 
-interface QuizDisplayProps {
+interface DocumentQuizDisplayProps {
   questions: Question[]
   onSave: (questions: Question[]) => Promise<void>
   onUpdate: (questions: Question[]) => void
 }
 
-export function QuizDisplay({ questions, onSave, onUpdate }: QuizDisplayProps) {
+export function DocumentQuizDisplay({ questions, onSave, onUpdate }: DocumentQuizDisplayProps) {
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {

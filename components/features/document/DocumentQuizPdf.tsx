@@ -32,7 +32,7 @@ interface QuizPDFProps {
   questions: Question[]
 }
 
-export function QuizPDF({ questions }: QuizPDFProps) {
+export function DocumentQuizPDF({ questions }: QuizPDFProps) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
