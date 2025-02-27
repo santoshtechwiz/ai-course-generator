@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
 
-import { QuizDisplay } from "@/components/features/document/quiz-display"
-import { DocumentQuizOptions } from "@/components/features/document/quiz-options"
+import { DocumentQuizDisplay } from "@/components/features/document/DocumentQuizDisplay"
+import { DocumentQuizOptions } from "@/components/features/document/DocumentQuizOptions"
 import { FileUpload } from "@/components/features/document/FileUpload"
 
 interface Question {
@@ -130,7 +130,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             {quiz.length > 0 ? (
-              <QuizDisplay questions={quiz} onSave={handleSaveQuiz} onUpdate={handleUpdateQuiz} />
+              <DocumentQuizDisplay questions={quiz} onSave={handleSaveQuiz} onUpdate={handleUpdateQuiz} />
             ) : (
               <p className="text-center text-muted-foreground">No quiz generated yet.</p>
             )}

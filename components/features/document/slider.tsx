@@ -4,7 +4,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-export interface SliderProps extends React.HTMLAttributes<HTMLSpanElement> {
+export interface SliderProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'defaultValue'> {
   defaultValue?: number[]
   value?: number[]
   onValueChange?: (value: number[]) => void
@@ -36,7 +36,6 @@ const Slider = React.forwardRef<HTMLSpanElement, SliderProps>(
       <div className="relative flex items-center">
         <input
           type="range"
-          ref={ref}
           className={cn(
             "peer h-2 w-full appearance-none rounded-lg bg-primary/20 outline-none dark:bg-primary/80",
             className,
