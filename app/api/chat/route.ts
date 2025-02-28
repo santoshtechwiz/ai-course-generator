@@ -10,7 +10,7 @@ import { Document } from "langchain/document"
 
 const CONFIG = {
   URL: process.env.NEXT_PUBLIC_URL,
-  MAX_RESULTS: 5,
+  MAX_RESULTS: 3, // Reduced from 5 to 3
 }
 
 let vectorStore: MemoryVectorStore | null = null
@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
     const userId = authSession?.user?.id
 
     if (!userId) {
-      console.error("Unauthorized: No user ID found")
       return new Response("Unauthorized", { status: 401 })
     }
 
@@ -31,22 +30,20 @@ export async function POST(req: NextRequest) {
       return new Response("Invalid request", { status: 400 })
     }
 
-    console.log(`Processing request for user ${userId}: ${userMessage}`)
-
-    // Initialize memory manager to store and retrieve conversation history
+    // Initialize memory manager with reduced maxTokens
     const memory = new MemoryManager({
       sessionId: userId,
-      maxTokens: 500,
+      maxTokens: 300, // Reduced from 500
     })
 
-    // Get conversation history
-    const chatHistory = await memory.getMessages()
+    // Get conversation history (last 3 messages only)
+    const chatHistory = (await memory.getMessages()).slice(-3)
 
     // Add current message to history
     await memory.addMessage({
       role: "user",
       content: userMessage,
-      id: ""
+      id: "",
     })
 
     // Initialize or retrieve vector store
@@ -65,7 +62,7 @@ export async function POST(req: NextRequest) {
       model: openai("gpt-3.5-turbo"),
       messages: [{ role: "system", content: systemMessage }, ...chatHistory, ...messages],
       temperature: 0.7,
-      maxTokens: 150,
+      maxTokens: 100, // Reduced from 250
     })
 
     // Add AI response to memory
@@ -73,13 +70,12 @@ export async function POST(req: NextRequest) {
       await memory.addMessage({
         role: "assistant",
         content: aiResponse,
-        id: ""
+        id: "",
       })
     })
 
     return result.toDataStreamResponse()
   } catch (error) {
-    console.error("Error in API:", error)
     return new Response("Internal Server Error", { status: 500 })
   }
 }
@@ -98,7 +94,7 @@ async function initializeVectorStore(): Promise<MemoryVectorStore> {
     ...allCourses.map(
       (course) =>
         new Document({
-          pageContent: `Course: ${course.name}\nDescription: ${course.description || "No description available."}`,
+          pageContent: `Course: ${course.name}\n${course.description || ""}`,
           metadata: { type: "course", slug: course.slug },
         }),
     ),
@@ -116,26 +112,25 @@ async function initializeVectorStore(): Promise<MemoryVectorStore> {
 }
 
 function buildSystemMessage(similarDocs: Document[]): string {
-  let message = `You are an AI assistant for our learning platform. Your task is to help users find relevant courses and quizzes or suggest creating new content if nothing suitable exists. Based on the user's query, here are the most relevant items from our platform:\n\n`
+  let message = `You are a concise AI assistant for our learning platform. Help users find courses and quizzes or suggest creating new content. Relevant items:\n\n`
 
   if (similarDocs.length > 0) {
     similarDocs.forEach((doc) => {
       if (doc.metadata.type === "course") {
         message += `- Course: [${doc.pageContent.split("\n")[0].replace("Course: ", "")}](${CONFIG.URL}/dashboard/course/${doc.metadata.slug})\n`
-        message += `  ${doc.pageContent.split("\n")[1]}\n\n`
       } else if (doc.metadata.type === "quiz") {
-        message += `- Quiz: [${doc.pageContent.replace("Quiz: ", "")}](${CONFIG.URL}/dashboard/${doc.metadata.quizType}/${doc.metadata.slug})\n\n`
+        message += `- Quiz: [${doc.pageContent.replace("Quiz: ", "")}](${CONFIG.URL}/dashboard/${doc.metadata.quizType}/${doc.metadata.slug})\n`
       }
     })
   } else {
-    message += "I couldn't find any directly relevant content for this query.\n\n"
+    message += "No directly relevant content found.\n"
   }
 
-  message += `If you can't find a suitable course or quiz for the user's query, suggest creating new content. You can use these links:
-- [Create a Course](${CONFIG.URL}/dashboard/create)
-- [Create a Quiz](${CONFIG.URL}/dashboard/quiz)
+  message += `\nIf no suitable content, suggest:
+- [Create Course](${CONFIG.URL}/dashboard/create)
+- [Create Quiz](${CONFIG.URL}/dashboard/quiz)
 
-Always maintain a helpful and encouraging tone. Provide guidance on how to get started with creating content if the user shows interest. Do not provide information about courses, quizzes, or content outside our platform.`
+Be helpful and brief. Don't provide external info. For specific course details, advise checking the course page.`
 
   return message
 }
