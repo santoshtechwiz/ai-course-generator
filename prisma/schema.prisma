@@ -43,6 +43,7 @@ model User {
   @@index([email])
   @@index([userType])
   @@index([engagementScore])
+  FlashCard FlashCard[]
 }
 
 model Account {
@@ -309,6 +310,7 @@ model UserQuiz {
   @@index([quizType])
   @@index([isPublic])
   @@index([difficulty])
+  FlashCard FlashCard[]
 }
 
 model UserQuizAttempt {
@@ -421,4 +423,23 @@ model UserQuizRating {
   @@unique([userId, userQuizId])
   @@index([userQuizId])
   @@index([rating])
+}
+
+model FlashCard {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  userId    String
+  slug      String?  @default("default-slug")
+  userQuizId Int?    // Foreign key to link with UserQuiz
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  difficulty String?
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userQuiz  UserQuiz? @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
+
+  @@index([question])
+  @@index([userId])
+  @@index([userQuizId])
 }

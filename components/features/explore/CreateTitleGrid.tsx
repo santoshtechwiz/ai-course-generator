@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
-import { FileQuestion, BookOpen, PenTool, AlignLeft, Code, FileText } from "lucide-react"
+import { FileQuestion, BookOpen, PenTool, AlignLeft, Code, FileText, Puzzle, Brain } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -125,6 +125,22 @@ const tiles = [
     ],
     isPremium: true,
   },
+  {
+    icon: Brain,
+    title: "AI-Powered Flashcard Learning System",
+    description:
+      "Create and study with intelligent flashcards using AI to enhance memory retention and adapt to your learning pace.",
+    url: "/dashboard/flashcard",
+    color: "red",
+    quotes: [
+      "Master any subject with AI-generated adaptive flashcards!",
+      "Boost your memory with intelligent spaced repetition learning.",
+      "Track your progress with detailed analytics and mastery levels.",
+      "Engage in gamified learning with streaks and confidence ratings.",
+      "Create personalized study decks that evolve as you learn.",
+    ],
+    isPremium: false,
+},
 ]
 
 function Tile({ icon: Icon, title, description, url, index, quotes, color, isPremium }: CreateTileGridProps) {

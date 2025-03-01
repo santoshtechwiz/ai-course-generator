@@ -470,3 +470,13 @@ export interface QuizWrapperProps {
   queryParams?: QueryParams
 }
 
+export interface FlashCard {
+  id?: string
+  question: string
+  answer: string
+  userId?: string
+  quizId?: string
+  createdAt?: Date
+  isSaved?: boolean
+}
+

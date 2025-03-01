@@ -56,7 +56,7 @@ CREATE TABLE "Course" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "image" TEXT NOT NULL,
-    "viewCount" INTEGER NOT NULL DEFAULT 0,
+    "viewCount" INTEGER NOT NULL DEFAULT 1000,
     "user_id" TEXT NOT NULL,
     "categoryId" INTEGER,
     "isCompleted" BOOLEAN DEFAULT false,
@@ -326,6 +326,21 @@ CREATE TABLE "UserQuizRating" (
     CONSTRAINT "UserQuizRating_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "FlashCard" (
+    "id" SERIAL NOT NULL,
+    "question" TEXT NOT NULL,
+    "answer" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "slug" TEXT DEFAULT 'default-slug',
+    "userQuizId" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "difficulty" TEXT,
+
+    CONSTRAINT "FlashCard_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -527,6 +542,15 @@ CREATE INDEX "UserQuizRating_rating_idx" ON "UserQuizRating"("rating");
 -- CreateIndex
 CREATE UNIQUE INDEX "UserQuizRating_userId_userQuizId_key" ON "UserQuizRating"("userId", "userQuizId");
 
+-- CreateIndex
+CREATE INDEX "FlashCard_question_idx" ON "FlashCard"("question");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_userId_idx" ON "FlashCard"("userId");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_userQuizId_idx" ON "FlashCard"("userQuizId");
+
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -604,3 +628,10 @@ ALTER TABLE "UserQuizRating" ADD CONSTRAINT "UserQuizRating_userQuizId_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "UserQuizRating" ADD CONSTRAINT "UserQuizRating_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FlashCard" ADD CONSTRAINT "FlashCard_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FlashCard" ADD CONSTRAINT "FlashCard_userQuizId_fkey" FOREIGN KEY ("userQuizId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
