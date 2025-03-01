@@ -81,7 +81,10 @@ export async function getQuizzes({
         quizType: quiz.quizType as QuizType,
         bestScore: quiz.bestScore || 0,
         tags: [],
-        questions:  quiz.questions,
+        questions: quiz.questions.map(q => ({
+          ...q,
+          options: q.options ? q.options.split(',') : [],
+        })),
       }),
     )
 
