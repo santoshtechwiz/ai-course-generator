@@ -70,17 +70,19 @@ export async function POST(req: Request) {
           quizType: "flashcard",
           slug,
           timeStarted: new Date(),
-          user: { connect: { id: session.user.id } },
-          FlashCard: {
+          userId: session.user.id,
+          flashCards: {
             create: flashcards.map((flashcard: any) => ({
               question: flashcard.question,
               answer: flashcard.answer,
-              user: { connect: { id: session.user.id } },
+              userId: session.user.id,
+              difficulty:"hard",
+              
             })),
           },
         },
         include: {
-          FlashCard: true,
+          flashCards: true,
         },
       });
       
@@ -145,7 +147,7 @@ export async function GET(req: Request) {
           userId: session.user.id, // Ensure user owns this quiz
         },
         include: {
-          FlashCard: {
+          flashCards: {
             orderBy: { createdAt: "desc" },
           },
         },
@@ -162,7 +164,7 @@ export async function GET(req: Request) {
         success: true, 
         data: {
           quiz,
-          flashcards: quiz.FlashCard,
+          flashcards: quiz.flashCards,
         }
       }, { status: 200 });
     } else {
@@ -179,7 +181,7 @@ export async function GET(req: Request) {
           slug: true,
           timeStarted: true,
           _count: {
-            select: { FlashCard: true },
+            select: { flashCards: true },
           },
         },
       });
