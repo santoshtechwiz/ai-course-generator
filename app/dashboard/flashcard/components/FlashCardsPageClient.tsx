@@ -4,21 +4,29 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import type { FlashCard } from "@/app/types/types"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, Plus, Sparkles } from "lucide-react"
+import { ArrowLeft, Sparkles } from "lucide-react"
 import axios from "axios"
 import { FlashCardComponent } from "./FlashCardComponent"
+import { QuizActions } from "@/components/QuizActions"
 
 interface FlashCardsPageClientProps {
   slug: string
+  userId: string
 }
 
-export default function FlashCardsPageClient({ slug }: FlashCardsPageClientProps) {
+export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageClientProps) {
   const [flashCards, setFlashCards] = useState<FlashCard[]>([])
   const [savedCardIds, setSavedCardIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [ownerId, setOwnerId] = useState<string>("")
+  const [quizId, setQuizId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
+  const [currentCardIndex, setCurrentCardIndex] = useState(0)
+  const [correctCount, setCorrectCount] = useState(0)
+  const [incorrectCount, setIncorrectCount] = useState(0)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -28,12 +36,13 @@ export default function FlashCardsPageClient({ slug }: FlashCardsPageClientProps
         setError(null)
 
         const response = await axios.get(`/api/flashcard?slug=${slug}`)
-
-        if (response.data.flashcards) {
-          setFlashCards(response.data.flashcards)
+        if (response.data.data.flashCards) {
+          setOwnerId(response.data.data.quiz?.userId)
+          setQuizId(response.data.data.quiz?.id)
+          setFlashCards(response.data.data.flashCards)
 
           // Extract saved card IDs
-          const savedIds = response.data.flashcards
+          const savedIds = response.data.data.flashCards
             .filter((card: FlashCard) => card.isSaved)
             .map((card: FlashCard) => card.id)
 
@@ -98,35 +107,48 @@ export default function FlashCardsPageClient({ slug }: FlashCardsPageClientProps
   }
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <div className="max-w-3xl mx-auto space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold">My Flash Cards</h1>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/dashboard/quizzes">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-            <Link href="/dashboard/flashcard">
-              <Button size="sm">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate New Cards
-              </Button>
-            </Link>
+    <div className="container mx-auto py-6 px-4 max-w-3xl">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex space-x-2 flex-row items-center">
+
           </div>
+          {/* <h1 className="text-3xl font-bold">My Flash Cards</h1> */}
+
         </div>
 
+        <div className="flex justify-between items-center">
+          <Link href="/dashboard/quizzes">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
+          </Link>
+          <Link href="/dashboard/flashcard">
+            <Button size="sm">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate New Cards
+            </Button>
+          </Link>
+        </div>
+        <QuizActions
+          quizId={quizId}
+          quizSlug={slug}
+          initialIsPublic={false}
+          initialIsFavorite={false}
+          userId={userId}
+          ownerId={ownerId}
+          quizType="flashcard"
+        />
         {loading ? (
-          <Card className="w-full max-w-md mx-auto h-80 flex items-center justify-center">
+          <Card className="w-full h-80 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
               <p className="text-muted-foreground">Loading your flash cards...</p>
             </div>
           </Card>
         ) : error ? (
-          <Card className="w-full max-w-md mx-auto">
+          <Card className="w-full mx-auto">
             <CardHeader>
               <CardTitle>Error Loading Flash Cards</CardTitle>
               <CardDescription>{error}</CardDescription>
@@ -138,9 +160,13 @@ export default function FlashCardsPageClient({ slug }: FlashCardsPageClientProps
             </CardContent>
           </Card>
         ) : flashCards.length > 0 ? (
-          <FlashCardComponent cards={flashCards} onSaveCard={handleSaveCard} savedCardIds={savedCardIds} />
+          <div className="space-y-4">
+           
+          
+            <FlashCardComponent cards={flashCards} onSaveCard={handleSaveCard} savedCardIds={savedCardIds} />
+          </div>
         ) : (
-          <Card className="w-full max-w-md mx-auto">
+          <Card className="w-full mx-auto">
             <CardHeader>
               <CardTitle>No Flash Cards Yet</CardTitle>
               <CardDescription>
@@ -150,7 +176,7 @@ export default function FlashCardsPageClient({ slug }: FlashCardsPageClientProps
             <CardContent>
               <Link href="/dashboard/flashcard">
                 <Button className="w-full">
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Sparkles className="mr-2 h-4 w-4" />
                   Create Flash Cards
                 </Button>
               </Link>
