@@ -66,6 +66,7 @@ export default function CreateFlashcardPage() {
       }
 
       const data = await response.json()
+      console.log(data);
 
       toast({
         title: "Flashcards created!",
@@ -73,7 +74,7 @@ export default function CreateFlashcardPage() {
       })
 
       // Redirect to the flashcards page
-      router.push(`/flashcard/${data.newTopic.slug}`)
+      router.push(`/dashboard/flashcard/${data.data.slug}`)
     } catch (error) {
       toast({
         title: "Something went wrong",

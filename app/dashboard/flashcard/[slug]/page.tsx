@@ -1,3 +1,4 @@
+import { getAuthSession } from "@/lib/authOptions"
 import FlashCardsPageClient from "../components/FlashCardsPageClient"
 
 
@@ -6,6 +7,10 @@ interface FlashCardsPageProps {
 }
 
 export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
-  return <FlashCardsPageClient slug={(await params).slug} />
+  const userId = (await getAuthSession())?.user.id ?? "";
+  return <FlashCardsPageClient slug={(await params).slug} 
+    userId={userId}
+  
+  />
 }
 
