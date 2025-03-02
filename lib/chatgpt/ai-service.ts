@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+
 
 import { FlashCard } from "@/app/types/types";
 import openai from "./openaiUtils";
@@ -60,7 +60,7 @@ export async function generateFlashCards(
       throw new Error("Invalid API response format");
     }
 
-    return parsedResponse.flashcards.map((item) => ({
+    return parsedResponse.flashcards.map((item: { question: string; answer: string }) => ({
       question: item.question,
       answer: item.answer
     }));
