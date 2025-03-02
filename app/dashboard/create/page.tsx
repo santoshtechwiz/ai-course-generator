@@ -14,12 +14,18 @@ const Page = async ({
   params: QueryParams,
   searchParams: { [key: string]: string | string[] | undefined }
 }) => {
-  console.log("Route params:", params);
-  console.log("Search params:", searchParams);
+  
+  let topic = "";
+  let category = "";
+  let courseData = [];
 
-  const topic = params?.topic || searchParams?.topic || "";
-  const category = params?.categoryAttachment || searchParams?.category || "";
-  const courseData = await getCourseDetails();
+  try {
+    topic = typeof params?.topic === 'string' ? params.topic : (Array.isArray(searchParams?.topic) ? searchParams.topic[0] : searchParams?.topic) || "";
+    category = typeof params?.categoryAttachment === 'string' ? params.categoryAttachment : (Array.isArray(searchParams?.category) ? searchParams.category[0] : searchParams?.category) || "";
+    courseData = await getCourseDetails();
+  } catch (error) {
+    console.warn("Failed to fetch course details:", error);
+  }
 
   return (
     <div className="container mx-auto py-6 space-y-6 min-h-screen bg-background text-foreground">

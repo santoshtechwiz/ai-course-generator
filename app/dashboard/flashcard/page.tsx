@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { Book, Lightbulb, ArrowLeft } from 'lucide-react'
+import { Book, Lightbulb, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
@@ -36,13 +38,14 @@ const formSchema = z.object({
 export default function CreateFlashcardPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const { subscriptionStatus } = useSubscriptionStore();
+  const { subscriptionStatus } = useSubscriptionStore()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       topic: "",
-      amount: 5,
+      amount: 3,
       difficulty: "medium",
     },
   })
@@ -52,13 +55,17 @@ export default function CreateFlashcardPage() {
       setIsSubmitting(true)
 
       // In a real app, you would send this data to your API
-      const response = await fetch('/api/flashcard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/flashcard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       })
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error("Failed to create flashcards")
+      }
+
+      const data = await response.json()
 
       toast({
         title: "Flashcards created!",
@@ -79,6 +86,19 @@ export default function CreateFlashcardPage() {
   }
 
   const isTopicValid = form.watch("topic").length >= 3
+
+  // This function will be called by the PlanAwareButton
+  const handleButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Manually trigger form validation and submission
+    if (formRef.current) {
+      await form.trigger() // Trigger validation
+
+      if (form.formState.isValid) {
+        // If form is valid, submit it programmatically
+        form.handleSubmit(onSubmit)()
+      }
+    }
+  }
 
   return (
     <div className="container max-w-3xl py-10 px-4">
@@ -103,7 +123,7 @@ export default function CreateFlashcardPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
                 control={form.control}
                 name="topic"
@@ -158,20 +178,8 @@ export default function CreateFlashcardPage() {
                     <FormLabel>Number of Flashcards: {field.value}</FormLabel>
                     <FormControl>
                       <div className="pt-2">
-
-                        <SubscriptionSlider
-
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        />
-
-                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                          <span>1</span>
-                          <span>5</span>
-                          <span>10</span>
-                          <span>15</span>
-                          <span>20</span>
-                        </div>
+                        <SubscriptionSlider value={field.value} onValueChange={(val) => field.onChange(val)} />
+                       
                       </div>
                     </FormControl>
                     <FormDescription>More cards will take longer to generate</FormDescription>
@@ -182,8 +190,8 @@ export default function CreateFlashcardPage() {
 
               <div className="pt-4">
                 <PlanAwareButton
-
-                  disabled={isSubmitting}
+                  onClick={handleButtonClick}
+                  isLoading={isSubmitting}
                   hasCredits={(subscriptionStatus?.credits ?? 0) > 0}
                   isEnabled={isTopicValid}
                   label="Create Flashcards"
@@ -213,8 +221,12 @@ export default function CreateFlashcardPage() {
             <Lightbulb className="mr-2 h-4 w-4" />
             <span>Tip: For best results, use specific topics rather than broad subjects</span>
           </div>
+          {Object.keys(form.formState.errors).length > 0 && (
+            <div className="text-sm text-destructive">Please fix the errors above before submitting</div>
+          )}
         </CardFooter>
       </Card>
     </div>
   )
 }
+
