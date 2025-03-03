@@ -52,7 +52,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
           setSavedCardIds([])
         }
       } catch (error) {
-        console.error("Error fetching flash cards:", error)
+        console.warn("Error fetching flash cards:", error)
         setError("Failed to load your flash cards")
         toast({
           title: "Error",

@@ -6,15 +6,19 @@ import { getCourseDetails } from "@/app/actions/getCourseDetails";
 import { Card } from "@/components/ui/card";
 import { QueryParams } from "@/app/types/types";
 import PopularCourses from "@/components/features/create/PopularCourses";
-
-const Page = async ({ 
+export const metadata = {
+  title: "Create Your Course | Course AI",
+  description:
+    "Design and build your own interactive course with our intuitive course creation tools. Share your expertise and engage learners effectively.",
+}
+const Page = async ({
   params,
   searchParams
-}: { 
+}: {
   params: QueryParams,
   searchParams: { [key: string]: string | string[] | undefined }
 }) => {
-  
+
   let topic = "";
   let category = "";
   let courseData = [];
@@ -49,10 +53,10 @@ const Page = async ({
                   Pro tip: Be specific with your topic
                 </div>
               </div>
-              <QuizWrapper 
-                type="course"  
+              <QuizWrapper
+                type="course"
                 queryParams={{
-                  topic: topic, 
+                  topic: topic,
                   category: category
                 }}
               />

@@ -16,23 +16,23 @@ import { PreviewStep } from "./PreviewStep"
 import { ConfirmationDialog } from "./ConfirmationDialog"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 
-import { QueryParams } from "@/app/types/types"
+import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
 import { SignInBanner } from "@/components/features/quiz/SignInBanner"
 
 interface CourseCreationFormProps {
- 
-  maxQuestions: number,
+  maxQuestions: number
   params: QueryParams
 }
 
-export default function CourseCreationForm({  maxQuestions,params }: CourseCreationFormProps) {
+export default function CourseCreationForm({ maxQuestions, params }: CourseCreationFormProps) {
   const [step, setStep] = React.useState(1)
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
@@ -65,12 +65,11 @@ export default function CourseCreationForm({  maxQuestions,params }: CourseCreat
     },
   })
 
- useEffect(() => {
+  useEffect(() => {
     if (params.topic) {
       setValue("title", params.topic)
     }
-  }, [params.topic])
-
+  }, [params.topic, setValue])
 
   const createCourseMutation = useMutation({
     mutationFn: async (data: CreateCourseInput) => {
@@ -160,76 +159,80 @@ export default function CourseCreationForm({  maxQuestions,params }: CourseCreat
     <div className="min-h-screen bg-background">
       <SignInBanner isAuthenticated={authStatus === "authenticated"} />
       <div className="container max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Create a New Course</h1>
-          <p className="text-lg text-muted-foreground">
-            Fill in the details for your new course. Progress is automatically saved.
-          </p>
-        </div>
+        <Card className="bg-background border border-border shadow-sm">
+          <CardHeader className="bg-primary/5 border-b">
+            <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
+              Create a New Course
+            </CardTitle>
+            <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
+              Fill in the details for your new course. Progress is automatically saved.
+            </p>
+          </CardHeader>
 
-        <div className="mt-12">
-          {/* Step Indicators */}
-          <div className="relative">
-            <div className="flex justify-between items-center relative z-10 px-8">
-              {steps.map((s, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "flex flex-col items-center",
-                    i + 1 === step ? "text-primary" : "text-muted-foreground",
-                  )}
-                >
+          <CardContent className="pt-6">
+            {/* Step Indicators */}
+            <div className="relative mb-8">
+              <div className="flex justify-between items-center relative z-10 px-8">
+                {steps.map((s, i) => (
                   <div
+                    key={i}
                     className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors",
-                      i + 1 === step ? "bg-primary/10" : "bg-muted",
+                      "flex flex-col items-center",
+                      i + 1 === step ? "text-primary" : "text-muted-foreground",
                     )}
                   >
-                    {s.icon}
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors",
+                        i + 1 === step ? "bg-primary/10" : "bg-muted",
+                      )}
+                    >
+                      {s.icon}
+                    </div>
+                    <span className="text-sm font-medium">{s.label}</span>
                   </div>
-                  <span className="text-sm font-medium">{s.label}</span>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mt-8 px-8">
+                <Progress value={((step - 1) / (totalSteps - 1)) * 100} className="h-2 transition-all duration-300" />
+              </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="mt-8 px-8">
-              <Progress value={((step - 1) / (totalSteps - 1)) * 100} className="h-2 transition-all duration-300" />
+            {/* Form Content */}
+            <div className="mt-8">
+              {step === 1 && <BasicInfoStep control={control} errors={errors} params={params} />}
+              {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
+              {step === 3 && <PreviewStep watch={watch} />}
             </div>
-          </div>
 
-          {/* Form Content */}
-          <div className="mt-12">
-            {step === 1 && <BasicInfoStep control={control} errors={errors}  params={params}/>}
-            {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
-            {step === 3 && <PreviewStep watch={watch} />}
-          </div>
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8">
+              <Button type="button" variant="outline" onClick={handleBack} disabled={step === 1}>
+                Back
+              </Button>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            <Button type="button" variant="outline" onClick={handleBack} disabled={step === 1}>
-              Back
-            </Button>
+              <div className="space-y-2">
+                {step < totalSteps ? (
+                  <Button type="button" onClick={handleNext} disabled={!isStepValid() || maxQuestions === 0}>
+                    Continue
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={isCreateDisabled} onClick={handleSubmit(onSubmit)}>
+                    {isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"}
+                  </Button>
+                )}
 
-            <div className="space-y-2">
-              {step < totalSteps ? (
-                <Button type="button" onClick={handleNext} disabled={!isStepValid() || maxQuestions === 0}>
-                  Continue
-                </Button>
-              ) : (
-                <Button type="submit" disabled={isCreateDisabled} onClick={handleSubmit(onSubmit)}>
-                  {isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"}
-                </Button>
-              )}
-
-              {!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) > 0 && (
-                <p className="text-sm text-muted-foreground text-right">
-                  Available credits: {availableCredits} (This action will deduct 1 credit)
-                </p>
-              )}
+                {!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) > 0 && (
+                  <p className="text-sm text-muted-foreground text-right">
+                    Available credits: {availableCredits} (This action will deduct 1 credit)
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       <ConfirmationDialog

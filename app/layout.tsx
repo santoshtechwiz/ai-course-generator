@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 
 import { Analytics } from "./analytics"
@@ -10,31 +10,31 @@ import PageLoader from "@/components/ui/loader"
 import { JsonLd } from "@/components/json-ld"
 import { Providers } from "./providers/provider"
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-plus-jakarta",
   display: "swap",
 })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"),
   title: {
-    default: "Course AI: Smart Quiz Generator & Course Creator | Create Quizzes Instantly",
-    template: `%s | Course AI - AI Quiz Generator`,
+    default: "Course AI: Smart Learning Platform | Create & Take Quizzes",
+    template: `%s | Course AI`,
   },
   description:
-    "Create professional quizzes and assessments instantly with AI. Generate multiple-choice questions, course materials, and interactive tests from any content. Perfect for educators and trainers.",
+    "Course AI: An intelligent learning platform for creating and taking quizzes, generating courses, and enhancing educational experiences. Perfect for students, educators, and lifelong learners.",
   keywords: [
-    "AI quiz generator",
-    "quiz maker online",
-    "multiple choice question generator",
-    "test creator software",
-    "quiz creation tool",
-    "automatic quiz generator",
-    "quiz builder AI",
-    "educational quiz generator",
-    "student assessment creator",
-    "learning assessment platform",
+    "online learning",
+    "quiz generator",
+    "course creation",
+    "educational platform",
+    "adaptive learning",
+    "personalized education",
+    "interactive quizzes",
+    "skill assessment",
+    "e-learning tools",
+    "knowledge testing",
   ],
   authors: [{ name: process.env.NEXT_PUBLIC_AUTHOR_NAME, url: process.env.NEXT_PUBLIC_AUTHOR_URL }],
   creator: process.env.NEXT_PUBLIC_CREATOR,
@@ -42,16 +42,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_SITE_URL,
-    title: "Course AI: Create Professional Quizzes & Assessments with AI",
+    title: "Course AI: Intelligent Learning Platform for Quizzes and Courses",
     description:
-      "Generate quizzes, tests, and assessments instantly. Transform any content into professional educational materials with our AI-powered platform.",
-    siteName: "Course AI - Smart Quiz Generator",
+      "Elevate your learning experience with Course AI. Create, take, and share quizzes and courses tailored to your educational needs.",
+    siteName: "Course AI - Smart Learning Platform",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Course AI: Create Professional Quizzes & Assessments with AI",
-    description:
-      "Generate quizzes, tests, and assessments instantly. Transform any content into professional educational materials.",
+    title: "Course AI: Revolutionize Your Learning Journey",
+    description: "Discover a smarter way to learn and teach with Course AI's interactive quizzes and adaptive courses.",
     creator: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
     site: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
   },
@@ -80,14 +79,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${plusJakartaSans.variable} antialiased`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
         <link rel="icon" href="/favicon.ico" sizes="any" />
-  
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
         <JsonLd />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">

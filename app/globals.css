@@ -1,63 +1,59 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  pointer-events: auto !important;
-}
-
 @layer base {
   :root {
     --font-sans:
-      "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+      "Plus Jakarta Sans", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
 
-    /* Color variables */
-    --background: 230 25% 98%;
-    --foreground: 230 15% 15%;
+    /* Updated color palette with improved contrast and cohesion */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 230 15% 15%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 230 15% 15%;
-    --primary: 230 85% 55%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 250 30% 95%;
-    --secondary-foreground: 230 15% 15%;
-    --muted: 230 20% 94%;
-    --muted-foreground: 230 15% 45%;
-    --accent: 270 80% 65%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 350 90% 60%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 221 83% 96%;
+    --accent-foreground: 221 83% 53%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 230 20% 90%;
-    --input: 230 20% 90%;
-    --ring: 230 85% 55%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 230 30% 8%;
-    --foreground: 230 15% 95%;
-    --card: 230 30% 12%;
-    --card-foreground: 230 15% 95%;
-    --popover: 230 30% 12%;
-    --popover-foreground: 230 15% 95%;
-    --primary: 230 80% 60%;
-    --primary-foreground: 230 15% 10%;
-    --secondary: 250 25% 20%;
-    --secondary-foreground: 230 15% 95%;
-    --muted: 230 25% 18%;
-    --muted-foreground: 230 15% 70%;
-    --accent: 270 75% 65%;
-    --accent-foreground: 230 15% 10%;
-    --destructive: 350 80% 55%;
-    --destructive-foreground: 230 15% 95%;
-    --border: 230 25% 22%;
-    --input: 230 25% 22%;
-    --ring: 230 80% 60%;
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 91.2% 15%;
+    --accent-foreground: 217.2 91.2% 59.8%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
 
@@ -65,28 +61,259 @@ body {
   * {
     @apply border-border;
   }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    letter-spacing: -0.01em;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-medium tracking-tight;
+    line-height: 1.2;
+  }
+
+  /* Improved focus styles for better accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
 
 @layer utilities {
-  /* Keep flip-related utilities */
-  .perspective-1200px {
-    perspective: 1200px;
+  /* Improved spacing system */
+  .content-container {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12;
+    max-width: 1280px;
   }
 
-  .transform-style-3d {
-    transform-style: preserve-3d;
+  .section-spacing {
+    @apply py-10 md:py-16 lg:py-20;
   }
 
-  .backface-hidden {
-    backface-visibility: hidden;
+  .card-spacing {
+    @apply p-5 sm:p-6;
   }
 
-  .rotate-y-180 {
-    transform: rotateY(180deg);
+  /* Enhanced typography system */
+  .heading-1 {
+    @apply text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl;
+    letter-spacing: -0.02em;
   }
+
+  .heading-2 {
+    @apply text-3xl font-bold tracking-tight sm:text-4xl;
+    letter-spacing: -0.015em;
+  }
+
+  .heading-3 {
+    @apply text-2xl font-bold tracking-tight sm:text-3xl;
+    letter-spacing: -0.01em;
+  }
+
+  .body-large {
+    @apply text-lg leading-relaxed;
+    letter-spacing: -0.01em;
+  }
+
+  .body-normal {
+    @apply text-base leading-relaxed;
+  }
+
+  .body-small {
+    @apply text-sm leading-relaxed;
+  }
+
+  /* Improved interactive elements */
+  .interactive-hover {
+    @apply transition-all duration-200 hover:scale-105;
+  }
+
+  .card-standard {
+    @apply bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Enhanced grid layouts */
+  .grid-responsive {
+    @apply grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  .grid-sidebar {
+    @apply grid grid-cols-1 lg:grid-cols-4 gap-8;
+  }
+
+  .main-content {
+    @apply lg:col-span-3;
+  }
+
+  .sidebar-content {
+    @apply lg:col-span-1;
+  }
+
+  /* Improved form elements */
+  .form-group {
+    @apply space-y-3 mb-6;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-foreground mb-1;
+  }
+
+  .form-input {
+    @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* Button size variants */
+  .btn-lg {
+    @apply px-6 py-3 text-lg rounded-md;
+  }
+
+  .btn-md {
+    @apply px-4 py-2 text-base rounded-md;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm rounded-md;
+  }
+
+  /* New utility classes */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  .shadow-subtle {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .shadow-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Improve accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Smooth scrolling for browsers that support it */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Improve text rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Improve contrast for better readability */
+.text-muted-foreground {
+  @apply text-opacity-80;
+}
+
+/* Improve form element styling */
+input,
+textarea,
+select {
+  @apply text-base;
+}
+
+/* Improve button styling */
+button,
+[type="button"],
+[type="reset"],
+[type="submit"] {
+  -webkit-appearance: button;
+  background-color: transparent;
+  background-image: none;
+}
+
+/* Improve list styling */
+ul,
+ol {
+  @apply pl-5;
+}
+
+/* Improve table styling */
+table {
+  @apply w-full border-collapse;
+}
+
+th,
+td {
+  @apply p-2 border;
+}
+
+/* Improve code block styling */
+pre,
+code {
+  @apply font-mono text-sm rounded-md bg-muted px-1 py-0.5;
+}
+
+/* Improve blockquote styling */
+blockquote {
+  @apply pl-4 border-l-4 border-muted italic;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+
+  .heading-1 {
+    @apply text-3xl;
+  }
+
+  .heading-2 {
+    @apply text-2xl;
+  }
+
+  .heading-3 {
+    @apply text-xl;
+  }
+}
+
+/* Improved card design */
+.card {
+  @apply rounded-xl border bg-card text-card-foreground shadow-subtle transition-all duration-200;
+}
+
+.card:hover {
+  @apply shadow-card;
+}
+
+/* Enhanced navigation styling */
+.nav-item {
+  @apply px-3 py-2 text-sm font-medium rounded-md transition-colors;
+}
+
+.nav-item:hover {
+  @apply bg-accent text-accent-foreground;
+}
+
+.nav-item.active {
+  @apply bg-primary text-primary-foreground;
 }
 
