@@ -2,84 +2,97 @@
 
 import { memo, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { Input } from "@/components/ui/input"
-import { Info, Brain } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
+import { motion, AnimatePresence } from "framer-motion"
+import { Brain, Info, AlertCircle } from "lucide-react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
+import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
-import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
 
 
+import type { QueryParams } from "@/app/types/types"
+import { z } from "zod"
 
-interface TopicFormProps {
+const fillInTheBlankQuizSchema = z.object({
+  topic: z.string().min(3, "Topic must be at least 3 characters"),
+  questionCount: z.number().int().positive().min(1, "Must have at least 1 question"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+});
+
+type FillInTheBlankQuizFormData = z.infer<typeof fillInTheBlankQuizSchema>
+
+interface FillInTheBlankQuizFormProps {
   isLoggedIn: boolean
+  maxQuestions: number
+  params?: QueryParams
 }
 
-function FillInTheBlankQuizFormComponent({ isLoggedIn }: TopicFormProps) {
-  const [topic, setTopic] = useState("")
-  const [questionCount, setQuestionCount] = useState(5)
-  const [openInfo, setOpenInfo] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: FillInTheBlankQuizFormProps) {
   const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
   const { subscriptionStatus } = useSubscriptionStore()
 
   const credits = subscriptionStatus?.credits || 0
-  const maxQuestions = subscriptionStatus?.subscriptionPlan
-    ? SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionStatus.subscriptionPlan)?.limits.totalQuestions || 5
-    : 5
 
-  const generateQuiz = useCallback(async () => {
-    setIsLoading(true)
-    setError("")
-
-    try {
-      const response = await fetch("/api/blanks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ topic, questionCount, difficulty: "easy" }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to generate quiz")
-      }
-
-      const { slug } = await response.json()
-      router.push(`/dashboard/blanks/${slug}`)
-    } catch (err) {
-      console.error("Error generating quiz:", err)
-      setError("Failed to generate quiz. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [topic, questionCount, router])
-
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault()
-      await generateQuiz()
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isValid },
+  } = useForm<FillInTheBlankQuizFormData>({
+    resolver: zodResolver(fillInTheBlankQuizSchema),
+    defaultValues: {
+      topic: params?.topic || "",
+      questionCount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
+      difficulty: "easy",
     },
-    [generateQuiz],
-  )
+    mode: "onChange",
+  })
 
-  const isFormValid = useMemo(() => topic.trim().length >= 3, [topic])
+  const generateQuiz = useCallback(
+    async (data: FillInTheBlankQuizFormData) => {
+      setIsLoading(true)
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && isFormValid && !isLoading) {
-        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
+      try {
+        const response = await fetch("/api/blanks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to generate quiz")
+        }
+
+        const { slug } = await response.json()
+        router.push(`/dashboard/blanks/${slug}`)
+      } catch (err) {
+        console.error("Error generating quiz:", err)
+        // Handle error (e.g., show error message to user)
+      } finally {
+        setIsLoading(false)
       }
     },
-    [handleSubmit, isFormValid, isLoading],
+    [router],
   )
+
+  const onSubmit = handleSubmit(generateQuiz)
+
+  const topic = watch("topic")
+  const questionCount = watch("questionCount")
+
+  const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
 
   return (
     <motion.div
@@ -108,7 +121,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn }: TopicFormProps) {
         </CardHeader>
 
         <CardContent className="space-y-6 pt-6">
-          <form onSubmit={handleSubmit} className="space-y-6" onKeyDown={handleKeyDown}>
+          <form onSubmit={onSubmit} className="space-y-6">
             <motion.div
               className="space-y-3"
               initial={{ opacity: 0, y: 20 }}
@@ -121,15 +134,13 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn }: TopicFormProps) {
               </Label>
               <Input
                 id="topic"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="E.g., Climate Change, AI in Education..."
+                {...register("topic")}
+                placeholder="E.g., World History, Biology, Literature..."
                 className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
                 aria-label="Quiz topic"
                 autoFocus
-                required
-                minLength={3}
               />
+              {errors.topic && <p className="text-sm text-destructive">{errors.topic.message}</p>}
             </motion.div>
 
             <motion.div
@@ -150,11 +161,19 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn }: TopicFormProps) {
                   {questionCount}
                 </motion.span>
               </Label>
-              <SubscriptionSlider
-                value={questionCount}
-                onValueChange={setQuestionCount}
-                ariaLabel="Select number of questions"
+              <Controller
+                name="questionCount"
+                control={control}
+                render={({ field }) => (
+                  <SubscriptionSlider
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    max={maxQuestions}
+                    ariaLabel="Select number of questions"
+                  />
+                )}
               />
+              {errors.questionCount && <p className="text-sm text-destructive">{errors.questionCount.message}</p>}
             </motion.div>
 
             <motion.div
@@ -172,47 +191,61 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn }: TopicFormProps) {
               </div>
             </motion.div>
 
-            {/* ... (rest of the component remains the same) ... */}
-          </form>
+            <AnimatePresence>
+              {errors.root && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-5 w-5" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{errors.root.message}</AlertDescription>
+                  </Alert>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <motion.div
-            className="pt-4 border-t"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <PlanAwareButton
-              label="Generate Quiz"
-              onClick={generateQuiz}
-              isLoggedIn={isLoggedIn}
-              isEnabled={isFormValid}
-              isLoading={isLoading}
-              hasCredits={credits > 0}
-              loadingLabel="Generating..."
-              className="w-full transition-all duration-300 hover:shadow-lg"
-              customStates={{
-                default: {
-                  tooltip: "Click to generate your fill-in-the-blank quiz",
-                },
-                loading: {
-                  label: "Generating Quiz...",
-                  tooltip: "Please wait while we generate your quiz",
-                },
-                notLoggedIn: {
-                  label: "Sign in to Generate",
-                  tooltip: "You need to be signed in to create a quiz",
-                },
-                notEnabled: {
-                  label: "Enter a valid topic",
-                  tooltip: "Please enter a topic with at least 3 characters",
-                },
-                noCredits: {
-                  label: "Out of credits",
-                  tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
-                },
-              }}
-            />
-          </motion.div>
+            <motion.div
+              className="pt-4 border-t"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <PlanAwareButton
+                label="Generate Quiz"
+                onClick={onSubmit}
+                isLoggedIn={isLoggedIn}
+                isEnabled={!isDisabled}
+                isLoading={isLoading}
+                hasCredits={credits > 0}
+                loadingLabel="Generating..."
+                className="w-full transition-all duration-300 hover:shadow-lg"
+                customStates={{
+                  default: {
+                    tooltip: "Click to generate your fill-in-the-blank quiz",
+                  },
+                  loading: {
+                    label: "Generating Quiz...",
+                    tooltip: "Please wait while we generate your quiz",
+                  },
+                  notLoggedIn: {
+                    label: "Sign in to Generate",
+                    tooltip: "You need to be signed in to create a quiz",
+                  },
+                  notEnabled: {
+                    label: "Enter a valid topic",
+                    tooltip: "Please enter a topic with at least 3 characters",
+                  },
+                  noCredits: {
+                    label: "Out of credits",
+                    tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
+                  },
+                }}
+              />
+            </motion.div>
+          </form>
         </CardContent>
       </Card>
     </motion.div>

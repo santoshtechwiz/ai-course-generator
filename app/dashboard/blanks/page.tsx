@@ -44,8 +44,8 @@ const Page = async () => {
 
 export default Page
 
-export const metadata: Metadata = {
-  title: "Create & Play Quizzes",
-  description: "A platform to create and play quizzes.",
+export const metadata = {
+  title: "Fill in the Blanks Quizzes | Course AI",
+  description:
+    "Enhance your learning with our interactive fill-in-the-blanks quizzes. Perfect for improving vocabulary, grammar, and subject-specific knowledge.",
 }
-

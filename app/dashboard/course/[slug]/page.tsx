@@ -1,27 +1,22 @@
-import { notFound } from "next/navigation";
-
-import { getCourseData } from "@/app/actions/getCourseData";
-import type { Metadata, ResolvingMetadata } from "next";
-import CoursePage from "@/components/features/course/CoursePage/CoursePage";
-import CourseStructuredData from "@/components/features/course/CoursePage/CourseStructuredData";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Suspense } from "react";
+import { notFound } from "next/navigation"
+import { getCourseData } from "@/app/actions/getCourseData"
+import type { Metadata, ResolvingMetadata } from "next"
+import CoursePage from "@/components/features/course/CoursePage/CoursePage"
+import CourseStructuredData from "@/components/features/course/CoursePage/CourseStructuredData"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Suspense } from "react"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 const SITE_NAME = "CourseAI"
+
 // Loading Skeleton for better UX
 function LoadingSkeleton() {
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] gap-4 p-4">
-      <div className="flex-grow lg:w-3/4">
-        <Skeleton className="w-full aspect-video rounded-lg" />
-        <Skeleton className="h-[400px] w-full mt-4 rounded-lg" />
-      </div>
-      <div className="lg:w-1/4 lg:min-w-[300px]">
-        <Skeleton className="h-full w-full rounded-lg" />
-      </div>
+    <div className="flex flex-col gap-4">
+      <Skeleton className="w-full aspect-video rounded-lg" />
+      <Skeleton className="h-[400px] w-full rounded-lg" />
     </div>
-  );
+  )
 }
 
 export async function generateMetadata(
@@ -43,7 +38,6 @@ export async function generateMetadata(
   const courseUrl = `${SITE_URL}/courses/${(await params).slug}`
   const imageUrl = course.image || `${SITE_URL}/default-course-thumbnail.png`
 
- 
   const defaultKeywords = [
     "AI-powered learning",
     "personalized education",
@@ -60,7 +54,7 @@ export async function generateMetadata(
   return {
     title: `${course.name} | AI-Powered Online Course`,
     description: `${courseDescription.slice(0, 155)}... Enroll now at ${SITE_NAME} for a personalized learning experience.`,
-    keywords: [...new Set([ ...defaultKeywords, course.name, SITE_NAME])],
+    keywords: [...new Set([...defaultKeywords, course.name, SITE_NAME])],
     category: "Education",
     openGraph: {
       title: `Master ${course.name} - AI-Powered Online Course `,
@@ -105,9 +99,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   }
 
   return (
-    <Suspense fallback={<LoadingSkeleton />}>
-      <CourseStructuredData course={course} />
-      <CoursePage course={course} />
-    </Suspense>
+    <div className="container mx-auto px-4 py-8">
+      <Suspense fallback={<LoadingSkeleton />}>
+        <CourseStructuredData course={course} />
+        <CoursePage course={course} />
+      </Suspense>
+    </div>
   )
 }
+

@@ -1,25 +1,24 @@
-import type { Metadata, ResolvingMetadata } from "next";
-import { notFound } from "next/navigation";
-import { getAuthSession } from "@/lib/authOptions";
-
-import axios from "axios";
-import type { CodingQuizProps } from "@/app/types/types";
-import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper";
-import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton";
-import AnimatedQuizHighlight from "@/components/RanomQuiz";
-import { Suspense } from "react";
-
+import type { Metadata, ResolvingMetadata } from "next"
+import { notFound } from "next/navigation"
+import { getAuthSession } from "@/lib/authOptions"
+import axios from "axios"
+import type { CodingQuizProps } from "@/app/types/types"
+import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper"
+import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
+import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import { Suspense } from "react"
+import SlugPageLayout from "@/components/shared/SlugPageLayout"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
-    const response = await axios.get<CodingQuizProps>(`${process.env.NEXTAUTH_URL}/api/code/${slug}`);
+    const response = await axios.get<CodingQuizProps>(`${process.env.NEXTAUTH_URL}/api/code/${slug}`)
     if (response.status !== 200) {
-      throw new Error("Failed to fetch quiz data");
+      throw new Error("Failed to fetch quiz data")
     }
-    return response.data;
+    return response.data
   } catch (error) {
-    console.error("Error fetching quiz data:", error);
-    return null;
+    console.error("Error fetching quiz data:", error)
+    return null
   }
 }
 
@@ -27,14 +26,14 @@ export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> },
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const slug = (await params).slug;
-  const quizData = await getQuizData(slug);
+  const slug = (await params).slug
+  const quizData = await getQuizData(slug)
 
   if (!quizData) {
-    return notFound();
+    return notFound()
   }
 
-  const previousImages = (await parent).openGraph?.images || [];
+  const previousImages = (await parent).openGraph?.images || []
 
   return {
     title: `${quizData.quizData.title} Quiz`,
@@ -58,30 +57,19 @@ export async function generateMetadata(
       description: `Test your knowledge on ${quizData.quizData.title} with this interactive quiz.`,
       images: [`${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.quizData.title)}`],
     },
-  };
+  }
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const session = await getAuthSession();
-  const slug = (await params).slug;
+  const session = await getAuthSession()
+  const slug = (await params).slug
 
   return (
-
-    <div className="py-8 sm:px-6 lg:px-8 overflow-hidden">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6 ">
-            <Suspense fallback={<QuizSkeleton />}>
-              <CodeQuizWrapper slug={slug} userId={session?.user?.id || ""} />
-            </Suspense>
-          </div>
-          <div className="lg:col-span-1">
-            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6">
-              <AnimatedQuizHighlight />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <SlugPageLayout sidebar={<AnimatedQuizHighlight />}>
+      <Suspense fallback={<QuizSkeleton />}>
+        <CodeQuizWrapper slug={slug} userId={session?.user?.id || ""} />
+      </Suspense>
+    </SlugPageLayout>
   )
 }
+

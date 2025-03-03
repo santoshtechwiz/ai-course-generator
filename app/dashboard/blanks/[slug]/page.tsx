@@ -1,39 +1,70 @@
 import { Suspense } from "react"
-
+import { getServerSession } from "next-auth"
+import type { Metadata } from "next"
+import { authOptions } from "@/lib/authOptions"
+import SlugPageLayout from "@/components/shared/SlugPageLayout"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BlankQuizWrapper } from "@/components/features/blanks/BlankQuizWrapper"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  // Fetch quiz data for metadata
+  const title = `Fill in the Blanks: ${params.slug}`
+  const description = `Test your knowledge with this fill in the blanks quiz on ${params.slug}`
 
-function QuizSkeleton() {
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  }
+}
+
+function LoadingSkeleton() {
   return (
-    <div className="space-y-4">
-      <Skeleton className="w-full h-12" />
-      <Skeleton className="w-full h-[400px]" />
-    </div>
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-8 w-2/3" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-4 w-full mb-2" />
+        <Skeleton className="h-4 w-5/6 mb-2" />
+        <Skeleton className="h-4 w-4/5" />
+      </CardContent>
+    </Card>
   )
 }
 
-export default async function BlankQuizPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+export default async function BlankQuizPage({ params }: { params: { slug: string } }) {
+  const session = await getServerSession(authOptions)
+  const userId = session?.user?.id || ""
 
   return (
-    <div className="py-8 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Suspense fallback={<QuizSkeleton />}>
-              <BlankQuizWrapper slug={slug} />
-            </Suspense>
-          </div>
-          <div className="lg:col-span-1">
-            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6">
-              <AnimatedQuizHighlight />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <SlugPageLayout
+      title={`Fill in the Blanks: ${params.slug}`}
+      description={`Test your knowledge on ${params.slug}`}
+      sidebar={<AnimatedQuizHighlight />}
+    >
+      <Suspense fallback={<LoadingSkeleton />}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{params.slug}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BlankQuizWrapper slug={params.slug}  />
+          </CardContent>
+        </Card>
+      </Suspense>
+    </SlugPageLayout>
   )
 }
 

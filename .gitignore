@@ -50,3 +50,5 @@ migrate.mjs
 a.html
 a.mjs
 .vscode/settings.json
+/components/shared
+src.zip

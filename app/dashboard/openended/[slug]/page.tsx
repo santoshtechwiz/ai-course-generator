@@ -1,94 +1,83 @@
-import type { Metadata, ResolvingMetadata } from "next"
+import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import { getQuiz } from "@/app/actions/getQuiz"
+import { getServerSession } from "next-auth"
+import type { Metadata } from "next"
+import { authOptions } from "@/lib/authOptions"
+import SlugPageLayout from "@/components/shared/SlugPageLayout"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
-import QuizHeader from "@/components/shared/QuizHeader"
-import { QuizStructuredData } from "@/components/withQuizStructuredData"
+import { getQuiz } from "@/app/actions/getQuiz"
 
-
-
-async function getQuizData(slug: string) {
-  try {
-    const data = await getQuiz(slug)
-    return data
-  } catch (error) {
-    console.error("Error fetching quiz data:", error)
-    return null
-  }
-}
-
-export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
-  const slug = (await params).slug
-  const quizData = await getQuizData(slug)
-
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const quizData = await getQuiz(params.slug)
   if (!quizData) {
-    return notFound()
+    return {
+      title: "Quiz Not Found",
+      description: "The requested quiz could not be found.",
+    }
   }
 
-  const previousImages = (await parent).openGraph?.images || []
+  const title = `${quizData.topic} Quiz`
+  const description = `Test your knowledge with this ${quizData.topic} open-ended quiz.`
 
   return {
-    title: `${quizData.topic} Quiz`,
-    description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
+    title,
+    description,
     openGraph: {
-      title: `${quizData.topic} Quiz`,
-      description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
-      images: [
-        {
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.topic)}`,
-          width: 1200,
-          height: 630,
-          alt: `${quizData.topic} Quiz`,
-        },
-        ...previousImages,
-      ],
+      title,
+      description,
+      type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: `${quizData.topic} Quiz`,
-      description: `Test your knowledge on ${quizData.topic} with this interactive quiz.`,
-      images: [`${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.topic)}`],
+      title,
+      description,
     },
   }
 }
 
-const OpenEndedQuizPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
-  const slug = (await params).slug
-  const quizData = await getQuizData(slug)
-
-  if (!quizData) {
-    return notFound()
-  }
-
-  const quizDetails = {
-    type: 'mcq' as const,
-    name: quizData.topic,
-    description: `Test your knowledge with this ${quizData.topic} quiz.`,
-    author: "Course AI",
-    datePublished: new Date().toISOString(),
-    numberOfQuestions: quizData.questions.length || 0,
-    timeRequired: 'PT30M', // Assuming 30 minutes, adjust as needed
-    educationalLevel: 'Beginner', // Adjust as needed
-  };
+function LoadingSkeleton() {
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <QuizStructuredData quizDetails={quizDetails} />
-      <QuizHeader topic={quizData.topic} />
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
-        </div>
-        <div className="lg:col-span-1">
-          <AnimatedQuizHighlight />
-        </div>
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-8 w-2/3" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-4 w-full mb-2" />
+        <Skeleton className="h-4 w-5/6 mb-2" />
+        <Skeleton className="h-4 w-4/5" />
+      </CardContent>
+    </Card>
   )
 }
 
-export default OpenEndedQuizPage
+export default async function OpenEndedQuizPage({ params }: { params: { slug: string } }) {
+  const session = await getServerSession(authOptions)
+  const quizData = await getQuiz(params.slug)
+
+  if (!quizData) {
+    notFound()
+  }
+
+  return (
+    <SlugPageLayout
+      title={`Open-Ended Quiz: ${quizData.topic}`}
+      description={`Test your knowledge on ${quizData.topic}`}
+      sidebar={<AnimatedQuizHighlight />}
+    >
+      <Suspense fallback={<LoadingSkeleton />}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{quizData.topic}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OpenEndedQuizWrapper slug={params.slug} quizData={quizData} />
+          </CardContent>
+        </Card>
+      </Suspense>
+    </SlugPageLayout>
+  )
+}
 

@@ -5,15 +5,12 @@ import type { Metadata } from "next"
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/authOptions"
 
-
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
-import QuizHeader from "@/components/shared/QuizHeader"
 import { QuizStructuredData } from "@/components/withQuizStructuredData"
-
-
+import SlugPageLayout from "@/components/shared/SlugPageLayout"
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await props.params
@@ -80,7 +77,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
 
-  const result = await getMcqQuestions(slug);
+  const result = await getMcqQuestions(slug)
   if (!result) {
     notFound()
   }
@@ -95,29 +92,23 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
     author: "Course AI",
     datePublished: new Date().toISOString(),
     numberOfQuestions: result.questions.length || 0,
-    timeRequired: 'PT30M', // Assuming 30 minutes, adjust as needed
-    educationalLevel: 'Beginner', // Adjust as needed
-  };
+    timeRequired: "PT30M", // Assuming 30 minutes, adjust as needed
+    educationalLevel: "Beginner", // Adjust as needed
+  }
 
- 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <SlugPageLayout
+      title={result.result.topic}
+      description={`Test your knowledge on ${result.result.topic}`}
+      sidebar={<AnimatedQuizHighlight />}
+    >
       <QuizStructuredData quizDetails={quizDetails} />
-      {result?.result && (
-        <QuizHeader topic={result.result.topic} />
-      )}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 ">
-          <Suspense fallback={<QuizSkeleton />}>
-            <McqQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
-          </Suspense>
-        </div>
-        <div className="lg:col-span-1">
-          <AnimatedQuizHighlight />
-        </div>
-      </div>
-    </div>
+      <Suspense fallback={<QuizSkeleton />}>
+        <McqQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
+      </Suspense>
+    </SlugPageLayout>
   )
 }
 
 export default McqPage
+

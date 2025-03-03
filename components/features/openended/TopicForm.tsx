@@ -3,78 +3,87 @@
 import { memo, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { Brain, ChevronDown, Info, AlertCircle } from "lucide-react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Input } from "@/components/ui/input"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ChevronDown, Info, AlertCircle, Brain } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
+import { openEndedQuizSchema } from "@/schema/schema"
 
-export const fetchCache = "force-no-store"
+import type { z } from "zod"
+import type { QueryParams } from "@/app/types/types"
+
+type OpenEndedQuizFormData = z.infer<typeof openEndedQuizSchema>
 
 interface TopicFormProps {
   credits: number
   maxQuestions: number
-  subscriptionPlan: any
   isLoggedIn: boolean
+  params?: QueryParams
 }
 
-function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPlan }: TopicFormProps) {
-  const [topic, setTopic] = useState("")
-  const [questionCount, setQuestionCount] = useState(maxQuestions)
+function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: TopicFormProps) {
+  const router = useRouter()
   const [openInfo, setOpenInfo] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const router = useRouter()
 
-  const generateQuiz = useCallback(async () => {
-    setIsLoading(true)
-    setError("")
-
-    try {
-      const response = await fetch("/api/generate-quiz", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ topic, questionCount }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to generate quiz")
-      }
-
-      const { slug } = await response.json()
-      router.push(`/dashboard/openended/${slug}`)
-    } catch (err) {
-      console.error("Error generating quiz:", err)
-      setError("Failed to generate quiz. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [topic, questionCount, router])
-
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault()
-      await generateQuiz()
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isValid },
+  } = useForm<OpenEndedQuizFormData>({
+    resolver: zodResolver(openEndedQuizSchema),
+    defaultValues: {
+      topic: params?.topic || "",
+      questionCount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     },
-    [generateQuiz],
-  )
+    mode: "onChange",
+  })
 
-  const isDisabled = useMemo(() => isLoading || credits < 1 || !topic.trim(), [isLoading, credits, topic])
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !isDisabled) {
-        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
+  const generateQuiz = useCallback(
+    async (data: OpenEndedQuizFormData) => {
+      setIsLoading(true)
+
+      try {
+        const response = await fetch("/api/generate-quiz", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to generate quiz")
+        }
+
+        const { slug } = await response.json()
+        router.push(`/dashboard/openended/${slug}`)
+      } catch (err) {
+        console.error("Error generating quiz:", err)
+        // Handle error (e.g., show error message to user)
+      } finally {
+        setIsLoading(false)
       }
     },
-    [handleSubmit, isDisabled],
+    [router],
   )
+
+  const onSubmit = handleSubmit(generateQuiz)
+
+  const topic = watch("topic")
+  const questionCount = watch("questionCount")
+
+  const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
 
   return (
     <motion.div
@@ -103,7 +112,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPla
         </CardHeader>
 
         <CardContent className="space-y-6 pt-6">
-          <form onSubmit={handleSubmit} className="space-y-6" onKeyDown={handleKeyDown}>
+          <form onSubmit={onSubmit} className="space-y-6">
             <motion.div
               className="space-y-3"
               initial={{ opacity: 0, y: 20 }}
@@ -116,15 +125,13 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPla
               </Label>
               <Input
                 id="topic"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                {...register("topic")}
                 placeholder="E.g., Climate Change, AI in Education..."
                 className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
                 aria-label="Quiz topic"
                 autoFocus
-                required
-                minLength={3}
               />
+              {errors.topic && <p className="text-sm text-destructive">{errors.topic.message}</p>}
             </motion.div>
 
             <motion.div
@@ -145,23 +152,19 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPla
                   {questionCount}
                 </motion.span>
               </Label>
-              <div className="flex items-center space-x-4">
-                {/* <Slider
-                  id="questionCount"
-                  min={1}
-                  max={maxQuestions}
-                  step={1}
-                  value={[questionCount]}
-                  onValueChange={(values: number[]) => setQuestionCount(values[0])}
-                  className="flex-grow"
-                  aria-label="Select number of questions"
-                /> */}
-                <SubscriptionSlider
-                  value={questionCount}
-                  onValueChange={setQuestionCount}
-                  ariaLabel="Select number of questions"
-                />
-              </div>
+              <Controller
+                name="questionCount"
+                control={control}
+                render={({ field }) => (
+                  <SubscriptionSlider
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    max={maxQuestions}
+                    ariaLabel="Select number of questions"
+                  />
+                )}
+              />
+              {errors.questionCount && <p className="text-sm text-destructive">{errors.questionCount.message}</p>}
             </motion.div>
 
             <motion.div
@@ -217,7 +220,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPla
             </motion.div>
 
             <AnimatePresence>
-              {error && (
+              {errors.root && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -226,43 +229,43 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, subscriptionPla
                   <Alert variant="destructive">
                     <AlertCircle className="h-5 w-5" />
                     <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{errors.root.message}</AlertDescription>
                   </Alert>
                 </motion.div>
               )}
             </AnimatePresence>
-          </form>
 
-          <motion.div
-            className="pt-4 border-t"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <PlanAwareButton
-              label="Generate Quiz"
-              onClick={generateQuiz}
-              isLoggedIn={isLoggedIn}
-              isLoading={isLoading}
-              isEnabled={!isDisabled}
-              hasCredits={credits > 0}
-              loadingLabel="Generating..."
-              className="w-full transition-all duration-300 hover:shadow-lg"
-              customStates={{
-                default: {
-                  tooltip: "Click to generate your quiz",
-                },
-                notEnabled: {
-                  label: "Enter a topic to generate",
-                  tooltip: "Please enter a topic before generating the quiz",
-                },
-                noCredits: {
-                  label: "Out of credits",
-                  tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
-                },
-              }}
-            />
-          </motion.div>
+            <motion.div
+              className="pt-4 border-t"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <PlanAwareButton
+                label="Generate Quiz"
+                onClick={onSubmit}
+                isLoggedIn={isLoggedIn}
+                isLoading={isLoading}
+                isEnabled={!isDisabled}
+                hasCredits={credits > 0}
+                loadingLabel="Generating..."
+                className="w-full transition-all duration-300 hover:shadow-lg"
+                customStates={{
+                  default: {
+                    tooltip: "Click to generate your quiz",
+                  },
+                  notEnabled: {
+                    label: "Enter a topic to generate",
+                    tooltip: "Please enter a topic before generating the quiz",
+                  },
+                  noCredits: {
+                    label: "Out of credits",
+                    tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
+                  },
+                }}
+              />
+            </motion.div>
+          </form>
         </CardContent>
       </Card>
     </motion.div>
