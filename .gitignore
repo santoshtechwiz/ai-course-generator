@@ -49,3 +49,4 @@ migrate.mjs
 /app/api/public/course
 a.html
 a.mjs
+.vscode/settings.json
