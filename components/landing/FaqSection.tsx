@@ -70,9 +70,9 @@ const faqData = [
   },
   {
     question: "Does the video transcript always generate?",
-    answer: "No, our platform uses YouTube. If a video transcript is available, only then can our platform generate a summary and quiz.",
-  }
-  
+    answer:
+      "No, our platform uses YouTube. If a video transcript is available, only then can our platform generate a summary and quiz.",
+  },
 ]
 
 export default function FAQSection() {
@@ -85,29 +85,20 @@ export default function FAQSection() {
   )
 
   return (
-    <section className="py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-secondary/20">
-      <div className="container px-4 md:px-6">
+    <section className="py-10 md:py-16 bg-gradient-to-b from-background to-secondary/20">
+      <div className="container px-4 md:px-6 max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-3xl mx-auto space-y-8"
+          className="space-y-8"
         >
-          {/* <motion.h2
-            className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            Frequently Asked Questions
-          </motion.h2> */}
-
-          <div className="relative">
+          <div className="relative mb-8">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search FAQs..."
-              className="pl-10 w-full"
+              className="pl-10 w-full bg-background border-border"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -133,13 +124,13 @@ export default function FAQSection() {
                         "hover:shadow-md",
                       )}
                     >
-                      <AccordionTrigger className="px-4 py-3 flex items-center justify-between text-left bg-card hover:bg-muted/50 transition-colors duration-200">
+                      <AccordionTrigger className="px-5 py-4 flex items-center justify-between text-left bg-card hover:bg-muted/50 transition-colors duration-200">
                         <div className="flex items-center space-x-3">
                           <HelpCircle className="flex-shrink-0 w-5 h-5 text-primary" />
                           <span className="text-base font-medium text-foreground">{item.question}</span>
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="px-4 py-3 text-sm text-muted-foreground bg-background">
+                      <AccordionContent className="px-5 py-4 text-base text-muted-foreground bg-background">
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -159,7 +150,7 @@ export default function FAQSection() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="text-center text-muted-foreground"
+                className="text-center text-base text-muted-foreground"
               >
                 No matching FAQs found. Please try a different search term.
               </motion.p>

@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Quote, Code, Database, Palette, Cpu, Rocket } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type React from "react" // Added import for React
+import type React from "react"
 
 const testimonials = [
   {
@@ -85,9 +85,8 @@ export default function TestimonialsSection() {
   }, [nextTestimonial])
 
   return (
-    <section className="py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-secondary/20">
-      <div className="container px-4 md:px-6">
-       
+    <section className="py-10 md:py-16 bg-gradient-to-b from-background to-secondary/20">
+      <div className="container px-4 md:px-6 max-w-6xl mx-auto">
         <div className="relative">
           <div className="overflow-hidden">
             <motion.div
@@ -99,7 +98,7 @@ export default function TestimonialsSection() {
                 <div
                   key={index}
                   className={cn(
-                    "flex-shrink-0 px-2",
+                    "flex-shrink-0 px-3",
                     cardsPerView === 1 ? "w-full" : cardsPerView === 2 ? "w-1/2" : "w-1/3",
                   )}
                 >
@@ -116,7 +115,7 @@ export default function TestimonialsSection() {
               className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:flex"
               aria-label="Previous testimonials"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5" />
             </Button>
           </div>
           <div className="absolute right-0 top-1/2 -translate-y-1/2 -right-4 md:-right-6">
@@ -127,7 +126,7 @@ export default function TestimonialsSection() {
               className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:flex"
               aria-label="Next testimonials"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -147,20 +146,20 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   const Icon = testimonial.icon
 
   return (
-    <Card className="h-full bg-card">
+    <Card className="h-full bg-card shadow-md">
       <CardContent className="p-6 flex flex-col h-full">
         <div className="flex items-center space-x-4 mb-4">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
             <Icon className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">{testimonial.name}</h3>
+            <h3 className="font-semibold text-base text-foreground">{testimonial.name}</h3>
             <p className="text-sm text-muted-foreground">{testimonial.role}</p>
           </div>
         </div>
         <blockquote className="text-foreground flex-grow">
           <Quote className="h-6 w-6 text-primary mb-2" />
-          <p className="text-sm">{testimonial.quote}</p>
+          <p className="text-base">{testimonial.quote}</p>
         </blockquote>
       </CardContent>
     </Card>

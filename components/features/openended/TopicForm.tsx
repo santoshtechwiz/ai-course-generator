@@ -15,11 +15,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
-import { openEndedQuizSchema } from "@/schema/schema"
 
-import type { z } from "zod"
+
+import { z } from "zod"
+
 import type { QueryParams } from "@/app/types/types"
-
+import { openEndedQuizSchema } from "@/schema/schema"
 type OpenEndedQuizFormData = z.infer<typeof openEndedQuizSchema>
 
 interface TopicFormProps {

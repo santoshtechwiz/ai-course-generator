@@ -65,7 +65,7 @@ const defaultSections = [
     icon: HelpCircle,
     Component: FAQSection,
   },
-];
+]
 type Section = {
   key: string
   title: string
@@ -123,28 +123,28 @@ export default function LandingComponent({ sections = defaultSections }: Landing
       <main className="flex-grow relative z-10">
         <LandingHero
           onTopicSubmit={(topic: string): void => {
-            router.push(`/dashboard/create`);
+            router.push(`/dashboard/create`)
           }}
         />
 
         {sections.map((section, index) => (
           <Element key={section.key} name={section.key}>
-            {index !== 0 && <Separator className="my-4 md:my-16" />}
-            <section className="py-4 md:py-16 lg:py-20 px-6 md:px-12 max-w-5xl mx-auto">
+            {index !== 0 && <Separator className="my-8 md:my-16" />}
+            <section className="py-8 md:py-16 px-4 md:px-8 max-w-6xl mx-auto">
               <motion.div
-                initial={false}
+                initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.2 }}
                 variants={stagger}
               >
-                <motion.div variants={fadeInUp} className="text-center space-y-4 mb-6">
-                  <div className="flex justify-center items-center mb-3">
-                    <div className="p-2 rounded-full bg-primary/10">
+                <motion.div variants={fadeInUp} className="text-center space-y-6 mb-10">
+                  <div className="flex justify-center items-center mb-4">
+                    <div className="p-3 rounded-full bg-primary/10">
                       <section.icon className="w-6 h-6 text-primary" />
                     </div>
                   </div>
-                  <h2 className="text-2xl md:text-4xl font-bold text-primary">{section.title}</h2>
-                  <p className="text-muted-foreground text-lg sm:text-xl">{section.description}</p>
+                  <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">{section.title}</h2>
+                  <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">{section.description}</p>
                 </motion.div>
                 <motion.div variants={fadeInUp}>
                   <section.Component {...(section.props || {})} />
@@ -159,7 +159,7 @@ export default function LandingComponent({ sections = defaultSections }: Landing
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: showScrollTop ? 1 : 0, scale: showScrollTop ? 1 : 0.8 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed bottom-4 right-4 z-50"
+        className="fixed bottom-6 right-6 z-50"
       >
         <Button
           variant="default"
@@ -167,11 +167,9 @@ export default function LandingComponent({ sections = defaultSections }: Landing
           className="rounded-full shadow-lg bg-primary hover:bg-primary/90"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
-          <ArrowUp className="h-4 w-4" />
+          <ArrowUp className="h-5 w-5" />
         </Button>
       </motion.div>
-
-     
     </div>
   )
 }

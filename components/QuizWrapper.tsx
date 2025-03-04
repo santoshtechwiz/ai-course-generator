@@ -13,8 +13,9 @@ import FillInTheBlankQuizForm from "./features/blanks/BlankQuizForm"
 
 import { Loader2 } from "lucide-react"
 import ConsistentCard from "./ConsistentCard"
+import FlashCardCreate from "@/app/dashboard/flashcard/components/FlashCardCreate"
 
-type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code"
+type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code"| "flashcard"
 
 interface QuizWrapperProps {
   type: QuizType
@@ -63,6 +64,8 @@ export function QuizWrapper({ type, queryParams }: QuizWrapperProps) {
         return <CreateCourseForm {...commonProps} />
       case "code":
         return <CodeQuizForm {...commonProps} />
+      case "flashcard":
+        return <FlashCardCreate {...commonProps} />
       default:
         return null
     }

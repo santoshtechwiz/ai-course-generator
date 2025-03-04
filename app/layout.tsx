@@ -9,6 +9,7 @@ import { Suspense } from "react"
 import PageLoader from "@/components/ui/loader"
 import { JsonLd } from "@/components/json-ld"
 import { Providers } from "./providers/provider"
+import GlobalLoader from "@/components/GlobalLoader"
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -89,6 +90,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
+          <GlobalLoader />
           <div className="flex flex-col min-h-screen">
             <main className="flex-grow">
               <Suspense fallback={<PageLoader />}>{children}</Suspense>
