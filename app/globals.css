@@ -61,7 +61,20 @@
   * {
     @apply border-border;
   }
+/* Custom styles for 3D card effects */
+.perspective {
+  perspective: 1200px;
+}
 
+/* Preserve 3D transformations */
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Hide backface of elements */
+.backface-hidden {
+  backface-visibility: hidden;
+}
   html {
     font-size: 16px;
     scroll-behavior: smooth;
