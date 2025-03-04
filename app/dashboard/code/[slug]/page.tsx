@@ -7,7 +7,7 @@ import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 import { Suspense } from "react"
-import SlugPageLayout from "@/components/shared/SlugPageLayout"
+import SlugPageLayout from "@/components/SlugPageLayout"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {

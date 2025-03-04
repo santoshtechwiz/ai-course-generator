@@ -1,3 +1,4 @@
+
 import { QuizWrapper } from "@/components/QuizWrapper";
 
 import RandomQuote from "@/components/RandomQuote";
