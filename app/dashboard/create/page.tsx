@@ -1,35 +1,43 @@
+import { QuizWrapper } from "@/components/QuizWrapper"
+import RandomQuote from "@/components/RandomQuote"
+import { BookOpen, Lightbulb } from "lucide-react"
+import { getCourseDetails } from "@/app/actions/getCourseDetails"
+import { Card } from "@/components/ui/card"
+import type { QueryParams } from "@/app/types/types"
+import PopularCourses from "@/components/features/create/PopularCourses"
 
-import { QuizWrapper } from "@/components/QuizWrapper";
+// Add this line to explicitly mark the page as dynamic
+export const dynamic = "force-dynamic"
 
-import RandomQuote from "@/components/RandomQuote";
-import { BookOpen, Lightbulb } from 'lucide-react';
-import { getCourseDetails } from "@/app/actions/getCourseDetails";
-import { Card } from "@/components/ui/card";
-import { QueryParams } from "@/app/types/types";
-import PopularCourses from "@/components/features/create/PopularCourses";
 export const metadata = {
   title: "Create Your Course | Course AI",
   description:
     "Design and build your own interactive course with our intuitive course creation tools. Share your expertise and engage learners effectively.",
 }
+
 const Page = async ({
   params,
-  searchParams
+  searchParams,
 }: {
-  params: QueryParams,
+  params: QueryParams
   searchParams: { [key: string]: string | string[] | undefined }
 }) => {
-
-  let topic = "";
-  let category = "";
-  let courseData = [];
+  let topic = ""
+  let category = ""
+  let courseData = []
 
   try {
-    topic = typeof params?.topic === 'string' ? params.topic : (Array.isArray(searchParams?.topic) ? searchParams.topic[0] : searchParams?.topic) || "";
-    category = typeof params?.categoryAttachment === 'string' ? params.categoryAttachment : (Array.isArray(searchParams?.category) ? searchParams.category[0] : searchParams?.category) || "";
-    courseData = await getCourseDetails();
+    topic =
+      typeof params?.topic === "string"
+        ? params.topic
+        : (Array.isArray(searchParams?.topic) ? searchParams.topic[0] : searchParams?.topic) || ""
+    category =
+      typeof params?.categoryAttachment === "string"
+        ? params.categoryAttachment
+        : (Array.isArray(searchParams?.category) ? searchParams.category[0] : searchParams?.category) || ""
+    courseData = await getCourseDetails()
   } catch (error) {
-    console.warn("Failed to fetch course details:", error);
+    console.warn("Failed to fetch course details:", error)
   }
 
   return (
@@ -58,7 +66,7 @@ const Page = async ({
                 type="course"
                 queryParams={{
                   topic: topic,
-                  category: category
+                  category: category,
                 }}
               />
             </div>
@@ -76,7 +84,8 @@ const Page = async ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Page;
+export default Page
+
