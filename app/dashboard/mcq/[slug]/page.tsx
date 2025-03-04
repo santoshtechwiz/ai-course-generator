@@ -10,7 +10,7 @@ import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 import { QuizStructuredData } from "@/components/withQuizStructuredData"
-import SlugPageLayout from "@/components/shared/SlugPageLayout"
+import SlugPageLayout from "@/components/SlugPageLayout"
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await props.params
