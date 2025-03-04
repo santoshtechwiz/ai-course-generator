@@ -27,7 +27,7 @@ export const useRandomQuizzes = (count = 3) => {
         const fetchedQuizzes = await axios.get<Quiz[]>(`/api/quiz/random`)
         .then((response) => response.data);
 
-       console.log(fetchedQuizzes);
+
 
         setQuizzes(fetchedQuizzes)
       } catch (err) {

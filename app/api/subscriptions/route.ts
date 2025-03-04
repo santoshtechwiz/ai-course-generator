@@ -27,7 +27,7 @@ export async function GET() {
     name: subscription.user.name,
     email: subscription.user.email,
   })));
-  console.log(subscriptions);
+
   return NextResponse.json({
     credits,
     isSubscribed: subscriptionPlan !== "FREE",

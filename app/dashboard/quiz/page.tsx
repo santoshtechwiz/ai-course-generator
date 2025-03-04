@@ -15,7 +15,7 @@ const ClientPage = () => {
   // Extract 'topic' and 'amount' from query parameters
   const topic = searchParams.get("topic") || ""
   const amount = searchParams.get("amount") || "5" // Default to 5 if not provided
-  console.log(topic, amount)
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <RandomQuote />
