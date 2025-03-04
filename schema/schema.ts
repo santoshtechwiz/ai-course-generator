@@ -64,5 +64,16 @@ export const checkAnswerSchema = z.object({
 export const endGameSchema = z.object({
   gameId: z.string(),
 });
+
+ const openEndedQuizSchema=z.object({
+  question: z.string().min(4).max(100),
+  answer: z.string().min(1).max(100),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  topic: z.string().min(4).max(50),
+  explanation: z.string().min(4).max(100),
+  userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
+})
+
 export type CreateCourseInput = z.infer<typeof createCourseSchema>
-export { updateSchema, createCourseSchema , quizSchema};
+export { updateSchema, createCourseSchema , quizSchema,openEndedQuizSchema};
+

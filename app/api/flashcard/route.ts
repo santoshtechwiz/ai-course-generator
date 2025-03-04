@@ -3,7 +3,8 @@ import { generateFlashCards } from "@/lib/chatgpt/ai-service"
 import prisma from "@/lib/db"
 import { titleToSlug } from "@/lib/slug"
 import { NextResponse } from "next/server"
-import { z } from "zod" // For input validation
+import { z } from "zod"
+import type { User } from "@prisma/client"
 
 // Input validation schema
 const createFlashcardSchema = z.object({
@@ -11,58 +12,114 @@ const createFlashcardSchema = z.object({
   count: z.number().int().positive().default(5),
 })
 
-// Generate a unique slug
+// Type for flashcard data from AI service
+interface FlashCardData {
+  question: string
+  answer: string
+}
+
+// Generate a unique slug with better performance
 async function generateUniqueSlug(topic: string): Promise<string> {
   const baseSlug = titleToSlug(topic)
 
-  // Check if slug exists
-  const existingQuiz = await prisma.userQuiz.findUnique({
+  // Check if slug exists with a more efficient query
+  const existingCount = await prisma.userQuiz.count({
     where: { slug: baseSlug },
   })
 
-  if (!existingQuiz) return baseSlug
+  if (existingCount === 0) return baseSlug
 
-  // If slug exists, append a unique identifier
-  const timestamp = Date.now().toString().slice(-6)
-  return `${baseSlug}-${timestamp}`
+  // If slug exists, try with a random suffix
+  const randomSuffix = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0")
+  const newSlug = `${baseSlug}-${randomSuffix}`
+
+  // Double-check the new slug doesn't exist
+  const newSlugExists = await prisma.userQuiz.count({
+    where: { slug: newSlug },
+  })
+
+  // In the rare case of a collision, use timestamp as fallback
+  if (newSlugExists > 0) {
+    const timestamp = Date.now().toString().slice(-6)
+    return `${baseSlug}-${timestamp}`
+  }
+
+  return newSlug
+}
+
+// Centralized error response handler
+function handleError(error: unknown, defaultMessage = "Internal server error") {
+  console.error("API Error:", error)
+
+  if (error instanceof z.ZodError) {
+    return NextResponse.json({ error: "Validation error", details: error.format() }, { status: 400 })
+  }
+
+  if (error instanceof Error) {
+    // Handle specific error types
+    if (error.message.includes("Authentication required")) {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+
+    if (error.message.includes("AI service")) {
+      return NextResponse.json({ error: "AI service error", message: error.message }, { status: 503 })
+    }
+
+    if (error.message.includes("credits")) {
+      return NextResponse.json({ error: "Credit operation failed", message: error.message }, { status: 400 })
+    }
+
+    if (error.message.includes("not found")) {
+      return NextResponse.json({ error: error.message }, { status: 404 })
+    }
+
+    if (error.message.includes("Insufficient")) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+
+    return NextResponse.json({ error: defaultMessage, message: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ error: defaultMessage }, { status: 500 })
+}
+
+// Verify user authentication and return user data
+async function authenticateUser(): Promise<{
+  session: { user: { id: string } }
+  user: Pick<User, "id" | "credits">
+}> {
+  const session = await getAuthSession()
+
+  if (!session?.user) {
+    throw new Error("Authentication required")
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, credits: true },
+  })
+
+  if (!user) {
+    throw new Error("User not found")
+  }
+
+  return { session, user }
 }
 
 export async function POST(req: Request) {
   try {
-    // Get session
-    const session = await getAuthSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
+    // Authenticate user
+    const { session, user } = await authenticateUser()
 
     // Parse and validate input
     const body = await req.json()
-    const validationResult = createFlashcardSchema.safeParse(body)
+    const { topic, count } = createFlashcardSchema.parse(body)
 
-    if (!validationResult.success) {
-      return NextResponse.json({ error: "Invalid input", details: validationResult.error.format() }, { status: 400 })
-    }
-
-    const { topic, count } = validationResult.data
-
-    // Check if user has enough credits before proceeding
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { credits: true },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
+    // Check credits
     if (user.credits < 1) {
-      return NextResponse.json(
-        {
-          error: "Insufficient credits",
-          message: "You need at least 1 credit to generate flashcards",
-        },
-        { status: 403 },
-      )
+      throw new Error("Insufficient credits. You need at least 1 credit to generate flashcards")
     }
 
     // Generate unique slug
@@ -71,14 +128,14 @@ export async function POST(req: Request) {
     // Use a transaction for database operations
     const result = await prisma.$transaction(async (tx) => {
       // Generate flashcards
-      const flashcards = await generateFlashCards(topic, count)
+      const flashcards = (await generateFlashCards(topic, count)) as FlashCardData[]
 
       if (!flashcards || flashcards.length === 0) {
         throw new Error("Failed to generate flashcards")
       }
 
-      // Create new topic with flashcards
-      const newTopic = await tx.userQuiz.create({
+      // Create new quiz with flashcards
+      const newQuiz = await tx.userQuiz.create({
         data: {
           topic,
           quizType: "flashcard",
@@ -90,22 +147,22 @@ export async function POST(req: Request) {
 
       // Create flashcards
       await tx.flashCard.createMany({
-        data: flashcards.map((flashcard: any) => ({
+        data: flashcards.map((flashcard: FlashCardData) => ({
           question: flashcard.question,
           answer: flashcard.answer,
           userId: session.user.id,
           difficulty: "hard",
-          userQuizId: newTopic.id,
+          userQuizId: newQuiz.id,
         })),
       })
 
-      // Deduct one credit from the user
+      // Deduct one credit
       await tx.user.update({
         where: { id: session.user.id },
         data: { credits: { decrement: 1 } },
       })
 
-      return newTopic
+      return newQuiz
     })
 
     return NextResponse.json(
@@ -117,49 +174,21 @@ export async function POST(req: Request) {
       { status: 201 },
     )
   } catch (error) {
-    console.error("Error creating flashcards:", error)
-
-    // Handle specific error types
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validation error", details: error.format() }, { status: 400 })
-    }
-
-    // Handle AI service errors
-    if (error instanceof Error && error.message.includes("AI service")) {
-      return NextResponse.json({ error: "AI service error", message: error.message }, { status: 503 })
-    }
-
-    // Handle database errors related to credits
-    if (error instanceof Error && error.message.includes("credits")) {
-      return NextResponse.json({ error: "Credit operation failed", message: error.message }, { status: 400 })
-    }
-
-    return NextResponse.json(
-      { error: "Internal server error", message: "Failed to generate flashcards" },
-      { status: 500 },
-    )
+    return handleError(error, "Failed to generate flashcards")
   }
 }
 
 export async function GET(req: Request) {
   try {
+    // Authenticate user
+    const { session } = await authenticateUser()
+
+    // Get slug parameter
     const { searchParams } = new URL(req.url)
     const slug = searchParams.get("slug")
 
-    // Validate slug parameter
-    if (slug && typeof slug !== "string") {
-      return NextResponse.json({ error: "Invalid slug parameter" }, { status: 400 })
-    }
-
-    // Get session
-    const session = await getAuthSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
-
-    // Optimize query with proper joins
     if (slug) {
-      // Get specific flashcards by slug
+      // Get specific quiz by slug
       const quiz = await prisma.userQuiz.findUnique({
         where: {
           slug,
@@ -173,29 +202,33 @@ export async function GET(req: Request) {
       })
 
       if (!quiz) {
-        return NextResponse.json({ error: "Flashcard set not found" }, { status: 404 })
+        throw new Error("Flashcard set not found")
       }
-      console.log(quiz)
+
       return NextResponse.json(
         {
           success: true,
           data: {
             quiz,
-            flashCards: quiz ? quiz.flashCards : [],
+            flashCards: quiz.flashCards,
           },
         },
         { status: 200 },
       )
     } else {
-      // Get all user's flashcard sets
-      const quiz = await prisma.userQuiz.findUnique({
+      // Get all user's quizzes
+      const quizzes = await prisma.userQuiz.findMany({
         where: {
-          slug: slug || undefined,
+          userId: session.user.id,
+          quizType: "flashcard",
         },
         include: {
           flashCards: {
             orderBy: { createdAt: "desc" },
           },
+        },
+        orderBy: {
+          createdAt: "desc",
         },
       })
 
@@ -203,16 +236,14 @@ export async function GET(req: Request) {
         {
           success: true,
           data: {
-            quiz,
-            flashCards: quiz?.flashCards || [],
+            quizzes,
           },
         },
         { status: 200 },
       )
     }
   } catch (error) {
-    console.error("Error fetching flashcards:", error)
-    return NextResponse.json({ error: "Internal server error", message: "Failed to fetch flashcards" }, { status: 500 })
+    return handleError(error, "Failed to fetch flashcards")
   }
 }
 

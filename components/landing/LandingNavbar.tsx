@@ -62,8 +62,8 @@ export default function Navbar() {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 100, damping: 20 }}
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 backdrop-blur-sm border-b border-border w-full ${
-          isScrolled ? "bg-background/80" : "bg-transparent"
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 backdrop-blur-sm border-b border-border w-full ${
+          isScrolled ? "bg-background/90" : "bg-transparent"
         }`}
       >
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -72,7 +72,7 @@ export default function Navbar() {
           </Link>
         </motion.div>
 
-        <div className="hidden md:flex items-center space-x-8">
+        <div className="hidden md:flex items-center space-x-6">
           {navItems.map((item, index) => (
             <motion.div key={item.to} variants={navItemVariants} initial="hidden" animate="visible" custom={index}>
               <ScrollLink
@@ -81,7 +81,7 @@ export default function Navbar() {
                 smooth={true}
                 offset={-64}
                 duration={500}
-                className="text-muted-foreground hover:text-foreground transition-colors relative group cursor-pointer"
+                className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors relative group cursor-pointer"
                 activeClass="text-primary"
               >
                 {item.name}
@@ -97,7 +97,9 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center space-x-4">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button onClick={handleGetStarted}>Get Started</Button>
+            <Button onClick={handleGetStarted} className="px-6 py-2 text-base font-medium">
+              Get Started
+            </Button>
           </motion.div>
         </div>
 
@@ -115,7 +117,7 @@ export default function Navbar() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-y-0 right-0 z-50 w-64 bg-background shadow-lg md:hidden"
+            className="fixed inset-y-0 right-0 z-50 w-72 bg-background shadow-lg md:hidden"
           >
             <div className="flex flex-col h-full">
               <div className="flex justify-between items-center p-4 border-b border-border">
@@ -146,7 +148,7 @@ export default function Navbar() {
                       smooth={true}
                       offset={-64}
                       duration={500}
-                      className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                      className="px-6 py-3 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
                       activeClass="text-primary"
                       onClick={closeMobileMenu}
                     >
@@ -158,7 +160,7 @@ export default function Navbar() {
               <div className="mt-auto p-4 border-t border-border">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
-                    className="w-full"
+                    className="w-full px-6 py-2 text-base font-medium"
                     onClick={() => {
                       handleGetStarted()
                       closeMobileMenu()
@@ -177,7 +179,7 @@ export default function Navbar() {
         {isMobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: 0.7 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"

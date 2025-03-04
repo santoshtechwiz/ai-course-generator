@@ -2,10 +2,9 @@
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import Logo from "./Logo"
-import { Twitter, Facebook, Linkedin, ArrowRight, Mail } from "lucide-react"
+import { Twitter, Facebook, Linkedin, Instagram, ArrowRight, Mail } from "lucide-react"
 
 const footerLinks = [
   {
@@ -37,52 +36,85 @@ const footerLinks = [
 ]
 
 const socialLinks = [
-  { icon: Twitter, label: "Twitter" },
-  { icon: Facebook, label: "Facebook" },
-  { icon: Linkedin, label: "LinkedIn" },
+  { icon: Twitter, label: "Twitter", href: "https://twitter.com" },
+  { icon: Facebook, label: "Facebook", href: "https://facebook.com" },
+  { icon: Linkedin, label: "LinkedIn", href: "https://linkedin.com" },
+  { icon: Instagram, label: "Instagram", href: "https://instagram.com" },
 ]
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
 
+  const containerAnimation = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  }
+
+  const itemAnimation = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 10,
+      },
+    },
+  }
+
   return (
-    <motion.footer
-      className="border-t bg-background mt-auto"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="content-container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
-          {/* Logo and Social Links */}
-          <div className="md:col-span-4 space-y-6">
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Logo size="large" />
+    <footer className="border-t bg-background mt-auto">
+      {/* Main Footer Content */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8"
+          variants={containerAnimation}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
+          {/* Logo and Description */}
+          <motion.div className="lg:col-span-4 space-y-6" variants={itemAnimation}>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="inline-block">
+              <Link href="/">
+                <Logo size="large" />
+              </Link>
             </motion.div>
-            <p className="body-normal text-muted-foreground max-w-md">
+
+            <p className="text-base text-muted-foreground max-w-md">
               Empowering education through AI-driven learning experiences. Create and take quizzes, generate courses,
               and enhance your educational journey.
             </p>
-            <div className="flex space-x-2">
+
+            <div className="flex gap-2 pt-2">
               {socialLinks.map((social) => (
                 <Button
                   key={social.label}
-                  variant="ghost"
+                  variant="outline"
                   size="icon"
-                  className="rounded-full hover:bg-accent hover:text-accent-foreground"
+                  className="rounded-full hover:bg-primary hover:text-primary-foreground transition-colors duration-300"
+                  asChild
                 >
-                  <social.icon className="h-5 w-5" />
-                  <span className="sr-only">{social.label}</span>
+                  <Link href={social.href} target="_blank" rel="noopener noreferrer" aria-label={social.label}>
+                    <social.icon className="h-4 w-4" />
+                  </Link>
                 </Button>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Navigation Links */}
-          <div className="md:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <motion.div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-8" variants={itemAnimation}>
             {footerLinks.map((section) => (
               <div key={section.title} className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
+                <h3 className="text-sm font-semibold tracking-wide text-foreground">{section.title}</h3>
                 <ul className="space-y-3">
                   {section.links.map((link) => (
                     <li key={link.name}>
@@ -90,7 +122,7 @@ export default function Footer() {
                         <Button
                           variant="link"
                           asChild
-                          className="text-muted-foreground hover:text-foreground transition-colors p-0 h-auto font-normal"
+                          className="text-muted-foreground hover:text-foreground transition-colors p-0 h-auto font-normal text-sm"
                         >
                           <Link href={link.href}>{link.name}</Link>
                         </Button>
@@ -100,38 +132,45 @@ export default function Footer() {
                 </ul>
               </div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Newsletter Subscription */}
-          <div className="md:col-span-2 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Stay Updated</h3>
-            <p className="body-small text-muted-foreground">
-              Subscribe to our newsletter for the latest updates and features.
-            </p>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input type="email" placeholder="Email address" className="pl-10 rounded-full" />
+          <motion.div className="lg:col-span-3 space-y-4" variants={itemAnimation}>
+            <div>
+              <h3 className="text-sm font-semibold tracking-wide text-foreground mb-4">Stay Updated</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Subscribe to our newsletter for the latest updates and features.
+              </p>
+
+              <div className="space-y-3">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input type="email" placeholder="Your email address" className="pl-10 rounded-md border-border" />
+                </div>
+                <Button className="w-full group">
+                  Subscribe
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
               </div>
-              <Button size="icon" className="rounded-full">
-                <ArrowRight className="h-4 w-4" />
-                <span className="sr-only">Subscribe</span>
-              </Button>
             </div>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="border-t border-border">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-muted-foreground">© {currentYear} CourseAI. All rights reserved.</p>
+
+            <p className="text-xs text-muted-foreground text-center md:text-right max-w-md">
+              AI can make mistakes. CourseAI is an AI-powered tool and may produce incorrect or biased information.
+              Always verify important information.
+            </p>
           </div>
         </div>
-
-        <Separator className="my-6" />
-
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>© {currentYear} Course AI. All rights reserved.</p>
-          <p className="text-center md:text-right">
-            AI can make mistakes. Course AI is an AI-powered tool and may produce incorrect or biased information.
-            Always verify important information.
-          </p>
-        </div>
       </div>
-    </motion.footer>
+    </footer>
   )
 }
 

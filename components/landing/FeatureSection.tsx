@@ -79,9 +79,9 @@ const FeatureSections = () => {
 
   return (
     <Element name="features">
-      <section ref={sectionRef} className="py-4 px-4 bg-gradient-to-b from-background to-secondary/20">
+      <section ref={sectionRef} className="py-6 px-4 bg-gradient-to-b from-background to-secondary/20">
         <div className="container mx-auto max-w-6xl">
-          <motion.div initial="hidden" animate={controls} variants={stagger} className="space-y-12">
+          <motion.div initial="hidden" animate={controls} variants={stagger} className="space-y-8">
             <motion.div variants={stagger} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {features.map((feature, idx) => (
                 <motion.div key={idx} variants={fadeInUp} custom={idx}>
@@ -92,17 +92,20 @@ const FeatureSections = () => {
                       animate={{ scale: 1, opacity: 0.1 }}
                       transition={{ duration: 0.6, delay: 0.2 }}
                     />
-                    <CardHeader>
+                    <CardHeader className="p-6">
                       <motion.div
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 200 }}
+                        className="mb-4"
                       >
-                        <feature.icon className={cn("h-8 w-8 mb-2", `text-gradient ${feature.gradient}`)} />
+                        <feature.icon className={cn("h-10 w-10", `text-gradient ${feature.gradient}`)} />
                       </motion.div>
-                      <CardTitle className="text-foreground">{feature.title}</CardTitle>
+                      <CardTitle className="text-xl text-foreground">{feature.title}</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-muted-foreground">{feature.description}</CardContent>
+                    <CardContent className="text-base text-muted-foreground p-6 pt-0">
+                      {feature.description}
+                    </CardContent>
                   </Card>
                 </motion.div>
               ))}
@@ -115,3 +118,4 @@ const FeatureSections = () => {
 }
 
 export default FeatureSections
+

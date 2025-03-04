@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { FileQuestion, AlignJustify, PenTool, Code } from "lucide-react"
+
+import { FileQuestion, AlignJustify, PenTool, Code, Flashlight } from "lucide-react"
 import { SearchBar } from "./SearchBar"
 import type { QuizType } from "@/app/types/types"
 import type React from "react" // Import React
@@ -10,6 +10,7 @@ const quizTypes = [
   { id: "openended" as const, label: "Open Ended", icon: AlignJustify, color: "green" },
   { id: "fill-blanks" as const, label: "Fill in the Blanks", icon: PenTool, color: "yellow" },
   { id: "code" as const, label: "Code", icon: Code, color: "purple" },
+  { id: "flashcard" as const, label: "Flash Card", icon:Flashlight , color: "pink" },
 ]
 
 interface QuizSidebarProps {
