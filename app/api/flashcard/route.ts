@@ -192,7 +192,7 @@ export async function GET(req: Request) {
       const quiz = await prisma.userQuiz.findUnique({
         where: {
           slug,
-          userId: session.user.id, // Ensure user owns this quiz
+         
         },
         include: {
           flashCards: {
