@@ -24,6 +24,7 @@
     "@langchain/community": "^0.3.31",
     "@langchain/core": "^0.3.40",
     "@langchain/openai": "^0.4.4",
+    "@mailchimp/mailchimp_marketing": "^3.0.80",
     "@monaco-editor/react": "^4.6.0",
     "@neondatabase/serverless": "^0.10.4",
     "@next-auth/prisma-adapter": "^1.0.7",
