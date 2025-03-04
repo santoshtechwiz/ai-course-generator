@@ -2,9 +2,10 @@
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import Logo from "./Logo"
-import { Twitter, Facebook, Linkedin, Instagram, ArrowRight, Mail } from "lucide-react"
+import { Twitter, Facebook, Linkedin, Instagram } from "lucide-react"
+import { NewsletterForm } from "../newsletter-form"
+
 
 const footerLinks = [
   {
@@ -142,16 +143,7 @@ export default function Footer() {
                 Subscribe to our newsletter for the latest updates and features.
               </p>
 
-              <div className="space-y-3">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input type="email" placeholder="Your email address" className="pl-10 rounded-md border-border" />
-                </div>
-                <Button className="w-full group">
-                  Subscribe
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </div>
+              <NewsletterForm />
             </div>
           </motion.div>
         </motion.div>
