@@ -47,6 +47,14 @@ export const metadata: Metadata = {
     description:
       "Elevate your learning experience with Course AI. Create, take, and share quizzes and courses tailored to your educational needs.",
     siteName: "Course AI - Smart Learning Platform",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "Course AI - Smart Learning Platform",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -54,6 +62,7 @@ export const metadata: Metadata = {
     description: "Discover a smarter way to learn and teach with Course AI's interactive quizzes and adaptive courses.",
     creator: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
     site: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/twitter-image.jpg`],
   },
   robots: {
     index: true,
@@ -68,6 +77,9 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: process.env.NEXT_PUBLIC_SITE_URL,
+    languages: {
+      "en-US": `${process.env.NEXT_PUBLIC_SITE_URL}/en-US`,
+    },
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,

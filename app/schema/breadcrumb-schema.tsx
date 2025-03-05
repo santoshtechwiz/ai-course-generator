@@ -1,43 +1,22 @@
-export const breadcrumbSchema = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Home",
-      item: `/`,
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: "Learning Path",
-      item: `/dashboard/dashboard`,
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
-      name: "Quizzes",
-      item: `/dashboard/quizzes`,
-    },
-    {
-      "@type": "ListItem",
-      position: 4,
-      name: "Courses",
-      item: `/dashboard`,
-    },
-    {
-      "@type": "ListItem",
-      position: 5,
-      name: "Create",
-      item: `/dashboard/explore`,
-    },
-    {
-      "@type": "ListItem",
-      position: 6,
-      name: "Membership",
-      item: `/dashboard/subscription`,
-    },
-  ],
+import { generateBreadcrumbSchema } from "@/lib/seo-utils"
+
+interface BreadcrumbSchemaProps {
+  items: Array<{
+    name: string
+    path: string
+  }>
+}
+
+export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+
+  const breadcrumbItems = items.map((item) => ({
+    name: item.name,
+    url: `${baseUrl}${item.path.startsWith("/") ? item.path : `/${item.path}`}`,
+  }))
+
+  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems)
+
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 }
 

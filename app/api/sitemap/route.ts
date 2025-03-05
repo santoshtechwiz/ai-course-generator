@@ -1,16 +1,16 @@
-import { generateSitemapXml } from '@/lib/sitemap';
-import { getCoursesAndQuizzes } from '@/lib/sitemapquery';
-import { NextResponse } from 'next/server'
-
-
+import { generateSitemapXml } from "@/lib/sitemap"
+import { getCoursesAndQuizzes } from "@/lib/sitemapquery"
+import { NextResponse } from "next/server"
 
 export async function GET() {
-  const { courses, quizzes } = await getCoursesAndQuizzes() as { courses: any[], quizzes: any[] };
-  const sitemap = generateSitemapXml(courses, quizzes);
+  const { courses, quizzes } = await getCoursesAndQuizzes()
+  const sitemap = generateSitemapXml(courses, quizzes)
 
   return new NextResponse(sitemap, {
     headers: {
-      'Content-Type': 'application/xml',
+      "Content-Type": "application/xml",
+      // Add cache control headers for better performance
+      "Cache-Control": "public, max-age=3600, s-maxage=86400",
     },
   })
 }
