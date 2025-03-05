@@ -19,21 +19,27 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
   if (!quiz) {
     return {
-      title: "Quiz Not Found",
-      description: "The requested quiz could not be found.",
+      title: "MCQ Quiz Not Found | CourseAI",
+      description:
+        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
     }
   }
 
   return generatePageMetadata({
-    title: `${quiz.topic} | Interactive Quiz`,
-    description:
-      quiz.topic ||
-      `Test your knowledge with our ${quiz.topic} quiz. Challenge yourself and learn with Course AI.`,
+    title: `${quiz.topic} | Programming MCQ Quiz`,
+    description: `Test your coding knowledge with this ${quiz.topic.toLowerCase()} multiple-choice quiz. Practice programming concepts and improve your skills.`,
     path: `/dashboard/quiz/${params.slug}`,
-    keywords: [quiz.topic, "interactive quiz", "knowledge test", "learning assessment", "educational quiz"],
+    keywords: [
+      `${quiz.topic.toLowerCase()} quiz`,
+      "programming MCQs",
+      "coding assessment",
+      "developer knowledge test",
+      "programming practice questions",
+    ],
     ogType: "article",
   })
 }
+
 export async function generateStaticParams() {
   const quizzes = await prisma.userQuiz.findMany({
     select: { slug: true },
@@ -60,7 +66,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   const quizDetails = {
     type: "mcq",
     name: result.result.topic,
-    description: `Test your knowledge with this ${result.result.topic} quiz.`,
+    description: `Test your programming knowledge with this ${result.result.topic} quiz.`,
     author: "Course AI",
     datePublished: new Date().toISOString(),
     numberOfQuestions: result.questions.length || 0,
@@ -71,7 +77,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   return (
     <SlugPageLayout
       title={result.result.topic}
-      description={`Test your knowledge on ${result.result.topic}`}
+      description={`Test your coding knowledge on ${result.result.topic}`}
       sidebar={<AnimatedQuizHighlight />}
     >
       <QuizStructuredData quizDetails={quizDetails} />

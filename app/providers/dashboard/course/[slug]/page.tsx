@@ -7,6 +7,7 @@ import CourseStructuredData from "@/components/features/course/CoursePage/Course
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+
 function LoadingSkeleton() {
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] gap-4 p-4">
@@ -18,7 +19,7 @@ function LoadingSkeleton() {
         <Skeleton className="h-full w-full rounded-lg" />
       </div>
     </div>
-  );
+  )
 }
 
 // Generate metadata for the course page
@@ -27,22 +28,29 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
   if (!course) {
     return {
-      title: "Course Not Found",
-      description: "The requested course could not be found.",
+      title: "Course Not Found | CourseAI",
+      description: "The requested programming course could not be found. Explore our other coding education resources.",
     }
   }
 
   return generatePageMetadata({
-    title: `${course.name} | Online Course`,
+    title: `${course.name} | Programming Course`,
     description:
       course.description ||
-      `Learn ${course.name} with our interactive online course. Enhance your skills and knowledge with Course AI.`,
+      `Master ${course.name} with our interactive coding course. Enhance your programming skills with hands-on practice and expert guidance.`,
     path: `/dashboard/course/${params.slug}`,
-    keywords: [course.name, "online course", "interactive learning", "education", "e-learning"],
+    keywords: [
+      `${course.name.toLowerCase()} tutorial`,
+      `${course.name.toLowerCase()} programming`,
+      "coding education",
+      "interactive programming",
+      "developer learning",
+    ],
     ogImage: course.image || undefined,
     ogType: "article",
   })
 }
+
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const slug = (await params).slug
   const course = await getCourseData(slug)

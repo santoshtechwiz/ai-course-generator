@@ -1,5 +1,4 @@
 import type { Metadata, ResolvingMetadata } from "next"
-import { notFound } from "next/navigation"
 import { getAuthSession } from "@/lib/authOptions"
 import axios from "axios"
 import type { CodingQuizProps } from "@/app/types/types"
@@ -30,32 +29,38 @@ export async function generateMetadata(
   const quizData = await getQuizData(slug)
 
   if (!quizData) {
-    return notFound()
+    return {
+      title: "Coding Quiz Not Found | CourseAI",
+      description:
+        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
+    }
   }
 
   const previousImages = (await parent).openGraph?.images || []
+  const title = quizData.quizData.title || "Coding Challenge"
 
   return {
-    title: `${quizData.quizData.title} Quiz`,
-    description: `Test your knowledge on ${quizData.quizData.title} with this interactive quiz.`,
+    title: `${title} | Programming Challenge`,
+    description: `Test your coding skills with this ${title.toLowerCase()} programming challenge. Practice writing code and improve your development abilities.`,
+    keywords: ["coding challenge", "programming practice", "code quiz", "developer assessment", "coding skills test"],
     openGraph: {
-      title: `${quizData.quizData.title} Quiz`,
-      description: `Test your knowledge on ${quizData.quizData.title} with this interactive quiz.`,
+      title: `${title} | Interactive Coding Challenge`,
+      description: `Enhance your programming skills with this interactive ${title.toLowerCase()} coding challenge. Write, test, and improve your code.`,
       images: [
         {
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.quizData.title)}`,
+          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(title)}`,
           width: 1200,
           height: 630,
-          alt: `${quizData.quizData.title} Quiz`,
+          alt: `${title} Coding Challenge`,
         },
         ...previousImages,
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${quizData.quizData.title} Quiz`,
-      description: `Test your knowledge on ${quizData.quizData.title} with this interactive quiz.`,
-      images: [`${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.quizData.title)}`],
+      title: `${title} | Programming Challenge`,
+      description: `Test your coding skills with this ${title.toLowerCase()} programming challenge. Practice writing code and improve your development abilities.`,
+      images: [`${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(title)}`],
     },
   }
 }
