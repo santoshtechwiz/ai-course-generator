@@ -61,20 +61,20 @@
   * {
     @apply border-border;
   }
-/* Custom styles for 3D card effects */
-.perspective {
-  perspective: 1200px;
-}
+  /* Custom styles for 3D card effects */
+  .perspective {
+    perspective: 1200px;
+  }
 
-/* Preserve 3D transformations */
-.preserve-3d {
-  transform-style: preserve-3d;
-}
+  /* Preserve 3D transformations */
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
 
-/* Hide backface of elements */
-.backface-hidden {
-  backface-visibility: hidden;
-}
+  /* Hide backface of elements */
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
   html {
     font-size: 16px;
     scroll-behavior: smooth;
@@ -239,8 +239,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-    pointer-events: auto !important;
-
+  pointer-events: auto !important;
 }
 
 /* Improve contrast for better readability */
@@ -343,5 +342,6 @@ blockquote {
 }
 
 .animate-loader {
-    animation: loaderAnimation 1s ease-in-out infinite;
-  }
+  animation: loaderAnimation 1s ease-in-out infinite;
+}
+
