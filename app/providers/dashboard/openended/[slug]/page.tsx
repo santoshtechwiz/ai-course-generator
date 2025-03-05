@@ -14,17 +14,25 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const quizData = await getQuiz(params.slug)
   if (!quizData) {
     return {
-      title: "Quiz Not Found",
-      description: "The requested quiz could not be found.",
+      title: "Open-Ended Quiz Not Found | CourseAI",
+      description:
+        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
     }
   }
 
-  const title = `${quizData.topic} Quiz`
-  const description = `Test your knowledge with this ${quizData.topic} open-ended quiz.`
+  const title = `${quizData.topic} Open-Ended Quiz`
+  const description = `Develop your programming problem-solving skills with this ${quizData.topic.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`
 
   return {
     title,
     description,
+    keywords: [
+      "open-ended coding questions",
+      "programming problem solving",
+      "coding critical thinking",
+      `${quizData.topic.toLowerCase()} practice`,
+      "developer reasoning skills",
+    ],
     openGraph: {
       title,
       description,
@@ -64,7 +72,7 @@ export default async function OpenEndedQuizPage({ params }: { params: { slug: st
   return (
     <SlugPageLayout
       title={`Open-Ended Quiz: ${quizData.topic}`}
-      description={`Test your knowledge on ${quizData.topic}`}
+      description={`Test your programming knowledge on ${quizData.topic}`}
       sidebar={<AnimatedQuizHighlight />}
     >
       <Suspense fallback={<LoadingSkeleton />}>

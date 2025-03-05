@@ -1,5 +1,18 @@
 import Link from 'next/link';
+import type { Metadata } from "next"
 
+export const metadata: Metadata = {
+  title: "Terms of Service | CourseAI Coding Education",
+  description:
+    "Review the terms and conditions for using CourseAI's programming education platform. Understanding our policies for a better learning experience.",
+  keywords: [
+    "coding education terms",
+    "programming learning conditions",
+    "developer education agreement",
+    "coding platform terms",
+    "programming learning policies",
+  ],
+}
 export default function TermsAndConditions() {
   return (
     <div className="container mx-auto px-4 py-8">
