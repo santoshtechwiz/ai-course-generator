@@ -1,21 +1,11 @@
-import { generateBreadcrumbSchema } from "@/lib/seo-utils"
+import { BreadcrumbItem, generateBreadcrumbSchema } from "@/components/json-ld"
 
-interface BreadcrumbSchemaProps {
-  items: Array<{
-    name: string
-    path: string
-  }>
+interface BreadcrumbJsonLdProps {
+  items: BreadcrumbItem[]
 }
 
-export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
-
-  const breadcrumbItems = items.map((item) => ({
-    name: item.name,
-    url: `${baseUrl}${item.path.startsWith("/") ? item.path : `/${item.path}`}`,
-  }))
-
-  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems)
+export function BreadcrumbJsonLd({ items }: BreadcrumbJsonLdProps) {
+  const breadcrumbSchema = generateBreadcrumbSchema(items)
 
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 }

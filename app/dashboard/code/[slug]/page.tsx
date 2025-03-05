@@ -1,75 +1,90 @@
-import type { Metadata, ResolvingMetadata } from "next"
+import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import { getAuthSession } from "@/lib/authOptions"
-import axios from "axios"
-import type { CodingQuizProps } from "@/app/types/types"
+import { getServerSession } from "next-auth"
+import type { Metadata } from "next"
+
+import { authOptions } from "@/lib/authOptions"
+import { getQuiz } from "@/app/actions/getQuiz"
+import { generatePageMetadata } from "@/lib/seo-utils"
+import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
+import { QuizStructuredData } from "@/components/withQuizStructuredData"
+import SlugPageLayout from "@/components/SlugPageLayout"
 import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
-import { Suspense } from "react"
-import SlugPageLayout from "@/components/SlugPageLayout"
 
-async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
-  try {
-    const response = await axios.get<CodingQuizProps>(`${process.env.NEXTAUTH_URL}/api/code/${slug}`)
-    if (response.status !== 200) {
-      throw new Error("Failed to fetch quiz data")
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const quiz = await getQuiz(params.slug)
+
+  if (!quiz) {
+    return {
+      title: "Code Challenge Not Found | CourseAI",
+      description:
+        "The requested programming challenge could not be found. Explore our other coding challenges and assessments.",
     }
-    return response.data
-  } catch (error) {
-    console.error("Error fetching quiz data:", error)
-    return null
   }
+
+  return generatePageMetadata({
+    title: `${quiz.topic} | Programming Code Challenge`,
+    description: `Test your coding skills with this ${quiz.topic.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
+    path: `/dashboard/code/${params.slug}`,
+    keywords: [
+      `${quiz.topic.toLowerCase()} challenge`,
+      "programming exercise",
+      "coding practice",
+      "developer skills test",
+      "programming challenge",
+    ],
+    ogType: "article",
+  })
 }
 
-export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
-  const slug = (await params).slug
-  const quizData = await getQuizData(slug)
+const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
+  const params = await props.params
+  const { slug } = params
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
-  if (!quizData) {
-    return notFound()
+  const session = await getServerSession(authOptions)
+  const currentUserId = session?.user?.id
+
+  const result = await getQuiz(slug)
+  if (!result) {
+    notFound()
   }
 
-  const previousImages = (await parent).openGraph?.images || []
-
-  return {
-    title: `${quizData.quizData.title} Quiz`,
-    description: `Test your knowledge on ${quizData.quizData.title} with this interactive quiz.`,
-    openGraph: {
-      title: `${quizData.quizData.title} Quiz`,
-      description: `Test your knowledge on ${quizData.quizData.title} with this interactive quiz.`,
-      images: [
-        {
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.quizData.title)}`,
-          width: 1200,
-          height: 630,
-          alt: `${quizData.quizData.title} Quiz`,
-        },
-        ...previousImages,
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${quizData.quizData.title} Quiz`,
-      description: `Test your knowledge on ${quizData.quizData.title} with this interactive quiz.`,
-      images: [`${process.env.NEXT_PUBLIC_APP_URL}/api/og?title=${encodeURIComponent(quizData.quizData.title)}`],
-    },
+  const quizDetails = {
+    type: "code",
+    name: result.topic,
+    description: `Test your programming skills with this ${result.topic} code challenge.`,
+    author: "Course AI",
+    datePublished: new Date(result.createdAt).toISOString(),
+    numberOfQuestions: result.questions?.length || 0,
+    timeRequired: "PT45M", // Assuming 45 minutes, adjust as needed
+    educationalLevel: "Intermediate", // Adjust as needed
   }
-}
 
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const session = await getAuthSession()
-  const slug = (await params).slug
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: result.topic, url: `${baseUrl}/dashboard/code/${slug}` },
+  ]
 
   return (
-    <SlugPageLayout sidebar={<AnimatedQuizHighlight />}>
+    <SlugPageLayout
+      title={result.topic}
+      description={`Test your coding skills on ${result.topic} with interactive programming challenges`}
+      sidebar={<AnimatedQuizHighlight />}
+    >
+      <QuizStructuredData quizDetails={quizDetails} />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
       <Suspense fallback={<QuizSkeleton />}>
-        <CodeQuizWrapper slug={slug} userId={session?.user?.id || ""} />
+        <CodeQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
       </Suspense>
     </SlugPageLayout>
   )
 }
+
+export default CodePage
 

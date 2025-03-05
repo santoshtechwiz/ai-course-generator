@@ -1,70 +1,90 @@
 import { Suspense } from "react"
+import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
+
 import { authOptions } from "@/lib/authOptions"
+import { getQuiz } from "@/app/actions/getQuiz"
+import { generatePageMetadata } from "@/lib/seo-utils"
+import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
+import { QuizStructuredData } from "@/components/withQuizStructuredData"
 import SlugPageLayout from "@/components/SlugPageLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { BlankQuizWrapper } from "@/components/features/blanks/BlankQuizWrapper"
+
+import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  // Fetch quiz data for metadata
-  const title = `Fill in the Blanks: ${params.slug}`
-  const description = `Test your knowledge with this fill in the blanks quiz on ${params.slug}`
+  const quiz = await getQuiz(params.slug)
 
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
+  if (!quiz) {
+    return {
+      title: "Fill in the Blanks Quiz Not Found | CourseAI",
+      description:
+        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
+    }
   }
+
+  return generatePageMetadata({
+    title: `${quiz.topic} | Programming Fill in the Blanks Quiz`,
+    description: `Test your coding knowledge with this ${quiz.topic.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
+    path: `/dashboard/blanks/${params.slug}`,
+    keywords: [
+      `${quiz.topic.toLowerCase()} quiz`,
+      "programming fill in the blanks",
+      "coding assessment",
+      "developer knowledge test",
+      "programming practice questions",
+    ],
+    ogType: "article",
+  })
 }
 
-function LoadingSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-8 w-2/3" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-4 w-full mb-2" />
-        <Skeleton className="h-4 w-5/6 mb-2" />
-        <Skeleton className="h-4 w-4/5" />
-      </CardContent>
-    </Card>
-  )
-}
+const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
+  const params = await props.params
+  const { slug } = params
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
-export default async function BlankQuizPage({ params }: { params: { slug: string } }) {
   const session = await getServerSession(authOptions)
-  const userId = session?.user?.id || ""
+  const currentUserId = session?.user?.id
+
+  const result = await getQuiz(slug)
+  if (!result) {
+    notFound()
+  }
+
+  const quizDetails = {
+    type: "blanks",
+    name: result.topic,
+    description: `Test your programming knowledge with this ${result.topic} fill in the blanks quiz.`,
+    author: "Course AI",
+    datePublished: new Date(result.createdAt).toISOString(),
+    numberOfQuestions: result.questions?.length || 0,
+    timeRequired: "PT20M", // Assuming 20 minutes, adjust as needed
+    educationalLevel: "Beginner", // Adjust as needed
+  }
+
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: result.topic, url: `${baseUrl}/dashboard/blanks/${slug}` },
+  ]
 
   return (
     <SlugPageLayout
-      title={`Fill in the Blanks: ${params.slug}`}
-      description={`Test your knowledge on ${params.slug}`}
+      title={result.topic}
+      description={`Test your coding knowledge on ${result.topic} with fill in the blanks questions`}
       sidebar={<AnimatedQuizHighlight />}
     >
-      <Suspense fallback={<LoadingSkeleton />}>
-        <Card>
-          <CardHeader>
-            <CardTitle>{params.slug}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BlankQuizWrapper slug={params.slug}  />
-          </CardContent>
-        </Card>
+      <QuizStructuredData quizDetails={quizDetails} />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <Suspense fallback={<QuizSkeleton />}>
+        <BlanksQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
       </Suspense>
     </SlugPageLayout>
   )
 }
+
+export default BlanksPage
 

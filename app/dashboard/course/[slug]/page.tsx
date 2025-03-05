@@ -1,110 +1,81 @@
-import { notFound } from "next/navigation"
+// Example of using CourseJsonLd in a page
+import type { Metadata } from "next"
+import { generatePageMetadata } from "@/lib/seo-utils"
 import { getCourseData } from "@/app/actions/getCourseData"
-import type { Metadata, ResolvingMetadata } from "next"
 import CoursePage from "@/components/features/course/CoursePage/CoursePage"
 import CourseStructuredData from "@/components/features/course/CoursePage/CourseStructuredData"
-import { Skeleton } from "@/components/ui/skeleton"
+import { notFound } from "next/navigation"
 import { Suspense } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
-const SITE_NAME = "CourseAI"
 
-// Loading Skeleton for better UX
 function LoadingSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
-      <Skeleton className="w-full aspect-video rounded-lg" />
-      <Skeleton className="h-[400px] w-full rounded-lg" />
+    <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] gap-4 p-4">
+      <div className="flex-grow lg:w-3/4">
+        <Skeleton className="w-full aspect-video rounded-lg" />
+        <Skeleton className="h-[400px] w-full mt-4 rounded-lg" />
+      </div>
+      <div className="lg:w-1/4 lg:min-w-[300px]">
+        <Skeleton className="h-full w-full rounded-lg" />
+      </div>
     </div>
   )
 }
 
-export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
-  const course = await getCourseData((await params).slug)
+// Generate metadata for the course page
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const course = await getCourseData(params.slug)
 
   if (!course) {
     return {
-      title: "Course Not Found ",
-      description: "The requested course is not available. Explore our other AI-powered courses at CourseAI.",
-      robots: "noindex, nofollow",
+      title: "Course Not Found | CourseAI",
+      description: "The requested programming course could not be found. Explore our other coding education resources.",
     }
   }
 
-  const previousImages = (await parent).openGraph?.images || []
-
-  const courseUrl = `${SITE_URL}/courses/${(await params).slug}`
-  const imageUrl = course.image || `${SITE_URL}/default-course-thumbnail.png`
-
-  const defaultKeywords = [
-    "AI-powered learning",
-    "personalized education",
-    "online course",
-    "e-learning",
-    "skill development",
-    "interactive learning",
-  ]
-
-  const courseDescription =
-    course.description ||
-    `Master ${course.name} with our AI-powered, personalized online course. Gain practical skills, complete interactive quizzes, and earn a certificate.`
-
-  return {
-    title: `${course.name} | AI-Powered Online Course`,
-    description: `${courseDescription.slice(0, 155)}... Enroll now at ${SITE_NAME} for a personalized learning experience.`,
-    keywords: [...new Set([...defaultKeywords, course.name, SITE_NAME])],
-    category: "Education",
-    openGraph: {
-      title: `Master ${course.name} - AI-Powered Online Course `,
-      description: courseDescription,
-      url: courseUrl,
-      siteName: SITE_NAME,
-      type: "website",
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: `${course.name} Course Thumbnail - AI-Powered Learning`,
-        },
-        ...previousImages,
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `Learn ${course.name} with AI | ${SITE_NAME}`,
-      description: `${courseDescription.slice(0, 180)}... Enroll now for personalized, AI-driven learning!`,
-      images: [imageUrl],
-      creator: "@courseai",
-    },
-    alternates: {
-      canonical: courseUrl,
-    },
-    other: {
-      "og:locale": "en_US",
-      "og:type": "course",
-      "og:price:currency": "USD",
-    },
-  }
+  return generatePageMetadata({
+    title: `${course.name} | Programming Course`,
+    description:
+      course.description ||
+      `Master ${course.name} with our interactive coding course. Enhance your programming skills with hands-on practice and expert guidance.`,
+    path: `/dashboard/course/${params.slug}`,
+    keywords: [
+      `${course.name.toLowerCase()} tutorial`,
+      `${course.name.toLowerCase()} programming`,
+      "coding education",
+      "interactive programming",
+      "developer learning",
+    ],
+    ogImage: course.image || undefined,
+    ogType: "article",
+  })
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const slug = (await params).slug
   const course = await getCourseData(slug)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
   if (!course) {
     notFound()
   }
 
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Courses", url: `${baseUrl}/dashboard/home` },
+    { name: course.name, url: `${baseUrl}/dashboard/course/${slug}` },
+  ]
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Suspense fallback={<LoadingSkeleton />}>
-        <CourseStructuredData course={course} />
-        <CoursePage course={course} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<LoadingSkeleton />}>
+      <CourseStructuredData course={course} />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <CoursePage course={course} />
+    </Suspense>
   )
 }
 

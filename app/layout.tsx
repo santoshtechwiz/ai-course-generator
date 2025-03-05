@@ -3,13 +3,15 @@ import type { Metadata } from "next"
 import { Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 
-import { Analytics } from "./analytics"
+
 import Footer from "@/components/shared/Footer"
 import { Suspense } from "react"
 import PageLoader from "@/components/ui/loader"
 import { JsonLd } from "@/components/json-ld"
-import { Providers } from "./providers/provider"
+
 import GlobalLoader from "@/components/GlobalLoader"
+import { Providers } from "./providers/provider"
+import { Analytics } from "./analytics"
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -20,22 +22,22 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"),
   title: {
-    default: "Course AI: Smart Learning Platform | Create & Take Quizzes",
-    template: `%s | Course AI`,
+    default: "CourseAI: AI-Powered Coding MCQs & Learning Resources",
+    template: `%s | CourseAI`,
   },
   description:
-    "Course AI: An intelligent learning platform for creating and taking quizzes, generating courses, and enhancing educational experiences. Perfect for students, educators, and lifelong learners.",
+    "Master coding with CourseAI's AI-powered MCQs, quizzes, and personalized learning resources. Enhance your programming skills through interactive practice and smart feedback.",
   keywords: [
-    "online learning",
-    "quiz generator",
-    "course creation",
-    "educational platform",
-    "adaptive learning",
-    "personalized education",
-    "interactive quizzes",
-    "skill assessment",
-    "e-learning tools",
-    "knowledge testing",
+    "coding MCQs",
+    "programming quizzes",
+    "AI learning",
+    "coding practice",
+    "programming resources",
+    "interactive coding",
+    "learn to code",
+    "coding assessment",
+    "programming education",
+    "AI-powered learning",
   ],
   authors: [{ name: process.env.NEXT_PUBLIC_AUTHOR_NAME, url: process.env.NEXT_PUBLIC_AUTHOR_URL }],
   creator: process.env.NEXT_PUBLIC_CREATOR,
@@ -43,23 +45,23 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_SITE_URL,
-    title: "Course AI: Intelligent Learning Platform for Quizzes and Courses",
+    title: "CourseAI: AI-Powered Coding MCQs & Learning Platform",
     description:
-      "Elevate your learning experience with Course AI. Create, take, and share quizzes and courses tailored to your educational needs.",
-    siteName: "Course AI - Smart Learning Platform",
+      "Accelerate your programming journey with CourseAI. Practice with AI-generated coding questions and receive personalized learning recommendations.",
+    siteName: "CourseAI - Coding Education Platform",
     images: [
       {
         url: `${process.env.NEXT_PUBLIC_SITE_URL}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "Course AI - Smart Learning Platform",
+        alt: "CourseAI - Coding Education Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Course AI: Revolutionize Your Learning Journey",
-    description: "Discover a smarter way to learn and teach with Course AI's interactive quizzes and adaptive courses.",
+    title: "CourseAI: Master Coding Through AI-Powered Practice",
+    description: "Improve your programming skills with interactive coding MCQs and personalized learning paths.",
     creator: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
     site: process.env.NEXT_PUBLIC_TWITTER_HANDLE,
     images: [`${process.env.NEXT_PUBLIC_SITE_URL}/twitter-image.jpg`],

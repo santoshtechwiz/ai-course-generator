@@ -1,15 +1,93 @@
+import type { Metadata } from "next"
 
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
-import { Sparkles, BookOpen, Lightbulb } from "lucide-react"
+import { BookOpen, Lightbulb } from "lucide-react"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 
+export const metadata: Metadata = {
+  title: "Open-Ended Quizzes | Course AI",
+  description:
+    "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
+  keywords: [
+    "open-ended questions",
+    "critical thinking",
+    "essay questions",
+    "programming challenges",
+    "coding problems",
+    "developer assessment",
+  ],
+  openGraph: {
+    title: "Open-Ended Quizzes | Course AI",
+    description:
+      "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
+    url: "https://courseai.dev/dashboard/openended",
+    type: "website",
+    images: [{ url: "/og-image-openended.jpg" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Open-Ended Quizzes | Course AI",
+    description:
+      "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
+    images: ["/twitter-image-openended.jpg"],
+  },
+}
+
 const Page = async () => {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+
+  // CreativeWork schema
+  const creativeWorkSchema = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: "Open-Ended Quiz Creator",
+    description:
+      "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
+    creator: {
+      "@type": "Organization",
+      name: "Course AI",
+    },
+    url: `${baseUrl}/dashboard/openended`,
+  }
+
+  // Breadcrumb schema
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": baseUrl
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Dashboard",
+        "item": `${baseUrl}/dashboard`
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Dashboard",
+        "item": `${baseUrl}/dashboard`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Open-Ended Quizzes",
+        "item": `${baseUrl}/dashboard/openended`
+      }
+    ],
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <RandomQuote />
-
-     
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 relative group">
@@ -25,7 +103,7 @@ const Page = async () => {
                 Pro tip: Be specific with your topic
               </div>
             </div>
-            <QuizWrapper type={"openended"} />
+            <QuizWrapper type="openended" />
           </div>
         </div>
 
@@ -42,8 +120,3 @@ const Page = async () => {
 
 export default Page
 
-export const metadata = {
-  title: "Open-Ended Quizzes | Course AI",
-  description:
-    "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
-}

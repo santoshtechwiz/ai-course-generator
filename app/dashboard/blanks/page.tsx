@@ -1,17 +1,85 @@
-import type { Metadata } from "next"
-
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { BookOpen, Lightbulb } from "lucide-react"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 
+export const metadata = {
+  title: "Fill in the Blanks Quizzes | Course AI",
+  description:
+    "Enhance your learning with our interactive fill-in-the-blanks quizzes. Perfect for improving vocabulary, grammar, and subject-specific knowledge.",
+  keywords: [
+    "fill in the blanks",
+    "cloze test",
+    "programming practice",
+    "code completion",
+    "syntax learning",
+    "interactive exercises",
+  ],
+  openGraph: {
+    title: "Fill in the Blanks Quizzes | Course AI",
+    description:
+      "Enhance your learning with our interactive fill-in-the-blanks quizzes. Perfect for improving vocabulary, grammar, and subject-specific knowledge.",
+    url: "https://courseai.dev/dashboard/blanks",
+    type: "website",
+    images: [{ url: "/og-image-blanks.jpg" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fill in the Blanks Quizzes | Course AI",
+    description:
+      "Enhance your learning with our interactive fill-in-the-blanks quizzes. Perfect for improving vocabulary, grammar, and subject-specific knowledge.",
+    images: ["/twitter-image-blanks.jpg"],
+  },
+}
 
 const Page = async () => {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+
+  // CreativeWork schema
+  const creativeWorkSchema = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: "Fill in the Blanks Quiz Creator",
+    description:
+      "Enhance your learning with our interactive fill-in-the-blanks quizzes. Perfect for improving vocabulary, grammar, and subject-specific knowledge.",
+    creator: {
+      "@type": "Organization",
+      name: "Course AI",
+    },
+    url: `${baseUrl}/dashboard/blanks`,
+  }
+
+  // Breadcrumb schema
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: baseUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Dashboard",
+        item: `${baseUrl}/dashboard`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "Fill in the Blanks Quizzes",
+        item: `${baseUrl}/dashboard/blanks`,
+      },
+    ],
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <RandomQuote />
-
-     
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 relative group">
@@ -44,8 +112,3 @@ const Page = async () => {
 
 export default Page
 
-export const metadata = {
-  title: "Fill in the Blanks Quizzes | Course AI",
-  description:
-    "Enhance your learning with our interactive fill-in-the-blanks quizzes. Perfect for improving vocabulary, grammar, and subject-specific knowledge.",
-}
