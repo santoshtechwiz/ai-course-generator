@@ -1,3 +1,6 @@
+const quizSchema = import('@/lib/seo-utils').then((mod) => mod.generateQuizSchema)  
+const courseSchema = import('@/lib/seo-utils').then((mod) => mod.generateCourseSchema)
+const breadcrumbSchema = import('@/lib/seo-utils').then((mod) => mod.generateBreadcrumbSchema)
 export function JsonLd() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
   const organizationSchema = {
@@ -38,6 +41,8 @@ export function JsonLd() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(quizSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }} />
     </>
   )
 }
