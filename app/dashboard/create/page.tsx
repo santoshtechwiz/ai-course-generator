@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { BookOpen, Lightbulb } from "lucide-react"
@@ -9,10 +10,31 @@ import PopularCourses from "@/components/features/create/PopularCourses"
 // Add this line to explicitly mark the page as dynamic
 export const dynamic = "force-dynamic"
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Create Your Course | Course AI",
   description:
     "Design and build your own interactive course with our intuitive course creation tools. Share your expertise and engage learners effectively.",
+  keywords: [
+    "course creation",
+    "build online course",
+    "teaching platform",
+    "educational content",
+    "course design",
+    "AI course builder",
+  ],
+  openGraph: {
+    title: "Create Your Course | Course AI",
+    description: "Design and build your own interactive course with our intuitive course creation tools.",
+    url: "https://courseai.dev/dashboard/create",
+    type: "website",
+    images: [{ url: "/og-image-create-course.jpg" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Create Your Course | Course AI",
+    description: "Design and build your own interactive course with our intuitive course creation tools.",
+    images: ["/twitter-image-create-course.jpg"],
+  },
 }
 
 const Page = async ({
@@ -40,8 +62,51 @@ const Page = async ({
     console.warn("Failed to fetch course details:", error)
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+
+  // CreativeWork schema
+  const creativeWorkSchema = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: "Course Creation Tool",
+    description: "Design and build your own interactive course with our intuitive course creation tools.",
+    creator: {
+      "@type": "Organization",
+      name: "Course AI",
+    },
+    url: `${baseUrl}/dashboard/create`,
+  }
+
+  // Breadcrumb schema
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: baseUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Dashboard",
+        item: `${baseUrl}/dashboard`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "Create Course",
+        item: `${baseUrl}/dashboard/create`,
+      },
+    ],
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6 min-h-screen bg-background text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       {/* RandomQuote Section */}
       <RandomQuote />
 

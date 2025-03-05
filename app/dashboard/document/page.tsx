@@ -8,7 +8,35 @@ import { toast } from "@/hooks/use-toast"
 import { DocumentQuizDisplay } from "@/components/features/document/DocumentQuizDisplay"
 import { DocumentQuizOptions } from "@/components/features/document/DocumentQuizOptions"
 import { FileUpload } from "@/components/features/document/FileUpload"
-
+import { Metadata } from "next"
+export const metadata: Metadata = {
+  title: "Document Analysis | Course AI",
+  description:
+    "Upload and analyze documents to generate quizzes, summaries, and learning materials from your own content.",
+  keywords: [
+    "document analysis",
+    "content generation",
+    "text processing",
+    "educational materials",
+    "document-based learning",
+    "custom quizzes",
+  ],
+  openGraph: {
+    title: "Document Analysis | Course AI",
+    description:
+      "Upload and analyze documents to generate quizzes, summaries, and learning materials from your own content.",
+    url: "https://courseai.dev/dashboard/document",
+    type: "website",
+    images: [{ url: "/og-image-document.jpg" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Document Analysis | Course AI",
+    description:
+      "Upload and analyze documents to generate quizzes, summaries, and learning materials from your own content.",
+    images: ["/twitter-image-document.jpg"],
+  },
+}
 interface Question {
   id: string
   question: string
