@@ -86,18 +86,16 @@ function generateCourseSchema(params: CourseSchemaParams) {
       },
     }),
     // Add courseWorkload (required by Google)
-
+    courseWorkload: params.workload || "PT30M", // Default 30 minutes in ISO 8601 duration format
     hasCourseInstance: {
       "@type": "CourseInstance",
       courseMode: "online",
-      courseWorkload: "P2D",
       courseSchedule: {
         "@type": "Schedule",
         startDate: new Date(params.dateCreated).toISOString(),
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(), // 1 year availability
         repeatFrequency: "P1D", // Available daily
       },
-
       provider: {
         "@type": "Organization",
         name: params.provider,
@@ -145,6 +143,40 @@ function generateFAQSchema(items: { question: string; answer: string }[]) {
     })),
   }
 }
+
+// Site-wide FAQs
+const siteWideFAQs = [
+  {
+    question: "What is CourseAI?",
+    answer:
+      "CourseAI is an intelligent learning platform that uses AI to create personalized learning experiences. Our platform offers quiz generation, course creation, flashcards, and other tools to enhance your learning journey.",
+  },
+  {
+    question: "How does CourseAI work?",
+    answer:
+      "CourseAI uses advanced AI to analyze content and generate quizzes, courses, and learning materials. You can upload documents, provide links, or create content directly on the platform. Our AI then processes this information to create interactive learning experiences tailored to your needs.",
+  },
+  {
+    question: "Is CourseAI free to use?",
+    answer:
+      "CourseAI offers both free and premium plans. The free plan gives you access to basic features, while our premium subscription unlocks unlimited access to all features, priority support, and advanced AI capabilities.",
+  },
+  {
+    question: "What types of quizzes can I create with CourseAI?",
+    answer:
+      "CourseAI supports multiple quiz formats including multiple-choice questions, fill-in-the-blanks, coding challenges, and open-ended questions. You can choose the format that best suits your learning objectives.",
+  },
+  {
+    question: "Can I use CourseAI for my classroom or organization?",
+    answer:
+      "CourseAI is designed for both individual learners and educators. We offer special plans for educational institutions and organizations that need to create learning content at scale.",
+  },
+  {
+    question: "How accurate is the AI-generated content?",
+    answer:
+      "CourseAI uses state-of-the-art AI models to generate high-quality content. While our AI is highly accurate, we recommend reviewing the generated content before using it in critical educational contexts. We continuously improve our models based on user feedback.",
+  },
+]
 
 export function JsonLd() {
   const pathname = usePathname()
@@ -216,11 +248,15 @@ export function JsonLd() {
 
   const breadcrumbSchemaData = generateBreadcrumbSchema(breadcrumbItems)
 
+  // Generate FAQ schema
+  const faqSchemaData = generateFAQSchema(siteWideFAQs)
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchemaData) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchemaData) }} />
     </>
   )
 }
