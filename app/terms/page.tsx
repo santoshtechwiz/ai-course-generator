@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import type { Metadata } from "next"
+import { generatePageMetadata } from '@/lib/seo-utils';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = generatePageMetadata({
   title: "Terms of Service | CourseAI Coding Education",
   description:
     "Review the terms and conditions for using CourseAI's programming education platform. Understanding our policies for a better learning experience.",
+  path: "/terms",
   keywords: [
     "coding education terms",
     "programming learning conditions",
@@ -12,7 +14,8 @@ export const metadata: Metadata = {
     "coding platform terms",
     "programming learning policies",
   ],
-}
+})
+
 export default function TermsAndConditions() {
   return (
     <div className="container mx-auto px-4 py-8">
