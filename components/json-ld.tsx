@@ -69,8 +69,8 @@ function generateCourseSchema(params: CourseSchemaParams) {
     url: params.url,
     ...(params.imageUrl && { image: params.imageUrl }),
     inLanguage: "en",
-    dateCreated: params.dateCreated,
-    ...(params.dateModified && { dateModified: params.dateModified }),
+    dateCreated: new Date(params.dateCreated).toISOString(),
+    ...(params.dateModified && { dateModified: new Date(params.dateModified).toISOString() }),
     ...(params.instructorName && {
       instructor: {
         "@type": "Person",
@@ -78,6 +78,7 @@ function generateCourseSchema(params: CourseSchemaParams) {
         ...(params.instructorUrl && { url: params.instructorUrl }),
       },
     }),
+    courseWorkload: "0.5 hours",
     hasCourseInstance: {
       "@type": "CourseInstance",
       courseMode: "online",
