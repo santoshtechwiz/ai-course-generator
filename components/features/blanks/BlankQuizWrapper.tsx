@@ -55,7 +55,7 @@ const loadQuizState = () => {
   return null
 }
 
-export function BlankQuizWrapper({ slug }: { slug: string }) {
+export default function BlankQuizWrapper({ slug }: { slug: string }) {
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<QuizAnswer[]>([])

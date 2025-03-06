@@ -10,8 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 import { getQuiz } from "@/app/actions/getQuiz"
-import QuizSchema from "@/app/schema/quiz-schema"
 
+import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
+import QuizSchema from "@/app/schema/quiz-schema"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const quizData = await getQuiz(params.slug)
@@ -58,10 +59,23 @@ function LoadingSkeleton() {
 export default async function OpenEndedQuizPage({ params }: { params: { slug: string } }) {
   const session = await getServerSession(authOptions)
   const quizData = await getQuiz(params.slug)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
   if (!quizData) {
     notFound()
   }
+
+  // Calculate estimated time based on question count
+  const questionCount = quizData.questions?.length || 3
+  const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 5))}M` // 5 minutes per question, minimum 10 minutes
+
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: quizData.topic, url: `${baseUrl}/dashboard/openended/${params.slug}` },
+  ]
 
   return (
     <SlugPageLayout
@@ -72,13 +86,14 @@ export default async function OpenEndedQuizPage({ params }: { params: { slug: st
       <QuizSchema
         quiz={{
           topic: quizData.topic,
-          description: `Test your knowledge on ${quizData.topic} with this open-ended programming quiz.`,
-          questionCount: quizData.questions?.length || 5,
-          estimatedTime: "PT20M", // 20 minutes in ISO 8601 duration format
-          level: "Intermediate",
+          description: `Develop your programming problem-solving skills with this ${quizData.topic.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
+          questionCount: questionCount,
+          estimatedTime: estimatedTime,
+          level:  "Intermediate",
           slug: params.slug,
         }}
       />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
       <Suspense fallback={<LoadingSkeleton />}>
         <Card>
           <CardHeader>

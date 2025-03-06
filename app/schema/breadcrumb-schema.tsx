@@ -1,3 +1,4 @@
+'use client'
 import { BreadcrumbItem, generateBreadcrumbSchema } from "@/components/json-ld"
 
 interface BreadcrumbJsonLdProps {
