@@ -78,6 +78,15 @@ function generateCourseSchema(params: CourseSchemaParams) {
         ...(params.instructorUrl && { url: params.instructorUrl }),
       },
     }),
+    hasCourseInstance: {
+      "@type": "CourseInstance",
+      courseMode: "online",
+      provider: {
+        "@type": "Organization",
+        name: params.provider,
+        url: new URL("/", params.url).toString(),
+      },
+    },
     audience: {
       "@type": "Audience",
       audienceType: "Programmers and coding enthusiasts",
@@ -85,6 +94,7 @@ function generateCourseSchema(params: CourseSchemaParams) {
     offers: {
       "@type": "Offer",
       price: "0",
+      category: "free",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },
