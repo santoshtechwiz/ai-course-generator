@@ -1,6 +1,6 @@
 "use client"
 
-import { repeat } from "lodash"
+
 import { usePathname } from "next/navigation"
 
 // Define types for the schema generators
@@ -95,7 +95,7 @@ function generateCourseSchema(params: CourseSchemaParams) {
         "@type": "Schedule",
         startDate: new Date(params.dateCreated).toISOString(),
         // 1 year availability
-        repeatFrequency: "http://schema.org/Daily", // Available daily
+        repeatFrequency: "Daily", // Available daily
         repeatCount: 365, // Repeat for 1 year
       },
       provider: {
