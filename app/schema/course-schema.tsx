@@ -13,6 +13,7 @@ interface CourseSchemaProps {
       name: string
       url?: string
     }
+    workload?: string
   }
 }
 
@@ -30,6 +31,7 @@ export default function CourseSchema({ course }: CourseSchemaProps) {
     instructorUrl: course.instructor?.url,
     dateCreated: course.createdAt,
     dateModified: course.updatedAt,
+    workload: course.workload || "PT1H", // Default 1 hour in ISO 8601 duration format
   })
 
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }} />

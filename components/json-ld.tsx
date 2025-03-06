@@ -22,6 +22,7 @@ type CourseSchemaParams = {
   instructorUrl?: string
   dateCreated: string
   dateModified?: string
+  workload?: string
 }
 
 type BreadcrumbItem = {
@@ -31,12 +32,14 @@ type BreadcrumbItem = {
 
 // Schema generator functions
 function generateQuizSchema(params: QuizSchemaParams) {
+  // Instead of using Quiz type (which isn't well-supported), use LearningResource
   return {
     "@context": "https://schema.org",
-    "@type": "Quiz",
+    "@type": "LearningResource",
     name: params.name,
     description: params.description,
     url: params.url,
+    learningResourceType: "Quiz",
     educationalAlignment: {
       "@type": "AlignmentObject",
       educationalFramework: "Programming Skills",
@@ -45,7 +48,11 @@ function generateQuizSchema(params: QuizSchemaParams) {
       educationalLevel: params.educationalLevel || "Beginner",
     },
     timeRequired: params.timeRequired,
-    numberOfQuestions: params.numberOfQuestions,
+    about: {
+      "@type": "Thing",
+      name: params.name.replace(" Quiz", ""),
+      description: `Knowledge assessment about ${params.name.replace(" Quiz", "")}`,
+    },
     isAccessibleForFree: true,
     provider: {
       "@type": "Organization",
@@ -78,10 +85,17 @@ function generateCourseSchema(params: CourseSchemaParams) {
         ...(params.instructorUrl && { url: params.instructorUrl }),
       },
     }),
-    courseWorkload: "0.5 hours",
+    // Add courseWorkload (required by Google)
+    courseWorkload: params.workload || "PT30M", // Default 30 minutes in ISO 8601 duration format
     hasCourseInstance: {
       "@type": "CourseInstance",
       courseMode: "online",
+      courseSchedule: {
+        "@type": "Schedule",
+        startDate: new Date(params.dateCreated).toISOString(),
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(), // 1 year availability
+        repeatFrequency: "P1D", // Available daily
+      },
       provider: {
         "@type": "Organization",
         name: params.provider,
@@ -95,9 +109,9 @@ function generateCourseSchema(params: CourseSchemaParams) {
     offers: {
       "@type": "Offer",
       price: "0",
-      category: "free",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
+      validFrom: new Date(params.dateCreated).toISOString(),
     },
   }
 }
@@ -141,7 +155,12 @@ export function JsonLd() {
     "@type": "Organization",
     name: "CourseAI",
     url: baseUrl,
-    logo: `${baseUrl}/logo.png`,
+    logo: {
+      "@type": "ImageObject",
+      url: `${baseUrl}/logo.png`,
+      width: 112,
+      height: 112,
+    },
     sameAs: [
       process.env.NEXT_PUBLIC_TWITTER_URL,
       process.env.NEXT_PUBLIC_FACEBOOK_URL,
@@ -166,7 +185,10 @@ export function JsonLd() {
       "An intelligent learning platform for creating and taking coding quizzes, generating programming courses, and enhancing educational experiences.",
     potentialAction: {
       "@type": "SearchAction",
-      target: `${baseUrl}/search?q={search_term_string}`,
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+      },
       "query-input": "required name=search_term_string",
     },
   }

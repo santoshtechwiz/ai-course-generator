@@ -1,114 +1,126 @@
-import { Suspense } from "react"
-import { notFound } from "next/navigation"
-import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
-import { prisma } from "@/lib/db"
-import { authOptions } from "@/lib/authOptions"
-
-import getMcqQuestions from "@/app/actions/getMcqQuestions"
-import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
-import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
+import { generatePageMetadata } from "@/lib/seo-utils"
+import { getQuiz } from "@/app/actions/getQuiz"
+import { QuizWrapper } from "@/components/QuizWrapper"
+import RandomQuote from "@/components/RandomQuote"
+import { BookOpen, Lightbulb } from "lucide-react"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import QuizSchema from "@/app/schema/quiz-schema"
 
-import SlugPageLayout from "@/components/SlugPageLayout"
-
-export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const params = await props.params
-  const { slug } = params
-
-  const quiz = await prisma.userQuiz.findUnique({
-    where: { slug },
-    select: { id: true, topic: true, questions: true, user: { select: { name: true } } },
-  })
-
-  const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000"
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const quiz = await getQuiz(params.slug)
 
   if (!quiz) {
-    return {
-      title: "Quiz Not Found",
-      description: "The requested quiz could not be found.",
-    }
+    return generatePageMetadata({
+      title: "Quiz Not Found | CourseAI",
+      description: "The requested quiz could not be found. Explore our other programming quizzes and assessments.",
+      path: `/dashboard/mcq/${params.slug}`,
+      noIndex: true,
+    })
   }
 
-  const title = `${quiz.topic} Quiz `
-  const description = `Test your knowledge with this ${quiz.topic} quiz created by ${quiz.user.name}. Challenge yourself and learn something new!`
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url: `${websiteUrl}/quiz/${slug}`,
-      type: "website",
-      images: [
-        {
-          url: `${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`,
-          width: 1200,
-          height: 630,
-          alt: `${quiz.topic} Quiz Thumbnail`,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [`${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`],
-    },
-    alternates: {
-      canonical: `${websiteUrl}/quiz/${slug}`,
-    },
-  }
-}
-
-export async function generateStaticParams() {
-  const quizzes = await prisma.userQuiz.findMany({
-    select: { slug: true },
+  return generatePageMetadata({
+    title: `${quiz.topic} | Multiple Choice Quiz`,
+    description: `Test your knowledge on ${quiz.topic.toLowerCase()} with this interactive multiple-choice quiz. Enhance your programming skills through practice.`,
+    path: `/dashboard/mcq/${params.slug}`,
+    keywords: [
+      `${quiz.topic.toLowerCase()} quiz`,
+      "multiple choice questions",
+      "programming assessment",
+      "coding knowledge test",
+      "developer skills evaluation",
+    ],
+    ogType: "article",
   })
-
-  return quizzes.filter((quiz) => quiz.slug).map((quiz) => ({ slug: quiz.slug }))
 }
 
-const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
-  const params = await props.params
-  const { slug } = params
+const Page = async ({ params }: { params: { slug: string } }) => {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const quiz = await getQuiz(params.slug)
 
-  const session = await getServerSession(authOptions)
-  const currentUserId = session?.user?.id
-
-  const result = await getMcqQuestions(slug)
-  if (!result) {
-    notFound()
-  }
-  if (!result.result) {
-    notFound()
+  if (!quiz) {
+    return null // This will be handled by Next.js to show the not-found page
   }
 
-  const quizDetails = {
-    type: "mcq",
-    name: result.result.topic,
-    description: `Test your knowledge with this ${result.result.topic} quiz.`,
-    author: "Course AI",
-    datePublished: new Date().toISOString(),
-    numberOfQuestions: result.questions.length || 0,
-    timeRequired: "PT30M", // Assuming 30 minutes, adjust as needed
-    educationalLevel: "Beginner", // Adjust as needed
+  // Breadcrumb schema
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: baseUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Dashboard",
+        item: `${baseUrl}/dashboard`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "Multiple Choice Quizzes",
+        item: `${baseUrl}/dashboard/mcq`,
+      },
+      {
+        "@type": "ListItem",
+        position: 4,
+        name: quiz.topic,
+        item: `${baseUrl}/dashboard/mcq/${params.slug}`,
+      },
+    ],
   }
+
+  // Calculate estimated time based on question count
+  const questionCount = quiz.questions?.length || 10
+  const estimatedTime = `PT${Math.max(5, Math.ceil(questionCount * 1.5))}M` // 1.5 minutes per question, minimum 5 minutes
 
   return (
-    <SlugPageLayout
-      title={result.result.topic}
-      description={`Test your knowledge on ${result.result.topic}`}
-      sidebar={<AnimatedQuizHighlight />}
-    >
-    
-      <Suspense fallback={<QuizSkeleton />}>
-        <McqQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
-      </Suspense>
-    </SlugPageLayout>
+    <div className="container mx-auto py-6 space-y-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <QuizSchema
+        quiz={{
+          topic: quiz.topic,
+          description: `Test your knowledge on ${quiz.topic} with this interactive multiple-choice quiz.`,
+          questionCount: questionCount,
+          estimatedTime: estimatedTime,
+          level:  "Intermediate",
+          slug: params.slug,
+        }}
+      />
+      <RandomQuote />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-background rounded-xl -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-border/50">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold flex items-center text-foreground">
+                <BookOpen className="mr-2 h-6 w-6 text-primary" />
+                {quiz.topic}
+              </h2>
+              <div className="hidden sm:flex items-center text-sm text-muted-foreground bg-secondary/10 px-3 py-1.5 rounded-full">
+                <Lightbulb className="h-4 w-4 mr-1.5 text-yellow-500" />
+                Test your knowledge
+              </div>
+            </div>
+            <QuizWrapper type="mcq"  />
+          </div>
+        </div>
+
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-secondary/5 to-background rounded-xl -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-border/50">
+            <AnimatedQuizHighlight />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
-export default McqPage
+export default Page
 
