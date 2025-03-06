@@ -1,6 +1,5 @@
 "use client"
 
-
 import { usePathname } from "next/navigation"
 
 // Define types for the schema generators
@@ -23,7 +22,6 @@ type CourseSchemaParams = {
   instructorUrl?: string
   dateCreated: string
   dateModified?: string
-  workload?: string
 }
 
 type BreadcrumbItem = {
@@ -33,14 +31,12 @@ type BreadcrumbItem = {
 
 // Schema generator functions
 function generateQuizSchema(params: QuizSchemaParams) {
-  // Instead of using Quiz type (which isn't well-supported), use LearningResource
   return {
     "@context": "https://schema.org",
-    "@type": "LearningResource",
+    "@type": "Quiz",
     name: params.name,
     description: params.description,
     url: params.url,
-    learningResourceType: "Quiz",
     educationalAlignment: {
       "@type": "AlignmentObject",
       educationalFramework: "Programming Skills",
@@ -49,11 +45,7 @@ function generateQuizSchema(params: QuizSchemaParams) {
       educationalLevel: params.educationalLevel || "Beginner",
     },
     timeRequired: params.timeRequired,
-    about: {
-      "@type": "Thing",
-      name: params.name.replace(" Quiz", ""),
-      description: `Knowledge assessment about ${params.name.replace(" Quiz", "")}`,
-    },
+    numberOfQuestions: params.numberOfQuestions,
     isAccessibleForFree: true,
     provider: {
       "@type": "Organization",
@@ -86,18 +78,10 @@ function generateCourseSchema(params: CourseSchemaParams) {
         ...(params.instructorUrl && { url: params.instructorUrl }),
       },
     }),
-    // Add courseWorkload (required by Google)
-    courseWorkload: params.workload || "PT30M", // Default 30 minutes in ISO 8601 duration format
+    courseWorkload: "0.5 hours",
     hasCourseInstance: {
       "@type": "CourseInstance",
       courseMode: "online",
-      courseSchedule: {
-        "@type": "Schedule",
-        startDate: new Date(params.dateCreated).toISOString(),
-        // 1 year availability
-        repeatFrequency: "Daily", // Available daily
-        repeatCount: 365, // Repeat for 1 year
-      },
       provider: {
         "@type": "Organization",
         name: params.provider,
@@ -114,7 +98,6 @@ function generateCourseSchema(params: CourseSchemaParams) {
       category: "free",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
-      validFrom: new Date(params.dateCreated).toISOString(),
     },
   }
 }
@@ -147,40 +130,6 @@ function generateFAQSchema(items: { question: string; answer: string }[]) {
   }
 }
 
-// Site-wide FAQs
-const siteWideFAQs = [
-  {
-    question: "What is CourseAI?",
-    answer:
-      "CourseAI is an intelligent learning platform that uses AI to create personalized learning experiences. Our platform offers quiz generation, course creation, flashcards, and other tools to enhance your learning journey.",
-  },
-  {
-    question: "How does CourseAI work?",
-    answer:
-      "CourseAI uses advanced AI to analyze content and generate quizzes, courses, and learning materials. You can upload documents, provide links, or create content directly on the platform. Our AI then processes this information to create interactive learning experiences tailored to your needs.",
-  },
-  {
-    question: "Is CourseAI free to use?",
-    answer:
-      "CourseAI offers both free and premium plans. The free plan gives you access to basic features, while our premium subscription unlocks unlimited access to all features, priority support, and advanced AI capabilities.",
-  },
-  {
-    question: "What types of quizzes can I create with CourseAI?",
-    answer:
-      "CourseAI supports multiple quiz formats including multiple-choice questions, fill-in-the-blanks, coding challenges, and open-ended questions. You can choose the format that best suits your learning objectives.",
-  },
-  {
-    question: "Can I use CourseAI for my classroom or organization?",
-    answer:
-      "CourseAI is designed for both individual learners and educators. We offer special plans for educational institutions and organizations that need to create learning content at scale.",
-  },
-  {
-    question: "How accurate is the AI-generated content?",
-    answer:
-      "CourseAI uses state-of-the-art AI models to generate high-quality content. While our AI is highly accurate, we recommend reviewing the generated content before using it in critical educational contexts. We continuously improve our models based on user feedback.",
-  },
-]
-
 export function JsonLd() {
   const pathname = usePathname()
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
@@ -192,12 +141,7 @@ export function JsonLd() {
     "@type": "Organization",
     name: "CourseAI",
     url: baseUrl,
-    logo: {
-      "@type": "ImageObject",
-      url: `${baseUrl}/logo.png`,
-      width: 112,
-      height: 112,
-    },
+    logo: `${baseUrl}/logo.png`,
     sameAs: [
       process.env.NEXT_PUBLIC_TWITTER_URL,
       process.env.NEXT_PUBLIC_FACEBOOK_URL,
@@ -222,10 +166,7 @@ export function JsonLd() {
       "An intelligent learning platform for creating and taking coding quizzes, generating programming courses, and enhancing educational experiences.",
     potentialAction: {
       "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${baseUrl}/search?q={search_term_string}`,
-      },
+      target: `${baseUrl}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   }
@@ -251,15 +192,11 @@ export function JsonLd() {
 
   const breadcrumbSchemaData = generateBreadcrumbSchema(breadcrumbItems)
 
-  // Generate FAQ schema
-  const faqSchemaData = generateFAQSchema(siteWideFAQs)
-
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchemaData) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchemaData) }} />
     </>
   )
 }
