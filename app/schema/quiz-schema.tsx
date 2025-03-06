@@ -15,7 +15,7 @@ interface QuizSchemaProps {
 
 export default function QuizSchema({ quiz }: QuizSchemaProps) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
-  const quizUrl = `${baseUrl}/dashboard/quiz/${quiz.slug}`
+  const quizUrl = `${baseUrl}/dashboard/mcq/${quiz.slug}`
 
   const quizSchema = generateQuizSchema({
     name: `${quiz.topic} Quiz`,

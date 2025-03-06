@@ -10,7 +10,7 @@ export const routeConfig = {
       '/about',
       '/contact',
       '/dashboard/create',
-      '/dashboard/quiz',
+      '/dashboard/mcq',
     ],
     redirects: [
       { from: '/course/:id', to: '/course/:slug' },

@@ -107,7 +107,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
       if (isLoading) return
 
       if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: "/dashboard/quiz" })
+        signIn("credentials", { callbackUrl: "/dashboard/mcq" })
         return
       }
 

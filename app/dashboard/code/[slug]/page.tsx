@@ -13,16 +13,18 @@ import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 import QuizSchema from "@/app/schema/quiz-schema"
 
+type Params = Promise<{ slug: string }>;
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const quiz = await getQuiz(params.slug)
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { slug } = await params;
+  const quiz = await getQuiz(slug)
 
   if (!quiz) {
     return generatePageMetadata({
       title: "Code Challenge Not Found | CourseAI",
       description:
         "The requested programming challenge could not be found. Explore our other coding challenges and assessments.",
-      path: `/dashboard/code/${params.slug}`,
+      path: `/dashboard/code/${slug}`,
       noIndex: true,
     })
   }
@@ -30,7 +32,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return generatePageMetadata({
     title: `${quiz.topic} | Programming Code Challenge`,
     description: `Test your coding skills with this ${quiz.topic.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
-    path: `/dashboard/code/${params.slug}`,
+    path: `/dashboard/code/${slug}`,
     keywords: [
       `${quiz.topic.toLowerCase()} challenge`,
       "programming exercise",

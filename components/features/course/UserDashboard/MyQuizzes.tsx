@@ -184,7 +184,7 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
               Start your learning journey by creating your first quiz.
             </p>
             <div className="mt-6 space-y-3">
-              <Link href="/dashboard/quiz/create" passHref>
+              <Link href="/dashboard/mcq/create" passHref>
                 <Button className="w-full">Create a New Quiz</Button>
               </Link>
               <Link href="/dashboard/courses" passHref>

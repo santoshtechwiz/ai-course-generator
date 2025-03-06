@@ -35,7 +35,7 @@ const tiles = [
     icon: FileQuestion,
     title: "AI-Powered MCQ Generator",
     description: "Create intelligent multiple-choice questions with AI assistance for adaptive learning experiences.",
-    url: "/dashboard/quiz",
+    url: "/dashboard/mcq",
     color: "blue",
     quotes: [
       "Craft AI-generated MCQs that adapt to student performance!",
