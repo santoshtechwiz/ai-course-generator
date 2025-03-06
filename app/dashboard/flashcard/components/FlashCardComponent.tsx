@@ -185,7 +185,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
+    <div className="w-full max-w-4xl mx-auto space-y-4 text-foreground">
       {/* Confetti canvas for celebrations */}
       <canvas
         ref={confettiRef}
@@ -249,7 +249,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
       </AnimatePresence>
 
       {/* Progress bar */}
-      <div className="w-full h-2.5 bg-blue-100 rounded-full overflow-hidden">
+      <div className="w-full h-2.5 bg-blue-100 dark:bg-blue-950/30 rounded-full overflow-hidden">
         <motion.div
           className="h-full bg-blue-500 rounded-full"
           initial={{ width: 0 }}
@@ -264,7 +264,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
           <motion.div
             key={currentIndex}
             ref={cardRef}
-            className="w-full rounded-xl border border-gray-200 shadow-sm bg-white overflow-hidden cursor-pointer"
+            className="w-full rounded-xl border border-border shadow-sm bg-card text-card-foreground overflow-hidden cursor-pointer"
             initial={{
               x: direction === 0 ? 0 : direction > 0 ? 300 : -300,
               opacity: 0,
@@ -362,7 +362,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.3 }}
                   >
-                    <p className="text-lg text-center text-gray-800">{currentCard?.question}</p>
+                    <p className="text-lg text-center text-foreground">{currentCard?.question}</p>
                   </motion.div>
 
                   <div className="pt-4">
@@ -373,7 +373,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                           handleFlip()
                         }}
                         variant="outline"
-                        className="w-full border-gray-200 hover:bg-gray-50 text-gray-600"
+                        className="w-full border-border hover:bg-muted text-muted-foreground"
                       >
                         Reveal Answer
                       </Button>
@@ -393,7 +393,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                   }}
                 >
                   <div className="flex justify-between items-start">
-                    <h2 className="text-xl font-bold text-gray-700">Answer</h2>
+                    <h2 className="text-xl font-bold text-foreground">Answer</h2>
                     {onSaveCard && (
                       <motion.div
                         whileHover={{ scale: 1.1 }}
@@ -416,7 +416,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1, duration: 0.3 }}
                   >
-                    <p className="text-lg text-center text-gray-800">{currentCard?.answer}</p>
+                    <p className="text-lg text-center text-foreground">{currentCard?.answer}</p>
                   </motion.div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -462,7 +462,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
             disabled={currentIndex === 0}
             variant="outline"
             size="sm"
-            className="text-gray-600"
+            className="text-foreground"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Previous
@@ -484,7 +484,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
             disabled={currentIndex === cards.length - 1 && !onComplete}
             variant="outline"
             size="sm"
-            className="text-gray-600"
+            className="text-foreground"
           >
             Next
             <ChevronRight className="ml-1 h-4 w-4" />
@@ -494,7 +494,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
 
       {/* Swipe instruction */}
       <motion.div
-        className="text-center text-sm text-gray-400 mt-2"
+        className="text-center text-sm text-muted-foreground mt-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5, duration: 0.5 }}
