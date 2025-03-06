@@ -86,16 +86,18 @@ function generateCourseSchema(params: CourseSchemaParams) {
       },
     }),
     // Add courseWorkload (required by Google)
-    courseWorkload: params.workload || "PT30M", // Default 30 minutes in ISO 8601 duration format
+
     hasCourseInstance: {
       "@type": "CourseInstance",
       courseMode: "online",
+      courseWorkload: "P2D",
       courseSchedule: {
         "@type": "Schedule",
         startDate: new Date(params.dateCreated).toISOString(),
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(), // 1 year availability
         repeatFrequency: "P1D", // Available daily
       },
+
       provider: {
         "@type": "Organization",
         name: params.provider,
