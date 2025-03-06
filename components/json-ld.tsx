@@ -104,6 +104,21 @@ function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
   }
 }
 
+function generateFAQSchema(items: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  }
+}
+
 export function JsonLd() {
   const pathname = usePathname()
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
@@ -176,7 +191,7 @@ export function JsonLd() {
 }
 
 // Export the schema generators for use in specific pages
-export { generateQuizSchema, generateCourseSchema, generateBreadcrumbSchema }
+export { generateQuizSchema, generateCourseSchema, generateBreadcrumbSchema, generateFAQSchema }
 
 // Export types for TypeScript support
 export type { QuizSchemaParams, CourseSchemaParams, BreadcrumbItem }

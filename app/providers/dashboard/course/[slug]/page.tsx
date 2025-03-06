@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getCourseData } from "@/app/actions/getCourseData"
 import CoursePage from "@/components/features/course/CoursePage/CoursePage"
-import CourseStructuredData from "@/components/features/course/CoursePage/CourseStructuredData"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -59,7 +58,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   }
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <CourseStructuredData course={course} />
+     
       <CoursePage course={course} />
     </Suspense>
   )

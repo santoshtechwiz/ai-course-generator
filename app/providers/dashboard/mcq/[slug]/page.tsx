@@ -9,7 +9,7 @@ import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
-import { QuizStructuredData } from "@/components/withQuizStructuredData"
+
 import SlugPageLayout from "@/components/SlugPageLayout"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
@@ -80,7 +80,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       description={`Test your coding knowledge on ${result.result.topic}`}
       sidebar={<AnimatedQuizHighlight />}
     >
-      <QuizStructuredData quizDetails={quizDetails} />
+   
       <Suspense fallback={<QuizSkeleton />}>
         <McqQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
       </Suspense>

@@ -1,116 +1,114 @@
+import { Suspense } from "react"
+import { notFound } from "next/navigation"
+import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
+import { prisma } from "@/lib/db"
+import { authOptions } from "@/lib/authOptions"
 
-import { QuizWrapper } from "@/components/QuizWrapper"
-import RandomQuote from "@/components/RandomQuote"
-import { BookOpen, Lightbulb } from "lucide-react"
+import getMcqQuestions from "@/app/actions/getMcqQuestions"
+import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
+import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 
-export const metadata: Metadata = {
-  title: "Multiple Choice Quizzes | Course AI",
-  description:
-    "Create and take multiple-choice quizzes to test your programming knowledge and skills in a structured format.",
-  keywords: [
-    "multiple choice quiz",
-    "MCQ generator",
-    "programming quiz",
-    "coding assessment",
-    "tech knowledge test",
-    "developer quiz",
-  ],
-  openGraph: {
-    title: "Multiple Choice Quizzes | Course AI",
-    description:
-      "Create and take multiple-choice quizzes to test your programming knowledge and skills in a structured format.",
-    url: "https://courseai.dev/dashboard/mcq",
-    type: "website",
-    images: [{ url: "/og-image-mcq.jpg" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Multiple Choice Quizzes | Course AI",
-    description:
-      "Create and take multiple-choice quizzes to test your programming knowledge and skills in a structured format.",
-    images: ["/twitter-image-mcq.jpg"],
-  },
-}
+import SlugPageLayout from "@/components/SlugPageLayout"
 
-const Page = async () => {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params
+  const { slug } = params
 
-  // CreativeWork schema
-  const creativeWorkSchema = {
-    "@context": "https://schema.org",
-    "@type": "CreativeWork",
-    name: "Multiple Choice Quiz Creator",
-    description:
-      "Create and take multiple-choice quizzes to test your programming knowledge and skills in a structured format.",
-    creator: {
-      "@type": "Organization",
-      name: "Course AI",
-    },
-    url: `${baseUrl}/dashboard/mcq`,
+  const quiz = await prisma.userQuiz.findUnique({
+    where: { slug },
+    select: { id: true, topic: true, questions: true, user: { select: { name: true } } },
+  })
+
+  const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000"
+
+  if (!quiz) {
+    return {
+      title: "Quiz Not Found",
+      description: "The requested quiz could not be found.",
+    }
   }
 
-  // Breadcrumb schema
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: baseUrl,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Dashboard",
-        item: `${baseUrl}/dashboard`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: "Multiple Choice Quizzes",
-        item: `${baseUrl}/dashboard/mcq`,
-      },
-    ],
+  const title = `${quiz.topic} Quiz `
+  const description = `Test your knowledge with this ${quiz.topic} quiz created by ${quiz.user.name}. Challenge yourself and learn something new!`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${websiteUrl}/quiz/${slug}`,
+      type: "website",
+      images: [
+        {
+          url: `${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`,
+          width: 1200,
+          height: 630,
+          alt: `${quiz.topic} Quiz Thumbnail`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`],
+    },
+    alternates: {
+      canonical: `${websiteUrl}/quiz/${slug}`,
+    },
+  }
+}
+
+export async function generateStaticParams() {
+  const quizzes = await prisma.userQuiz.findMany({
+    select: { slug: true },
+  })
+
+  return quizzes.filter((quiz) => quiz.slug).map((quiz) => ({ slug: quiz.slug }))
+}
+
+const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
+  const params = await props.params
+  const { slug } = params
+
+  const session = await getServerSession(authOptions)
+  const currentUserId = session?.user?.id
+
+  const result = await getMcqQuestions(slug)
+  if (!result) {
+    notFound()
+  }
+  if (!result.result) {
+    notFound()
+  }
+
+  const quizDetails = {
+    type: "mcq",
+    name: result.result.topic,
+    description: `Test your knowledge with this ${result.result.topic} quiz.`,
+    author: "Course AI",
+    datePublished: new Date().toISOString(),
+    numberOfQuestions: result.questions.length || 0,
+    timeRequired: "PT30M", // Assuming 30 minutes, adjust as needed
+    educationalLevel: "Beginner", // Adjust as needed
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <RandomQuote />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-background rounded-xl -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-border/50">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold flex items-center text-foreground">
-                <BookOpen className="mr-2 h-6 w-6 text-primary" />
-                Create a New Quiz
-              </h2>
-              <div className="hidden sm:flex items-center text-sm text-muted-foreground bg-secondary/10 px-3 py-1.5 rounded-full">
-                <Lightbulb className="h-4 w-4 mr-1.5 text-yellow-500" />
-                Pro tip: Be specific with your topic
-              </div>
-            </div>
-            <QuizWrapper type="mcq" />
-          </div>
-        </div>
-
-        <div className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-secondary/5 to-background rounded-xl -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-border/50">
-            <AnimatedQuizHighlight />
-          </div>
-        </div>
-      </div>
-    </div>
+    <SlugPageLayout
+      title={result.result.topic}
+      description={`Test your knowledge on ${result.result.topic}`}
+      sidebar={<AnimatedQuizHighlight />}
+    >
+    
+      <Suspense fallback={<QuizSkeleton />}>
+        <McqQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
+      </Suspense>
+    </SlugPageLayout>
   )
 }
 
-export default Page
+export default McqPage
 

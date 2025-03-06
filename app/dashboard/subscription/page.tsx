@@ -7,10 +7,12 @@ import { SubscriptionPlanType } from '@/config/subscriptionPlans';
 import SubscriptionPlans from '@/app/dashboard/subscription/components/SubscriptionPlans';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Metadata } from 'next';
-export const metadata: Metadata = {
+import { generatePageMetadata } from '@/lib/seo-utils';
+export const metadata: Metadata = generatePageMetadata({
   title: "Subscription Plans | Course AI",
   description:
     "Explore our subscription plans and choose the perfect option to enhance your learning experience with Course AI.",
+  path: "/dashboard/subscription",
   keywords: [
     "subscription plans",
     "pricing",
@@ -19,22 +21,8 @@ export const metadata: Metadata = {
     "course access",
     "educational plans",
   ],
-  openGraph: {
-    title: "Subscription Plans | Course AI",
-    description:
-      "Explore our subscription plans and choose the perfect option to enhance your learning experience with Course AI.",
-    url: "https://courseai.dev/dashboard/subscription",
-    type: "website",
-    images: [{ url: "/og-image-subscription.jpg" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Subscription Plans | Course AI",
-    description:
-      "Explore our subscription plans and choose the perfect option to enhance your learning experience with Course AI.",
-    images: ["/twitter-image-subscription.jpg"],
-  },
-}
+  ogImage: "/og-image-subscription.jpg",
+})
 const Page=async ()=>{
   const session = await getAuthSession();
   const userId = session?.user?.id ?? null;

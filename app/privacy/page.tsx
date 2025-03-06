@@ -1,10 +1,12 @@
+import { generatePageMetadata } from '@/lib/seo-utils';
 import { Metadata } from 'next';
 import Link from 'next/link';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = generatePageMetadata({
   title: "Privacy Policy | CourseAI Coding Education",
   description:
     "Learn how CourseAI protects your data while providing programming education services. Our commitment to your privacy and security.",
+  path: "/privacy",
   keywords: [
     "coding education privacy",
     "programming learning data protection",
@@ -12,7 +14,8 @@ export const metadata: Metadata = {
     "coding platform security",
     "programming learning privacy",
   ],
-}
+})
+
 export default function PrivacyPolicy() {
   return (
     <div className="container mx-auto px-4 py-8">
