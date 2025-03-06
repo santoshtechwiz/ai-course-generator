@@ -124,7 +124,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
           initialIsPublic={false}
           initialIsFavorite={false}
           userId={userId}
-          ownerId={userId}
+          ownerId={ownerId}
           quizType="flashcard"
         />
         {loading ? (
