@@ -6,6 +6,7 @@ import { Providers } from "@/app/providers/provider"
 import { Analytics } from "@/app/analytics"
 import { defaultSEO } from "@/lib/seo-utils"
 import { JsonLd } from "@/components/json-ld"
+import Footer from "@/components/shared/Footer"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -82,6 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <JsonLd />
           {children}
           <Analytics />
+          <Footer></Footer>
         </Providers>
       </body>
     </html>
