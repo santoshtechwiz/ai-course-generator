@@ -21,7 +21,7 @@ const createOptions: CreateOption[] = [
   {
     title: "MCQ Quiz",
     description: "Create a new multiple-choice quiz to test knowledge with predefined answers.",
-    href: "/dashboard/quiz",
+    href: "/dashboard/mcq",
     buttonText: "Start Creating",
     icon: HelpCircle,
   },

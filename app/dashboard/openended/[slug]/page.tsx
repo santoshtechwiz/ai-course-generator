@@ -13,15 +13,16 @@ import { getQuiz } from "@/app/actions/getQuiz"
 
 import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
 import QuizSchema from "@/app/schema/quiz-schema"
-
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const quizData = await getQuiz(params.slug)
+type Params=Promise<{slug:string}>;
+export async function generateMetadata({ params }: { params:Params }): Promise<Metadata> {
+  const {slug}=await params;
+  const quizData = await getQuiz(slug)
   if (!quizData) {
     return generatePageMetadata({
       title: "Open-Ended Quiz Not Found | CourseAI",
       description:
         "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
-      path: `/dashboard/openended/${params.slug}`,
+      path: `/dashboard/openended/${slug}`,
       noIndex: true,
     })
   }
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return generatePageMetadata({
     title: `${quizData.topic} | Open-Ended Programming Quiz`,
     description: `Develop your programming problem-solving skills with this ${quizData.topic.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
-    path: `/dashboard/openended/${params.slug}`,
+    path: `/dashboard/openended/${slug}`,
     keywords: [
       "open-ended coding questions",
       "programming problem solving",
@@ -56,9 +57,10 @@ function LoadingSkeleton() {
   )
 }
 
-export default async function OpenEndedQuizPage({ params }: { params: { slug: string } }) {
+export default async function OpenEndedQuizPage({ params }: { params: Params }) {
+  const { slug } =await params;
   const session = await getServerSession(authOptions)
-  const quizData = await getQuiz(params.slug)
+  const quizData = await getQuiz(slug)
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
   if (!quizData) {
@@ -74,7 +76,7 @@ export default async function OpenEndedQuizPage({ params }: { params: { slug: st
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: quizData.topic, url: `${baseUrl}/dashboard/openended/${params.slug}` },
+    { name: quizData.topic, url: `${baseUrl}/dashboard/openended/${slug}` },
   ]
 
   return (
@@ -90,7 +92,7 @@ export default async function OpenEndedQuizPage({ params }: { params: { slug: st
           questionCount: questionCount,
           estimatedTime: estimatedTime,
           level:  "Intermediate",
-          slug: params.slug,
+          slug: slug,
         }}
       />
       <BreadcrumbJsonLd items={breadcrumbItems} />
@@ -100,7 +102,7 @@ export default async function OpenEndedQuizPage({ params }: { params: { slug: st
             <CardTitle>{quizData.topic}</CardTitle>
           </CardHeader>
           <CardContent>
-            <OpenEndedQuizWrapper slug={params.slug} quizData={quizData} />
+            <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
           </CardContent>
         </Card>
       </Suspense>

@@ -24,7 +24,7 @@ export const CreateCard: React.FC<CreateCardProps> = ({
   floating,
   title = "Create Your Own Quiz",
   description = "Transform your knowledge into an engaging quiz in minutes! ✨",
-  createUrl = "/dashboard/quiz",
+  createUrl = "/dashboard/mcq",
   animationDuration = 1.5,
   className,
 }) => {

@@ -10,7 +10,7 @@ interface SignInBannerProps {
 
 export function SignInBanner({ isAuthenticated }: SignInBannerProps) {
   const handleSignIn = () => {
-    signIn('credentials', { callbackUrl: '/dashboard/quiz' });
+    signIn('credentials', { callbackUrl: '/dashboard/mcq' });
   }
 
   return (

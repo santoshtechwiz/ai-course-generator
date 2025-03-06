@@ -85,11 +85,11 @@ export default function HowItWorks() {
             <Button 
               disabled={stage > 0} 
               className={cn(
-                "w-full sm:w-auto",
+                "w-full sm:w-auto whitespace-nowrap",
                 stage > 0 ? "bg-primary/50" : "bg-primary"
               )}
             >
-              {stage > 0 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {stage > 0 ? <Loader2 className="mr-2 h-4 w-8 animate-spin" /> : null}
               {stage > 0 ? 'Processing...' : 'Start Learning'}
             </Button>
           </div>
