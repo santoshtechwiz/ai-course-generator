@@ -23,6 +23,7 @@ import {
 import { staggerChildren, scaleIn, fadeIn } from "@/lib/animation"
 import { Separator } from "@radix-ui/react-separator"
 import { useToast } from "@/hooks/use-toast"
+import FAQSchema from "@/app/schema/faq-schema"
 
 const planColors: Record<SubscriptionPlanType, string> = {
   FREE: "bg-secondary hover:bg-secondary/90",
@@ -451,6 +452,7 @@ function FAQSection() {
   return (
     <motion.div variants={fadeIn} initial="initial" animate="animate" exit="exit" className="mt-12">
       <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
+      <FAQSchema faqs={FAQ_ITEMS} />
       <input
         type="text"
         placeholder="Search FAQs..."
@@ -460,6 +462,7 @@ function FAQSection() {
         }}
       />
       <Accordion type="single" collapsible className="w-full">
+        
         {FAQ_ITEMS.map((item, index) => (
           <AccordionItem key={index} value={`item-${index}`}>
             <AccordionTrigger className="text-left text-base font-medium">{item.question}</AccordionTrigger>
