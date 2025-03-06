@@ -51,29 +51,24 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
   }
 
   return (
-    
-    <SlugPageLayout sidebar={<AnimatedQuizHighlight />}>
-      <QuizActions
-        initialIsFavorite={false}
-        initialIsPublic={false}
-        ownerId={quiz.userId}
-        quizSlug={slug}
-        quizId={quiz.id.toString()}
-        userId={userId}
-      />
-      <QuizSchema
-        quiz={{
-          topic: quiz.topic,
-          description: `Study and memorize key concepts about ${quiz.topic} with these interactive flashcards.`,
-          questionCount: quiz.questions?.length || 10,
-          estimatedTime: "PT15M", // 15 minutes in ISO 8601 duration format
-          level: "All Levels",
-          slug: slug,
-        }}
-      />
+    <>
+
+      <SlugPageLayout sidebar={<AnimatedQuizHighlight />}>
       
-      <FlashCardsPageClient slug={slug} userId={userId} />
-    </SlugPageLayout>
+        <QuizSchema
+          quiz={{
+            topic: quiz.topic,
+            description: `Study and memorize key concepts about ${quiz.topic} with these interactive flashcards.`,
+            questionCount: quiz.questions?.length || 10,
+            estimatedTime: "PT15M", // 15 minutes in ISO 8601 duration format
+            level: "All Levels",
+            slug: slug,
+          }}
+        />
+
+        <FlashCardsPageClient slug={slug} userId={userId} />
+      </SlugPageLayout>
+    </>
   )
 }
 

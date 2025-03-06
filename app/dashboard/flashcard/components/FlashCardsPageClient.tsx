@@ -117,27 +117,14 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
 
         </div>
 
-        <div className="flex justify-between items-center">
-          <Link href="/dashboard/quizzes">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </Link>
-          <Link href="/dashboard/flashcard">
-            <Button size="sm">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate New Cards
-            </Button>
-          </Link>
-        </div>
+     
         <QuizActions
           quizId={quizId}
           quizSlug={slug}
           initialIsPublic={false}
           initialIsFavorite={false}
           userId={userId}
-          ownerId={ownerId}
+          ownerId={userId}
           quizType="flashcard"
         />
         {loading ? (
