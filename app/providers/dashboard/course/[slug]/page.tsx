@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
-
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getCourseData } from "@/app/actions/getCourseData"
 import CoursePage from "@/components/features/course/CoursePage/CoursePage"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import CourseSchema from "@/app/schema/course-schema"
+import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
 
 function LoadingSkeleton() {
   return (
@@ -26,10 +27,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const course = await getCourseData(params.slug)
 
   if (!course) {
-    return {
+    return generatePageMetadata({
       title: "Course Not Found | CourseAI",
       description: "The requested programming course could not be found. Explore our other coding education resources.",
-    }
+      path: `/dashboard/course/${params.slug}`,
+      noIndex: true,
+    })
   }
 
   return generatePageMetadata({
@@ -53,12 +56,38 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const slug = (await params).slug
   const course = await getCourseData(slug)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+
   if (!course) {
     notFound()
   }
+
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Courses", url: `${baseUrl}/dashboard/explore` },
+    { name: course.name, url: `${baseUrl}/dashboard/course/${slug}` },
+  ]
+
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-     
+      <CourseSchema
+        course={{
+          name: course.name,
+          description: course.description || `Learn ${course.name} with interactive lessons and exercises.`,
+          image: course.image,
+          createdAt: course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString(),
+          updatedAt: course.updatedAt ? new Date(course.updatedAt).toISOString() : undefined,
+          instructor: course.name
+            ? {
+                name: course.name || "CourseAI Instructor",
+                url: `${baseUrl}/dashboard/instructor/${course.slug}`,
+              }
+            : undefined,
+        }}
+      />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
       <CoursePage course={course} />
     </Suspense>
   )

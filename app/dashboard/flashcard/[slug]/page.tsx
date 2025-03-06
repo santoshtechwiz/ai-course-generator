@@ -6,10 +6,10 @@ import { getQuiz } from "@/app/actions/getQuiz"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
 import SlugPageLayout from "@/components/SlugPageLayout"
 import QuizSchema from "@/app/schema/quiz-schema"
-type Params = Promise<{ slug: string }>;
+type Params = Promise<{ slug: string }>
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const {slug}=await params;
+  const { slug } = await params
   const quiz = await getQuiz(slug)
 
   if (!quiz) {

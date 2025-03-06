@@ -2,91 +2,90 @@ import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
-import { prisma } from "@/lib/db"
+
 import { authOptions } from "@/lib/authOptions"
-
-import getMcqQuestions from "@/app/actions/getMcqQuestions"
-import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
-import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
-
-import SlugPageLayout from "@/components/SlugPageLayout"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
+import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
+import SlugPageLayout from "@/components/SlugPageLayout"
+import { QuizWrapper } from "@/components/QuizWrapper"
+import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
+import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import QuizSchema from "@/app/schema/quiz-schema"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const quiz = await getQuiz(params.slug)
 
   if (!quiz) {
-    return {
-      title: "MCQ Quiz Not Found | CourseAI",
-      description:
-        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
-    }
+    return generatePageMetadata({
+      title: "Quiz Not Found | CourseAI",
+      description: "The requested quiz could not be found. Explore our other programming quizzes and assessments.",
+      path: `/dashboard/mcq/${params.slug}`,
+      noIndex: true,
+    })
   }
 
   return generatePageMetadata({
-    title: `${quiz.topic} | Programming MCQ Quiz`,
-    description: `Test your coding knowledge with this ${quiz.topic.toLowerCase()} multiple-choice quiz. Practice programming concepts and improve your skills.`,
-    path: `/dashboard/quiz/${params.slug}`,
+    title: `${quiz.topic} | Multiple Choice Quiz`,
+    description: `Test your knowledge on ${quiz.topic.toLowerCase()} with this interactive multiple-choice quiz. Enhance your programming skills through practice.`,
+    path: `/dashboard/mcq/${params.slug}`,
     keywords: [
       `${quiz.topic.toLowerCase()} quiz`,
-      "programming MCQs",
-      "coding assessment",
-      "developer knowledge test",
-      "programming practice questions",
+      "multiple choice questions",
+      "programming assessment",
+      "coding knowledge test",
+      "developer skills evaluation",
     ],
     ogType: "article",
   })
 }
 
-export async function generateStaticParams() {
-  const quizzes = await prisma.userQuiz.findMany({
-    select: { slug: true },
-  })
-
-  return quizzes.filter((quiz) => quiz.slug).map((quiz) => ({ slug: quiz.slug }))
-}
-
-const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
-  const params = await props.params
-  const { slug } = params
+const Page = async ({ params }: { params: { slug: string } }) => {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const quiz = await getQuiz(params.slug)
 
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
 
-  const result = await getMcqQuestions(slug)
-  if (!result) {
-    notFound()
-  }
-  if (!result.result) {
+  if (!quiz) {
     notFound()
   }
 
-  const quizDetails = {
-    type: "mcq",
-    name: result.result.topic,
-    description: `Test your programming knowledge with this ${result.result.topic} quiz.`,
-    author: "Course AI",
-    datePublished: new Date().toISOString(),
-    numberOfQuestions: result.questions.length || 0,
-    timeRequired: "PT30M", // Assuming 30 minutes, adjust as needed
-    educationalLevel: "Beginner", // Adjust as needed
-  }
+  // Calculate estimated time based on question count
+  const questionCount = quiz.questions?.length || 10
+  const estimatedTime = `PT${Math.max(5, Math.ceil(questionCount * 1.5))}M` // 1.5 minutes per question, minimum 5 minutes
+
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: quiz.topic, url: `${baseUrl}/dashboard/mcq/${params.slug}` },
+  ]
 
   return (
     <SlugPageLayout
-      title={result.result.topic}
-      description={`Test your coding knowledge on ${result.result.topic}`}
+      title={quiz.topic}
+      description={`Test your knowledge on ${quiz.topic} with this interactive multiple-choice quiz`}
       sidebar={<AnimatedQuizHighlight />}
     >
-   
+      <QuizSchema
+        quiz={{
+          topic: quiz.topic,
+          description: `Test your knowledge on ${quiz.topic} with this interactive multiple-choice quiz.`,
+          questionCount: questionCount,
+          estimatedTime: estimatedTime,
+          level: "Intermediate",
+          slug: params.slug,
+        }}
+      />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
       <Suspense fallback={<QuizSkeleton />}>
-        <McqQuizWrapper slug={slug} currentUserId={currentUserId || ""} result={result} />
+        <QuizWrapper type="mcq" />
       </Suspense>
     </SlugPageLayout>
   )
 }
 
-export default McqPage
+export default Page
 

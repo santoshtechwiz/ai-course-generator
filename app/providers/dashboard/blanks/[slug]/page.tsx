@@ -2,43 +2,42 @@ import { Suspense } from "react"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
+import { generatePageMetadata } from "@/lib/seo-utils"
+import { getQuiz } from "@/app/actions/getQuiz"
 import SlugPageLayout from "@/components/SlugPageLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BlankQuizWrapper } from "@/components/features/blanks/BlankQuizWrapper"
 import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
+import QuizSchema from "@/app/schema/quiz-schema"
+import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  // Extract a readable title from the slug
-  const readableTitle = params.slug
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
+  const quiz = await getQuiz(params.slug)
 
-  const title = `Fill in the Blanks: ${readableTitle}`
-  const description = `Practice your coding knowledge with this fill-in-the-blanks exercise on ${readableTitle.toLowerCase()}. Enhance your programming syntax skills.`
-
-  return {
-    title: `${title} | Programming Practice`,
-    description,
-    keywords: [
-      "coding fill-in-blanks",
-      "programming syntax practice",
-      "code completion exercise",
-      `${params.slug.replace(/-/g, " ")} practice`,
-      "developer skills training",
-    ],
-    openGraph: {
-      title,
-      description,
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
+  if (!quiz) {
+    return generatePageMetadata({
+      title: "Fill in the Blanks Quiz Not Found | CourseAI",
+      description:
+        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
+      path: `/dashboard/blanks/${params.slug}`,
+      noIndex: true,
+    })
   }
+
+  return generatePageMetadata({
+    title: `${quiz.topic} | Programming Fill in the Blanks Quiz`,
+    description: `Test your coding knowledge with this ${quiz.topic.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
+    path: `/dashboard/blanks/${params.slug}`,
+    keywords: [
+      `${quiz.topic.toLowerCase()} quiz`,
+      "programming fill in the blanks",
+      "coding assessment",
+      "developer knowledge test",
+      "programming practice questions",
+    ],
+    ogType: "article",
+  })
 }
 
 function LoadingSkeleton() {
@@ -59,23 +58,46 @@ function LoadingSkeleton() {
 export default async function BlankQuizPage({ params }: { params: { slug: string } }) {
   const session = await getServerSession(authOptions)
   const userId = session?.user?.id || ""
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
-  // Extract a readable title from the slug
-  const readableTitle = params.slug
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
+  const quiz = await getQuiz(params.slug)
+  if (!quiz) {
+    return null // This will be handled by Next.js to show the not-found page
+  }
+
+  // Calculate estimated time based on question count
+  const questionCount = quiz.questions?.length || 5
+  const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 2))}M` // 2 minutes per question, minimum 10 minutes
+
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: quiz.topic, url: `${baseUrl}/dashboard/blanks/${params.slug}` },
+  ]
 
   return (
     <SlugPageLayout
-      title={`Fill in the Blanks: ${readableTitle}`}
-      description={`Test your coding knowledge on ${readableTitle}`}
+      title={`Fill in the Blanks: ${quiz.topic}`}
+      description={`Test your coding knowledge on ${quiz.topic} with fill in the blanks questions`}
       sidebar={<AnimatedQuizHighlight />}
     >
+      <QuizSchema
+        quiz={{
+          topic: quiz.topic,
+          description: `Test your coding knowledge with this ${quiz.topic} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
+          questionCount: questionCount,
+          estimatedTime: estimatedTime,
+          level: "Intermediate",
+          slug: params.slug,
+        }}
+      />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
       <Suspense fallback={<LoadingSkeleton />}>
         <Card>
           <CardHeader>
-            <CardTitle>{readableTitle}</CardTitle>
+            <CardTitle>{quiz.topic}</CardTitle>
           </CardHeader>
           <CardContent>
             <BlankQuizWrapper slug={params.slug} />
