@@ -9,7 +9,7 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
 import SlugPageLayout from "@/components/SlugPageLayout"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import QuizSchema from "@/app/schema/quiz-schema"
 import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
 
@@ -70,7 +70,7 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
     <SlugPageLayout
       title={result.topic}
       description={`Test your coding knowledge on ${result.topic} with fill in the blanks questions`}
-      sidebar={<AnimatedQuizHighlight />}
+      sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{

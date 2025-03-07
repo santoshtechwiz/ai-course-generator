@@ -8,7 +8,7 @@ import { authOptions } from "@/lib/authOptions"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import SlugPageLayout from "@/components/SlugPageLayout"
 import { generatePageMetadata, generateQuizSchema } from "@/lib/seo-utils"
 
@@ -94,7 +94,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       <SlugPageLayout
         title={quizData.topic}
         description={`Test your knowledge on ${quizData.topic}`}
-        sidebar={<AnimatedQuizHighlight />}
+        sidebar={<RandomQuiz />}
       >
         <Suspense fallback={<QuizSkeleton />}>
           <McqQuizWrapper slug={slug} currentUserId={currentUserId} result={result} />

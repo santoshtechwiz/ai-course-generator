@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { QuizWrapper } from "@/components/QuizWrapper"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 
 export default function QuizPage() {
   const [loading, setLoading] = useState(false)
@@ -15,7 +15,7 @@ export default function QuizPage() {
           <QuizWrapper type="code" />
         </div>
         <div className="lg:w-1/3">
-          <AnimatedQuizHighlight />
+          <RandomQuiz />
         </div>
       </div>
     </div>

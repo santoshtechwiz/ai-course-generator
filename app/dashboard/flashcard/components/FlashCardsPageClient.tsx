@@ -24,9 +24,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
   const [ownerId, setOwnerId] = useState<string>("")
   const [quizId, setQuizId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
-  const [currentCardIndex, setCurrentCardIndex] = useState(0)
-  const [correctCount, setCorrectCount] = useState(0)
-  const [incorrectCount, setIncorrectCount] = useState(0)
+
   const { toast } = useToast()
 
   useEffect(() => {

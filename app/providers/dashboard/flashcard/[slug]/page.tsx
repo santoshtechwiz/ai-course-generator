@@ -1,7 +1,7 @@
 import { getAuthSession } from "@/lib/authOptions"
 import FlashCardsPageClient from "../components/FlashCardsPageClient"
 import type { Metadata } from "next"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import SlugPageLayout from "@/components/SlugPageLayout"
 
 interface FlashCardsPageProps {
@@ -32,7 +32,7 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
   const userId = (await getAuthSession())?.user.id ?? ""
 
   return (
-    <SlugPageLayout sidebar={<AnimatedQuizHighlight />}>
+    <SlugPageLayout sidebar={<RandomQuiz />}>
       <FlashCardsPageClient slug={(await params).slug} userId={userId} />
     </SlugPageLayout>
   )

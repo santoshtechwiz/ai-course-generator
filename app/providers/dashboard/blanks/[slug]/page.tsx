@@ -7,7 +7,7 @@ import { getQuiz } from "@/app/actions/getQuiz"
 import SlugPageLayout from "@/components/SlugPageLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
 import QuizSchema from "@/app/schema/quiz-schema"
 import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
@@ -81,7 +81,7 @@ export default async function BlankQuizPage({ params }: { params: { slug: string
     <SlugPageLayout
       title={`Fill in the Blanks: ${quiz.topic}`}
       description={`Test your coding knowledge on ${quiz.topic} with fill in the blanks questions`}
-      sidebar={<AnimatedQuizHighlight />}
+      sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{
