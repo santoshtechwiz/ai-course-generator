@@ -7,11 +7,12 @@ import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
-import SlugPageLayout from "@/components/SlugPageLayout"
+
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
 import RandomQuiz from "@/components/RanomQuiz"
 import QuizSchema from "@/app/schema/quiz-schema"
 import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
+import SlugPageLayout from "@/components/SlugPageLayout"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const quiz = await getQuiz(params.slug)

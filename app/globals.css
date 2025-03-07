@@ -105,6 +105,7 @@ body {
 }
 
 @layer utilities {
+  
   .perspective-1000 {
     perspective: 1000px;
   }
@@ -287,5 +288,21 @@ body {
   .print-friendly {
     @apply text-black bg-white;
   }
+}
+
+/* 3D Transform Utilities */
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
 }
 
