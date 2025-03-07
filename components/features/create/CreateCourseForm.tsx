@@ -16,7 +16,7 @@ import { PreviewStep } from "./PreviewStep"
 import { ConfirmationDialog } from "./ConfirmationDialog"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
@@ -150,29 +150,31 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
     showConfirmDialog
 
   const steps = [
-    { icon: <Pencil className="w-6 h-6" />, label: "Basic Info" },
-    { icon: <FileText className="w-6 h-6" />, label: "Content" },
-    { icon: <Eye className="w-6 h-6" />, label: "Preview" },
+    { icon: <Pencil className="h-5 w-5" />, label: "Basic Info" },
+    { icon: <FileText className="h-5 w-5" />, label: "Content" },
+    { icon: <Eye className="h-5 w-5" />, label: "Preview" },
   ]
 
   return (
     <div className="min-h-screen bg-background">
       <SignInBanner isAuthenticated={authStatus === "authenticated"} />
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <Card className="bg-background border border-border shadow-sm">
-          <CardHeader className="bg-primary/5 border-b">
-            <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
+      <div className="container mx-auto px-4 py-6 md:py-8 lg:py-10 max-w-3xl">
+        <div className="bg-card rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-muted/40 px-4 py-6 sm:px-6">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-foreground">
               Create a New Course
-            </CardTitle>
-            <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
+            </h1>
+            <p className="text-center text-sm sm:text-base text-muted-foreground mt-2">
               Fill in the details for your new course. Progress is automatically saved.
             </p>
-          </CardHeader>
+          </div>
 
-          <CardContent className="pt-6">
+          <Separator />
+
+          <div className="p-4 sm:p-6">
             {/* Step Indicators */}
-            <div className="relative mb-8">
-              <div className="flex justify-between items-center relative z-10 px-8">
+            <div className="relative mb-6 md:mb-8">
+              <div className="flex justify-between items-center relative z-10">
                 {steps.map((s, i) => (
                   <div
                     key={i}
@@ -183,56 +185,72 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
                   >
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors",
-                        i + 1 === step ? "bg-primary/10" : "bg-muted",
+                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 transition-colors",
+                        i + 1 === step ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
                       )}
                     >
                       {s.icon}
                     </div>
-                    <span className="text-sm font-medium">{s.label}</span>
+                    <span className="text-xs sm:text-sm font-medium">{s.label}</span>
                   </div>
                 ))}
               </div>
 
               {/* Progress Bar */}
-              <div className="mt-8 px-8">
+              <div className="mt-6 sm:mt-8">
                 <Progress value={((step - 1) / (totalSteps - 1)) * 100} className="h-2 transition-all duration-300" />
               </div>
             </div>
 
             {/* Form Content */}
-            <div className="mt-8">
+            <div className="mt-6 md:mt-8 space-y-6">
               {step === 1 && <BasicInfoStep control={control} errors={errors} params={params} />}
               {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
               {step === 3 && <PreviewStep watch={watch} />}
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8">
-              <Button type="button" variant="outline" onClick={handleBack} disabled={step === 1}>
+            <div className="flex flex-col sm:flex-row sm:justify-between mt-8 gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBack}
+                disabled={step === 1}
+                className="w-full sm:w-auto"
+              >
                 Back
               </Button>
 
-              <div className="space-y-2">
+              <div className="space-y-2 w-full sm:w-auto">
                 {step < totalSteps ? (
-                  <Button type="button" onClick={handleNext} disabled={!isStepValid() || maxQuestions === 0}>
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!isStepValid() || maxQuestions === 0}
+                    className="w-full sm:w-auto"
+                  >
                     Continue
                   </Button>
                 ) : (
-                  <Button type="submit" disabled={isCreateDisabled} onClick={handleSubmit(onSubmit)}>
+                  <Button
+                    type="submit"
+                    disabled={isCreateDisabled}
+                    onClick={handleSubmit(onSubmit)}
+                    className="w-full sm:w-auto"
+                  >
                     {isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"}
                   </Button>
                 )}
 
                 {!subscriptionStatus?.isSubscribed && (availableCredits ?? 0) > 0 && (
-                  <p className="text-sm text-muted-foreground text-right">
+                  <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-right">
                     Available credits: {availableCredits} (This action will deduct 1 credit)
                   </p>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <ConfirmationDialog
