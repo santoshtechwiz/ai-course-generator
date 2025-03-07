@@ -8,7 +8,7 @@ import SlugPageLayout from "@/components/SlugPageLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import { getQuiz } from "@/app/actions/getQuiz"
 
 import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
@@ -83,7 +83,7 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
     <SlugPageLayout
       title={`Open-Ended Quiz: ${quizData.topic}`}
       description={`Test your knowledge on ${quizData.topic}`}
-      sidebar={<AnimatedQuizHighlight />}
+      sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{

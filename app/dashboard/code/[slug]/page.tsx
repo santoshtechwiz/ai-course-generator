@@ -10,7 +10,7 @@ import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
 import SlugPageLayout from "@/components/SlugPageLayout"
 import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import QuizSchema from "@/app/schema/quiz-schema"
 
 type Params = Promise<{ slug: string }>;
@@ -73,7 +73,7 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
     <SlugPageLayout
       title={result.topic}
       description={`Test your coding skills on ${result.topic} with interactive programming challenges`}
-      sidebar={<AnimatedQuizHighlight />}
+      sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{

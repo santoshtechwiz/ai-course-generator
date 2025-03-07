@@ -3,10 +3,10 @@ import FlashCardsPageClient from "../components/FlashCardsPageClient"
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getQuiz } from "@/app/actions/getQuiz"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import SlugPageLayout from "@/components/SlugPageLayout"
 import QuizSchema from "@/app/schema/quiz-schema"
-import { QuizActions } from "@/components/QuizActions"
+
 type Params = Promise<{ slug: string }>
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -51,24 +51,24 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
   }
 
   return (
-    <>
+    <SlugPageLayout
+      sidebar={<RandomQuiz />}
+      title={quiz.topic}
+      description="Study and memorize key concepts with these interactive flashcards."
+    >
+      <QuizSchema
+        quiz={{
+          topic: quiz.topic,
+          description: `Study and memorize key concepts about ${quiz.topic} with these interactive flashcards.`,
+          questionCount: quiz.questions?.length || 10,
+          estimatedTime: "PT15M", // 15 minutes in ISO 8601 duration format
+          level: "All Levels",
+          slug: slug,
+        }}
+      />
 
-      <SlugPageLayout sidebar={<AnimatedQuizHighlight />}>
-      
-        <QuizSchema
-          quiz={{
-            topic: quiz.topic,
-            description: `Study and memorize key concepts about ${quiz.topic} with these interactive flashcards.`,
-            questionCount: quiz.questions?.length || 10,
-            estimatedTime: "PT15M", // 15 minutes in ISO 8601 duration format
-            level: "All Levels",
-            slug: slug,
-          }}
-        />
-
-        <FlashCardsPageClient slug={slug} userId={userId} />
-      </SlugPageLayout>
-    </>
+      <FlashCardsPageClient slug={slug} userId={userId} />
+    </SlugPageLayout>
   )
 }
 

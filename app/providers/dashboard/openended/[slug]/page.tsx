@@ -7,7 +7,7 @@ import SlugPageLayout from "@/components/SlugPageLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import { getQuiz } from "@/app/actions/getQuiz"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -73,7 +73,7 @@ export default async function OpenEndedQuizPage({ params }: { params: { slug: st
     <SlugPageLayout
       title={`Open-Ended Quiz: ${quizData.topic}`}
       description={`Test your programming knowledge on ${quizData.topic}`}
-      sidebar={<AnimatedQuizHighlight />}
+      sidebar={<RandomQuiz />}
     >
       <Suspense fallback={<LoadingSkeleton />}>
         <Card>

@@ -10,7 +10,7 @@ import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
 import SlugPageLayout from "@/components/SlugPageLayout"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
-import AnimatedQuizHighlight from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RanomQuiz"
 import QuizSchema from "@/app/schema/quiz-schema"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -67,7 +67,7 @@ const Page = async ({ params }: { params: { slug: string } }) => {
     <SlugPageLayout
       title={quiz.topic}
       description={`Test your knowledge on ${quiz.topic} with this interactive multiple-choice quiz`}
-      sidebar={<AnimatedQuizHighlight />}
+      sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{
