@@ -78,7 +78,8 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
       }
 
       // Call API to update saved status
-      await axios.patch(`/api/flashcard/${card.id}`, {
+      await axios.patch(`/api/flashcard`, {
+        id: card.id,
         isSaved: !isSaved,
       })
 

@@ -3,7 +3,7 @@ import { chatGptRequest } from "./chatGptRequest";
 
 
 // Default token limit for truncation
-const MAX_TOKENS = 4000;
+const MAX_TOKENS = 100000;
 
 // Function to estimate token count more accurately
 function estimateTokenCount(text: string): number {

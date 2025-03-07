@@ -181,7 +181,7 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     // Authenticate user
-    const { session } = await authenticateUser()
+    await authenticateUser()
 
     // Get slug parameter
     const { searchParams } = new URL(req.url)
@@ -192,7 +192,7 @@ export async function GET(req: Request) {
       const quiz = await prisma.userQuiz.findUnique({
         where: {
           slug,
-         
+
         },
         include: {
           flashCards: {
@@ -216,6 +216,9 @@ export async function GET(req: Request) {
         { status: 200 },
       )
     } else {
+      // Authenticate user to get session
+      const { session } = await authenticateUser();
+
       // Get all user's quizzes
       const quizzes = await prisma.userQuiz.findMany({
         where: {
@@ -247,3 +250,32 @@ export async function GET(req: Request) {
   }
 }
 
+export async function PATCH(req: Request) {
+  try {
+    // Authenticate user
+    const { session } = await authenticateUser();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const body = await req.json();
+   
+    const {id, isSaved } = z.object({ isSaved: z.boolean(),id:z.number() }).parse(body);
+    if (!id) {
+      return NextResponse.json({ error: "Card ID is required" }, { status: 400 });
+    }
+
+    // Parse and validate request body
+
+
+    // Update flashcard in the database
+    const updatedCard = await prisma.flashCard.update({
+      where: { id: +id }, // Ensure `id` is the correct type (string for UUIDs)
+      data: { saved: isSaved },
+    });
+
+    return NextResponse.json({ success: true, data: updatedCard }, { status: 200 });
+  } catch (error) {
+    console.error("Error updating flashcard:", error);
+    return NextResponse.json({ error: "Failed to update flashcard" }, { status: 500 });
+  }
+}

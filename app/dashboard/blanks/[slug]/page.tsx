@@ -14,15 +14,16 @@ import QuizSchema from "@/app/schema/quiz-schema"
 import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
 import SlugPageLayout from "@/components/SlugPageLayout"
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const quiz = await getQuiz(params.slug)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+ const {slug}=await params;
+  const quiz = await getQuiz(slug)
 
   if (!quiz) {
     return generatePageMetadata({
       title: "Fill in the Blanks Quiz Not Found | CourseAI",
       description:
         "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
-      path: `/dashboard/blanks/${params.slug}`,
+      path: `/dashboard/blanks/${slug}`,
       noIndex: true,
     })
   }
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return generatePageMetadata({
     title: `${quiz.topic} | Programming Fill in the Blanks Quiz`,
     description: `Test your coding knowledge with this ${quiz.topic.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
-    path: `/dashboard/blanks/${params.slug}`,
+    path: `/dashboard/blanks/${slug}`,
     keywords: [
       `${quiz.topic.toLowerCase()} quiz`,
       "programming fill in the blanks",

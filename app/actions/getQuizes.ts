@@ -74,7 +74,7 @@ export async function getQuizzes({
     const quizListItems = quizzes.map(
       (quiz): QuizListItem => ({
         id: quiz.id,
-        topic: quiz.topic,
+        title: quiz.topic,
         slug: quiz.slug,
         questionCount: quiz._count.questions,
         isPublic: quiz.isPublic ?? true,

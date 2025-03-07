@@ -14,13 +14,14 @@ import RandomQuiz from "@/components/RanomQuiz"
 import QuizSchema from "@/app/schema/quiz-schema"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const quiz = await getQuiz(params.slug)
+  const { slug } = await params;
+  const quiz = await getQuiz(slug)
 
   if (!quiz) {
     return generatePageMetadata({
       title: "Quiz Not Found | CourseAI",
       description: "The requested quiz could not be found. Explore our other programming quizzes and assessments.",
-      path: `/dashboard/mcq/${params.slug}`,
+      path: `/dashboard/mcq/${slug}`,
       noIndex: true,
     })
   }
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return generatePageMetadata({
     title: `${quiz.topic} | Multiple Choice Quiz`,
     description: `Test your knowledge on ${quiz.topic.toLowerCase()} with this interactive multiple-choice quiz. Enhance your programming skills through practice.`,
-    path: `/dashboard/mcq/${params.slug}`,
+    path: `/dashboard/mcq/${slug}`,
     keywords: [
       `${quiz.topic.toLowerCase()} quiz`,
       "multiple choice questions",
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 const Page = async ({ params }: { params: { slug: string } }) => {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
-  const quiz = await getQuiz(params.slug)
+  const quiz = await getQuiz(slug)
 
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
@@ -60,7 +61,7 @@ const Page = async ({ params }: { params: { slug: string } }) => {
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: quiz.topic, url: `${baseUrl}/dashboard/mcq/${params.slug}` },
+    { name: quiz.topic, url: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
 
   return (
@@ -76,7 +77,7 @@ const Page = async ({ params }: { params: { slug: string } }) => {
           questionCount: questionCount,
           estimatedTime: estimatedTime,
           level: "Intermediate",
-          slug: params.slug,
+          slug: slug,
         }}
       />
       <BreadcrumbJsonLd items={breadcrumbItems} />

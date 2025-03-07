@@ -63,7 +63,7 @@ export interface Chapter {
 
 export interface UserQuiz {
   id: number
-  topic: string
+  title: string
   slug: string
   timeStarted: Date
   createdAt: Date
@@ -101,7 +101,7 @@ export interface UserQuizAttempt {
   attemptQuestions: AttemptQuestion[]
   userQuiz: {
     id: number
-    topic: string
+    title: string
     questions: {
       id: number
       question: string
@@ -126,7 +126,7 @@ export interface UserStats {
   completedCourses: number
   totalTimeSpent: number
   averageTimePerQuiz: number
-  topPerformingTopics: TopicPerformance[]
+  topPerformingtitles: titlePerformance[]
   recentImprovement: number
   quizzesPerMonth: number
   courseCompletionRate: number
@@ -135,8 +135,8 @@ export interface UserStats {
   difficultyProgression: number
 }
 
-export interface TopicPerformance {
-  topic: string
+export interface titlePerformance {
+  title: string
   averageScore: number
   attempts: number
   averageTimeSpent: number
@@ -222,7 +222,7 @@ export type QuizWithQuestionsAndTags = Prisma.UserQuizGetPayload<{
 
 export interface QuizListItem {
   id: number
-  topic: string
+  title: string
   slug: string
   questionCount: number
   questions: UserQuizQuestion[]
@@ -460,7 +460,7 @@ export interface TranscriptResponse{
 }
 
 export interface QueryParams {
-  topic?: string
+  title?: string
   categoryAttachment?: string
   [key: string]: string | undefined
 }
