@@ -27,7 +27,7 @@ const SlugPageLayout = ({
       )}
 
       <div
-        className={`${fullWidth ? "" : "grid gap-8"} ${
+        className={`grid ${fullWidth ? "" : "lg:gap-12 items-start"} ${
           sidebar
             ? sidebarWidth === "narrow"
               ? "grid-cols-1 lg:grid-cols-[1fr_300px]"
@@ -36,11 +36,10 @@ const SlugPageLayout = ({
         }`}
       >
         <div className="space-y-6">{children}</div>
-        {sidebar && <div className="space-y-6 mt-8 lg:mt-0 sticky top-24 self-start h-fit">{sidebar}</div>}
+        {sidebar && <div className="space-y-6 sticky top-24 h-fit">{sidebar}</div>}
       </div>
     </div>
   )
 }
 
 export default SlugPageLayout
-

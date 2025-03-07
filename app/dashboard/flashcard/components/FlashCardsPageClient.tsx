@@ -105,8 +105,8 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-3xl">
-      <div className="space-y-6">
+    <div className="container mx-auto  max-w-3xl">
+      <div className="space-y-1">
         <div className="flex items-center justify-between">
           <div className="flex space-x-2 flex-row items-center">
 
