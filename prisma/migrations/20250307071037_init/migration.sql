@@ -53,10 +53,10 @@ CREATE TABLE "Session" (
 -- CreateTable
 CREATE TABLE "Course" (
     "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
     "description" TEXT,
     "image" TEXT NOT NULL,
-    "viewCount" INTEGER NOT NULL DEFAULT 0,
+    "viewCount" INTEGER NOT NULL DEFAULT 1000,
     "user_id" TEXT NOT NULL,
     "categoryId" INTEGER,
     "isCompleted" BOOLEAN DEFAULT false,
@@ -74,7 +74,7 @@ CREATE TABLE "Course" (
 CREATE TABLE "CourseUnit" (
     "id" SERIAL NOT NULL,
     "courseId" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
     "isCompleted" BOOLEAN DEFAULT false,
     "duration" INTEGER,
     "order" INTEGER,
@@ -88,7 +88,7 @@ CREATE TABLE "CourseUnit" (
 CREATE TABLE "Chapter" (
     "id" SERIAL NOT NULL,
     "unitId" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
     "youtubeSearchQuery" TEXT NOT NULL,
     "videoId" TEXT,
     "summary" TEXT,
@@ -221,7 +221,7 @@ CREATE TABLE "CourseQuizAttempt" (
 CREATE TABLE "UserQuiz" (
     "id" SERIAL NOT NULL,
     "user_id" TEXT NOT NULL,
-    "topic" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
     "quizType" TEXT NOT NULL,
     "isPublic" BOOLEAN NOT NULL DEFAULT false,
     "slug" TEXT NOT NULL,
@@ -326,6 +326,22 @@ CREATE TABLE "UserQuizRating" (
     CONSTRAINT "UserQuizRating_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "FlashCard" (
+    "id" SERIAL NOT NULL,
+    "question" TEXT NOT NULL,
+    "answer" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "slug" TEXT DEFAULT 'default-slug',
+    "userQuizId" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "difficulty" TEXT,
+    "saved" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "FlashCard_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -354,7 +370,7 @@ CREATE INDEX "Session_userId_idx" ON "Session"("userId");
 CREATE UNIQUE INDEX "Course_slug_key" ON "Course"("slug");
 
 -- CreateIndex
-CREATE INDEX "Course_name_idx" ON "Course"("name");
+CREATE INDEX "Course_title_idx" ON "Course"("title");
 
 -- CreateIndex
 CREATE INDEX "Course_categoryId_idx" ON "Course"("categoryId");
@@ -459,7 +475,7 @@ CREATE UNIQUE INDEX "UserQuiz_slug_key" ON "UserQuiz"("slug");
 CREATE INDEX "UserQuiz_user_id_idx" ON "UserQuiz"("user_id");
 
 -- CreateIndex
-CREATE INDEX "UserQuiz_topic_idx" ON "UserQuiz"("topic");
+CREATE INDEX "UserQuiz_title_idx" ON "UserQuiz"("title");
 
 -- CreateIndex
 CREATE INDEX "UserQuiz_quizType_idx" ON "UserQuiz"("quizType");
@@ -526,6 +542,18 @@ CREATE INDEX "UserQuizRating_rating_idx" ON "UserQuizRating"("rating");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserQuizRating_userId_userQuizId_key" ON "UserQuizRating"("userId", "userQuizId");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_question_idx" ON "FlashCard"("question");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_userId_idx" ON "FlashCard"("userId");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_userQuizId_idx" ON "FlashCard"("userQuizId");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_difficulty_idx" ON "FlashCard"("difficulty");
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -604,3 +632,9 @@ ALTER TABLE "UserQuizRating" ADD CONSTRAINT "UserQuizRating_userQuizId_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "UserQuizRating" ADD CONSTRAINT "UserQuizRating_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FlashCard" ADD CONSTRAINT "FlashCard_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FlashCard" ADD CONSTRAINT "FlashCard_userQuizId_fkey" FOREIGN KEY ("userQuizId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;

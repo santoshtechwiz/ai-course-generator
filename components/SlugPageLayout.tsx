@@ -35,7 +35,7 @@ const SlugPageLayout = ({
             : ""
         }`}
       >
-        <div className="space-y-6">{children}</div>
+        <div className="">{children}</div>
         {sidebar && <div className="space-y-6 sticky top-24 h-fit">{sidebar}</div>}
       </div>
     </div>

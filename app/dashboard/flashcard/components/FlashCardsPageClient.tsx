@@ -106,69 +106,58 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
 
   return (
     <div className="container mx-auto  max-w-3xl">
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <div className="flex space-x-2 flex-row items-center">
-
+      <QuizActions
+        quizId={quizId}
+        quizSlug={slug}
+        initialIsPublic={false}
+        initialIsFavorite={false}
+        userId={userId}
+        ownerId={ownerId}
+        quizType="flashcard"
+      />
+      {loading ? (
+        <Card className="w-full h-80 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your flash cards...</p>
           </div>
-          {/* <h1 className="text-3xl font-bold">My Flash Cards</h1> */}
+        </Card>
+      ) : error ? (
+        <Card className="w-full mx-auto">
+          <CardHeader>
+            <CardTitle>Error Loading Flash Cards</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      ) : flashCards.length > 0 ? (
 
-        </div>
 
-     
-        <QuizActions
-          quizId={quizId}
-          quizSlug={slug}
-          initialIsPublic={false}
-          initialIsFavorite={false}
-          userId={userId}
-          ownerId={ownerId}
-          quizType="flashcard"
-        />
-        {loading ? (
-          <Card className="w-full h-80 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading your flash cards...</p>
-            </div>
-          </Card>
-        ) : error ? (
-          <Card className="w-full mx-auto">
-            <CardHeader>
-              <CardTitle>Error Loading Flash Cards</CardTitle>
-              <CardDescription>{error}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" onClick={() => window.location.reload()}>
-                Try Again
+        <FlashCardComponent cards={flashCards} onSaveCard={handleSaveCard} savedCardIds={savedCardIds} />
+
+      ) : (
+        <Card className="w-full mx-auto">
+          <CardHeader>
+            <CardTitle>No Flash Cards Yet</CardTitle>
+            <CardDescription>
+              You haven't created any flash cards yet. Generate some with AI or create them manually.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/flashcard">
+              <Button className="w-full">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Create Flash Cards
               </Button>
-            </CardContent>
-          </Card>
-        ) : flashCards.length > 0 ? (
-          <div className="space-y-4">
-           
-          
-            <FlashCardComponent cards={flashCards} onSaveCard={handleSaveCard} savedCardIds={savedCardIds} />
-          </div>
-        ) : (
-          <Card className="w-full mx-auto">
-            <CardHeader>
-              <CardTitle>No Flash Cards Yet</CardTitle>
-              <CardDescription>
-                You haven't created any flash cards yet. Generate some with AI or create them manually.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/dashboard/flashcard">
-                <Button className="w-full">
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Create Flash Cards
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
     </div>
   )
 }
