@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  shadowDatabaseUrl = env("DATABASE_URL1")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model User {
@@ -79,7 +79,7 @@ model Session {
 
 model Course {
   id             Int      @id @default(autoincrement())
-  name           String
+  name           String  @map("title")
   description    String?
   image          String
   viewCount      Int      @default(1000)
@@ -110,7 +110,7 @@ model Course {
 model CourseUnit {
   id          Int      @id @default(autoincrement())
   courseId    Int
-  name        String
+ name           String  @map("title")
   isCompleted Boolean? @default(false)
   duration    Int?
   order       Int?
@@ -127,7 +127,7 @@ model CourseUnit {
 model Chapter {
   id                 Int      @id @default(autoincrement())
   unitId             Int
-  name               String
+  name           String  @map("title")
   youtubeSearchQuery String
   videoId            String?
   summary            String?
@@ -289,7 +289,7 @@ model CourseQuizAttempt {
 model UserQuiz {
   id            Int       @id @default(autoincrement())
   userId        String    @map("user_id")
-  topic         String
+  topic         String    @map("title")
   quizType      String
   isPublic      Boolean   @default(false)
   slug          String    @unique
@@ -437,6 +437,7 @@ model FlashCard {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   difficulty String?
+  saved      Boolean  @default(false) // New field for saving flashcards
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userQuiz UserQuiz? @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
