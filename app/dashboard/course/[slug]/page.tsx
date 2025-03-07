@@ -7,6 +7,7 @@ import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import CourseSchema from "@/app/schema/course-schema"
+export const revalidate = 60; 
 
 
 function LoadingSkeleton() {
@@ -56,7 +57,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const slug = (await params).slug
+  const slug = (await params).slug;
   const course = await getCourseData(slug)
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
