@@ -32,8 +32,8 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
     subscriptionStatus?.subscriptionPlan === "PRO" || subscriptionStatus?.subscriptionPlan === "ULTIMATE"
 
   const isPublicCourse = course.isPublic
-  const summaryAvailable = Boolean(chapter.summary)
-  const quizAvailable = chapter.questions && chapter.questions.length > 0
+  const summaryAvailable = Boolean(chapter?.summary)
+  const quizAvailable = chapter?.questions && chapter?.questions?.length > 0
 
   const handleTabChange = (value: string) => {
     if ((isPremium || isPublicCourse) && value === "summary") {
@@ -136,7 +136,7 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
                     <CourseAISummary
                       chapterId={chapterId}
                       name={name}
-                      existingSummary={chapter.summary}
+                      existingSummary={chapter?.summary}
                       isPremium={isPremium}
                       isAdmin={session?.user?.isAdmin ?? false}
                     />
