@@ -35,15 +35,15 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     })
   }
 
-  const title = `${quiz.topic} Quiz | Test Your Knowledge`
-  const description = `Test your knowledge with this ${quiz.topic} quiz created by ${quiz.user.name}. ${quiz.questions.length} questions to challenge yourself and learn something new!`
-  const ogImage = `/api/og?title=${encodeURIComponent(quiz.topic)}`
+  const title = `${quiz.title} Quiz | Test Your Knowledge`
+  const description = `Test your knowledge with this ${quiz.title} quiz created by ${quiz.user.name}. ${quiz.questions.length} questions to challenge yourself and learn something new!`
+  const ogImage = `/api/og?title=${encodeURIComponent(quiz.title)}`
 
   return generatePageMetadata({
     title,
     description,
     path: `/quiz/${slug}`,
-    keywords: [quiz.topic, "quiz", "test", "knowledge", "learning", "multiple choice"],
+    keywords: [quiz.title, "quiz", "test", "knowledge", "learning", "multiple choice"],
     ogImage,
     ogType: "website",
   })
@@ -78,8 +78,8 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
 
   // Generate structured data for the quiz
   const quizSchema = generateQuizSchema({
-    name: quizData.topic,
-    description: `Test your knowledge with this ${quizData.topic} quiz.`,
+    name: quizData.title,
+    description: `Test your knowledge with this ${quizData.title} quiz.`,
     url: `${baseUrl}/quiz/${slug}`,
     numberOfQuestions: questions.length,
     timeRequired: "PT30M", // ISO 8601 duration format - 30 minutes
@@ -92,8 +92,8 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(quizSchema) }} />
 
       <SlugPageLayout
-        title={quizData.topic}
-        description={`Test your knowledge on ${quizData.topic}`}
+        title={quizData.title}
+        description={`Test your knowledge on ${quizData.title}`}
         sidebar={<RandomQuiz />}
       >
         <Suspense fallback={<QuizSkeleton />}>

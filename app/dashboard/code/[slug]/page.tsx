@@ -30,11 +30,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 
   return generatePageMetadata({
-    title: `${quiz.topic} | Programming Code Challenge`,
-    description: `Test your coding skills with this ${quiz.topic.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
+    title: `${quiz.title} | Programming Code Challenge`,
+    description: `Test your coding skills with this ${quiz.title.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
     path: `/dashboard/code/${slug}`,
     keywords: [
-      `${quiz.topic.toLowerCase()} challenge`,
+      `${quiz.title.toLowerCase()} challenge`,
       "programming exercise",
       "coding practice",
       "developer skills test",
@@ -66,19 +66,19 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: result.topic, url: `${baseUrl}/dashboard/code/${slug}` },
+    { name: result.title, url: `${baseUrl}/dashboard/code/${slug}` },
   ]
 
   return (
     <SlugPageLayout
-      title={result.topic}
-      description={`Test your coding skills on ${result.topic} with interactive programming challenges`}
+      title={result.title}
+      description={`Test your coding skills on ${result.title} with interactive programming challenges`}
       sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{
-          topic: result.topic,
-          description: `Test your coding skills with this ${result.topic} programming challenge. Practice writing real code and improve your development abilities.`,
+          title: result.title,
+          description: `Test your coding skills with this ${result.title} programming challenge. Practice writing real code and improve your development abilities.`,
           questionCount: questionCount,
           estimatedTime: estimatedTime,
           level:  "Advanced",

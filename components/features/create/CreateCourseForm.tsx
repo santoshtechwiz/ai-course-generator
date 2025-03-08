@@ -58,7 +58,7 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
   } = useForm<CreateCourseInput>({
     resolver: zodResolver(createCourseSchema),
     defaultValues: {
-      title: params.topic || "",
+      title: params.title || "",
       description: "",
       category: "",
       units: [""],
@@ -66,10 +66,10 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
   })
 
   useEffect(() => {
-    if (params.topic) {
-      setValue("title", params.topic)
+    if (params.title) {
+      setValue("title", params.title)
     }
-  }, [params.topic, setValue])
+  }, [params.title, setValue])
 
   const createCourseMutation = useMutation({
     mutationFn: async (data: CreateCourseInput) => {

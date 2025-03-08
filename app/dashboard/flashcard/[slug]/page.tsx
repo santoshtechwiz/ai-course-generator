@@ -23,11 +23,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 
   return generatePageMetadata({
-    title: `${quiz.topic} | Programming Flashcards`,
-    description: `Study and memorize key concepts about ${quiz.topic.toLowerCase()} with our interactive flashcards. Improve your programming knowledge efficiently.`,
+    title: `${quiz.title} | Programming Flashcards`,
+    description: `Study and memorize key concepts about ${quiz.title.toLowerCase()} with our interactive flashcards. Improve your programming knowledge efficiently.`,
     path: `/dashboard/flashcard/${slug}`,
     keywords: [
-      `${quiz.topic.toLowerCase()} flashcards`,
+      `${quiz.title.toLowerCase()} flashcards`,
       "programming study aids",
       "coding concepts",
       "developer learning tools",
@@ -53,13 +53,13 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
   return (
     <SlugPageLayout
       sidebar={<RandomQuiz />}
-      title={quiz.topic}
+      title={quiz.title}
       description="Study and memorize key concepts with these interactive flashcards."
     >
       <QuizSchema
         quiz={{
-          topic: quiz.topic,
-          description: `Study and memorize key concepts about ${quiz.topic} with these interactive flashcards.`,
+          title: quiz.title,
+          description: `Study and memorize key concepts about ${quiz.title} with these interactive flashcards.`,
           questionCount: quiz.questions?.length || 10,
           estimatedTime: "PT15M", // 15 minutes in ISO 8601 duration format
           level: "All Levels",

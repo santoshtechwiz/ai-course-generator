@@ -49,7 +49,7 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                   <div className="flex justify-between items-center w-full">
                     <h4 className="text-lg font-semibold flex items-center text-foreground">
                       <Book className="w-5 h-5 mr-2 text-primary" />
-                      {attempt.userQuiz?.topic || `Quiz ${index + 1}`}
+                      {attempt.userQuiz?.title || `Quiz ${index + 1}`}
                     </h4>
                     <motion.div className="flex items-center" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Badge

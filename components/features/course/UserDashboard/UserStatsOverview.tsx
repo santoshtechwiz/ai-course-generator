@@ -94,7 +94,7 @@ export function UserStatsOverview({ stats }: UserStatsOverviewProps) {
                 className="bg-muted/50 p-3 rounded-lg"
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">{topic.topic}</span>
+                  <span className="font-medium">{topic.title}</span>
                   <span className="text-sm">
                     {topic.averageScore.toFixed(1)}% ({topic.attempts} attempts)
                   </span>

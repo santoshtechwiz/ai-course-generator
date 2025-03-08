@@ -15,7 +15,7 @@ import { QuizActions } from "@/components/QuizActions"
 interface QuizData {
   id: number
   questions: QuestionOpenEnded[]
-  topic: string
+  title: string
   userId: string
 }
 

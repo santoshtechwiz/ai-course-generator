@@ -26,7 +26,7 @@ interface FlashCreationFormProps {
   params: QueryParams
 }
 const formSchema = z.object({
-  topic: z
+  title: z
     .string()
     .min(3, { message: "Topic must be at least 3 characters" })
     .max(100, { message: "Topic must be less than 100 characters" }),
@@ -40,7 +40,7 @@ const formSchema = z.object({
 })
 
 // export default function FlashCardCreate() {
-const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ credits, maxQuestions, isLoggedIn, subscriptionPlan }) => {
+const FlashCardCreate: React.FC<FlashCreationFormProps> = ({  maxQuestions}) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
@@ -49,7 +49,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ credits, maxQuestio
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      topic: "",
+      title: "",
       amount: 3,
       difficulty: "medium",
     },
@@ -75,7 +75,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ credits, maxQuestio
 
       toast({
         title: "Flashcards created!",
-        description: `Created ${values.amount} ${values.difficulty} flashcards about "${values.topic}"`,
+        description: `Created ${values.amount} ${values.difficulty} flashcards about "${values.title}"`,
       })
 
       // Redirect to the flashcards page
@@ -91,7 +91,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ credits, maxQuestio
     }
   }
 
-  const isTopicValid = form.watch("topic").length >= 3
+  const isTopicValid = form.watch("title").length >= 3
 
   // This function will be called by the PlanAwareButton
   const handleButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -132,7 +132,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ credits, maxQuestio
             <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
                 control={form.control}
-                name="topic"
+                title="title"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Topic</FormLabel>

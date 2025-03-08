@@ -23,7 +23,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
         <Controller
           name="title"
           control={control}
-          defaultValue={params?.topic || ""} // Set default topic if available
+          defaultValue={params?.title || ""} // Set default topic if available
           render={({ field }) => (
             <Input {...field} id="title" placeholder="Enter course title" className="transition-all duration-200" />
           )}

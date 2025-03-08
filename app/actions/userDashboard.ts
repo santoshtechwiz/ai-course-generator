@@ -246,7 +246,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
           score: attempt.score ?? 0,
           totalQuestions: attempt.userQuiz.questions.length,
           percentageCorrect: attempt.score ?? 0,
-          topic: attempt.userQuiz.title, // Using title consistently
+          title: attempt.userQuiz.title, // Using title consistently
           timeSpent,
         }
       })
@@ -302,7 +302,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 export async function getRecommendedCourses(userId: string): Promise<Course[]> {
   try {
     const userStats = await getUserStats(userId)
-    const userTopics = userStats.topPerformingTopics.map((topic) => topic.topic)
+    const userTopics = userStats.topPerformingTopics.map((topic) => topic.title)
 
     // Performance optimization: Get completed course IDs first to avoid nested query
     const completedCourseIds = await prisma.courseProgress
@@ -404,19 +404,19 @@ function getLastStreakDate(attempts: UserQuizAttempt[]): Date | null {
 }
 
 function calculateTopicPerformance(
-  scores: { topic: string; percentageCorrect: number; timeSpent: number }[],
+  scores: { title: string; percentageCorrect: number; timeSpent: number }[],
 ): Record<string, { totalScore: number; attempts: number; totalTimeSpent: number }> {
   // Use a Map for better performance with large datasets
   const performanceMap = new Map<string, { totalScore: number; attempts: number; totalTimeSpent: number }>()
   
   for (const score of scores) {
-    const existing = performanceMap.get(score.topic)
+    const existing = performanceMap.get(score.title)
     if (existing) {
       existing.totalScore += score.percentageCorrect
       existing.attempts += 1
       existing.totalTimeSpent += score.timeSpent
     } else {
-      performanceMap.set(score.topic, { 
+      performanceMap.set(score.title, { 
         totalScore: score.percentageCorrect, 
         attempts: 1, 
         totalTimeSpent: score.timeSpent 

@@ -18,7 +18,7 @@ const stagger = {
 }
 
 interface LandingHeroProps {
-  onTopicSubmit: (topic: string) => void
+  onTopicSubmit: (title: string) => void
 }
 
 const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {

@@ -83,10 +83,10 @@ export async function POST(req: NextRequest) {
 async function initializeVectorStore(): Promise<MemoryVectorStore> {
   const [allCourses, allQuizzes] = await Promise.all([
     prisma.course.findMany({
-      select: { name: true, slug: true, description: true },
+      select: { title: true, slug: true, description: true },
     }),
     prisma.userQuiz.findMany({
-      select: { topic: true, slug: true, quizType: true },
+      select: { title: true, slug: true, quizType: true },
     }),
   ])
 
@@ -94,14 +94,14 @@ async function initializeVectorStore(): Promise<MemoryVectorStore> {
     ...allCourses.map(
       (course) =>
         new Document({
-          pageContent: `Course: ${course.name}\n${course.description || ""}`,
+          pageContent: `Course: ${course.title}\n${course.description || ""}`,
           metadata: { type: "course", slug: course.slug },
         }),
     ),
     ...allQuizzes.map(
       (quiz) =>
         new Document({
-          pageContent: `Quiz: ${quiz.topic}`,
+          pageContent: `Quiz: ${quiz.title}`,
           metadata: { type: "quiz", slug: quiz.slug, quizType: quiz.quizType },
         }),
     ),

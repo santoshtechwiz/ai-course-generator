@@ -225,7 +225,7 @@ export async function getUserWithCourses(userId: string) {
 
       return {
         id: course.id,
-        name: course.name,
+        name: course.title,
         progress,
       }
     })
@@ -278,7 +278,7 @@ export async function getRandomQuestions(count: number = 5) {
   return randomQuestions.map(q => ({
     question: q.questions.map(question => question.question).join(', '),
     slug: q.slug,
-    topic: q.topic,
+    title: q.title,
     count: q._count.questions,
   }));
 }
@@ -327,7 +327,7 @@ export async function fetchRandomQuizzes(count: number = 3) {
   }
 }
 
-export async function createUserQuiz(userId: string, topic: string, type: string, slug: string) {
+export async function createUserQuiz(userId: string, title: string, type: string, slug: string) {
   let uniqueSlug = slug;
   let counter = 1;
 
@@ -339,7 +339,7 @@ export async function createUserQuiz(userId: string, topic: string, type: string
           timeStarted: new Date(),
           userId,
           isPublic: false,
-          title: topic,
+          title,
           slug: uniqueSlug,
         },
       });
@@ -396,10 +396,10 @@ export async function createQuestions(questions: MultipleChoiceQuestion[] | Open
   await prisma.userQuizQuestion.createMany({ data });
 }
 
-export async function updateTopicCount(topic: string) {
+export async function updateTopicCount(title: string) {
   return prisma.topicCount.upsert({
-    where: { topic },
-    create: { topic, count: 1 },
+    where: { topic: title },
+    create: { topic: title, count: 1 },
     update: { count: { increment: 1 } },
   });
 }

@@ -27,11 +27,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 
   return generatePageMetadata({
-    title: `${quiz.topic} | Multiple Choice Quiz`,
-    description: `Test your knowledge on ${quiz.topic.toLowerCase()} with this interactive multiple-choice quiz. Enhance your programming skills through practice.`,
+    title: `${quiz.title} | Multiple Choice Quiz`,
+    description: `Test your knowledge on ${quiz.title.toLowerCase()} with this interactive multiple-choice quiz. Enhance your programming skills through practice.`,
     path: `/dashboard/mcq/${slug}`,
     keywords: [
-      `${quiz.topic.toLowerCase()} quiz`,
+      `${quiz.title.toLowerCase()} quiz`,
       "multiple choice questions",
       "programming assessment",
       "coding knowledge test",
@@ -61,19 +61,19 @@ const Page = async ({ params }: { params: { slug: string } }) => {
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: quiz.topic, url: `${baseUrl}/dashboard/mcq/${slug}` },
+    { name: quiz.title, url: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
 
   return (
     <SlugPageLayout
-      title={quiz.topic}
-      description={`Test your knowledge on ${quiz.topic} with this interactive multiple-choice quiz`}
+      title={quiz.title}
+      description={`Test your knowledge on ${quiz.title} with this interactive multiple-choice quiz`}
       sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{
-          topic: quiz.topic,
-          description: `Test your knowledge on ${quiz.topic} with this interactive multiple-choice quiz.`,
+          title: quiz.title,
+          description: `Test your knowledge on ${quiz.title} with this interactive multiple-choice quiz.`,
           questionCount: questionCount,
           estimatedTime: estimatedTime,
           level: "Intermediate",

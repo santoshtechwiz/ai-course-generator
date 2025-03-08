@@ -16,10 +16,10 @@ export const dynamic = "force-dynamic";
 
 
 
-async function fetchQuizQuestions(amount: number, topic: string, type: QuizType, difficulty: string, userType:string) {
+async function fetchQuizQuestions(amount: number, title: string, type: QuizType, difficulty: string, userType:string) {
   const { data } = await axios.post<MultipleChoiceQuestion[] | OpenEndedQuestion[]>(
     `${process.env.NEXT_PUBLIC_URL}/api/quiz`,
-    { amount, topic, type, difficulty, userType },
+    { amount, title, type, difficulty, userType },
     { headers: { 'Content-Type': 'application/json' } }
   );
   return data;
@@ -39,11 +39,11 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { topic, type, amount, difficulty, userType } = quizCreationSchema.parse(body);
-    const slug = generateSlug(topic);
+    const { title, type, amount, difficulty, userType } = quizCreationSchema.parse(body);
+    const slug = generateSlug(title);
     const quizType: QuizType = type === "open_ended" ? "openended" : "mcq";
     // 1. First fetch questions to ensure we can create a quiz
-    const questions = await fetchQuizQuestions(amount, topic, quizType, difficulty, userType);
+    const questions = await fetchQuizQuestions(amount, title, quizType, difficulty, userType);
     if (questions.length === 0) {
       return NextResponse.json(
         { error: "No questions were generated for the given topic." },
@@ -52,14 +52,14 @@ export async function POST(req: Request) {
     }
 
     // 2. Create the user quiz
-    const userQuiz = await createUserQuiz(session.user.id, topic, type, slug);
+    const userQuiz = await createUserQuiz(session.user.id, title, type, slug);
 
     try {
       // 3. Create questions for the quiz
       await createQuestions(questions, userQuiz.id, quizType);
 
       // 4. Update topic count
-      await updateTopicCount(topic);
+      await updateTopicCount(title);
 
       // 5. Only deduct credits if everything else succeeded
       await updateUserCredits(session.user.id, quizType);

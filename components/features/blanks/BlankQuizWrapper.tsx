@@ -31,7 +31,7 @@ interface Question {
 interface QuizData {
   id: number
   questions: Question[]
-  topic: string
+  title: string
   userId: string
 }
 
@@ -229,7 +229,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
         <CardHeader className="flex flex-row items-center justify-between px-6 py-4 border-b">
           <CardTitle className="flex items-center text-2xl font-bold">
             <Book className="w-6 h-6 mr-2" />
-            Fill in the Blanks Quiz: {quizData.topic || "Unknown"}
+            Fill in the Blanks Quiz: {quizData.title || "Unknown"}
           </CardTitle>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">

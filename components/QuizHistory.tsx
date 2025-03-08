@@ -57,7 +57,7 @@ export default function QuizHistory({ quizzes }: { quizzes: UserQuiz[] }) {
                           <CheckCircle2 className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium">{quiz.topic}</p>
+                          <p className="font-medium">{quiz.title}</p>
                           <p className="text-sm text-muted-foreground">
                             {quiz.quizType.charAt(0).toUpperCase() + quiz.quizType.slice(1)} Quiz
                           </p>

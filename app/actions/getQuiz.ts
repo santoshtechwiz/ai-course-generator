@@ -6,7 +6,7 @@ import {  QuestionOpenEnded } from "../types/types"
 type Result={
   id: number
   userId: string
-  topic: string
+  title: string
   questions: QuestionOpenEnded[] 
 }
 

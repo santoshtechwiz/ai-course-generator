@@ -70,7 +70,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     const response = {
       id: result.id,
       userId: result.userId,
-      topic: result.title,
+      title: result.title,
       questions: transformedQuestions,
     }
 

@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
+type QuizType = 'mcq' | 'openended' | 'fill-blanks' | 'code';
 
+interface Quiz {
+  id: string;
+  title: string;
+  slug: string;
+  quizType: QuizType;
+}
 function generateCourseDescription(course: any) {
   const descriptions = [
     `Enhance your ${course.name} skills with our project-based learning approach.`,
@@ -12,7 +19,9 @@ function generateCourseDescription(course: any) {
   return descriptions[Math.floor(Math.random() * descriptions.length)]
 }
 
-function generateQuizDescription(quiz: any) {
+
+
+function generateQuizDescription(quiz: Quiz) {
   const quizTypeDescriptions = {
     mcq: "multiple-choice questions",
     openended: "open-ended questions",
@@ -20,11 +29,11 @@ function generateQuizDescription(quiz: any) {
     code: "coding challenges",
   }
   const descriptions = [
-    `Assess your understanding of ${quiz.topic} with our carefully crafted ${quizTypeDescriptions[quiz.quizType]}.`,
-    `Put your ${quiz.topic} knowledge to the test in this engaging quiz format.`,
-    `Reinforce your learning with practical ${quizTypeDescriptions[quiz.quizType]} on ${quiz.topic}.`,
-    `Challenge yourself and identify areas for improvement in ${quiz.topic} with this interactive quiz.`,
-    `Validate your expertise in ${quiz.topic} through our comprehensive set of ${quizTypeDescriptions[quiz.quizType]}.`,
+    `Assess your understanding of ${quiz.title} with our carefully crafted ${quizTypeDescriptions[quiz.quizType]}.`,
+    `Put your ${quiz.title} knowledge to the test in this engaging quiz format.`,
+    `Reinforce your learning with practical ${quizTypeDescriptions[quiz.quizType]} on ${quiz.title}.`,
+    `Challenge yourself and identify areas for improvement in ${quiz.title} with this interactive quiz.`,
+    `Validate your expertise in ${quiz.title} through our comprehensive set of ${quizTypeDescriptions[quiz.quizType]}.`,
   ]
   return descriptions[Math.floor(Math.random() * descriptions.length)]
 }
@@ -38,7 +47,7 @@ export async function GET() {
         select: {
           id: true,
           slug: true,
-          name: true,
+          title: true,
           description: true,
         },
       }),
@@ -57,19 +66,19 @@ export async function GET() {
     const carouselItems = [
       ...courses.map((course) => ({
         id: course.id,
-        name: course.name,
+        name: course.title,
         slug: course.slug,
         quizType: "course",
         description: course.description || generateCourseDescription(course),
-        tagline: `Master ${course.name} through practical exercises`,
+        tagline: `Master ${course.title} through practical exercises`,
         type: "course" as const,
       })),
       ...quizzes.map((quiz) => ({
         id: quiz.id,
-        name: quiz.topic,
+        name: quiz.title,
         slug: quiz.slug,
         description: generateQuizDescription(quiz),
-        tagline: `Evaluate your ${quiz.topic} proficiency`,
+        tagline: `Evaluate your ${quiz.title} proficiency`,
         quizType: quiz.quizType,
         type: "quiz" as const,
       })),

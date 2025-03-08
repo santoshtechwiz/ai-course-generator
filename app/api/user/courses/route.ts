@@ -16,7 +16,7 @@ export async function GET() {
       course: {
         select: {
           id: true,
-          name: true,
+          title: true,
           description: true,
           image: true,
           difficulty: true,
@@ -28,7 +28,7 @@ export async function GET() {
 
   const courses = courseProgress.map((progress) => ({
     id: progress.courseId,
-    title: progress.course.name,
+    title: progress.course.title,
     description: progress.course.description,
     image: progress.course.image,
     difficulty: progress.course.difficulty,

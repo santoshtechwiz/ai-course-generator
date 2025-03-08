@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     }
   }
 
-  const title = `${quizData.topic} Open-Ended Quiz`
-  const description = `Develop your programming problem-solving skills with this ${quizData.topic.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`
+  const title = `${quizData.title} Open-Ended Quiz`
+  const description = `Develop your programming problem-solving skills with this ${quizData.title.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`
 
   return {
     title,
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       "open-ended coding questions",
       "programming problem solving",
       "coding critical thinking",
-      `${quizData.topic.toLowerCase()} practice`,
+      `${quizData.title.toLowerCase()} practice`,
       "developer reasoning skills",
     ],
     openGraph: {
@@ -71,14 +71,14 @@ export default async function OpenEndedQuizPage({ params }: { params: { slug: st
 
   return (
     <SlugPageLayout
-      title={`Open-Ended Quiz: ${quizData.topic}`}
-      description={`Test your programming knowledge on ${quizData.topic}`}
+      title={`Open-Ended Quiz: ${quizData.title}`}
+      description={`Test your programming knowledge on ${quizData.title}`}
       sidebar={<RandomQuiz />}
     >
       <Suspense fallback={<LoadingSkeleton />}>
         <Card>
           <CardHeader>
-            <CardTitle>{quizData.topic}</CardTitle>
+            <CardTitle>{quizData.title}</CardTitle>
           </CardHeader>
           <CardContent>
             <OpenEndedQuizWrapper slug={params.slug} quizData={quizData} />

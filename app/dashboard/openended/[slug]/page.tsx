@@ -28,14 +28,14 @@ export async function generateMetadata({ params }: { params:Params }): Promise<M
   }
 
   return generatePageMetadata({
-    title: `${quizData.topic} | Open-Ended Programming Quiz`,
-    description: `Develop your programming problem-solving skills with this ${quizData.topic.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
+    title: `${quizData.title} | Open-Ended Programming Quiz`,
+    description: `Develop your programming problem-solving skills with this ${quizData.title.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
     path: `/dashboard/openended/${slug}`,
     keywords: [
       "open-ended coding questions",
       "programming problem solving",
       "coding critical thinking",
-      `${quizData.topic.toLowerCase()} practice`,
+      `${quizData.title.toLowerCase()} practice`,
       "developer reasoning skills",
     ],
     ogType: "article",
@@ -76,19 +76,19 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: quizData.topic, url: `${baseUrl}/dashboard/openended/${slug}` },
+    { name: quizData.title, url: `${baseUrl}/dashboard/openended/${slug}` },
   ]
 
   return (
     <SlugPageLayout
-      title={`Open-Ended Quiz: ${quizData.topic}`}
-      description={`Test your knowledge on ${quizData.topic}`}
+      title={`Open-Ended Quiz: ${quizData.title}`}
+      description={`Test your knowledge on ${quizData.title}`}
       sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{
-          topic: quizData.topic,
-          description: `Develop your programming problem-solving skills with this ${quizData.topic.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
+          title: quizData.title,
+          description: `Develop your programming problem-solving skills with this ${quizData.title.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
           questionCount: questionCount,
           estimatedTime: estimatedTime,
           level:  "Intermediate",
@@ -99,7 +99,7 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
       <Suspense fallback={<LoadingSkeleton />}>
         <Card>
           <CardHeader>
-            <CardTitle>{quizData.topic}</CardTitle>
+            <CardTitle>{quizData.title}</CardTitle>
           </CardHeader>
           <CardContent>
             <OpenEndedQuizWrapper slug={slug} quizData={quizData} />

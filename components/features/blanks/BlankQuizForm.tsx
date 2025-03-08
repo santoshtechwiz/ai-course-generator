@@ -22,7 +22,7 @@ import type { QueryParams } from "@/app/types/types"
 import { z } from "zod"
 
 const fillInTheBlankQuizSchema = z.object({
-  topic: z.string().min(3, "Topic must be at least 3 characters"),
+  title: z.string().min(3, "Topic must be at least 3 characters"),
   questionCount: z.number().int().positive().min(1, "Must have at least 1 question"),
   difficulty: z.enum(["easy", "medium", "hard"]),
 });
@@ -51,7 +51,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
   } = useForm<FillInTheBlankQuizFormData>({
     resolver: zodResolver(fillInTheBlankQuizSchema),
     defaultValues: {
-      topic: params?.topic || "",
+      title: params?.title || "",
       questionCount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
       difficulty: "easy",
     },
@@ -128,19 +128,19 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
+              <Label htmlFor="title" className="text-sm font-medium flex items-center gap-2">
                 <Info className="h-4 w-4 text-primary" />
                 Quiz Topic
               </Label>
               <Input
-                id="topic"
-                {...register("topic")}
+                id="title"
+                {...register("title")}
                 placeholder="E.g., World History, Biology, Literature..."
                 className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
                 aria-label="Quiz topic"
                 autoFocus
               />
-              {errors.topic && <p className="text-sm text-destructive">{errors.topic.message}</p>}
+              {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
             </motion.div>
 
             <motion.div
@@ -168,7 +168,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
                   <SubscriptionSlider
                     value={field.value}
                     onValueChange={field.onChange}
-                    max={maxQuestions}
+                  
                     ariaLabel="Select number of questions"
                   />
                 )}
