@@ -41,7 +41,7 @@ export default function CourseDetailsQuiz({ chapter }: Props) {
       const response = await axios.post('/api/coursequiz', {
         videoId: chapter.videoId,
         chapterId: chapter.id,
-        chapterName: chapter.name,
+        chapterName: chapter.title,
       })
       if (response.data.error) {
         throw new Error(response.data.error)
