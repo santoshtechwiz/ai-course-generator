@@ -10,7 +10,7 @@ export async function GET() {
       },
       select: {
         id: true,
-        topic: true,
+        title: true,
         quizType: true,
         isPublic: true,
         timeStarted: true,

@@ -34,7 +34,7 @@ export async function getQuiz(slug: string): Promise<Result | null> {
       },
       select: {
         id: true,
-        topic: true,
+        title: true,
         userId: true,
         questions: {
           select: {
@@ -75,7 +75,7 @@ export async function getQuiz(slug: string): Promise<Result | null> {
     const response= {
       id: result.id,
       userId: result.userId as string,
-      topic: result.topic,
+      title: result.title,
       questions: transformedQuestions,
     }
 

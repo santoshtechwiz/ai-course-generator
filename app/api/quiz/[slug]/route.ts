@@ -110,7 +110,7 @@ export async function GET(req: Request, props: { params: Promise<{ slug: string 
     isPublic: result.isPublic,
     isFavorite: result.isFavorite,
     quizData: {
-      title: result.topic,
+      title: result.title,
       questions: result.questions,
       
     }

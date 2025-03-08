@@ -44,6 +44,9 @@ model User {
   @@index([email])
   @@index([userType])
   @@index([engagementScore])
+  @@index([lastActiveAt]) // Added for user activity queries
+  @@index([createdAt]) // Added for user registration analytics
+  @@index([isAdmin]) // Added for admin filtering
 }
 
 model Account {
@@ -63,6 +66,7 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
+  @@index([provider]) // Added for provider-based queries
 }
 
 model Session {
@@ -73,11 +77,12 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expires]) // Added for session cleanup queries
 }
 
 model Course {
   id             Int              @id @default(autoincrement())
-  name           String           @map("title")
+  title           String          
   description    String?
   image          String
   viewCount      Int              @default(1000)
@@ -97,11 +102,14 @@ model Course {
   courseUnits    CourseUnit[]
   favorites      Favorite[]
 
-  @@index([name])
+  @@index([title])
   @@index([categoryId])
   @@index([userId])
   @@index([isPublic])
   @@index([difficulty])
+  @@index([createdAt]) // Added for sorting by newest
+  @@index([viewCount]) // Added for popularity sorting
+  @@index([slug]) // Added for slug lookups
 }
 
 model CourseUnit {
@@ -117,13 +125,15 @@ model CourseUnit {
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId])
+  @@index([order]) // Added for ordering queries
+  @@index([isCompleted])
   @@map("CourseUnit")
 }
 
 model Chapter {
   id                 Int          @id @default(autoincrement())
   unitId             Int
-  name               String       @map("title")
+  title               String     
   youtubeSearchQuery String
   videoId            String?
   summary            String?
@@ -138,6 +148,8 @@ model Chapter {
 
   @@index([unitId])
   @@index([isCompleted])
+  @@index([order]) // Added for ordering queries
+  @@index([videoStatus, summaryStatus]) // Added for status filtering
   @@map("Chapter")
 }
 
@@ -155,6 +167,7 @@ model CourseRating {
   @@unique([userId, courseId])
   @@index([courseId])
   @@index([rating])
+  @@index([createdAt]) // Added for recent reviews
 }
 
 model Category {
@@ -195,6 +208,9 @@ model CourseProgress {
   @@index([courseId])
   @@index([progress])
   @@index([isCompleted])
+  @@index([engagementScore]) // Added for engagement analytics
+  @@index([timeSpent]) // Added for time analytics
+  @@index([currentChapterId]) // Added for current chapter lookups
 }
 
 model UserSubscription {
@@ -213,6 +229,8 @@ model UserSubscription {
 
   @@index([status])
   @@index([currentPeriodEnd])
+  @@index([planId]) // Added for plan-based queries
+  @@index([stripeCustomerId]) // Added for Stripe customer lookups
 }
 
 model Favorite {
@@ -227,6 +245,7 @@ model Favorite {
   @@unique([userId, courseId], name: "unique_user_course")
   @@index([userId])
   @@index([courseId])
+  @@index([createdAt]) // Added for recent favorites
 }
 
 model TopicCount {
@@ -237,6 +256,7 @@ model TopicCount {
   updatedAt DateTime @updatedAt
 
   @@index([topic])
+  @@index([count]) // Added for popularity sorting
   @@map("TopicCount")
 }
 
@@ -272,12 +292,13 @@ model CourseQuizAttempt {
   @@index([courseQuizId])
   @@index([score])
   @@index([accuracy])
+  @@index([createdAt]) // Added for recent attempts
 }
 
 model UserQuiz {
   id             Int                @id @default(autoincrement())
   userId         String             @map("user_id")
-  topic          String             @map("title")
+  title          String             
   quizType       String
   isPublic       Boolean            @default(false)
   slug           String             @unique
@@ -296,10 +317,15 @@ model UserQuiz {
   userQuizRating UserQuizRating[]
 
   @@index([userId])
-  @@index([topic])
+  @@index([title])
   @@index([quizType])
   @@index([isPublic])
   @@index([difficulty])
+  @@index([createdAt]) // Added for recent quizzes
+  @@index([bestScore]) // Added for leaderboard queries
+  @@index([lastAttempted]) // Added for recently attempted
+  @@index([slug]) // Added for slug lookups
+  @@index([isFavorite]) // Added for favorite filtering
 }
 
 model UserQuizAttempt {
@@ -325,6 +351,8 @@ model UserQuizAttempt {
   @@index([userQuizId])
   @@index([score])
   @@index([accuracy])
+  @@index([createdAt]) // Added for recent attempts
+  @@index([completionSpeed]) // Added for speed analytics
 }
 
 model UserEngagementMetrics {
@@ -342,6 +370,8 @@ model UserEngagementMetrics {
 
   @@index([userId])
   @@index([completionRate])
+  @@index([weeklyActiveMinutes, monthlyActiveMinutes]) // Added for activity analytics
+  @@index([lastCalculated]) // Added for recalculation queries
 }
 
 model UserQuizQuestion {
@@ -373,6 +403,7 @@ model OpenEndedQuestion {
   question   UserQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([difficulty])
+  @@index([tags]) // Added for tag-based filtering
 }
 
 model UserQuizAttemptQuestion {
@@ -391,6 +422,7 @@ model UserQuizAttemptQuestion {
   @@index([attemptId])
   @@index([questionId])
   @@index([isCorrect])
+  @@index([timeSpent]) // Added for time analytics
 }
 
 model UserQuizRating {
@@ -406,6 +438,7 @@ model UserQuizRating {
   @@unique([userId, userQuizId])
   @@index([userQuizId])
   @@index([rating])
+  @@index([createdAt]) // Added for recent ratings
 }
 
 model FlashCard {
@@ -426,4 +459,79 @@ model FlashCard {
   @@index([userId])
   @@index([userQuizId])
   @@index([difficulty])
+  @@index([saved]) // Added for saved flashcards filtering
+  @@index([createdAt]) // Added for recent flashcards
+  @@index([slug]) // Added for slug lookups
+}
+
+// Extension tables for future features (without modifying existing tables)
+model UserAchievement {
+  id          String   @id @default(cuid())
+  userId      String
+  achievementType String
+  title       String
+  description String?
+  earnedAt    DateTime @default(now())
+  metadata    Json?    // Flexible field for achievement-specific data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([achievementType])
+  @@index([earnedAt])
+}
+
+model UserNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  metadata    Json?    // Flexible field for notification-specific data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model CourseTag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  courses   CourseToTag[]
+
+  @@index([name])
+}
+
+model CourseToTag {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  tagId     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([courseId, tagId])
+  @@index([courseId])
+  @@index([tagId])
+  CourseTag CourseTag[]
+}
+
+model UserSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  emailNotifications Boolean  @default(true)
+  pushNotifications Boolean  @default(true)
+  darkMode          Boolean  @default(false)
+  language          String   @default("en")
+  timezone          String?
+  preferences       Json?    // Flexible field for user preferences
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
 }

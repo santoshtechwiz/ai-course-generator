@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       ...(search
         ? {
             OR: [
-              { name: { contains: search, mode: "insensitive" } },
+              { title: { contains: search, mode: "insensitive" } },
               { description: { contains: search, mode: "insensitive" } },
             ],
           }
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         where,
         select: {
           id: true,
-          name: true,
+          title: true,
           description: true,
           image: true,
           slug: true,
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
 
     const formattedCourses = courses.map((course) => ({
       id: course.id.toString(),
-      name: course.name,
+      name: course.title,
       description: course.description || "No description available",
       image: course.image,
       rating: course.ratings[0]?.rating || 0,

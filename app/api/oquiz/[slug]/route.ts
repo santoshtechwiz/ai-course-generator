@@ -31,7 +31,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       },
       select: {
         id: true,
-        topic: true,
+        title: true,
         userId: true,
         questions: {
           select: {
@@ -70,7 +70,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     const response = {
       id: result.id,
       userId: result.userId,
-      topic: result.topic,
+      topic: result.title,
       questions: transformedQuestions,
     }
 
