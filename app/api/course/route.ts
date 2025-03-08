@@ -141,7 +141,6 @@ async function createCourseWithUnits(
 
     await prisma.chapter.createMany({
       data: unit.chapters.map((chapter) => ({
-        name: chapter.chapter_title,
         title: chapter.chapter_title,
         youtubeSearchQuery: chapter.youtube_search_query,
         unitId: prismaUnit.id,

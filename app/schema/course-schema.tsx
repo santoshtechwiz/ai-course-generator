@@ -4,7 +4,7 @@ import { generateCourseSchema } from "@/components/json-ld"
 
 interface CourseSchemaProps {
   course: {
-    name: string
+    title: string
     description: string
     image?: string
     createdAt: string
@@ -19,11 +19,11 @@ interface CourseSchemaProps {
 
 export default function CourseSchema({ course }: CourseSchemaProps) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
-  const courseUrl = `${baseUrl}/dashboard/course/${course.name.toLowerCase().replace(/\s+/g, "-")}`
+  const courseUrl = `${baseUrl}/dashboard/course/${course?.title?.toLowerCase().replace(/\s+/g, "-")}`
 
   const courseSchema = generateCourseSchema({
-    name: course.name,
-    description: course.description || `Learn ${course.name} with interactive lessons and exercises.`,
+    name: course.title,
+    description: course.description || `Learn ${course.title} with interactive lessons and exercises.`,
     provider: "CourseAI",
     url: courseUrl,
     imageUrl: course.image,
