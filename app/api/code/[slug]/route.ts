@@ -18,7 +18,7 @@ export async function GET(_: Request, props: { params: Promise< { slug: string }
         userId: true,
         isFavorite: true,
         isPublic: true,
-        topic: true,
+        title: true,
         slug: true,
         questions: {
           select: {
@@ -44,7 +44,7 @@ export async function GET(_: Request, props: { params: Promise< { slug: string }
       userId: result.userId,
       ownerId: result.userId, // Assuming the owner is the same as the user who created the quiz
       quizData: {
-        title: result.topic,
+        title: result.title,
         questions: result.questions.map((q) => ({
           question: q.question,
           options: q.options ? JSON.parse(q.options) : [],

@@ -6,7 +6,7 @@ export async function getPublicQuizzes() {
     const quizzes = await prisma.userQuiz.findMany({
       select: {
         id: true,
-        topic: true,
+        title: true,
         slug: true,
         _count: {
           select: {
@@ -20,7 +20,7 @@ export async function getPublicQuizzes() {
 
     return quizzes.map((quiz) => ({
       id: quiz.id,
-      topic: quiz.topic,
+      title: quiz.title,
       totalQuestions: quiz._count.questions,
       slug: quiz.slug || "",
     }));

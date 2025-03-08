@@ -257,7 +257,7 @@ export async function getRandomQuestions(count: number = 5) {
     select: {
       id: true,
       slug: true,
-      topic: true,
+      title: true,
       _count: {
         select: {
           questions: true,
@@ -306,7 +306,7 @@ export async function fetchRandomQuizzes(count: number = 3) {
       },
       select: {
         id: true,
-        topic: true,
+        title: true,
         slug: true,
         quizType: true,
         difficulty: true,
@@ -339,7 +339,7 @@ export async function createUserQuiz(userId: string, topic: string, type: string
           timeStarted: new Date(),
           userId,
           isPublic: false,
-          topic,
+          title: topic,
           slug: uniqueSlug,
         },
       });

@@ -27,7 +27,7 @@ export async function getQuizzes({
           ? {
               OR: [
                 {
-                  topic: {
+                  title: {
                     contains: searchTerm,
                     mode: "insensitive" as const,
                   },
@@ -52,7 +52,7 @@ export async function getQuizzes({
         where: whereCondition,
         select: {
           id: true,
-          topic: true,
+          title: true,
           slug: true,
           isPublic: true,
           quizType: true,
@@ -74,7 +74,7 @@ export async function getQuizzes({
     const quizListItems = quizzes.map(
       (quiz): QuizListItem => ({
         id: quiz.id,
-        title: quiz.topic,
+        title: quiz.title,
         slug: quiz.slug,
         questionCount: quiz._count.questions,
         isPublic: quiz.isPublic ?? true,

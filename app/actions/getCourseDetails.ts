@@ -9,7 +9,7 @@ export async function getCourseDetails(): Promise<any[]> {
     select: {
       id: true,
       slug: true,
-      name: true,
+      title: true,
       category: { select: { name: true } },
       courseUnits: {
         select: {
@@ -32,7 +32,7 @@ export async function getCourseDetails(): Promise<any[]> {
 
     return {
       id: course.id,
-      courseName: course.name,
+      courseName: course.title,
       totalUnits,
       totalChapters,
       category: course.category?.name || null,

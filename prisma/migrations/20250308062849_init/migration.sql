@@ -342,6 +342,81 @@ CREATE TABLE "FlashCard" (
     CONSTRAINT "FlashCard_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "UserAchievement" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "achievementType" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "earnedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserAchievement_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserNotification" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserNotification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CourseTag" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CourseTag_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CourseToTag" (
+    "id" SERIAL NOT NULL,
+    "courseId" INTEGER NOT NULL,
+    "tagId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CourseToTag_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserSettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "emailNotifications" BOOLEAN NOT NULL DEFAULT true,
+    "pushNotifications" BOOLEAN NOT NULL DEFAULT true,
+    "darkMode" BOOLEAN NOT NULL DEFAULT false,
+    "language" TEXT NOT NULL DEFAULT 'en',
+    "timezone" TEXT,
+    "preferences" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "_CourseTagToCourseToTag" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_CourseTagToCourseToTag_AB_pkey" PRIMARY KEY ("A","B")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -355,7 +430,19 @@ CREATE INDEX "User_userType_idx" ON "User"("userType");
 CREATE INDEX "User_engagementScore_idx" ON "User"("engagementScore");
 
 -- CreateIndex
+CREATE INDEX "User_lastActiveAt_idx" ON "User"("lastActiveAt");
+
+-- CreateIndex
+CREATE INDEX "User_createdAt_idx" ON "User"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "User_isAdmin_idx" ON "User"("isAdmin");
+
+-- CreateIndex
 CREATE INDEX "Account_user_id_idx" ON "Account"("user_id");
+
+-- CreateIndex
+CREATE INDEX "Account_provider_idx" ON "Account"("provider");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
@@ -365,6 +452,9 @@ CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
 
 -- CreateIndex
 CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+
+-- CreateIndex
+CREATE INDEX "Session_expires_idx" ON "Session"("expires");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Course_slug_key" ON "Course"("slug");
@@ -385,7 +475,22 @@ CREATE INDEX "Course_isPublic_idx" ON "Course"("isPublic");
 CREATE INDEX "Course_difficulty_idx" ON "Course"("difficulty");
 
 -- CreateIndex
+CREATE INDEX "Course_createdAt_idx" ON "Course"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "Course_viewCount_idx" ON "Course"("viewCount");
+
+-- CreateIndex
+CREATE INDEX "Course_slug_idx" ON "Course"("slug");
+
+-- CreateIndex
 CREATE INDEX "CourseUnit_courseId_idx" ON "CourseUnit"("courseId");
+
+-- CreateIndex
+CREATE INDEX "CourseUnit_order_idx" ON "CourseUnit"("order");
+
+-- CreateIndex
+CREATE INDEX "CourseUnit_isCompleted_idx" ON "CourseUnit"("isCompleted");
 
 -- CreateIndex
 CREATE INDEX "Chapter_unitId_idx" ON "Chapter"("unitId");
@@ -394,10 +499,19 @@ CREATE INDEX "Chapter_unitId_idx" ON "Chapter"("unitId");
 CREATE INDEX "Chapter_isCompleted_idx" ON "Chapter"("isCompleted");
 
 -- CreateIndex
+CREATE INDEX "Chapter_order_idx" ON "Chapter"("order");
+
+-- CreateIndex
+CREATE INDEX "Chapter_videoStatus_summaryStatus_idx" ON "Chapter"("videoStatus", "summaryStatus");
+
+-- CreateIndex
 CREATE INDEX "CourseRating_courseId_idx" ON "CourseRating"("courseId");
 
 -- CreateIndex
 CREATE INDEX "CourseRating_rating_idx" ON "CourseRating"("rating");
+
+-- CreateIndex
+CREATE INDEX "CourseRating_createdAt_idx" ON "CourseRating"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CourseRating_user_id_courseId_key" ON "CourseRating"("user_id", "courseId");
@@ -421,6 +535,15 @@ CREATE INDEX "CourseProgress_progress_idx" ON "CourseProgress"("progress");
 CREATE INDEX "CourseProgress_isCompleted_idx" ON "CourseProgress"("isCompleted");
 
 -- CreateIndex
+CREATE INDEX "CourseProgress_engagementScore_idx" ON "CourseProgress"("engagementScore");
+
+-- CreateIndex
+CREATE INDEX "CourseProgress_timeSpent_idx" ON "CourseProgress"("timeSpent");
+
+-- CreateIndex
+CREATE INDEX "CourseProgress_currentChapterId_idx" ON "CourseProgress"("currentChapterId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "CourseProgress_user_id_courseId_key" ON "CourseProgress"("user_id", "courseId");
 
 -- CreateIndex
@@ -436,10 +559,19 @@ CREATE INDEX "UserSubscription_status_idx" ON "UserSubscription"("status");
 CREATE INDEX "UserSubscription_currentPeriodEnd_idx" ON "UserSubscription"("currentPeriodEnd");
 
 -- CreateIndex
+CREATE INDEX "UserSubscription_planId_idx" ON "UserSubscription"("planId");
+
+-- CreateIndex
+CREATE INDEX "UserSubscription_stripeCustomerId_idx" ON "UserSubscription"("stripeCustomerId");
+
+-- CreateIndex
 CREATE INDEX "Favorite_user_id_idx" ON "Favorite"("user_id");
 
 -- CreateIndex
 CREATE INDEX "Favorite_courseId_idx" ON "Favorite"("courseId");
+
+-- CreateIndex
+CREATE INDEX "Favorite_createdAt_idx" ON "Favorite"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Favorite_user_id_courseId_key" ON "Favorite"("user_id", "courseId");
@@ -449,6 +581,9 @@ CREATE UNIQUE INDEX "TopicCount_topic_key" ON "TopicCount"("topic");
 
 -- CreateIndex
 CREATE INDEX "TopicCount_topic_idx" ON "TopicCount"("topic");
+
+-- CreateIndex
+CREATE INDEX "TopicCount_count_idx" ON "TopicCount"("count");
 
 -- CreateIndex
 CREATE INDEX "CourseQuiz_chapterId_idx" ON "CourseQuiz"("chapterId");
@@ -464,6 +599,9 @@ CREATE INDEX "CourseQuizAttempt_score_idx" ON "CourseQuizAttempt"("score");
 
 -- CreateIndex
 CREATE INDEX "CourseQuizAttempt_accuracy_idx" ON "CourseQuizAttempt"("accuracy");
+
+-- CreateIndex
+CREATE INDEX "CourseQuizAttempt_createdAt_idx" ON "CourseQuizAttempt"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CourseQuizAttempt_userId_courseQuizId_key" ON "CourseQuizAttempt"("userId", "courseQuizId");
@@ -487,6 +625,21 @@ CREATE INDEX "UserQuiz_isPublic_idx" ON "UserQuiz"("isPublic");
 CREATE INDEX "UserQuiz_difficulty_idx" ON "UserQuiz"("difficulty");
 
 -- CreateIndex
+CREATE INDEX "UserQuiz_createdAt_idx" ON "UserQuiz"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "UserQuiz_bestScore_idx" ON "UserQuiz"("bestScore");
+
+-- CreateIndex
+CREATE INDEX "UserQuiz_lastAttempted_idx" ON "UserQuiz"("lastAttempted");
+
+-- CreateIndex
+CREATE INDEX "UserQuiz_slug_idx" ON "UserQuiz"("slug");
+
+-- CreateIndex
+CREATE INDEX "UserQuiz_isFavorite_idx" ON "UserQuiz"("isFavorite");
+
+-- CreateIndex
 CREATE INDEX "UserQuizAttempt_userId_idx" ON "UserQuizAttempt"("userId");
 
 -- CreateIndex
@@ -497,6 +650,12 @@ CREATE INDEX "UserQuizAttempt_score_idx" ON "UserQuizAttempt"("score");
 
 -- CreateIndex
 CREATE INDEX "UserQuizAttempt_accuracy_idx" ON "UserQuizAttempt"("accuracy");
+
+-- CreateIndex
+CREATE INDEX "UserQuizAttempt_createdAt_idx" ON "UserQuizAttempt"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "UserQuizAttempt_completionSpeed_idx" ON "UserQuizAttempt"("completionSpeed");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserQuizAttempt_userId_userQuizId_key" ON "UserQuizAttempt"("userId", "userQuizId");
@@ -511,6 +670,12 @@ CREATE INDEX "UserEngagementMetrics_userId_idx" ON "UserEngagementMetrics"("user
 CREATE INDEX "UserEngagementMetrics_completionRate_idx" ON "UserEngagementMetrics"("completionRate");
 
 -- CreateIndex
+CREATE INDEX "UserEngagementMetrics_weeklyActiveMinutes_monthlyActiveMinu_idx" ON "UserEngagementMetrics"("weeklyActiveMinutes", "monthlyActiveMinutes");
+
+-- CreateIndex
+CREATE INDEX "UserEngagementMetrics_lastCalculated_idx" ON "UserEngagementMetrics"("lastCalculated");
+
+-- CreateIndex
 CREATE INDEX "UserQuizQuestion_userQuizId_idx" ON "UserQuizQuestion"("userQuizId");
 
 -- CreateIndex
@@ -523,6 +688,9 @@ CREATE UNIQUE INDEX "OpenEndedQuestion_questionId_key" ON "OpenEndedQuestion"("q
 CREATE INDEX "OpenEndedQuestion_difficulty_idx" ON "OpenEndedQuestion"("difficulty");
 
 -- CreateIndex
+CREATE INDEX "OpenEndedQuestion_tags_idx" ON "OpenEndedQuestion"("tags");
+
+-- CreateIndex
 CREATE INDEX "UserQuizAttemptQuestion_attemptId_idx" ON "UserQuizAttemptQuestion"("attemptId");
 
 -- CreateIndex
@@ -532,6 +700,9 @@ CREATE INDEX "UserQuizAttemptQuestion_questionId_idx" ON "UserQuizAttemptQuestio
 CREATE INDEX "UserQuizAttemptQuestion_isCorrect_idx" ON "UserQuizAttemptQuestion"("isCorrect");
 
 -- CreateIndex
+CREATE INDEX "UserQuizAttemptQuestion_timeSpent_idx" ON "UserQuizAttemptQuestion"("timeSpent");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "UserQuizAttemptQuestion_attemptId_questionId_key" ON "UserQuizAttemptQuestion"("attemptId", "questionId");
 
 -- CreateIndex
@@ -539,6 +710,9 @@ CREATE INDEX "UserQuizRating_userQuizId_idx" ON "UserQuizRating"("userQuizId");
 
 -- CreateIndex
 CREATE INDEX "UserQuizRating_rating_idx" ON "UserQuizRating"("rating");
+
+-- CreateIndex
+CREATE INDEX "UserQuizRating_createdAt_idx" ON "UserQuizRating"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserQuizRating_userId_userQuizId_key" ON "UserQuizRating"("userId", "userQuizId");
@@ -554,6 +728,60 @@ CREATE INDEX "FlashCard_userQuizId_idx" ON "FlashCard"("userQuizId");
 
 -- CreateIndex
 CREATE INDEX "FlashCard_difficulty_idx" ON "FlashCard"("difficulty");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_saved_idx" ON "FlashCard"("saved");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_createdAt_idx" ON "FlashCard"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "FlashCard_slug_idx" ON "FlashCard"("slug");
+
+-- CreateIndex
+CREATE INDEX "UserAchievement_userId_idx" ON "UserAchievement"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserAchievement_achievementType_idx" ON "UserAchievement"("achievementType");
+
+-- CreateIndex
+CREATE INDEX "UserAchievement_earnedAt_idx" ON "UserAchievement"("earnedAt");
+
+-- CreateIndex
+CREATE INDEX "UserNotification_userId_idx" ON "UserNotification"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserNotification_isRead_idx" ON "UserNotification"("isRead");
+
+-- CreateIndex
+CREATE INDEX "UserNotification_type_idx" ON "UserNotification"("type");
+
+-- CreateIndex
+CREATE INDEX "UserNotification_createdAt_idx" ON "UserNotification"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CourseTag_name_key" ON "CourseTag"("name");
+
+-- CreateIndex
+CREATE INDEX "CourseTag_name_idx" ON "CourseTag"("name");
+
+-- CreateIndex
+CREATE INDEX "CourseToTag_courseId_idx" ON "CourseToTag"("courseId");
+
+-- CreateIndex
+CREATE INDEX "CourseToTag_tagId_idx" ON "CourseToTag"("tagId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CourseToTag_courseId_tagId_key" ON "CourseToTag"("courseId", "tagId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserSettings_userId_key" ON "UserSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserSettings_userId_idx" ON "UserSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "_CourseTagToCourseToTag_B_index" ON "_CourseTagToCourseToTag"("B");
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -638,3 +866,9 @@ ALTER TABLE "FlashCard" ADD CONSTRAINT "FlashCard_userId_fkey" FOREIGN KEY ("use
 
 -- AddForeignKey
 ALTER TABLE "FlashCard" ADD CONSTRAINT "FlashCard_userQuizId_fkey" FOREIGN KEY ("userQuizId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CourseTagToCourseToTag" ADD CONSTRAINT "_CourseTagToCourseToTag_A_fkey" FOREIGN KEY ("A") REFERENCES "CourseTag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CourseTagToCourseToTag" ADD CONSTRAINT "_CourseTagToCourseToTag_B_fkey" FOREIGN KEY ("B") REFERENCES "CourseToTag"("id") ON DELETE CASCADE ON UPDATE CASCADE;

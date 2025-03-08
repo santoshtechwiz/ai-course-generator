@@ -21,7 +21,7 @@ const getMcqQuestions = async (slug: string): Promise<McqQuestionsResponse> => {
     where: { slug },
     select: {
       id: true,
-      topic: true,
+      title: true,
       slug: true,
       isPublic: true,
       isFavorite: true,
@@ -79,7 +79,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
 
   const quiz = await prisma.userQuiz.findUnique({
     where: { slug },
-    select: { id: true, topic: true, questions: true, user: { select: { name: true } } },
+    select: { id: true, title: true, questions: true, user: { select: { name: true } } },
   })
 
   const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000"
@@ -91,8 +91,8 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     }
   }
 
-  const title = `${quiz.topic} Quiz `
-  const description = `Test your knowledge with this ${quiz.topic} quiz created by ${quiz.user.name}. Challenge yourself and learn something new!`
+  const title = `${quiz.title} Quiz `
+  const description = `Test your knowledge with this ${quiz.title} quiz created by ${quiz.user.name}. Challenge yourself and learn something new!`
 
   return {
     title,
@@ -104,10 +104,10 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       type: "website",
       images: [
         {
-          url: `${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`,
+          url: `${websiteUrl}/api/og?title=${encodeURIComponent(quiz.title)}`,
           width: 1200,
           height: 630,
-          alt: `${quiz.topic} Quiz Thumbnail`,
+          alt: `${quiz.title} Quiz Thumbnail`,
         },
       ],
     },
@@ -115,7 +115,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       card: "summary_large_image",
       title,
       description,
-      images: [`${websiteUrl}/api/og?title=${encodeURIComponent(quiz.topic)}`],
+      images: [`${websiteUrl}/api/og?title=${encodeURIComponent(quiz.title)}`],
     },
     alternates: {
       canonical: `${websiteUrl}/quiz/${slug}`,

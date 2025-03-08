@@ -118,7 +118,7 @@ async function createCourseWithUnits(
 ) {
   const course = await prisma.course.create({
     data: {
-      name: courseData.title,
+      title: courseData.title,
       image: courseData.image,
       description: courseData.description,
       userId: courseData.userId,
@@ -142,6 +142,7 @@ async function createCourseWithUnits(
     await prisma.chapter.createMany({
       data: unit.chapters.map((chapter) => ({
         name: chapter.chapter_title,
+        title: chapter.chapter_title,
         youtubeSearchQuery: chapter.youtube_search_query,
         unitId: prismaUnit.id,
       })),

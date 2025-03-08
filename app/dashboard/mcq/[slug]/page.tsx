@@ -20,7 +20,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     where: { slug },
     select: {
       id: true,
-      topic: true,
+      title: true,
       questions: true,
       user: { select: { name: true } },
     },

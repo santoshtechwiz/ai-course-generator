@@ -41,11 +41,11 @@ const initializeTrie = async () => {
 
   try {
     const courses = await prisma.course.findMany({
-      select: { id: true, name: true },
+      select: { id: true, title: true },
     });
 
     courses.forEach((course) => {
-      courseTrie.insert(course.name.toLowerCase(), course.id);
+      courseTrie.insert(course.title.toLowerCase(), course.id);
     });
 
     console.log('Trie initialized with courses data.');
@@ -83,14 +83,14 @@ export async function GET(request: Request) {
       where: {
         OR: [
           { id: { in: courseIds } },
-          { name: { contains: query, mode: 'insensitive' } },
+          { title: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
         ],
         AND: [{ isPublic: true }],
       },
       select: {
         id: true,
-        name: true,
+        title: true,
         description: true,
         slug: true,
       },
@@ -99,13 +99,13 @@ export async function GET(request: Request) {
     // Search games in the database (only in topic field)
     const games = await prisma.userQuiz.findMany({
       where: {
-        OR: [{ topic: { contains: query, mode: 'insensitive' } }],
+        OR: [{ title: { contains: query, mode: 'insensitive' } }],
         AND: [{ isPublic: true }],
        
       },
       select: {
         id: true,
-        topic: true,
+        title: true,
         slug: true,
         quizType: true,
       },
@@ -114,7 +114,7 @@ export async function GET(request: Request) {
     // Process game results
     const processedGames = games.map(game => ({
       id: game.id,
-      topic: game.topic,
+      topic: game.title,
       slug: game.slug,
       quizType: game.quizType,
     }));

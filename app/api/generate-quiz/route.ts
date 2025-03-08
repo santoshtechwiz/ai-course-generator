@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       return await tx.userQuiz.create({
         data: {
           userId,
-          topic,
+          title: topic,
           timeStarted: new Date(),
           quizType: 'openended',
           slug: slug,

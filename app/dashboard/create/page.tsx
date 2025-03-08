@@ -39,24 +39,32 @@ export const metadata: Metadata = {
 
 const Page = async ({
   params,
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
   params: QueryParams
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) => {
   let topic = ""
   let category = ""
   let courseData = []
 
   try {
+    const searchParams = await searchParamsPromise
+
     topic =
       typeof params?.topic === "string"
         ? params.topic
-        : (Array.isArray(searchParams?.topic) ? searchParams.topic[0] : searchParams?.topic) || ""
+        : Array.isArray(params?.topic)
+        ? params.topic[0]
+        : ""
+
     category =
       typeof params?.categoryAttachment === "string"
         ? params.categoryAttachment
-        : (Array.isArray(searchParams?.category) ? searchParams.category[0] : searchParams?.category) || ""
+        : Array.isArray(searchParams?.category)
+        ? searchParams.category[0]
+        : searchParams?.category || ""
+
     courseData = await getCourseDetails()
   } catch (error) {
     console.warn("Failed to fetch course details:", error)
@@ -153,4 +161,3 @@ const Page = async ({
 }
 
 export default Page
-

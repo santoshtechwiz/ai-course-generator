@@ -48,7 +48,7 @@ export async function GET() {
         select: {
           slug: true,
           id: true,
-          topic: true,
+          title: true,
           quizType: true,
         },
       }),
