@@ -8,7 +8,7 @@ import { generateOpenEndedFillIntheBlanks } from '@/lib/chatgpt/userMcqQuiz';
 export async function POST(req: Request) {
   try {
     const session = await getAuthSession();
-    const { topic, questionCount } = await req.json()
+    const { title, questionCount } = await req.json()
     const userId = session?.user.id;
 
     if (!userId) {
@@ -20,8 +20,8 @@ export async function POST(req: Request) {
       return { error: 'Insufficient credits', status: 403 };
     }
 
-    const quiz = await generateOpenEndedFillIntheBlanks(topic, questionCount)
-    const slug = generateSlug(topic)
+    const quiz = await generateOpenEndedFillIntheBlanks(title, questionCount)
+    const slug = generateSlug(title)
 
     const userQuiz = await prisma.$transaction(async (tx) => {
       await tx.user.update({
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       return await tx.userQuiz.create({
         data: {
           userId,
-          topic,
+          title,
           timeStarted: new Date(),
           quizType: 'fill-blanks',
           slug: slug,
