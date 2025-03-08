@@ -106,7 +106,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
     }
   }
 
-  const isTopicValid = form.watch("topic").length >= 3
+  const isTopicValid = form.watch("title").length >= 3
   const difficulty = form.watch("difficulty")
   const amount = form.watch("amount")
 
@@ -120,7 +120,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
   }
 
   const handleExampleClick = () => {
-    form.setValue("topic", exampleTopic)
+    form.setValue("title", exampleTopic)
   }
 
   const getDifficultyColor = (diff: string) => {
@@ -167,7 +167,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
           <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FormField
               control={form.control}
-              name="topic"
+              name="title"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Topic</FormLabel>
@@ -228,7 +228,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
                       <SubscriptionSlider
                         value={field.value}
                         onValueChange={(val) => field.onChange(val)}
-                        max={maxQuestions}
+                    
                         step={1}
                       />
                     </div>

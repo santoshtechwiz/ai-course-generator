@@ -75,7 +75,7 @@ async function generateQuizInternal(
       }),
     });
 
-    return transcript.substring(0, 10);
+    return transcript?.substring(0, 10);
   } catch (error: unknown) {
     console.error((error as Error).message);
     return "";
