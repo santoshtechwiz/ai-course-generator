@@ -66,7 +66,7 @@ function VideoNavigationSidebar({
           <h2 className="text-lg sm:text-xl font-semibold tracking-tight">Course Content</h2>
           {currentChapter && (
             <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-              Currently watching: {currentChapter.name}
+              Currently watching: {currentChapter.title}
             </p>
           )}
         </div>
@@ -118,7 +118,7 @@ function VideoNavigationSidebar({
               >
                 <CollapsibleTrigger className="flex w-full items-center justify-between p-3 sm:p-4 hover:bg-accent/50 transition-colors rounded-t-lg">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-medium">{unit.name}</h3>
+                    <h3 className="text-sm font-medium">{unit.title}</h3>
                     <Badge variant={isCurrentUnit ? "default" : "secondary"} className="ml-auto sm:ml-2">
                       {unitProgress}/{unit.chapters.length}
                     </Badge>

@@ -302,7 +302,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   return (
     <div className="min-h-screen bg-background">
       <div className="lg:hidden">
-        <MobilePlayList courseName={course.name} onSidebarOpen={() => setIsSidebarOpen(true)} />
+        <MobilePlayList courseName={course.title} onSidebarOpen={() => setIsSidebarOpen(true)} />
       </div>
 
       <div className="flex flex-col lg:flex-row">

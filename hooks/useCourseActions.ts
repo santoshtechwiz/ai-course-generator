@@ -52,7 +52,7 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
             body: JSON.stringify(updateData),
           })
         } else if (action === "delete") {
-          response = await fetch(`/api/courses/${slug}`, {
+          response = await fetch(`/api/course/${slug}`, {
             method: "DELETE",
           })
         }
@@ -74,7 +74,7 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
             title: "Course Deleted",
             description: "The course has been successfully deleted.",
           })
-          router.push("/courses")
+          router.push("/dashboard")
         } else if (action === "favorite") {
           setStatus((prev) => ({ ...prev, isFavorite: result.course.isFavorite }))
           toast({
