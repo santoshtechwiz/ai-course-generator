@@ -66,7 +66,7 @@ const RandomQuizCard: React.FC<{ quiz: any; index: number }> = React.memo(({ qui
               </div>
               <div className="flex-grow min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <h3 className="text-sm font-medium line-clamp-1">{quiz.topic}</h3>
+                  <h3 className="text-sm font-medium line-clamp-1">{quiz.title}</h3>
                   <Badge variant="outline" className={`${color} text-xs px-1.5 py-0 h-5`}>
                     {difficulty}
                   </Badge>

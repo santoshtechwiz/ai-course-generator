@@ -19,8 +19,8 @@ export const PublicQuizCardListing: React.FC<PublicQuizCardListingProps> = ({ qu
       transition={{ duration: 0.3, delay: index * 0.1 }}
     >
       <QuizCard
-        title={quiz.topic}
-        description={quiz.topic}
+        title={quiz.title}
+        description={quiz.title}
         questionCount={quiz.questionCount}
         isPublic={quiz.isPublic}
         slug={quiz.slug}

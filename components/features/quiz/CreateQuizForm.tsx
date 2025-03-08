@@ -52,7 +52,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
   const { subscriptionStatus } = useSubscriptionStore()
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
-    topic: params?.topic || "",
+    title: params?.title || "",
     amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     difficulty: "medium",
   })
@@ -71,8 +71,8 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
   })
 
   React.useEffect(() => {
-    if (params?.topic) {
-      setValue("topic", params.topic)
+    if (params?.title) {
+      setValue("topic", params.title)
     }
     if (params?.amount) {
       const amount = Number.parseInt(params.amount, 10)
@@ -80,7 +80,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
         setValue("amount", Math.min(amount, maxQuestions))
       }
     }
-  }, [params?.topic, params?.amount, maxQuestions, setValue])
+  }, [params?.title, params?.amount, maxQuestions, setValue])
 
   React.useEffect(() => {
     const subscription = watch((value) => setFormData(value as QuizFormData))
@@ -204,9 +204,9 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              {errors.topic && (
+              {errors.title && (
                 <p className="text-sm text-destructive" id="topic-error">
-                  {errors.topic.message}
+                  {errors.title.message}
                 </p>
               )}
               <p className="text-sm text-muted-foreground" id="topic-description">

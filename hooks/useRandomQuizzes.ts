@@ -7,7 +7,7 @@ import { useState, useEffect } from "react"
 
 export interface Quiz {
   id: number
-  topic: string
+  title: string
   quizType: string
   difficulty: string | null
   bestScore: number | null

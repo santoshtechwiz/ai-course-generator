@@ -15,7 +15,7 @@ export default function QuizHistory({ quizzes }: QuizHistoryProps) {
           <ul className="space-y-2">
             {quizzes.slice(0, 5).map(quiz => (
               <li key={quiz.id} className="flex justify-between text-sm">
-                <span>{quiz.topic}</span>
+                <span>{quiz.title}</span>
                 <span>{new Date(quiz.timeStarted).toLocaleDateString()}</span>
               </li>
             ))}

@@ -19,7 +19,7 @@ const createCourseSchema = z.object({
 })
 
 const quizSchema = z.object({
-    topic: z.string().min(3, "Topic must be at least 3 characters long").max(100, "Topic must be at most 100 characters long"),
+    title: z.string().min(3, "Topic must be at least 3 characters long").max(100, "Topic must be at most 100 characters long"),
     amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
     difficulty: z.enum(["easy", "medium", "hard"]),
    
@@ -35,7 +35,7 @@ export const createChaptersSchema = z.object({
 });
 
 export const quizCreationSchema = z.object({
-  topic: z
+  title: z
     .string()
     .min(4, {
       message: "Topic must be at least 4 characters long",
@@ -49,7 +49,7 @@ export const quizCreationSchema = z.object({
   userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
 });
 export const getQuestionsSchema = z.object({
-  topic: z.string(),
+  title: z.string(),
   amount: z.number().int().positive().min(1).max(10),
   type: z.enum(["mcq", "open_ended"]),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -69,7 +69,7 @@ export const endGameSchema = z.object({
   question: z.string().min(4).max(100),
   answer: z.string().min(1).max(100),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  topic: z.string().min(4).max(50),
+  title: z.string().min(4).max(50),
   explanation: z.string().min(4).max(100),
   userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
 })

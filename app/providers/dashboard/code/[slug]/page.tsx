@@ -28,11 +28,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return generatePageMetadata({
-    title: `${quiz.topic} | Programming Code Challenge`,
-    description: `Test your coding skills with this ${quiz.topic.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
+    title: `${quiz.title} | Programming Code Challenge`,
+    description: `Test your coding skills with this ${quiz.title.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
     path: `/dashboard/code/${slug}`,
     keywords: [
-      `${quiz.topic.toLowerCase()} challenge`,
+      `${quiz.title.toLowerCase()} challenge`,
       "programming exercise",
       "coding practice",
       "developer skills test",
@@ -61,19 +61,19 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: quiz.topic, url: `${baseUrl}/dashboard/code/${slug}` },
+    { name: quiz.title, url: `${baseUrl}/dashboard/code/${slug}` },
   ]
 
   return (
     <SlugPageLayout
-      title={quiz.topic}
-      description={`Test your coding skills on ${quiz.topic} with interactive programming challenges`}
+      title={quiz.title}
+      description={`Test your coding skills on ${quiz.title} with interactive programming challenges`}
       sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{
-          topic: quiz.topic,
-          description: `Test your coding skills with this ${quiz.topic} programming challenge. Practice writing real code and improve your development abilities.`,
+          title: quiz.title,
+          description: `Test your coding skills with this ${quiz.title} programming challenge. Practice writing real code and improve your development abilities.`,
           questionCount: questionCount,
           estimatedTime: estimatedTime,
           level: "Advanced",

@@ -6,7 +6,7 @@ import { Question } from "../types/types";
 export interface McqQuestionsResponse {
   result: {
     id: number;
-    topic: string;
+    title: string;
     slug: string;
     isPublic: boolean;
     isFavorite: boolean;

@@ -39,7 +39,7 @@ export function StatsView({ stats }: StatsViewProps) {
           <ul className="space-y-2">
             {stats.topPerformingTopics.map((topic, index) => (
               <li key={index} className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">{topic.topic}</span>
+                <span className="text-sm text-muted-foreground">{topic.title}</span>
                 <span className="font-medium">{Math.round(topic.averageScore)}%</span>
               </li>
             ))}

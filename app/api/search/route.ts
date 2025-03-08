@@ -114,7 +114,7 @@ export async function GET(request: Request) {
     // Process game results
     const processedGames = games.map(game => ({
       id: game.id,
-      topic: game.title,
+      title: game.title,
       slug: game.slug,
       quizType: game.quizType,
     }));

@@ -5,7 +5,7 @@ import openai from "./openaiUtils";
 
 
 export async function generateFlashCards(
-  topic: string,
+  title: string,
   count = 5
 ): Promise<FlashCard[]> {
   try {
@@ -18,7 +18,7 @@ export async function generateFlashCards(
         },
         {
           role: "user",
-          content: `Generate ${count} flash cards about "${topic}".
+          content: `Generate ${count} flash cards about "${title}".
           Each flashcard should have a challenging question and a concise yet comprehensive answer.
           
           Respond as a function call using the "generate_flashcards" function schema.`

@@ -22,15 +22,15 @@ const Page = async ({
   params: QueryParams
   searchParams: { [key: string]: string | string[] | undefined }
 }) => {
-  let topic = ""
+  let title = ""
   let category = ""
   let courseData = []
 
   try {
-    topic =
-      typeof params?.topic === "string"
-        ? params.topic
-        : (Array.isArray(searchParams?.topic) ? searchParams.topic[0] : searchParams?.topic) || ""
+    title =
+      typeof params?.title === "string"
+        ? params.title
+        : (Array.isArray(searchParams?.title) ? searchParams.title[0] : searchParams?.title) || ""
     category =
       typeof params?.categoryAttachment === "string"
         ? params.categoryAttachment
@@ -65,7 +65,7 @@ const Page = async ({
               <QuizWrapper
                 type="course"
                 queryParams={{
-                  topic: topic,
+                  title: title,
                   category: category,
                 }}
               />

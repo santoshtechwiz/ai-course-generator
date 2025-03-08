@@ -12,10 +12,10 @@ const ClientPage = () => {
   // Use the useSearchParams hook to get query parameters
   const searchParams = useSearchParams()
 
-  // Extract 'topic' and 'amount' from query parameters
-  const topic = searchParams.get("topic") || ""
+  // Extract 'title' and 'amount' from query parameters
+  const title = searchParams.get("title") || ""
   const amount = searchParams.get("amount") || "5" // Default to 5 if not provided
-  console.log(topic, amount)
+  console.log(title, amount)
   return (
     <div className="container mx-auto py-6 space-y-6">
       <RandomQuote />
@@ -30,13 +30,13 @@ const ClientPage = () => {
               </h2>
               <div className="hidden sm:flex items-center text-sm text-muted-foreground bg-secondary/10 px-3 py-1.5 rounded-full">
                 <Lightbulb className="h-4 w-4 mr-1.5 text-yellow-500" />
-                Pro tip: Be specific with your topic
+                Pro tip: Be specific with your title
               </div>
             </div>
             <QuizWrapper
               type="mcq"
               queryParams={{
-                topic: topic,
+                title: title,
                 amount: amount,
               }}
             />

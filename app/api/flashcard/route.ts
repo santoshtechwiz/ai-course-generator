@@ -8,7 +8,7 @@ import type { User } from "@prisma/client"
 
 // Input validation schema
 const createFlashcardSchema = z.object({
-  topic: z.string().min(1, "Topic is required"),
+  title: z.string().min(1, "Topic is required"),
   count: z.number().int().positive().default(5),
 })
 
@@ -19,8 +19,8 @@ interface FlashCardData {
 }
 
 // Generate a unique slug with better performance
-async function generateUniqueSlug(topic: string): Promise<string> {
-  const baseSlug = titleToSlug(topic)
+async function generateUniqueSlug(title: string): Promise<string> {
+  const baseSlug = titleToSlug(title)
 
   // Check if slug exists with a more efficient query
   const existingCount = await prisma.userQuiz.count({

@@ -80,7 +80,7 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <p className="font-medium text-lg">{quiz.topic}</p>
+                    <p className="font-medium text-lg">{quiz.title}</p>
                     <div className="flex items-center space-x-2 text-sm">
                       <Badge className={getQuizColor(index)}>{getQuizTypeLabel(quiz.quizType as QuizType)}</Badge>
                       {quiz.timeEnded ? (

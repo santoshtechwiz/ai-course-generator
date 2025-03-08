@@ -13,7 +13,7 @@ interface QuizResultsProps {
   knownCards: number
   reviewCards: number
   savedCards: number
-  topic: string
+  title: string
   onRestart: () => void
 }
 

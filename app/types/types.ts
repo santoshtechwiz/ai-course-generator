@@ -144,7 +144,7 @@ export interface UserStats {
 }
 
 export interface TopicPerformance { // Renamed from titlePerformance to TopicPerformance
-  topic: string // Renamed from title to topic
+  title: string // Renamed from title to topic
   averageScore: number
   attempts: number
   averageTimeSpent: number

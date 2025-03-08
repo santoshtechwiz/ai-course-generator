@@ -44,7 +44,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   } = useForm<OpenEndedQuizFormData>({
     resolver: zodResolver(openEndedQuizSchema),
     defaultValues: {
-      topic: params?.topic || "",
+      title: params?.title || "",
       questionCount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     },
     mode: "onChange",
@@ -81,7 +81,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
 
   const onSubmit = handleSubmit(generateQuiz)
 
-  const topic = watch("topic")
+  const title = watch("title")
   const questionCount = watch("questionCount")
 
   const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
@@ -120,19 +120,19 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
+              <Label htmlFor="title" className="text-sm font-medium flex items-center gap-2">
                 <Info className="h-4 w-4 text-primary" />
                 Quiz Topic
               </Label>
               <Input
-                id="topic"
-                {...register("topic")}
+                id="title"
+                {...register("title")}
                 placeholder="E.g., Climate Change, AI in Education..."
                 className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
                 aria-label="Quiz topic"
                 autoFocus
               />
-              {errors.topic && <p className="text-sm text-destructive">{errors.topic.message}</p>}
+              {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
             </motion.div>
 
             <motion.div
@@ -154,11 +154,11 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
                 </motion.span>
               </Label>
               <Controller
-                name="questionCount"
+                
                 control={control}
                 render={({ field }) => (
                   <SubscriptionSlider
-                    value={field.value}
+                  
                     onValueChange={field.onChange}
                     max={maxQuestions}
                     ariaLabel="Select number of questions"

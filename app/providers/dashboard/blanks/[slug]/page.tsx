@@ -12,7 +12,8 @@ import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
 import QuizSchema from "@/app/schema/quiz-schema"
 import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
   const quiz = await getQuiz(slug)
 
   if (!quiz) {
@@ -26,11 +27,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 
   return generatePageMetadata({
-    title: `${quiz.topic} | Programming Fill in the Blanks Quiz`,
-    description: `Test your coding knowledge with this ${quiz.topic.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
+    title: `${quiz.title} | Programming Fill in the Blanks Quiz`,
+    description: `Test your coding knowledge with this ${quiz.title.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
     path: `/dashboard/blanks/${slug}`,
     keywords: [
-      `${quiz.topic.toLowerCase()} quiz`,
+      `${quiz.title.toLowerCase()} quiz`,
       "programming fill in the blanks",
       "coding assessment",
       "developer knowledge test",
@@ -74,19 +75,19 @@ export default async function BlankQuizPage({ params }: { params: Promise<{ slug
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: quiz.topic, url: `${baseUrl}/dashboard/blanks/${slug}` },
+    { name: quiz.title, url: `${baseUrl}/dashboard/blanks/${slug}` },
   ]
 
   return (
     <SlugPageLayout
-      title={`Fill in the Blanks: ${quiz.topic}`}
-      description={`Test your coding knowledge on ${quiz.topic} with fill in the blanks questions`}
+      title={`Fill in the Blanks: ${quiz.title}`}
+      description={`Test your coding knowledge on ${quiz.title} with fill in the blanks questions`}
       sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{
-          topic: quiz.topic,
-          description: `Test your coding knowledge with this ${quiz.topic} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
+          title: quiz.title,
+          description: `Test your coding knowledge with this ${quiz.title} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
           questionCount: questionCount,
           estimatedTime: estimatedTime,
           level: "Intermediate",
@@ -97,7 +98,7 @@ export default async function BlankQuizPage({ params }: { params: Promise<{ slug
       <Suspense fallback={<LoadingSkeleton />}>
         <Card>
           <CardHeader>
-            <CardTitle>{quiz.topic}</CardTitle>
+            <CardTitle>{quiz.title}</CardTitle>
           </CardHeader>
           <CardContent>
             <BlankQuizWrapper slug={slug} />

@@ -122,7 +122,7 @@ export default function LandingComponent({ sections = defaultSections }: Landing
       <Navbar />
       <main className="flex-grow relative z-10">
         <LandingHero
-          onTopicSubmit={(topic: string): void => {
+          onTopicSubmit={(title: string): void => {
             router.push(`/dashboard/create`)
           }}
         />

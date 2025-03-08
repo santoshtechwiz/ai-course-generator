@@ -28,7 +28,7 @@ interface FlashCreationFormProps {
 }
 
 const formSchema = z.object({
-  topic: z
+  title: z
     .string()
     .min(3, { message: "Topic must be at least 3 characters" })
     .max(100, { message: "Topic must be less than 100 characters" }),
@@ -67,7 +67,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      topic: params?.topic || "",
+      title: params?.title || "",
       amount: 5,
       difficulty: "medium",
     },
@@ -91,7 +91,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
 
       toast({
         title: "Flashcards created!",
-        description: `Created ${values.amount} ${values.difficulty} flashcards about "${values.topic}"`,
+        description: `Created ${values.amount} ${values.difficulty} flashcards about "${values.title}"`,
       })
 
       router.push(`/dashboard/flashcard/${data.data.slug}`)

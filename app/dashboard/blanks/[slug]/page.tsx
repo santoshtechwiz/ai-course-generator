@@ -29,11 +29,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return generatePageMetadata({
-    title: `${quiz.topic} | Programming Fill in the Blanks Quiz`,
-    description: `Test your coding knowledge with this ${quiz.topic.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
+    title: `${quiz.title} | Programming Fill in the Blanks Quiz`,
+    description: `Test your coding knowledge with this ${quiz.title.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
     path: `/dashboard/blanks/${slug}`,
     keywords: [
-      `${quiz.topic.toLowerCase()} quiz`,
+      `${quiz.title.toLowerCase()} quiz`,
       "programming fill in the blanks",
       "coding assessment",
       "developer knowledge test",
@@ -65,19 +65,19 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: result.topic, url: `${baseUrl}/dashboard/blanks/${slug}` },
+    { name: result.title, url: `${baseUrl}/dashboard/blanks/${slug}` },
   ]
 
   return (
     <SlugPageLayout
-      title={result.topic}
-      description={`Test your coding knowledge on ${result.topic} with fill in the blanks questions`}
+      title={result.title}
+      description={`Test your coding knowledge on ${result.title} with fill in the blanks questions`}
       sidebar={<RandomQuiz />}
     >
       <QuizSchema
         quiz={{
-          topic: result.topic,
-          description: `Test your coding knowledge with this ${result.topic} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
+          title: result.title,
+          description: `Test your coding knowledge with this ${result.title} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
           questionCount: questionCount,
           estimatedTime: estimatedTime,
           level:  "Intermediate",

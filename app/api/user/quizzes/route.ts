@@ -20,7 +20,7 @@ export async function GET() {
 
   const quizzes = userQuizAttempts.map((attempt) => ({
     id: attempt.id,
-    title: attempt.userQuiz?.topic || "Unknown",
+    title: attempt.userQuiz?.title || "Unknown",
     score: attempt.score,
     accuracy: attempt.accuracy,
     timeSpent: attempt.timeSpent,

@@ -3,7 +3,7 @@ import { OpenAIMessage, Quiz } from "@/app/types/types";
 import openai, { generateQuizFlexible } from "./openaiUtils";
 
 
-export const generateMcqForUserInput = async (topic: string, amount: number, difficulty: string = 'hard', userType:string) => {
+export const generateMcqForUserInput = async (title: string, amount: number, difficulty: string = 'hard', userType:string) => {
   const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "gpt-3.5-turbo-1106";
   const functions = [
     {
@@ -38,7 +38,7 @@ export const generateMcqForUserInput = async (topic: string, amount: number, dif
       { role: 'system', content: 'You are an AI that generates multiple-choice questions.' },
       {
         role: 'user',
-        content: `Generate ${amount} ${difficulty} multiple-choice questions about ${topic}. Each question should have one correct answer and three incorrect options.`,
+        content: `Generate ${amount} ${difficulty} multiple-choice questions about ${title}. Each question should have one correct answer and three incorrect options.`,
       },
     ],
     functions,
@@ -54,7 +54,7 @@ export const generateMcqForUserInput = async (topic: string, amount: number, dif
   return result.questions;
 };
 
-export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficulty = "medium", userType = "FREE"): Promise<Quiz> => {
+export const generateOpenEndedQuiz = async (title: string, amount = 5, difficulty = "medium", userType = "FREE"): Promise<Quiz> => {
   const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini";
   const functions = [
     {
@@ -112,7 +112,7 @@ export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficult
     },
     {
       role: "user",
-      content: `Generate a concise open-ended quiz about ${topic} with ${amount} questions. The quiz should have a short title. Each question should be brief (max 150 words) with a concise answer (max 200 words), two short hints (max 8 words each), a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions. Prioritize questions that can be answered with a single word or a very short phrase.`,
+      content: `Generate a concise open-ended quiz about ${title} with ${amount} questions. The quiz should have a short title. Each question should be brief (max 150 words) with a concise answer (max 200 words), two short hints (max 8 words each), a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions. Prioritize questions that can be answered with a single word or a very short phrase.`,
     },
   ];
 
@@ -125,7 +125,7 @@ export const generateOpenEndedQuiz = async (topic: string, amount = 5, difficult
 }
 
 export const generateOpenEndedFillIntheBlanks = async (
-  topic: string,
+  title: string,
   amount: number,
   userType: string = "FREE"
 ): Promise<Quiz> => {
@@ -179,7 +179,7 @@ export const generateOpenEndedFillIntheBlanks = async (
     },
     {
       role: "user",
-      content: `Generate a quiz on ${topic} with ${amount} fill-in-the-blank questions.`,
+      content: `Generate a quiz on ${title} with ${amount} fill-in-the-blank questions.`,
     },
   ];
   
