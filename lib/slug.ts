@@ -29,7 +29,7 @@ const titleSubTopicToSlug = (title: string, subTopic: string): string => {
 
 
 const getCourseSlug = (course: Course) => {
-    return `${titleToSlug(course.name)}-${course.id}`;
+    return `${titleToSlug(course.title)}-${course.id}`;
 };
 
 const getUnitSlug = (unit: CourseUnit) => {

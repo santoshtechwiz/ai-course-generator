@@ -15,12 +15,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
+const openEndedQuizSchema = z.object({
+  topic: z.string().min(3, "Topic must be at least 3 characters long").max(100, "Topic must be at most 100 characters long"),
+  questionCount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
+})
+
 
 
 import { z } from "zod"
 
 import type { QueryParams } from "@/app/types/types"
-import { openEndedQuizSchema } from "@/schema/schema"
+
 type OpenEndedQuizFormData = z.infer<typeof openEndedQuizSchema>
 
 interface TopicFormProps {
@@ -44,7 +49,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   } = useForm<OpenEndedQuizFormData>({
     resolver: zodResolver(openEndedQuizSchema),
     defaultValues: {
-      title: params?.title || "",
+      topic: params?.topic || "",
       questionCount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     },
     mode: "onChange",
@@ -81,7 +86,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
 
   const onSubmit = handleSubmit(generateQuiz)
 
-  const title = watch("title")
+  const topic = watch("topic")
   const questionCount = watch("questionCount")
 
   const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
@@ -120,19 +125,19 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Label htmlFor="title" className="text-sm font-medium flex items-center gap-2">
+              <Label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
                 <Info className="h-4 w-4 text-primary" />
                 Quiz Topic
               </Label>
               <Input
-                id="title"
-                {...register("title")}
+                id="topic"
+                {...register("topic")}
                 placeholder="E.g., Climate Change, AI in Education..."
                 className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
                 aria-label="Quiz topic"
                 autoFocus
               />
-              {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+              {errors.topic && <p className="text-sm text-destructive">{errors.topic.message}</p>}
             </motion.div>
 
             <motion.div
@@ -154,13 +159,13 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
                 </motion.span>
               </Label>
               <Controller
-                
+                name="questionCount"
                 control={control}
                 render={({ field }) => (
                   <SubscriptionSlider
-                  
+                    value={field.value}
                     onValueChange={field.onChange}
-                    max={maxQuestions}
+                   
                     ariaLabel="Select number of questions"
                   />
                 )}
