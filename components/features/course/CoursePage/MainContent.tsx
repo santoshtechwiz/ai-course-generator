@@ -9,7 +9,7 @@ import { AlertTriangle, Loader2 } from "lucide-react"
 import CourseDetailsTabs from "./CourseDetailsTabs"
 import CourseActionsWithErrorBoundary from "./CourseActions"
 import { useSession } from "next-auth/react"
-import type { FullCourseType, FullChapter } from "@/app/types/types"
+import type { FullCourseType, FullChapter, FullChapterType } from "@/app/types/types"
 import type { CourseProgress } from "@prisma/client"
 import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -70,11 +70,11 @@ const VideoPlayerSkeleton = () => <div className="aspect-video animate-pulse bg-
 const ChapterInfo = ({ course, currentChapter }: ChapterInfoProps) => (
   <div className="space-y-2 p-4 lg:p-6">
     <h1 className="text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl lg:text-4xl">
-      {course.name}
+      {course.title}
     </h1>
     {currentChapter ? (
       <p className="text-sm text-muted-foreground sm:text-base md:text-lg lg:text-xl">
-        {currentChapter.name}
+        {currentChapter.title}
       </p>
     ) : (
       <Skeleton className="h-4 w-48" /> // Loading state
@@ -180,8 +180,8 @@ const VideoPlayer = ({
   }
 
   const handleDownloadCertificate = () => {
-    console.log("Downloading certificate for course:", course.name)
-    alert(`Certificate for ${course.name} is being downloaded.`)
+    console.log("Downloading certificate for course:", course.title)
+    alert(`Certificate for ${course.title} is being downloaded.`)
   }
 
   return (
@@ -208,7 +208,7 @@ const VideoPlayer = ({
           <CourseCompletionOverlay
             onClose={handleCloseOverlay}
             onWatchAnotherCourse={onWatchAnotherCourse}
-            courseName={course.name}
+            courseName={course.title}
           />
         )}
       </Suspense>
@@ -228,9 +228,9 @@ const QuizSectionTabs = ({ course, currentChapter, planId }: QuizSectionTabsProp
       <CardContent className="p-0">
         <CourseDetailsTabs
           chapterId={currentChapter?.id ?? 0}
-          name={currentChapter?.name || "Chapter Details"}
+          name={currentChapter?.title || "Chapter Details"}
           course={course}
-          chapter={currentChapter as unknown}
+          chapter={currentChapter as FullChapterType}
         />
       </CardContent>
     </Card>
