@@ -15,7 +15,7 @@ interface SearchResult {
   name?: string
   description?: string
   slug?: string
-  topic?: string
+  title?: string
   quizType?: "mcq" | "openended" | "fill-blanks"
 }
 
@@ -108,9 +108,9 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
 
   const handleResultClick = (result: SearchResult) => {
     let url
-    if (result.topic) {
+    if (result.title) {
       // This is a game/quiz
-      url = `/dashboard/${result.quizType==='fill-blanks'?'blanks':result.quizType}/${result.slug}`
+      url = `/dashboard/${result.quizType === "fill-blanks" ? "blanks" : result.quizType}/${result.slug}`
     } else {
       // This is a course
       url = `/dashboard/course/${result.slug}`
@@ -125,11 +125,11 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
     const parts = text.split(new RegExp(`(${query})`, "gi"))
     return parts.map((part, index) =>
       part.toLowerCase() === query.toLowerCase() ? (
-        <span key={index} className="bg-yellow-200 dark:bg-yellow-800">
+        <span key={`highlight-${index}-${part}`} className="bg-yellow-200 dark:bg-yellow-800">
           {part}
         </span>
       ) : (
-        part
+        <span key={`text-${index}-${part.substring(0, 5)}`}>{part}</span>
       ),
     )
   }
@@ -154,11 +154,11 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
         )}
         <div className="flex-grow min-w-0">
           <p className="font-medium text-base truncate">
-            {highlightMatch(result.name || result.topic || "", searchTerm)}
+            {highlightMatch(result.title || result.name || "", searchTerm)}
           </p>
           {type === "course" && result.description && (
-            <p className="text-sm text-muted-foreground mt-1 truncate">
-              {highlightMatch(result.description, searchTerm)}
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              {highlightMatch(result.description.substring(0, 100), searchTerm)}
             </p>
           )}
           {type === "game" && (

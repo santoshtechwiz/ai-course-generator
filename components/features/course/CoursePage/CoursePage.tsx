@@ -7,7 +7,11 @@ import { useToast } from "@/hooks/use-toast"
 import MainContent from "./MainContent"
 import VideoNavigationSidebar from "./VideoNavigationSidebar"
 import useProgress from "@/hooks/useProgress"
-import type { FullChapter, FullCourseType, FullChapterType } from "@/app/types/types"
+import type { FullCourseType, FullChapterType } from "@/app/types/types"
+
+interface FullChapter extends FullChapterType {
+  videoId: string;
+}
 import { useUser } from "@/app/providers/userContext"
 import throttle from "lodash.throttle"
 import { Button } from "@/components/ui/button"
