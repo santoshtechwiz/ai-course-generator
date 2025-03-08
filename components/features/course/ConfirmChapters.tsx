@@ -82,7 +82,7 @@ const ConfirmChapters = ({ course }: CourseProps) => {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <BookOpen className="w-6 h-6" />
-            {course.name}
+            {course.title}
           </h1>
         </div>
         <div className="space-y-2">

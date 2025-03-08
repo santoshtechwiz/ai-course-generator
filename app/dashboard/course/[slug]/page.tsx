@@ -39,14 +39,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return generatePageMetadata({
-    title: `${course.name} | Programming Course`,
+    title: `${course.title} | Programming Course`,
     description:
       course.description ||
-      `Master ${course.name} with our interactive coding course. Enhance your programming skills with hands-on practice and expert guidance.`,
+      `Master ${course.title} with our interactive coding course. Enhance your programming skills with hands-on practice and expert guidance.`,
     path: `/dashboard/course/${slug}`,
     keywords: [
-      `${course.name.toLowerCase()} tutorial`,
-      `${course.name.toLowerCase()} programming`,
+      `${course.title.toLowerCase()} tutorial`,
+      `${course.title.toLowerCase()} programming`,
       "coding education",
       "interactive programming",
       "developer learning",
@@ -71,14 +71,14 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     <Suspense fallback={<LoadingSkeleton />}>
       <CourseSchema
         course={{
-          name: course.name,
-          description: course.description || `Learn ${course.name} with interactive lessons and exercises.`,
+          title: course.title,
+          description: course.description || `Learn ${course.title} with interactive lessons and exercises.`,
           image: course.image,
           createdAt: course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString(),
           updatedAt: course.updatedAt ? new Date(course.updatedAt).toISOString() : undefined,
-          instructor: course.name
+          instructor: course.title
             ? {
-                name: course.name || "CourseAI Instructor",
+                name: course.title || "CourseAI Instructor",
                 url: `${baseUrl}/dashboard/instructor/${course.slug}`,
               }
             : undefined,
