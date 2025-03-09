@@ -1,4 +1,3 @@
-import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
@@ -7,10 +6,8 @@ import { authOptions } from "@/lib/authOptions"
 
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
-import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
-import RandomQuiz from "@/components/RanomQuiz"
-import SlugPageLayout from "@/components/SlugPageLayout"
-import { generatePageMetadata, generateQuizSchema } from "@/lib/seo-utils"
+import { QuizDetailPage } from "@/components/QuizCommon"
+import { generatePageMetadata } from "@/lib/seo-utils"
 
 // SEO metadata generation
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -76,33 +73,27 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
 
   const { result: quizData, questions } = result
 
-  // Generate structured data for the quiz
-  const quizSchema = generateQuizSchema({
-    name: quizData.title,
-    description: `Test your knowledge with this ${quizData.title} quiz.`,
-    url: `${baseUrl}/quiz/${slug}`,
-    numberOfQuestions: questions.length,
-    timeRequired: "PT30M", // ISO 8601 duration format - 30 minutes
-    educationalLevel: "Beginner",
-  })
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: quizData.title, url: `${baseUrl}/dashboard/mcq/${slug}` },
+  ]
 
   return (
-    <>
-      {/* Add JSON-LD structured data */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(quizSchema) }} />
-
-      <SlugPageLayout
-        title={quizData.title}
-        description={`Test your knowledge on ${quizData.title}`}
-        sidebar={<RandomQuiz />}
-      >
-        <Suspense fallback={<QuizSkeleton />}>
-          <McqQuizWrapper slug={slug} currentUserId={currentUserId} result={result} />
-        </Suspense>
-      </SlugPageLayout>
-    </>
+    <QuizDetailPage
+      title={quizData.title}
+      description={`Test your knowledge on ${quizData.title}`}
+      slug={slug}
+      quizType="mcq"
+      questionCount={questions.length}
+      estimatedTime="PT30M"
+      breadcrumbItems={breadcrumbItems}
+    >
+      <McqQuizWrapper slug={slug} currentUserId={currentUserId} result={result} />
+    </QuizDetailPage>
   )
 }
 
-export default McqPage
 
