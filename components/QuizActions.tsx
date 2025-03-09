@@ -173,7 +173,32 @@ export function QuizActions({
     fetchQuizState()
   }, [quizSlug, quizId])
 
+  const promptLogin = () => {
+    toast({
+      title: "Authentication required",
+      description: "Please log in to perform this action",
+      variant: "destructive",
+    })
+    // You can add navigation to login page here if needed
+    // router.push('/login')
+  }
+
   const updateQuiz = async (field: string, value: boolean) => {
+    if (!userId) {
+      promptLogin()
+      return
+    }
+
+    // Only owner can change visibility
+    if (field === "isPublic" && !isOwner) {
+      toast({
+        title: "Permission denied",
+        description: "Only the quiz owner can change visibility settings",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setIsPublicLoading(field === "isPublic" ? true : isPublicLoading)
       setIsFavoriteLoading(field === "isFavorite" ? true : isFavoriteLoading)
@@ -210,6 +235,14 @@ export function QuizActions({
   }
 
   const togglePublic = () => {
+    if (!isOwner) {
+      toast({
+        title: "Permission denied",
+        description: "Only the quiz owner can change visibility settings",
+        variant: "destructive",
+      })
+      return
+    }
     updateQuiz("isPublic", !isPublic)
   }
 
@@ -218,6 +251,11 @@ export function QuizActions({
   }
 
   const handleShare = () => {
+    if (!userId) {
+      promptLogin()
+      return
+    }
+
     navigator.clipboard.writeText(`${window.location.origin}/quiz/${quizSlug}`).then(() => {
       toast({
         title: "Copied!",
@@ -248,6 +286,11 @@ export function QuizActions({
   }
 
   const handleDownload = async () => {
+    if (!userId) {
+      promptLogin()
+      return
+    }
+
     setIsDownloading(true)
     try {
       const response = await fetch(`/api/quiz/${quizId}`)
@@ -295,11 +338,21 @@ export function QuizActions({
   }
 
   const handleRatingChange = async (value: number) => {
+    if (!userId) {
+      promptLogin()
+      return
+    }
+
     try {
       setRating(value)
-      const response = await fetch(`/api/quiz/${quizId}/rating`, {
+      const response = await fetch(`/api/rating`, {
         method: "POST",
-        body: JSON.stringify({ rating: value }),
+        body: JSON.stringify({ 
+
+          type: 'quiz',
+          id: quizId,
+          rating: value,
+         }),
       })
 
       if (!response.ok) {
@@ -320,6 +373,15 @@ export function QuizActions({
   }
 
   const handleDelete = async () => {
+    if (!isOwner) {
+      toast({
+        title: "Permission denied",
+        description: "Only the quiz owner can delete this quiz",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsDeleteLoading(true)
     try {
       const response = await fetch(`/api/quiz/${quizId}`, {
@@ -348,7 +410,8 @@ export function QuizActions({
     }
   }
 
-  if (!isOwner) {
+  // If no userId is provided, user is not logged in
+  if (!userId) {
     return <>{children}</>
   }
 
@@ -398,12 +461,13 @@ export function QuizActions({
                         variant="ghost"
                         size="icon"
                         onClick={togglePublic}
-                        disabled={isPublicLoading}
+                        disabled={!isOwner || isPublicLoading}
                         className={cn(
                           "h-14 w-14 rounded-xl transition-colors",
                           isPublic
                             ? "bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
                             : "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50",
+                          !isOwner && "opacity-50 cursor-not-allowed",
                         )}
                       >
                         {isPublicLoading ? (
@@ -416,7 +480,13 @@ export function QuizActions({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="text-base">
-                      <p>{isPublic ? "Public - Click to make private" : "Private - Click to make public"}</p>
+                      <p>
+                        {!isOwner
+                          ? "Only the quiz owner can change visibility"
+                          : isPublic
+                            ? "Public - Click to make private"
+                            : "Private - Click to make public"}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
 
@@ -569,8 +639,11 @@ export function QuizActions({
                           <Button
                             variant="ghost"
                             size="icon"
-                            disabled={isDeleteLoading}
-                            className="h-14 w-14 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                            disabled={!isOwner || isDeleteLoading}
+                            className={cn(
+                              "h-14 w-14 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50",
+                              !isOwner && "opacity-50 cursor-not-allowed",
+                            )}
                           >
                             {isDeleteLoading ? (
                               <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
@@ -581,7 +654,7 @@ export function QuizActions({
                         </AlertDialogTrigger>
                       </TooltipTrigger>
                       <TooltipContent side="right" className="text-base">
-                        <p>Delete quiz</p>
+                        <p>{!isOwner ? "Only the quiz owner can delete this quiz" : "Delete quiz"}</p>
                       </TooltipContent>
                     </Tooltip>
                     <AlertDialogContent>
@@ -619,3 +692,4 @@ export function QuizActions({
     </>
   )
 }
+
