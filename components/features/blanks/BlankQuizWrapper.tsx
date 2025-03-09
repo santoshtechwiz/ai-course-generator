@@ -13,8 +13,9 @@ import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
 
 import PageLoader from "@/components/ui/loader"
 import { GuidedHelp } from "@/components/HelpModal"
-import { QuizActions } from "@/components/QuizActions"
+
 import { SignInPrompt } from "@/components/SignInPrompt"
+import { QuizActions } from "@/components/QuizActions"
 
 interface Question {
   id: number

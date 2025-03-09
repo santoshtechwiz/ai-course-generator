@@ -6,9 +6,10 @@ import { pdf } from "@react-pdf/renderer"
 import type { QuizPDFProps } from "./ConfigurableQuizPDF"
 import { Button } from "@/components/ui/button"
 import ConfigurableQuizPDF from "./ConfigurableQuizPDF"
-import { SiAdobe } from "react-icons/si"
+import { FileDown, Lock } from 'lucide-react'
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import PageLoader from "@/components/ui/loader"
+import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface QuizPDFDownloadProps extends QuizPDFProps {
   config?: {
@@ -17,9 +18,18 @@ interface QuizPDFDownloadProps extends QuizPDFProps {
     answerSpaceHeight?: number
     showAnswers?: boolean
   }
+  className?: string
+  variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive"
+  size?: "default" | "sm" | "lg" | "icon"
 }
 
-const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) => {
+const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ 
+  quizData, 
+  config, 
+  className, 
+  variant = "outline",
+  size = "lg"
+}) => {
   const [isClient, setIsClient] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const { subscriptionStatus, canDownloadPDF, isLoading } = useSubscriptionStore()
@@ -30,7 +40,7 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) =
 
   const isDataReady = useMemo(() => quizData && Object.keys(quizData).length > 0, [quizData])
 
-  const quizSlug = useMemo(() => (isDataReady ? `${quizData.title}.pdf` : "quiz.pdf"), [isDataReady, quizData])
+  const quizSlug = useMemo(() => (isDataReady ? `${quizData?.title || "quiz"}.pdf` : "quiz.pdf"), [isDataReady, quizData])
 
   const isDisabled = useMemo(
     () => !isClient || !isDataReady || isLoading || !canDownloadPDF(),
@@ -61,26 +71,49 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ quizData, config }) =
   }
 
   if (!isClient) {
-    return <PageLoader />
+    return null
   }
 
   return (
-    <Button
-      onClick={handleDownload}
-      disabled={isDisabled}
-      variant="outline"
-      className="flex items-center justify-center min-w-[40px] h-10 px-2 sm:px-4 rounded-lg transition-all duration-300"
-      aria-label={isDisabled ? "Upgrade to Download" : "Download PDF"}
-    >
-      {isDownloading ? (
-        <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
-      ) : (
-        <SiAdobe className="w-5 h-5 text-red-600" />
-      )}
-      <span className="hidden sm:inline ml-2">{isDisabled ? "Upgrade" : "PDF"}</span>
-    </Button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={handleDownload}
+            disabled={isDisabled}
+            variant={variant}
+            size={size}
+            className={cn(
+              "relative",
+              isDisabled && "opacity-80",
+              className
+            )}
+          >
+            {isDownloading ? (
+              <span className="flex items-center">
+                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></span>
+                Downloading...
+              </span>
+            ) : (
+              <>
+                {isDisabled ? (
+                  <Lock className="mr-2 h-4 w-4" />
+                ) : (
+                  <FileDown className="mr-2 h-4 w-4" />
+                )}
+                {isDisabled ? "Upgrade to Download PDF" : "Download PDF"}
+              </>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {isDisabled 
+            ? "Upgrade your subscription to download quizzes as PDF" 
+            : "Download this quiz as a PDF file"}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
 export default QuizPDFDownload
-
