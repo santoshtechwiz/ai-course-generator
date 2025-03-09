@@ -11,6 +11,7 @@ import { ArrowLeft, Sparkles } from "lucide-react"
 import axios from "axios"
 import { FlashCardComponent } from "./FlashCardComponent"
 import { QuizActions } from "@/components/QuizActions"
+import { FloatingQuizToolbar } from "@/components/FloatingQuizToolbar"
 
 interface FlashCardsPageClientProps {
   slug: string
@@ -74,7 +75,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
       if (isSaved) {
         setSavedCardIds(savedCardIds.filter((id) => id !== card.id))
       } else {
-        setSavedCardIds([...savedCardIds, card.id || ""])
+        setSavedCardIds([...savedCardIds, String(card.id) || ""])
       }
 
       // Call API to update saved status
@@ -91,7 +92,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
       console.error("Error saving card:", error)
 
       // Revert the UI change since the API call failed
-      if (savedCardIds.includes(card.id || "")) {
+      if (savedCardIds.includes(String(card.id))) {
         setSavedCardIds(savedCardIds.filter((id) => id !== card.id))
       } else {
         setSavedCardIds([...savedCardIds, card.id || ""])
@@ -107,7 +108,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
 
   return (
     <div className="container mx-auto  max-w-3xl">
-      <QuizActions
+      <FloatingQuizToolbar
         quizId={quizId}
         quizSlug={slug}
         initialIsPublic={false}

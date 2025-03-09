@@ -1,9 +1,27 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Eye, Star, Trash2, Share2, Facebook, Twitter, Linkedin } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Eye,
+  EyeOff,
+  Star,
+  Trash2,
+  Share2,
+  FileDown,
+  Lock,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Settings,
+  X,
+} from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,16 +34,21 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { motion } from "framer-motion"
-
-
-import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { Rating } from "@/components/ui/rating"
-import QuizPDFDownload from "./features/course/QuizPDFDownload"
 
-interface QuizActionsToolbarProps {
+import { pdf } from "@react-pdf/renderer"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
+import ConfigurableQuizPDF from "./features/course/ConfigurableQuizPDF"
+
+declare global {
+  interface Window {
+    scrollTimeout: number
+  }
+}
+
+interface FloatingQuizToolbarProps {
   quizId: string
   quizSlug: string
   initialIsPublic: boolean
@@ -33,6 +56,8 @@ interface QuizActionsToolbarProps {
   userId: string
   ownerId: string
   quizType?: string
+  className?: string
+  children?: React.ReactNode
 }
 
 export function QuizActions({
@@ -43,24 +68,85 @@ export function QuizActions({
   userId,
   ownerId,
   quizType,
-}: QuizActionsToolbarProps) {
+  className,
+  children,
+}: FloatingQuizToolbarProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  const [isScrolling, setIsScrolling] = useState(false)
+  const [lastScrollY, setLastScrollY] = useState(0)
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
   const [isPublicLoading, setIsPublicLoading] = useState(false)
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
-  const [isShareLoading, setIsShareLoading] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [isDeleteLoading, setIsDeleteLoading] = useState(false)
   const [data, setData] = useState<any | null>(null)
-  const router = useRouter()
-  const { subscriptionStatus, isLoading } = useSubscriptionStore()
   const [rating, setRating] = useState<number | null>(null)
+  const router = useRouter()
+  const { subscriptionStatus, canDownloadPDF, isLoading } = useSubscriptionStore()
+
   const pdfConfig = {
     showOptions: true,
     showAnswerSpace: true,
     answerSpaceHeight: 40,
     showAnswers: true,
   }
+
   const isOwner = userId === ownerId
+
+  // Handle scroll events
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+
+      // If we're scrolling, hide the toolbar
+      if (Math.abs(currentScrollY - lastScrollY) > 10) {
+        setIsVisible(false)
+        setIsOpen(false)
+        setIsScrolling(true)
+
+        // Clear any existing timeout
+        if (window.scrollTimeout) {
+          clearTimeout(window.scrollTimeout)
+        }
+
+        // Set a timeout to show the toolbar again after scrolling stops
+        window.scrollTimeout = setTimeout(() => {
+          setIsScrolling(false)
+          setIsVisible(true)
+        }, 1000)
+      }
+
+      setLastScrollY(currentScrollY)
+    }
+
+    // Add a visibility check when user moves mouse to left side of screen
+    const handleMouseMove = (e: MouseEvent) => {
+      if (e.clientX < 100 && !isVisible) {
+        setIsVisible(true)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    window.addEventListener("mousemove", handleMouseMove)
+
+    // Add a fallback to ensure toolbar reappears
+    const visibilityInterval = setInterval(() => {
+      if (!isVisible && !isScrolling) {
+        setIsVisible(true)
+      }
+    }, 5000)
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      window.removeEventListener("mousemove", handleMouseMove)
+      clearInterval(visibilityInterval)
+      if (window.scrollTimeout) {
+        clearTimeout(window.scrollTimeout)
+      }
+    }
+  }, [lastScrollY, isVisible, isScrolling])
 
   useEffect(() => {
     const fetchQuizState = async () => {
@@ -89,95 +175,174 @@ export function QuizActions({
     fetchQuizState()
   }, [quizSlug, quizId])
 
-  const handleRatingChange = async (newRating: number) => {
+  const updateQuiz = async (field: string, value: boolean) => {
     try {
-      const response = await fetch("/api/rating", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "quiz", id: quizId, rating: newRating }),
-      })
+      setIsPublicLoading(field === "isPublic" ? true : isPublicLoading)
+      setIsFavoriteLoading(field === "isFavorite" ? true : isFavoriteLoading)
 
-      if (response.ok) {
-        setRating(newRating)
-        toast({
-          title: "Rating updated",
-          description: "Your rating has been successfully updated.",
-          variant: "success",
-        })
-      } else {
-        throw new Error("Failed to update rating")
-      }
-    } catch (error) {
-      console.error("Error updating rating:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update rating. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const updateQuiz = async (data: { isPublic?: boolean; isFavorite?: boolean }) => {
-    const loadingState = data.isPublic !== undefined ? setIsPublicLoading : setIsFavoriteLoading
-    loadingState(true)
-    try {
       const response = await fetch(`/api/quiz/${quizSlug}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ [field]: value }),
       })
-      if (response.ok) {
-        const updatedQuiz = await response.json()
-        setData(updatedQuiz.quizData)
-        setIsPublic(updatedQuiz.isPublic)
-        setIsFavorite(updatedQuiz.isFavorite)
-        toast({
-          title: "Quiz updated",
-          description: `Your quiz is now ${updatedQuiz.isPublic ? "public" : "private"}${
-            data.isFavorite !== undefined ? ` and ${updatedQuiz.isFavorite ? "favorited" : "unfavorited"}` : ""
-          }.`,
-          variant: "success",
-        })
-      } else {
+
+      if (!response.ok) {
         throw new Error("Failed to update quiz")
       }
-    } catch (error) {
-      console.error("Error updating quiz:", error)
+
+      if (field === "isPublic") {
+        setIsPublic(value)
+      } else {
+        setIsFavorite(value)
+      }
+
+      toast({
+        title: "Success",
+        description: `Quiz ${field === "isPublic" ? "visibility" : "favorite status"} updated`,
+      })
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update quiz. Please try again.",
+        description: error.message,
         variant: "destructive",
       })
     } finally {
-      loadingState(false)
+      setIsPublicLoading(false)
+      setIsFavoriteLoading(false)
     }
   }
 
-  const togglePublic = () => updateQuiz({ isPublic: !isPublic })
-  const toggleFavorite = () => updateQuiz({ isFavorite: !isFavorite })
+  const togglePublic = () => {
+    updateQuiz("isPublic", !isPublic)
+  }
+
+  const toggleFavorite = () => {
+    updateQuiz("isFavorite", !isFavorite)
+  }
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/quiz/${quizSlug}`).then(() => {
+      toast({
+        title: "Copied!",
+        description: "Quiz link copied to clipboard.",
+      })
+    })
+  }
+
+  const handleSocialShare = (platform: string) => {
+    let url = ""
+    const shareUrl = `${window.location.origin}/quiz/${quizSlug}`
+
+    switch (platform) {
+      case "facebook":
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
+        break
+      case "twitter":
+        url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}`
+        break
+      case "linkedin":
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
+        break
+      default:
+        break
+    }
+
+    window.open(url, "_blank")
+  }
+
+  const handleDownload = async () => {
+    setIsDownloading(true)
+    try {
+      const response = await fetch(`/api/quiz/${quizId}`)
+      if (!response.ok) {
+        throw new Error("Failed to fetch quiz data")
+      }
+      const quizData = await response.json()
+      setData(quizData)
+
+      const doc = (
+        <ConfigurableQuizPDF
+          quiz={quizData}
+          showOptions={pdfConfig.showOptions}
+          showAnswerSpace={pdfConfig.showAnswerSpace}
+          answerSpaceHeight={pdfConfig.answerSpaceHeight}
+          showAnswers={pdfConfig.showAnswers}
+        />
+      )
+
+      const pdfBlob = await pdf(doc).toBlob()
+
+      // Trigger the download
+      const blobUrl = URL.createObjectURL(pdfBlob)
+      const a = document.createElement("a")
+      a.href = blobUrl
+      a.download = `${quizData.title}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+
+      toast({
+        title: "Download started",
+        description: "Your quiz is downloading now.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  const handleRatingChange = async (value: number) => {
+    try {
+      setRating(value)
+      const response = await fetch(`/api/quiz/${quizId}/rating`, {
+        method: "POST",
+        body: JSON.stringify({ rating: value }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to submit rating")
+      }
+
+      toast({
+        title: "Success",
+        description: "Thank you for rating this quiz!",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleDelete = async () => {
     setIsDeleteLoading(true)
     try {
-      const response = await fetch(`/api/quiz/${quizSlug}`, {
+      const response = await fetch(`/api/quiz/${quizId}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
       })
-      if (response.ok) {
-        toast({
-          title: "Quiz deleted",
-          description: "Your quiz has been successfully deleted.",
-          variant: "success",
-        })
-        router.push("/dashboard/quizzes")
-      } else {
+
+      if (!response.ok) {
         throw new Error("Failed to delete quiz")
       }
-    } catch (error) {
-      console.error("Error deleting quiz:", error)
+
+      router.push("/")
+      router.refresh()
+
+      toast({
+        title: "Success",
+        description: "Quiz deleted successfully",
+      })
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to delete quiz. Please try again.",
+        description: error.message,
         variant: "destructive",
       })
     } finally {
@@ -185,221 +350,275 @@ export function QuizActions({
     }
   }
 
-  const handleShare = () => {
-    if (!isPublic) {
-      toast({
-        title: "Cannot share private quiz",
-        description: "Make the quiz public to share it.",
-        variant: "danger",
-      })
-      return
-    }
-
-    const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
-    navigator.clipboard.writeText(shareUrl)
-    toast({
-      title: "Share link copied",
-      description: "The quiz link has been copied to your clipboard.",
-      variant: "success",
-    })
-  }
-
-  const handleSocialShare = (platform: string) => {
-    if (!isPublic) {
-      toast({
-        title: "Cannot share private quiz",
-        description: "Make the quiz public to share it.",
-        variant: "danger",
-      })
-      return
-    }
-
-    const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
-    let shareLink = ""
-
-    switch (platform) {
-      case "facebook":
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
-        break
-      case "twitter":
-        shareLink = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent("Check out this quiz!")}`
-        break
-      case "linkedin":
-        shareLink = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent("Check out this quiz!")}`
-        break
-      default:
-        break
-    }
-
-    if (shareLink) {
-      window.open(shareLink, "_blank")
-    }
-  }
-
   if (!isOwner) {
-    return null
+    return <>{children}</>
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-4"
-    >
-      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-1 sm:gap-x-2 gap-y-2 bg-muted p-2 sm:p-4 rounded-md">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
+    <>
+      {children}
+
+      <div
+        className={cn(
+          "fixed left-4 top-1/2 -translate-y-1/2 z-50 transition-all duration-500",
+          isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-20 pointer-events-none",
+          isScrolling && !isVisible ? "animate-pulse" : "",
+          className,
+        )}
+      >
+        {!isOpen && !isVisible && (
+          <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-2 h-16 bg-primary/50 rounded-full animate-pulse" />
+        )}
+        {!isOpen ? (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsOpen(true)}
+            className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-110 transition-transform animate-pulse"
+          >
+            <Settings className="h-6 w-6" />
+          </Button>
+        ) : (
+          <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg p-4 w-[90px] animate-in slide-in-from-left duration-300 ease-in-out">
+            <div className="flex flex-col items-center">
+              {/* Close Button */}
               <Button
-                variant={isPublic ? "secondary" : "destructive"}
-                size="sm"
-                onClick={togglePublic}
-                disabled={isPublicLoading}
-                className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+                className="h-8 w-8 rounded-full self-end mb-2 hover:bg-gray-200 dark:hover:bg-gray-800"
               >
-                {isPublicLoading ? (
-                  <span className="loader"></span>
-                ) : (
-                  <>
-                    <Eye className="h-4 w-4" />
-                    <span className="hidden sm:inline-block sm:ml-2">{isPublic ? "Public" : "Private"}</span>
-                  </>
-                )}
+                <X className="h-4 w-4" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {isPublic ? "Public" : "Private"} - Click to {isPublic ? "make private" : "make public"}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={isFavorite ? "secondary" : "outline"}
-                size="sm"
-                onClick={toggleFavorite}
-                disabled={isFavoriteLoading}
-                className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
-              >
-                {isFavoriteLoading ? (
-                  <span className="loader"></span>
-                ) : (
-                  <>
-                    <Star className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
-                    <span className="hidden sm:inline-block sm:ml-2">{isFavorite ? "Favorited" : "Favorite"}</span>
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {isFavorite ? "Favorited" : "Favorite"} - Click to{" "}
-                {isFavorite ? "remove from favorites" : "add to favorites"}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+              <TooltipProvider>
+                {/* Visibility Group */}
+                <div className="flex flex-col items-center gap-3">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={togglePublic}
+                        disabled={isPublicLoading}
+                        className={cn(
+                          "h-14 w-14 rounded-xl transition-colors",
+                          isPublic
+                            ? "bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+                            : "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50",
+                        )}
+                      >
+                        {isPublicLoading ? (
+                          <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : isPublic ? (
+                          <Eye className="h-6 w-6" />
+                        ) : (
+                          <EyeOff className="h-6 w-6" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-base">
+                      <p>{isPublic ? "Public - Click to make private" : "Private - Click to make public"}</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2">
-                    <Share2 className="h-4 w-4" />
-                    <span className="hidden sm:inline-block sm:ml-2">Share</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={handleShare}>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    <span>Copy Link</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSocialShare("facebook")}>
-                    <Facebook className="mr-2 h-4 w-4" />
-                    <span>Facebook</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSocialShare("twitter")}>
-                    <Twitter className="mr-2 h-4 w-4" />
-                    <span>Twitter</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSocialShare("linkedin")}>
-                    <Linkedin className="mr-2 h-4 w-4" />
-                    <span>LinkedIn</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Share - Click to see sharing options</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleFavorite}
+                        disabled={isFavoriteLoading}
+                        className={cn(
+                          "h-14 w-14 rounded-xl transition-colors",
+                          isFavorite
+                            ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200 hover:text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-700 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-800/70",
+                        )}
+                      >
+                        {isFavoriteLoading ? (
+                          <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Star className={cn("h-6 w-6", isFavorite ? "fill-yellow-500" : "")} />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-base">
+                      <p>{isFavorite ? "Favorited - Click to remove" : "Add to favorites"}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="w-10 h-10 sm:w-auto sm:h-auto">
-                <QuizPDFDownload quizData={data} config={pdfConfig} />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Download - Click to download as PDF</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+                <Separator className="my-4 w-16 bg-gray-300 dark:bg-gray-700" />
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={isDeleteLoading}
-              className="w-10 h-10 p-0 sm:w-auto sm:h-auto sm:p-2"
-            >
-              {isDeleteLoading ? (
-                <span className="loader"></span>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline-block sm:ml-2">Delete</span>
-                </>
-              )}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete your quiz and remove it from our servers.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                {/* Share Group */}
+                <div className="flex flex-col items-center gap-3">
+                  <DropdownMenu>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-14 w-14 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-200 hover:text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                          >
+                            <Share2 className="h-6 w-6" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="text-base">
+                        <p>Share quiz</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent side="right" align="start" className="w-48">
+                      <DropdownMenuItem onClick={handleShare} className="py-3 text-base">
+                        <Share2 className="mr-3 h-5 w-5" />
+                        <span>Copy Link</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleSocialShare("facebook")}
+                        className="py-3 text-base text-[#1877F2]"
+                      >
+                        <Facebook className="mr-3 h-5 w-5" />
+                        <span>Facebook</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleSocialShare("twitter")}
+                        className="py-3 text-base text-[#1DA1F2]"
+                      >
+                        <Twitter className="mr-3 h-5 w-5" />
+                        <span>Twitter</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleSocialShare("linkedin")}
+                        className="py-3 text-base text-[#0A66C2]"
+                      >
+                        <Linkedin className="mr-3 h-5 w-5" />
+                        <span>LinkedIn</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="w-10 h-10 sm:w-auto sm:h-auto flex items-center justify-center">
-                <Rating value={rating} onValueChange={handleRatingChange} />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Rate this quiz</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDownload}
+                        disabled={isDownloading || !canDownloadPDF()}
+                        className={cn(
+                          "h-14 w-14 rounded-xl transition-colors",
+                          canDownloadPDF()
+                            ? "bg-purple-100 text-purple-600 hover:bg-purple-200 hover:text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-800/70",
+                        )}
+                      >
+                        {isDownloading ? (
+                          <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : canDownloadPDF() ? (
+                          <FileDown className="h-6 w-6" />
+                        ) : (
+                          <Lock className="h-6 w-6" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-base">
+                      <p>{canDownloadPDF() ? "Download as PDF" : "Upgrade to download PDF"}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+
+                <Separator className="my-4 w-16 bg-gray-300 dark:bg-gray-700" />
+
+                {/* Rating & Delete Group */}
+                <div className="flex flex-col items-center gap-3">
+                  <Dialog>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-14 w-14 rounded-xl bg-amber-100 text-amber-600 hover:bg-amber-200 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 relative"
+                          >
+                            <Star className="h-6 w-6 fill-amber-500" />
+                            {rating && (
+                              <span className="absolute -bottom-1 -right-1 bg-amber-500 text-white text-sm font-bold h-6 w-6 flex items-center justify-center rounded-full">
+                                {rating}
+                              </span>
+                            )}
+                          </Button>
+                        </DialogTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="text-base">
+                        <p>Rate this quiz</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl">Rate this Quiz</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex justify-center p-6">
+                        <Rating value={rating} onValueChange={handleRatingChange} className="scale-150" />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <AlertDialog>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={isDeleteLoading}
+                            className="h-14 w-14 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                          >
+                            {isDeleteLoading ? (
+                              <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="h-6 w-6" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="text-base">
+                        <p>Delete quiz</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl">Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-base">
+                          This action cannot be undone. This will permanently delete your quiz and remove it from our
+                          servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </TooltipProvider>
+            </div>
+          </div>
+        )}
       </div>
-    </motion.div>
+      {!isVisible && (
+        <div
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 transition-all duration-300 opacity-70 hover:opacity-100"
+          onClick={() => setIsVisible(true)}
+        >
+          <div className="bg-primary/20 hover:bg-primary/40 p-2 rounded-r-lg cursor-pointer transition-colors">
+            <Settings className="h-5 w-5 text-primary-foreground" />
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
