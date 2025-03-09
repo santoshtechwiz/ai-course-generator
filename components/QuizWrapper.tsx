@@ -82,12 +82,9 @@ export function QuizWrapper({ type, queryParams }: QuizWrapperProps) {
   }
 
   return (
-    <ConsistentCard
-      title={`Create ${type.charAt(0).toUpperCase() + type.slice(1)} Quiz`}
-      description={`Generate a ${type} quiz based on your preferences.`}
-    >
+    <>
       {renderQuizForm()}
-    </ConsistentCard>
+    </>
   )
 }
 
