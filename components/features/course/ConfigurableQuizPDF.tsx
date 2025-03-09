@@ -108,6 +108,7 @@ interface Question {
 }
 
 export interface QuizPDFProps {
+  
   disabled?: boolean
   quizData: {
     title: string

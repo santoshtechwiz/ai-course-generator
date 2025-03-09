@@ -25,9 +25,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
 
-    if (quiz.userId !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // if (quiz.userId !== session.user.id) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // }
 
     const updatedQuiz = await prisma.userQuiz.update({
       where: { slug },
