@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -58,6 +56,8 @@ interface FloatingQuizToolbarProps {
   children?: React.ReactNode
 }
 
+const shadowPulse = "shadow-md hover:shadow-lg transition-shadow duration-200"
+
 export function QuizActions({
   quizId,
   quizSlug,
@@ -93,33 +93,24 @@ export function QuizActions({
 
   const isOwner = userId === ownerId
 
-  // Handle scroll events
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY
-
-      // If we're scrolling, hide the toolbar
       if (Math.abs(currentScrollY - lastScrollY) > 10) {
         setIsVisible(false)
         setIsOpen(false)
         setIsScrolling(true)
-
-        // Clear any existing timeout
         if (window.scrollTimeout) {
           clearTimeout(window.scrollTimeout)
         }
-
-        // Set a timeout to show the toolbar again after scrolling stops
         window.scrollTimeout = setTimeout(() => {
           setIsScrolling(false)
           setIsVisible(true)
         }, 1000)
       }
-
       setLastScrollY(currentScrollY)
     }
 
-    // Add a visibility check when user moves mouse to left side of screen
     const handleMouseMove = (e: MouseEvent) => {
       if (e.clientX < 100 && !isVisible) {
         setIsVisible(true)
@@ -129,7 +120,6 @@ export function QuizActions({
     window.addEventListener("scroll", handleScroll, { passive: true })
     window.addEventListener("mousemove", handleMouseMove)
 
-    // Add a fallback to ensure toolbar reappears
     const visibilityInterval = setInterval(() => {
       if (!isVisible && !isScrolling) {
         setIsVisible(true)
@@ -179,8 +169,6 @@ export function QuizActions({
       description: "Please log in to perform this action",
       variant: "destructive",
     })
-    // You can add navigation to login page here if needed
-    // router.push('/login')
   }
 
   const updateQuiz = async (field: string, value: boolean) => {
@@ -189,7 +177,6 @@ export function QuizActions({
       return
     }
 
-    // Only owner can change visibility
     if (field === "isPublic" && !isOwner) {
       toast({
         title: "Permission denied",
@@ -311,8 +298,6 @@ export function QuizActions({
       )
 
       const pdfBlob = await pdf(doc).toBlob()
-
-      // Trigger the download
       const blobUrl = URL.createObjectURL(pdfBlob)
       const a = document.createElement("a")
       a.href = blobUrl
@@ -348,11 +333,10 @@ export function QuizActions({
       const response = await fetch(`/api/rating`, {
         method: "POST",
         body: JSON.stringify({ 
-
           type: 'quiz',
           id: quizId,
           rating: value,
-         }),
+        }),
       })
 
       if (!response.ok) {
@@ -410,7 +394,6 @@ export function QuizActions({
     }
   }
 
-  // If no userId is provided, user is not logged in
   if (!userId) {
     return <>{children}</>
   }
@@ -421,40 +404,50 @@ export function QuizActions({
 
       <div
         className={cn(
-          "fixed left-4 top-1/2 -translate-y-1/2 z-50 transition-all duration-500",
+          "fixed left-4 top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ease-in-out",
           isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-20 pointer-events-none",
           isScrolling && !isVisible ? "animate-pulse" : "",
           className,
         )}
       >
         {!isOpen && !isVisible && (
-          <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-2 h-16 bg-primary/50 rounded-full animate-pulse" />
+          <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-2 h-16 bg-primary/60 rounded-full animate-pulse transition-all duration-300" />
         )}
         {!isOpen ? (
           <Button
             variant="outline"
             size="icon"
             onClick={() => setIsOpen(true)}
-            className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-110 transition-transform animate-pulse"
+            className={cn(
+              "h-12 w-12 rounded-full bg-primary text-primary-foreground",
+              shadowPulse,
+              "hover:scale-105 focus:ring-2 focus:ring-primary focus:ring-offset-2",
+              "transition-all duration-200 ease-in-out"
+            )}
+            aria-label="Open quiz settings"
           >
-            <Settings className="h-6 w-6" />
+            <Settings className="h-5 w-5" />
           </Button>
         ) : (
-          <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg p-4 w-[90px] animate-in slide-in-from-left duration-300 ease-in-out">
-            <div className="flex flex-col items-center">
-              {/* Close Button */}
+          <div className={cn(
+            "bg-background/95 backdrop-blur-md border rounded-xl",
+            shadowPulse,
+            "p-4 w-[100px] animate-in slide-in-from-left duration-300 ease-in-out"
+          )}>
+            <div className="flex flex-col items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(false)}
-                className="h-8 w-8 rounded-full self-end mb-2 hover:bg-gray-200 dark:hover:bg-gray-800"
+                className="h-6 w-6 rounded-full self-end hover:bg-gray-200 dark:hover:bg-gray-800 focus:ring-2 focus:ring-gray-400"
+                aria-label="Close quiz settings"
               >
                 <X className="h-4 w-4" />
               </Button>
 
-              <TooltipProvider>
-                {/* Visibility Group */}
-                <div className="flex flex-col items-center gap-3">
+              <TooltipProvider delayDuration={200}>
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Manage</span>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -463,30 +456,31 @@ export function QuizActions({
                         onClick={togglePublic}
                         disabled={!isOwner || isPublicLoading}
                         className={cn(
-                          "h-14 w-14 rounded-xl transition-colors",
+                          "h-12 w-12 rounded-xl",
+                          shadowPulse,
+                          "focus:ring-2 focus:ring-offset-1",
                           isPublic
-                            ? "bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
-                            : "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50",
-                          !isOwner && "opacity-50 cursor-not-allowed",
+                            ? "bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-400"
+                            : "bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400",
+                          !isOwner && "opacity-60 cursor-not-allowed"
                         )}
+                        aria-label={isPublic ? "Make quiz private" : "Make quiz public"}
                       >
                         {isPublicLoading ? (
-                          <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                          <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                         ) : isPublic ? (
-                          <Eye className="h-6 w-6" />
+                          <Eye className="h-5 w-5" />
                         ) : (
-                          <EyeOff className="h-6 w-6" />
+                          <EyeOff className="h-5 w-5" />
                         )}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="text-base">
-                      <p>
-                        {!isOwner
-                          ? "Only the quiz owner can change visibility"
-                          : isPublic
-                            ? "Public - Click to make private"
-                            : "Private - Click to make public"}
-                      </p>
+                    <TooltipContent side="right" className="text-sm py-1.5 px-2">
+                      {!isOwner
+                        ? "Only owner can change visibility"
+                        : isPublic
+                          ? "Public - Click to make private"
+                          : "Private - Click to make public"}
                     </TooltipContent>
                   </Tooltip>
 
@@ -498,29 +492,32 @@ export function QuizActions({
                         onClick={toggleFavorite}
                         disabled={isFavoriteLoading}
                         className={cn(
-                          "h-14 w-14 rounded-xl transition-colors",
+                          "h-12 w-12 rounded-xl",
+                          shadowPulse,
+                          "focus:ring-2 focus:ring-offset-1",
                           isFavorite
-                            ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200 hover:text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-700 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-800/70",
+                            ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800/60 dark:text-gray-400"
                         )}
+                        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                       >
                         {isFavoriteLoading ? (
-                          <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                          <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <Star className={cn("h-6 w-6", isFavorite ? "fill-yellow-500" : "")} />
+                          <Star className={cn("h-5 w-5", isFavorite ? "fill-yellow-500" : "")} />
                         )}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="text-base">
-                      <p>{isFavorite ? "Favorited - Click to remove" : "Add to favorites"}</p>
+                    <TooltipContent side="right" className="text-sm py-1.5 px-2">
+                      {isFavorite ? "Remove from favorites" : "Add to favorites"}
                     </TooltipContent>
                   </Tooltip>
                 </div>
 
-                <Separator className="my-4 w-16 bg-gray-300 dark:bg-gray-700" />
+                <Separator className="my-2 w-16 bg-gray-200 dark:bg-gray-700/50" />
 
-                {/* Share Group */}
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Share</span>
                   <DropdownMenu>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -528,41 +525,47 @@ export function QuizActions({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-14 w-14 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-200 hover:text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                            className={cn(
+                              "h-12 w-12 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-200",
+                              "dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60",
+                              shadowPulse,
+                              "focus:ring-2 focus:ring-offset-1"
+                            )}
+                            aria-label="Share quiz options"
                           >
-                            <Share2 className="h-6 w-6" />
+                            <Share2 className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
                       </TooltipTrigger>
-                      <TooltipContent side="right" className="text-base">
-                        <p>Share quiz</p>
+                      <TooltipContent side="right" className="text-sm py-1.5 px-2">
+                        Share quiz
                       </TooltipContent>
                     </Tooltip>
-                    <DropdownMenuContent side="right" align="start" className="w-48">
-                      <DropdownMenuItem onClick={handleShare} className="py-3 text-base">
-                        <Share2 className="mr-3 h-5 w-5" />
-                        <span>Copy Link</span>
+                    <DropdownMenuContent side="right" align="start" className="w-48 rounded-lg shadow-lg">
+                      <DropdownMenuItem onClick={handleShare} className="py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Copy Link
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleSocialShare("facebook")}
-                        className="py-3 text-base text-[#1877F2]"
+                        className="py-1.5 text-sm text-[#1877F2] hover:bg-gray-100 dark:hover:bg-gray-800"
                       >
-                        <Facebook className="mr-3 h-5 w-5" />
-                        <span>Facebook</span>
+                        <Facebook className="mr-2 h-4 w-4" />
+                        Facebook
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleSocialShare("twitter")}
-                        className="py-3 text-base text-[#1DA1F2]"
+                        className="py-1.5 text-sm text-[#1DA1F2] hover:bg-gray-100 dark:hover:bg-gray-800"
                       >
-                        <Twitter className="mr-3 h-5 w-5" />
-                        <span>Twitter</span>
+                        <Twitter className="mr-2 h-4 w-4" />
+                        Twitter
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleSocialShare("linkedin")}
-                        className="py-3 text-base text-[#0A66C2]"
+                        className="py-1.5 text-sm text-[#0A66C2] hover:bg-gray-100 dark:hover:bg-gray-800"
                       >
-                        <Linkedin className="mr-3 h-5 w-5" />
-                        <span>LinkedIn</span>
+                        <Linkedin className="mr-2 h-4 w-4" />
+                        LinkedIn
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -575,31 +578,34 @@ export function QuizActions({
                         onClick={handleDownload}
                         disabled={isDownloading || !canDownloadPDF()}
                         className={cn(
-                          "h-14 w-14 rounded-xl transition-colors",
+                          "h-12 w-12 rounded-xl",
+                          shadowPulse,
+                          "focus:ring-2 focus:ring-offset-1",
                           canDownloadPDF()
-                            ? "bg-purple-100 text-purple-600 hover:bg-purple-200 hover:text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50"
-                            : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-800/70",
+                            ? "bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-400"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800/60 dark:text-gray-400"
                         )}
+                        aria-label={canDownloadPDF() ? "Download as PDF" : "Upgrade to download PDF"}
                       >
                         {isDownloading ? (
-                          <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                          <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                         ) : canDownloadPDF() ? (
-                          <FileDown className="h-6 w-6" />
+                          <FileDown className="h-5 w-5" />
                         ) : (
-                          <Lock className="h-6 w-6" />
+                          <Lock className="h-5 w-5" />
                         )}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="text-base">
-                      <p>{canDownloadPDF() ? "Download as PDF" : "Upgrade to download PDF"}</p>
+                    <TooltipContent side="right" className="text-sm py-1.5 px-2">
+                      {canDownloadPDF() ? "Download as PDF" : "Upgrade to download PDF"}
                     </TooltipContent>
                   </Tooltip>
                 </div>
 
-                <Separator className="my-4 w-16 bg-gray-300 dark:bg-gray-700" />
+                <Separator className="my-2 w-16 bg-gray-200 dark:bg-gray-700/50" />
 
-                {/* Rating & Delete Group */}
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Actions</span>
                   <Dialog>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -607,27 +613,33 @@ export function QuizActions({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-14 w-14 rounded-xl bg-amber-100 text-amber-600 hover:bg-amber-200 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 relative"
+                            className={cn(
+                              "h-12 w-12 rounded-xl bg-amber-100 text-amber-600 hover:bg-amber-200",
+                              "dark:bg-amber-900/40 dark:text-amber-400 relative",
+                              shadowPulse,
+                              "focus:ring-2 focus:ring-offset-1"
+                            )}
+                            aria-label="Rate this quiz"
                           >
-                            <Star className="h-6 w-6 fill-amber-500" />
+                            <Star className="h-5 w-5 fill-amber-500" />
                             {rating && (
-                              <span className="absolute -bottom-1 -right-1 bg-amber-500 text-white text-sm font-bold h-6 w-6 flex items-center justify-center rounded-full">
+                              <span className="absolute -bottom-0.5 -right-0.5 bg-amber-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full ring-1 ring-white dark:ring-gray-900">
                                 {rating}
                               </span>
                             )}
                           </Button>
                         </DialogTrigger>
                       </TooltipTrigger>
-                      <TooltipContent side="right" className="text-base">
-                        <p>Rate this quiz</p>
+                      <TooltipContent side="right" className="text-sm py-1.5 px-2">
+                        Rate this quiz
                       </TooltipContent>
                     </Tooltip>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md rounded-lg">
                       <DialogHeader>
-                        <DialogTitle className="text-xl">Rate this Quiz</DialogTitle>
+                        <DialogTitle className="text-lg">Rate this Quiz</DialogTitle>
                       </DialogHeader>
-                      <div className="flex justify-center p-6">
-                        <Rating value={rating} onValueChange={handleRatingChange} className="scale-150" />
+                      <div className="flex justify-center p-4">
+                        <Rating value={rating} onValueChange={handleRatingChange} className="scale-125" />
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -641,33 +653,36 @@ export function QuizActions({
                             size="icon"
                             disabled={!isOwner || isDeleteLoading}
                             className={cn(
-                              "h-14 w-14 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50",
-                              !isOwner && "opacity-50 cursor-not-allowed",
+                              "h-12 w-12 rounded-xl bg-red-100 text-red-600 hover:bg-red-200",
+                              "dark:bg-red-900/40 dark:text-red-400",
+                              shadowPulse,
+                              "focus:ring-2 focus:ring-offset-1",
+                              !isOwner && "opacity-60 cursor-not-allowed"
                             )}
+                            aria-label="Delete quiz"
                           >
                             {isDeleteLoading ? (
-                              <span className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                              <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                             ) : (
-                              <Trash2 className="h-6 w-6" />
+                              <Trash2 className="h-5 w-5" />
                             )}
                           </Button>
                         </AlertDialogTrigger>
                       </TooltipTrigger>
-                      <TooltipContent side="right" className="text-base">
-                        <p>{!isOwner ? "Only the quiz owner can delete this quiz" : "Delete quiz"}</p>
+                      <TooltipContent side="right" className="text-sm py-1.5 px-2">
+                        {!isOwner ? "Only owner can delete" : "Delete quiz"}
                       </TooltipContent>
                     </Tooltip>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="rounded-lg">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-xl">Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-base">
-                          This action cannot be undone. This will permanently delete your quiz and remove it from our
-                          servers.
+                        <AlertDialogTitle className="text-lg">Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm">
+                          This action cannot be undone. This will permanently delete your quiz.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                        <AlertDialogCancel className="rounded-md text-sm py-1">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 rounded-md text-sm py-1">
                           Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -681,11 +696,12 @@ export function QuizActions({
       </div>
       {!isVisible && (
         <div
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 transition-all duration-300 opacity-70 hover:opacity-100"
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 transition-all duration-300 opacity-60 hover:opacity-100 cursor-pointer"
           onClick={() => setIsVisible(true)}
+          aria-label="Show quiz settings"
         >
-          <div className="bg-primary/20 hover:bg-primary/40 p-2 rounded-r-lg cursor-pointer transition-colors">
-            <Settings className="h-5 w-5 text-primary-foreground" />
+          <div className="bg-primary/20 hover:bg-primary/30 p-2 rounded-r-lg transition-all duration-200">
+            <Settings className="h-4 w-4 text-primary" />
           </div>
         </div>
       )}
@@ -693,3 +709,4 @@ export function QuizActions({
   )
 }
 
+export default QuizActions
