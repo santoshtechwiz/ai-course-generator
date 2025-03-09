@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -37,7 +36,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { Rating } from "@/components/ui/rating"
-
 import { pdf } from "@react-pdf/renderer"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import ConfigurableQuizPDF from "./features/course/ConfigurableQuizPDF"
@@ -621,4 +619,3 @@ export function QuizActions({
     </>
   )
 }
-

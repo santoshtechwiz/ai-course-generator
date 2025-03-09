@@ -34,7 +34,7 @@ export default function NotFound() {
   const suggestedPages = [
     { href: "/", icon: Home, title: "Home", description: "Return to the main page" },
     { href: "/dashboard/create", icon: PlusCircle, title: "Create", description: "Start creating your own content" },
-    { href: "/dashboard/", icon: Compass, title: "Explore", description: "Discover new learning opportunities" },
+    { href: "/dashboard", icon: Compass, title: "Explore", description: "Discover new learning opportunities" },
     { href: "/dashboard/quizzes", icon: HelpCircle, title: "Quiz", description: "Discover new " },
   ]
 
