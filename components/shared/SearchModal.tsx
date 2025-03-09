@@ -16,7 +16,7 @@ interface SearchResult {
   description?: string
   slug?: string
   title?: string
-  quizType?: "mcq" | "openended" | "fill-blanks"
+  quizType?: "mcq" | "openended" | "fill-blanks"|'code'
 }
 
 interface SearchResponse {
@@ -108,7 +108,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
 
   const handleResultClick = (result: SearchResult) => {
     let url
-    if (result.title) {
+    if (result.title && ['mcq', 'openended', 'fill-blanks', 'code'].includes(result.quizType || '')) {
       // This is a game/quiz
       url = `/dashboard/${result.quizType === "fill-blanks" ? "blanks" : result.quizType}/${result.slug}`
     } else {
