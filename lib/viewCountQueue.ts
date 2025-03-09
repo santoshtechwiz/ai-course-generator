@@ -12,11 +12,16 @@ class ViewCountQueue {
   }
 
   increment(slug: string): void {
+    // Only increment if slug is provided
+    if (!slug) return
+    
     this.queue.set(slug, (this.queue.get(slug) || 0) + 1)
     this.cache.set(slug, (this.cache.get(slug) || 0) + 1)
   }
 
   async getViewCount(slug: string): Promise<number> {
+    if (!slug) return 0
+    
     if (this.cache.has(slug)) {
       return this.cache.get(slug)!
     }
@@ -35,7 +40,8 @@ class ViewCountQueue {
     if (this.isProcessing || this.queue.size === 0) return
 
     this.isProcessing = true
-    const batchUpdates = new Map(Array.from(this.queue).slice(0, this.batchSize))
+    const batchEntries = Array.from(this.queue).slice(0, this.batchSize)
+    const batchUpdates = new Map(batchEntries)
 
     // Remove processed items from the queue
     for (const slug of batchUpdates.keys()) {
@@ -43,19 +49,36 @@ class ViewCountQueue {
     }
 
     try {
-      // Debugging: Log batch updates
-      console.log("Processing batch:", batchUpdates)
-
-      await prisma.$transaction(
-        Array.from(batchUpdates).map(([slug, increment]) =>
-          prisma.course.update({
-            where: { slug },
-            data: { viewCount: { increment } },
-          })
+      // First, verify which courses actually exist
+      const slugs = Array.from(batchUpdates.keys())
+      const existingCourses = await prisma.course.findMany({
+        where: { slug: { in: slugs } },
+        select: { slug: true },
+      })
+      
+      const existingSlugs = new Set(existingCourses.map(course => course.slug))
+      
+      // Log which slugs don't exist
+      const nonExistentSlugs = slugs.filter(slug => !existingSlugs.has(slug))
+      if (nonExistentSlugs.length > 0) {
+        console.warn(`Skipping updates for non-existent courses: ${nonExistentSlugs.join(', ')}`)
+      }
+      
+      // Only update courses that exist
+      if (existingSlugs.size > 0) {
+        await prisma.$transaction(
+          Array.from(batchUpdates)
+            .filter(([slug]) => existingSlugs.has(slug))
+            .map(([slug, increment]) =>
+              prisma.course.update({
+                where: { slug },
+                data: { viewCount: { increment } },
+              })
+            )
         )
-      )
-
-      console.log(`Processed ${batchUpdates.size} view count updates`)
+        
+        console.log(`Processed ${existingSlugs.size} view count updates`)
+      }
     } catch (error) {
       console.error("Error processing view count queue:", error)
 
@@ -70,6 +93,28 @@ class ViewCountQueue {
     // If there are more items in the queue, process them after a short delay
     if (this.queue.size > 0) {
       setTimeout(() => this.processQueue(), 1000)
+    }
+  }
+  
+  // Method to clear invalid entries (for maintenance)
+  async clearInvalidEntries(): Promise<void> {
+    const slugs = Array.from(this.queue.keys())
+    if (slugs.length === 0) return
+    
+    const existingCourses = await prisma.course.findMany({
+      where: { slug: { in: slugs } },
+      select: { slug: true },
+    })
+    
+    const existingSlugs = new Set(existingCourses.map(course => course.slug))
+    
+    // Remove non-existent slugs from queue and cache
+    for (const slug of slugs) {
+      if (!existingSlugs.has(slug)) {
+        this.queue.delete(slug)
+        this.cache.delete(slug)
+        console.log(`Removed invalid slug from queue: ${slug}`)
+      }
     }
   }
 }
