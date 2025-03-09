@@ -1,21 +1,15 @@
-import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import SlugPageLayout from "@/components/SlugPageLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
 import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
-import RandomQuiz from "@/components/RanomQuiz"
+import { QuizDetailPage } from "@/components/QuizCommon"
 import { getQuiz } from "@/app/actions/getQuiz"
 
-import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
-import QuizSchema from "@/app/schema/quiz-schema"
-type Params=Promise<{slug:string}>;
-export async function generateMetadata({ params }: { params:Params }): Promise<Metadata> {
-  const {slug}=await params;
+type Params = Promise<{ slug: string }>
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { slug } = await params
   const quizData = await getQuiz(slug)
   if (!quizData) {
     return generatePageMetadata({
@@ -42,23 +36,8 @@ export async function generateMetadata({ params }: { params:Params }): Promise<M
   })
 }
 
-function LoadingSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-8 w-2/3" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-4 w-full mb-2" />
-        <Skeleton className="h-4 w-5/6 mb-2" />
-        <Skeleton className="h-4 w-4/5" />
-      </CardContent>
-    </Card>
-  )
-}
-
 export default async function OpenEndedQuizPage({ params }: { params: Params }) {
-  const { slug } =await params;
+  const { slug } = await params
   const session = await getServerSession(authOptions)
   const quizData = await getQuiz(slug)
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
@@ -80,33 +59,17 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
   ]
 
   return (
-    <SlugPageLayout
-      title={`Open-Ended Quiz: ${quizData.title}`}
-      description={`Test your knowledge on ${quizData.title}`}
-      sidebar={<RandomQuiz />}
+    <QuizDetailPage
+      title={quizData.title}
+      description={`Test your problem-solving skills with open-ended questions about ${quizData.title}`}
+      slug={slug}
+      quizType="openended"
+      questionCount={questionCount}
+      estimatedTime={estimatedTime}
+      breadcrumbItems={breadcrumbItems}
     >
-      <QuizSchema
-        quiz={{
-          title: quizData.title,
-          description: `Develop your programming problem-solving skills with this ${quizData.title.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
-          questionCount: questionCount,
-          estimatedTime: estimatedTime,
-          level:  "Intermediate",
-          slug: slug,
-        }}
-      />
-      <BreadcrumbJsonLd items={breadcrumbItems} />
-      <Suspense fallback={<LoadingSkeleton />}>
-        <Card>
-          <CardHeader>
-            <CardTitle>{quizData.title}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
-          </CardContent>
-        </Card>
-      </Suspense>
-    </SlugPageLayout>
+      <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
+    </QuizDetailPage>
   )
 }
 

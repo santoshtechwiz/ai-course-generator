@@ -1,4 +1,3 @@
-import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
@@ -6,17 +5,13 @@ import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
-import SlugPageLayout from "@/components/SlugPageLayout"
 import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper"
-import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
-import RandomQuiz from "@/components/RanomQuiz"
-import QuizSchema from "@/app/schema/quiz-schema"
+import { QuizDetailPage } from "@/components/QuizCommon"
 
-type Params = Promise<{ slug: string }>;
+type Params = Promise<{ slug: string }>
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug } = await params
   const quiz = await getQuiz(slug)
 
   if (!quiz) {
@@ -70,26 +65,17 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
   ]
 
   return (
-    <SlugPageLayout
+    <QuizDetailPage
       title={result.title}
       description={`Test your coding skills on ${result.title} with interactive programming challenges`}
-      sidebar={<RandomQuiz />}
+      slug={slug}
+      quizType="code"
+      questionCount={questionCount}
+      estimatedTime={estimatedTime}
+      breadcrumbItems={breadcrumbItems}
     >
-      <QuizSchema
-        quiz={{
-          title: result.title,
-          description: `Test your coding skills with this ${result.title} programming challenge. Practice writing real code and improve your development abilities.`,
-          questionCount: questionCount,
-          estimatedTime: estimatedTime,
-          level:  "Advanced",
-          slug: slug,
-        }}
-      />
-      <BreadcrumbJsonLd items={breadcrumbItems} />
-      <Suspense fallback={<QuizSkeleton />}>
-        <CodeQuizWrapper slug={slug} userId={currentUserId || ''} />
-      </Suspense>
-    </SlugPageLayout>
+      <CodeQuizWrapper slug={slug} userId={currentUserId || ""} />
+    </QuizDetailPage>
   )
 }
 

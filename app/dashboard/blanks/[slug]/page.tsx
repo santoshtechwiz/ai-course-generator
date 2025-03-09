@@ -1,96 +1,89 @@
-import { Suspense } from "react"
-import { notFound } from "next/navigation"
-import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
+import { QuizCreationPage } from "@/components/QuizCommon"
 
-import { authOptions } from "@/lib/authOptions"
-import { getQuiz } from "@/app/actions/getQuiz"
-import { generatePageMetadata } from "@/lib/seo-utils"
-import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
-
-import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
-import RandomQuiz from "@/components/RanomQuiz"
-import QuizSchema from "@/app/schema/quiz-schema"
-import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
-import SlugPageLayout from "@/components/SlugPageLayout"
-
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
- const {slug}=await params;
-  const quiz = await getQuiz(slug)
-
-  if (!quiz) {
-    return generatePageMetadata({
-      title: "Fill in the Blanks Quiz Not Found | CourseAI",
-      description:
-        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
-      path: `/dashboard/blanks/${slug}`,
-      noIndex: true,
-    })
-  }
-
-  return generatePageMetadata({
-    title: `${quiz.title} | Programming Fill in the Blanks Quiz`,
-    description: `Test your coding knowledge with this ${quiz.title.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
-    path: `/dashboard/blanks/${slug}`,
-    keywords: [
-      `${quiz.title.toLowerCase()} quiz`,
-      "programming fill in the blanks",
-      "coding assessment",
-      "developer knowledge test",
-      "programming practice questions",
-    ],
-    ogType: "article",
-  })
+export const metadata: Metadata = {
+  title: "Open-Ended Quizzes | Course AI",
+  description:
+    "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
+  keywords: [
+    "open-ended questions",
+    "critical thinking",
+    "essay questions",
+    "programming challenges",
+    "coding problems",
+    "developer assessment",
+  ],
+  openGraph: {
+    title: "Open-Ended Quizzes | Course AI",
+    description:
+      "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
+    url: "https://courseai.dev/dashboard/openended",
+    type: "website",
+    images: [{ url: "/og-image-openended.jpg" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Open-Ended Quizzes | Course AI",
+    description:
+      "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
+    images: ["/twitter-image-openended.jpg"],
+  },
 }
 
-const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
-  const params = await props.params
-  const { slug } = params
+const Page = async () => {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
-  const session = await getServerSession(authOptions)
-  const currentUserId = session?.user?.id
-
-  const result = await getQuiz(slug)
-  if (!result) {
-    notFound()
+  // CreativeWork schema
+  const creativeWorkSchema = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: "Open-Ended Quiz Creator",
+    description:
+      "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
+    creator: {
+      "@type": "Organization",
+      name: "Course AI",
+    },
+    url: `${baseUrl}/dashboard/openended`,
   }
 
-  // Calculate estimated time based on question count
-  const questionCount = result.questions?.length || 5
-  const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 2))}M` // 2 minutes per question, minimum 10 minutes
-
-  // Create breadcrumb items
-  const breadcrumbItems = [
-    { name: "Home", url: baseUrl },
-    { name: "Dashboard", url: `${baseUrl}/dashboard` },
-    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: result.title, url: `${baseUrl}/dashboard/blanks/${slug}` },
-  ]
+  // Breadcrumb schema
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: baseUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Dashboard",
+        item: `${baseUrl}/dashboard`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "Open-Ended Quizzes",
+        item: `${baseUrl}/dashboard/openended`,
+      },
+    ],
+  }
 
   return (
-    <SlugPageLayout
-      title={result.title}
-      description={`Test your coding knowledge on ${result.title} with fill in the blanks questions`}
-      sidebar={<RandomQuiz />}
-    >
-      <QuizSchema
-        quiz={{
-          title: result.title,
-          description: `Test your coding knowledge with this ${result.title} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
-          questionCount: questionCount,
-          estimatedTime: estimatedTime,
-          level:  "Intermediate",
-          slug: slug,
-        }}
-      />
-      <BreadcrumbJsonLd items={breadcrumbItems} />
-      <Suspense fallback={<QuizSkeleton />}>
-        <BlankQuizWrapper slug={slug}  />
-      </Suspense>
-    </SlugPageLayout>
+    <QuizCreationPage
+      type="openended"
+      title="Open-Ended Quiz"
+      metadata={{
+        creativeWorkSchema,
+        breadcrumbSchema,
+      }}
+    />
   )
 }
 
-export default BlanksPage
+export default Page
 
