@@ -1,3 +1,4 @@
+'use client'
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -368,7 +369,7 @@ export function QuizActions({
 
     setIsDeleteLoading(true)
     try {
-      const response = await fetch(`/api/quiz/${quizId}`, {
+      const response = await fetch(`/api/quiz/${quizSlug}`, {
         method: "DELETE",
       })
 

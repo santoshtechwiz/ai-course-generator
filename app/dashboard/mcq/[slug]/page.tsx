@@ -5,9 +5,10 @@ import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/authOptions"
 
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
-import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
+
 import { QuizDetailPage } from "@/components/QuizCommon"
 import { generatePageMetadata } from "@/lib/seo-utils"
+import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 
 // SEO metadata generation
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -97,3 +98,4 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
 }
 
 
+export default McqPage
