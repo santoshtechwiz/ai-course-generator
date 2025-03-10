@@ -281,7 +281,7 @@ export function QuizActions({
 
     setIsDownloading(true)
     try {
-      const response = await fetch(`/api/quiz/${quizId}`)
+      const response = await fetch(`/api/quiz/${quizSlug}`)
       if (!response.ok) {
         throw new Error("Failed to fetch quiz data")
       }
