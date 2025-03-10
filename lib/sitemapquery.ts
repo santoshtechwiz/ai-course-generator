@@ -35,7 +35,7 @@ export const getCourse = async (id: string) => {
 
 // 3. Add a new course
 export const addCourse = async (course: {
-    name: string;
+    title: string;
     description: string;
     image: string;
     userId: string;
@@ -44,7 +44,7 @@ export const addCourse = async (course: {
     try {
         const newCourse = await prisma.course.create({
             data: {
-                name: course.name,
+                title: course.title,
                 description: course.description,
                 image: course.image,
                 userId: course.userId,
