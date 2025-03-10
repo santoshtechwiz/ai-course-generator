@@ -108,7 +108,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
 
   return (
     <div className="container mx-auto  max-w-3xl">
-      <FloatingQuizToolbar
+      <QuizActions
         quizId={quizId}
         quizSlug={slug}
         initialIsPublic={false}

@@ -141,11 +141,11 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
-  const topic = watch("title")
+  const title = watch("title")
 
   const isFormValid = React.useMemo(() => {
-    return !!topic && !!amount && !!difficulty && isValid
-  }, [topic, amount, difficulty, isValid])
+    return !!title && !!amount && !!difficulty && isValid
+  }, [title, amount, difficulty, isValid])
 
   const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
 

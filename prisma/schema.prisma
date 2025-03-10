@@ -298,6 +298,7 @@ model CourseQuizAttempt {
 model UserQuiz {
   id             Int                @id @default(autoincrement())
   userId         String             @map("user_id")
+  quizTitle      String?            @default("Untitled Quiz")
   title          String             
   quizType       String
   isPublic       Boolean            @default(false)

@@ -12,14 +12,14 @@ import { Question } from "@/app/types/types";
 export async function generateQuestions(req: unknown): Promise<{ questions: Question[] }> {
   try {
     // Validate the input using Zod
-    const { amount, topic, type,difficulty,userType } = getQuestionsSchema.parse(req);
+    const { amount, title, type,difficulty,userType } = getQuestionsSchema.parse(req);
 
-    console.log(`Generating ${amount} ${type} questions about ${topic}`);
+    console.log(`Generating ${amount} ${type} questions about ${title}`);
 
     // Generate questions based on the type
     const questions = type === 'mcq'
-      ? await generateMcqForUserInput(topic, amount, difficulty, userType || '')
-      : await generateOpenEndedQuiz(topic, amount,userType);
+      ? await generateMcqForUserInput(title, amount, difficulty, userType || '')
+      : await generateOpenEndedQuiz(title, amount,userType);
 
    
     return  questions ;
