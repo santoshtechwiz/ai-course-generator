@@ -72,7 +72,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
 
   React.useEffect(() => {
     if (params?.title) {
-      setValue("topic", params.title)
+      setValue("title", params.title)
     }
     if (params?.amount) {
       const amount = Number.parseInt(params.amount, 10)
@@ -141,7 +141,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
-  const topic = watch("topic")
+  const topic = watch("title")
 
   const isFormValid = React.useMemo(() => {
     return !!topic && !!amount && !!difficulty && isValid
@@ -182,15 +182,15 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Label htmlFor="topic" className="text-lg font-medium">
+              <Label htmlFor="title" className="text-lg font-medium">
                 Topic
               </Label>
               <div className="relative">
                 <Input
-                  id="topic"
+                  id="title"
                   placeholder="Enter the quiz topic"
                   className="h-12 pr-10 transition-all duration-300 focus:ring-2 focus:ring-primary"
-                  {...register("topic")}
+                  {...register("title")}
                   aria-describedby="topic-description"
                 />
                 <TooltipProvider>
