@@ -5,34 +5,38 @@ import { QuizSkeleton } from "./QuizSkeleton"
 import type { McqQuestionsResponse } from "@/app/actions/getMcqQuestions"
 
 interface McqContainerProps {
-    slug: string
-    currentUserId: string
-    result: McqQuestionsResponse
+  slug: string
+  currentUserId: string
+  result: McqQuestionsResponse
 }
 
 const McqQuizWrapper = ({ slug, currentUserId, result }: McqContainerProps) => {
-    return (
+  // Early return if no result data is available
+  if (!result?.result) {
+    return <QuizSkeleton />
+  }
 
-        <div className="flex flex-col gap-8 ">
-            <Suspense fallback={<QuizSkeleton />}>
-                {result && result.result && (
-                    <QuizActions
-                        quizId={result.result.id?.toString() || ""}
-                        userId={currentUserId}
-                        ownerId={result.result.userId || ""}
-                        quizSlug={result.result.slug || ""}
-                        initialIsPublic={result.result.isPublic || false}
-                        initialIsFavorite={result.result.isFavorite || false}
-                        quizType="mcq"
-                    />
-                )}
-            </Suspense>
-            {result.result && result.questions && (
-                <McqQuiz questions={result.questions} quizId={Number(result.result?.id) || 0} slug={slug} />
-            )}
-        </div>
+  const { result: quizData, questions } = result
 
-    )
+  return (
+    <div className="flex flex-col gap-8">
+      {/* QuizActions doesn't need its own Suspense boundary unless it's loading async data internally */}
+      <QuizActions
+        quizId={quizData.id?.toString() || ""}
+        userId={currentUserId}
+        ownerId={quizData.userId || ""}
+        quizSlug={quizData.slug || ""}
+        initialIsPublic={quizData.isPublic || false}
+        initialIsFavorite={quizData.isFavorite || false}
+        quizType="mcq"
+      />
+
+      {/* Wrap the actual quiz content in Suspense since it's likely to be the heavier component */}
+      <Suspense fallback={<QuizSkeleton />}>
+        {questions && <McqQuiz questions={questions} quizId={Number(quizData.id) || 0} slug={slug} />}
+      </Suspense>
+    </div>
+  )
 }
 
 export default McqQuizWrapper

@@ -17,7 +17,7 @@ export default async function DashboardLayout({
 
   return (
     <ClientLayoutWrapper>
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col container mx-auto">
         <MainNavbar />
 
         <main className="flex-grow flex flex-col">
@@ -37,7 +37,7 @@ export default async function DashboardLayout({
           </div>
         </main>
         <Toaster />
-        <Chatbot userId={session?.user?.id || ""} isSubscribed={!!session?.user?.subscriptionStatus} />
+        <Chatbot userId={session?.user?.id || ""}  />
       </div>
     </ClientLayoutWrapper>
   )
