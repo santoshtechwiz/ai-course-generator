@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import { motion, useAnimation, useInView } from "framer-motion"
 import { Element } from "react-scroll"
 import { Youtube, FileText, HelpCircle, Layers, Zap, Users, CreditCard } from "lucide-react"
@@ -53,23 +53,11 @@ const features = [
   },
 ]
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 50 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
-}
-
-const stagger = {
-  visible: {
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-}
-
 const FeatureSections = () => {
   const controls = useAnimation()
   const sectionRef = useRef(null)
   const isInView = useInView(sectionRef, { once: true, amount: 0.2 })
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null)
 
   useEffect(() => {
     if (isInView) {
@@ -81,22 +69,81 @@ const FeatureSections = () => {
     <Element name="features">
       <section ref={sectionRef} className="py-6 px-4 bg-gradient-to-b from-background to-secondary/20">
         <div className="container mx-auto max-w-6xl">
-          <motion.div initial="hidden" animate={controls} variants={stagger} className="space-y-8">
-            <motion.div variants={stagger} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            initial="hidden"
+            animate={controls}
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: 0.1,
+                },
+              },
+            }}
+            className="space-y-8"
+          >
+            <motion.div
+              variants={{
+                hidden: {},
+                visible: {
+                  transition: {
+                    staggerChildren: 0.1,
+                  },
+                },
+              }}
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+            >
               {features.map((feature, idx) => (
-                <motion.div key={idx} variants={fadeInUp} custom={idx}>
-                  <Card className="relative overflow-hidden border-none bg-card/50 hover:bg-card/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg h-full">
+                <motion.div
+                  key={idx}
+                  variants={{
+                    hidden: { opacity: 0, y: 50 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      transition: {
+                        duration: 0.6,
+                        ease: "easeOut",
+                      },
+                    },
+                  }}
+                  whileHover={{
+                    scale: 1.03,
+                    transition: { duration: 0.2 },
+                  }}
+                  onHoverStart={() => setHoveredCard(idx)}
+                  onHoverEnd={() => setHoveredCard(null)}
+                >
+                  <Card
+                    className={cn(
+                      "relative overflow-hidden border-none bg-card/50 transition-all duration-300 h-full",
+                      "hover:bg-card/80 transform hover:-translate-y-1 hover:shadow-lg",
+                    )}
+                  >
                     <motion.div
                       className={cn("absolute inset-0 opacity-10 bg-gradient-to-br", feature.gradient)}
                       initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 0.1 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
+                      animate={{
+                        scale: hoveredCard === idx ? 1.1 : 1,
+                        opacity: hoveredCard === idx ? 0.15 : 0.1,
+                      }}
+                      transition={{ duration: 0.6 }}
                     />
                     <CardHeader className="p-6">
                       <motion.div
                         initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 200 }}
+                        animate={{
+                          scale: 1,
+                          rotate: 0,
+                          rotateY: hoveredCard === idx ? 360 : 0,
+                        }}
+                        transition={{
+                          duration: 0.6,
+                          delay: 0.1 * idx,
+                          type: "spring",
+                          stiffness: 200,
+                          rotateY: { duration: 0.8 },
+                        }}
                         className="mb-4"
                       >
                         <feature.icon className={cn("h-10 w-10", `text-gradient ${feature.gradient}`)} />
@@ -106,6 +153,17 @@ const FeatureSections = () => {
                     <CardContent className="text-base text-muted-foreground p-6 pt-0">
                       {feature.description}
                     </CardContent>
+
+                    {/* Animated highlight effect on hover */}
+                    <motion.div
+                      className="absolute bottom-0 left-0 h-1 bg-gradient-to-r"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, ${feature.gradient.split(" ")[1]}, ${feature.gradient.split(" ")[3]})`,
+                      }}
+                      initial={{ width: 0 }}
+                      animate={{ width: hoveredCard === idx ? "100%" : "0%" }}
+                      transition={{ duration: 0.3 }}
+                    />
                   </Card>
                 </motion.div>
               ))}

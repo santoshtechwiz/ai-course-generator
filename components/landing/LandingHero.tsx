@@ -7,7 +7,8 @@ import { Element } from "react-scroll"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import RevealAnimation from "../shared/RevealAnimation"
-import FeatureVideo from "../animations/FeatureVideo"
+import FeatureVideo from "./FeatureVideo"
+
 
 const stagger = {
   visible: {
@@ -73,4 +74,3 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
 }
 
 export default LandingHero
-

@@ -15,6 +15,7 @@ import {
   TagIcon,
   GraduationCap,
   ChevronRight,
+  Info,
 } from "lucide-react"
 import type { CourseCardProps } from "@/app/types/types"
 import { cn } from "@/lib/utils"
@@ -53,10 +54,21 @@ const determineCourseLevel = (
 export const CourseCard: React.FC<CourseCardProps> = React.memo(
   ({ name, description, rating, slug, unitCount, lessonCount, quizCount, viewCount, category }) => {
     const [isHovered, setIsHovered] = React.useState(false)
+    const [showFullDescription, setShowFullDescription] = React.useState(false)
+    const descriptionRef = React.useRef<HTMLParagraphElement>(null)
+    const [isDescriptionTruncated, setIsDescriptionTruncated] = React.useState(false)
+
     const categoryName = typeof category === "object" ? category.name : category
     const progress = Math.floor(Math.random() * 101) // Simulated progress
     const courseLevel = determineCourseLevel(unitCount, lessonCount, quizCount)
     const config = courseLevelConfig[courseLevel]
+
+    // Check if description is truncated
+    React.useEffect(() => {
+      if (descriptionRef.current) {
+        setIsDescriptionTruncated(descriptionRef.current.scrollHeight > descriptionRef.current.clientHeight)
+      }
+    }, [description])
 
     return (
       <motion.div
@@ -64,7 +76,10 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="h-full pt-6"
         onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
+        onHoverEnd={() => {
+          setIsHovered(false)
+          setShowFullDescription(false)
+        }}
       >
         <Link
           href={`/dashboard/course/${slug}`}
@@ -79,45 +94,69 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
               <GraduationCap className="w-5 h-5 text-white" />
             </motion.div>
 
-            <Card className="relative flex flex-col h-full overflow-hidden group border-2 transition-colors hover:border-primary/50">
+            <Card className="relative flex flex-col h-[450px] overflow-hidden group border-2 transition-colors hover:border-primary/50">
               <div className={cn("absolute inset-0 opacity-100 transition-opacity duration-300", config.gradient)} />
 
               <CardContent className="relative flex flex-col flex-grow p-6 space-y-4">
                 <div className="space-y-2">
-                  <Badge
-                    variant="outline"
-                    className={cn("px-2.5 py-0.5 text-xs font-medium rounded-lg transition-colors", config.badge)}
-                  >
-                    {courseLevel}
-                  </Badge>
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant="outline"
+                      className={cn("px-2.5 py-0.5 text-xs font-medium rounded-lg transition-colors", config.badge)}
+                    >
+                      {courseLevel}
+                    </Badge>
 
-                  <h3 className="text-xl font-semibold leading-tight tracking-tight group-hover:text-primary transition-colors line-clamp-2">
+                    <div className="flex gap-1.5">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                        <StarIcon className="w-3 h-3 mr-1 fill-current" />
+                        {rating?.toFixed(1)}
+                      </Badge>
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                        <EyeIcon className="w-3 h-3 mr-1" />
+                        {viewCount}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-semibold leading-tight tracking-tight group-hover:text-primary transition-colors line-clamp-2 min-h-[3.5rem]">
                     {name}
                   </h3>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                    <StarIcon className="w-3 h-3 mr-1 fill-current" />
-                    {rating?.toFixed(1)}
+                {categoryName && (
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 w-fit">
+                    <TagIcon className="w-3 h-3 mr-1" />
+                    {categoryName}
                   </Badge>
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                    <EyeIcon className="w-3 h-3 mr-1" />
-                    {viewCount}
-                  </Badge>
-                  {categoryName && (
-                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                      <TagIcon className="w-3 h-3 mr-1" />
-                      {categoryName}
-                    </Badge>
+                )}
+
+                <div className="relative">
+                  <p
+                    ref={descriptionRef}
+                    className={cn(
+                      "text-sm text-muted-foreground line-clamp-3 h-[4.5rem]",
+                      showFullDescription && "line-clamp-none h-auto max-h-[8rem] overflow-y-auto pr-2",
+                    )}
+                  >
+                    {description}
+                  </p>
+
+                  {isDescriptionTruncated && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setShowFullDescription(!showFullDescription)
+                      }}
+                      className="absolute -bottom-5 right-0 text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+                    >
+                      <Info className="w-3 h-3" />
+                      {showFullDescription ? "Show less" : "Read more"}
+                    </button>
                   )}
                 </div>
 
-                <p className="text-sm text-muted-foreground line-clamp-2 group-hover:line-clamp-none transition-all flex-grow">
-                  {description}
-                </p>
-
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 mt-auto pt-2">
                   <Progress value={progress} className="h-2 bg-primary/10" />
                   <div className="text-right text-xs text-muted-foreground">{progress}% complete</div>
                 </div>
@@ -148,17 +187,25 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
               </CardFooter>
 
               <AnimatePresence>
-                {isHovered && (
+                {isHovered && !showFullDescription && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute inset-0 bg-gradient-to-t from-background/95 to-transparent flex items-end p-6"
+                    className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/70 to-transparent flex items-center justify-center"
                   >
-                    <p className="text-foreground text-sm font-medium text-center">
-                      Start your journey in {name} today!
-                    </p>
+                    <motion.div
+                      initial={{ scale: 0.9 }}
+                      animate={{ scale: 1 }}
+                      className="bg-card p-4 rounded-xl shadow-lg border border-primary/20 max-w-[80%] text-center"
+                    >
+                      <h4 className="font-semibold mb-2 text-primary">{name}</h4>
+                      <p className="text-foreground text-sm mb-3">Start your learning journey today!</p>
+                      <Badge variant="default" className="mx-auto">
+                        {unitCount} Units • {lessonCount} Lessons • {quizCount} Quizzes
+                      </Badge>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>

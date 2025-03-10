@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion"
 import Link from "next/link"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Link as ScrollLink } from "react-scroll"
 import Logo from "../shared/Logo"
@@ -31,16 +31,29 @@ const navItemVariants = {
   }),
 }
 
-export default function Navbar() {
+interface NavbarProps {
+  activeSection?: string
+}
+
+export default function Navbar({ activeSection = "" }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
+  const navRef = useRef<HTMLDivElement>(null)
+
+  // Scroll-based animations
+  const { scrollY } = useScroll()
+  const navBackground = useTransform(scrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.9)"])
+  const navBackgroundDark = useTransform(scrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.9)"])
+  const navBlur = useTransform(scrollY, [0, 100], ["blur(0px)", "blur(10px)"])
+  const navHeight = useTransform(scrollY, [0, 100], ["5rem", "4rem"])
+  const navShadow = useTransform(scrollY, [0, 100], ["0 0 0 rgba(0,0,0,0)", "0 4px 20px rgba(0,0,0,0.1)"])
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10)
     }
-    window.addEventListener("scroll", handleScroll)
+    window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
@@ -59,14 +72,23 @@ export default function Navbar() {
   return (
     <>
       <motion.nav
+        ref={navRef}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 100, damping: 20 }}
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 backdrop-blur-sm border-b border-border w-full ${
-          isScrolled ? "bg-background/90" : "bg-transparent"
-        }`}
+        style={{
+          height: navHeight,
+          boxShadow: navShadow,
+          backdropFilter: navBlur,
+          backgroundColor: isScrolled ? navBackground : "transparent",
+        }}
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50 w-full transition-all duration-300 bg-background/90 dark:bg-background/90"
       >
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
           <Link href="/" className="flex items-center space-x-2">
             <Logo />
           </Link>
@@ -81,12 +103,14 @@ export default function Navbar() {
                 smooth={true}
                 offset={-64}
                 duration={500}
-                className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors relative group cursor-pointer"
+                className={`text-base font-medium transition-colors relative group cursor-pointer
+                  ${activeSection === item.to ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 activeClass="text-primary"
               >
                 {item.name}
                 <motion.span
-                  className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary"
+                  className={`absolute -bottom-1 left-0 h-0.5 bg-primary
+                    ${activeSection === item.to ? "w-full" : "w-0"}`}
                   whileHover={{ width: "100%" }}
                   transition={{ duration: 0.3 }}
                 />
@@ -96,8 +120,20 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button onClick={handleGetStarted} className="px-6 py-2 text-base font-medium">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Button
+              onClick={handleGetStarted}
+              className="px-6 py-2 text-base font-medium relative overflow-hidden group"
+            >
+              <motion.span
+                className="absolute inset-0 w-0 bg-white/20 transition-all duration-300 group-hover:w-full"
+                initial={{ width: 0 }}
+                whileHover={{ width: "100%" }}
+              />
               Get Started
             </Button>
           </motion.div>
@@ -117,7 +153,7 @@ export default function Navbar() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-y-0 right-0 z-50 w-72 bg-background shadow-lg md:hidden"
+            className="fixed inset-y-0 right-0 z-50 w-72 bg-background shadow-lg md:hidden dark:bg-background"
           >
             <div className="flex flex-col h-full">
               <div className="flex justify-between items-center p-4 border-b border-border">
@@ -148,7 +184,8 @@ export default function Navbar() {
                       smooth={true}
                       offset={-64}
                       duration={500}
-                      className="px-6 py-3 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                      className={`px-6 py-3 text-base font-medium hover:bg-accent transition-colors cursor-pointer
+                        ${activeSection === item.to ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                       activeClass="text-primary"
                       onClick={closeMobileMenu}
                     >
@@ -158,7 +195,11 @@ export default function Navbar() {
                 ))}
               </motion.div>
               <div className="mt-auto p-4 border-t border-border">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
                   <Button
                     className="w-full px-6 py-2 text-base font-medium"
                     onClick={() => {
@@ -182,7 +223,7 @@ export default function Navbar() {
             animate={{ opacity: 0.7 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden dark:bg-background/80"
             onClick={closeMobileMenu}
           />
         )}
@@ -190,4 +231,3 @@ export default function Navbar() {
     </>
   )
 }
-

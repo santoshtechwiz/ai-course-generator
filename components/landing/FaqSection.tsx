@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useRef, useEffect } from "react"
+import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Search, HelpCircle } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Input } from "@/components/ui/input"
@@ -77,6 +77,11 @@ const faqData = [
 
 export default function FAQSection() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [expandedItem, setExpandedItem] = useState<string | null>(null)
+  const [highlightedTerms, setHighlightedTerms] = useState<string[]>([])
+  const sectionRef = useRef(null)
+  const isInView = useInView(sectionRef, { once: true, amount: 0.2 })
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const filteredFAQs = faqData.filter(
     (faq) =>
@@ -84,25 +89,82 @@ export default function FAQSection() {
       faq.answer.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  useEffect(() => {
+    if (searchTerm) {
+      setHighlightedTerms(
+        searchTerm
+          .toLowerCase()
+          .split(" ")
+          .filter((term) => term.length > 2),
+      )
+    } else {
+      setHighlightedTerms([])
+    }
+  }, [searchTerm])
+
+  // Auto-focus search input when section comes into view
+  useEffect(() => {
+    if (isInView && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 500)
+    }
+  }, [isInView])
+
+  // Highlight matching text
+  const highlightText = (text: string) => {
+    if (highlightedTerms.length === 0) return text
+
+    let highlightedText = text
+    highlightedTerms.forEach((term) => {
+      const regex = new RegExp(`(${term})`, "gi")
+      highlightedText = highlightedText.replace(
+        regex,
+        '<mark class="bg-primary/20 text-foreground px-1 rounded">$1</mark>',
+      )
+    })
+
+    return <span dangerouslySetInnerHTML={{ __html: highlightedText }} />
+  }
+
   return (
-    <section className="py-10 md:py-16 bg-gradient-to-b from-background to-secondary/20">
+    <section ref={sectionRef} className="py-10 md:py-16 bg-gradient-to-b from-background to-secondary/20">
       <div className="container px-4 md:px-6 max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5 }}
           className="space-y-8"
         >
-          <div className="relative mb-8">
+          <motion.div
+            className="relative mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               type="text"
               placeholder="Search FAQs..."
-              className="pl-10 w-full bg-background border-border"
+              className="pl-10 w-full bg-background border-border focus:ring-2 focus:ring-primary/30 transition-all duration-300"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
+            {searchTerm && (
+              <motion.button
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setSearchTerm("")}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0 }}
+                whileHover={{ rotate: 90 }}
+                transition={{ duration: 0.2 }}
+              >
+                ✕
+              </motion.button>
+            )}
+          </motion.div>
 
           <AnimatePresence mode="wait">
             {filteredFAQs.length > 0 ? (
@@ -113,47 +175,100 @@ export default function FAQSection() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Accordion type="single" collapsible className="w-full space-y-4">
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="w-full space-y-4"
+                  value={expandedItem || undefined}
+                  onValueChange={setExpandedItem}
+                >
                   {filteredFAQs.map((item, index) => (
-                    <AccordionItem
+                    <motion.div
                       key={index}
-                      value={`item-${index}`}
-                      className={cn(
-                        "border rounded-lg overflow-hidden",
-                        "transition-all duration-200 ease-in-out",
-                        "hover:shadow-md",
-                      )}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
                     >
-                      <AccordionTrigger className="px-5 py-4 flex items-center justify-between text-left bg-card hover:bg-muted/50 transition-colors duration-200">
-                        <div className="flex items-center space-x-3">
-                          <HelpCircle className="flex-shrink-0 w-5 h-5 text-primary" />
-                          <span className="text-base font-medium text-foreground">{item.question}</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-5 py-4 text-base text-muted-foreground bg-background">
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
+                      <AccordionItem
+                        value={`item-${index}`}
+                        className={cn(
+                          "border rounded-lg overflow-hidden",
+                          "transition-all duration-200 ease-in-out",
+                          "hover:shadow-md",
+                          expandedItem === `item-${index}` && "shadow-md border-primary/50",
+                        )}
+                      >
+                        <AccordionTrigger
+                          className={cn(
+                            "px-5 py-4 flex items-center justify-between text-left bg-card hover:bg-muted/50 transition-colors duration-200",
+                            expandedItem === `item-${index}` && "bg-muted/30",
+                          )}
                         >
-                          {item.answer}
-                        </motion.div>
-                      </AccordionContent>
-                    </AccordionItem>
+                          <div className="flex items-center space-x-3">
+                            <motion.div
+                              animate={
+                                expandedItem === `item-${index}`
+                                  ? {
+                                      rotate: [0, 15, 0, -15, 0],
+                                      scale: [1, 1.2, 1],
+                                      color: ["hsl(var(--primary))", "hsl(var(--primary))", "hsl(var(--primary))"],
+                                    }
+                                  : {}
+                              }
+                              transition={{ duration: 0.5 }}
+                            >
+                              <HelpCircle className="flex-shrink-0 w-5 h-5 text-primary" />
+                            </motion.div>
+                            <span className="text-base font-medium text-foreground">
+                              {highlightText(item.question)}
+                            </span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-5 py-4 text-base text-muted-foreground bg-background">
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {highlightText(item.answer)}
+                          </motion.div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </motion.div>
                   ))}
                 </Accordion>
               </motion.div>
             ) : (
-              <motion.p
+              <motion.div
                 key="no-results"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="text-center text-base text-muted-foreground"
+                className="text-center py-12"
               >
-                No matching FAQs found. Please try a different search term.
-              </motion.p>
+                <motion.div
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, 0, -5, 0],
+                  }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                  className="inline-block mb-4"
+                >
+                  <HelpCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+                </motion.div>
+                <p className="text-center text-base text-muted-foreground mb-4">
+                  No matching FAQs found. Please try a different search term.
+                </p>
+                <motion.button
+                  onClick={() => setSearchTerm("")}
+                  className="text-primary hover:underline"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Clear search and show all FAQs
+                </motion.button>
+              </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
