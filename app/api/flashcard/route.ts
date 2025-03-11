@@ -115,7 +115,7 @@ export async function POST(req: Request) {
 
     // Parse and validate input
     const body = await req.json()
-    const { topic, count } = createFlashcardSchema.parse(body)
+    const { title, count } = createFlashcardSchema.parse(body)
 
     // Check credits
     if (user.credits < 1) {
@@ -123,12 +123,12 @@ export async function POST(req: Request) {
     }
 
     // Generate unique slug
-    const slug = await generateUniqueSlug(topic)
+    const slug = await generateUniqueSlug(title)
 
     // Use a transaction for database operations
     const result = await prisma.$transaction(async (tx) => {
       // Generate flashcards
-      const flashcards = (await generateFlashCards(topic, count)) as FlashCardData[]
+      const flashcards = (await generateFlashCards(title, count)) as FlashCardData[]
 
       if (!flashcards || flashcards.length === 0) {
         throw new Error("Failed to generate flashcards")
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
       // Create new quiz with flashcards
       const newQuiz = await tx.userQuiz.create({
         data: {
-          topic,
+          title,
           quizType: "flashcard",
           slug,
           timeStarted: new Date(),
@@ -258,8 +258,8 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const body = await req.json();
-   
-    const {id, isSaved } = z.object({ isSaved: z.boolean(),id:z.number() }).parse(body);
+
+    const { id, isSaved } = z.object({ isSaved: z.boolean(), id: z.number() }).parse(body);
     if (!id) {
       return NextResponse.json({ error: "Card ID is required" }, { status: 400 });
     }

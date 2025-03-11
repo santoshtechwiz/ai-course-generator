@@ -153,14 +153,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
             <Sparkles className="h-5 w-5 text-primary" />
             <span>New Flashcard Set</span>
           </h2>
-          {/* <div className="flex gap-2">
-            <Badge variant="outline" className="font-normal">
-              <Clock className="mr-1 h-3 w-3" />~{getEstimatedTime()} min
-            </Badge>
-            <Badge className={`font-normal ${getDifficultyColor(difficulty)}`}>
-              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-            </Badge>
-          </div> */}
+        
         </div>
 
         <Form {...form}>
@@ -229,7 +222,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
                         value={field.value}
                         onValueChange={(val) => field.onChange(val)}
                     
-                        step={1}
+                       
                       />
                     </div>
                   </FormControl>
