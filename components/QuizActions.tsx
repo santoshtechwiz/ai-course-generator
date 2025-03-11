@@ -35,9 +35,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { Rating } from "@/components/ui/rating"
-import { pdf } from "@react-pdf/renderer"
+
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import ConfigurableQuizPDF from "./features/course/ConfigurableQuizPDF"
+
+import QuizPDFDownload from "./features/course/QuizPDFDownload"
 
 declare global {
   interface Window {
@@ -273,55 +274,6 @@ export function QuizActions({
     window.open(url, "_blank")
   }
 
-  const handleDownload = async () => {
-    if (!userId) {
-      promptLogin()
-      return
-    }
-
-    setIsDownloading(true)
-    try {
-      const response = await fetch(`/api/quiz/${quizSlug}`)
-      if (!response.ok) {
-        throw new Error("Failed to fetch quiz data")
-      }
-      const quizData = await response.json()
-      setData(quizData)
-
-      const doc = (
-        <ConfigurableQuizPDF
-          quiz={quizData}
-          showOptions={pdfConfig.showOptions}
-          showAnswerSpace={pdfConfig.showAnswerSpace}
-          answerSpaceHeight={pdfConfig.answerSpaceHeight}
-          showAnswers={pdfConfig.showAnswers}
-        />
-      )
-
-      const pdfBlob = await pdf(doc).toBlob()
-      const blobUrl = URL.createObjectURL(pdfBlob)
-      const a = document.createElement("a")
-      a.href = blobUrl
-      a.download = `${quizData.title}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(blobUrl)
-
-      toast({
-        title: "Download started",
-        description: "Your quiz is downloading now.",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      })
-    } finally {
-      setIsDownloading(false)
-    }
-  }
 
   const handleRatingChange = async (value: number) => {
     if (!userId) {
@@ -573,29 +525,13 @@ export function QuizActions({
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleDownload}
-                        disabled={isDownloading || !canDownloadPDF()}
-                        className={cn(
-                          "h-12 w-12 rounded-xl",
-                          shadowPulse,
-                          "focus:ring-2 focus:ring-offset-1",
-                          canDownloadPDF()
-                            ? "bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-400"
-                            : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800/60 dark:text-gray-400"
-                        )}
-                        aria-label={canDownloadPDF() ? "Download as PDF" : "Upgrade to download PDF"}
-                      >
-                        {isDownloading ? (
-                          <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : canDownloadPDF() ? (
-                          <FileDown className="h-5 w-5" />
-                        ) : (
-                          <Lock className="h-5 w-5" />
-                        )}
-                      </Button>
+                      <QuizPDFDownload
+                        quizData={data}
+                        config={pdfConfig}
+                        canDownloadPDF={canDownloadPDF}
+                        
+                      ></QuizPDFDownload>
+                        
                     </TooltipTrigger>
                     <TooltipContent side="right" className="text-sm py-1.5 px-2">
                       {canDownloadPDF() ? "Download as PDF" : "Upgrade to download PDF"}

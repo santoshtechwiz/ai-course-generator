@@ -146,7 +146,7 @@ const ConfigurableQuizPDF: React.FC<QuizPDFProps> = ({ quizData, config = {} }) 
             <Text style={styles.question}>{q.question}</Text>
             {showOptions && q.options && (
               <View style={styles.optionsContainer}>
-                {q.options.map((option, j) => (
+                {q.options.map((option: any, j: number) => (
                   <Text key={j} style={styles.option}>
                     {`${String.fromCharCode(65 + j)}. ${option}`}
                   </Text>
