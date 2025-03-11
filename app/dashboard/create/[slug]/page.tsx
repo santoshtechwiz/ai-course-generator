@@ -2,10 +2,10 @@ import { getAuthSession } from "@/lib/authOptions"
 import { redirect } from "next/navigation"
 import { getCourses } from "@/app/actions/getCourses"
 import ConfirmChapters from "@/components/features/course/ConfirmChapters"
-import CourseCreationVideo from "@/components/landing/CourseCreationVideo"
 import { getCourseData } from "@/app/actions/getCourseData"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import type { Metadata } from "next"
+import CourseCreationVideo from "@/components/common/CourseCreationVideo"
 
 export const fetchCache = "force-no-store"
 type Props = {
