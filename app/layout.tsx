@@ -2,11 +2,12 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { Providers } from "@/app/providers/provider"
+
 import { Analytics } from "@/app/analytics"
 import { defaultSEO } from "@/lib/seo-utils"
 import { JsonLd } from "@/components/json-ld"
 import Footer from "@/components/shared/Footer"
+import { Providers } from "@/providers/provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
