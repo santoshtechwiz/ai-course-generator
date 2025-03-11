@@ -78,14 +78,23 @@ function generateCourseSchema(params: CourseSchemaParams) {
         ...(params.instructorUrl && { url: params.instructorUrl }),
       },
     }),
-    courseWorkload: "0.5 hours",
+    
     hasCourseInstance: {
       "@type": "CourseInstance",
+      "courseWorkload": "P2D",
       courseMode: "online",
       provider: {
         "@type": "Organization",
         name: params.provider,
         url: new URL("/", params.url).toString(),
+      },
+      courseSchedule: {
+        "@type": "Schedule",
+        "duration": "PT3H",
+        "repeatFrequency": "Daily",
+        "repeatCount": 31,
+        "startDate": "2024-07-01",
+        "endDate": "2024-07-31"
       },
     },
     audience: {
