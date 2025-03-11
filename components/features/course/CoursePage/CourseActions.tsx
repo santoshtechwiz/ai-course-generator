@@ -2,7 +2,22 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Eye, EyeOff, Heart, Share2, Star, Trash2, Loader2, ChevronRight, Settings } from "lucide-react"
+import {
+  Eye,
+  EyeOff,
+  Heart,
+  Share2,
+  Star,
+  Trash2,
+  Loader2,
+  ChevronRight,
+  ChevronLeft,
+  Settings,
+  Copy,
+  Twitter,
+  Facebook,
+  Linkedin,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCourseActions } from "@/hooks/useCourseActions"
 import { useScrollDirection } from "@/hooks/use-scroll-direction"
@@ -17,18 +32,34 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 
 interface CourseActionsProps {
   slug: string
+  position?: "left" | "right"
 }
 
-export default function CourseActions({ slug }: CourseActionsProps) {
+export default function CourseActions({ slug, position = "left" }: CourseActionsProps) {
   const { status, loading, handleAction, handleRating } = useCourseActions({ slug })
   const [showRating, setShowRating] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const { visible } = useScrollDirection()
+  const [hasInteracted, setHasInteracted] = useState(false)
+
+  // Set hasInteracted to true after first interaction
+  useEffect(() => {
+    if (isOpen && !hasInteracted) {
+      setHasInteracted(true)
+    }
+  }, [isOpen, hasInteracted])
 
   const handleShare = async (type: "copy" | "twitter" | "facebook" | "linkedin") => {
     const url = `${window.location.origin}/course/${slug}`
@@ -62,29 +93,106 @@ export default function CourseActions({ slug }: CourseActionsProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [isOpen])
 
+  // Animation variants
+  const containerVariants = {
+    hidden: {
+      opacity: 0,
+      y: 20,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 25,
+      },
+    },
+    exit: {
+      opacity: 0,
+      y: 20,
+      transition: {
+        duration: 0.2,
+      },
+    },
+  }
+
+  const panelVariants = {
+    hidden: {
+      opacity: 0,
+      x: position === "left" ? -20 : 20,
+      width: 0,
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      width: "auto",
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 30,
+        when: "beforeChildren",
+        staggerChildren: 0.05,
+      },
+    },
+    exit: {
+      opacity: 0,
+      x: position === "left" ? -20 : 20,
+      width: 0,
+      transition: {
+        duration: 0.2,
+        when: "afterChildren",
+        staggerChildren: 0.05,
+        staggerDirection: -1,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 500,
+        damping: 25,
+      },
+    },
+    exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <AnimatePresence>
         {visible && (
           <motion.div
             data-course-actions
-            className="fixed left-0 top-1/2 -translate-y-1/2 z-50 flex"
-            initial={{ x: "-100%" }}
-            animate={{ x: "0" }}
-            exit={{ x: "-100%" }}
-            style={{ margin: 0, padding: 0 }}
+            className={cn(
+              "fixed z-50 flex flex-col items-center",
+              position === "left"
+                ? "left-4 sm:left-6 top-1/2 -translate-y-1/2"
+                : "right-4 sm:right-6 top-1/2 -translate-y-1/2",
+            )}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
           >
             {/* Main panel with actions */}
             <AnimatePresence mode="wait">
               {isOpen && (
                 <motion.div
-                  className="bg-white dark:bg-gray-800 shadow-lg rounded-r-lg overflow-hidden"
-                  initial={{ opacity: 0, x: "-100%" }}
-                  animate={{ opacity: 1, x: "0" }}
-                  exit={{ opacity: 0, x: "-100%" }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className={cn(
+                    "bg-card border shadow-lg rounded-xl overflow-hidden mb-3",
+                    position === "left" ? "origin-bottom-left" : "origin-bottom-right",
+                  )}
+                  variants={panelVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
                 >
-                  <div className="flex flex-col p-2 gap-2">
+                  <div className="flex flex-col p-3 gap-3">
                     {/* Public/Private Toggle */}
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -92,8 +200,10 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                           onClick={() => handleAction("privacy")}
                           className={cn(
                             "w-10 h-10 flex items-center justify-center rounded-lg",
-                            "bg-emerald-500 hover:bg-emerald-600 text-white transition-colors duration-150",
+                            "bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200",
+                            "shadow-sm hover:shadow-md",
                           )}
+                          variants={itemVariants}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           disabled={loading === "privacy"}
@@ -107,7 +217,7 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                           )}
                         </motion.button>
                       </TooltipTrigger>
-                      <TooltipContent side="right">
+                      <TooltipContent side={position === "left" ? "right" : "left"}>
                         <p>{status.isPublic ? "Make Private" : "Make Public"}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -119,8 +229,10 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                           onClick={() => handleAction("favorite")}
                           className={cn(
                             "w-10 h-10 flex items-center justify-center rounded-lg",
-                            "bg-pink-500 hover:bg-pink-600 text-white transition-colors duration-150",
+                            "bg-pink-500 hover:bg-pink-600 text-white transition-all duration-200",
+                            "shadow-sm hover:shadow-md",
                           )}
+                          variants={itemVariants}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           disabled={loading === "favorite"}
@@ -132,7 +244,7 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                           )}
                         </motion.button>
                       </TooltipTrigger>
-                      <TooltipContent side="right">
+                      <TooltipContent side={position === "left" ? "right" : "left"}>
                         <p>{status.isFavorite ? "Unfavorite" : "Favorite"}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -143,7 +255,12 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                         <TooltipTrigger asChild>
                           <DropdownMenuTrigger asChild>
                             <motion.button
-                              className="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition-colors duration-150"
+                              className={cn(
+                                "w-10 h-10 flex items-center justify-center rounded-lg",
+                                "bg-blue-500 hover:bg-blue-600 text-white transition-all duration-200",
+                                "shadow-sm hover:shadow-md",
+                              )}
+                              variants={itemVariants}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                             >
@@ -151,14 +268,27 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                             </motion.button>
                           </DropdownMenuTrigger>
                         </TooltipTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                          <DropdownMenuItem onClick={() => handleShare("copy")}>Copy link</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare("twitter")}>Share on Twitter</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare("facebook")}>Share on Facebook</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare("linkedin")}>Share on LinkedIn</DropdownMenuItem>
+                        <DropdownMenuContent align={position === "left" ? "start" : "end"} className="w-56">
+                          <DropdownMenuItem onClick={() => handleShare("copy")}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            <span>Copy link</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleShare("twitter")}>
+                            <Twitter className="mr-2 h-4 w-4" />
+                            <span>Share on Twitter</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShare("facebook")}>
+                            <Facebook className="mr-2 h-4 w-4" />
+                            <span>Share on Facebook</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShare("linkedin")}>
+                            <Linkedin className="mr-2 h-4 w-4" />
+                            <span>Share on LinkedIn</span>
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <TooltipContent side="right">
+                      <TooltipContent side={position === "left" ? "right" : "left"}>
                         <p>Share</p>
                       </TooltipContent>
                     </Tooltip>
@@ -168,14 +298,19 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                       <TooltipTrigger asChild>
                         <motion.button
                           onClick={() => setShowRating(!showRating)}
-                          className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150"
+                          className={cn(
+                            "w-10 h-10 flex items-center justify-center rounded-lg",
+                            "bg-amber-500 hover:bg-amber-600 text-white transition-all duration-200",
+                            "shadow-sm hover:shadow-md",
+                          )}
+                          variants={itemVariants}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
-                          <Star className={cn("h-5 w-5", status.rating && "text-yellow-400 fill-yellow-400")} />
+                          <Star className={cn("h-5 w-5", status.rating && "fill-current")} />
                         </motion.button>
                       </TooltipTrigger>
-                      <TooltipContent side="right">
+                      <TooltipContent side={position === "left" ? "right" : "left"}>
                         <p>Rate Course</p>
                       </TooltipContent>
                     </Tooltip>
@@ -186,26 +321,31 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="flex flex-col gap-1 items-center"
+                          className="flex flex-col gap-2 items-center bg-muted/50 rounded-lg p-2"
                         >
-                          {[1, 2, 3, 4, 5].map((value) => (
-                            <motion.button
-                              key={value}
-                              onClick={() => handleRating(value)}
-                              whileHover={{ scale: 1.2 }}
-                              whileTap={{ scale: 0.9 }}
-                              className="p-1"
-                            >
-                              <Star
-                                className={cn(
-                                  "h-5 w-5 transition-colors duration-150",
-                                  value <= (status.rating || 0)
-                                    ? "text-yellow-400 fill-yellow-400"
-                                    : "text-gray-300 hover:text-yellow-400",
-                                )}
-                              />
-                            </motion.button>
-                          ))}
+                          <div className="text-xs font-medium text-muted-foreground">
+                            {status.rating ? `Your rating: ${status.rating}/5` : "Rate this course"}
+                          </div>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((value) => (
+                              <motion.button
+                                key={value}
+                                onClick={() => handleRating(value)}
+                                whileHover={{ scale: 1.2 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="p-1"
+                              >
+                                <Star
+                                  className={cn(
+                                    "h-5 w-5 transition-colors duration-150",
+                                    value <= (status.rating || 0)
+                                      ? "text-amber-400 fill-amber-400"
+                                      : "text-muted-foreground hover:text-amber-400",
+                                  )}
+                                />
+                              </motion.button>
+                            ))}
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -216,7 +356,12 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                         <TooltipTrigger asChild>
                           <AlertDialogTrigger asChild>
                             <motion.button
-                              className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors duration-150"
+                              className={cn(
+                                "w-10 h-10 flex items-center justify-center rounded-lg",
+                                "bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all duration-200",
+                                "shadow-sm hover:shadow-md",
+                              )}
+                              variants={itemVariants}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                             >
@@ -237,7 +382,7 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                             <AlertDialogAction
                               onClick={() => handleAction("delete")}
                               disabled={loading === "delete"}
-                              className="bg-red-500 text-white hover:bg-red-600"
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               {loading === "delete" ? (
                                 <span className="flex items-center gap-2">
@@ -251,7 +396,7 @@ export default function CourseActions({ slug }: CourseActionsProps) {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                      <TooltipContent side="right">
+                      <TooltipContent side={position === "left" ? "right" : "left"}>
                         <p>Delete Course</p>
                       </TooltipContent>
                     </Tooltip>
@@ -260,44 +405,69 @@ export default function CourseActions({ slug }: CourseActionsProps) {
               )}
             </AnimatePresence>
 
-            {/* Toggle button - absolutely positioned to touch the edge */}
+            {/* Toggle button */}
             <motion.button
               onClick={() => setIsOpen(!isOpen)}
-              className="h-12 w-12 flex items-center justify-center bg-primary text-primary-foreground rounded-r-lg shadow-lg"
-              style={{
-                borderRadius: "0 6px 6px 0",
-                margin: 0,
-                padding: 0,
-                border: 0,
-                outline: 0,
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-              }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {isOpen ? (
-                <motion.div initial={{ rotate: 0 }} animate={{ rotate: 180 }} transition={{ duration: 0.3 }}>
-                  <ChevronRight className="h-5 w-5" />
-                </motion.div>
-              ) : (
-                <>
-                  <Settings className="h-5 w-5" />
-                  {/* Attention-grabbing pulse animation */}
-                  <motion.div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{ borderRadius: "0 6px 6px 0" }}
-                    initial={{ opacity: 0.5, scale: 1 }}
-                    animate={{
-                      opacity: [0.5, 0.2, 0.5],
-                      scale: [1, 1.05, 1],
-                    }}
-                    transition={{
-                      repeat: Number.POSITIVE_INFINITY,
-                      duration: 2,
-                      repeatType: "loop",
-                    }}
-                  />
-                </>
+              className={cn(
+                "flex items-center justify-center rounded-full shadow-lg",
+                "bg-primary text-primary-foreground",
+                "h-14 w-14 transition-all duration-300",
+                isOpen ? "scale-90" : "scale-100",
               )}
+              whileHover={{ scale: isOpen ? 0.95 : 1.05 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <AnimatePresence mode="wait">
+                {isOpen ? (
+                  <motion.div
+                    key="close"
+                    initial={{ rotate: 0, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: 90, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {position === "left" ? <ChevronLeft className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="open"
+                    initial={{ rotate: -90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: 90, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative"
+                  >
+                    <Settings className="h-6 w-6" />
+
+                    {/* Notification badge */}
+                    {!hasInteracted && (
+                      <Badge
+                        className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-red-500 text-white"
+                        variant="destructive"
+                      >
+                        !
+                      </Badge>
+                    )}
+
+                    {/* Attention-grabbing pulse animation */}
+                    {!hasInteracted && (
+                      <motion.div
+                        className="absolute inset-0 rounded-full bg-primary"
+                        initial={{ opacity: 0.3, scale: 1 }}
+                        animate={{
+                          opacity: [0.3, 0, 0.3],
+                          scale: [1, 1.3, 1],
+                        }}
+                        transition={{
+                          repeat: Number.POSITIVE_INFINITY,
+                          duration: 1.5,
+                          repeatType: "loop",
+                        }}
+                      />
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.button>
           </motion.div>
         )}
