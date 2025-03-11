@@ -1,9 +1,12 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Book, AlertCircle, Clock, HelpCircle } from "lucide-react"
+import { AlertCircle, HelpCircle, BookOpen, Timer, CheckCircle, RotateCcw, Tag, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useSession } from "next-auth/react"
 import { submitQuizData } from "@/app/actions/actions"
@@ -177,25 +180,28 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
 
   if (error) {
     return (
-      <Card className="max-w-md mx-auto mt-8">
+      <Card className="max-w-md mx-auto mt-8 border-destructive">
         <CardHeader>
-          <CardTitle className="flex items-center text-red-500">
-            <AlertCircle className="w-6 h-6 mr-2" />
-            Error
+          <CardTitle className="flex items-center text-destructive">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            Error Loading Quiz
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p>{error}</p>
-          <Button onClick={() => fetchQuizData()} className="mt-4">
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => fetchQuizData()} className="w-full">
+            <RotateCcw className="w-4 h-4 mr-2" />
             Try Again
           </Button>
         </CardContent>
       </Card>
     )
   }
-  if(loading){
+  if (loading) {
     return (
-        <PageLoader></PageLoader>
+      <div className="flex justify-center items-center min-h-[300px]">
+        <PageLoader />
+      </div>
     )
   }
 
@@ -203,13 +209,16 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
     return (
       <Card className="max-w-md mx-auto mt-8">
         <CardHeader>
-          <CardTitle className="flex items-center text-gray-500">
-            <Book className="w-6 h-6 mr-2" />
-            No Quiz Data
+          <CardTitle className="flex items-center text-muted-foreground">
+            <Info className="w-5 h-5 mr-2" />
+            No Quiz Found
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p>No quiz data available.</p>
+          <p className="text-muted-foreground mb-4">No quiz data is available for this request.</p>
+          <Button variant="outline" onClick={() => window.history.back()} className="w-full">
+            Go Back
+          </Button>
         </CardContent>
       </Card>
     )
@@ -217,33 +226,51 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
 
   return (
     <>
-      <QuizActions
-        userId={session?.user?.id || ""}
-        ownerId={quizData.userId}
-        quizId={quizData.id.toString()}
-        quizSlug={slug}
-        quizType="blanks"
-        initialIsPublic={false}
-        initialIsFavorite={false}
-      />
-      <Card className="mb-8 shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between px-6 py-4 border-b">
-          <CardTitle className="flex items-center text-2xl font-bold">
-            <Book className="w-6 h-6 mr-2" />
-            Fill in the Blanks Quiz: {quizData.title || "Unknown"}
-          </CardTitle>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
-              </span>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setShowGuidedHelp(true)}>
-              <HelpCircle className="w-5 h-5" />
+      <div className="mb-6">
+        <QuizActions
+          userId={session?.user?.id || ""}
+          ownerId={quizData.userId}
+          quizId={quizData.id.toString()}
+          quizSlug={slug}
+          quizType="blanks"
+          initialIsPublic={false}
+          initialIsFavorite={false}
+        />
+      </div>
+      <Card className="mb-8 shadow-md max-w-4xl mx-auto">
+        <CardHeader className="flex flex-row items-center justify-between px-6 py-4 border-b bg-muted/30">
+          <div className="flex flex-col space-y-1">
+            <CardTitle className="flex items-center text-xl sm:text-2xl font-bold">
+              <BookOpen className="w-5 h-5 mr-2 text-primary" />
+              <span className="truncate">{quizData.title || "Unknown"}</span>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Fill in the Blanks Quiz</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center px-2 py-1 bg-muted rounded-md">
+                    <Timer className="w-4 h-4 text-primary mr-1.5" />
+                    <span className="text-sm font-medium tabular-nums">
+                      {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Time elapsed</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <Button variant="outline" size="sm" onClick={() => setShowGuidedHelp(true)}>
+              <HelpCircle className="w-4 h-4 mr-1.5" />
+              <span className="hidden sm:inline">Help</span>
             </Button>
           </div>
         </CardHeader>
+
+
         <CardContent className="px-6 py-4">
           {quizCompleted ? (
             isAuthenticated ? (
@@ -254,8 +281,12 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
                 onComplete={handleComplete}
               />
             ) : (
-              <div>
-                <p className="mb-4">You've completed the quiz! Sign in to see your results and save your progress.</p>
+              <div className="text-center py-8">
+                <CheckCircle className="w-12 h-12 text-primary mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-4">Quiz Completed!</h3>
+                <p className="mb-6 text-muted-foreground max-w-md mx-auto">
+                  Sign in to see your results and save your progress.
+                </p>
                 <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
               </div>
             )
@@ -267,15 +298,39 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
               totalQuestions={quizData.questions.length}
             />
           ) : (
-            <p className="text-gray-500 flex items-center">
-              <AlertCircle className="w-5 h-5 mr-2" />
-              No questions available for this quiz.
-            </p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No questions available for this quiz.</p>
+            </div>
           )}
         </CardContent>
-        <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
+
+        {!quizCompleted && quizData.questions.length > 0 && (
+          <CardFooter className="px-6 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-between">
+            <div className="flex flex-wrap gap-2">
+              {quizData.questions[currentQuestion].openEndedQuestion?.tags?.map((tag, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  <Tag className="w-3 h-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+            <Badge
+              variant={
+                quizData.questions[currentQuestion].openEndedQuestion?.difficulty === "Hard"
+                  ? "destructive"
+                  : quizData.questions[currentQuestion].openEndedQuestion?.difficulty === "Medium"
+                    ? "secondary"
+                    : "default"
+              }
+            >
+              {quizData.questions[currentQuestion].openEndedQuestion?.difficulty || "Easy"}
+            </Badge>
+          </CardFooter>
+        )}
       </Card>
+
+      <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
     </>
   )
 }
-

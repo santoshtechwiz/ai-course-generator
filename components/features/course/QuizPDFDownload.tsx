@@ -6,7 +6,7 @@ import { pdf } from "@react-pdf/renderer"
 import type { QuizPDFProps } from "./ConfigurableQuizPDF"
 import { Button } from "@/components/ui/button"
 import ConfigurableQuizPDF from "./ConfigurableQuizPDF"
-import { FileDown, Lock } from 'lucide-react'
+import { Download, FileDown, FileText, Lock } from 'lucide-react'
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -33,6 +33,7 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
   const [isClient, setIsClient] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const { subscriptionStatus, canDownloadPDF, isLoading } = useSubscriptionStore()
+  const shadowPulse = "shadow-md hover:shadow-lg transition-shadow duration-200"
 
   useEffect(() => {
     setIsClient(true)
@@ -74,9 +75,10 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
     return null
   }
 
+
   return (
     <TooltipProvider>
-      <Tooltip>
+      <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>
           <Button
             onClick={handleDownload}
@@ -84,36 +86,47 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
             variant={variant}
             size={size}
             className={cn(
-              "relative",
-              isDisabled && "opacity-80",
-              className
+              "relative group h-12 w-12 rounded-xl",
+              "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 hover:from-blue-100 hover:to-blue-200",
+              "dark:from-blue-900/30 dark:to-blue-800/40 dark:text-blue-300 dark:hover:from-blue-800/40 dark:hover:to-blue-700/50",
+              shadowPulse,
+              "focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
+              !canDownloadPDF && "opacity-60 cursor-not-allowed",
+              className,
             )}
+            aria-label="Download PDF"
           >
             {isDownloading ? (
-              <span className="flex items-center">
-                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></span>
-                Downloading...
+              <span className="flex items-center justify-center">
+                <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
               </span>
             ) : (
               <>
                 {isDisabled ? (
-                  <Lock className="mr-2 h-4 w-4" />
+                  <Lock className="h-5 w-5" />
                 ) : (
-                  <FileDown className="mr-2 h-4 w-4" />
+                  <div className="relative flex items-center justify-center">
+                    <FileText className="h-5 w-5" />
+                    <div className="absolute -bottom-1 -right-1 flex items-center justify-center w-4 h-4 bg-blue-500 text-white rounded-full">
+                      <Download className="h-2.5 w-2.5" />
+                    </div>
+                    <span className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[10px] font-bold bg-blue-600 text-white px-1 rounded">
+                      PDF
+                    </span>
+                  </div>
                 )}
-                {isDisabled ? "Upgrade to Download PDF" : "Download PDF"}
               </>
             )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          {isDisabled 
-            ? "Upgrade your subscription to download quizzes as PDF" 
-            : "Download this quiz as a PDF file"}
+        <TooltipContent side="bottom" className="bg-blue-900 text-white border-blue-700">
+          {isDisabled ? "Upgrade your subscription to download quizzes as PDF" : "Download this quiz as a PDF file"}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   )
 }
 
-export default QuizPDFDownload
+
+
+export default QuizPDFDownload;
