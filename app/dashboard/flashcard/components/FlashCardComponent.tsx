@@ -37,7 +37,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
 
   // Calculate progress
   const progress = ((currentIndex + 1) / cards.length) * 100
-  const isSaved = currentCard?.id ? savedCardIds.includes(currentCard.id) : false
+  const isSaved = currentCard?.id ? savedCardIds.includes(currentCard.id.toString()) : false
 
   // Handle card navigation
   const handleNext = () => {
