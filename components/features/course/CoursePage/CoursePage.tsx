@@ -12,7 +12,7 @@ import type { FullCourseType, FullChapterType } from "@/app/types/types"
 interface FullChapter extends FullChapterType {
   videoId: string;
 }
-import { useUser } from "@/app/providers/userContext"
+
 import throttle from "lodash.throttle"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AnimatePresence, motion } from "framer-motion"
 import MobilePlayList from "./MobilePlayList"
+import { useUser } from "@/providers/userContext"
 
 // State and Action Types
 interface State {
