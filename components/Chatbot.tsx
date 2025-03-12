@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const AnimatedQuestions = () => {
   const questions = [
@@ -32,7 +33,7 @@ const AnimatedQuestions = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentQuestionIndex((prevIndex) => (prevIndex + 1) % questions.length)
-    }, 3000) // Change question every 3 seconds
+    }, 3000)
 
     return () => clearInterval(interval)
   }, [])
@@ -61,10 +62,12 @@ interface ChatbotProps {
 
 export function Chatbot({ userId }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const { subscriptionStatus, isLoading: isSubscriptionLoading } = useSubscriptionStore()
   const [remainingQuestions, setRemainingQuestions] = useState(5)
   const [lastQuestionTime, setLastQuestionTime] = useState(Date.now())
+  const [showTooltip, setShowTooltip] = useState(false)
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
     api: "/api/chat",
@@ -75,41 +78,64 @@ export function Chatbot({ userId }: ChatbotProps) {
     },
   })
 
+  // Focus input when chat opens
   useEffect(() => {
-    // Reset remaining questions every hour
+    if (isOpen && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 300)
+    }
+  }, [isOpen])
+
+  // Reset remaining questions every hour
+  useEffect(() => {
     const interval = setInterval(() => {
       if (Date.now() - lastQuestionTime >= 3600000) {
         setRemainingQuestions(5)
       }
-    }, 60000) // Check every minute
+    }, 60000)
 
     return () => clearInterval(interval)
   }, [lastQuestionTime])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollAreaRef.current) {
+    if (scrollAreaRef.current && messages.length > 0) {
       const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
       if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight
+        setTimeout(() => {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight
+        }, 100)
       }
     }
-  }, [scrollAreaRef]) //Corrected dependency
+  }, [messages])
+
+  // Show tooltip for new users
+  useEffect(() => {
+    const hasSeenTooltip = localStorage.getItem("hasSeenChatTooltip")
+    if (!hasSeenTooltip) {
+      setShowTooltip(true)
+      setTimeout(() => {
+        setShowTooltip(false)
+        localStorage.setItem("hasSeenChatTooltip", "true")
+      }, 5000)
+    }
+  }, [])
 
   const canUseChat = useCallback(() => {
     if (isSubscriptionLoading) return false
-    if (!subscriptionStatus?.isSubscribed) return false
-    return remainingQuestions > 0
+    if (!subscriptionStatus?.isSubscribed) return remainingQuestions > 0 // Allow free users some questions
+    return true // Subscribers have unlimited questions
   }, [isSubscriptionLoading, subscriptionStatus, remainingQuestions])
 
   const handleChatSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
-      if (canUseChat()) {
+      if (canUseChat() && input.trim()) {
         handleSubmit(e)
       }
     },
-    [canUseChat, handleSubmit],
+    [canUseChat, handleSubmit, input],
   )
 
   const toggleChat = () => setIsOpen(!isOpen)
@@ -125,6 +151,22 @@ export function Chatbot({ userId }: ChatbotProps) {
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
     handleInputChange({ target: { value: suggestion } } as React.ChangeEvent<HTMLInputElement>)
+    if (inputRef.current) {
+      inputRef.current.focus()
+    }
+  }
+
+  // Format time remaining until reset
+  const formatTimeRemaining = () => {
+    const timeElapsed = Date.now() - lastQuestionTime
+    const timeRemaining = 3600000 - timeElapsed
+
+    if (timeRemaining <= 0) return "Available now"
+
+    const minutes = Math.floor(timeRemaining / 60000)
+    const seconds = Math.floor((timeRemaining % 60000) / 1000)
+
+    return `${minutes}m ${seconds}s`
   }
 
   return (
@@ -143,9 +185,25 @@ export function Chatbot({ userId }: ChatbotProps) {
                 <div className="flex items-center gap-2">
                   <BrainCircuit className="h-5 w-5 text-primary" />
                   <CardTitle className="text-base font-medium">Course AI Assistant</CardTitle>
-                  <Badge variant="outline" className="ml-2 text-xs font-normal">
-                    {remainingQuestions} left
-                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant={remainingQuestions > 0 ? "outline" : "destructive"}
+                          className="ml-2 text-xs font-normal cursor-help"
+                        >
+                          {subscriptionStatus?.isSubscribed ? "Pro" : `${remainingQuestions} left`}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        {subscriptionStatus?.isSubscribed
+                          ? "Unlimited questions with your Pro subscription"
+                          : remainingQuestions > 0
+                            ? `${remainingQuestions} questions remaining this hour`
+                            : `Questions reset in ${formatTimeRemaining()}`}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <Button variant="ghost" size="sm" onClick={toggleChat} className="h-8 w-8 p-0">
                   <X className="h-4 w-4" />
@@ -179,8 +237,14 @@ export function Chatbot({ userId }: ChatbotProps) {
                     </div>
                   ) : (
                     <div className="space-y-4 pt-4 pb-4">
-                      {messages.map((m) => (
-                        <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+                      {messages.map((m, index) => (
+                        <motion.div
+                          key={m.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
+                        >
                           <div
                             className={cn(
                               "flex gap-2 max-w-[85%]",
@@ -190,7 +254,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                           >
                             <Avatar className="w-7 h-7 shrink-0">
                               {m.role === "user" ? (
-                                <AvatarImage src="/user-avatar.png" />
+                                <AvatarImage src="/user-avatar.png" alt="User" />
                               ) : (
                                 <div className="w-full h-full bg-primary/10 flex items-center justify-center">
                                   <Crown className="h-3.5 w-3.5 text-primary" />
@@ -209,10 +273,10 @@ export function Chatbot({ userId }: ChatbotProps) {
                               </ReactMarkdown>
                             </div>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                       {isLoading && (
-                        <div className="flex justify-start">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                           <div className="flex items-start gap-2">
                             <Avatar className="w-7 h-7">
                               <div className="w-full h-full bg-primary/10 flex items-center justify-center">
@@ -222,12 +286,24 @@ export function Chatbot({ userId }: ChatbotProps) {
                             </Avatar>
                             <div className="px-3 py-2 rounded-lg bg-muted">
                               <div className="flex items-center gap-2">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                <span className="text-xs text-muted-foreground">Thinking...</span>
+                                <div className="flex space-x-1">
+                                  <div
+                                    className="w-2 h-2 bg-primary/60 rounded-full animate-pulse"
+                                    style={{ animationDelay: "0ms" }}
+                                  ></div>
+                                  <div
+                                    className="w-2 h-2 bg-primary/60 rounded-full animate-pulse"
+                                    style={{ animationDelay: "150ms" }}
+                                  ></div>
+                                  <div
+                                    className="w-2 h-2 bg-primary/60 rounded-full animate-pulse"
+                                    style={{ animationDelay: "300ms" }}
+                                  ></div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </motion.div>
                       )}
                       {error && (
                         <Alert variant="destructive" className="mx-0 mt-2 p-2">
@@ -240,8 +316,8 @@ export function Chatbot({ userId }: ChatbotProps) {
                           <AlertCircle className="h-3.5 w-3.5" />
                           <AlertDescription className="text-xs">
                             {!subscriptionStatus?.isSubscribed
-                              ? "You need to subscribe to use the chatbot. Please upgrade your plan."
-                              : "You've reached the maximum number of questions for this hour. Please try again later."}
+                              ? "You've reached the free limit. Upgrade to Pro for unlimited questions."
+                              : `Questions reset in ${formatTimeRemaining()}`}
                           </AlertDescription>
                         </Alert>
                       )}
@@ -253,6 +329,7 @@ export function Chatbot({ userId }: ChatbotProps) {
               <CardFooter className="border-t p-3">
                 <form onSubmit={handleChatSubmit} className="flex w-full items-center space-x-2">
                   <Input
+                    ref={inputRef}
                     value={input}
                     onChange={handleInputChange}
                     placeholder={canUseChat() ? "Ask a question..." : "Chatbot unavailable"}
@@ -272,22 +349,31 @@ export function Chatbot({ userId }: ChatbotProps) {
             </Card>
           </motion.div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Button
-              onClick={toggleChat}
-              size="icon"
-              className="rounded-full h-12 w-12 shadow-lg bg-primary hover:bg-primary/90"
-            >
-              <MessageSquare className="h-5 w-5 text-primary-foreground" />
-            </Button>
-          </motion.div>
+          <TooltipProvider>
+            <Tooltip open={showTooltip}>
+              <TooltipTrigger asChild>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={toggleChat}
+                    size="icon"
+                    className="rounded-full h-12 w-12 shadow-lg bg-primary hover:bg-primary/90"
+                  >
+                    <MessageSquare className="h-5 w-5 text-primary-foreground" />
+                  </Button>
+                </motion.div>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="p-2">
+                <p className="text-sm">Need help? Chat with our AI assistant!</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </AnimatePresence>
     </div>
