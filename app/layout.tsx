@@ -9,7 +9,11 @@ import { JsonLd } from "@/components/json-ld"
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/providers/provider"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+})
 
 export const metadata: Metadata = {
   title: {
@@ -78,13 +82,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning className="scroll-smooth">
+      <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
           <JsonLd />
-          {children}
+          <main className="flex-1 flex flex-col">{children}</main>
           <Analytics />
-          <Footer></Footer>
+          <Footer />
         </Providers>
       </body>
     </html>

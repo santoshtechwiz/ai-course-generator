@@ -18,12 +18,13 @@ import Link from "next/link"
 import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 
+// Update the NavItems component for better spacing and hover effects
 const NavItems = () => {
   const router = useRouter()
   const pathname = usePathname()
 
   return (
-    <nav className="mx-6 hidden items-center space-x-1 md:flex">
+    <nav className="mx-6 hidden items-center space-x-2 md:flex">
       {navItems.map((item) => (
         <motion.div
           key={item.name}
@@ -33,7 +34,7 @@ const NavItems = () => {
         >
           <Button
             variant={pathname === item.href ? "default" : "ghost"}
-            className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium ${
+            className={`flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium transition-colors duration-200 ${
               pathname === item.href
                 ? "bg-primary text-primary-foreground"
                 : "text-foreground hover:bg-accent hover:text-accent-foreground"
@@ -42,7 +43,7 @@ const NavItems = () => {
           >
             <item.icon className="h-4 w-4" />
             <span>{item.name}</span>
-            {item.subItems.length > 0 && <ChevronDown className="h-3 w-3 ml-1" />}
+            {item.subItems.length > 0 && <ChevronDown className="h-3 w-3 ml-1.5" />}
           </Button>
         </motion.div>
       ))}
@@ -96,6 +97,7 @@ export default function MainNavbar() {
   }
 
   return (
+    // Update the main header component
     <motion.header
       className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
         scrolled ? "shadow-md" : ""
@@ -104,7 +106,7 @@ export default function MainNavbar() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="container mx-auto max-w-screen-xl flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto max-w-screen-xl flex h-16 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center flex-shrink-0">
           <motion.div
             whileHover={{ scale: 1.03 }}
@@ -118,12 +120,12 @@ export default function MainNavbar() {
           <NavItems />
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsSearchModalOpen(true)}
-            className="rounded-full hover:bg-accent hover:text-accent-foreground"
+            className="rounded-full hover:bg-accent hover:text-accent-foreground transition-colors duration-200"
           >
             <Search className="h-4 w-4" />
             <span className="sr-only">Search</span>
@@ -134,16 +136,16 @@ export default function MainNavbar() {
 
           {status === "authenticated" ? (
             <UserMenu>
-              <DropdownMenuContent className="w-56 rounded-xl p-1" align="end" forceMount>
-                <div className="flex flex-col space-y-1 p-2">
+              <DropdownMenuContent className="w-56 rounded-xl p-2" align="end" forceMount>
+                <div className="flex flex-col space-y-1.5 p-2">
                   {session?.user?.name && <p className="font-medium">{session.user.name}</p>}
                   {session?.user?.email && (
-                    <p className="w-[200px] truncate body-small text-muted-foreground">{session.user.email}</p>
+                    <p className="w-[200px] truncate text-sm text-muted-foreground">{session.user.email}</p>
                   )}
                   {getSubscriptionBadge()}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="cursor-pointer rounded-md">
+                <DropdownMenuItem asChild className="cursor-pointer rounded-md py-1.5">
                   <Link href="/dashboard" className="flex items-center">
                     <User className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
@@ -152,7 +154,7 @@ export default function MainNavbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleSignOut}
-                  className="flex items-center cursor-pointer rounded-md text-destructive focus:text-destructive"
+                  className="flex items-center cursor-pointer rounded-md text-destructive focus:text-destructive py-1.5"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
@@ -165,7 +167,7 @@ export default function MainNavbar() {
                 variant="default"
                 size="sm"
                 onClick={handleSignIn}
-                className="rounded-full px-4 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="rounded-full px-4 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-200"
               >
                 <LogIn className="mr-2 h-4 w-4" />
                 Sign In
@@ -177,7 +179,7 @@ export default function MainNavbar() {
             variant="ghost"
             size="icon"
             onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden rounded-full hover:bg-accent hover:text-accent-foreground"
+            className="md:hidden rounded-full hover:bg-accent hover:text-accent-foreground transition-colors duration-200"
           >
             <Menu className="h-5 w-5" />
             <span className="sr-only">Toggle menu</span>

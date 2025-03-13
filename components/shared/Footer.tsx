@@ -6,7 +6,6 @@ import Logo from "./Logo"
 import { Twitter, Facebook, Linkedin, Instagram } from "lucide-react"
 import { NewsletterForm } from "../newsletter-form"
 
-
 const footerLinks = [
   {
     title: "Platform",
@@ -73,9 +72,9 @@ export default function Footer() {
   return (
     <footer className="border-t bg-background mt-auto">
       {/* Main Footer Content */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10"
           variants={containerAnimation}
           initial="hidden"
           whileInView="visible"
@@ -89,12 +88,12 @@ export default function Footer() {
               </Link>
             </motion.div>
 
-            <p className="text-base text-muted-foreground max-w-md">
+            <p className="text-base text-muted-foreground max-w-md leading-relaxed">
               Empowering education through AI-driven learning experiences. Create and take quizzes, generate courses,
               and enhance your educational journey.
             </p>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-3 pt-2">
               {socialLinks.map((social) => (
                 <Button
                   key={social.label}
@@ -112,10 +111,10 @@ export default function Footer() {
           </motion.div>
 
           {/* Navigation Links */}
-          <motion.div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-8" variants={itemAnimation}>
+          <motion.div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-10" variants={itemAnimation}>
             {footerLinks.map((section) => (
-              <div key={section.title} className="space-y-4">
-                <h3 className="text-sm font-semibold tracking-wide text-foreground">{section.title}</h3>
+              <div key={section.title} className="space-y-5">
+                <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">{section.title}</h3>
                 <ul className="space-y-3">
                   {section.links.map((link) => (
                     <li key={link.name}>
@@ -136,10 +135,10 @@ export default function Footer() {
           </motion.div>
 
           {/* Newsletter Subscription */}
-          <motion.div className="lg:col-span-3 space-y-4" variants={itemAnimation}>
+          <motion.div className="lg:col-span-3 space-y-5" variants={itemAnimation}>
             <div>
-              <h3 className="text-sm font-semibold tracking-wide text-foreground mb-4">Stay Updated</h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase mb-4">Stay Updated</h3>
+              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
                 Subscribe to our newsletter for the latest updates and features.
               </p>
 
@@ -153,9 +152,9 @@ export default function Footer() {
       <div className="border-t border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">© {currentYear} CourseAI. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground font-medium">© {currentYear} CourseAI. All rights reserved.</p>
 
-            <p className="text-xs text-muted-foreground text-center md:text-right max-w-md">
+            <p className="text-xs text-muted-foreground text-center md:text-right max-w-md leading-relaxed">
               AI can make mistakes. CourseAI is an AI-powered tool and may produce incorrect or biased information.
               Always verify important information.
             </p>

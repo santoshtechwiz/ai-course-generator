@@ -1,262 +1,383 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useRef, useEffect } from "react"
+import * as React from "react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+import { useMutation } from "@tanstack/react-query"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Sparkles } from "lucide-react"
+import axios from "axios"
+import { signIn, useSession } from "next-auth/react"
+import { Layers, HelpCircle, Timer } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { toast } from "@/hooks/use-toast"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
-import type { QueryParams } from "@/app/types/types"
 
-interface FlashCreationFormProps {
-  maxQuestions?: number
+import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { usePersistentState } from "@/hooks/usePersistentState"
+import { cn } from "@/lib/utils"
+
+import { z } from "zod"
+import type { QueryParams } from "@/app/types/types"
+import { SignInBanner } from "@/components/features/quiz/SignInBanner"
+import { ConfirmDialog } from "@/components/features/quiz/ConfirmDialog"
+const flashcardSchema = z.object({
+  topic: z.string().nonempty("Topic is required"),
+  amount: z.number().int().min(1, "Amount must be at least 1").max(100, "Amount must be at most 100"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+});
+
+type FlashCardFormData = z.infer<typeof flashcardSchema> & {
+  userType?: string
+}
+
+interface FlashCardCreateProps {
+  credits: number
+  isLoggedIn: boolean
+  maxCards: number
   params?: QueryParams
 }
 
-const formSchema = z.object({
-  title: z
-    .string()
-    .min(3, { message: "Topic must be at least 3 characters" })
-    .max(100, { message: "Topic must be less than 100 characters" }),
-  amount: z
-    .number()
-    .min(1, { message: "You must create at least 1 flashcard" })
-    .max(20, { message: "You can create up to 20 flashcards at once" }),
-  difficulty: z.enum(["easy", "medium", "hard"], {
-    required_error: "Please select a difficulty level",
-  }),
-})
-
-const EXAMPLE_TOPICS = [
-  "JavaScript Promises and Async/Await",
-  "React Hooks and State Management",
-  "Python Data Structures",
-  "Machine Learning Fundamentals",
-  "SQL Joins and Queries",
-  "World War II Major Battles",
-  "Human Anatomy: The Nervous System",
-  "Photosynthesis Process",
-]
-
-const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, params }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [exampleTopic, setExampleTopic] = useState("")
+export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params }: FlashCardCreateProps) {
   const router = useRouter()
-  const formRef = useRef<HTMLFormElement>(null)
+  const { toast } = useToast()
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(false)
+  const { data: session, status } = useSession()
   const { subscriptionStatus } = useSubscriptionStore()
 
-  useEffect(() => {
-    const randomIndex = Math.floor(Math.random() * EXAMPLE_TOPICS.length)
-    setExampleTopic(EXAMPLE_TOPICS[randomIndex])
-  }, [])
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: params?.title || "",
-      amount: 5,
-      difficulty: "medium",
-    },
+  const [formData, setFormData] = usePersistentState<FlashCardFormData>("flashcardFormData", {
+    topic: params?.title || "",
+    amount: params?.amount ? Number.parseInt(params.amount, 10) : maxCards,
+    difficulty: "medium",
   })
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      setIsSubmitting(true)
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isValid },
+  } = useForm<FlashCardFormData>({
+    resolver: zodResolver(flashcardSchema),
+    defaultValues: formData,
+    mode: "onChange",
+  })
 
-      const response = await fetch("/api/flashcard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create flashcards")
+  React.useEffect(() => {
+    if (params?.title) {
+      setValue("topic", params.title)
+    }
+    if (params?.amount) {
+      const amount = Number.parseInt(params.amount, 10)
+      if (amount !== maxCards) {
+        setValue("amount", Math.min(amount, maxCards))
       }
+    }
+  }, [params?.title, params?.amount, maxCards, setValue])
 
-      const data = await response.json()
+  React.useEffect(() => {
+    const subscription = watch((value) => setFormData(value as FlashCardFormData))
+    return () => subscription.unsubscribe()
+  }, [watch, setFormData])
 
+  const { mutateAsync: createFlashCardsMutation } = useMutation({
+    mutationFn: async (data: FlashCardFormData) => {
+      data.userType = subscriptionStatus?.subscriptionPlan
+      const response = await axios.post("/api/flashcards", data)
+      return response.data
+    },
+    onError: (error) => {
+      console.error("Error creating flashcards:", error)
       toast({
-        title: "Flashcards created!",
-        description: `Created ${values.amount} ${values.difficulty} flashcards about "${values.title}"`,
-      })
-
-      router.push(`/dashboard/flashcard/${data.data.slug}`)
-    } catch (error) {
-      toast({
-        title: "Something went wrong",
         description: "Failed to create flashcards. Please try again.",
         variant: "destructive",
       })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    },
+  })
 
-  const isTopicValid = form.watch("title").length >= 3
-  const difficulty = form.watch("difficulty")
-  const amount = form.watch("amount")
+  const onSubmit = React.useCallback(
+    (data: FlashCardFormData) => {
+      if (isLoading) return
 
-  const handleButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (formRef.current) {
-      await form.trigger()
-      if (form.formState.isValid) {
-        form.handleSubmit(onSubmit)()
+      if (!isLoggedIn) {
+        signIn("credentials", { callbackUrl: "/dashboard/flashcards" })
+        return
       }
+
+      setIsLoading(true)
+      setIsConfirmDialogOpen(true)
+    },
+    [isLoading, isLoggedIn],
+  )
+
+  const handleConfirm = React.useCallback(async () => {
+    setIsConfirmDialogOpen(false)
+
+    try {
+      const response = await createFlashCardsMutation(watch())
+      const flashcardSetId = response?.flashcardSetId
+
+      if (!flashcardSetId) throw new Error("Flashcard set ID not found")
+
+      toast({
+        title: "Success!",
+        description: "Your flashcards have been created.",
+      })
+
+      router.push(`/dashboard/flashcards/${response?.slug}`)
+    } catch (error) {
+      // Error is handled in the mutation's onError callback
+    } finally {
+      setIsLoading(false)
     }
-  }
+  }, [createFlashCardsMutation, watch, toast, router])
 
-  const handleExampleClick = () => {
-    form.setValue("title", exampleTopic)
-  }
+  const amount = watch("amount")
+  const difficulty = watch("difficulty")
+  const topic = watch("topic")
 
-  const getDifficultyColor = (diff: string) => {
-    switch (diff) {
-      case "easy":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "medium":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-      case "hard":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
-    }
-  }
+  const isFormValid = React.useMemo(() => {
+    return !!topic && !!amount && !!difficulty && isValid
+  }, [topic, amount, difficulty, isValid])
 
-  const getEstimatedTime = () => {
-    const baseTime = 5
-    const difficultyMultiplier = difficulty === "easy" ? 0.8 : difficulty === "hard" ? 1.5 : 1
-    const cardMultiplier = amount * 0.5
-    return Math.round(baseTime + cardMultiplier * difficultyMultiplier)
-  }
+  const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
 
   return (
-    <div className="max-w-3xl mx-auto py-12">
-      <div className="bg-card rounded-lg border shadow-sm p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <span>New Flashcard Set</span>
-          </h2>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
+    >
+      <SignInBanner isAuthenticated={status === "authenticated"} />
+      <Card className="bg-background border border-border shadow-sm">
+        <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
+          <div className="flex justify-center mb-4">
+            <motion.div
+              className="p-3 bg-primary/10 rounded-xl"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Layers className="w-8 h-8 text-primary" />
+            </motion.div>
+          </div>
+          <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">Create Flashcards</CardTitle>
+          <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
+            Generate flashcards to help you study any topic
+          </p>
+        </CardHeader>
 
-        <Form {...form}>
-          <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-medium">Topic</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input placeholder={`e.g. ${exampleTopic}`} className="bg-background h-11" {...field} />
-                    </div>
-                  </FormControl>
-                  <div className="flex justify-between mt-2">
-                    <FormDescription>What would you like to learn about?</FormDescription>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 text-xs text-primary"
-                      onClick={handleExampleClick}
-                    >
-                      Use example
-                    </Button>
-                  </div>
-                  <FormMessage />
-                </FormItem>
+        <CardContent className="space-y-6 pt-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Label htmlFor="topic" className="text-base font-medium text-foreground flex items-center gap-2">
+                Topic
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="w-[200px]">Enter any topic you'd like to create flashcards for</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="topic"
+                  placeholder="Enter the flashcard topic"
+                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
+                  {...register("topic")}
+                  aria-describedby="topic-description"
+                />
+              </div>
+              {errors.topic && (
+                <p className="text-sm text-destructive mt-1" id="topic-error">
+                  {errors.topic.message}
+                </p>
               )}
-            />
+              <p className="text-sm text-muted-foreground" id="topic-description">
+                Choose a specific topic for more focused flashcards
+              </p>
+            </motion.div>
 
-            <FormField
-              control={form.control}
-              name="difficulty"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-medium">Difficulty Level</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-background h-11">
-                        <SelectValue placeholder="Select difficulty" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="easy">Easy - Basic concepts and definitions</SelectItem>
-                      <SelectItem value="medium">Medium - Moderate complexity and application</SelectItem>
-                      <SelectItem value="hard">Hard - Advanced concepts and analysis</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription className="mt-2">Determines the complexity of questions and answers</FormDescription>
-                  <FormMessage />
-                </FormItem>
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Label className="text-base font-medium text-foreground flex items-center gap-2">
+                Number of Flashcards
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="w-[200px]">Select how many flashcards you want in your set</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+              <div className="space-y-3 px-2">
+                <div className="flex items-center justify-between px-2">
+                  <Timer className="w-5 h-5 text-muted-foreground" />
+                  <motion.span
+                    className="text-2xl font-bold text-primary"
+                    key={amount}
+                    initial={{ scale: 1.2, color: "#00ff00" }}
+                    animate={{ scale: 1, color: "var(--primary)" }}
+                    transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                  >
+                    {amount}
+                  </motion.span>
+                </div>
+                <Controller
+                  name="amount"
+                  control={control}
+                  render={({ field }) => (
+                    <SubscriptionSlider
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
+                      ariaLabel="Select number of flashcards"
+                    />
+                  )}
+                />
+                <p className="text-sm text-muted-foreground text-center">Select between 1 and {maxCards} flashcards</p>
+              </div>
+              {errors.amount && <p className="text-sm text-destructive mt-1">{errors.amount.message}</p>}
+              <p className="text-sm text-muted-foreground mt-2">
+                {isLoggedIn
+                  ? "Unlimited flashcard sets available"
+                  : `This set will use ${amount} credit${amount > 1 ? "s" : ""}`}
+              </p>
+            </motion.div>
+
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Label className="text-base font-medium text-foreground flex items-center gap-2">
+                Difficulty
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="w-[200px]">Choose how challenging the flashcards should be</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+              <div className="grid grid-cols-3 gap-4">
+                {["easy", "medium", "hard"].map((level) => (
+                  <Button
+                    key={level}
+                    type="button"
+                    variant={difficulty === level ? "default" : "outline"}
+                    className={cn(
+                      "capitalize w-full h-12 font-medium transition-all",
+                      difficulty === level ? "border-primary shadow-sm" : "hover:border-primary/50",
+                    )}
+                    onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
+                    aria-pressed={difficulty === level}
+                  >
+                    {level}
+                  </Button>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <h3 className="text-base font-semibold mb-2">Available Credits</h3>
+              <Progress value={(credits / 10) * 100} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+              </p>
+            </motion.div>
+
+            <AnimatePresence>
+              {errors.root && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <Alert variant="destructive">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{errors.root.message}</AlertDescription>
+                  </Alert>
+                </motion.div>
               )}
-            />
+            </AnimatePresence>
 
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-medium">Number of Flashcards: {field.value}</FormLabel>
-                  <FormControl>
-                    <div className="pt-4">
-                      <SubscriptionSlider value={field.value} onValueChange={(val) => field.onChange(val)} />
-                    </div>
-                  </FormControl>
-                  <div className="flex justify-between text-xs text-muted-foreground pt-2">
-                    <span>Fewer</span>
-                    <span>More</span>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Separator className="my-8" />
-
-            <PlanAwareButton
-              onClick={handleButtonClick}
-              isLoading={isSubmitting}
-              hasCredits={(subscriptionStatus?.credits ?? 0) > 0}
-              isEnabled={isTopicValid}
-              label="Create Flashcards"
-              loadingLabel={isSubmitting ? "Generating flashcards..." : "Create Flashcards"}
-              className="w-full h-12 text-base font-medium"
-              customStates={{
-                default: {
-                  label: "Create Flashcards",
-                  tooltip: "Click to generate your flashcards",
-                },
-                notEnabled: {
-                  label: "Enter a topic to generate",
-                  tooltip: "Please enter a topic before generating the flashcards",
-                },
-                noCredits: {
-                  label: "Out of credits",
-                  tooltip: "You need credits to generate flashcards. Consider upgrading your plan.",
-                },
-              }}
-            />
+            <motion.div
+              className="pt-4 border-t border-border/60"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <PlanAwareButton
+                label="Generate Flashcards"
+                onClick={handleSubmit(onSubmit)}
+                isLoggedIn={isLoggedIn}
+                isEnabled={!isDisabled}
+                isLoading={isLoading}
+                hasCredits={credits > 0}
+                loadingLabel="Generating Flashcards..."
+                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg"
+                customStates={{
+                  default: {
+                    tooltip: "Click to generate your flashcards",
+                  },
+                  notEnabled: {
+                    label: "Enter a topic to generate",
+                    tooltip: "Please enter a topic before generating flashcards",
+                  },
+                  noCredits: {
+                    label: "Out of credits",
+                    tooltip: "You need credits to generate flashcards. Consider upgrading your plan.",
+                  },
+                }}
+              />
+            </motion.div>
           </form>
-        </Form>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+
+      <ConfirmDialog
+        isOpen={isConfirmDialogOpen}
+        onConfirm={handleConfirm}
+        onCancel={() => setIsConfirmDialogOpen(false)}
+      />
+    </motion.div>
   )
 }
-
-export default FlashCardCreate
 

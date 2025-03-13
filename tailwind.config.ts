@@ -2,7 +2,13 @@ import type { Config } from "tailwindcss"
 
 const config: Config = {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}", "*.{js,ts,jsx,tsx,mdx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+    "*.{js,ts,jsx,tsx,mdx}",
+  ],
   theme: {
     container: {
       center: true,
@@ -115,11 +121,24 @@ const config: Config = {
         "slide-down": "slideDown 0.5s ease-out forwards",
         "slide-left": "slideLeft 0.5s ease-out forwards",
         "slide-right": "slideRight 0.5s ease-out forwards",
-        "scale": "scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-        "shimmer": "shimmer 2s infinite linear",
+        scale: "scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+        shimmer: "shimmer 2s infinite linear",
       },
       transitionTimingFunction: {
-        'bounce': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        bounce: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+      },
+      spacing: {
+        section: "clamp(3rem, 8vw, 6rem)",
+        content: "clamp(1.5rem, 4vw, 3rem)",
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: "65ch",
+            color: "var(--tw-prose-body)",
+            lineHeight: "1.75",
+          },
+        },
       },
     },
   },
@@ -127,3 +146,4 @@ const config: Config = {
 }
 
 export default config
+

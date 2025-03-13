@@ -94,11 +94,11 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
               <GraduationCap className="w-5 h-5 text-white" />
             </motion.div>
 
-            <Card className="relative flex flex-col h-[450px] overflow-hidden group border-2 transition-colors hover:border-primary/50">
+            <Card className="relative flex flex-col h-[450px] overflow-hidden group border-2 transition-all duration-300 hover:border-primary/50 hover:shadow-md">
               <div className={cn("absolute inset-0 opacity-100 transition-opacity duration-300", config.gradient)} />
 
-              <CardContent className="relative flex flex-col flex-grow p-6 space-y-4">
-                <div className="space-y-2">
+              <CardContent className="relative flex flex-col flex-grow p-6 space-y-5">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Badge
                       variant="outline"
@@ -107,7 +107,7 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                       {courseLevel}
                     </Badge>
 
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-2">
                       <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                         <StarIcon className="w-3 h-3 mr-1 fill-current" />
                         {rating?.toFixed(1)}
@@ -131,12 +131,12 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                   </Badge>
                 )}
 
-                <div className="relative">
+                <div className="relative mt-1">
                   <p
                     ref={descriptionRef}
                     className={cn(
-                      "text-sm text-muted-foreground line-clamp-3 h-[4.5rem]",
-                      showFullDescription && "line-clamp-none h-auto max-h-[8rem] overflow-y-auto pr-2",
+                      "text-sm text-muted-foreground line-clamp-3 h-[4.5rem] leading-relaxed",
+                      showFullDescription && "line-clamp-none h-auto max-h-[8rem] overflow-y-auto pr-2 scrollbar-thin",
                     )}
                   >
                     {description}
@@ -148,7 +148,7 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                         e.preventDefault()
                         setShowFullDescription(!showFullDescription)
                       }}
-                      className="absolute -bottom-5 right-0 text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+                      className="absolute -bottom-5 right-0 text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 font-medium"
                     >
                       <Info className="w-3 h-3" />
                       {showFullDescription ? "Show less" : "Read more"}
@@ -156,12 +156,12 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                   )}
                 </div>
 
-                <div className="space-y-1.5 mt-auto pt-2">
+                <div className="space-y-2 mt-auto pt-3">
                   <Progress value={progress} className="h-2 bg-primary/10" />
-                  <div className="text-right text-xs text-muted-foreground">{progress}% complete</div>
+                  <div className="text-right text-xs text-muted-foreground font-medium">{progress}% complete</div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3 mt-1">
                   {[
                     { icon: BookIcon, label: "Units", value: unitCount },
                     { icon: UsersIcon, label: "Lessons", value: lessonCount },
@@ -180,7 +180,11 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
               </CardContent>
 
               <CardFooter className="p-6 pt-0">
-                <motion.div className="flex items-center gap-2 text-primary font-medium ml-auto" whileHover={{ x: 5 }}>
+                <motion.div
+                  className="flex items-center gap-2 text-primary font-medium ml-auto"
+                  whileHover={{ x: 5 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
                   Start Learning
                   <ChevronRight className="w-4 h-4" />
                 </motion.div>
