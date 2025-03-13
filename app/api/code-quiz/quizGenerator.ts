@@ -7,7 +7,7 @@ export async function generateCodingMCQs(
   language: string,
   subtopic: string,
   difficulty: string,
-  questionCount: number = 2,
+  amount: number = 2,
 ): Promise<CodeChallenge[]> {
   try {
     const response = await openai.chat.completions.create({
@@ -36,7 +36,7 @@ export async function generateCodingMCQs(
           4. Formulate four unlabeled answer options based on the code snippet, ensuring one of them is correct.
           5. Double-check that the correct answer isn't immediately obvious from the code snippet alone.
           
-          Generate exactly ${questionCount} questions in this format.
+          Generate exactly ${amount} questions in this format.
           Ensure that 90% of the questions are coding-related and 10% are concept-related.For concept-related questions, do not include a 'codeSnippet'. Each question should provide four unlabeled answer options, with only one correct answer.
           `,
         },
@@ -64,8 +64,8 @@ export async function generateCodingMCQs(
                   },
                   required: ["question", "codeSnippet", "options", "correctAnswer"],
                 },
-                minItems: questionCount,
-                maxItems: questionCount,
+                minItems: amount,
+                maxItems: amount,
               },
             },
             required: ["quizzes"],

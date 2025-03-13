@@ -7,7 +7,7 @@ import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
 import type { QueryParams } from "@/app/types/types"
 import CreateQuizForm from "./features/quiz/CreateQuizForm"
 import CodeQuizForm from "./features/code/CodeQuizForm"
-import TopicForm from "./features/openended/TopicForm"
+import OpenEndedQuizForm from "./features/openended/OpenEndedQuizForm"
 import CreateCourseForm from "./features/create/CreateCourseForm"
 import FillInTheBlankQuizForm from "./features/blanks/BlankQuizForm"
 
@@ -57,7 +57,7 @@ export function QuizWrapper({ type, queryParams }: QuizWrapperProps) {
       case "mcq":
         return <CreateQuizForm {...commonProps} />
       case "openended":
-        return <TopicForm {...commonProps} />
+        return <OpenEndedQuizForm {...commonProps} />
       case "fill-in-the-blanks":
         return <FillInTheBlankQuizForm {...commonProps} />
       case "course":

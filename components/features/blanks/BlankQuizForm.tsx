@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Brain, Info, AlertCircle } from "lucide-react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
@@ -17,15 +18,13 @@ import useSubscriptionStore from "@/store/useSubscriptionStore"
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
-
 import type { QueryParams } from "@/app/types/types"
-import { z } from "zod"
 
 const fillInTheBlankQuizSchema = z.object({
   title: z.string().min(3, "Topic must be at least 3 characters"),
   questionCount: z.number().int().positive().min(1, "Must have at least 1 question"),
   difficulty: z.enum(["easy", "medium", "hard"]),
-});
+})
 
 type FillInTheBlankQuizFormData = z.infer<typeof fillInTheBlankQuizSchema>
 
@@ -89,7 +88,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
 
   const onSubmit = handleSubmit(generateQuiz)
 
-  const topic = watch("topic")
+  const title = watch("title")
   const questionCount = watch("questionCount")
 
   const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
@@ -101,8 +100,8 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
       transition={{ duration: 0.5 }}
       className="w-full max-w-2xl mx-auto"
     >
-      <Card className="bg-background border border-border shadow-sm">
-        <CardHeader className="bg-primary/5 border-b">
+      <Card className="bg-background border border-border/60 shadow-md overflow-hidden">
+        <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
             <motion.div
               className="p-3 bg-primary/10 rounded-xl"
@@ -135,7 +134,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
               <Input
                 id="title"
                 {...register("title")}
-                placeholder="E.g., World History, Biology, Literature..."
+                placeholder="E.g., JavaScript Fundamentals, React Hooks, Data Structures..."
                 className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
                 aria-label="Quiz topic"
                 autoFocus
@@ -168,7 +167,6 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
                   <SubscriptionSlider
                     value={field.value}
                     onValueChange={field.onChange}
-                  
                     ariaLabel="Select number of questions"
                   />
                 )}
@@ -208,7 +206,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
             </AnimatePresence>
 
             <motion.div
-              className="pt-4 border-t"
+              className="pt-4 border-t border-border/60"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -221,7 +219,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
                 isLoading={isLoading}
                 hasCredits={credits > 0}
                 loadingLabel="Generating..."
-                className="w-full transition-all duration-300 hover:shadow-lg"
+                className="w-full h-12 transition-all duration-300 hover:shadow-lg"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your fill-in-the-blank quiz",
