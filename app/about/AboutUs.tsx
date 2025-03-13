@@ -38,10 +38,10 @@ const sections = [
 
 const AboutUs = () => {
   return (
-    <section className="py-4 md:py-24 lg:py-32 bg-gradient-to-b from-background to-secondary/20">
-      <div className="container px-4 md:px-6">
+    <section className="py-8 md:py-16 lg:py-24 bg-gradient-to-b from-background to-secondary/20">
+      <div className="container px-4 md:px-6 lg:px-8 mx-auto">
         <motion.div
-          className="grid gap-8 md:grid-cols-2"
+          className="grid gap-6 md:gap-8 md:grid-cols-2"
           initial="hidden"
           animate="visible"
           variants={{
@@ -62,14 +62,14 @@ const AboutUs = () => {
               transition={{ duration: 0.5 }}
             >
               <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 h-full">
-                <CardContent className="p-6 space-y-4 h-full flex flex-col">
+                <CardContent className="p-6 sm:p-8 space-y-5 h-full flex flex-col">
                   <div className="flex items-center space-x-4">
-                    <div className={`p-2 rounded-full ${section.color} bg-opacity-20`}>
+                    <div className={`p-3 rounded-full ${section.color} bg-opacity-20`}>
                       <section.icon className={`w-6 h-6 ${section.color.replace("bg-", "text-")}`} />
                     </div>
-                    <h2 className="text-xl font-semibold">{section.title}</h2>
+                    <h2 className="text-xl font-semibold tracking-tight">{section.title}</h2>
                   </div>
-                  <p className="text-muted-foreground flex-grow">{section.description}</p>
+                  <p className="text-muted-foreground flex-grow leading-relaxed text-base">{section.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -77,12 +77,16 @@ const AboutUs = () => {
         </motion.div>
 
         <motion.div
-          className="text-center mt-12"
+          className="text-center mt-12 md:mt-16"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          <Button size="lg" className="px-8 py-3 text-lg" onClick={() => (window.location.href = "/contactus")}>
+          <Button
+            size="lg"
+            className="px-8 py-3 text-lg font-medium"
+            onClick={() => (window.location.href = "/contactus")}
+          >
             Get in Touch
           </Button>
         </motion.div>

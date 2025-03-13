@@ -11,7 +11,6 @@ import {
   Check,
   ThumbsUp,
   ThumbsDown,
-  Sparkles,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
@@ -255,28 +254,27 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
   }, [showConfetti])
 
   return (
+    // Enhance the flashcard component with better spacing and typography
     <div className={quizStyles.container}>
       {/* Quiz Header with subtle animation */}
       <motion.div
-        className={quizStyles.header}
+        className="flex items-center justify-between w-full border-b border-border/50 px-6 py-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="flex items-center justify-between w-full">
-          <h2 className={quizStyles.headerTitle}>Flashcards</h2>
-          <p className="text-sm text-muted-foreground">
-            Card {currentIndex + 1} of {cards.length}
-          </p>
-        </div>
+        <h2 className="text-xl font-semibold tracking-tight">Flashcards</h2>
+        <p className="text-sm text-muted-foreground">
+          Card {currentIndex + 1} of {cards.length}
+        </p>
       </motion.div>
 
       {/* Flashcard Content */}
-      <div className="p-6 border-b border-border/50">
+      <div className="p-6 md:p-8 border-b border-border/50">
         {!isCompleted ? (
           <>
             {/* Flashcard with improved flip and hover animations */}
-            <div className="relative min-h-[300px] w-full perspective-1000">
+            <div className="relative min-h-[350px] w-full perspective-1000">
               <AnimatePresence initial={false} custom={direction} onExitComplete={() => setExitComplete(true)}>
                 <motion.div
                   key={currentIndex}
@@ -285,14 +283,14 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                   initial="enter"
                   animate="center"
                   exit="exit"
-                  className="absolute inset-0 w-full min-h-[300px]"
+                  className="absolute inset-0 w-full min-h-[350px]"
                   ref={cardRef}
                 >
                   {!flipped ? (
                     // Front of card with enhanced gradient and shadow
                     <motion.div
                       onClick={toggleFlip}
-                      className="w-full h-full rounded-lg border border-border/50 shadow-lg cursor-pointer bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 p-6 flex flex-col items-center justify-center relative overflow-hidden"
+                      className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 p-8 flex flex-col items-center justify-center relative overflow-hidden"
                       variants={frontCardVariants}
                       initial="initial"
                       animate="animate"
@@ -326,9 +324,11 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                         }}
                       />
 
-                      <div className="text-xl font-medium text-center text-blue-800 z-10">{currentCard?.question}</div>
+                      <div className="text-2xl font-medium text-center text-blue-800 z-10 max-w-md leading-relaxed">
+                        {currentCard?.question}
+                      </div>
                       <motion.div
-                        className="mt-4 text-sm text-blue-600 flex items-center gap-1"
+                        className="mt-6 text-sm text-blue-600 flex items-center gap-1"
                         animate={{
                           y: [0, -5, 0],
                         }}
@@ -345,7 +345,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                     // Back of card with different color scheme and animated self-rating buttons
                     <motion.div
                       onClick={toggleFlip}
-                      className="w-full h-full rounded-lg border border-border/50 shadow-lg cursor-pointer bg-gradient-to-br from-green-100 via-green-50 to-emerald-50 p-6 flex flex-col items-center justify-center relative overflow-hidden"
+                      className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-gradient-to-br from-green-100 via-green-50 to-emerald-50 p-8 flex flex-col items-center justify-center relative overflow-hidden"
                       variants={backCardVariants}
                       initial="initial"
                       animate="animate"
@@ -379,11 +379,15 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                         }}
                       />
 
-                      <div className="text-lg text-center text-green-800 z-10">{currentCard?.answer}</div>
+                      <div className="text-xl text-center text-green-800 z-10 max-w-md leading-relaxed">
+                        {currentCard?.answer}
+                      </div>
 
-                      <div className="mt-6 flex flex-col gap-3 w-full max-w-xs z-10">
-                        <p className="text-sm text-center text-green-700 mb-2">How well did you know this?</p>
-                        <div className="flex justify-center gap-3">
+                      <div className="mt-8 flex flex-col gap-3 w-full max-w-xs z-10">
+                        <p className="text-sm text-center text-green-700 mb-2 font-medium">
+                          How well did you know this?
+                        </p>
+                        <div className="flex justify-center gap-4">
                           <motion.div whileHover="hover" whileTap="tap" variants={buttonVariants}>
                             <Button
                               variant={selfRating[currentCard?.id || ""] === "correct" ? "default" : "outline"}
@@ -392,7 +396,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                                 e.stopPropagation()
                                 handleSelfRating(currentCard?.id || "", "correct")
                               }}
-                              className="flex items-center gap-1 relative overflow-hidden"
+                              className="flex items-center gap-2 relative overflow-hidden h-10 px-4"
                             >
                               <ThumbsUp className="h-4 w-4" />
                               Got it
@@ -407,7 +411,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                                 e.stopPropagation()
                                 handleSelfRating(currentCard?.id || "", "incorrect")
                               }}
-                              className="flex items-center gap-1 relative overflow-hidden"
+                              className="flex items-center gap-2 relative overflow-hidden h-10 px-4"
                             >
                               <ThumbsDown className="h-4 w-4" />
                               Still learning
@@ -415,58 +419,13 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                           </motion.div>
                         </div>
                       </div>
-
-                      {/* Rating feedback animation */}
-                      <AnimatePresence>
-                        {ratingAnimation === "correct" && (
-                          <motion.div
-                            className="absolute inset-0 bg-green-500/10 flex items-center justify-center"
-                            variants={ratingFeedbackVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                          >
-                            <motion.div
-                              className="bg-green-100 text-green-800 rounded-full p-3"
-                              animate={{
-                                scale: [1, 1.2, 1],
-                                rotate: [0, 10, 0, -10, 0],
-                              }}
-                              transition={{ duration: 0.5 }}
-                            >
-                              <Sparkles className="h-8 w-8" />
-                            </motion.div>
-                          </motion.div>
-                        )}
-
-                        {ratingAnimation === "incorrect" && (
-                          <motion.div
-                            className="absolute inset-0 bg-red-500/10 flex items-center justify-center"
-                            variants={ratingFeedbackVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                          >
-                            <motion.div
-                              className="bg-red-100 text-red-800 rounded-full p-3"
-                              animate={{
-                                scale: [1, 1.2, 1],
-                                rotate: [0, -5, 0, 5, 0],
-                              }}
-                              transition={{ duration: 0.5 }}
-                            >
-                              <RotateCcw className="h-8 w-8" />
-                            </motion.div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </motion.div>
                   )}
                 </motion.div>
               </AnimatePresence>
             </div>
 
-            <div className="flex justify-between items-center mt-6">
+            <div className="flex justify-between items-center mt-8">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="outline"
@@ -475,7 +434,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                     e.stopPropagation()
                     handleSaveCard()
                   }}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-2 h-10 px-4"
                 >
                   <motion.span
                     animate={
@@ -511,13 +470,13 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
           </>
         ) : (
           <motion.div
-            className="min-h-[300px] flex flex-col items-center justify-center"
+            className="min-h-[350px] flex flex-col items-center justify-center p-6"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, type: "spring" }}
           >
             <motion.div
-              className="text-2xl font-bold text-center mb-4 text-purple-700"
+              className="text-3xl font-bold text-center mb-6 text-purple-700"
               initial={{ y: -20 }}
               animate={{ y: 0 }}
               transition={{ delay: 0.2, type: "spring" }}
@@ -526,7 +485,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
             </motion.div>
 
             <motion.div
-              className="text-lg text-center mb-6 text-purple-600"
+              className="text-xl text-center mb-8 text-purple-600 max-w-md"
               initial={{ y: -20 }}
               animate={{ y: 0 }}
               transition={{ delay: 0.3, type: "spring" }}
@@ -535,18 +494,18 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
             </motion.div>
 
             <motion.div
-              className="grid grid-cols-2 gap-4 mb-8 w-full max-w-md"
+              className="grid grid-cols-2 gap-6 mb-10 w-full max-w-md"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
             >
               <motion.div
-                className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center"
+                className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg text-center"
                 whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 <motion.div
-                  className="text-3xl font-bold text-green-600 dark:text-green-400"
+                  className="text-4xl font-bold text-green-600 dark:text-green-400"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{
@@ -558,16 +517,16 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                 >
                   {Object.values(selfRating).filter((r) => r === "correct").length}
                 </motion.div>
-                <div className="text-sm text-green-600 dark:text-green-400">Cards you knew</div>
+                <div className="text-sm text-green-600 dark:text-green-400 mt-2">Cards you knew</div>
               </motion.div>
 
               <motion.div
-                className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center"
+                className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg text-center"
                 whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 <motion.div
-                  className="text-3xl font-bold text-red-600 dark:text-red-400"
+                  className="text-4xl font-bold text-red-600 dark:text-red-400"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{
@@ -579,7 +538,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                 >
                   {Object.values(selfRating).filter((r) => r === "incorrect").length}
                 </motion.div>
-                <div className="text-sm text-red-600 dark:text-red-400">Cards to review</div>
+                <div className="text-sm text-red-600 dark:text-red-400 mt-2">Cards to review</div>
               </motion.div>
             </motion.div>
 
@@ -590,7 +549,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1.1, type: "spring" }}
             >
-              <Button onClick={handleRestart} className="flex items-center gap-2">
+              <Button onClick={handleRestart} className="flex items-center gap-2 h-11 px-6 text-base font-medium">
                 <RotateCcw className="h-4 w-4" />
                 Study Again
               </Button>
@@ -601,31 +560,31 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
 
       {/* Navigation */}
       {!isCompleted && (
-        <div className="p-6">
-          <div className={quizStyles.buttonContainer}>
+        <div className="p-6 md:p-8">
+          <div className="flex justify-between items-center">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="outline"
                 onClick={handlePrevious}
                 disabled={currentIndex === 0 || !exitComplete}
-                className="flex items-center"
+                className="flex items-center h-11 px-5"
               >
-                <ChevronLeft className="mr-1 h-4 w-4" />
+                <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous
               </Button>
             </motion.div>
 
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={handleNext} disabled={!exitComplete} className="flex items-center">
+              <Button onClick={handleNext} disabled={!exitComplete} className="flex items-center h-11 px-5">
                 {currentIndex < cards.length - 1 ? (
                   <>
                     Next
-                    <ChevronRight className="ml-1 h-4 w-4" />
+                    <ChevronRight className="ml-2 h-4 w-4" />
                   </>
                 ) : (
                   <>
                     Complete
-                    <Check className="ml-1 h-4 w-4" />
+                    <Check className="ml-2 h-4 w-4" />
                   </>
                 )}
               </Button>
@@ -633,10 +592,10 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
           </div>
 
           {/* Enhanced progress indicator with animation */}
-          <div className="mt-6">
-            <div className={quizStyles.progressContainer}>
+          <div className="mt-8">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
               <motion.div
-                className={quizStyles.progressBar}
+                className="h-full rounded-full"
                 style={{
                   width: `${progress}%`,
                   background: "linear-gradient(90deg, #34d399, #3b82f6)",
