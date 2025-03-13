@@ -11,7 +11,7 @@ import { QuizActions } from "@/components/QuizActions"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
-    const response = await axios.get<CodingQuizProps>(`/api/code/${slug}`)
+    const response = await axios.get<CodingQuizProps>(`/api/code-quiz/${slug}`)
     if (response.status !== 200) {
       throw new Error("Failed to fetch quiz data")
     }
