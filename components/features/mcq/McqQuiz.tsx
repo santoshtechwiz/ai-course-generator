@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { ArrowRight, AlertTriangle, Timer, HelpCircle, RefreshCcw, Trophy, Clock } from "lucide-react"
+import { ArrowRight, Timer, HelpCircle, RefreshCcw, Trophy, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { useSession } from "next-auth/react"
 import { submitQuizData } from "@/app/actions/actions"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import PageLoader from "@/components/ui/loader"
 import { SignInPrompt } from "@/components/SignInPrompt"
@@ -302,10 +302,8 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
       <div className="min-h-[50vh] flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl shadow-lg">
           <CardContent className="pt-6 text-center">
-            <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Question Error</h2>
             <p className="text-muted-foreground mb-4">This question needs review due to insufficient options.</p>
-            <Button onClick={nextQuestion}>Skip to Next Question</Button>
+            <Button onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}>Skip to Next Question</Button>
           </CardContent>
         </Card>
       </div>
@@ -329,93 +327,55 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
 
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center min-h-[50vh] p-4 w-full"
       >
-        <Card className="max-w-full w-full md:max-w-2xl shadow-lg border-t-4 border-t-primary">
+        <Card className="max-w-full w-full md:max-w-2xl shadow-lg">
           <CardHeader className="text-center pb-2">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="mx-auto mb-2"
-            >
-              <Trophy className="w-16 h-16 text-yellow-500" />
-            </motion.div>
-            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
-              <h2 className="text-2xl font-bold">Quiz Completed!</h2>
-              <p className="text-muted-foreground mt-1">{performanceMessage}</p>
-            </motion.div>
+            <CardTitle className="text-2xl font-bold">Quiz Completed!</CardTitle>
+            <p className="text-muted-foreground mt-1">{performanceMessage}</p>
           </CardHeader>
           <CardContent className="space-y-6 pt-4">
             <div className="flex flex-col sm:flex-row justify-center gap-4 text-center">
-              <motion.div
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="bg-muted rounded-lg p-4 flex-1"
-              >
+              <div className="bg-muted rounded-lg p-4 flex-1">
                 <Clock className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">Time Taken</p>
                 <p className="text-xl font-semibold">{formatTime(timeSpent)}</p>
-              </motion.div>
-              <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="bg-muted rounded-lg p-4 flex-1"
-              >
+              </div>
+              <div className="bg-muted rounded-lg p-4 flex-1">
                 <Trophy className="w-8 h-8 mx-auto text-yellow-500 mb-2" />
                 <p className="text-sm text-muted-foreground">Accuracy</p>
                 <p className="text-xl font-semibold">{Math.round(percentage)}%</p>
-              </motion.div>
+              </div>
             </div>
 
-            {isAuthenticated ? (
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="bg-primary/10 rounded-lg p-6 text-center"
-              >
-                <div className="text-4xl font-bold mb-2">
-                  {score} / {questions.length}
-                </div>
-                <p className="text-muted-foreground">
-                  You answered {score} out of {questions.length} questions correctly
-                </p>
+            <div className="bg-primary/10 rounded-lg p-6 text-center">
+              <div className="text-4xl font-bold mb-2">
+                {score} / {questions.length}
+              </div>
+              <p className="text-muted-foreground">
+                You answered {score} out of {questions.length} questions correctly
+              </p>
 
-                <div className="w-full bg-muted rounded-full h-4 mt-4 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percentage}%` }}
-                    transition={{ delay: 0.7, duration: 1 }}
-                    className="h-full bg-primary"
-                  />
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6 }}>
-                <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />
-              </motion.div>
-            )}
+              <div className="w-full bg-muted rounded-full h-4 mt-4 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${percentage}%` }}
+                  transition={{ duration: 1 }}
+                  className="h-full bg-primary"
+                />
+              </div>
+            </div>
+
+            {!isAuthenticated && <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />}
           </CardContent>
           <CardFooter className="flex justify-center pt-2 pb-6">
             {isAuthenticated && (
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button onClick={() => window.location.reload()} size="lg" className="font-medium">
-                  <RefreshCcw className="mr-2 h-4 w-4" />
-                  Retake Quiz
-                </Button>
-              </motion.div>
+              <Button onClick={() => window.location.reload()} size="lg" className="font-medium">
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Retake Quiz
+              </Button>
             )}
           </CardFooter>
         </Card>
@@ -432,7 +392,7 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
               <Badge variant="outline" className="bg-primary/10 text-primary font-medium px-3 py-1">
                 Quiz
               </Badge>
-              <h1 className="text-xl sm:text-2xl font-bold">Interactive Challenge</h1>
+              <h1 className="text-xl font-bold">The Ultimate JavaScript Challenge</h1>
             </div>
             <TooltipProvider>
               <Tooltip>
@@ -471,9 +431,9 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
               className="space-y-6"
             >
               <div className="space-y-4">
-                <div className="flex items-start gap-3 bg-muted/50 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
                   <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                  <h2 className="text-lg sm:text-xl font-semibold leading-tight">{currentQuestion?.question}</h2>
+                  <h2 className="text-lg font-semibold leading-tight">{currentQuestion?.question}</h2>
                 </div>
 
                 <RadioGroup
@@ -487,7 +447,6 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      whileHover={{ scale: 1.01 }}
                     >
                       <div
                         className={cn(
@@ -523,25 +482,23 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
             </span>
           </div>
 
-          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-            <Button
-              onClick={nextQuestion}
-              disabled={!selectedAnswer || isSubmitting}
-              className="w-full md:w-auto"
-              size="lg"
-            >
-              {isSubmitting ? (
-                "Submitting..."
-              ) : currentQuestionIndex === questions.length - 1 ? (
-                "Finish Quiz"
-              ) : (
-                <>
-                  Next Question
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </motion.div>
+          <Button
+            onClick={nextQuestion}
+            disabled={!selectedAnswer || isSubmitting}
+            className="w-full md:w-auto"
+            size="lg"
+          >
+            {isSubmitting ? (
+              "Submitting..."
+            ) : currentQuestionIndex === questions.length - 1 ? (
+              "Finish Quiz"
+            ) : (
+              <>
+                Next Question
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
         </CardFooter>
         {showMotivationalQuote && (
           <motion.div
@@ -571,13 +528,6 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
                   type: "spring",
                   stiffness: 500,
                   damping: 20,
-                },
-              }}
-              whileInView={{
-                boxShadow: ["0 0 0 0 rgba(var(--primary), 0.7)", "0 0 0 10px rgba(var(--primary), 0)"],
-                transition: {
-                  repeat: Number.POSITIVE_INFINITY,
-                  duration: 2,
                 },
               }}
             >
