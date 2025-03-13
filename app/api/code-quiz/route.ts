@@ -7,7 +7,7 @@ import { generateCodingMCQs } from "./quizGenerator";
 
 
 export async function POST(req: Request) {
-  let { language, subtopic, difficulty, questionCount } = await req.json();
+  let { language, title, difficulty, questionCount: amount } = await req.json();
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json(
@@ -18,13 +18,13 @@ export async function POST(req: Request) {
 
 
   try {
-    const slug = titleSubTopicToSlug(language, subtopic);
-    const userQuiz = await createUserQuiz(session.user.id, `${language} ${subtopic}`, 'code', slug);
+    const slug = titleSubTopicToSlug(language, title);
+    const userQuiz = await createUserQuiz(session.user.id, `${language} ${title}`, 'code', slug);
    
     try {
     
 
-      let quizzes = await generateCodingMCQs(language, subtopic, difficulty, questionCount);  //dummyQuizzes[language] || dummyQuizzes["JavaScript"]
+      let quizzes = await generateCodingMCQs(language, title, difficulty, amount);  //dummyQuizzes[language] || dummyQuizzes["JavaScript"]
       if(quizzes.length === 0){
         return NextResponse.json({
           error: "No quizzes available for the selected topic"

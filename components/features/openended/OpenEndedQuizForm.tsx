@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Brain, ChevronDown, Info, AlertCircle } from "lucide-react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
@@ -15,16 +17,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
+import type { QueryParams } from "@/app/types/types"
+
 const openEndedQuizSchema = z.object({
-  topic: z.string().min(3, "Topic must be at least 3 characters long").max(100, "Topic must be at most 100 characters long"),
+  topic: z
+    .string()
+    .min(3, "Topic must be at least 3 characters long")
+    .max(100, "Topic must be at most 100 characters long"),
   questionCount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
 })
-
-
-
-import { z } from "zod"
-
-import type { QueryParams } from "@/app/types/types"
 
 type OpenEndedQuizFormData = z.infer<typeof openEndedQuizSchema>
 
@@ -98,8 +99,8 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       transition={{ duration: 0.5 }}
       className="w-full max-w-2xl mx-auto"
     >
-      <Card className="bg-background border border-border shadow-sm">
-        <CardHeader className="bg-primary/5 border-b">
+      <Card className="bg-background border border-border/60 shadow-md overflow-hidden">
+        <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
             <motion.div
               className="p-3 bg-primary/10 rounded-xl"
@@ -165,7 +166,6 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
                   <SubscriptionSlider
                     value={field.value}
                     onValueChange={field.onChange}
-                   
                     ariaLabel="Select number of questions"
                   />
                 )}
@@ -242,7 +242,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
             </AnimatePresence>
 
             <motion.div
-              className="pt-4 border-t"
+              className="pt-4 border-t border-border/60"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -255,7 +255,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
                 isEnabled={!isDisabled}
                 hasCredits={credits > 0}
                 loadingLabel="Generating..."
-                className="w-full transition-all duration-300 hover:shadow-lg"
+                className="w-full h-12 transition-all duration-300 hover:shadow-lg"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your quiz",
@@ -278,7 +278,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   )
 }
 
-export const TopicForm = memo(TopicFormComponent)
+export const OpenEndedQuizForm = memo(TopicFormComponent)
 
-export default TopicForm
+export default OpenEndedQuizForm
 

@@ -97,5 +97,5 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   )
 }
 
-
 export default McqPage
+

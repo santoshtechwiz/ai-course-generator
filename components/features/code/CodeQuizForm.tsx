@@ -33,6 +33,7 @@ import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import { SignInBanner } from "../quiz/SignInBanner"
 import { ConfirmDialog } from "../quiz/ConfirmDialog"
+import { codeQuizSchema } from "@/schema/schema"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string
@@ -69,7 +70,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   const { subscriptionStatus } = useSubscriptionStore()
 
   const [formData, setFormData] = usePersistentState<CodeQuizFormData>("codeQuizFormData", {
-    topic: params?.title || "",
+    title: params?.title || "",
     amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     difficulty: "medium",
     language: "JavaScript",
@@ -90,7 +91,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
 
   React.useEffect(() => {
     if (params?.title) {
-      setValue("topic", params.title)
+      setValue("title", params.title)
     }
     if (params?.amount) {
       const amount = Number.parseInt(params.amount, 10)
@@ -125,7 +126,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
       if (isLoading) return
 
       if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: "/dashboard/code-quiz" })
+        signIn("credentials", { callbackUrl: "/dashboard/code" })
         return
       }
 
@@ -140,16 +141,16 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
 
     try {
       const response = await createCodeQuizMutation(watch())
-      const codeQuizId = response?.codeQuizId
+      const userQuizId = response?.userQuizId
 
-      if (!codeQuizId) throw new Error("Code Quiz ID not found")
+      if (!userQuizId) throw new Error("Code Quiz ID not found")
 
       toast({
         title: "Success!",
         description: "Your code quiz has been created.",
       })
 
-      router.push(`/dashboard/code-quiz/${response?.slug}`)
+      router.push(`/dashboard/code/${response?.slug}`)
     } catch (error) {
       // Error is handled in the mutation's onError callback
     } finally {
@@ -159,12 +160,12 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
-  const topic = watch("topic")
+  const title = watch("title")
   const language = watch("language")
 
   const isFormValid = React.useMemo(() => {
-    return !!topic && !!amount && !!difficulty && !!language && isValid
-  }, [topic, amount, difficulty, language, isValid])
+    return !!title && !!amount && !!difficulty && !!language && isValid
+  }, [title, amount, difficulty, language, isValid])
 
   const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
 
@@ -201,34 +202,34 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Label htmlFor="topic" className="text-base font-medium text-foreground flex items-center gap-2">
-                Topic
+              <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
+                title
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                      <p className="w-[200px]">Enter any programming topic you'd like to be quizzed on</p>
+                      <p className="w-[200px]">Enter any programming title you'd like to be quizzed on</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Label>
               <div className="relative">
                 <Input
-                  id="topic"
-                  placeholder="Enter the programming topic"
+                  id="title"
+                  placeholder="Enter the programming title"
                   className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
-                  {...register("topic")}
-                  aria-describedby="topic-description"
+                  {...register("title")}
+                  aria-describedby="title-description"
                 />
               </div>
-              {errors.topic && (
-                <p className="text-sm text-destructive mt-1" id="topic-error">
-                  {errors.topic.message}
+              {errors.title && (
+                <p className="text-sm text-destructive mt-1" id="title-error">
+                  {errors.title.message}
                 </p>
               )}
-              <p className="text-sm text-muted-foreground" id="topic-description">
+              <p className="text-sm text-muted-foreground" id="title-description">
                 Examples: React Hooks, Data Structures, Async/Await, etc.
               </p>
             </motion.div>
@@ -414,8 +415,8 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
                     tooltip: "Click to generate your code quiz",
                   },
                   notEnabled: {
-                    label: "Enter a topic to generate",
-                    tooltip: "Please enter a topic before generating the quiz",
+                    label: "Enter a title to generate",
+                    tooltip: "Please enter a title before generating the quiz",
                   },
                   noCredits: {
                     label: "Out of credits",
