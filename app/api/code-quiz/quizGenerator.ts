@@ -5,7 +5,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function generateCodingMCQs(
   language: string,
-  subtopic: string,
+  title: string,
   difficulty: string,
   amount: number = 2,
 ): Promise<CodeChallenge[]> {
@@ -15,7 +15,7 @@ export async function generateCodingMCQs(
       messages: [
         {
           role: "system",
-          content: `Generate a coding quiz for ${language} on the topic of ${subtopic} at a ${difficulty} difficulty level. 
+          content: `Generate a coding quiz for ${language} on the topic of ${title} at a ${difficulty} difficulty level. 
           Each quiz question must have:
           1. A question that does not include any code.
           2. A 'codeSnippet' field containing the code relevant to the question.
