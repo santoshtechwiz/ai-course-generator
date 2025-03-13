@@ -12,16 +12,17 @@ export function SuccessContent() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full"
+      className="w-full max-w-md"
     >
-      <Card className="border-none shadow-sm bg-card">
-        <CardHeader className="space-y-4 text-center">
+      <Card className="border-none shadow-sm bg-card overflow-hidden">
+        <div className="h-2 bg-primary w-full"></div>
+        <CardHeader className="space-y-6 text-center pt-8">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
           >
-            <CheckCircle className="w-16 h-16 mx-auto text-primary" />
+            <CheckCircle className="w-24 h-24 mx-auto text-primary" />
           </motion.div>
           <CardTitle>
             <motion.h1
@@ -39,20 +40,20 @@ export function SuccessContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-center text-muted-foreground text-lg"
+            className="text-center text-muted-foreground text-lg leading-relaxed max-w-md mx-auto"
           >
             Thank you for subscribing to our service. Your account has been upgraded, and you now have access to all the
             features of your new plan.
           </motion.p>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
+        <CardFooter className="flex flex-col space-y-4 pt-6 pb-8 px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="w-full"
           >
-            <Button asChild className="w-full">
+            <Button asChild className="w-full h-11 text-base font-medium">
               <Link href="/dashboard" className="flex items-center justify-center">
                 <Home className="mr-2 h-4 w-4" /> Go to Dashboard
               </Link>
@@ -64,7 +65,7 @@ export function SuccessContent() {
             transition={{ delay: 0.6 }}
             className="w-full"
           >
-            <Button variant="outline" asChild className="w-full">
+            <Button variant="outline" asChild className="w-full h-11 text-base font-medium">
               <Link href="/account/billing" className="flex items-center justify-center">
                 <CreditCard className="mr-2 h-4 w-4" /> View Billing Details
               </Link>
@@ -75,3 +76,4 @@ export function SuccessContent() {
     </motion.div>
   )
 }
+

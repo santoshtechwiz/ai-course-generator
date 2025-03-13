@@ -7,13 +7,12 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { Book, Clock, Sparkles, Lightbulb } from "lucide-react"
+import { Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
 import { toast } from "@/hooks/use-toast"
@@ -144,32 +143,29 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8">
-     
-
-      <div className="bg-card rounded-lg border shadow-sm p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-medium flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+    <div className="max-w-3xl mx-auto py-12">
+      <div className="bg-card rounded-lg border shadow-sm p-8">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-primary" />
             <span>New Flashcard Set</span>
           </h2>
-        
         </div>
 
         <Form {...form}>
-          <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
               control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Topic</FormLabel>
+                  <FormLabel className="text-base font-medium">Topic</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input placeholder={`e.g. ${exampleTopic}`} className="bg-background" {...field} />
+                      <Input placeholder={`e.g. ${exampleTopic}`} className="bg-background h-11" {...field} />
                     </div>
                   </FormControl>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between mt-2">
                     <FormDescription>What would you like to learn about?</FormDescription>
                     <Button
                       type="button"
@@ -191,10 +187,10 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
               name="difficulty"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Difficulty Level</FormLabel>
+                  <FormLabel className="text-base font-medium">Difficulty Level</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-background">
+                      <SelectTrigger className="bg-background h-11">
                         <SelectValue placeholder="Select difficulty" />
                       </SelectTrigger>
                     </FormControl>
@@ -204,7 +200,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
                       <SelectItem value="hard">Hard - Advanced concepts and analysis</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormDescription>Determines the complexity of questions and answers</FormDescription>
+                  <FormDescription className="mt-2">Determines the complexity of questions and answers</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -215,18 +211,13 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Number of Flashcards: {field.value}</FormLabel>
+                  <FormLabel className="text-base font-medium">Number of Flashcards: {field.value}</FormLabel>
                   <FormControl>
-                    <div className="pt-2">
-                      <SubscriptionSlider
-                        value={field.value}
-                        onValueChange={(val) => field.onChange(val)}
-                    
-                       
-                      />
+                    <div className="pt-4">
+                      <SubscriptionSlider value={field.value} onValueChange={(val) => field.onChange(val)} />
                     </div>
                   </FormControl>
-                  <div className="flex justify-between text-xs text-muted-foreground pt-1">
+                  <div className="flex justify-between text-xs text-muted-foreground pt-2">
                     <span>Fewer</span>
                     <span>More</span>
                   </div>
@@ -235,7 +226,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
               )}
             />
 
-            <Separator className="my-6" />
+            <Separator className="my-8" />
 
             <PlanAwareButton
               onClick={handleButtonClick}
@@ -244,7 +235,7 @@ const FlashCardCreate: React.FC<FlashCreationFormProps> = ({ maxQuestions = 20, 
               isEnabled={isTopicValid}
               label="Create Flashcards"
               loadingLabel={isSubmitting ? "Generating flashcards..." : "Create Flashcards"}
-              className="w-full"
+              className="w-full h-12 text-base font-medium"
               customStates={{
                 default: {
                   label: "Create Flashcards",
