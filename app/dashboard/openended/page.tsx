@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { BookOpen, Lightbulb } from "lucide-react"
-import RandomQuiz from "@/components/RanomQuiz"
+import RandomQuiz from "@/components/RandomQuiz"
 
 export const metadata: Metadata = {
   title: "Open-Ended Quizzes | Course AI",
