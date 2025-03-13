@@ -1,3 +1,5 @@
+"use client"
+
 import type { ReactNode } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -29,17 +31,27 @@ export default function ConsistentCard({
 }: ConsistentCardProps) {
   return (
     <Card
-      className={cn("card-standard overflow-hidden", interactive && "cursor-pointer interactive-hover", className)}
+      className={cn(
+        "overflow-hidden border transition-all duration-200",
+        interactive && "cursor-pointer hover:border-primary/50 hover:shadow-md",
+        className,
+      )}
       onClick={onClick}
     >
       {(title || description) && (
-        <CardHeader className={cn("card-spacing pb-2", headerClassName)}>
-          {title && <CardTitle className="heading-3">{title}</CardTitle>}
-          {description && <CardDescription className="body-small mt-1">{description}</CardDescription>}
+        <CardHeader className={cn("p-5 pb-3", headerClassName)}>
+          {title && <CardTitle className="text-xl font-semibold tracking-tight">{title}</CardTitle>}
+          {description && (
+            <CardDescription className="mt-1.5 text-sm text-muted-foreground">{description}</CardDescription>
+          )}
         </CardHeader>
       )}
-      <CardContent className={cn("card-spacing pt-2", contentClassName)}>{children}</CardContent>
-      {footer && <CardFooter className={cn("card-spacing border-t bg-muted/10", footerClassName)}>{footer}</CardFooter>}
+      <CardContent className={cn("p-5 pt-3", contentClassName)}>{children}</CardContent>
+      {footer && (
+        <CardFooter className={cn("p-5 pt-4 border-t bg-muted/10 flex items-center", footerClassName)}>
+          {footer}
+        </CardFooter>
+      )}
     </Card>
   )
 }

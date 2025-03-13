@@ -26,8 +26,8 @@ export default function SectionContainer({
   }
 
   return (
-    <section id={id} className={cn(bgClasses[background], "w-full", className)}>
-      <div className={cn(!noPadding && "section-spacing", !fullWidth && "content-container")}>{children}</div>
+    <section id={id} className={cn(bgClasses[background], "w-full py-8 md:py-12", className)}>
+      <div className={cn(!noPadding && "px-4 sm:px-6 lg:px-8", !fullWidth && "max-w-7xl mx-auto")}>{children}</div>
     </section>
   )
 }
