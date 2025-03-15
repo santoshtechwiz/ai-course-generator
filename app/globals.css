@@ -51,7 +51,7 @@
     --radius-full: 9999px;
   }
 
-  /* Dark Theme Colors - Reduced border visibility */
+  /* Dark Theme Colors - Improved contrast and readability */
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -69,8 +69,7 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    /* Reduced border opacity for cleaner UI */
-    --border: 217.2 32.6% 12.5%;
+    --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
     --success: 142 69.2% 30.3%;
@@ -84,16 +83,23 @@
   /* Base Element Styling */
   html {
     scroll-behavior: smooth;
-    font-size: 16px;
+    font-size: 100%; /* Use percentage for better scaling */
+    -webkit-text-size-adjust: 100%; /* Prevent font scaling in landscape */
   }
 
   body {
     @apply antialiased text-foreground bg-background transition-colors duration-300;
     font-feature-settings: "rlig" 1, "calt" 1;
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden; /* Prevent horizontal scrolling on mobile */
+    min-height: 100vh; /* Ensure full height on mobile */
+    pointer-events: auto !important;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
-  /* Typography Enhancements */
+  /* Improved Responsive Typography */
   h1,
   h2,
   h3,
@@ -101,48 +107,52 @@
   h5,
   h6 {
     @apply font-bold tracking-tight;
+    word-wrap: break-word; /* Prevent overflow on small screens */
   }
 
   h1 {
-    @apply text-4xl md:text-5xl lg:text-6xl mb-8;
+    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-6 sm:mb-8;
     line-height: 1.1;
   }
 
   h2 {
-    @apply text-3xl md:text-4xl mb-6;
+    @apply text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6;
     line-height: 1.2;
   }
 
   h3 {
-    @apply text-2xl md:text-3xl mb-5;
+    @apply text-xl sm:text-2xl md:text-3xl mb-3 sm:mb-5;
     line-height: 1.3;
   }
 
   h4 {
-    @apply text-xl md:text-2xl mb-4;
+    @apply text-lg sm:text-xl md:text-2xl mb-3 sm:mb-4;
     line-height: 1.4;
   }
 
   h5 {
-    @apply text-lg md:text-xl mb-3;
+    @apply text-base sm:text-lg md:text-xl mb-2 sm:mb-3;
     line-height: 1.5;
   }
 
   h6 {
-    @apply text-base md:text-lg mb-2;
+    @apply text-sm sm:text-base md:text-lg mb-2;
     line-height: 1.5;
   }
 
   p {
-    @apply mb-5 leading-relaxed;
+    @apply mb-4 sm:mb-5 leading-relaxed;
+    max-width: 70ch; /* Improve readability with max line length */
   }
 
+  /* Improved link styling with better touch targets */
   a {
     @apply text-primary hover:text-primary/80 transition-all duration-300 relative;
     text-underline-offset: 2px;
+    padding: 0.125rem 0; /* Slightly increase touch target */
   }
 
-  /* Animated link underline effect */
+  /* Animated link underline effect - improved for mobile */
   a:not(.no-underline)::after {
     content: "";
     position: absolute;
@@ -154,30 +164,35 @@
     transition: width 0.3s ease;
   }
 
-  a:not(.no-underline):hover::after {
+  a:not(.no-underline):hover::after,
+  a:not(.no-underline):focus::after {
     width: 100%;
   }
 
+  /* Improved code blocks for mobile */
   code,
   pre {
     @apply font-mono;
+    overflow-wrap: break-word; /* Prevent overflow on small screens */
   }
 
   pre {
-    @apply bg-muted p-5 rounded-md overflow-x-auto text-sm leading-relaxed my-5;
+    @apply bg-muted p-3 sm:p-5 rounded-md overflow-x-auto text-sm leading-relaxed my-4 sm:my-5;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
 
   blockquote {
-    @apply border-l-4 border-primary pl-5 italic my-6 py-1;
+    @apply border-l-4 border-primary pl-4 sm:pl-5 italic my-5 sm:my-6 py-1;
   }
 
   hr {
-    @apply border-border/50 my-8;
+    @apply border-border/50 my-6 sm:my-8;
   }
 
+  /* Improved list styling for mobile */
   ul,
   ol {
-    @apply pl-6 mb-5;
+    @apply pl-5 sm:pl-6 mb-4 sm:mb-5;
   }
 
   ul {
@@ -190,17 +205,19 @@
 
   li {
     @apply mb-2;
+    padding-left: 0.25rem; /* Add space between bullet and text */
   }
 
-  /* Improved focus styles for better accessibility */
+  /* Improved focus styles for better accessibility and touch */
   :focus-visible {
     @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background transition-all duration-200;
+    outline: 2px solid transparent; /* For browsers that don't support ring */
   }
 
-  /* Scrollbar styling */
+  /* Improved scrollbar styling */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px; /* Slightly wider for better touch */
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
@@ -216,53 +233,66 @@
     @apply bg-primary/20 text-foreground;
   }
 
-  /* Dark mode specific adjustments */
+  /* Dark mode specific adjustments - improved for contrast */
   .dark {
-    /* Reduce borders in dark mode */
-    --tw-border-opacity: 0.15;
-
-    /* Adjust card and dialog shadows for better depth perception instead of borders */
+    /* Improved shadows for better depth perception */
     .card,
     .dialog,
     .popover,
     .dropdown-menu {
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
     }
 
-    /* Reduce border visibility on inputs and other elements */
+    /* Improved contrast for inputs */
     input,
     select,
     textarea,
     .input,
     .select,
     .textarea {
-      border-color: hsl(var(--border) / 0.2);
+      border-color: hsl(var(--border) / 0.3);
     }
 
     /* Improve contrast for muted elements */
     .text-muted-foreground {
-      opacity: 0.8;
+      opacity: 0.85;
     }
+  }
+
+  /* Fix for iOS input styling */
+  input,
+  textarea,
+  select,
+  button {
+    -webkit-appearance: none;
+    border-radius: var(--radius);
   }
 }
 
 /* ===== Component Styles ===== */
 @layer components {
-  /* Button animations */
+  /* Improved button styling for touch */
   .btn,
   button:not(.unstyled),
   [type="button"],
   [type="reset"],
   [type="submit"] {
     @apply relative overflow-hidden transition-all duration-300 ease-out;
+    min-height: 2.75rem; /* Minimum 44px for touch targets */
+    min-width: 2.75rem;
+    padding: 0.5rem 1rem;
+    touch-action: manipulation; /* Optimize for touch */
   }
 
-  .btn:not(:disabled):hover,
-  button:not(:disabled, .unstyled):hover,
-  [type="button"]:not(:disabled):hover,
-  [type="reset"]:not(:disabled):hover,
-  [type="submit"]:not(:disabled):hover {
-    @apply translate-y-[-2px] shadow-md;
+  /* Improved hover states with media query for non-touch devices */
+  @media (hover: hover) {
+    .btn:not(:disabled):hover,
+    button:not(:disabled, .unstyled):hover,
+    [type="button"]:not(:disabled):hover,
+    [type="reset"]:not(:disabled):hover,
+    [type="submit"]:not(:disabled):hover {
+      @apply translate-y-[-2px] shadow-md;
+    }
   }
 
   .btn:not(:disabled):active,
@@ -273,52 +303,58 @@
     @apply translate-y-[1px] shadow-sm;
   }
 
-  /* Button ripple effect */
-  .btn:not(:disabled)::after,
-  button:not(:disabled, .unstyled)::after,
-  [type="button"]:not(:disabled)::after,
-  [type="reset"]:not(:disabled)::after,
-  [type="submit"]:not(:disabled)::after {
-    content: "";
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    background-image: radial-gradient(circle, currentColor 10%, transparent 10.01%);
-    background-repeat: no-repeat;
-    background-position: 50%;
-    transform: scale(10, 10);
-    opacity: 0;
-    transition: transform 0.5s, opacity 0.8s;
+  /* Button ripple effect - optimized for performance */
+  @media (hover: hover) {
+    .btn:not(:disabled)::after,
+    button:not(:disabled, .unstyled)::after,
+    [type="button"]:not(:disabled)::after,
+    [type="reset"]:not(:disabled)::after,
+    [type="submit"]:not(:disabled)::after {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      background-image: radial-gradient(circle, currentColor 10%, transparent 10.01%);
+      background-repeat: no-repeat;
+      background-position: 50%;
+      transform: scale(10, 10);
+      opacity: 0;
+      transition: transform 0.5s, opacity 0.8s;
+      will-change: transform, opacity; /* Optimize animations */
+    }
+
+    .btn:not(:disabled):active::after,
+    button:not(:disabled, .unstyled):active::after,
+    [type="button"]:not(:disabled):active::after,
+    [type="reset"]:not(:disabled):active::after,
+    [type="submit"]:not(:disabled):active::after {
+      transform: scale(0, 0);
+      opacity: 0.3;
+      transition: 0s;
+    }
   }
 
-  .btn:not(:disabled):active::after,
-  button:not(:disabled, .unstyled):active::after,
-  [type="button"]:not(:disabled):active::after,
-  [type="reset"]:not(:disabled):active::after,
-  [type="submit"]:not(:disabled):active::after {
-    transform: scale(0, 0);
-    opacity: 0.3;
-    transition: 0s;
-  }
-
-  /* Card hover effects */
+  /* Card hover effects - only on non-touch devices */
   .card {
     @apply transition-all duration-300 ease-out;
   }
 
-  .card:hover {
-    @apply shadow-lg translate-y-[-2px];
+  @media (hover: hover) {
+    .card:hover {
+      @apply shadow-lg translate-y-[-2px];
+    }
   }
 
-  /* Input focus animations */
+  /* Improved input focus animations */
   .input,
   input:not(.unstyled),
   textarea:not(.unstyled),
   select:not(.unstyled) {
     @apply transition-all duration-200 ease-out;
+    min-height: 2.75rem; /* Minimum 44px for touch targets */
   }
 
   .input:focus,
@@ -329,30 +365,35 @@
     transform: translateY(-1px);
   }
 
-  /* Modal animations */
+  /* Optimized modal animations */
   .dialog-overlay {
     animation: fadeIn 0.3s ease forwards;
+    will-change: opacity;
   }
 
   .dialog-content {
     animation: scale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     transform-origin: center center;
+    will-change: transform, opacity;
   }
 
-  /* Toast animations */
+  /* Optimized toast animations */
   .toast {
     animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
   }
 
-  /* Dropdown animations */
+  /* Optimized dropdown animations */
   .dropdown-content {
     animation: scale 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     transform-origin: top center;
+    will-change: transform, opacity;
   }
 
-  /* Tooltip animations */
+  /* Optimized tooltip animations */
   .tooltip {
     animation: fadeIn 0.2s ease forwards;
+    will-change: opacity;
   }
 
   /* Badge pulse effect */
@@ -360,21 +401,47 @@
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* Consistent spacing utility classes */
+  /* Improved spacing utility classes */
   .content-spacing {
-    @apply space-y-6;
+    @apply space-y-4 sm:space-y-6;
   }
 
   .section-spacing {
-    @apply py-12 md:py-16;
+    @apply py-8 sm:py-12 md:py-16;
   }
 
   .container-padding {
     @apply px-4 sm:px-6 lg:px-8;
   }
+
+  /* Mobile navigation improvements */
+  .mobile-nav {
+    @apply fixed inset-0 z-50 bg-background/95 backdrop-blur-sm;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Mobile-friendly grid layouts */
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+  }
+
+  /* Improved form elements for mobile */
+  .form-group {
+    @apply mb-4 sm:mb-6;
+  }
+
+  .form-label {
+    @apply block mb-2 text-sm font-medium;
+  }
+
+  .form-input {
+    @apply w-full px-3 py-2 border border-input rounded-md;
+    min-height: 2.75rem; /* Minimum 44px for touch targets */
+  }
 }
 
-/* ===== Animations ===== */
+/* ===== Optimized Animations ===== */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -521,38 +588,79 @@
 /* ===== Accessibility ===== */
 .sr-only {
   @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+  clip: rect(0, 0, 0, 0);
 }
 
 /* ===== Responsive Adjustments ===== */
+/* Mobile-first approach with progressive enhancement */
 @media (max-width: 640px) {
-  h1 {
-    @apply text-3xl mb-5;
+  /* Improve touch targets on mobile */
+  a,
+  button,
+  input[type="button"],
+  input[type="submit"] {
+    @apply py-2 px-3;
+    min-height: 44px; /* Apple's recommended minimum */
   }
 
-  h2 {
-    @apply text-2xl mb-4;
+  /* Prevent text from being too small */
+  html {
+    font-size: 16px; /* Ensure minimum readable size */
   }
 
-  h3 {
-    @apply text-xl mb-3;
+  /* Fix input zoom issues on iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px; /* Prevent zoom on focus in iOS */
   }
 
-  /* Improve spacing on mobile */
+  /* Improve form element spacing */
+  .form-group {
+    @apply mb-4;
+  }
+
+  /* Adjust spacing for mobile */
   .container-padding {
     @apply px-4;
   }
 
   .section-spacing {
-    @apply py-8;
+    @apply py-6;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Optimize for touch but with more space */
+  .container-padding {
+    @apply px-6;
   }
 
-  /* Adjust button sizes for touch targets */
-  .btn,
-  button:not(.unstyled),
-  [type="button"],
-  [type="reset"],
-  [type="submit"] {
-    @apply min-h-[44px] px-4;
+  .section-spacing {
+    @apply py-10;
+  }
+}
+
+/* Landscape phone optimization */
+@media (max-height: 480px) and (orientation: landscape) {
+  /* Adjust spacing for landscape mode */
+  .section-spacing {
+    @apply py-4;
+  }
+
+  h1 {
+    @apply text-2xl mb-3;
+  }
+
+  h2 {
+    @apply text-xl mb-2;
   }
 }
 
@@ -638,5 +746,49 @@
 
 .delay-500 {
   animation-delay: 500ms;
+}
+
+/* Mobile-specific helper classes */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Prevent content from being hidden under fixed headers/footers */
+.has-fixed-header {
+  padding-top: var(--header-height, 60px);
+}
+
+.has-fixed-footer {
+  padding-bottom: var(--footer-height, 60px);
+}
+
+/* Prevent text overflow */
+.text-ellipsis {
+  @apply overflow-hidden  whitespace-nowrap;
+}
+
+/* Improved mobile grid layouts */
+.grid-auto-fill-sm {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.grid-auto-fill-md {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+/* Fix for iOS 100vh issue */
+.full-screen {
+  height: 100vh; /* Fallback */
+  height: -webkit-fill-available;
+  height: stretch; /* Future standard */
 }
 
