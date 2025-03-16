@@ -17,6 +17,7 @@ const difficultyColors = {
   Easy: "bg-emerald-50 text-emerald-600",
   Medium: "bg-orange-50 text-orange-600",
   Hard: "bg-rose-50 text-rose-600",
+
 }
 
 const quizTypeRoutes = {
@@ -28,12 +29,19 @@ const quizTypeRoutes = {
 }
 
 
+const quizTypeBgColors = {
+  "fill-blanks": "bg-blue-50 text-blue-600",
+  flashcard: "bg-orange-50 text-orange-600",
+  openended: "bg-purple-50 text-purple-600",
+  code: "bg-green-50 text-green-600",
+}
+
 export const RandomQuiz: React.FC = () => {
   const { quizzes, isLoading, error, refresh, setLimit } = useRandomQuizzes(3)
   const [filter, setFilter] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const quizTypes = ["openended", "fill-blanks", "flashcard"]
+  const quizTypes = ["openended", "fill-blanks", "flashcard","code"]
 
   const handleRefresh = () => {
     setRefreshKey((prevKey) => prevKey + 1)
