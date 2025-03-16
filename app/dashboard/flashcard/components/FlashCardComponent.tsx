@@ -290,7 +290,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                     // Front of card with enhanced gradient and shadow
                     <motion.div
                       onClick={toggleFlip}
-                      className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 p-8 flex flex-col items-center justify-center relative overflow-hidden"
+                      className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-card p-8 flex flex-col items-center justify-center relative overflow-hidden"
                       variants={frontCardVariants}
                       initial="initial"
                       animate="animate"
@@ -299,7 +299,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                     >
                       {/* Decorative elements */}
                       <motion.div
-                        className="absolute top-0 right-0 w-32 h-32 bg-blue-200/30 rounded-full -mr-16 -mt-16"
+                        className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16"
                         animate={{
                           scale: [1, 1.05, 1],
                           rotate: [0, 5, 0],
@@ -311,7 +311,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                         }}
                       />
                       <motion.div
-                        className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-200/30 rounded-full -ml-12 -mb-12"
+                        className="absolute bottom-0 left-0 w-24 h-24 bg-primary/10 rounded-full -ml-12 -mb-12"
                         animate={{
                           scale: [1, 1.1, 1],
                           rotate: [0, -5, 0],
@@ -324,11 +324,11 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                         }}
                       />
 
-                      <div className="text-2xl font-medium text-center text-blue-800 z-10 max-w-md leading-relaxed">
+                      <div className="text-2xl font-medium text-center text-foreground z-10 max-w-md leading-relaxed">
                         {currentCard?.question}
                       </div>
                       <motion.div
-                        className="mt-6 text-sm text-blue-600 flex items-center gap-1"
+                        className="mt-6 text-sm text-muted-foreground flex items-center gap-1"
                         animate={{
                           y: [0, -5, 0],
                         }}
@@ -345,7 +345,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                     // Back of card with different color scheme and animated self-rating buttons
                     <motion.div
                       onClick={toggleFlip}
-                      className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-gradient-to-br from-green-100 via-green-50 to-emerald-50 p-8 flex flex-col items-center justify-center relative overflow-hidden"
+                      className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-card p-8 flex flex-col items-center justify-center relative overflow-hidden"
                       variants={backCardVariants}
                       initial="initial"
                       animate="animate"
@@ -354,7 +354,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                     >
                       {/* Decorative elements */}
                       <motion.div
-                        className="absolute top-0 left-0 w-32 h-32 bg-green-200/30 rounded-full -ml-16 -mt-16"
+                        className="absolute top-0 left-0 w-32 h-32 bg-secondary/20 rounded-full -ml-16 -mt-16"
                         animate={{
                           scale: [1, 1.05, 1],
                           rotate: [0, -5, 0],
@@ -366,7 +366,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                         }}
                       />
                       <motion.div
-                        className="absolute bottom-0 right-0 w-24 h-24 bg-emerald-200/30 rounded-full -mr-12 -mb-12"
+                        className="absolute bottom-0 right-0 w-24 h-24 bg-secondary/20 rounded-full -mr-12 -mb-12"
                         animate={{
                           scale: [1, 1.1, 1],
                           rotate: [0, 5, 0],
@@ -379,12 +379,12 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                         }}
                       />
 
-                      <div className="text-xl text-center text-green-800 z-10 max-w-md leading-relaxed">
+                      <div className="text-xl text-center text-foreground z-10 max-w-md leading-relaxed">
                         {currentCard?.answer}
                       </div>
 
                       <div className="mt-8 flex flex-col gap-3 w-full max-w-xs z-10">
-                        <p className="text-sm text-center text-green-700 mb-2 font-medium">
+                        <p className="text-sm text-center text-muted-foreground mb-2 font-medium">
                           How well did you know this?
                         </p>
                         <div className="flex justify-center gap-4">
@@ -476,7 +476,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
             transition={{ duration: 0.5, type: "spring" }}
           >
             <motion.div
-              className="text-3xl font-bold text-center mb-6 text-purple-700"
+              className="text-3xl font-bold text-center mb-6 text-foreground"
               initial={{ y: -20 }}
               animate={{ y: 0 }}
               transition={{ delay: 0.2, type: "spring" }}
@@ -485,7 +485,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
             </motion.div>
 
             <motion.div
-              className="text-xl text-center mb-8 text-purple-600 max-w-md"
+              className="text-xl text-center mb-8 text-muted-foreground max-w-md"
               initial={{ y: -20 }}
               animate={{ y: 0 }}
               transition={{ delay: 0.3, type: "spring" }}
@@ -500,12 +500,12 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
               transition={{ delay: 0.5, duration: 0.5 }}
             >
               <motion.div
-                className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg text-center"
+                className="bg-card p-6 rounded-lg text-center border border-border"
                 whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 <motion.div
-                  className="text-4xl font-bold text-green-600 dark:text-green-400"
+                  className="text-4xl font-bold text-primary"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{
@@ -517,16 +517,16 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                 >
                   {Object.values(selfRating).filter((r) => r === "correct").length}
                 </motion.div>
-                <div className="text-sm text-green-600 dark:text-green-400 mt-2">Cards you knew</div>
+                <div className="text-sm text-muted-foreground mt-2">Cards you knew</div>
               </motion.div>
 
               <motion.div
-                className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg text-center"
+                className="bg-card p-6 rounded-lg text-center border border-border"
                 whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 <motion.div
-                  className="text-4xl font-bold text-red-600 dark:text-red-400"
+                  className="text-4xl font-bold text-destructive"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{
@@ -538,7 +538,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                 >
                   {Object.values(selfRating).filter((r) => r === "incorrect").length}
                 </motion.div>
-                <div className="text-sm text-red-600 dark:text-red-400 mt-2">Cards to review</div>
+                <div className="text-sm text-muted-foreground mt-2">Cards to review</div>
               </motion.div>
             </motion.div>
 
@@ -595,10 +595,9 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
           <div className="mt-8">
             <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
               <motion.div
-                className="h-full rounded-full"
+                className="h-full rounded-full bg-primary"
                 style={{
                   width: `${progress}%`,
-                  background: "linear-gradient(90deg, #34d399, #3b82f6)",
                 }}
                 initial={{ width: `${(currentIndex / cards.length) * 100}%` }}
                 animate={{ width: `${progress}%` }}
