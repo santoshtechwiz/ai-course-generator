@@ -1,11 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { AlertCircle, HelpCircle, BookOpen, Timer, CheckCircle, RotateCcw, Tag, Info } from "lucide-react"
+import { AlertCircle, HelpCircle, BookOpen, Timer, CheckCircle, RotateCcw, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useSession } from "next-auth/react"
@@ -19,6 +16,8 @@ import { GuidedHelp } from "@/components/HelpModal"
 
 import { SignInPrompt } from "@/components/SignInPrompt"
 import { QuizActions } from "@/components/QuizActions"
+
+// Card components removed in favor of standard div elements
 
 interface Question {
   id: number
@@ -180,21 +179,21 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
 
   if (error) {
     return (
-      <Card className="max-w-md mx-auto mt-8 border-destructive">
-        <CardHeader>
-          <CardTitle className="flex items-center text-destructive">
+      <div className="max-w-md mx-auto mt-8 border border-destructive rounded-lg shadow-sm">
+        <div className="p-4 border-b">
+          <h2 className="flex items-center text-destructive font-semibold text-lg">
             <AlertCircle className="w-5 h-5 mr-2" />
             Error Loading Quiz
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </h2>
+        </div>
+        <div className="p-4">
           <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={() => fetchQuizData()} className="w-full">
             <RotateCcw className="w-4 h-4 mr-2" />
             Try Again
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
   if (loading) {
@@ -207,20 +206,20 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
 
   if (!quizData) {
     return (
-      <Card className="max-w-md mx-auto mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center text-muted-foreground">
+      <div className="max-w-md mx-auto mt-8 border rounded-lg shadow-sm">
+        <div className="p-4 border-b">
+          <h2 className="flex items-center text-muted-foreground font-semibold text-lg">
             <Info className="w-5 h-5 mr-2" />
             No Quiz Found
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </h2>
+        </div>
+        <div className="p-4">
           <p className="text-muted-foreground mb-4">No quiz data is available for this request.</p>
           <Button variant="outline" onClick={() => window.history.back()} className="w-full">
             Go Back
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
@@ -237,13 +236,13 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
           initialIsFavorite={false}
         />
       </div>
-      <Card className="mb-8 shadow-md max-w-4xl mx-auto">
-        <CardHeader className="flex flex-row items-center justify-between px-6 py-4 border-b bg-muted/30">
+      <div className="mb-8 shadow-md max-w-4xl mx-auto border rounded-lg overflow-hidden">
+        <header className="flex flex-row items-center justify-between px-6 py-4 border-b bg-muted/30">
           <div className="flex flex-col space-y-1">
-            <CardTitle className="flex items-center text-xl sm:text-2xl font-bold">
+            <h2 className="flex items-center text-xl sm:text-2xl font-bold">
               <BookOpen className="w-5 h-5 mr-2 text-primary" />
               <span className="truncate">{quizData.title || "Unknown"}</span>
-            </CardTitle>
+            </h2>
             <p className="text-xs text-muted-foreground">Fill in the Blanks Quiz</p>
           </div>
           <div className="flex items-center gap-3">
@@ -268,10 +267,9 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
               <span className="hidden sm:inline">Help</span>
             </Button>
           </div>
-        </CardHeader>
+        </header>
 
-
-        <CardContent className="px-6 py-4">
+        <div className="px-6 py-4">
           {quizCompleted ? (
             isAuthenticated ? (
               <BlankQuizResults
@@ -303,34 +301,11 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
               <p className="text-muted-foreground">No questions available for this quiz.</p>
             </div>
           )}
-        </CardContent>
-
-        {!quizCompleted && quizData.questions.length > 0 && (
-          <CardFooter className="px-6 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-between">
-            <div className="flex flex-wrap gap-2">
-              {quizData.questions[currentQuestion].openEndedQuestion?.tags?.map((tag, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  <Tag className="w-3 h-3 mr-1" />
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-            <Badge
-              variant={
-                quizData.questions[currentQuestion].openEndedQuestion?.difficulty === "Hard"
-                  ? "destructive"
-                  : quizData.questions[currentQuestion].openEndedQuestion?.difficulty === "Medium"
-                    ? "secondary"
-                    : "default"
-              }
-            >
-              {quizData.questions[currentQuestion].openEndedQuestion?.difficulty || "Easy"}
-            </Badge>
-          </CardFooter>
-        )}
-      </Card>
+        </div>
+      </div>
 
       <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
     </>
   )
 }
+
