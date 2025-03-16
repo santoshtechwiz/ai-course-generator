@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper"
-import { QuizDetailPage } from "@/components/QuizCommon"
+import { QuizDetailPage } from "@/components/QuizDetailsWrapper"
 
 type Params = Promise<{ slug: string }>
 
