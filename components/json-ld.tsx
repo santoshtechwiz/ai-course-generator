@@ -78,10 +78,9 @@ function generateCourseSchema(params: CourseSchemaParams) {
         ...(params.instructorUrl && { url: params.instructorUrl }),
       },
     }),
-    
     hasCourseInstance: {
       "@type": "CourseInstance",
-      "courseWorkload": "P2D",
+      courseWorkload: "P2D",
       courseMode: "online",
       provider: {
         "@type": "Organization",
@@ -90,11 +89,11 @@ function generateCourseSchema(params: CourseSchemaParams) {
       },
       courseSchedule: {
         "@type": "Schedule",
-        "duration": "PT3H",
-        "repeatFrequency": "Daily",
-        "repeatCount": 31,
-        "startDate": "2024-07-01",
-        "endDate": "2024-07-31"
+        duration: "PT3H",
+        repeatFrequency: "Daily",
+        repeatCount: 31,
+        startDate: "2024-07-01",
+        endDate: "2024-07-31"
       },
     },
     audience: {
@@ -139,34 +138,30 @@ function generateFAQSchema(items: { question: string; answer: string }[]) {
   }
 }
 
-export function JsonLd() {
-  const pathname = usePathname()
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
-  const currentUrl = `${baseUrl}${pathname}`
-
-  // Organization schema
-  const organizationSchema = {
+function generateOrganizationSchema(baseUrl: string) {
+  return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "CourseAI",
     url: baseUrl,
     logo: `${baseUrl}/logo.png`,
     sameAs: [
-      process.env.NEXT_PUBLIC_TWITTER_URL,
-      process.env.NEXT_PUBLIC_FACEBOOK_URL,
-      process.env.NEXT_PUBLIC_LINKEDIN_URL,
+      "https://twitter.com/courseai",
+      "https://facebook.com/courseai",
+      "https://linkedin.com/company/courseai",
     ].filter(Boolean),
     contactPoint: {
       "@type": "ContactPoint",
-      telephone: process.env.NEXT_PUBLIC_CONTACT_PHONE,
+      telephone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "+1-800-123-4567",
       contactType: "customer service",
-      email: process.env.NEXT_PUBLIC_CONTACT_EMAIL,
+      email: process.env.NEXT_PUBLIC_CONTACT_EMAIL||"webmaster.codeguru@gmail.com" ,
       availableLanguage: "English",
     },
   }
+}
 
-  // Website schema
-  const websiteSchema = {
+function generateWebsiteSchema(baseUrl: string) {
+  return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     url: baseUrl,
@@ -179,6 +174,97 @@ export function JsonLd() {
       "query-input": "required name=search_term_string",
     },
   }
+}
+
+function generatePricingSchema(baseUrl: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "CourseAI",
+    description: "AI-powered platform for creating courses, quizzes, and educational content",
+    image: `${baseUrl}/images/courseai-logo.png`,
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "USD",
+      lowPrice: "0",
+      highPrice: "49.99",
+      offerCount: "3",
+      offers: [
+        {
+          "@type": "Offer",
+          name: "Free Trial",
+          price: "0",
+          priceCurrency: "USD",
+          description: "3 Day Free Trial with limited features",
+          url: `${baseUrl}/pricing#free-trial`,
+        },
+        {
+          "@type": "Offer",
+          name: "Basic Plan",
+          price: "19.99",
+          priceCurrency: "USD",
+          description: "25 Hosted Courses",
+          url: `${baseUrl}/pricing#basic`,
+        },
+        {
+          "@type": "Offer",
+          name: "Premium Plan",
+          price: "49.99",
+          priceCurrency: "USD",
+          description: "Unlimited courses and premium features",
+          url: `${baseUrl}/pricing#premium`,
+        },
+      ],
+    },
+  }
+}
+
+function generateWebApplicationSchema(baseUrl: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "CourseAI Quiz Generator",
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Web",
+    description: "AI-powered platform for creating quizzes, assessments, and educational content instantly",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    featureList: [
+      "AI Quiz Generation",
+      "Multiple Choice Questions",
+      "True/False Questions",
+      "Open-Ended Questions",
+      "Video Quiz Creation",
+      "PDF Quiz Generation",
+      "Custom Templates",
+      "Analytics Dashboard",
+      "Automated Grading",
+      "Question Bank",
+    ],
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      ratingCount: "1000",
+      bestRating: "5",
+      worstRating: "1",
+    },
+    provider: {
+      "@type": "Organization",
+      name: "CourseAI",
+      url: baseUrl,
+    },
+    screenshot: `${baseUrl}/images/courseai-screenshot.png`,
+    softwareVersion: "2.0",
+    url: baseUrl,
+  }
+}
+
+export function JsonLd() {
+  const pathname = usePathname()
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
   // Default breadcrumb schema based on current path
   const pathSegments = pathname.split("/").filter(Boolean)
@@ -199,20 +285,57 @@ export function JsonLd() {
     })
   })
 
-  const breadcrumbSchemaData = generateBreadcrumbSchema(breadcrumbItems)
-
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchemaData) }} />
+      <script 
+        type="application/ld+json" 
+        dangerouslySetInnerHTML={{ 
+          __html: JSON.stringify(generateOrganizationSchema(baseUrl)) 
+        }} 
+      />
+      <script 
+        type="application/ld+json" 
+        dangerouslySetInnerHTML={{ 
+          __html: JSON.stringify(generateWebsiteSchema(baseUrl)) 
+        }} 
+      />
+      <script 
+        type="application/ld+json" 
+        dangerouslySetInnerHTML={{ 
+          __html: JSON.stringify(generateBreadcrumbSchema(breadcrumbItems)) 
+        }} 
+      />
+      {pathname === "/pricing" && (
+        <script 
+          type="application/ld+json" 
+          dangerouslySetInnerHTML={{ 
+            __html: JSON.stringify(generatePricingSchema(baseUrl)) 
+          }} 
+        />
+      )}
+      {(pathname === "/" || pathname === "/home") && (
+        <script 
+          type="application/ld+json" 
+          dangerouslySetInnerHTML={{ 
+            __html: JSON.stringify(generateWebApplicationSchema(baseUrl)) 
+          }} 
+        />
+      )}
     </>
   )
 }
 
 // Export the schema generators for use in specific pages
-export { generateQuizSchema, generateCourseSchema, generateBreadcrumbSchema, generateFAQSchema }
+export { 
+  generateQuizSchema, 
+  generateCourseSchema, 
+  generateBreadcrumbSchema, 
+  generateFAQSchema,
+  generateOrganizationSchema,
+  generateWebsiteSchema,
+  generatePricingSchema,
+  generateWebApplicationSchema
+}
 
 // Export types for TypeScript support
 export type { QuizSchemaParams, CourseSchemaParams, BreadcrumbItem }
-

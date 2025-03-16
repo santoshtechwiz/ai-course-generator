@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/authOptions"
 
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 
-import { QuizDetailPage } from "@/components/QuizCommon"
+import { QuizDetailPage } from "@/components/QuizDetailsWrapper"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 

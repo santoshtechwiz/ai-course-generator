@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
-import { QuizDetailPage } from "@/components/QuizCommon"
+import { QuizDetailPage } from "@/components/QuizDetailsWrapper"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -50,11 +50,9 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
     notFound()
   }
 
-  // Calculate estimated time based on question count
   const questionCount = result.questions?.length || 5
-  const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 2))}M` // 2 minutes per question, minimum 10 minutes
+  const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 2))}M`
 
-  // Create breadcrumb items
   const breadcrumbItems = [
     { name: "Home", url: baseUrl },
     { name: "Dashboard", url: `${baseUrl}/dashboard` },
@@ -78,4 +76,3 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
 }
 
 export default BlanksPage
-

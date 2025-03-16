@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { AlertCircle, HelpCircle, BookOpen, Timer, CheckCircle, RotateCcw, Info } from "lucide-react"
+import { AlertCircle, HelpCircle, Timer, CheckCircle, RotateCcw, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -16,8 +16,6 @@ import { GuidedHelp } from "@/components/HelpModal"
 
 import { SignInPrompt } from "@/components/SignInPrompt"
 import { QuizActions } from "@/components/QuizActions"
-
-// Card components removed in favor of standard div elements
 
 interface Question {
   id: number
@@ -141,7 +139,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
         })
       }
     },
-    [elapsedTime, quizData, currentQuestion, answers],
+    [elapsedTime, quizData, currentQuestion, answers]
   )
 
   const handleRestart = useCallback(() => {
@@ -174,20 +172,18 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
         }
       }
     },
-    [isAuthenticated, quizData, slug, answers, elapsedTime],
+    [isAuthenticated, quizData, slug, answers, elapsedTime]
   )
 
   if (error) {
     return (
-      <div className="max-w-md mx-auto mt-8 border border-destructive rounded-lg shadow-sm">
-        <div className="p-4 border-b">
+      <div className="max-w-md mx-auto mt-8 rounded-lg shadow-sm border border-destructive">
+        <div className="p-4">
           <h2 className="flex items-center text-destructive font-semibold text-lg">
             <AlertCircle className="w-5 h-5 mr-2" />
             Error Loading Quiz
           </h2>
-        </div>
-        <div className="p-4">
-          <p className="text-muted-foreground mb-4">{error}</p>
+          <p className="text-muted-foreground my-4">{error}</p>
           <Button onClick={() => fetchQuizData()} className="w-full">
             <RotateCcw className="w-4 h-4 mr-2" />
             Try Again
@@ -196,6 +192,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
       </div>
     )
   }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[300px]">
@@ -206,15 +203,13 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
 
   if (!quizData) {
     return (
-      <div className="max-w-md mx-auto mt-8 border rounded-lg shadow-sm">
-        <div className="p-4 border-b">
+      <div className="max-w-md mx-auto mt-8 rounded-lg shadow-sm border">
+        <div className="p-4">
           <h2 className="flex items-center text-muted-foreground font-semibold text-lg">
             <Info className="w-5 h-5 mr-2" />
             No Quiz Found
           </h2>
-        </div>
-        <div className="p-4">
-          <p className="text-muted-foreground mb-4">No quiz data is available for this request.</p>
+          <p className="text-muted-foreground my-4">No quiz data is available for this request.</p>
           <Button variant="outline" onClick={() => window.history.back()} className="w-full">
             Go Back
           </Button>
@@ -237,15 +232,9 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
           position="left-center"
         />
       </div>
-      <div className="mb-8 shadow-md max-w-4xl mx-auto border rounded-lg overflow-hidden">
-        <header className="flex flex-row items-center justify-between px-6 py-4 border-b bg-muted/30">
-          <div className="flex flex-col space-y-1">
-            <h2 className="flex items-center text-xl sm:text-2xl font-bold">
-              <BookOpen className="w-5 h-5 mr-2 text-primary" />
-              <span className="truncate">{quizData.title || "Unknown"}</span>
-            </h2>
-            <p className="text-xs text-muted-foreground">Fill in the Blanks Quiz</p>
-          </div>
+      <div className="mb-8 max-w-4xl mx-auto rounded-lg shadow-md border overflow-hidden">
+        <header className="flex items-center justify-between px-6 py-4 bg-muted/30">
+          <p className="text-sm text-muted-foreground">Fill in the Blanks Quiz</p>
           <div className="flex items-center gap-3">
             <TooltipProvider>
               <Tooltip>
@@ -262,14 +251,12 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-
             <Button variant="outline" size="sm" onClick={() => setShowGuidedHelp(true)}>
               <HelpCircle className="w-4 h-4 mr-1.5" />
               <span className="hidden sm:inline">Help</span>
             </Button>
           </div>
         </header>
-
         <div className="px-6 py-4">
           {quizCompleted ? (
             isAuthenticated ? (
@@ -304,9 +291,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
           )}
         </div>
       </div>
-
       <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
     </>
   )
 }
-

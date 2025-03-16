@@ -4,7 +4,7 @@ import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
-import { QuizDetailPage } from "@/components/QuizCommon"
+import { QuizDetailPage } from "@/components/QuizDetailsWrapper"
 import { getQuiz } from "@/app/actions/getQuiz"
 
 type Params = Promise<{ slug: string }>
