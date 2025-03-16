@@ -29,6 +29,7 @@ const McqQuizWrapper = ({ slug, currentUserId, result }: McqContainerProps) => {
         initialIsPublic={quizData.isPublic || false}
         initialIsFavorite={quizData.isFavorite || false}
         quizType="mcq"
+           position="left-center"
       />
 
       {/* Wrap the actual quiz content in Suspense since it's likely to be the heavier component */}

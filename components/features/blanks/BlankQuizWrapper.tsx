@@ -234,6 +234,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
           quizType="blanks"
           initialIsPublic={false}
           initialIsFavorite={false}
+          position="left-center"
         />
       </div>
       <div className="mb-8 shadow-md max-w-4xl mx-auto border rounded-lg overflow-hidden">

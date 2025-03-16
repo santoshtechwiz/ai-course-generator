@@ -56,6 +56,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
           initialIsFavorite={false}
           userId={userId}
           ownerId={quizData?.ownerId || ""}
+             position="left-center"
         />
    
         <CodingQuiz
