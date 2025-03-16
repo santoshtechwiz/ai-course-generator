@@ -1,3 +1,4 @@
+'use client'
 import type React from "react"
 import Link from "next/link"
 import { QuizWrapper } from "@/components/QuizWrapper"
@@ -151,8 +152,7 @@ export function QuizDetailPage({
                   </Link>
                 </Button>
                 <Button variant="ghost" size="sm" className="gap-1">
-                  <Share2 className="h-4 w-4" />
-                  <span>Share</span>
+                 <ShareButton slug={""} title={""}></ShareButton>
                 </Button>
               </div>
               <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
@@ -223,6 +223,7 @@ function Badge({ type, icon, text }: { type?: string; icon?: React.ReactNode; te
 
 // Import icons for badges
 import { Clock, FileText } from "lucide-react"
+import { ShareButton } from "./ShareButton"
 
 // Error component for quiz pages
 export function QuizError({

@@ -11,7 +11,7 @@ import { ArrowLeft, Sparkles } from "lucide-react"
 import axios from "axios"
 import { FlashCardComponent } from "./FlashCardComponent"
 import { QuizActions } from "@/components/QuizActions"
-import { FloatingQuizToolbar } from "@/components/FloatingQuizToolbar"
+
 
 interface FlashCardsPageClientProps {
   slug: string
@@ -25,6 +25,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
   const [ownerId, setOwnerId] = useState<string>("")
   const [quizId, setQuizId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
+
 
   const { toast } = useToast()
 
@@ -116,6 +117,8 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
         userId={userId}
         ownerId={ownerId}
         quizType="flashcard"
+       
+       position="left-center"
       />
       {loading ? (
         <Card className="w-full h-80 flex items-center justify-center">

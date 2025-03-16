@@ -20,22 +20,13 @@ const difficultyColors = {
 }
 
 const quizTypeRoutes = {
-  "fill-blanks": "dashboard/fill-blanks",
-  flashcard: "dashboard/flashcards",
-  openended: "dashboard/open-ended",
+  "fill-blanks": "dashboard/blanks",
+  mcq: "dashboard/mcq",
+  flashcard: "dashboard/flashcard",
+  openended: "dashboard/openended",
+  code: "dashboard/code",
 }
 
-const quizTypeIcons = {
-  "fill-blanks": "Edit, Edit3",
-  flashcard: "LayoutList",
-  openended: "MessageSquare",
-}
-
-const quizTypeBgColors = {
-  "fill-blanks": "bg-blue-50 text-blue-600",
-  flashcard: "bg-orange-50 text-orange-600",
-  openended: "bg-purple-50 text-purple-600",
-}
 
 export const RandomQuiz: React.FC = () => {
   const { quizzes, isLoading, error, refresh, setLimit } = useRandomQuizzes(3)
