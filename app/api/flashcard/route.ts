@@ -92,7 +92,7 @@ async function authenticateUser(): Promise<{
 }> {
   const session = await getAuthSession()
 
-  if (!session?.user) {
+  if (!session) {
     throw new Error("Authentication required")
   }
 
@@ -180,10 +180,7 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    // Authenticate user
-    await authenticateUser()
-
-    // Get slug parameter
+   // Get slug parameter
     const { searchParams } = new URL(req.url)
     const slug = searchParams.get("slug")
 
