@@ -180,6 +180,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
         initialIsPublic={false}
         initialIsFavorite={false}
         quizType="openended"
+           position="left-center"
       />
      
       {quizCompleted || (isAuthenticated && finalScore !== null) ? (

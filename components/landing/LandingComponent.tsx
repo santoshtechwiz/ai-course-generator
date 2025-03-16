@@ -15,6 +15,7 @@ import type React from "react"
 import LandingHero from "./LandingHero"
 import Navbar from "./LandingNavbar"
 
+
 // Dynamically import components with loading states
 const FlyingElements = dynamic(() => import("./FlyingElements"), {
   ssr: false,
@@ -38,8 +39,9 @@ const FAQSection = dynamic(() => import("./FaqSection"), {
   ssr: false,
 })
 
-const ShowcaseSection = dynamic(() => import("./ShowCaseCarousel"), {
+const ShowCaseCarousel = dynamic(() => import("./ShowCaseCarousel"), {
   ssr: false,
+ 
 })
 
 const TestimonialsSection = dynamic(() => import("./TestimonialsSection"), {
@@ -70,7 +72,7 @@ const defaultSections = [
     title: "Interactive Demo",
     description: "Experience our AI-generated courses and multi-format quizzes firsthand.",
     icon: Laptop,
-    Component: ShowcaseSection,
+    Component: ShowCaseCarousel,
   },
   {
     key: "testimonials",
