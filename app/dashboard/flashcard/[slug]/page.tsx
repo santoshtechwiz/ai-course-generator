@@ -7,7 +7,7 @@ import QuizDetailPage from "@/components/QuizDetailsPage"
 
 
 type Params = Promise<{ slug: string }>
-
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev";
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params
   const quiz = await getQuiz(slug)
@@ -52,11 +52,10 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
 
   // Create breadcrumb items
   const breadcrumbItems = [
-    { name: "Home", url: baseUrl },
-    { name: "Dashboard", url: `${baseUrl}/dashboard` },
-    { name: "Flashcards", url: `${baseUrl}/dashboard/flashcard` },
+  
+    { name: "Quizzes", url: `${baseUrl}/quizzes` },
     { name: quiz.title, url: `${baseUrl}/dashboard/flashcard/${slug}` },
-  ]
+  ];
 
   return (
     <QuizDetailPage

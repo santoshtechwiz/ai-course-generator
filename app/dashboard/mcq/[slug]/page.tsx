@@ -10,7 +10,7 @@ import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import QuizDetailsPage from "@/components/QuizDetailsPage"
-
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
 // SEO metadata generation
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -76,14 +76,13 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
 
   const { result: quizData, questions } = result
 
+
   // Create breadcrumb items
   const breadcrumbItems = [
-    { name: "Home", url: baseUrl },
-    { name: "Dashboard", url: `${baseUrl}/dashboard` },
-    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+  
+    { name: "Quizzes", url: `${baseUrl}/quizzes` },
     { name: quizData.title, url: `${baseUrl}/dashboard/mcq/${slug}` },
-  ]
-
+  ];
   return (
     <QuizDetailsPage
       title={quizData.title}
