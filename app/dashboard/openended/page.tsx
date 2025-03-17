@@ -1,5 +1,6 @@
+import QuizCreationPage from "@/components/QuizCreationPage"
 import type { Metadata } from "next"
-import { QuizCreationPage } from "@/components/QuizCreationPage"
+
 
 export const metadata: Metadata = {
   title: "Open-Ended Quizzes | Course AI",
