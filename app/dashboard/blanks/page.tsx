@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { QuizCreationPage } from "@/components/QuizDetailsWrapper"
+import { QuizCreationPage } from "@/components/QuizCreationPage"
 
 export const metadata: Metadata = {
   title: "Fill in the Blanks Quizzes | Course AI",

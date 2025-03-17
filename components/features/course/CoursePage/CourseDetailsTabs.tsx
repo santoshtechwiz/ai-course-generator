@@ -4,7 +4,6 @@ import React, { useState } from "react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Lock, FileText, ClipboardList } from "lucide-react"
-import type { FullChapter, FullChapterType, FullCourseType } from "@/app/types/types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 
@@ -12,6 +11,9 @@ import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { useRouter } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
 
+import type { FullChapterType, FullCourseType } from "@/app/types/types"
+
+// Lazy load components for better performance
 const CourseAISummary = React.lazy(() => import("./CourseAISummary"))
 const CourseDetailsQuiz = React.lazy(() => import("./CourseDetailsQuiz"))
 
@@ -46,8 +48,6 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
   const upgradetoPremium = () => {
     router.push("/dashboard/subscription")
   }
-
-
 
   const PremiumFeatureOverlay = () => (
     <div className="flex flex-col items-center justify-center p-6 text-center">
@@ -151,10 +151,12 @@ const CourseDetailsTabs: React.FC<CourseDetailsTabsProps> = ({ chapterId, name, 
                         </div>
                       }
                     >
-                      <CourseDetailsQuiz 
+                      <CourseDetailsQuiz
                         isPremium={isPremium}
                         isPublicCourse={isPublicCourse}
-                      chapter={chapter} course={course} />
+                        chapter={chapter}
+                        course={course}
+                      />
                     </React.Suspense>
                   </TabsContent>
                 )}

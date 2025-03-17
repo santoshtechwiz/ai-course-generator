@@ -1,10 +1,12 @@
+"use client"
+
 import { type Control, Controller, type FieldErrors } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { CreateCourseInput } from "@/schema/schema"
 import { CategorySelector } from "./CategorySelector"
-import { QueryParams } from "@/app/types/types"
+import type { QueryParams } from "@/app/types/types"
 
 interface BasicInfoStepProps {
   control: Control<CreateCourseInput>
@@ -13,7 +15,6 @@ interface BasicInfoStepProps {
 }
 
 export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
-  console.log(params);
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="space-y-2">
@@ -23,7 +24,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
         <Controller
           name="title"
           control={control}
-          defaultValue={params?.title || ""} // Set default topic if available
+          defaultValue={params?.title || ""}
           render={({ field }) => (
             <Input {...field} id="title" placeholder="Enter course title" className="transition-all duration-200" />
           )}
@@ -58,7 +59,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
         <Controller
           name="category"
           control={control}
-          defaultValue={params?.category || ""} // Set default category if available
+          defaultValue={params?.category || ""}
           render={({ field }) => (
             <CategorySelector value={field.value} onChange={field.onChange} error={!!errors.category} />
           )}
@@ -66,7 +67,6 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
         {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
       </div>
     </div>
-  );
+  )
 }
-
 

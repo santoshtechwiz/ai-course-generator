@@ -20,6 +20,7 @@ import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
 import type { QueryParams } from "@/app/types/types"
 
+// Define schema with zod for consistent validation
 const fillInTheBlankQuizSchema = z.object({
   title: z.string().min(3, "Topic must be at least 3 characters"),
   questionCount: z.number().int().positive().min(1, "Must have at least 1 question"),

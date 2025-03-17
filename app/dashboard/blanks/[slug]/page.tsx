@@ -6,7 +6,8 @@ import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import BlankQuizWrapper from "@/components/features/blanks/BlankQuizWrapper"
-import { QuizDetailPage } from "@/components/QuizDetailsWrapper"
+import QuizDetailPage from "@/components/QuizDetailsPage"
+
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

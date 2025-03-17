@@ -6,9 +6,10 @@ import { authOptions } from "@/lib/authOptions"
 
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 
-import { QuizDetailPage } from "@/components/QuizDetailsWrapper"
+
 import { generatePageMetadata } from "@/lib/seo-utils"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
+import QuizDetailPage from "@/components/QuizDetailsPage"
 
 // SEO metadata generation
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
