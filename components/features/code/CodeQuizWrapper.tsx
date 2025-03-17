@@ -3,11 +3,12 @@
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { notFound } from "next/navigation"
-import CodingQuiz from "./CodeQuiz"
+
 import type { CodingQuizProps } from "@/app/types/types"
 
 import PageLoader from "@/components/ui/loader"
 import { QuizActions } from "@/components/QuizActions"
+import CodeQuiz from "./CodeQuiz"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
@@ -59,7 +60,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
              position="left-center"
         />
    
-        <CodingQuiz
+        <CodeQuiz
           quizId={quizData.quizId}
           slug={quizData.slug}
           isFavorite={quizData.isFavorite}
@@ -73,4 +74,3 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
 
   )
 }
-

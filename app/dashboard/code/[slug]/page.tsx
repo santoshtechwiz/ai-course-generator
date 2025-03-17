@@ -73,7 +73,7 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
       quizType="code"
       questionCount={questionCount}
       estimatedTime={estimatedTime}
-      breadcrumbItems={breadcrumbItems}
+   
     >
       <CodeQuizWrapper slug={slug} userId={currentUserId || ""} />
     </QuizDetailPage>

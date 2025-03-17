@@ -16,7 +16,7 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWi
   ({ className, ...props }, ref) => (
     <ol
       ref={ref}
-      className={cn("flex flex-wrap items-center gap-3 break-words text-sm text-muted-foreground", className)}
+      className={cn("flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground", className)}
       {...props}
     />
   ),
@@ -25,7 +25,7 @@ BreadcrumbList.displayName = "BreadcrumbList"
 
 const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
   ({ className, ...props }, ref) => (
-    <li ref={ref} className={cn("inline-flex items-center gap-2.5", className)} {...props} />
+    <li ref={ref} className={cn("inline-flex items-center gap-1.5", className)} {...props} />
   ),
 )
 BreadcrumbItem.displayName = "BreadcrumbItem"
@@ -37,19 +37,13 @@ const BreadcrumbLink = React.forwardRef<
   }
 >(({ className, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "a"
-  return (
-    <Comp
-      ref={ref}
-      className={cn("transition-colors hover:text-foreground px-1 py-0.5 rounded-md hover:bg-muted/50", className)}
-      {...props}
-    />
-  )
+  return <Comp ref={ref} className={cn("transition-colors hover:text-foreground", className)} {...props} />
 })
 BreadcrumbLink.displayName = "BreadcrumbLink"
 
 const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentProps<"li">) => (
-  <li role="presentation" aria-hidden="true" className={cn("mx-1 text-muted-foreground/50", className)} {...props}>
-    {children || <ChevronRight className="h-3.5 w-3.5" />}
+  <li role="presentation" aria-hidden="true" className={cn("[&>svg]:size-3.5", className)} {...props}>
+    {children || <ChevronRight className="h-4 w-4" />}
   </li>
 )
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator"
@@ -58,7 +52,7 @@ const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<"span"
   <span
     role="presentation"
     aria-hidden="true"
-    className={cn("flex h-9 w-9 items-center justify-center text-muted-foreground/70", className)}
+    className={cn("flex h-9 w-9 items-center justify-center", className)}
     {...props}
   >
     &#8230;
