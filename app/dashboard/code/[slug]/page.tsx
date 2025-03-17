@@ -59,9 +59,7 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
 
   // Create breadcrumb items
   const breadcrumbItems = [
-    { name: "Home", url: baseUrl },
-    { name: "Dashboard", url: `${baseUrl}/dashboard` },
-    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: "Quizzes", url: `${baseUrl}/quizzes` },
     { name: result.title, url: `${baseUrl}/dashboard/code/${slug}` },
   ]
 
@@ -73,6 +71,7 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
       quizType="code"
       questionCount={questionCount}
       estimatedTime={estimatedTime}
+      breadcrumbItems={breadcrumbItems}
    
     >
       <CodeQuizWrapper slug={slug} userId={currentUserId || ""} />

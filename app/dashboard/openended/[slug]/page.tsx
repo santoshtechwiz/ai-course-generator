@@ -55,11 +55,10 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
 
   // Create breadcrumb items
   const breadcrumbItems = [
-    { name: "Home", url: baseUrl },
-    { name: "Dashboard", url: `${baseUrl}/dashboard` },
-    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: "Quizzes", url: `${baseUrl}/quizzes` },
     { name: quizData.title, url: `${baseUrl}/dashboard/openended/${slug}` },
   ]
+
 
   return (
     <QuizDetailPage

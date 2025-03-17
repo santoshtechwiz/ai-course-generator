@@ -1,15 +1,11 @@
 "use client"
 
 import type React from "react"
-import Link from "next/link"
 import { motion } from "framer-motion"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import RandomQuiz from "@/components/RandomQuiz"
-import { BookOpen, Lightbulb, AlertCircle, CheckCircle, Brain } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { BookOpen, Lightbulb, Brain } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export default function QuizCreationPage({
@@ -61,7 +57,7 @@ export default function QuizCreationPage({
 
   return (
     <motion.div
-      className="container mx-auto py-8 md:py-12 px-4 sm:px-6 space-y-8"
+      className="w-full px-3 sm:px-4 md:px-6 lg:container lg:mx-auto py-6 md:py-10 space-y-6 md:space-y-8"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -76,72 +72,77 @@ export default function QuizCreationPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(metadata.breadcrumbSchema) }}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 gap-5 md:gap-6 lg:gap-8">
         {/* Compact RandomQuote */}
-        <motion.div className="col-span-1 lg:col-span-3" variants={itemVariants}>
+        <motion.div variants={itemVariants}>
           <RandomQuote />
         </motion.div>
 
-        <motion.div className="lg:col-span-2 relative group" variants={itemVariants}>
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-background rounded-xl -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
-          <Card className="relative bg-background/80 backdrop-blur-sm border-border/50 shadow-md overflow-hidden h-full">
-            <CardHeader className="pb-4 border-b border-border/10 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="bg-primary/10 p-2 rounded-lg">
-                    <BookOpen className="h-6 w-6 text-primary" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6 lg:gap-8">
+          <motion.div className="lg:col-span-2 relative group" variants={itemVariants}>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-background rounded-lg -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
+            <div className="relative bg-background/80 backdrop-blur-sm border border-border/50 shadow-md rounded-lg overflow-hidden h-full">
+              <div className="pb-3 md:pb-4 border-b border-border/10 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 p-2 rounded-lg">
+                      <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                    </div>
+                    <h2 className="text-xl md:text-2xl font-semibold text-foreground">Create a New {title}</h2>
                   </div>
-                  <CardTitle className="text-2xl font-semibold text-foreground">Create a New {title}</CardTitle>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <motion.div
+                          className="flex items-center text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-full self-start sm:self-auto"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.6, duration: 0.3 }}
+                        >
+                          <Lightbulb className="h-4 w-4 mr-1.5 text-amber-500" />
+                          Pro tip: Be specific with your topic
+                        </motion.div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">
+                          Specific topics lead to better quiz questions and more accurate results.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <motion.div
-                        className="hidden sm:flex items-center text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-full"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.6, duration: 0.3 }}
-                      >
-                        <Lightbulb className="h-4 w-4 mr-1.5 text-amber-500" />
-                        Pro tip: Be specific with your topic
-                      </motion.div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs">
-                        Specific topics lead to better quiz questions and more accurate results.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <p className="mt-2 text-sm md:text-base text-muted-foreground">
+                  Create a custom {quizTypeLabels[type]} to test knowledge or prepare for exams.
+                </p>
               </div>
-              <CardDescription className="mt-2 text-base">
-                Create a custom {quizTypeLabels[type]} to test knowledge or prepare for exams.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <QuizWrapper type={type} />
-            </CardContent>
-          </Card>
-        </motion.div>
+              <div className="p-4 md:p-6">
+                <QuizWrapper type={type} />
+              </div>
+            </div>
+          </motion.div>
 
-        <motion.div className="relative group" variants={itemVariants}>
-          <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-secondary/5 to-background rounded-xl -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
-          <Card className="relative bg-background/80 backdrop-blur-sm border-border/50 shadow-md overflow-hidden h-full">
-            <CardHeader className="pb-3 border-b border-border/10 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent">
-              <div className="flex items-center gap-2">
-                <div className="bg-blue-500/10 p-2 rounded-lg">
-                  <Brain className="h-5 w-5 text-blue-500" />
+          <motion.div className="relative group" variants={itemVariants}>
+            <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-secondary/5 to-background rounded-lg -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
+            <div className="relative bg-background/80 backdrop-blur-sm border border-border/50 shadow-md rounded-lg overflow-hidden h-full">
+              <div className="pb-3 border-b border-border/10 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent p-4 md:p-5">
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-500/10 p-2 rounded-lg">
+                    <Brain className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
+                  </div>
+                  <h3 className="text-base md:text-lg font-medium">Discover Quizzes</h3>
                 </div>
-                <CardTitle className="text-lg font-medium">Discover Quizzes</CardTitle>
+                <p className="mt-1 text-xs md:text-sm text-muted-foreground">
+                  Explore popular quizzes created by others
+                </p>
               </div>
-              <CardDescription>Explore popular quizzes created by others</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <RandomQuiz />
-            </CardContent>
-          </Card>
-        </motion.div>
+              <div>
+                <RandomQuiz />
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </motion.div>
   )
 }
+
