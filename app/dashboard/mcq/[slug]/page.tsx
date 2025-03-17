@@ -80,7 +80,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   // Create breadcrumb items
   const breadcrumbItems = [
   
-    { name: "Quizzes", url: `${baseUrl}/quizzes` },
+    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
     { name: quizData.title, url: `${baseUrl}/dashboard/mcq/${slug}` },
   ];
   return (

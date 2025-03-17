@@ -7,7 +7,7 @@ export function ShareButton({ slug, title }: { slug: string; title: string }) {
   const [isLinkCopied, setIsLinkCopied] = useState(false)
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/quizzes/${slug}`
+    const url = `${window.location.origin}/dahsboard/quizzes/${slug}`
     navigator.clipboard.writeText(url).then(() => {
       setIsLinkCopied(true)
       setTimeout(() => setIsLinkCopied(false), 2000) // Reset after 2 seconds
@@ -15,12 +15,12 @@ export function ShareButton({ slug, title }: { slug: string; title: string }) {
   }
 
   const handleShareOnFacebook = () => {
-    const url = `${window.location.origin}/quizzes/${slug}`
+    const url = `${window.location.origin}/dahsboard/quizzes/${slug}`
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank")
   }
 
   const handleShareOnTwitter = () => {
-    const url = `${window.location.origin}/quizzes/${slug}`
+    const url = `${window.location.origin}/dashboard/quizzes/${slug}`
     const text = `Check out this quiz: ${title}`
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, "_blank")
   }

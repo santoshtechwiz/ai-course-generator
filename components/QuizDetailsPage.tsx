@@ -181,7 +181,7 @@ export default function QuizDetailsPage({
               <CardHeader className="bg-gradient-to-r from-muted/30 to-muted/10 border-b space-y-4">
                 <div className="flex items-center justify-between">
                   <Button variant="ghost" size="sm" asChild className="gap-1 -ml-2 hover:bg-background/50">
-                    <Link href="/dashboard/quizzes">
+                    <Link href="/dashboard//quizzes">
                       <ArrowLeft className="h-4 w-4" />
                       <span>Back</span>
                     </Link>

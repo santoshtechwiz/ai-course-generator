@@ -53,7 +53,7 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
   // Create breadcrumb items
   const breadcrumbItems = [
   
-    { name: "Quizzes", url: `${baseUrl}/quizzes` },
+    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
     { name: quiz.title, url: `${baseUrl}/dashboard/flashcard/${slug}` },
   ];
 
