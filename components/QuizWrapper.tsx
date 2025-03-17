@@ -65,7 +65,7 @@ export function QuizWrapper({ type, queryParams }: QuizWrapperProps) {
       case "code":
         return <CodeQuizForm {...commonProps} />
       case "flashcard":
-        return <FlashCardCreate {...commonProps} />
+        return <FlashCardCreate maxCards={0} {...commonProps} />
       default:
         return null
     }

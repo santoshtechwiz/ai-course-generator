@@ -9,7 +9,8 @@ import getMcqQuestions from "@/app/actions/getMcqQuestions"
 
 import { generatePageMetadata } from "@/lib/seo-utils"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
-import QuizDetailPage from "@/components/QuizDetailsPage"
+import QuizDetailsPage from "@/components/QuizDetailsPage"
+
 
 // SEO metadata generation
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -84,7 +85,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   ]
 
   return (
-    <QuizDetailPage
+    <QuizDetailsPage
       title={quizData.title}
       description={`Test your knowledge on ${quizData.title}`}
       slug={slug}
@@ -94,7 +95,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       breadcrumbItems={breadcrumbItems}
     >
       <McqQuizWrapper slug={slug} currentUserId={currentUserId} result={result} />
-    </QuizDetailPage>
+   </QuizDetailsPage>
   )
 }
 

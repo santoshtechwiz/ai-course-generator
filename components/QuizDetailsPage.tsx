@@ -19,6 +19,7 @@ import { QuizActions } from "@/components/QuizActions"
 import { cn } from "@/lib/utils"
 import { RandomQuiz } from "@/components/RandomQuiz"
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "./breadcrumb"
+import { RandomQuote } from "@/components/RandomQuote"
 
 interface QuizDetailsPageProps {
   title: string
@@ -368,6 +369,15 @@ export default function QuizDetailsPage({
                 <RandomQuiz />
               </CardContent>
             </Card>
+
+            {/* Add RandomQuote component */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7, duration: 0.4 }}
+            >
+              <RandomQuote />
+            </motion.div>
           </motion.div>
         </div>
       </div>
