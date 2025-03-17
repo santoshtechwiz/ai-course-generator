@@ -4,18 +4,14 @@ import Link from "next/link"
 import { QuizWrapper } from "@/components/QuizWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import RandomQuiz from "@/components/RandomQuiz"
-import { BookOpen, Lightbulb, Sparkles, AlertCircle, CheckCircle, ArrowLeft, Share2, Brain } from "lucide-react"
-import { Suspense } from "react"
+import { BookOpen, Lightbulb, AlertCircle, CheckCircle, Brain } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BreadcrumbJsonLd } from "@/app/schema/breadcrumb-schema"
-import QuizSchema from "@/app/schema/quiz-schema"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
 
 // Common component for quiz creation pages
-export function QuizCreationPage({
+export default function QuizCreationPage({
   type,
   title,
   metadata,
@@ -106,124 +102,7 @@ export function QuizCreationPage({
   )
 }
 
-// Common component for quiz detail slug pages
-export function QuizDetailPage({
-  title,
-  description,
-  slug,
-  quizType,
-  questionCount,
-  estimatedTime,
-  breadcrumbItems,
-  children,
-}: {
-  title: string
-  description: string
-  slug: string
-  quizType: string
-  questionCount: number
-  estimatedTime: string
-  breadcrumbItems: { name: string; url: string }[]
-  children: React.ReactNode
-}) {
-  return (
-    <div className="container mx-auto py-8 md:py-12 px-4 sm:px-6 space-y-8">
-      <QuizSchema
-        quiz={{
-          title: title,
-          description: description,
-          questionCount: questionCount,
-          estimatedTime: estimatedTime,
-          level: "Intermediate",
-          slug: slug,
-        }}
-      />
-      <BreadcrumbJsonLd items={breadcrumbItems} />
 
-      <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
-        <div className="lg:w-3/4">
-          <Card className="overflow-hidden border shadow-md">
-            <CardHeader className="bg-muted/40 border-b space-y-3">
-              <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" asChild className="gap-1 -ml-2">
-                  <Link href="/dashboard/quizzes">
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>Back</span>
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="sm" className="gap-1">
-                 <ShareButton slug={""} title={""}></ShareButton>
-                </Button>
-              </div>
-              <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-                <Sparkles className="h-5 w-5 text-primary" />
-                {title}
-              </CardTitle>
-              <CardDescription className="text-sm md:text-base">{description}</CardDescription>
-              <div className="flex flex-wrap gap-3 pt-1">
-                <Badge type={quizType} />
-                <Badge icon={<Clock />} text={`${estimatedTime} min`} />
-                <Badge icon={<FileText />} text={`${questionCount} questions`} />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="lg:w-1/4">
-          <Card className="sticky top-20 overflow-hidden border shadow-md">
-            <CardHeader className="pb-3 border-b border-border/10">
-              <CardTitle className="text-lg font-medium">Discover Quizzes</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <RandomQuiz />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Custom Badge component for quiz metadata
-function Badge({ type, icon, text }: { type?: string; icon?: React.ReactNode; text?: string }) {
-  let content = text
-  const badgeIcon = icon
-
-  if (type) {
-    const typeColors = {
-      mcq: "bg-blue-50 text-blue-700 border-blue-200",
-      openended: "bg-purple-50 text-purple-700 border-purple-200",
-      "fill-in-the-blanks": "bg-amber-50 text-amber-700 border-amber-200",
-      code: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      flashcard: "bg-rose-50 text-rose-700 border-rose-200",
-    }
-
-    content = type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, " ")
-    return (
-      <span
-        className={cn(
-          "px-2.5 py-1 text-xs font-medium rounded-full border",
-          typeColors[type as keyof typeof typeColors] || "bg-gray-50 text-gray-700 border-gray-200",
-        )}
-      >
-        {content}
-      </span>
-    )
-  }
-
-  return (
-    <span className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-gray-50 text-gray-700 border border-gray-200">
-      {badgeIcon}
-      {content}
-    </span>
-  )
-}
-
-// Import icons for badges
-import { Clock, FileText } from "lucide-react"
-import { ShareButton } from "./ShareButton"
 
 // Error component for quiz pages
 export function QuizError({

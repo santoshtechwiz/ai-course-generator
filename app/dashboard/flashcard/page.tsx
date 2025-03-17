@@ -1,4 +1,4 @@
-import { QuizCreationPage } from "@/components/QuizDetailsWrapper"
+import { QuizCreationPage } from "@/components/QuizCreationPage"
 
 export const metadata = {
   title: "Flashcards | Course AI",

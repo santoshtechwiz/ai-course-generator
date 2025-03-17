@@ -3,7 +3,8 @@ import FlashCardsPageClient from "../components/FlashCardsPageClient"
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getQuiz } from "@/app/actions/getQuiz"
-import { QuizDetailPage } from "@/components/QuizDetailsWrapper"
+import QuizDetailPage from "@/components/QuizDetailsPage"
+
 
 type Params = Promise<{ slug: string }>
 

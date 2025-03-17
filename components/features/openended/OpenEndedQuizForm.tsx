@@ -19,6 +19,7 @@ import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
 import type { QueryParams } from "@/app/types/types"
 
+// Define schema with zod for consistent validation
 const openEndedQuizSchema = z.object({
   topic: z
     .string()

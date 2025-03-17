@@ -20,20 +20,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
-
+import { SignInBanner } from "../quiz/SignInBanner"
+import { ConfirmDialog } from "../quiz/ConfirmDialog"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/utils"
+import { codeQuizSchema } from "@/schema/schema"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
-import { SignInBanner } from "../quiz/SignInBanner"
-import { ConfirmDialog } from "../quiz/ConfirmDialog"
-import { codeQuizSchema } from "@/schema/schema"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string
@@ -203,7 +201,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
               transition={{ delay: 0.2 }}
             >
               <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
-                title
+                Title
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>

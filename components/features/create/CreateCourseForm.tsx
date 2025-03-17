@@ -20,12 +20,11 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
-
 import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { SignInBanner } from "@/components/features/quiz/SignInBanner"
 
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
-import { SignInBanner } from "@/components/features/quiz/SignInBanner"
 
 interface CourseCreationFormProps {
   maxQuestions: number

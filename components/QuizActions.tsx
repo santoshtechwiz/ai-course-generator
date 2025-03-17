@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Eye, EyeOff, Star, Trash2, Settings, X } from "lucide-react"
+import { Eye, EyeOff, Star, Trash2, X, ChevronDown, ChevronUp, Download } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,14 +65,14 @@ export function QuizActions({
   const [isDeleteLoading, setIsDeleteLoading] = useState(false)
   const [data, setData] = useState<any | null>(null)
   const [rating, setRating] = useState<number | null>(null)
-  const [isPulsing, setIsPulsing] = useState(true)
+  const [hasBeenSeen, setHasBeenSeen] = useState(false)
   const router = useRouter()
   const { canDownloadPDF } = useSubscriptionStore()
-  const fabRef = useRef<HTMLDivElement>(null)
+  const toolbarRef = useRef<HTMLDivElement>(null)
 
   const isOwner = userId === ownerId
 
-  // Position mapping
+  // Position mapping for the toolbar indicator
   const positionClasses = {
     "bottom-right": "bottom-4 right-4",
     "bottom-left": "bottom-4 left-4",
@@ -110,11 +110,11 @@ export function QuizActions({
     fetchQuizState()
   }, [quizSlug, quizId])
 
-  // Stop pulsing animation after 5 seconds
+  // Mark as seen after 3 seconds to reduce animation
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsPulsing(false)
-    }, 5000)
+      setHasBeenSeen(true)
+    }, 3000)
 
     return () => clearTimeout(timer)
   }, [])
@@ -122,7 +122,7 @@ export function QuizActions({
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (fabRef.current && !fabRef.current.contains(event.target as Node) && isOpen) {
+      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node) && isOpen) {
         setIsOpen(false)
       }
     }
@@ -285,252 +285,262 @@ export function QuizActions({
     <>
       {children}
 
-      <div ref={fabRef} className={cn("fixed z-50", positionClasses[position], className)}>
+      <div ref={toolbarRef} className={cn("fixed z-50 flex flex-col items-end", positionClasses[position], className)}>
         <AnimatePresence mode="wait">
-          {!isOpen ? (
+          {isOpen ? (
             <motion.div
-              key="button"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: 1,
-                scale: isPulsing ? [1, 1.1, 1] : 1,
-                rotate: isPulsing ? [0, -5, 5, -5, 0] : 0,
-              }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{
-                duration: 0.3,
-                scale: {
-                  repeat: isPulsing ? Number.POSITIVE_INFINITY : 0,
-                  repeatType: "reverse",
-                  duration: isPulsing ? 1.5 : 0.3,
-                },
-                rotate: {
-                  repeat: isPulsing ? Number.POSITIVE_INFINITY : 0,
-                  repeatDelay: 3,
-                  duration: isPulsing ? 0.5 : 0.3,
-                },
-              }}
+              key="toolbar"
+              className="w-full mb-2 overflow-hidden"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
             >
-              <motion.button
-                onClick={() => setIsOpen(true)}
-                className={cn(
-                  "h-14 w-14 rounded-full",
-                  customBgColor,
-                  customTextColor,
-                  "shadow-lg hover:shadow-xl transition-all duration-200",
-                  "focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                  "flex items-center justify-center",
-                )}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                aria-label="Open quiz settings"
-              >
-                {icon || <Settings className="h-6 w-6" />}
-              </motion.button>
-
-              {/* Attention ring animation */}
-              {isPulsing && (
-                <motion.div
-                  className="absolute inset-0 rounded-full"
-                  initial={{ opacity: 0.5, scale: 1 }}
-                  animate={{ opacity: 0, scale: 1.5 }}
-                  transition={{
-                    repeat: Number.POSITIVE_INFINITY,
-                    duration: 1.5,
-                    ease: "easeOut",
-                  }}
-                  style={{
-                    border: `2px solid ${backgroundColor || "var(--primary)"}`,
-                    zIndex: -1,
-                  }}
-                />
-              )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="menu"
-              className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 w-[280px]"
-              initial={{ opacity: 0, scale: 0.9, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 10 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            >
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium">Quiz Actions</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsOpen(false)}
-                    className="h-7 w-7 rounded-full hover:bg-muted"
-                    aria-label="Close quiz settings"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <TooltipProvider delayDuration={0}>
-                  <div className="grid grid-cols-5 gap-2">
-                    {/* Public/Private Toggle */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          onClick={togglePublic}
-                          disabled={!isOwner || isPublicLoading}
-                          className={cn(
-                            "h-12 w-12 rounded-full flex items-center justify-center",
-                            isPublic
-                              ? "bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-400 dark:hover:bg-green-900/60"
-                              : "bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60",
-                            !isOwner && "opacity-60 cursor-not-allowed",
-                          )}
-                          aria-label={isPublic ? "Make quiz private" : "Make quiz public"}
-                        >
-                          {isPublicLoading ? (
-                            <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          ) : isPublic ? (
-                            <Eye className="h-5 w-5" />
-                          ) : (
-                            <EyeOff className="h-5 w-5" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs py-1 px-2">
-                        {!isOwner ? "Only owner can change visibility" : isPublic ? "Make private" : "Make public"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {/* Favorite Toggle */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          onClick={toggleFavorite}
-                          disabled={isFavoriteLoading}
-                          className={cn(
-                            "h-12 w-12 rounded-full flex items-center justify-center",
-                            isFavorite
-                              ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:hover:bg-yellow-900/60"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700",
-                          )}
-                          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                        >
-                          {isFavoriteLoading ? (
-                            <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Star className={cn("h-5 w-5", isFavorite ? "fill-yellow-500" : "")} />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs py-1 px-2">
-                        {isFavorite ? "Remove from favorites" : "Add to favorites"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {/* Download PDF */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <QuizPDFDownload
-                            quizData={data}
-                            config={{
-                              showOptions: true,
-                              showAnswerSpace: true,
-                              answerSpaceHeight: 40,
-                              showAnswers: true,
-                            }}
-                          ></QuizPDFDownload>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs py-1 px-2">
-                        {canDownloadPDF() ? "Download as PDF" : "Upgrade to download PDF"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {/* Rate Quiz */}
-                    <Dialog>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "h-12 w-12 rounded-full flex items-center justify-center",
-                                "bg-amber-100 text-amber-600 hover:bg-amber-200",
-                                "dark:bg-amber-900/40 dark:text-amber-400 dark:hover:bg-amber-900/60",
-                              )}
-                              aria-label="Rate this quiz"
-                            >
-                              <Star className="h-5 w-5 fill-amber-500" />
-                            </Button>
-                          </DialogTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="text-xs py-1 px-2">
-                          Rate this quiz {rating ? `(${rating})` : ""}
-                        </TooltipContent>
-                      </Tooltip>
-                      <DialogContent className="sm:max-w-md rounded-lg">
-                        <DialogHeader>
-                          <DialogTitle className="text-lg">Rate this Quiz</DialogTitle>
-                        </DialogHeader>
-                        <div className="flex justify-center p-4">
-                          <Rating value={rating} onValueChange={handleRatingChange} className="scale-125" />
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-
-                    {/* Delete Quiz */}
-                    <AlertDialog>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              disabled={!isOwner || isDeleteLoading}
-                              className={cn(
-                                "h-12 w-12 rounded-full flex items-center justify-center",
-                                "bg-red-100 text-red-600 hover:bg-red-200",
-                                "dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60",
-                                !isOwner && "opacity-60 cursor-not-allowed",
-                              )}
-                              aria-label="Delete quiz"
-                            >
-                              {isDeleteLoading ? (
-                                <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <Trash2 className="h-5 w-5" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="text-xs py-1 px-2">
-                          {!isOwner ? "Only owner can delete" : "Delete quiz"}
-                        </TooltipContent>
-                      </Tooltip>
-                      <AlertDialogContent className="rounded-lg">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-lg">Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-sm">
-                            This action cannot be undone. This will permanently delete your quiz.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="rounded-md text-sm py-1">Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={handleDelete}
-                            className="bg-destructive hover:bg-destructive/90 rounded-md text-sm py-1"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 w-full max-w-[280px] ml-auto">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">Quiz Actions</h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsOpen(false)}
+                      className="h-7 w-7 rounded-full hover:bg-muted"
+                      aria-label="Close quiz settings"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                </TooltipProvider>
+
+                  <TooltipProvider delayDuration={0}>
+                    <div className="grid grid-cols-5 gap-2">
+                      {/* Public/Private Toggle */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            onClick={togglePublic}
+                            disabled={!isOwner || isPublicLoading}
+                            className={cn(
+                              "h-12 w-12 rounded-full flex items-center justify-center",
+                              isPublic
+                                ? "bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-400 dark:hover:bg-green-900/60"
+                                : "bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60",
+                              !isOwner && "opacity-60 cursor-not-allowed",
+                            )}
+                            aria-label={isPublic ? "Make quiz private" : "Make quiz public"}
+                          >
+                            {isPublicLoading ? (
+                              <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : isPublic ? (
+                              <Eye className="h-5 w-5" />
+                            ) : (
+                              <EyeOff className="h-5 w-5" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs py-1 px-2">
+                          {!isOwner ? "Only owner can change visibility" : isPublic ? "Make private" : "Make public"}
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* Favorite Toggle */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            onClick={toggleFavorite}
+                            disabled={isFavoriteLoading}
+                            className={cn(
+                              "h-12 w-12 rounded-full flex items-center justify-center",
+                              isFavorite
+                                ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:hover:bg-yellow-900/60"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700",
+                            )}
+                            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                          >
+                            {isFavoriteLoading ? (
+                              <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Star className={cn("h-5 w-5", isFavorite ? "fill-yellow-500" : "")} />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs py-1 px-2">
+                          {isFavorite ? "Remove from favorites" : "Add to favorites"}
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* Download PDF */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <QuizPDFDownload
+                              quizData={data}
+                              config={{
+                                showOptions: true,
+                                showAnswerSpace: true,
+                                answerSpaceHeight: 40,
+                                showAnswers: true,
+                              }}
+                            >
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "h-12 w-12 rounded-full flex items-center justify-center",
+                                  "bg-blue-100 text-blue-600 hover:bg-blue-200",
+                                  "dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60",
+                                )}
+                                aria-label="Download as PDF"
+                              >
+                                <Download className="h-5 w-5" />
+                              </Button>
+                            </QuizPDFDownload>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs py-1 px-2">
+                          {canDownloadPDF() ? "Download as PDF" : "Upgrade to download PDF"}
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* Rate Quiz */}
+                      <Dialog>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "h-12 w-12 rounded-full flex items-center justify-center",
+                                  "bg-amber-100 text-amber-600 hover:bg-amber-200",
+                                  "dark:bg-amber-900/40 dark:text-amber-400 dark:hover:bg-amber-900/60",
+                                )}
+                                aria-label="Rate this quiz"
+                              >
+                                <Star className="h-5 w-5 fill-amber-500" />
+                              </Button>
+                            </DialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs py-1 px-2">
+                            Rate this quiz {rating ? `(${rating})` : ""}
+                          </TooltipContent>
+                        </Tooltip>
+                        <DialogContent className="sm:max-w-md rounded-lg">
+                          <DialogHeader>
+                            <DialogTitle className="text-lg">Rate this Quiz</DialogTitle>
+                          </DialogHeader>
+                          <div className="flex justify-center p-4">
+                            <Rating value={rating} onValueChange={handleRatingChange} className="scale-125" />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      {/* Delete Quiz */}
+                      <AlertDialog>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                disabled={!isOwner || isDeleteLoading}
+                                className={cn(
+                                  "h-12 w-12 rounded-full flex items-center justify-center",
+                                  "bg-red-100 text-red-600 hover:bg-red-200",
+                                  "dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60",
+                                  !isOwner && "opacity-60 cursor-not-allowed",
+                                )}
+                                aria-label="Delete quiz"
+                              >
+                                {isDeleteLoading ? (
+                                  <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-5 w-5" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs py-1 px-2">
+                            {!isOwner ? "Only owner can delete" : "Delete quiz"}
+                          </TooltipContent>
+                        </Tooltip>
+                        <AlertDialogContent className="rounded-lg">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-lg">Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm">
+                              This action cannot be undone. This will permanently delete your quiz.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="rounded-md text-sm py-1">Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleDelete}
+                              className="bg-destructive hover:bg-destructive/90 rounded-md text-sm py-1"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TooltipProvider>
+                </div>
               </div>
             </motion.div>
-          )}
+          ) : null}
+
+          {/* Toolbar indicator button */}
+          <motion.div
+            key="indicator"
+            className={cn("flex flex-col items-center", isOpen ? "mb-0" : "mb-0")}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+          >
+            <motion.button
+              onClick={() => setIsOpen(!isOpen)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-full shadow-lg",
+                customBgColor,
+                customTextColor,
+                "hover:shadow-xl transition-all duration-200",
+                "focus:ring-2 focus:ring-primary focus:ring-offset-2",
+              )}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              animate={!hasBeenSeen && !isOpen ? { y: [0, -5, 0] } : {}}
+              transition={
+                !hasBeenSeen && !isOpen
+                  ? {
+                      y: { repeat: 3, duration: 1, repeatType: "reverse" },
+                      scale: { type: "spring", damping: 15, stiffness: 300 },
+                    }
+                  : {
+                      scale: { type: "spring", damping: 15, stiffness: 300 },
+                    }
+              }
+              aria-label={isOpen ? "Close quiz settings" : "Open quiz settings"}
+            >
+              <span className="font-medium">Quiz Settings</span>
+              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </motion.button>
+
+            {/* Attention indicator for new users */}
+            {!hasBeenSeen && !isOpen && (
+              <motion.div
+                className="absolute inset-0 rounded-full"
+                initial={{ opacity: 0.5, scale: 1 }}
+                animate={{ opacity: 0, scale: 1.5 }}
+                transition={{
+                  repeat: 3,
+                  duration: 1.5,
+                  ease: "easeOut",
+                }}
+                style={{
+                  border: `2px solid ${backgroundColor || "var(--primary)"}`,
+                  zIndex: -1,
+                }}
+              />
+            )}
+          </motion.div>
         </AnimatePresence>
       </div>
     </>

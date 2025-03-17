@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import AIEmoji from "../AIEmoji"
-
 import { useChapterSummary } from "@/hooks/useChapterSummary"
 import { processMarkdown } from "@/lib/markdownProcessor"
 import { MarkdownRenderer } from "./markdownUtils"

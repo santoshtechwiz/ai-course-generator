@@ -9,20 +9,23 @@ import { AlertTriangle, Loader2 } from "lucide-react"
 import CourseDetailsTabs from "./CourseDetailsTabs"
 import CourseActionsWithErrorBoundary from "./CourseActions"
 import { useSession } from "next-auth/react"
-import type { FullCourseType, FullChapter, FullChapterType } from "@/app/types/types"
-import type { CourseProgress } from "@prisma/client"
 import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
 import { Skeleton } from "@/components/ui/skeleton"
 
+import type { FullCourseType, FullChapter, FullChapterType } from "@/app/types/types"
+import type { CourseProgress } from "@prisma/client"
+
+// Dynamically import the video player for better performance
 const EnhancedVideoPlayer = dynamic(() => import("./EnhancedVideoPlayer"), {
   ssr: false,
   loading: () => <VideoPlayerSkeleton />,
 })
 
-interface ChapterInfoProps{
+interface ChapterInfoProps {
   course: FullCourseType
   currentChapter?: FullChapter
 }
+
 interface MainContentProps {
   course: FullCourseType
   initialVideoId?: string
@@ -69,18 +72,15 @@ const VideoPlayerSkeleton = () => <div className="aspect-video animate-pulse bg-
 
 const ChapterInfo = ({ course, currentChapter }: ChapterInfoProps) => (
   <div className="space-y-2 p-4 lg:p-6">
-    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl lg:text-4xl">
-      {course.title}
-    </h1>
+    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl lg:text-4xl">{course.title}</h1>
     {currentChapter ? (
-      <p className="text-sm text-muted-foreground sm:text-base md:text-lg lg:text-xl">
-        {currentChapter.title}
-      </p>
+      <p className="text-sm text-muted-foreground sm:text-base md:text-lg lg:text-xl">{currentChapter.title}</p>
     ) : (
       <Skeleton className="h-4 w-48" /> // Loading state
     )}
   </div>
 )
+
 interface VideoPlayerProps {
   initialVideoId?: string
   currentChapter?: FullChapter
@@ -202,8 +202,14 @@ const VideoPlayer = ({
             rememberMute: true,
             showCertificateButton: isLastVideo,
           }}
-          courseAIVideos={course.courseUnits.flatMap((unit) => unit.chapters.map((chapter) => ({ id: chapter.videoId || "", title: chapter.name }))
-          )} courseName={""}        />
+          courseAIVideos={course.courseUnits.flatMap((unit) =>
+            unit.chapters.map((chapter) => ({
+              id: chapter.videoId || "",
+              title: chapter.name,
+            })),
+          )}
+          courseName={course.title}
+        />
         {showCompletionOverlay && (
           <CourseCompletionOverlay
             onClose={handleCloseOverlay}
