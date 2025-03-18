@@ -28,11 +28,6 @@
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 240 65.8% 53.9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 240 65.8% 53.9%;
 
   /* Border radius system */
   --radius-sm: 0.25rem;
@@ -80,11 +75,6 @@
   --muted-foreground: 215 20.2% 75%;
   --accent: 262 83.3% 65%;
   --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 50.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 25%;
-  --input: 217.2 32.6% 25%;
-  --ring: 240 65.8% 65%;
   --destructive: 0 62.8% 50.6%;
   --destructive-foreground: 210 40% 98%;
   --border: 217.2 32.6% 25%;
@@ -266,6 +256,19 @@
     transition: all var(--duration-fast) ease-out;
   }
 
+  /* Improved input styling for shadcn compatibility */
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+  }
+
+  /* Add specific styling for inputs with icons */
+  .input-with-icon {
+    @apply pl-10; /* Add left padding for the icon */
+  }
+
   /* Tables */
   table {
     @apply w-full border-collapse my-6;
@@ -313,18 +316,23 @@
   input:not(.unstyled),
   textarea:not(.unstyled),
   select:not(.unstyled) {
-    @apply w-full px-3 py-2 border border-input rounded-md;
+    @apply w-full px-3 py-2 border border-input rounded-md bg-transparent;
     min-height: 2.75rem;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
-    background-color: transparent;
   }
 
+  /* Add specific styling for icon positioning in inputs */
+  .input-icon {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none;
+  }
+
+  /* Improve focus states for better accessibility and visual feedback */
   .input:focus-visible,
   input:not(.unstyled):focus-visible,
   textarea:not(.unstyled):focus-visible,
   select:not(.unstyled):focus-visible {
-    @apply border-primary ring-2 ring-primary/30;
-    transform: translateY(-2px);
+    @apply outline-none border-primary ring-2 ring-primary/30;
+    transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
   }
 
@@ -680,6 +688,30 @@
 
   .dropdown-item {
     @apply block px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-colors duration-150 cursor-pointer;
+  }
+
+  /* Search component specific styles */
+  .search-wrapper {
+    @apply relative w-full;
+  }
+
+  .search-icon {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none;
+  }
+
+  .search-input {
+    @apply w-full h-10 pl-10 pr-4 py-2 border border-input rounded-md bg-transparent;
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .search-input:focus-visible {
+    @apply outline-none border-primary ring-2 ring-primary/30;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .search-hint {
+    @apply mt-2 text-sm text-muted-foreground;
   }
 }
 
