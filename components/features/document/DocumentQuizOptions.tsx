@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
+import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
 interface DocumentQuizOptionsProps {
   onOptionsChange: (options: DocumentQuizOptions) => void
@@ -30,15 +31,13 @@ export function DocumentQuizOptions({ onOptionsChange }: DocumentQuizOptionsProp
     <div className="space-y-4">
       <div>
         <Label htmlFor="numberOfQuestions">Number of Questions</Label>
-        <Input
-          id="numberOfQuestions"
-          type="number"
-          min="1"
-          max="20"
+        <SubscriptionSlider
           value={options.numberOfQuestions}
-          onChange={(e) => handleChange("numberOfQuestions", Number.parseInt(e.target.value))}
+          onValueChange={(value) => handleChange("numberOfQuestions", value)}
         />
-      </div>
+     </div>
+     
+  
       <div>
         <Label>Difficulty</Label>
         <Slider
