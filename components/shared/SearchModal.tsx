@@ -16,7 +16,7 @@ interface SearchResult {
   description?: string
   slug?: string
   title?: string
-  quizType?: "mcq" | "openended" | "fill-blanks"|'code'
+  quizType?: "mcq" | "openended" | "fill-blanks" | "code"
 }
 
 interface SearchResponse {
@@ -108,7 +108,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
 
   const handleResultClick = (result: SearchResult) => {
     let url
-    if (result.title && ['mcq', 'openended', 'fill-blanks', 'code'].includes(result.quizType || '')) {
+    if (result.title && ["mcq", "openended", "fill-blanks", "code"].includes(result.quizType || "")) {
       // This is a game/quiz
       url = `/dashboard/${result.quizType === "fill-blanks" ? "blanks" : result.quizType}/${result.slug}`
     } else {
@@ -141,19 +141,23 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className={`rounded-lg p-3 transition-colors ${index === selectedIndex ? "bg-primary/20" : "hover:bg-muted/80"}`}
+      className={`rounded-lg p-3 transition-colors ${
+        index === selectedIndex
+          ? "bg-primary/10 border border-primary/30"
+          : "hover:bg-muted border border-transparent hover:border-muted-foreground/20"
+      }`}
     >
       <button
         onClick={() => handleResultClick(result)}
-        className="w-full text-left hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary flex items-start space-x-3"
+        className="w-full text-left focus:outline-none focus:ring-0 flex items-start space-x-3"
       >
         {type === "course" ? (
-          <Book className="h-5 w-5 flex-shrink-0 mt-1" />
+          <Book className={`h-5 w-5 flex-shrink-0 mt-1 ${index === selectedIndex ? "text-primary" : ""}`} />
         ) : (
-          <FileQuestion className="h-5 w-5 flex-shrink-0 mt-1" />
+          <FileQuestion className={`h-5 w-5 flex-shrink-0 mt-1 ${index === selectedIndex ? "text-primary" : ""}`} />
         )}
         <div className="flex-grow min-w-0">
-          <p className="font-medium text-base truncate">
+          <p className={`font-medium text-base truncate ${index === selectedIndex ? "text-primary" : ""}`}>
             {highlightMatch(result.title || result.name || "", searchTerm)}
           </p>
           {type === "course" && result.description && (
@@ -178,23 +182,24 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden p-4">
-            <div className="relative w-full mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+            <div className="relative w-full mb-4 focus-within:ring-2 focus-within:ring-primary/50 rounded-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary pointer-events-none" />
               <Input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Type to search..."
+                placeholder="Search courses and quizzes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full pl-10 pr-10 h-12 text-lg"
+                className="w-full pl-10 pr-10 h-12 text-lg border-primary/20 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               {searchTerm && (
                 <Button
                   size="icon"
                   variant="ghost"
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-muted"
+                  aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -203,8 +208,9 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
 
             <div className="overflow-y-auto flex-1 -mr-4 pr-4 max-h-[calc(90vh-180px)]">
               {showLoader ? (
-                <div className="flex justify-center items-center py-8">
+                <div className="flex flex-col justify-center items-center py-8 space-y-2">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground animate-pulse">Searching...</p>
                 </div>
               ) : searchResults && (searchResults?.courses?.length > 0 || searchResults?.games?.length > 0) ? (
                 <div className="space-y-6">
@@ -244,7 +250,17 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
           </div>
 
           <div className="p-4 border-t">
-            <p className="text-sm text-muted-foreground">Press ↑↓ to navigate, Enter to select</p>
+            <div className="flex items-center justify-center space-x-4 text-sm text-muted-foreground">
+              <div className="flex items-center">
+                <kbd className="px-2 py-1 bg-muted rounded text-xs mr-1">↑</kbd>
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">↓</kbd>
+                <span className="ml-2">to navigate</span>
+              </div>
+              <div className="flex items-center">
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">Enter</kbd>
+                <span className="ml-2">to select</span>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>
