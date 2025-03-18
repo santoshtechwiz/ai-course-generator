@@ -5,9 +5,7 @@ import CoursePage from "@/components/features/course/CoursePage/CoursePage"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-
 import CourseSchema from "@/app/schema/course-schema"
-export const revalidate = 60; 
 
 
 function LoadingSkeleton() {
@@ -25,8 +23,8 @@ function LoadingSkeleton() {
 }
 
 // Generate metadata for the course page
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const {slug}=await params;
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const { slug } = params
   const course = await getCourseData(slug)
 
   if (!course) {
@@ -56,16 +54,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 }
 
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const slug = (await params).slug;
+export default async function Page({ params }: { params: { slug: string } }) {
+  const { slug } = params
   const course = await getCourseData(slug)
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
   if (!course) {
     notFound()
   }
-
-
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
@@ -84,7 +80,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             : undefined,
         }}
       />
- 
+
       <CoursePage course={course} />
     </Suspense>
   )
