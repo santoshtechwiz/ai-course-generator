@@ -98,7 +98,7 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
   }, [quizzes, searchQuery, sortOption])
 
   const handlePlayQuiz = (quizId: string) => {
-    router.push(`/play/${quizId}`)
+    router.push(`/dashboard/document/${quizId}`)
   }
 
   const handleEditQuiz = (quiz: Quiz) => {
@@ -129,7 +129,7 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
 
   const getShareUrl = () => {
     if (!selectedQuizId) return ""
-    return `${window.location.origin}/play/${selectedQuizId}`
+    return `${window.location.origin}/dashboard/document/${selectedQuizId}`
   }
 
   const copyShareLink = () => {
