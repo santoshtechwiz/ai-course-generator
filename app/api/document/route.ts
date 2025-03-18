@@ -3,6 +3,9 @@ import { generateObject } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { z } from "zod"
 
+import { updateUserCredits } from "@/lib/db"
+import { getAuthSession } from "@/lib/authOptions"
+
 const QuestionSchema = z.object({
   question: z.string(),
   options: z.array(z.string()).length(4),
@@ -40,13 +43,13 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File
   const numberOfQuestions = formData.get("numberOfQuestions") as string
   const difficulty = formData.get("difficulty") as string
-
+  const session=await getAuthSession();
   if (!file) {
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
   }
 
   // Check file size (max 1MB)
-  const MAX_FILE_SIZE = 1 * 1024 * 1024 // 1MB in bytes
+  const MAX_FILE_SIZE = .5 * 1024 * 1024 // 1MB in bytes
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json({ error: "File too large. Please upload a file smaller than 1MB." }, { status: 400 })
   }
@@ -86,7 +89,12 @@ export async function POST(req: NextRequest) {
       ],
       schema: QuizSchema,
     })
-
+    //deduct tokens used
+    if (session?.user.id) {
+     await updateUserCredits(session.user.id, "undefined");
+    } else {
+      throw new Error("User session is not valid");
+    }
     return NextResponse.json(result.object.questions)
   } catch (error) {
     console.error("Error generating quiz:", error)
