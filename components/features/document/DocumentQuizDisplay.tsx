@@ -110,9 +110,9 @@ export function DocumentQuizDisplay({ questions, onSave, onUpdate }: DocumentQui
             <Button disabled={loading}>{loading ? "Generating PDF..." : "Download PDF"}</Button>
           )}
         </PDFDownloadLink>
-        <Button onClick={handleSave} disabled={isSaving}>
+        {/* <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? "Saving..." : "Save to Database"}
-        </Button>
+        </Button> */}
       </div>
     </div>
   )
