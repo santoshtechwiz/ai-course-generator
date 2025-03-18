@@ -1,3 +1,5 @@
+"use client"
+
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
 
 // Define the component props with configuration options
@@ -10,6 +12,7 @@ interface Question {
 
 interface QuizPDFProps {
   questions: Question[]
+  title?: string
   // Configuration options
   config?: {
     // Highlighting options
@@ -28,10 +31,10 @@ interface QuizPDFProps {
   }
 }
 
-export default function DocumentQuizPDF({ questions, config = {} }: QuizPDFProps) {
+export default function DocumentQuizPDF({ questions, title = "Generated Quiz", config = {} }: QuizPDFProps) {
   // Set default configuration values
   const {
-    highlightAnswers = false,
+    highlightAnswers = true, // Changed default to true to show answers
     highlightColor = "#4CAF50",
     showCopyright = true,
     copyrightText = "© CourseAI",
@@ -51,6 +54,13 @@ export default function DocumentQuizPDF({ questions, config = {} }: QuizPDFProps
       padding: 30,
       fontFamily: fontFamily,
       position: "relative",
+    },
+    title: {
+      fontSize: 24,
+      marginBottom: 20,
+      fontWeight: "bold",
+      textAlign: "center",
+      color: questionColor,
     },
     section: {
       margin: 10,
@@ -74,7 +84,7 @@ export default function DocumentQuizPDF({ questions, config = {} }: QuizPDFProps
       marginBottom: 5,
       color: highlightColor,
       fontWeight: "bold",
-      backgroundColor: `${highlightColor}20`, // 20% opacity of highlight color
+      backgroundColor: "#e6f7e6", // Light green background for highlighted options
       padding: "3 5",
       borderRadius: 3,
     },
@@ -95,11 +105,26 @@ export default function DocumentQuizPDF({ questions, config = {} }: QuizPDFProps
       fontSize: 10,
       color: "#666666",
     },
+    answerKey: {
+      fontSize: 18,
+      marginBottom: 15,
+      fontWeight: "bold",
+      textAlign: "center",
+      color: questionColor,
+    },
+    answerItem: {
+      fontSize: 12,
+      marginBottom: 5,
+      color: optionColor,
+    },
   })
 
   return (
     <Document>
+      {/* Quiz Questions Page */}
       <Page size="A4" style={styles.page}>
+        <Text style={styles.title}>{title}</Text>
+
         {questions.map((question, index) => (
           <View key={question.id} style={styles.section}>
             <Text style={styles.question}>{`${index + 1}. ${question.question}`}</Text>
@@ -111,10 +136,33 @@ export default function DocumentQuizPDF({ questions, config = {} }: QuizPDFProps
 
               return (
                 <Text key={optionIndex} style={optionStyle}>
-                  {`${String.fromCharCode(97 + optionIndex)}. ${option}`}
+                  {`${String.fromCharCode(65 + optionIndex)}. ${option}`}
                 </Text>
               )
             })}
+          </View>
+        ))}
+
+        {/* Copyright notice */}
+        {showCopyright && <Text style={styles.footer}>{copyrightText}</Text>}
+
+        {/* Page number */}
+        <Text
+          style={styles.pageNumber}
+          render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+          fixed
+        />
+      </Page>
+
+      {/* Answer Key Page */}
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.answerKey}>Answer Key</Text>
+
+        {questions.map((question, index) => (
+          <View key={`answer-${question.id}`} style={styles.section}>
+            <Text style={styles.answerItem}>
+              {`${index + 1}. ${String.fromCharCode(65 + question.correctAnswer)} - ${question.options[question.correctAnswer]}`}
+            </Text>
           </View>
         ))}
 
