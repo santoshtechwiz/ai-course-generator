@@ -13,7 +13,6 @@ import UserNotFound from "@/components/UserNotFound"
 
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
 import FavoriteCourses from "@/components/FavoriteCourses"
-import QuizHistory from "@/components/QuizHistory"
 import UserProfile from "@/components/UserProfile"
 import CourseProgress from "@/components/features/course/CoursePage/CourseProgress"
 import { MyCourses } from "@/components/features/course/UserDashboard/MyCourses"
@@ -21,6 +20,7 @@ import { MyQuizzes } from "@/components/features/course/UserDashboard/MyQuizzes"
 import { QuizAttempts } from "@/components/features/course/UserDashboard/QuizAttempts"
 import SubscriptionStatus from "@/components/features/course/UserDashboard/SubscriptionStatus"
 import { UserStatsOverview } from "@/components/features/course/UserDashboard/UserStatsOverview"
+import QuizHistory from "@/components/features/course/UserDashboard/QuizHistory"
 
 // Lazy load heavy components
 const AIRecommendations = dynamic(() => import("@/components/Recommendations"), {

@@ -1,16 +1,16 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw } from "lucide-react"
+import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw, Sparkles, BookMarked } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { Course, CourseProgress, UserQuizAttempt } from "@/app/types/types"
-
+import type { Course, CourseProgress, UserQuizAttempt } from "@/app/types/types"
+import { useLocalStorage } from "@/lib/useLocalStorage"
 
 interface AIRecommendationsProps {
   courses: Course[]
@@ -19,52 +19,146 @@ interface AIRecommendationsProps {
 }
 
 interface Recommendation {
-  type: "next" | "review" | "practice"
+  type: "next" | "review" | "practice" | "quiz"
   message: string
   courseId: number
   chapterId: number
   slug: string
+  generatedAt?: Date
 }
+
+interface GeneratedQuiz {
+  id: string
+  title: string
+  courseId: number
+  chapterId: number
+  questions: {
+    question: string
+    options: string[]
+    correctAnswer: number
+  }[]
+}
+
+// Cache TTL in milliseconds (24 hours)
+const CACHE_TTL = 24 * 60 * 60 * 1000
 
 export default function AIRecommendations({ courses, courseProgress, quizAttempts }: AIRecommendationsProps) {
   const router = useRouter()
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false)
+  const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null)
+  const hasInitialized = useRef(false)
+
+  // Cache recommendations in localStorage to reduce API calls
+  const [cachedRecommendations, setCachedRecommendations] = useLocalStorage<{
+    data: Recommendation[]
+    timestamp: number
+  }>("ai-recommendations-cache", { data: [], timestamp: 0 })
+
+  // Analyze user data to identify knowledge gaps and interests
+  const userAnalysis = useMemo(() => {
+    // Track topics the user has engaged with
+    const topicEngagement = new Map<string, number>()
+
+    // Track knowledge gaps based on quiz performance
+    const knowledgeGaps = new Map<string, number>()
+
+    // Analyze quiz attempts to find knowledge gaps
+    quizAttempts.forEach((attempt) => {
+      const relevantCourse = courses.find((c) =>
+        c.courseUnits?.some((unit) =>
+          unit.chapters.some((chapter) => chapter.questions?.some((question) => question.id === attempt.userQuizId)),
+        ),
+      )
+
+      if (relevantCourse) {
+        // Increase topic engagement
+        topicEngagement.set(relevantCourse.title, (topicEngagement.get(relevantCourse.title) || 0) + 1)
+
+        // If score is low, mark as knowledge gap
+        if (attempt.score !== null && attempt.score < 70) {
+          knowledgeGaps.set(relevantCourse.title, (knowledgeGaps.get(relevantCourse.title) || 0) + 1)
+        }
+      }
+    })
+
+    // Analyze course progress to find interests
+    courseProgress.forEach((progress) => {
+      const course = courses.find((c) => c.id === progress.id)
+      if (course) {
+        // Increase topic engagement based on progress
+        topicEngagement.set(course.title, (topicEngagement.get(course.title) || 0) + Math.floor(progress.progress / 10))
+      }
+    })
+
+    return {
+      topicEngagement: Array.from(topicEngagement.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([topic]) => topic),
+      knowledgeGaps: Array.from(knowledgeGaps.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([topic]) => topic),
+    }
+  }, [courses, courseProgress, quizAttempts])
 
   const generateRecommendations = useCallback(() => {
     setIsLoading(true)
     setError(null)
 
     try {
+      // Check if we have valid cached recommendations
+      const now = Date.now()
+      if (cachedRecommendations.data.length > 0 && now - cachedRecommendations.timestamp < CACHE_TTL) {
+        setRecommendations(cachedRecommendations.data)
+        setIsLoading(false)
+        return
+      }
+
       const newRecommendations: Recommendation[] = []
 
       // Find courses with low progress
-      const lowProgressCourses = courseProgress.filter((c) => c.progress < 30 && !c.isCompleted)
+      const lowProgressCourses = courseProgress
+        .filter((c) => c.progress < 30 && !c.isCompleted)
+        .sort((a, b) => a.progress - b.progress)
+
       if (lowProgressCourses.length > 0) {
-        const course = courses.find((c) => c.id === lowProgressCourses[0].course.id)
+        const course = courses.find((c) => c.id === lowProgressCourses[0].id)
         if (
           course &&
           course.courseUnits &&
           course.courseUnits.length > 0 &&
           course.courseUnits[0].chapters.length > 0
         ) {
+          // Find the next incomplete chapter
+          const completedChaptersArray = lowProgressCourses[0].completedChapters
+            ? JSON.parse(lowProgressCourses[0].completedChapters)
+            : []
+
+          const nextChapter =
+            course.courseUnits
+              .flatMap((unit) => unit.chapters)
+              .find((chapter) => !completedChaptersArray.includes(chapter.id)) || course.courseUnits[0].chapters[0]
+
           newRecommendations.push({
             type: "next",
-            message: `Continue ${course.name} to maintain your learning momentum`,
+            message: `Continue ${course.title} to maintain your learning momentum`,
             courseId: course.id,
-            chapterId: course.courseUnits[0].chapters[0].id,
+            chapterId: nextChapter.id,
             slug: course.slug || "",
+            generatedAt: new Date(),
           })
         }
       }
 
       // Find quizzes with low scores
-      const lowScoreQuizzes = quizAttempts.filter((q) => q.score !== null && q.score < 70)
+      const lowScoreQuizzes = quizAttempts
+        .filter((q) => q.score !== null && q.score < 70)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
       if (lowScoreQuizzes.length > 0) {
-        const latestLowScoreQuiz = lowScoreQuizzes.reduce((latest, current) =>
-          new Date(latest.createdAt) > new Date(current.createdAt) ? latest : current,
-        )
+        const latestLowScoreQuiz = lowScoreQuizzes[0]
         const relevantCourse = courses.find((c) =>
           c.courseUnits?.some((unit) =>
             unit.chapters.some((chapter) =>
@@ -72,44 +166,77 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
             ),
           ),
         )
+
         if (relevantCourse) {
           const relevantChapter = relevantCourse.courseUnits
             ?.flatMap((unit) => unit.chapters)
             .find((chapter) => chapter.questions?.some((question) => question.id === latestLowScoreQuiz.userQuizId))
+
           if (relevantChapter) {
             newRecommendations.push({
               type: "review",
-              message: "Review previous chapters to improve your quiz scores",
+              message: `Review ${relevantChapter.title} to improve your quiz score of ${latestLowScoreQuiz.score}%`,
               courseId: relevantCourse.id,
               chapterId: relevantChapter.id,
               slug: relevantCourse.slug || "",
+              generatedAt: new Date(),
             })
           }
         }
       }
 
       // Recommend practice if no recent activity
-      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      const inactiveCourses = courseProgress.filter((c) => new Date(c.lastAccessedAt) < oneWeekAgo && !c.isCompleted)
+      const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+      const inactiveCourses = courseProgress
+        .filter((c) => new Date(c.lastAccessedAt) < twoWeeksAgo && !c.isCompleted)
+        .sort((a, b) => new Date(a.lastAccessedAt).getTime() - new Date(b.lastAccessedAt).getTime())
+
       if (inactiveCourses.length > 0) {
-        const course = courses.find((c) => c.id === inactiveCourses[0].course.id)
-        if (
-          course &&
-          course.courseUnits &&
-          course.courseUnits.length > 0 &&
-          course.courseUnits[0].chapters.length > 0
-        ) {
+        const course = courses.find((c) => c.id === inactiveCourses[0]?.id)
+        if (course && course.courseUnits && course.courseUnits.length > 0) {
+          // Find a chapter with questions for practice
+          const chapterWithQuestions = course.courseUnits
+            .flatMap((unit) => unit.chapters)
+            .find((chapter) => chapter.questions && chapter.questions.length > 0)
+
+          if (chapterWithQuestions) {
+            newRecommendations.push({
+              type: "practice",
+              message: `Practice ${course.title} to refresh your knowledge after ${getTimeSinceLastAccess(inactiveCourses[0].lastAccessedAt.toISOString())}`,
+              courseId: course.id,
+              chapterId: chapterWithQuestions.id,
+              slug: course.slug || "",
+              generatedAt: new Date(),
+            })
+          }
+        }
+      }
+
+      // Add personalized quiz recommendation based on user interests
+      if (userAnalysis.topicEngagement.length > 0) {
+        const topInterest = userAnalysis.topicEngagement[0]
+        const relevantCourse = courses.find((c) => c.title === topInterest)
+
+        if (relevantCourse && relevantCourse.courseUnits && relevantCourse.courseUnits.length > 0) {
+          const firstChapter = relevantCourse.courseUnits[0].chapters[0]
+
           newRecommendations.push({
-            type: "practice",
-            message: "Practice makes perfect! Take a quick quiz to stay sharp",
-            courseId: course.id,
-            chapterId: course.courseUnits[0].chapters[0].id,
-            slug: course.slug || "",
+            type: "quiz",
+            message: `Take a personalized quiz on ${topInterest} to test your knowledge`,
+            courseId: relevantCourse.id,
+            chapterId: firstChapter.id,
+            slug: relevantCourse.slug || "",
+            generatedAt: new Date(),
           })
         }
       }
 
+      // Update state and cache
       setRecommendations(newRecommendations)
+      setCachedRecommendations({
+        data: newRecommendations,
+        timestamp: now,
+      })
     } catch (err) {
       setError("Failed to generate recommendations. Please try again.")
       toast({
@@ -120,14 +247,123 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     } finally {
       setIsLoading(false)
     }
-  }, [courses, courseProgress, quizAttempts])
+  }, [courses, courseProgress, quizAttempts, userAnalysis, setCachedRecommendations])
 
   useEffect(() => {
+    if (hasInitialized.current) return
+
+    hasInitialized.current = true
     generateRecommendations()
-  }, [generateRecommendations])
+
+    return () => {
+      // Cleanup
+    }
+  }, []) // Empty dependency array to run only once
 
   const handleRecommendationClick = (recommendation: Recommendation) => {
-    router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
+    if (recommendation.type === "quiz") {
+      generatePersonalizedQuiz(recommendation)
+    } else {
+      router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
+    }
+  }
+
+  const generatePersonalizedQuiz = async (recommendation: Recommendation) => {
+    setIsGeneratingQuiz(true)
+
+    try {
+      // Find the course and chapter for this recommendation
+      const course = courses.find((c) => c.id === recommendation.courseId)
+      const chapter = course?.courseUnits
+        ?.flatMap((unit) => unit.chapters)
+        .find((ch) => ch.id === recommendation.chapterId)
+
+      if (!course || !chapter) {
+        throw new Error("Course or chapter not found")
+      }
+
+      // In a real implementation, this would call an API endpoint
+      // Here we're simulating the generation to avoid API calls
+      const quiz: GeneratedQuiz = {
+        id: `generated-${Date.now()}`,
+        title: `Personalized Quiz: ${course.title}`,
+        courseId: course.id,
+        chapterId: chapter.id,
+        questions: [
+          {
+            question: `What is the main focus of ${course.title}?`,
+            options: [
+              `Understanding core concepts of ${course.title}`,
+              `Advanced techniques in ${course.title}`,
+              `History of ${course.title}`,
+              `Practical applications of ${course.title}`,
+            ],
+            correctAnswer: 0,
+          },
+          {
+            question: `Which of these is most relevant to ${chapter.title}?`,
+            options: ["Theoretical foundations", "Practical implementation", "Case studies", "Future developments"],
+            correctAnswer: 1,
+          },
+          {
+            question: "Based on your previous quiz performance, which area needs improvement?",
+            options: [
+              userAnalysis.knowledgeGaps[0] || "Fundamental concepts",
+              userAnalysis.knowledgeGaps[1] || "Advanced applications",
+              "Problem-solving techniques",
+              "Analytical thinking",
+            ],
+            correctAnswer: 0,
+          },
+        ],
+      }
+
+      // In a real implementation, this quiz would be saved to the database
+      setGeneratedQuiz(quiz)
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to generate personalized quiz. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingQuiz(false)
+    }
+  }
+
+  const handleStartQuiz = () => {
+    if (generatedQuiz) {
+      // In a real implementation, this would navigate to the quiz page
+      // with the generated quiz ID
+      toast({
+        title: "Quiz Ready",
+        description: "Your personalized quiz has been created and is ready to take!",
+      })
+
+      // Reset the generated quiz state
+      setGeneratedQuiz(null)
+
+      // Navigate to the course page
+      const recommendation = recommendations.find((r) => r.type === "quiz")
+      if (recommendation) {
+        router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
+      }
+    }
+  }
+
+  // Helper function to format time since last access
+  const getTimeSinceLastAccess = (lastAccessedAt: string) => {
+    const lastAccess = new Date(lastAccessedAt)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - lastAccess.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays < 7) {
+      return `${diffDays} days`
+    } else if (diffDays < 30) {
+      return `${Math.floor(diffDays / 7)} weeks`
+    } else {
+      return `${Math.floor(diffDays / 30)} months`
+    }
   }
 
   if (isLoading) {
@@ -176,6 +412,77 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     )
   }
 
+  if (isGeneratingQuiz) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            Generating Personalized Quiz
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center space-y-4 py-8">
+          <div className="flex items-center justify-center h-24 w-24 rounded-full bg-primary/10">
+            <Sparkles className="h-12 w-12 text-primary animate-pulse" />
+          </div>
+          <p className="text-sm text-center">Creating a personalized quiz based on your learning history...</p>
+          <div className="w-full max-w-xs bg-muted rounded-full h-2.5">
+            <div
+              className="bg-primary h-2.5 rounded-full animate-[progress_2s_ease-in-out_infinite]"
+              style={{ width: "70%" }}
+            ></div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (generatedQuiz) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            {generatedQuiz.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            This quiz has been personalized based on your learning history and areas that need improvement.
+          </p>
+          <div className="space-y-3">
+            {generatedQuiz.questions.map((q, i) => (
+              <div key={i} className="border rounded-lg p-3">
+                <p className="font-medium text-sm mb-2">
+                  Question {i + 1}: {q.question}
+                </p>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  {q.options.map((option, j) => (
+                    <li key={j} className="flex items-start gap-2">
+                      <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-muted text-xs">
+                        {String.fromCharCode(65 + j)}
+                      </span>
+                      {option}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button variant="outline" onClick={() => setGeneratedQuiz(null)}>
+            Cancel
+          </Button>
+          <Button onClick={handleStartQuiz} className="flex items-center gap-2">
+            <BookMarked className="h-4 w-4" />
+            Start Quiz
+          </Button>
+        </CardFooter>
+      </Card>
+    )
+  }
+  {console.log(recommendations)}
   if (recommendations.length === 0) {
     return (
       <Card>
@@ -231,9 +538,12 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
                   {rec.type === "review" && <RotateCcw className="h-5 w-5 text-yellow-500 shrink-0" />}
                   {rec.type === "practice" && <Target className="h-5 w-5 text-blue-500 shrink-0" />}
                   {rec.type === "next" && <ArrowRight className="h-5 w-5 text-green-500 shrink-0" />}
+                  {rec.type === "quiz" && <Sparkles className="h-5 w-5 text-purple-500 shrink-0" />}
                   <div className="flex-1 space-y-2">
                     <p className="text-sm">{rec.message}</p>
-                    <p className="text-xs text-muted-foreground">Click to get started</p>
+                    <p className="text-xs text-muted-foreground">
+                      {rec.type === "quiz" ? "Click to generate a personalized quiz" : "Click to get started"}
+                    </p>
                   </div>
                 </div>
               </motion.div>
