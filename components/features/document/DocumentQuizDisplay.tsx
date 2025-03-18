@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { PDFDownloadLink } from "@react-pdf/renderer"
-import { DocumentQuizPDF } from "./DocumentQuizPdf"
+import DocumentQuizPDF from "./DocumentQuizPdf"
 import { PlusCircle, Trash2 } from "lucide-react"
 
 interface Question {
@@ -105,7 +105,7 @@ export function DocumentQuizDisplay({ questions, onSave, onUpdate }: DocumentQui
         <PlusCircle className="mr-2 h-4 w-4" /> Add Question
       </Button>
       <div className="flex space-x-4">
-        <PDFDownloadLink document={<QuizPDF questions={questions} />} fileName="generated_quiz.pdf">
+        <PDFDownloadLink document={<DocumentQuizPDF questions={questions} />} fileName="generated_quiz.pdf">
           {({ blob, url, loading, error }) => (
             <Button disabled={loading}>{loading ? "Generating PDF..." : "Download PDF"}</Button>
           )}
