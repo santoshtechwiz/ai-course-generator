@@ -1,158 +1,444 @@
-import { prisma } from '@/lib/db';
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
+// import { prisma } from '@/lib/db';
+// import { headers } from 'next/headers';
+// import { NextResponse } from 'next/server';
+// import Stripe from 'stripe';
+
+// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+//   apiVersion: '2024-10-28.acacia',
+// });
+
+// export async function POST(req: Request) {
+//   try {
+//     const body = await req.text();
+//     const headersList = await headers();
+//     const signature = headersList.get('stripe-signature');
+
+//     if (!signature) {
+//       return NextResponse.json(
+//         { error: 'No stripe-signature header found' },
+//         { status: 400 }
+//       );
+//     }
+
+//     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+//     if (!webhookSecret) {
+//       return NextResponse.json(
+//         { error: 'Stripe webhook secret is not configured' },
+//         { status: 500 }
+//       );
+//     }
+
+//     let event: Stripe.Event;
+//     try {
+//       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+//     } catch (err) {
+//       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+//       return NextResponse.json(
+//         { error: `Webhook signature verification failed: ${errorMessage}` },
+//         { status: 400 }
+//       );
+//     }
+
+//     try {
+//       await processStripeEvent(event);
+//       return NextResponse.json({ received: true });
+//     } catch (error) {
+//       console.error('Error processing webhook:', error);
+//       // Return 200 to acknowledge receipt of the webhook
+//       return NextResponse.json(
+//         { error: 'Internal server error' },
+//         { status: 200 }
+//       );
+//     }
+//   } catch (error) {
+//     console.error('Fatal error processing webhook:', error);
+//     return NextResponse.json(
+//       { error: 'Internal server error' },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+// async function processStripeEvent(event: Stripe.Event): Promise<void> {
+//   switch (event.type) {
+//     case 'customer.subscription.created':
+//     case 'customer.subscription.updated':
+//       await handleSubscriptionChange(event.data.object as Stripe.Subscription);
+//       break;
+//     case 'checkout.session.completed':
+//       await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+//       break;
+//     case 'invoice.payment_failed':
+//       await handleFailedPayment(event.data.object as Stripe.Invoice);
+//       break;
+//     default:
+//       console.log(`Unhandled event type ${event.type}`);
+//   }
+// }
+
+// async function handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
+//   if (!subscription.id || typeof subscription.customer !== 'string') {
+//     throw new Error('Invalid subscription data');
+//   }
+
+//   const userSubscription = await prisma.userSubscription.findFirst({
+//     where: { stripeCustomerId: subscription.customer },
+//     select: { userId: true },
+//   });
+
+//   if (!userSubscription) {
+//     throw new Error(`User subscription not found for customer: ${subscription.customer}`);
+//   }
+
+//   await prisma.userSubscription.update({
+//     where: { userId: userSubscription.userId },
+//     data: {
+//       status: subscription.status,
+//       stripeSubscriptionId: subscription.id,
+//       currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+//       cancelAtPeriodEnd: subscription.cancel_at_period_end,
+//     },
+//   });
+// }
+
+// async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
+//   if (!session.customer || !session.metadata?.userId || !session.metadata?.tokens) {
+//     throw new Error('Missing required session data');
+//   }
+
+//   const tokens = parseInt(session.metadata.tokens, 10);
+//   if (isNaN(tokens)) {
+//     throw new Error('Invalid tokens value');
+//   }
+
+//   await prisma.$transaction(async (tx) => {
+//     await tx.user.update({
+//       where: { id: session.metadata!.userId },
+//       data: { credits: { increment: tokens },userType: session.metadata!.planName },
+//     });
+
+//     if (session.subscription && typeof session.customer === 'string') {
+//       await tx.userSubscription.updateMany({
+//         where: {
+//           userId: session.metadata!.userId,
+//           stripeCustomerId: session.customer,
+//         },
+//         data: { status: 'ACTIVE' },
+//       });
+//     }
+//   });
+// }
+
+// async function handleFailedPayment(invoice: Stripe.Invoice): Promise<void> {
+//   if (!invoice.subscription || typeof invoice.subscription !== 'string') {
+//     return;
+//   }
+
+//   const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+//   const userSubscription = await prisma.userSubscription.findFirst({
+//     where: { stripeSubscriptionId: subscription.id },
+//     select: { userId: true },
+//   });
+
+//   if (!userSubscription) {
+//     throw new Error(`User subscription not found for: ${subscription.id}`);
+//   }
+
+//   await prisma.userSubscription.update({
+//     where: { userId: userSubscription.userId },
+//     data: { status: 'PAST_DUE' },
+//   });
+// }
+
+// export const config = {
+//   api: {
+//     bodyParser: false,
+//   },
+// };
+
+
+import { type NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/db"
+import Stripe from "stripe"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia',
-});
+  apiVersion: "2024-10-28.acacia",
+})
 
-export async function POST(req: Request) {
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
+
+export async function POST(req: NextRequest) {
+  const payload = await req.text()
+  const signature = req.headers.get("stripe-signature") as string
+
+  let event: Stripe.Event
+
   try {
-    const body = await req.text();
-    const headersList = await headers();
-    const signature = headersList.get('stripe-signature');
+    event = stripe.webhooks.constructEvent(payload, signature, endpointSecret)
+  } catch (err: any) {
+    console.error(`Webhook signature verification failed: ${err.message}`)
+    return NextResponse.json({ error: "Webhook signature verification failed" }, { status: 400 })
+  }
 
-    if (!signature) {
-      return NextResponse.json(
-        { error: 'No stripe-signature header found' },
-        { status: 400 }
-      );
+  try {
+    // Handle the event
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session
+
+        // Handle subscription checkout
+        if (session.mode === "subscription" && session.metadata?.userId) {
+          await handleSubscriptionCheckout(session)
+        }
+
+        // Handle token purchase
+        if (session.mode === "payment" && session.metadata?.type === "token_purchase") {
+          await handleTokenPurchase(session)
+        }
+
+        break
+      }
+
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription
+        await handleSubscriptionUpdated(subscription)
+        break
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription
+        await handleSubscriptionDeleted(subscription)
+        break
+      }
     }
 
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      return NextResponse.json(
-        { error: 'Stripe webhook secret is not configured' },
-        { status: 500 }
-      );
-    }
-
-    let event: Stripe.Event;
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      return NextResponse.json(
-        { error: `Webhook signature verification failed: ${errorMessage}` },
-        { status: 400 }
-      );
-    }
-
-    try {
-      await processStripeEvent(event);
-      return NextResponse.json({ received: true });
-    } catch (error) {
-      console.error('Error processing webhook:', error);
-      // Return 200 to acknowledge receipt of the webhook
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 200 }
-      );
-    }
+    return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Fatal error processing webhook:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error("Error processing webhook:", error)
+    return NextResponse.json({ error: "Error processing webhook" }, { status: 500 })
   }
 }
 
-async function processStripeEvent(event: Stripe.Event): Promise<void> {
-  switch (event.type) {
-    case 'customer.subscription.created':
-    case 'customer.subscription.updated':
-      await handleSubscriptionChange(event.data.object as Stripe.Subscription);
-      break;
-    case 'checkout.session.completed':
-      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
-      break;
-    case 'invoice.payment_failed':
-      await handleFailedPayment(event.data.object as Stripe.Invoice);
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-}
+async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId
+  const planName = session.metadata?.planName
+  const tokens = Number.parseInt(session.metadata?.tokens || "0")
+  const referrerId = session.metadata?.referrerId
 
-async function handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
-  if (!subscription.id || typeof subscription.customer !== 'string') {
-    throw new Error('Invalid subscription data');
-  }
+  if (!userId || !planName) return
 
-  const userSubscription = await prisma.userSubscription.findFirst({
-    where: { stripeCustomerId: subscription.customer },
-    select: { userId: true },
-  });
+  // Get subscription from Stripe
+  const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
 
-  if (!userSubscription) {
-    throw new Error(`User subscription not found for customer: ${subscription.customer}`);
-  }
-
+  // Update user's subscription
   await prisma.userSubscription.update({
-    where: { userId: userSubscription.userId },
+    where: { userId },
     data: {
-      status: subscription.status,
+      planId: planName,
+      status: "ACTIVE",
       stripeSubscriptionId: subscription.id,
+      currentPeriodStart: new Date(subscription.current_period_start * 1000),
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+    },
+  })
+
+  // Add tokens to user's account
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  })
+
+  if (user) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        credits: user.credits + tokens,
+      },
+    })
+
+    // Log the token addition
+    await prisma.tokenTransaction.create({
+      data: {
+        userId,
+        amount: tokens,
+        type: "SUBSCRIPTION",
+        description: `Added ${tokens} tokens from ${planName} plan subscription`,
+      },
+    })
+  }
+
+  // Process referral if applicable
+  if (referrerId && referrerId !== "") {
+    await processReferralReward(referrerId, userId, planName)
+  }
+}
+
+async function handleTokenPurchase(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId
+  const tokenAmount = Number.parseInt(session.metadata?.tokenAmount || "0")
+
+  if (!userId || !tokenAmount) return
+
+  // Add tokens to user's account
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  })
+
+  if (user) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        credits: user.credits + tokenAmount,
+      },
+    })
+
+    // Log the token addition
+    await prisma.tokenTransaction.create({
+      data: {
+        userId,
+        amount: tokenAmount,
+        type: "PURCHASE",
+        description: `Purchased ${tokenAmount} tokens`,
+      },
+    })
+  }
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  // Find the user with this subscription
+  const userSubscription = await prisma.userSubscription.findUnique({
+    where: { stripeSubscriptionId: subscription.id },
+  })
+
+  if (!userSubscription) return
+
+  // Update subscription details
+  await prisma.userSubscription.update({
+    where: { stripeSubscriptionId: subscription.id },
+    data: {
+      status:
+        subscription.status === "active"
+          ? "ACTIVE"
+          : subscription.status === "past_due"
+            ? "PAST_DUE"
+            : subscription.status === "canceled"
+              ? "CANCELED"
+              : subscription.status === "unpaid"
+                ? "INACTIVE"
+                : "PENDING",
+      currentPeriodStart: new Date(subscription.current_period_start * 1000),
       currentPeriodEnd: new Date(subscription.current_period_end * 1000),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
     },
-  });
+  })
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  if (!session.customer || !session.metadata?.userId || !session.metadata?.tokens) {
-    throw new Error('Missing required session data');
-  }
-
-  const tokens = parseInt(session.metadata.tokens, 10);
-  if (isNaN(tokens)) {
-    throw new Error('Invalid tokens value');
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: session.metadata!.userId },
-      data: { credits: { increment: tokens },userType: session.metadata!.planName },
-    });
-
-    if (session.subscription && typeof session.customer === 'string') {
-      await tx.userSubscription.updateMany({
-        where: {
-          userId: session.metadata!.userId,
-          stripeCustomerId: session.customer,
-        },
-        data: { status: 'ACTIVE' },
-      });
-    }
-  });
-}
-
-async function handleFailedPayment(invoice: Stripe.Invoice): Promise<void> {
-  if (!invoice.subscription || typeof invoice.subscription !== 'string') {
-    return;
-  }
-
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-  const userSubscription = await prisma.userSubscription.findFirst({
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  // Find the user with this subscription
+  const userSubscription = await prisma.userSubscription.findUnique({
     where: { stripeSubscriptionId: subscription.id },
-    select: { userId: true },
-  });
+  })
 
-  if (!userSubscription) {
-    throw new Error(`User subscription not found for: ${subscription.id}`);
-  }
+  if (!userSubscription) return
 
+  // Update subscription status
   await prisma.userSubscription.update({
-    where: { userId: userSubscription.userId },
-    data: { status: 'PAST_DUE' },
-  });
+    where: { stripeSubscriptionId: subscription.id },
+    data: {
+      status: "INACTIVE",
+    },
+  })
 }
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+async function processReferralReward(referrerId: string, referredId: string, planName: string) {
+  try {
+    // Find the referral record
+    const referral = await prisma.userReferral.findUnique({
+      where: { userId: referrerId },
+    })
+
+    if (!referral) return
+
+    // Find or create the referral use record
+    const referralUse = await prisma.userReferralUse.findFirst({
+      where: {
+        referrerId,
+        referredId,
+      },
+    })
+
+    if (referralUse) {
+      // Update existing referral use
+      await prisma.userReferralUse.update({
+        where: { id: referralUse.id },
+        data: {
+          status: "COMPLETED",
+          planId: planName,
+          completedAt: new Date(),
+        },
+      })
+    } else {
+      // Create new referral use
+      await prisma.userReferralUse.create({
+        data: {
+          referrerId,
+          referredId,
+          referralId: referral.id,
+          status: "COMPLETED",
+          planId: planName,
+          completedAt: new Date(),
+        },
+      })
+    }
+
+    // Add tokens to referrer (10 tokens)
+    const referrer = await prisma.user.findUnique({
+      where: { id: referrerId },
+    })
+
+    if (referrer) {
+      await prisma.user.update({
+        where: { id: referrerId },
+        data: {
+          credits: referrer.credits + 10,
+        },
+      })
+
+      // Log the token addition
+      await prisma.tokenTransaction.create({
+        data: {
+          userId: referrerId,
+          amount: 10,
+          type: "REFERRAL",
+          description: `Earned 10 tokens from referral`,
+        },
+      })
+    }
+
+    // Add bonus tokens to referred user (5 tokens)
+    const referred = await prisma.user.findUnique({
+      where: { id: referredId },
+    })
+
+    if (referred) {
+      await prisma.user.update({
+        where: { id: referredId },
+        data: {
+          credits: referred.credits + 5,
+        },
+      })
+
+      // Log the token addition
+      await prisma.tokenTransaction.create({
+        data: {
+          userId: referredId,
+          amount: 5,
+          type: "REFERRAL_BONUS",
+          description: `Received 5 bonus tokens from referral`,
+        },
+      })
+    }
+  } catch (error) {
+    console.error("Error processing referral reward:", error)
+  }
+}
 

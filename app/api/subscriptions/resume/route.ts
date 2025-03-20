@@ -11,12 +11,12 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = session.user.id
-    const result = await SubscriptionService.cancelSubscription(userId)
+    const result = await SubscriptionService.resumeSubscription(userId)
 
     return NextResponse.json({ success: result })
   } catch (error: any) {
-    console.error("Error canceling subscription:", error)
-    return NextResponse.json({ error: "Failed to cancel subscription", details: error.message }, { status: 500 })
+    console.error("Error resuming subscription:", error)
+    return NextResponse.json({ error: "Failed to resume subscription", details: error.message }, { status: 500 })
   }
 }
 

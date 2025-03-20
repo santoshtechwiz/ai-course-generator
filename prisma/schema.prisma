@@ -40,6 +40,10 @@ model User {
   userQuizAttempts      UserQuizAttempt[]
   userQuizRatings       UserQuizRating[]
   subscription          UserSubscription?
+  TokenTransaction      TokenTransaction[]
+  UserReferral          UserReferral?
+  referralsGiven        UserReferralUse[]      @relation("Referrer")
+  referralsReceived     UserReferralUse[]      @relation("Referred")
 
   @@index([email])
   @@index([userType])
@@ -82,7 +86,7 @@ model Session {
 
 model Course {
   id             Int              @id @default(autoincrement())
-  title           String          
+  title          String          
   description    String?
   image          String
   viewCount      Int              @default(1000)
@@ -133,7 +137,7 @@ model CourseUnit {
 model Chapter {
   id                 Int          @id @default(autoincrement())
   unitId             Int
-  title               String     
+  title              String     
   youtubeSearchQuery String
   videoId            String?
   summary            String?
@@ -298,8 +302,7 @@ model CourseQuizAttempt {
 model UserQuiz {
   id             Int                @id @default(autoincrement())
   userId         String             @map("user_id")
-  // quizTitle      String?            @default("Untitled Quiz")
-  title          String             
+  title          String     
   quizType       String
   isPublic       Boolean            @default(false)
   slug           String             @unique
@@ -467,15 +470,15 @@ model FlashCard {
 
 // Extension tables for future features (without modifying existing tables)
 model UserAchievement {
-  id          String   @id @default(cuid())
-  userId      String
+  id             String   @id @default(cuid())
+  userId         String
   achievementType String
-  title       String
-  description String?
-  earnedAt    DateTime @default(now())
-  metadata    Json?    // Flexible field for achievement-specific data
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  title          String
+  description    String?
+  earnedAt       DateTime @default(now())
+  metadata       Json?    // Flexible field for achievement-specific data
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([userId])
   @@index([achievementType])
@@ -500,39 +503,89 @@ model UserNotification {
 }
 
 model CourseTag {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
   courses   CourseToTag[]
 
   @@index([name])
 }
 
 model CourseToTag {
-  id        Int      @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   courseId  Int
   tagId     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tag       CourseTag   @relation(fields: [tagId], references: [id])
   
   @@unique([courseId, tagId])
   @@index([courseId])
   @@index([tagId])
-  CourseTag CourseTag[]
 }
 
 model UserSettings {
-  id                String   @id @default(cuid())
-  userId            String   @unique
+  id                 String   @id @default(cuid())
+  userId             String   @unique
   emailNotifications Boolean  @default(true)
-  pushNotifications Boolean  @default(true)
-  darkMode          Boolean  @default(false)
-  language          String   @default("en")
-  timezone          String?
-  preferences       Json?    // Flexible field for user preferences
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  pushNotifications  Boolean  @default(true)
+  darkMode           Boolean  @default(false)
+  language           String   @default("en")
+  timezone           String?
+  preferences        Json?    // Flexible field for user preferences
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([userId])
 }
+
+model TokenTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  type        String   
+  description String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model UserReferral {
+  id            String           @id @default(cuid())
+  userId        String           @unique
+  referralCode  String           @unique
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referralUses  UserReferralUse[]
+  
+  @@index([referralCode])
+}
+
+model UserReferralUse {
+  id            String       @id @default(cuid())
+  referrerId    String
+  referredId    String
+  referralId    String
+  status        String       // PENDING, COMPLETED, CANCELLED
+  planId        String?
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  
+  referrer      User         @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred      User         @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  referral      UserReferral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  
+  @@index([referralId])
+  @@index([referrerId])
+  @@index([referredId])
+  @@index([status])
+  @@index([createdAt])
+}
+

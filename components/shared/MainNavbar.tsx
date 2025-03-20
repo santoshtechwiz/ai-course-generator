@@ -152,6 +152,12 @@ export default function MainNavbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer rounded-md py-1.5">
+                  <Link href="/dashboard/subscription/account" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Account</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleSignOut}
                   className="flex items-center cursor-pointer rounded-md text-destructive focus:text-destructive py-1.5"

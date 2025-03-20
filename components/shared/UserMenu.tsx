@@ -1,5 +1,7 @@
+"use client"
+
 import { useSession, signOut } from "next-auth/react"
-import { LogOut, User, Crown } from "lucide-react"
+import { LogOut, User, Crown, CreditCard } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -9,6 +11,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
@@ -29,8 +33,21 @@ export function UserMenu({ children }: UserMenuProps) {
 
   const getSubscriptionBadge = () => {
     if (isLoadingSubscription || !subscriptionStatus) return null
+
     const plan = subscriptionStatus.subscriptionPlan as "PRO" | "BASIC" | "FREE" | "ULTIMATE"
-    return <Badge variant={plan === "PRO" ? "default" : plan === "BASIC" ? "secondary" : plan === "ULTIMATE" ? "success" : "outline"}>{plan}</Badge>
+
+    const variants = {
+      PRO: "default",
+      BASIC: "secondary",
+      ULTIMATE: "success",
+      FREE: "outline",
+    } as const
+
+    return (
+      <Badge variant={variants[plan]} className="ml-auto">
+        {plan}
+      </Badge>
+    )
   }
 
   if (!session) return null
@@ -50,31 +67,41 @@ export function UserMenu({ children }: UserMenuProps) {
           children
         ) : (
           <>
-            <div className="flex flex-col space-y-1 leading-none p-2">
-              {session.user?.name && <p className="font-medium">{session.user.name}</p>}
-              {session.user?.email && (
-                <p className="w-[200px] truncate text-sm text-muted-foreground">{session.user.email}</p>
-              )}
-              {getSubscriptionBadge()}
-            </div>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                {session.user?.name && <p className="font-medium text-sm">{session.user.name}</p>}
+                {session.user?.email && (
+                  <p className="w-full truncate text-xs text-muted-foreground">{session.user.email}</p>
+                )}
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/profile" className="flex items-center">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-              {session.user?.isAdmin && (
+            <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/admin" className="flex items-center">
-                  <Crown className="mr-2 h-4 w-4" />
-                  <span>Admin</span>
+                <Link href="/dashboard/profile" className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
-            )}
-            </DropdownMenuItem>
-          
+              
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/subscription/account" className="cursor-pointer">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  <span>Account</span>
+                  {getSubscriptionBadge()}
+                </Link>
+              </DropdownMenuItem>
+              {session.user?.isAdmin && (
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/admin" className="cursor-pointer">
+                    <Crown className="mr-2 h-4 w-4" />
+                    <span>Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="flex items-center">
+            <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
@@ -84,3 +111,4 @@ export function UserMenu({ children }: UserMenuProps) {
     </DropdownMenu>
   )
 }
+
