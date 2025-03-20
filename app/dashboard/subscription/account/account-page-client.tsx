@@ -115,17 +115,7 @@ export function AccountPageClient({ user }: { user: any }) {
             <p className="text-muted-foreground">{user.email}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/dashboard">Dashboard</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/dashboard/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Link>
-          </Button>
-        </div>
+        
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -179,18 +169,6 @@ export function AccountPageClient({ user }: { user: any }) {
         <div className="md:col-span-3 space-y-6">
           <ManageSubscription userId={user.id} subscriptionData={formattedSubscriptionData} />
 
-          <div className="flex flex-wrap gap-3 mb-4">
-            <Button asChild>
-              <Link href="/dashboard/subscription">
-                <CreditCard className="mr-2 h-4 w-4" />
-                Manage Subscription
-              </Link>
-            </Button>
-            <Button variant="outline" onClick={() => document.getElementById("billing-tab")?.click()}>
-              <FileText className="mr-2 h-4 w-4" />
-              View Billing History
-            </Button>
-          </div>
 
           <Tabs defaultValue="referrals" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
