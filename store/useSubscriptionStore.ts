@@ -1,7 +1,8 @@
 "use client"
 
+import { SubscriptionPlanType } from "@/app/dashboard/subscription/components/subscription.config"
 import { create } from "zustand"
-import type { SubscriptionPlanType } from "@/config/subscriptionPlans"
+
 
 export interface SubscriptionStatus {
   credits: number

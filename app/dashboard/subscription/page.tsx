@@ -1,13 +1,15 @@
+import { Suspense } from "react"
+import { getAuthSession } from "@/lib/authOptions"
+import { SubscriptionService } from "@/services/subscriptionService"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-import { Suspense } from 'react';
-import { getAuthSession } from "@/lib/authOptions";
-import { SubscriptionService } from "@/services/subscriptionService";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { SubscriptionPlanType } from '@/config/subscriptionPlans';
-import SubscriptionPlans from '@/app/dashboard/subscription/components/SubscriptionPlans';
-import { Skeleton } from "@/components/ui/skeleton";
-import { Metadata } from 'next';
-import { generatePageMetadata } from '@/lib/seo-utils';
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Metadata } from "next"
+import { generatePageMetadata } from "@/lib/seo-utils"
+import { SubscriptionPlanType } from "./components/subscription.config"
+import { PricingPage } from "./components/subscription_plan"
+
+
 export const metadata: Metadata = generatePageMetadata({
   title: "Subscription Plans | Course AI",
   description:
@@ -23,82 +25,87 @@ export const metadata: Metadata = generatePageMetadata({
   ],
   ogImage: "/og-image-subscription.jpg",
 })
-const Page=async ()=>{
-  const session = await getAuthSession();
-  const userId = session?.user?.id ?? null;
-  const isProd = process.env.NODE_ENV === 'production';
 
-  async function getSubscriptionData(): Promise<{ 
-    currentPlan: SubscriptionPlanType | null, 
-    subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | null, 
-    error?: string 
+export default async function Page() {
+  const session = await getAuthSession()
+  const userId = session?.user?.id ?? null
+  const isProd = process.env.NODE_ENV === "production"
+
+  async function getSubscriptionData(): Promise<{
+    currentPlan: SubscriptionPlanType | null
+    subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
+    tokensUsed: number
+    error?: string
   }> {
     if (!userId) {
-      return { 
-        currentPlan: null, 
-        subscriptionStatus: null 
-      };
+      return {
+        currentPlan: null,
+        subscriptionStatus: null,
+        tokensUsed: 0,
+      }
     }
     try {
-      const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId);
-      return { 
-        currentPlan: plan as SubscriptionPlanType, 
-        subscriptionStatus: status as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | null
-      };
+      const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId)
+      // You would need to  status } = await SubscriptionService.getSubscriptionStatus(userId);
+      // You would need to implement a method to get tokens used
+      const tokensUsed = (await SubscriptionService.getTokensUsed(userId)) || 0
+
+      return {
+        currentPlan: plan as SubscriptionPlanType,
+        subscriptionStatus: status as "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null,
+        tokensUsed,
+      }
     } catch (error) {
-      console.error('Error fetching subscription data:', error);
-      return { 
-        currentPlan: null, 
-        subscriptionStatus: null, 
-        error: 'Failed to fetch subscription data' 
-      };
+      console.error("Error fetching subscription data:", error)
+      return {
+        currentPlan: null,
+        subscriptionStatus: null,
+        tokensUsed: 0,
+        error: "Failed to fetch subscription data",
+      }
     }
   }
 
-  const subscriptionData = await getSubscriptionData();
+  const subscriptionData = await getSubscriptionData()
 
   return (
     <div className="container mx-auto px-4 py-8">
-     
-      <Suspense fallback={<SubscriptionPlansSkeleton />}>
-        <SubscriptionPlansWrapper 
-          userId={userId} 
-          subscriptionData={subscriptionData}
-          isProd={isProd}
-        />
+      <Suspense fallback={<PricingPageSkeleton />}>
+        <PricingPageWrapper userId={userId} subscriptionData={subscriptionData} isProd={isProd} />
       </Suspense>
     </div>
-  );
+  )
 }
 
-function SubscriptionPlansSkeleton() {
+function PricingPageSkeleton() {
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => (
           <Skeleton key={i} className="h-[400px] w-full" />
         ))}
       </div>
       <Skeleton className="h-[200px] w-full" />
       <Skeleton className="h-[300px] w-full" />
     </div>
-  );
+  )
 }
 
-async function SubscriptionPlansWrapper({ 
-  userId, 
+function PricingPageWrapper({
+  userId,
   subscriptionData,
-  isProd
-}: { 
-  userId: string | null, 
-  subscriptionData: { 
-    currentPlan: SubscriptionPlanType | null, 
-    subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | null
-    error?: string 
-  },
+  isProd,
+}: {
+  userId: string | null
+  subscriptionData: {
+    currentPlan: SubscriptionPlanType | null
+    subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
+    tokensUsed: number
+    error?: string
+  }
   isProd: boolean
 }) {
-  const { currentPlan, subscriptionStatus, error } = subscriptionData;
+  const { currentPlan, subscriptionStatus, tokensUsed, error } = subscriptionData
 
   if (error) {
     return (
@@ -106,16 +113,17 @@ async function SubscriptionPlansWrapper({
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
-    );
+    )
   }
 
   return (
-    <SubscriptionPlans 
-      userId={userId} 
-      currentPlan={currentPlan} 
+    <PricingPage
+      userId={userId}
+      currentPlan={currentPlan}
       subscriptionStatus={subscriptionStatus}
+      tokensUsed={tokensUsed}
       isProd={isProd}
     />
-  );
+  )
 }
-export default Page;
+
