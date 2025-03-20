@@ -137,24 +137,7 @@ export function AccountPageClient({ user }: { user: any }) {
                 Subscription
               </Link>
             </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild>
-              <Link href="/dashboard/account/notifications">
-                <Bell className="mr-2 h-4 w-4" />
-                Notifications
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild>
-              <Link href="/dashboard/account/security">
-                <Shield className="mr-2 h-4 w-4" />
-                Security
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild>
-              <Link href="/dashboard/account/api-keys">
-                <Key className="mr-2 h-4 w-4" />
-                API Keys
-              </Link>
-            </Button>
+           
           </div>
           <CardFooter className="flex flex-col items-start px-6 py-4">
             <div className="text-xs text-muted-foreground mb-2">
