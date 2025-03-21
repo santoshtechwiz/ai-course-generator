@@ -63,6 +63,7 @@ const getMcqQuestions = async (slug: string): Promise<McqQuestionsResponse> => {
     return {
       id: question.id,
       question: question.question,
+      title: result.title,
       answer: question.answer,
       option1: option1 || "",
       option2: option2 || "",
