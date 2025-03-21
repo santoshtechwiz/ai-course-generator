@@ -10,6 +10,7 @@ import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import QuizDetailsPage from "@/components/QuizDetailsPage"
+import { title } from "process"
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
 // SEO metadata generation
@@ -94,7 +95,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       estimatedTime="PT30M"
       breadcrumbItems={breadcrumbItems}
     >
-      <McqQuizWrapper slug={slug} {title}={result.result.title} currentUserId={currentUserId} result={result} />
+      <McqQuizWrapper slug={slug} currentUserId={currentUserId} result={result} title={result.result.title} />
    </QuizDetailsPage>
   )
 }
