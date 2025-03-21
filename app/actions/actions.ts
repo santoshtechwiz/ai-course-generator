@@ -117,15 +117,27 @@ export async function updateUser(userId: string, data: any) {
 
 export async function deleteUser(userId: string) {
   try {
-    await prisma.user.delete({
-      where: { id: userId },
+    // First, delete all related records that reference this user
+    // Reset user subscriptions
+    await prisma.userSubscription.updateMany({
+      where: { userId },
+      data: {
+        status: "FREE",
+        updatedAt: new Date(),
+      },
     })
+
+    // Delete token transactions
+    await prisma.tokenTransaction.deleteMany({
+      where: { userId },
+    })
+
 
     revalidatePath("/")
     return { success: true }
   } catch (error) {
     console.error("Error deleting user:", error)
-    return { error: "Failed to delete user" }
+    return { error: "Failed to delete user. " + (error instanceof Error ? error.message : String(error)) }
   }
 }
 
@@ -180,4 +192,3 @@ export async function getCreditHistory(userId: string) {
     return { error: "Failed to fetch credit history" }
   }
 }
-
