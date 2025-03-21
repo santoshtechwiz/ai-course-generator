@@ -5,9 +5,12 @@ import {
 import { prisma } from "@/lib/db"
 import Stripe from "stripe"
 
-const stripe = new Stripe("***REMOVED***", {
-  apiVersion: "2024-10-28.acacia",
-})
+const stripe = new Stripe(
+  "***REMOVED***",
+  {
+    apiVersion: "2024-10-28.acacia",
+  },
+)
 
 export class SubscriptionService {
   static async activateFreePlan(userId: string): Promise<{ success: boolean }> {
@@ -117,31 +120,66 @@ export class SubscriptionService {
     }
 
     // Process referral if a code is provided
-    let referrerId: string | undefined
+    let referrerUserId: string | undefined
+    let referralRecordId: string | undefined
+    let referralUseId: string | undefined
+
     if (referralCode) {
       try {
+        // First check if the referral code exists
         const referral = await prisma.userReferral.findUnique({
           where: { referralCode },
-          select: { userId: true },
+          select: { userId: true, id: true },
         })
 
-        if (referral) {
-          referrerId = referral.userId
+        if (!referral) {
+          console.warn(`Invalid referral code: ${referralCode}`)
+        } else if (referral.userId === userId) {
+          console.warn(`User attempted to use their own referral code: ${userId}`)
+        } else {
+          // Store both the user ID who created the referral and the referral record ID
+          referrerUserId = referral.userId
+          referralRecordId = referral.id
 
-          // Record the referral
-          await prisma.userReferralUse.create({
-            data: {
-              referrerId: referral.userId,
+          // Check if this user has already used a referral code
+          const existingReferralUse = await prisma.userReferralUse.findFirst({
+            where: {
               referredId: userId,
-              referralId: referral.userId,
-              status: "PENDING", // Will be updated to COMPLETED after successful payment
-              planId: plan.name,
+              status: { in: ["PENDING", "COMPLETED"] },
             },
           })
+
+          if (existingReferralUse) {
+            console.warn(`User ${userId} has already used a referral code`)
+          } else {
+            // Record the referral - using the correct IDs for each field
+            const referralUse = await prisma.userReferralUse.create({
+              data: {
+                referrerId: referrerUserId, // User ID who created the referral
+                referredId: userId, // Current user being referred
+                referralId: referralRecordId, // The actual referral record ID
+                status: "PENDING", // Will be updated to COMPLETED after successful payment
+                planId: plan.name,
+              },
+            })
+
+            referralUseId = referralUse.id
+          }
         }
       } catch (error) {
         console.error("Error processing referral:", error)
-        // Continue without referral if there's an error
+
+        // If we created a referral use record but encountered an error later,
+        // clean it up to avoid orphaned records
+        if (referralUseId) {
+          try {
+            await prisma.userReferralUse.delete({
+              where: { id: referralUseId },
+            })
+          } catch (cleanupError) {
+            console.error("Failed to clean up referral use record:", cleanupError)
+          }
+        }
       }
     }
 
@@ -171,7 +209,8 @@ export class SubscriptionService {
         userId,
         planName,
         tokens: plan.tokens.toString(),
-        referrerId: referrerId || "",
+        referrerId: referrerUserId || "",
+        referralUseId: referralUseId || "",
       },
     })
 

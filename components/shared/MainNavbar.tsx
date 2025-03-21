@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { Search, LogIn, User, LogOut, Menu, ChevronDown } from "lucide-react"
+import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ThemeToggle"
@@ -158,6 +158,14 @@ export default function MainNavbar() {
                     <span>Account</span>
                   </Link>
                 </DropdownMenuItem>
+                {session.user?.isAdmin && (
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/admin" className="cursor-pointer">
+                    <Crown className="mr-2 h-4 w-4" />
+                    <span>Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
                 <DropdownMenuItem
                   onClick={handleSignOut}
                   className="flex items-center cursor-pointer rounded-md text-destructive focus:text-destructive py-1.5"
@@ -165,6 +173,7 @@ export default function MainNavbar() {
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
+
               </DropdownMenuContent>
             </UserMenu>
           ) : (
