@@ -35,7 +35,7 @@ const McqQuizWrapper = ({ slug, currentUserId, result,title }: McqContainerProps
 
       {/* Wrap the actual quiz content in Suspense since it's likely to be the heavier component */}
       <Suspense fallback={<QuizSkeleton />}>
-        {questions && <McqQuiz questions={questions} topic={title} quizId={Number(quizData.id) || 0} slug={slug} />}
+        {questions && <McqQuiz questions={questions} title={title} quizId={Number(quizData.id) || 0} slug={slug} />}
       </Suspense>
     </div>
   )
