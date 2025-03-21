@@ -4,11 +4,13 @@ import { User } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { signIn } from 'next-auth/react'
 
+
 interface SignInBannerProps {
   isAuthenticated: boolean
+  title?:string
 }
 
-export function SignInBanner({ isAuthenticated }: SignInBannerProps) {
+export function SignInBanner({ isAuthenticated,title="Sign in to create and save your quizzes"}: SignInBannerProps) {
   const handleSignIn = () => {
     signIn('credentials', { callbackUrl: '/dashboard/mcq' });
   }
@@ -25,7 +27,7 @@ export function SignInBanner({ isAuthenticated }: SignInBannerProps) {
           <div className="flex items-center">
             <User className="w-5 h-5 text-yellow-600 mr-2" />
             <span className="text-yellow-800 font-medium">
-              Sign in to create and save your quizzes
+             {title}
             </span>
           </div>
           <Button

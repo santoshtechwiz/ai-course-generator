@@ -11,40 +11,24 @@ export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 }
 
-// Function to determine GitHub OAuth credentials dynamically
-const getGitHubCredentials = (req: NextRequest) => {
-  const host = req.nextUrl.host || ""
-
-  if (host.includes("courseai.dev")) {
-    return {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    }
-  }
-
-  return {
-    clientId: process.env.GITHUB_CLIENT_ID_IO!,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET_IO!,
-  }
-}
-
-// Middleware function
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
-
-  // Handle WebSocket connections
-  if (pathname.startsWith("/api/socketio")) {
+// Handle WebSocket connections
+function handleWebSocketConnections(req: NextRequest) {
+  if (req.nextUrl.pathname.startsWith("/api/socketio")) {
     const response = NextResponse.next()
     response.headers.set("Access-Control-Allow-Origin", "*")
     response.headers.set("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE")
     response.headers.set("Access-Control-Allow-Credentials", "true")
     return response
   }
-  // Get the pathname
-  const path = req.nextUrl.pathname
+  return null
+}
 
-  // Check if the path is the admin page
-  if (path === "/" || path.startsWith("/api/users")) {
+// Protect admin routes
+async function protectAdminRoutes(req: NextRequest) {
+  const path = req.nextUrl.pathname
+  
+  // Check if the path is the admin page (fixed to use /dashboard/admin)
+  if (path === "/dashboard/admin" || path.startsWith("/api/users")) {
     const token = await getToken({
       req: req,
       secret: process.env.NEXTAUTH_SECRET,
@@ -61,12 +45,31 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/unauthorized", req.url))
     }
   }
-  // Handle dynamic GitHub credentials setup for authentication
-  const githubCreds = getGitHubCredentials(req)
-  process.env.GITHUB_CLIENT_ID = githubCreds.clientId
-  process.env.GITHUB_CLIENT_SECRET = githubCreds.clientSecret
+  return null
+}
 
-  // Handle redirects based on route configuration
+// Function to determine GitHub OAuth credentials dynamically
+function setupGitHubCredentials(req: NextRequest) {
+  const host = req.nextUrl.host || ""
+
+  const credentials = host.includes("courseai.dev") 
+    ? {
+        clientId: process.env.GITHUB_CLIENT_ID!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      }
+    : {
+        clientId: process.env.GITHUB_CLIENT_ID_IO!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET_IO!,
+      }
+
+  process.env.GITHUB_CLIENT_ID = credentials.clientId
+  process.env.GITHUB_CLIENT_SECRET = credentials.clientSecret
+}
+
+// Handle redirects based on route configuration
+async function handleRedirects(req: NextRequest) {
+  const pathname = req.nextUrl.pathname
+  
   const redirect = routeConfig.redirects.find((r) => {
     const regex = new RegExp(`^${r.from.replace(/:\w+/g, "(\\d+)")}$`)
     return regex.test(pathname)
@@ -92,15 +95,20 @@ export async function middleware(req: NextRequest) {
       }
     }
   }
+  return null
+}
 
-  // Track user interaction if userId is available in cookies
+// Track user interaction if userId is available in cookies
+function trackUserInteraction(req: NextRequest) {
   const userId = req.cookies.get("userId")?.value
   if (userId) {
     const interactionType = "page_view"
-    trackServerSideInteraction(userId, interactionType, pathname)
+    trackServerSideInteraction(userId, interactionType, req.nextUrl.pathname)
   }
+}
 
-  // Handle course view count increment
+// Handle course view count increment
+function incrementCourseViewCount(req: NextRequest) {
   const coursePattern = new URLPattern({ pathname: "/dashboard/course/:slug" })
   const match = coursePattern.exec(req.nextUrl)
 
@@ -116,9 +124,38 @@ export async function middleware(req: NextRequest) {
       }).catch((error) => console.error("Error incrementing view count:", error))
     }
   }
+}
 
-  // Set caching headers for response
-  const response = NextResponse.next()
+// Set caching headers for response
+function setCacheHeaders(response: NextResponse) {
   response.headers.set("Cache-Control", "no-store, max-age=0")
   return response
+}
+
+// Middleware function
+export async function middleware(req: NextRequest) {
+  // Handle WebSocket connections
+  const wsResponse = handleWebSocketConnections(req)
+  if (wsResponse) return wsResponse
+
+  // Protect admin routes
+  const adminResponse = await protectAdminRoutes(req)
+  if (adminResponse) return adminResponse
+
+  // Setup GitHub credentials
+  setupGitHubCredentials(req)
+
+  // Handle redirects
+  const redirectResponse = await handleRedirects(req)
+  if (redirectResponse) return redirectResponse
+
+  // Track user interaction
+  trackUserInteraction(req)
+
+  // Increment course view count
+  incrementCourseViewCount(req)
+
+  // Set cache headers and return response
+  const response = NextResponse.next()
+  return setCacheHeaders(response)
 }

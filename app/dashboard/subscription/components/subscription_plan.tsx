@@ -406,7 +406,6 @@ export function PricingPage({
               Invite your friends to join our platform and earn 10 free tokens for each successful referral. Your
               friends will also receive 5 bonus tokens when they sign up.
             </p>
-            
           </div>
           <div className="md:w-1/2 flex justify-center">
             <div className="bg-background rounded-lg p-6 border w-full max-w-md">
