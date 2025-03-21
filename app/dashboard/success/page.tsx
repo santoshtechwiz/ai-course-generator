@@ -11,14 +11,14 @@ import { prisma } from "@/lib/db"
 export default async function SuccessPage({
   searchParams,
 }: {
-  searchParams: { session_id?: string }
+  searchParams: Promise<{ session_id?: string }>
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     redirect("/auth/signin")
   }
 
-  const { session_id } = searchParams
+  const { session_id } = await searchParams
 
   if (!session_id) {
     redirect("/dashboard")

@@ -5,10 +5,11 @@ import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
 import { trackServerSideInteraction } from "@/lib/tracking"
 import { getToken } from "next-auth/jwt"
+import type { JWT } from "next-auth/jwt"
 
 // Define matcher to exclude API, static files, and favicon requests
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|unauthorized).*)"],
 }
 
 // Handle WebSocket connections
@@ -25,26 +26,22 @@ function handleWebSocketConnections(req: NextRequest) {
 
 // Protect admin routes
 async function protectAdminRoutes(req: NextRequest) {
-  const path = req.nextUrl.pathname
-  
-  // Check if the path is the admin page (fixed to use /dashboard/admin)
-  if (path === "/dashboard/admin" || path.startsWith("/api/users")) {
-    const token = await getToken({
-      req: req,
-      secret: process.env.NEXTAUTH_SECRET,
-    })
+  // Only check admin routes
+  if (!req.nextUrl.pathname.startsWith("/admin")) {
+    return null
+  }
 
-    // If user is not logged in or not an admin, redirect to unauthorized page
+  try {
+    const token = await getToken({ req })
+    
     if (!token || !token.isAdmin) {
-      // For API routes, return a 403 Forbidden response
-      if (path.startsWith("/api/")) {
-        return NextResponse.json({ error: "Unauthorized access" }, { status: 403 })
-      }
-
-      // For page routes, redirect to unauthorized page
       return NextResponse.redirect(new URL("/unauthorized", req.url))
     }
+  } catch (error) {
+    console.error("Error getting token:", error)
+    return NextResponse.redirect(new URL("/unauthorized", req.url))
   }
+
   return null
 }
 
@@ -138,7 +135,7 @@ export async function middleware(req: NextRequest) {
   const wsResponse = handleWebSocketConnections(req)
   if (wsResponse) return wsResponse
 
-  // Protect admin routes
+  // Protect admin routes - only check admin routes
   const adminResponse = await protectAdminRoutes(req)
   if (adminResponse) return adminResponse
 

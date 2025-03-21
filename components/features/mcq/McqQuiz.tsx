@@ -29,10 +29,11 @@ type Question = {
 interface McqQuizProps {
   questions: Question[]
   quizId: number
-  slug: string
+  slug: string,
+  title: string
 }
 
-export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
+export default function McqQuiz({ questions, quizId, slug,title }: McqQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [score, setScore] = useState(0)
@@ -392,7 +393,7 @@ export default function McqQuiz({ questions, quizId, slug }: McqQuizProps) {
               <Badge variant="outline" className="bg-primary/10 text-primary font-medium px-3 py-1">
                 Quiz
               </Badge>
-              <h1 className="text-xl font-bold">The Ultimate JavaScript Challenge</h1>
+                <h1 className="text-xl font-bold">The Ultimate Quiz on {title}</h1>
             </div>
             <TooltipProvider>
               <Tooltip>

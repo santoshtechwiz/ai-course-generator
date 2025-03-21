@@ -22,6 +22,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       id: true,
       title: true,
       questions: true,
+    
       user: { select: { name: true } },
     },
   })
@@ -93,7 +94,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       estimatedTime="PT30M"
       breadcrumbItems={breadcrumbItems}
     >
-      <McqQuizWrapper slug={slug} currentUserId={currentUserId} result={result} />
+      <McqQuizWrapper slug={slug} {title}={result.result.title} currentUserId={currentUserId} result={result} />
    </QuizDetailsPage>
   )
 }

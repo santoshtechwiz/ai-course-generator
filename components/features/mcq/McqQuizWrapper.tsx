@@ -8,9 +8,10 @@ interface McqContainerProps {
   slug: string
   currentUserId: string
   result: McqQuestionsResponse
+  title:string
 }
 
-const McqQuizWrapper = ({ slug, currentUserId, result }: McqContainerProps) => {
+const McqQuizWrapper = ({ slug, currentUserId, result,title }: McqContainerProps) => {
   // Early return if no result data is available
   if (!result?.result) {
     return <QuizSkeleton />
@@ -34,7 +35,7 @@ const McqQuizWrapper = ({ slug, currentUserId, result }: McqContainerProps) => {
 
       {/* Wrap the actual quiz content in Suspense since it's likely to be the heavier component */}
       <Suspense fallback={<QuizSkeleton />}>
-        {questions && <McqQuiz questions={questions} quizId={Number(quizData.id) || 0} slug={slug} />}
+        {questions && <McqQuiz questions={questions} topic={title} quizId={Number(quizData.id) || 0} slug={slug} />}
       </Suspense>
     </div>
   )
