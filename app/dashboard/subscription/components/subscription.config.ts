@@ -30,7 +30,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     name: "FREE",
     description: "Basic access to essential features",
     icon: CreditCard,
-    tokens: 10,
+    tokens: 3,
     options: [
       {
         duration: 1,
