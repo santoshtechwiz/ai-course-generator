@@ -126,15 +126,15 @@ export function AccountPageClient({ user }: { user: any }) {
           </CardHeader>
           <div className="space-y-1 px-6">
             <Button variant="ghost" className="w-full justify-start" asChild>
-              <Link href="/dashboard/account">
+              <Link href="/dashboard">
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start text-primary" asChild>
-              <Link href="/dashboard/account/subscription">
+              <Link href="/dashboard/dashboard">
                 <CreditCard className="mr-2 h-4 w-4" />
-                Subscription
+                Learning Path
               </Link>
             </Button>
            

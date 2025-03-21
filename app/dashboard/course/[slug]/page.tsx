@@ -54,8 +54,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   })
 }
 
-export default async function Page({ params }: { params: { slug: string } }) {
-  const { slug } = params
+export default async function Page({ params }: { params: Promise< { slug: string }> }) {
+  const { slug } = await params
   const course = await getCourseData(slug)
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 

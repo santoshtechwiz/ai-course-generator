@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import { SUBSCRIPTION_PLANS } from "@/config/subscriptionPlans"
+
 import type { QueryParams } from "@/app/types/types"
 import CreateQuizForm from "./features/quiz/CreateQuizForm"
 import CodeQuizForm from "./features/code/CodeQuizForm"
@@ -14,6 +14,7 @@ import FillInTheBlankQuizForm from "./features/blanks/BlankQuizForm"
 import { Loader2 } from "lucide-react"
 import ConsistentCard from "./ConsistentCard"
 import FlashCardCreate from "@/app/dashboard/flashcard/components/FlashCardCreate"
+import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription.config"
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code"| "flashcard"
 

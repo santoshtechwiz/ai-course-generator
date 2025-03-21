@@ -488,3 +488,49 @@ export interface FlashCard {
   difficulty?: string | null // Added missing field
   slug?: string | null // Added missing field
 }
+
+export interface User {
+  id: string
+  name: string | null
+  email: string | null
+  emailVerified: Date | null
+  image: string | null
+  credits: number
+  isAdmin: boolean
+  userType: string
+  totalCoursesWatched: number
+  totalQuizzesAttempted: number
+  totalTimeSpent: number
+  engagementScore: number
+  streakDays: number
+  lastStreakDate: Date | null
+  createdAt: Date
+  updatedAt: Date
+  lastLogin: Date
+  lastActiveAt: Date
+}
+
+export interface TokenTransaction {
+  id: string
+  userId: string
+  amount: number
+  type: string
+  description: string | null
+  createdAt: Date
+}
+
+export interface UserWithTransactions extends User {
+  TokenTransaction: TokenTransaction[]
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+

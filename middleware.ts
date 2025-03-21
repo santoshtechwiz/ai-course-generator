@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server"
 import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
 import { trackServerSideInteraction } from "@/lib/tracking"
+import { getToken } from "next-auth/jwt"
 
 // Define matcher to exclude API, static files, and favicon requests
 export const config = {
@@ -39,7 +40,27 @@ export async function middleware(req: NextRequest) {
     response.headers.set("Access-Control-Allow-Credentials", "true")
     return response
   }
+  // Get the pathname
+  const path = req.nextUrl.pathname
 
+  // Check if the path is the admin page
+  if (path === "/" || path.startsWith("/api/users")) {
+    const token = await getToken({
+      req: req,
+      secret: process.env.NEXTAUTH_SECRET,
+    })
+
+    // If user is not logged in or not an admin, redirect to unauthorized page
+    if (!token || !token.isAdmin) {
+      // For API routes, return a 403 Forbidden response
+      if (path.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized access" }, { status: 403 })
+      }
+
+      // For page routes, redirect to unauthorized page
+      return NextResponse.redirect(new URL("/unauthorized", req.url))
+    }
+  }
   // Handle dynamic GitHub credentials setup for authentication
   const githubCreds = getGitHubCredentials(req)
   process.env.GITHUB_CLIENT_ID = githubCreds.clientId
@@ -58,10 +79,10 @@ export async function middleware(req: NextRequest) {
       const type = redirect.from.startsWith("/course")
         ? "course"
         : redirect.from.startsWith("/mcq")
-        ? "mcq"
-        : redirect.from.startsWith("/openended")
-        ? "openended"
-        : "default"
+          ? "mcq"
+          : redirect.from.startsWith("/openended")
+            ? "openended"
+            : "default"
 
       const slug = await fetchSlug(type, id)
       if (slug) {
