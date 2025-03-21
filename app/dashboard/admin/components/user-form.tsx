@@ -14,9 +14,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { deleteUser, updateUser } from "@/app/actions/actions"
-import { TokenTransaction, UserWithTransactions } from "@/app/types/types"
 import { useToast } from "@/hooks/use-toast"
+import { TokenTransaction, UserWithTransactions } from "@/app/types/types"
+import { createUser, deleteUser, updateUser } from "@/app/actions/actions"
 
 
 const userFormSchema = z.object({
@@ -145,14 +145,14 @@ export function UserForm() {
     }
 
     // Add event listeners
-    window.addEventListener("edit-user", handleEditUser as EventListener)
-    window.addEventListener("adjust-credits", handleAdjustCredits as EventListener)
+    window.addEventListener("edit-user", handleEditUser as unknown as EventListener)
+    window.addEventListener("adjust-credits", handleAdjustCredits as unknown as EventListener)
     window.addEventListener("create-user", handleCreateUser)
 
     // Clean up
     return () => {
-      window.removeEventListener("edit-user", handleEditUser as EventListener)
-      window.removeEventListener("adjust-credits", handleAdjustCredits as EventListener)
+      window.removeEventListener("edit-user", handleEditUser as unknown as EventListener)
+      window.removeEventListener("adjust-credits", handleAdjustCredits as unknown as EventListener)
       window.removeEventListener("create-user", handleCreateUser)
     }
   }, [form, toast])
