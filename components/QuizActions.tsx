@@ -147,6 +147,7 @@ export function QuizActions({
       return
     }
 
+    // Check if user is trying to change visibility but is not the owner
     if (field === "isPublic" && !isOwner) {
       toast({
         title: "Permission denied",
@@ -192,14 +193,6 @@ export function QuizActions({
   }
 
   const togglePublic = () => {
-    if (!isOwner) {
-      toast({
-        title: "Permission denied",
-        description: "Only the quiz owner can change visibility settings",
-        variant: "destructive",
-      })
-      return
-    }
     updateQuiz("isPublic", !isPublic)
   }
 
@@ -300,6 +293,9 @@ export function QuizActions({
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium">Quiz Actions</h3>
+                    {!isOwner && (
+                      <span className="text-xs text-amber-600 dark:text-amber-400">Some actions limited to owner</span>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -339,7 +335,11 @@ export function QuizActions({
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="text-xs py-1 px-2">
-                          {!isOwner ? "Only owner can change visibility" : isPublic ? "Make private" : "Make public"}
+                          {!isOwner
+                            ? "Only the quiz owner can change visibility"
+                            : isPublic
+                              ? "Make quiz private (only you can see it)"
+                              : "Make quiz public (anyone can see it)"}
                         </TooltipContent>
                       </Tooltip>
 
@@ -389,7 +389,9 @@ export function QuizActions({
                                   "h-12 w-12 rounded-full flex items-center justify-center",
                                   "bg-blue-100 text-blue-600 hover:bg-blue-200",
                                   "dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60",
+                                  !canDownloadPDF() && "opacity-60 cursor-not-allowed",
                                 )}
+                                disabled={!canDownloadPDF()}
                                 aria-label="Download as PDF"
                               >
                                 <Download className="h-5 w-5" />
@@ -497,12 +499,14 @@ export function QuizActions({
           >
             <motion.button
               onClick={() => setIsOpen(!isOpen)}
+              disabled={isPublicLoading || isFavoriteLoading || isDeleteLoading}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-full shadow-lg",
                 customBgColor,
                 customTextColor,
                 "hover:shadow-xl transition-all duration-200",
                 "focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                (isPublicLoading || isFavoriteLoading || isDeleteLoading) && "opacity-70",
               )}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -520,7 +524,13 @@ export function QuizActions({
               aria-label={isOpen ? "Close quiz settings" : "Open quiz settings"}
             >
               <span className="font-medium">Quiz Settings</span>
-              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              {isPublicLoading || isFavoriteLoading || isDeleteLoading ? (
+                <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : isOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
             </motion.button>
 
             {/* Attention indicator for new users */}

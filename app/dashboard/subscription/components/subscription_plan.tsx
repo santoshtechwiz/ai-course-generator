@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Check, X, Sparkles, Gift, Loader2, AlertTriangle, Lock } from "lucide-react"
+import { Check, X, Sparkles, Gift, Loader2, AlertTriangle, Lock, Info } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { SUBSCRIPTION_PLANS, FAQ_ITEMS } from "./subscription.config"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "./subscription.config"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 import { ReferralSystem } from "./referral-system"
 
@@ -44,12 +45,20 @@ export function PricingPage({
   const [loading, setLoading] = useState<SubscriptionPlanType | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<1 | 6>(1)
   const [showPromotion, setShowPromotion] = useState(true)
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
   const isAuthenticated = !!userId
 
+  // Normalize subscription status for case-insensitive comparison
+  const normalizedStatus = subscriptionStatus?.toUpperCase() || null
+  const isSubscribed = currentPlan && normalizedStatus === "ACTIVE"
+
   // Update the handleSubscribe function to check if the user is already subscribed to the selected plan
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
+    // Clear any previous errors
+    setSubscriptionError(null)
+
     if (!userId) {
       toast({
         title: "Authentication Required",
@@ -60,11 +69,14 @@ export function PricingPage({
       return
     }
 
-    // Check if user is already subscribed to this plan
-    if (isSubscribed && currentPlan === planName) {
+    // If user has any active subscription, prevent new subscriptions
+    if (isSubscribed) {
+      setSubscriptionError(
+        `You already have an active subscription. Please wait until it expires or cancel it before subscribing to a new plan.`,
+      )
       toast({
         title: "Subscription Error",
-        description: `You already have an active ${planName} plan.`,
+        description: `You already have an active subscription. Please wait until it expires or cancel it before subscribing to a new plan.`,
         variant: "destructive",
       })
       return
@@ -96,6 +108,7 @@ export function PricingPage({
         router.refresh()
       } catch (error) {
         console.error("Free plan activation error:", error)
+        setSubscriptionError("Failed to activate the free plan. Please try again.")
         toast({
           title: "Activation Error",
           description: "Failed to activate the free plan. Please try again.",
@@ -131,16 +144,18 @@ export function PricingPage({
 
       if (!response.ok) {
         if (response.status === 409) {
+          setSubscriptionError("You already have an active subscription.")
           toast({
             title: "Subscription Conflict",
             description: "You already have an active subscription.",
-            variant: "default",
+            variant: "destructive",
           })
         } else {
+          setSubscriptionError(data.details || "There was an error processing your subscription. Please try again.")
           toast({
             title: "Subscription Error",
             description: data.details || "There was an error processing your subscription. Please try again.",
-            variant: "default",
+            variant: "destructive",
           })
         }
         return
@@ -162,11 +177,14 @@ export function PricingPage({
       })
     } catch (error) {
       console.error("Subscription error:", error)
+      setSubscriptionError(
+        "We encountered an issue while processing your request. Please try again later or contact support.",
+      )
       toast({
         title: "Subscription Error",
         description:
           "We encountered an issue while processing your request. Please try again later or contact support.",
-        variant: "default",
+        variant: "destructive",
       })
     } finally {
       setLoading(null)
@@ -174,7 +192,7 @@ export function PricingPage({
   }
 
   const handleCancelSubscription = async () => {
-    if (!userId || !currentPlan || subscriptionStatus !== "ACTIVE") {
+    if (!userId || !currentPlan || normalizedStatus !== "ACTIVE") {
       return
     }
 
@@ -211,13 +229,22 @@ export function PricingPage({
     router.push("/dashboard/subscription/account")
   }
 
-  const isSubscribed = currentPlan && subscriptionStatus === "ACTIVE"
   const userPlan = SUBSCRIPTION_PLANS.find((plan) => plan.id === currentPlan) || SUBSCRIPTION_PLANS[0]
   const tokenUsagePercentage = userPlan ? (tokensUsed / userPlan.tokens) * 100 : 0
 
   return (
     <div className="container max-w-6xl space-y-8 px-4 sm:px-6">
       {!isProd && <DevModeBanner />}
+
+      {/* Display subscription error if any */}
+      {subscriptionError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Subscription Error</AlertTitle>
+          <AlertDescription>{subscriptionError}</AlertDescription>
+        </Alert>
+      )}
+
       {isAuthenticated && (
         <Card className="bg-muted/50">
           <CardHeader>
@@ -258,14 +285,27 @@ export function PricingPage({
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row gap-3">{/* Buttons remain the same */}</CardFooter>
+          <CardFooter className="flex flex-col sm:flex-row gap-3">
+            {/* Buttons for subscription management */}
+            {isSubscribed && (
+              <>
+                {/* <Button variant="outline" onClick={handleManageSubscription}>
+                  Manage Subscription
+                </Button>
+                <Button variant="destructive" onClick={handleCancelSubscription}>
+                  Cancel Subscription
+                </Button> */}
+              </>
+            )}
+          </CardFooter>
         </Card>
       )}
+
       {/* Add the ReferralSystem component here */}
       <div className="mt-8">
         <ReferralSystem userId={userId} />
       </div>
-     
+
       {showPromotion && (
         <div className="relative overflow-hidden rounded-lg border bg-background p-4 shadow-md">
           <div className="absolute top-2 right-2">
@@ -314,7 +354,18 @@ export function PricingPage({
         </Label>
       </div>
 
-      <div className="text-center mb-8">
+      {isSubscribed && (
+        <Alert className="mt-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertTitle>You have an active subscription</AlertTitle>
+          <AlertDescription>
+            You currently have an active {currentPlan} plan. You need to wait until your subscription expires or cancel
+            it before subscribing to a new plan.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="text-center mb-8 mt-4">
         <Button
           variant="outline"
           onClick={() => document.getElementById("comparison-table")?.scrollIntoView({ behavior: "smooth" })}
@@ -330,6 +381,7 @@ export function PricingPage({
         loading={loading}
         handleSubscribe={handleSubscribe}
         duration={selectedDuration}
+        isSubscribed={isSubscribed}
       />
 
       <div className="text-center mt-8">
@@ -354,10 +406,7 @@ export function PricingPage({
               Invite your friends to join our platform and earn 10 free tokens for each successful referral. Your
               friends will also receive 5 bonus tokens when they sign up.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button>Get Referral Link</Button>
-              <Button variant="outline">Learn More</Button>
-            </div>
+            
           </div>
           <div className="md:w-1/2 flex justify-center">
             <div className="bg-background rounded-lg p-6 border w-full max-w-md">
@@ -401,6 +450,7 @@ function PlanCards({
   loading,
   handleSubscribe,
   duration,
+  isSubscribed,
 }: {
   plans: typeof SUBSCRIPTION_PLANS
   currentPlan: SubscriptionPlanType | null
@@ -408,9 +458,10 @@ function PlanCards({
   loading: SubscriptionPlanType | null
   handleSubscribe: (planId: SubscriptionPlanType, duration: number) => Promise<void>
   duration: 1 | 6
+  isSubscribed: boolean
 }) {
-  const isSubscribed = currentPlan && subscriptionStatus === "ACTIVE"
   const bestPlan = plans.find((plan) => plan.name === "PRO")
+  const normalizedStatus = subscriptionStatus?.toUpperCase() || null
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
@@ -418,7 +469,6 @@ function PlanCards({
         const priceOption = plan.options.find((o) => o.duration === duration) || plan.options[0]
         const isPlanActive = currentPlan === plan.id
         const isBestValue = plan.name === bestPlan?.name
-        // Fix: Correctly check if this is the current active plan
         const isCurrentActivePlan = isSubscribed && currentPlan === plan.id
 
         return (
@@ -439,10 +489,10 @@ function PlanCards({
                   <div className="flex flex-wrap gap-1 mt-1 sm:mt-0">
                     {isPlanActive && (
                       <Badge
-                        variant={subscriptionStatus === "ACTIVE" ? "default" : "destructive"}
+                        variant={normalizedStatus === "ACTIVE" ? "default" : "destructive"}
                         className="whitespace-nowrap"
                       >
-                        {subscriptionStatus === "ACTIVE" ? "Active Plan" : "Inactive Plan"}
+                        {normalizedStatus === "ACTIVE" ? "Active Plan" : "Inactive Plan"}
                       </Badge>
                     )}
                     {isBestValue && (
@@ -508,8 +558,8 @@ function PlanCards({
                       <div className="w-full">
                         <Button
                           onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
-                          // Fix: Disable button if this is the current active plan or if loading
-                          disabled={isCurrentActivePlan || loading !== null}
+                          // Disable all buttons if user has any active subscription
+                          disabled={isSubscribed || loading !== null}
                           className={`w-full text-primary-foreground ${planColors[plan.id as SubscriptionPlanType]} ${
                             plan.name === bestPlan?.name && !isCurrentActivePlan ? "animate-pulse" : ""
                           }`}
@@ -521,8 +571,8 @@ function PlanCards({
                             </>
                           ) : isCurrentActivePlan ? (
                             "Current Active Plan"
-                          ) : isPlanActive && subscriptionStatus !== "ACTIVE" ? (
-                            "Reactivate Plan"
+                          ) : isSubscribed ? (
+                            "Subscription Active"
                           ) : plan.id === "FREE" ? (
                             "Start for Free"
                           ) : (
@@ -534,8 +584,8 @@ function PlanCards({
                     <TooltipContent>
                       {isCurrentActivePlan
                         ? "This is your current active plan"
-                        : isPlanActive && subscriptionStatus !== "ACTIVE"
-                          ? "Reactivate your subscription"
+                        : isSubscribed
+                          ? "You need to wait until your current subscription expires or cancel it before subscribing to a new plan"
                           : plan.id === "FREE"
                             ? "Start using the free plan"
                             : `Subscribe to the ${plan.name} plan`}
@@ -543,6 +593,23 @@ function PlanCards({
                   </Tooltip>
                 </TooltipProvider>
               </CardFooter>
+
+              {/* Add a note for current active plan */}
+              {isCurrentActivePlan && (
+                <div className="px-6 pb-4 text-center">
+                  <p className="text-sm text-muted-foreground italic">You are currently subscribed to this plan</p>
+                </div>
+              )}
+
+              {/* Add a note for other plans when user has an active subscription */}
+              {isSubscribed && !isCurrentActivePlan && (
+                <div className="px-6 pb-4 text-center">
+                  <p className="text-sm text-muted-foreground italic">
+                    You need to wait until your current subscription expires or cancel it before subscribing to this
+                    plan
+                  </p>
+                </div>
+              )}
             </Card>
           </div>
         )
@@ -575,7 +642,10 @@ function SavingsHighlight({ plan, duration }: { plan: (typeof SUBSCRIPTION_PLANS
 function StatusBadge({ status }: { status: string }) {
   if (!status) return <Badge variant="outline">N/A</Badge>
 
-  switch (status) {
+  // Normalize status to uppercase for consistent comparison
+  const normalizedStatus = status.toUpperCase()
+
+  switch (normalizedStatus) {
     case "ACTIVE":
       return (
         <Badge variant="default" className="bg-green-500 text-white">
@@ -702,7 +772,6 @@ function FAQSection() {
             <AccordionContent className="text-sm text-muted-foreground">{item.answer}</AccordionContent>
           </AccordionItem>
         ))}
-
       </Accordion>
       <div className="mt-6">
         <Button variant="outline" onClick={() => (window.location.href = "/contact")}>
