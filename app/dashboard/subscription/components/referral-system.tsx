@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { Copy, Share2, RefreshCw, Loader2, Users, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { SignInPrompt } from "@/components/SignInPrompt"
+import { SignInBanner } from "@/components/features/quiz/SignInBanner"
 
 interface ReferralSystemProps {
   userId: string | null
@@ -35,11 +37,15 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
   const { toast } = useToast()
 
   const fetchReferralStats = async () => {
-    if (!userId) return
+   
+    if (!userId) {
+      setIsLoading(false)
+      return
+    }
 
     setIsLoading(true)
     try {
-      const response = await fetch(`http://localhost:3000/api/referrals`)
+      const response = await fetch(`/api/referrals`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch referral stats")
@@ -64,11 +70,12 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
   }, [userId])
 
   const generateReferralCode = async () => {
+    alert(userId);
     if (!userId) return
 
     setIsGenerating(true)
     try {
-      const response = await fetch(`http://localhost:3000/api/referrals/generate`, {
+      const response = await fetch(`/api/referrals/generate`, {
         method: "POST",
       })
 
@@ -148,7 +155,9 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {isLoading ? (
+        {!userId ? (
+          <SignInBanner isAuthenticated={userId!=null}  title="SignIn to get referral link" />
+        ) : isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
@@ -256,7 +265,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
             <li>Your friend gets 5 bonus tokens when they join</li>
           </ol>
         </div>
-        {referralStats?.referralCode && (
+        {userId && referralStats?.referralCode && (
           <Button variant="outline" size="sm" onClick={fetchReferralStats} className="ml-auto">
             <RefreshCw className="mr-2 h-3 w-3" />
             Refresh Stats

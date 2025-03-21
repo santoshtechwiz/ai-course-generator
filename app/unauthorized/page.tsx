@@ -21,9 +21,7 @@ export default function UnauthorizedPage() {
           <Button asChild variant="default" className="w-full sm:w-auto">
             <Link href="/dashboard">Go to Dashboard</Link>
           </Button>
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href="/login">Login as Admin</Link>
-          </Button>
+        
         </div>
       </div>
     </div>
