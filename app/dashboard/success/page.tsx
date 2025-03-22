@@ -30,28 +30,62 @@ export default async function SuccessPage({
     const referralUse = await prisma.userReferralUse.findFirst({
       where: {
         referredId: session.user.id,
-        status: "COMPLETED",
+        status: "PENDING", // Look for PENDING referrals to update
       },
       include: {
         referrer: {
           select: {
+            id: true,
             name: true,
           },
         },
       },
-      orderBy: {
-        completedAt: "desc",
-      },
     })
 
     if (referralUse) {
+      // Define bonus amount
+      const bonusTokens = 5
+
+      // Start a transaction to ensure all updates succeed or fail together
+      await prisma.$transaction(async (tx) => {
+        // 1. Update the referral status to COMPLETED
+        await tx.userReferralUse.update({
+          where: { id: referralUse.id },
+          data: {
+            status: "COMPLETED",
+            completedAt: new Date(),
+          },
+        })
+
+        // 2. Add tokens to the referred user (current user)
+        await tx.user.update({
+          where: { id: session.user.id },
+          data: {
+            credits: {
+              increment: bonusTokens,
+            },
+          },
+        })
+
+        // 3. Add tokens to the referrer
+        await tx.user.update({
+          where: { id: referralUse.referrer.id },
+          data: {
+            credits: {
+              increment: bonusTokens,
+            },
+          },
+        })
+      })
+
+      // Set the bonus info for display
       referralBonus = {
-        tokensReceived: 5,
+        tokensReceived: bonusTokens,
         referrerName: referralUse.referrer.name || "A friend",
       }
     }
   } catch (error) {
-    console.error("Error checking referral:", error)
+    console.error("Error processing referral:", error)
     // Continue without referral info if there's an error
   }
 
@@ -76,6 +110,9 @@ export default async function SuccessPage({
             <div className="bg-green-50 p-4 rounded-md mb-4">
               <p className="font-medium text-green-700">You received {referralBonus.tokensReceived} bonus tokens!</p>
               <p className="text-sm text-green-600">Thanks for using {referralBonus.referrerName}'s referral link.</p>
+              <p className="text-sm text-green-600 mt-1">
+                {referralBonus.referrerName} also received {referralBonus.tokensReceived} bonus tokens.
+              </p>
             </div>
           )}
 

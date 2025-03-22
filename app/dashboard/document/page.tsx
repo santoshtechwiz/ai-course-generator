@@ -17,6 +17,10 @@ import { FileUpload } from "@/components/features/document/FileUpload"
 // Import the quiz store
 import { quizStore, type Quiz } from "@/lib/quiz-store"
 import { SavedQuizList } from "@/components/features/document/SavedQuizList"
+import { PlanAwareButton } from "@/components/PlanAwareButton"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useSession } from "next-auth/react"
+import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription.config"
 
 interface Question {
   id: string
@@ -45,7 +49,11 @@ export default function Home() {
   const [savedQuizId, setSavedQuizId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null)
+  const { subscriptionStatus } = useSubscriptionStore()
+  const { data: session, status } = useSession()
 
+  const subscriptionPlan = subscriptionStatus ? subscriptionStatus.subscriptionPlan : "FREE"
+  const plan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionPlan)
   // Load saved quizzes on component mount
   const loadSavedQuizzes = () => {
     const loadedQuizzes = quizStore.getAllQuizzes()
@@ -250,9 +258,37 @@ export default function Home() {
                   <>
                     <FileUpload onFileSelect={handleFileSelect} />
                     <DocumentQuizOptions onOptionsChange={handleOptionsChange} />
-                    <Button onClick={handleGenerateQuiz} disabled={!file || isLoading} className="w-full">
-                      {isLoading ? "Generating..." : "Generate Quiz"}
-                    </Button>
+                    <PlanAwareButton
+
+                      onClick={handleGenerateQuiz}
+                      disabled={isLoading}
+
+                      hasCredits={(session?.user?.credits ?? 0) > 0}
+                      isLoggedIn={!!session?.user}
+                      loadingLabel="Processing..."
+                      label="Generate Quiz"
+
+                      className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg"
+                      customStates={{
+                        default: {
+                          tooltip: "Click to generate your flashcards",
+                        },
+                        notEnabled: {
+                          label: "Enter a topic to generate",
+                          tooltip: "Please enter a topic before generating flashcards",
+                        },
+                        noCredits: {
+                          label: "Out of credits",
+                          tooltip: "You need credits to generate flashcards. Consider upgrading your plan.",
+                        },
+                      }}
+
+                    >
+
+                    </PlanAwareButton>
+
+
+
                   </>
                 )}
               </CardContent>
@@ -267,7 +303,6 @@ export default function Home() {
                     questions={quiz}
                     onSave={handleSaveQuiz}
                     onUpdate={handleUpdateQuiz}
-                    title={quizTitle}
                   />
                 ) : (
                   <p className="text-center text-muted-foreground">
