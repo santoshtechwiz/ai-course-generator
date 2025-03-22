@@ -122,7 +122,7 @@ const ConfirmChapters = ({ course }: CourseProps) => {
       <div className="flex-none p-4 border-t">
         <div className="flex items-center justify-between">
           <Button variant="outline" asChild>
-            <Link href="/dashboard/create">
+            <Link href="/dashboard/explore">
               <ChevronLeft className="w-4 h-4 mr-2" />
               Back
             </Link>

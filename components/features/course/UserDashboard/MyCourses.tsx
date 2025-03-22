@@ -83,7 +83,7 @@ export function MyCourses({ courses }: MyCoursesProps) {
                 Start your journey by creating your first course.
               </p>
               <Button asChild className="mt-4 sm:mt-6">
-                <Link href="/dashboard/create" className="gap-2 text-sm">
+                <Link href="/dashboard/explore" className="gap-2 text-sm">
                   <Plus className="h-4 w-4" />
                   Create Course
                 </Link>

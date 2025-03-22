@@ -9,8 +9,8 @@ import { getAuthSession } from "@/lib/authOptions"
 import { Suspense } from "react"
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL
-  ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/create`
-  : "http://localhost:3000/dashboard/create"
+  ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/explore`
+  : "http://localhost:3000/dashboard/explore"
 
 export default async function CoursesPage() {
   const session = await getAuthSession()

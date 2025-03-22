@@ -35,7 +35,7 @@ const createOptions: CreateOption[] = [
   {
     title: "Course",
     description: "Create a comprehensive course with multiple modules and lessons.",
-    href: "/dashboard/create",
+    href: "/dashboard/explore",
     buttonText: "Create Course",
     icon: BookOpen,
   },

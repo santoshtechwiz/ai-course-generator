@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Create Your Course | Course AI",
     description: "Design and build your own interactive course with our intuitive course creation tools.",
-    url: "https://courseai.dev/dashboard/create",
+    url: "https://courseai.dev/dashboard/explore",
     type: "website",
     images: [{ url: "/og-image-create-course.jpg" }],
   },
@@ -82,7 +82,7 @@ const Page = async ({
       "@type": "Organization",
       name: "Course AI",
     },
-    url: `${baseUrl}/dashboard/create`,
+    url: `${baseUrl}/dashboard/explore`,
   }
 
   // Breadcrumb schema
@@ -106,7 +106,7 @@ const Page = async ({
         "@type": "ListItem",
         position: 3,
         name: "Create Course",
-        item: `${baseUrl}/dashboard/create`,
+        item: `${baseUrl}/dashboard/explore`,
       },
     ],
   }

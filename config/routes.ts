@@ -9,7 +9,7 @@ export const routeConfig = {
       '/',
       '/about',
       '/contact',
-      '/dashboard/create',
+      '/dashboard/explore',
       '/dashboard/mcq',
     ],
     redirects: [
