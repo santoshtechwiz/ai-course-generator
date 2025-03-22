@@ -1,9 +1,11 @@
 "use client"
 
 import { memo, useEffect } from "react"
+import { motion } from "framer-motion"
 import { PublicQuizzes } from "./PublicQuizzes"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import NProgress from "nprogress"
+import { useInView } from "react-intersection-observer"
 
 import type { QuizListItem } from "@/app/types/types"
 
@@ -36,19 +38,36 @@ function QuizList({ quizzes, isLoading, isError, isFetchingNextPage, hasNextPage
     }
   }, [isFetchingNextPage])
 
+  const [endMessageRef, endMessageInView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  })
+
   if (isLoading) {
     return <QuizzesSkeleton />
   }
 
   if (isError) {
-    return <div className="text-center text-red-500">Error loading quizzes. Please try again later.</div>
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center p-4 bg-red-50 rounded-lg text-red-500"
+      >
+        Error loading quizzes. Please try again later.
+      </motion.div>
+    )
   }
 
   if (quizzes.length === 0) {
     return (
-      <div className="text-center text-muted-foreground">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center text-muted-foreground"
+      >
         {isSearching ? "No quizzes found matching your search." : "No quizzes available."}
-      </div>
+      </motion.div>
     )
   }
 
@@ -56,7 +75,17 @@ function QuizList({ quizzes, isLoading, isError, isFetchingNextPage, hasNextPage
     <>
       <PublicQuizzes quizzes={quizzes} />
       {isFetchingNextPage && <QuizzesSkeleton />}
-      {!hasNextPage && <div className="text-center mt-4">No more quizzes to load.</div>}
+      {!hasNextPage && quizzes.length > 0 && (
+        <motion.div
+          ref={endMessageRef}
+          initial={{ opacity: 0, y: 20 }}
+          animate={endMessageInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mt-8 p-4 text-muted-foreground bg-muted/20 rounded-lg"
+        >
+          You've reached the end! No more quizzes to load.
+        </motion.div>
+      )}
     </>
   )
 }

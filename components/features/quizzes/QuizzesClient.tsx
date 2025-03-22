@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useMemo } from "react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
-
+import { motion } from "framer-motion"
 import { QuizSidebar } from "./QuizSidebar"
 import { useInView } from "react-intersection-observer"
 
@@ -11,7 +11,7 @@ import type { QuizListItem, QuizType } from "@/app/types/types"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { CreateCard } from "@/components/CreateCard"
-
+import { QuizzesSkeleton } from "./QuizzesSkeleton"
 
 const LazyQuizList = React.lazy(() => import("./QuizList"))
 
@@ -27,7 +27,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
   const debouncedSearch = useDebounce(search, 300)
-  const { ref, inView } = useInView()
+  const { ref, inView } = useInView({
+    threshold: 0.1,
+    triggerOnce: false,
+  })
 
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
     queryKey: ["quizzes", debouncedSearch, userId, selectedTypes],
@@ -48,10 +51,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   })
 
   React.useEffect(() => {
-    if (inView && hasNextPage) {
+    if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
-  }, [inView, fetchNextPage, hasNextPage])
+  }, [inView, fetchNextPage, hasNextPage, isFetchingNextPage])
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
@@ -78,7 +81,12 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   const hasNoQuizzes = !isLoading && quizzes.length === 0
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 min-h-screen">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-col lg:flex-row gap-6 min-h-[50vh]"
+    >
       <QuizSidebar
         search={search}
         onSearchChange={handleSearchChange}
@@ -87,12 +95,19 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         selectedTypes={selectedTypes}
         toggleQuizType={toggleQuizType}
       />
-      <div className="lg:w-3/4 space-y-8">
-        <ErrorBoundary fallback={<div>Error loading quizzes. Please try again later.</div>}>
+
+      <div className="lg:w-3/4 space-y-6">
+        <ErrorBoundary
+          fallback={
+            <div className="p-8 text-center bg-red-50 rounded-lg text-red-500">
+              Error loading quizzes. Please try again later.
+            </div>
+          }
+        >
           {hasNoQuizzes ? (
-            <div className="py-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-8">
               {isSearching ? (
-                <div className="text-center space-y-4">
+                <div className="text-center space-y-4 p-8 bg-muted/30 rounded-lg">
                   <h3 className="text-xl font-semibold">No quizzes found</h3>
                   <p className="text-muted-foreground">
                     We couldn't find any quizzes matching your search criteria. Try adjusting your filters or create a
@@ -100,7 +115,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
                   </p>
                   <button
                     onClick={handleClearSearch}
-                    className="px-4 py-2 mt-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90"
+                    className="px-4 py-2 mt-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
                   >
                     Clear filters
                   </button>
@@ -120,9 +135,9 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
                   />
                 </div>
               )}
-            </div>
+            </motion.div>
           ) : (
-            <React.Suspense fallback={<div>Loading quizzes...</div>}>
+            <React.Suspense fallback={<QuizzesSkeleton />}>
               <LazyQuizList
                 quizzes={quizzes}
                 isLoading={isLoading}
@@ -131,12 +146,16 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
                 hasNextPage={hasNextPage}
                 isSearching={isSearching}
               />
-              <div ref={ref} className="h-10" />
+              <div ref={ref} className="h-20 flex items-center justify-center">
+                {isFetchingNextPage && (
+                  <div className="animate-pulse text-muted-foreground text-sm">Loading more quizzes...</div>
+                )}
+              </div>
             </React.Suspense>
           )}
         </ErrorBoundary>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

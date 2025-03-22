@@ -261,7 +261,7 @@ export interface OpenEndedQuestion {
   answer: string
 }
 
-export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "undefined"
+export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" |  "undefined"
 
 export interface CodeChallenge {
   question: string

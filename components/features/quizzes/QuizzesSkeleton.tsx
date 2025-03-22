@@ -1,13 +1,18 @@
+"use client"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { motion } from "framer-motion"
 
 export function QuizzesSkeleton() {
   return (
-    <div className="flex flex-wrap justify-start gap-6 px-4">
-      {[...Array(12)].map((_, index) => (
-        <div
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {[...Array(6)].map((_, index) => (
+        <motion.div
           key={index}
-          className="w-full sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)] xl:w-[calc(20%-19.2px)]"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: index * 0.05 }}
         >
           <Card className="overflow-hidden w-full h-full">
             <CardContent className="flex flex-col h-full p-6 relative">
@@ -54,8 +59,9 @@ export function QuizzesSkeleton() {
               <Skeleton className="h-10 w-full rounded-lg bg-gray-200" />
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       ))}
     </div>
   )
 }
+
