@@ -5,36 +5,26 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus } from "lucide-react"
+import { Plus, Save } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-
-import { DocumentQuizDisplay } from "@/components/features/document/DocumentQuizDisplay"
 import { DocumentQuizOptions } from "@/components/features/document/DocumentQuizOptions"
 import { FileUpload } from "@/components/features/document/FileUpload"
 
-
 // Import the quiz store
-import { quizStore, type Quiz } from "@/lib/quiz-store"
+import { quizStore, type Quiz, type Question } from "@/lib/quiz-store"
 import { SavedQuizList } from "@/components/features/document/SavedQuizList"
 import { PlanAwareButton } from "@/components/PlanAwareButton"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { useSession } from "next-auth/react"
 import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription.config"
 
-interface Question {
-  id: string
-  question: string
-  options: string[]
-  correctAnswer: number
-}
-
 interface QuizOptionsType {
   numberOfQuestions: number
   difficulty: number
 }
 
-export default function Home() {
+export default function DocumentQuizPage() {
   const [file, setFile] = useState<File | null>(null)
   const [quizOptions, setQuizOptions] = useState<QuizOptionsType>({
     numberOfQuestions: 5,
@@ -42,6 +32,7 @@ export default function Home() {
   })
   const [quiz, setQuiz] = useState<Question[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("create")
   const [savedQuizzes, setSavedQuizzes] = useState<Quiz[]>([])
   const [quizTitle, setQuizTitle] = useState("New Quiz")
@@ -54,10 +45,20 @@ export default function Home() {
 
   const subscriptionPlan = subscriptionStatus ? subscriptionStatus.subscriptionPlan : "FREE"
   const plan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionPlan)
+
   // Load saved quizzes on component mount
   const loadSavedQuizzes = () => {
-    const loadedQuizzes = quizStore.getAllQuizzes()
-    setSavedQuizzes(loadedQuizzes)
+    try {
+      const loadedQuizzes = quizStore.getAllQuizzes()
+      setSavedQuizzes(loadedQuizzes)
+    } catch (error) {
+      console.error("Error loading quizzes:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load saved quizzes. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   useEffect(() => {
@@ -117,29 +118,40 @@ export default function Home() {
     }
   }
 
-  const handleSaveQuiz = async (questions: Question[]) => {
-    try {
-      // First save to your API
-      const response = await fetch("/api/save-quiz", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ quiz: questions }),
+  const handleSaveQuiz = async () => {
+    if (quiz.length === 0) {
+      toast({
+        title: "No Questions",
+        description: "Please generate or add questions before saving the quiz.",
+        variant: "destructive",
       })
+      return
+    }
 
-      if (!response.ok) {
-        throw new Error("Failed to save quiz")
-      }
+    // Validate questions
+    const invalidQuestions = quiz.filter(
+      (q) => !q.question.trim() || q.options.some((o) => !o.trim()) || q.options.length < 2,
+    )
 
-      // Then save to local storage
+    if (invalidQuestions.length > 0) {
+      toast({
+        title: "Invalid Questions",
+        description: "All questions must have a question text and at least 2 non-empty options.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Save directly to local storage without API call
       let savedQuiz: Quiz
 
       if (isEditing && editingQuizId) {
         // Update existing quiz
         const updatedQuiz = quizStore.updateQuiz(editingQuizId, {
           title: quizTitle,
-          questions: questions,
+          questions: quiz,
         })
 
         if (!updatedQuiz) {
@@ -153,7 +165,7 @@ export default function Home() {
         })
       } else {
         // Create new quiz
-        savedQuiz = quizStore.saveQuiz(quizTitle, questions)
+        savedQuiz = quizStore.saveQuiz(quizTitle, quiz)
         toast({
           title: "Quiz Saved",
           description: "Your quiz has been successfully saved and can be shared.",
@@ -178,6 +190,8 @@ export default function Home() {
         description: "Failed to save quiz. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -228,8 +242,9 @@ export default function Home() {
   return (
     <main className="container mx-auto p-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="create">{isEditing ? "Edit Quiz" : "Create Quiz"}</TabsTrigger>
+          <TabsTrigger value="quiz">Quiz Preview</TabsTrigger>
           <TabsTrigger value="saved">My Quizzes</TabsTrigger>
         </TabsList>
 
@@ -259,15 +274,12 @@ export default function Home() {
                     <FileUpload onFileSelect={handleFileSelect} />
                     <DocumentQuizOptions onOptionsChange={handleOptionsChange} />
                     <PlanAwareButton
-
                       onClick={handleGenerateQuiz}
                       disabled={isLoading}
-
                       hasCredits={(session?.user?.credits ?? 0) > 0}
                       isLoggedIn={!!session?.user}
                       loadingLabel="Processing..."
                       label="Generate Quiz"
-
                       className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg"
                       customStates={{
                         default: {
@@ -282,28 +294,58 @@ export default function Home() {
                           tooltip: "You need credits to generate flashcards. Consider upgrading your plan.",
                         },
                       }}
-
-                    >
-
-                    </PlanAwareButton>
-
-
-
+                    ></PlanAwareButton>
                   </>
                 )}
               </CardContent>
             </Card>
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle>{isEditing ? "Edit Questions" : "Generated Quiz"}</CardTitle>
+                {quiz.length > 0 && (
+                  <Button onClick={handleSaveQuiz} disabled={isSaving} size="sm">
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSaving ? "Saving..." : "Save Quiz"}
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {quiz.length > 0 ? (
-                  <DocumentQuizDisplay
-                    questions={quiz}
-                    onSave={handleSaveQuiz}
-                    onUpdate={handleUpdateQuiz}
-                  />
+                  <div className="space-y-4">
+                    {quiz.map((question, index) => (
+                      <Card key={question.id} className="border-muted">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base font-medium">Question {index + 1}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="mb-2">{question.question}</p>
+                          <div className="space-y-2">
+                            {question.options.map((option, optionIndex) => (
+                              <div
+                                key={optionIndex}
+                                className={`p-3 rounded-md border ${
+                                  optionIndex === question.correctAnswer
+                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                    : "border-gray-200 dark:border-gray-700"
+                                }`}
+                              >
+                                {option}
+                                {optionIndex === question.correctAnswer && (
+                                  <span className="ml-2 text-xs text-green-600">(Correct)</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <div className="flex justify-end mt-4">
+                      <Button onClick={handleSaveQuiz} disabled={isSaving}>
+                        <Save className="mr-2 h-4 w-4" />
+                        {isSaving ? "Saving..." : "Save Quiz"}
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <p className="text-center text-muted-foreground">
                     {isEditing ? "Loading quiz questions..." : "No quiz generated yet."}
@@ -312,6 +354,78 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="quiz">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Quiz Preview</CardTitle>
+                <CardDescription>Review your quiz before saving</CardDescription>
+              </div>
+              {quiz.length > 0 && (
+                <Button onClick={handleSaveQuiz} disabled={isSaving}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? "Saving..." : "Save Quiz"}
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {quiz.length > 0 ? (
+                <div className="space-y-6">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h2 className="text-xl font-bold mb-2">{quizTitle}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {quiz.length} {quiz.length === 1 ? "question" : "questions"}
+                    </p>
+                  </div>
+
+                  {quiz.map((question, index) => (
+                    <Card key={question.id} className="border-muted">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base font-medium">Question {index + 1}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="mb-4">{question.question}</p>
+                        <div className="space-y-2">
+                          {question.options.map((option, optionIndex) => (
+                            <div
+                              key={optionIndex}
+                              className={`p-3 rounded-md border ${
+                                optionIndex === question.correctAnswer
+                                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                  : "border-gray-200 dark:border-gray-700"
+                              }`}
+                            >
+                              {option}
+                              {optionIndex === question.correctAnswer && (
+                                <span className="ml-2 text-xs text-green-600">(Correct)</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No quiz generated yet.</p>
+                  <Button variant="outline" onClick={() => setActiveTab("create")} className="mt-4">
+                    Go to Create Quiz
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+            {quiz.length > 0 && (
+              <CardFooter className="flex justify-end">
+                <Button onClick={handleSaveQuiz} disabled={isSaving}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? "Saving..." : "Save Quiz"}
+                </Button>
+              </CardFooter>
+            )}
+          </Card>
         </TabsContent>
 
         <TabsContent value="saved">
