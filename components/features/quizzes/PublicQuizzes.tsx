@@ -5,7 +5,6 @@ import { PublicQuizCardListing } from "./PublicQuizCardListing"
 import type { QuizListItem } from "@/app/types/types"
 import { CreateCard } from "@/components/CreateCard"
 
-
 interface PublicQuizzesProps {
   quizzes: QuizListItem[]
 }
@@ -34,9 +33,9 @@ export function PublicQuizzes({ quizzes }: PublicQuizzesProps) {
       </AnimatePresence>
 
       {/* Quiz Grid Layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {quizzes.map((quiz) => (
-          <PublicQuizCardListing key={quiz.id} quiz={quiz} index={quizzes.indexOf(quiz)} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {quizzes.map((quiz, index) => (
+          <PublicQuizCardListing key={quiz.id} quiz={quiz} index={index} />
         ))}
       </div>
     </div>
