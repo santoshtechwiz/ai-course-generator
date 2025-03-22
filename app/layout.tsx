@@ -83,6 +83,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
+      <head>
+        <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
+      </head>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
           <JsonLd />
