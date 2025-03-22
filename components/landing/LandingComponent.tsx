@@ -200,7 +200,7 @@ export default function LandingComponent({ sections = defaultSections }: Landing
       <main ref={mainRef} className="flex-grow relative z-10">
         <LandingHero
           onTopicSubmit={(title: string): void => {
-            router.push(`/dashboard/create`)
+            router.push(`/dashboard/explore`)
           }}
         />
 

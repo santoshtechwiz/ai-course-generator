@@ -127,7 +127,7 @@ function buildSystemMessage(similarDocs: Document[]): string {
   }
 
   message += `\nIf no suitable content, suggest:
-- [Create Course](${CONFIG.URL}/dashboard/create)
+- [Create Course](${CONFIG.URL}/dashboard/explore)
 - [Create Quiz](${CONFIG.URL}/dashboard/quiz)
 
 Be helpful and brief. Don't provide external info. For specific course details, advise checking the course page.`

@@ -7,7 +7,7 @@ export default function QuickActions() {
     <Card>
       <CardContent className="p-4">
         <div className="flex justify-between items-center">
-          <Button variant="outline" onClick={() => window.location.href='/dashboard/create'} className="flex items-center space-x-2">
+          <Button variant="outline" onClick={() => window.location.href='/dashboard/explore'} className="flex items-center space-x-2">
             <PlusCircle className="h-4 w-4" />
             <span>New Course</span>
           </Button>
