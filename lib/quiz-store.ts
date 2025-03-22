@@ -1,6 +1,4 @@
-"use client"
-
-import { nanoid } from 'nanoid'
+// Enhanced quiz store with better persistence
 
 export interface Question {
   id: string
@@ -16,7 +14,8 @@ export interface Quiz {
   createdAt: number
 }
 
-export interface QuizAttempt {
+interface QuizAttempt {
+  id: string
   quizId: string
   answers: number[]
   score: number
@@ -25,158 +24,181 @@ export interface QuizAttempt {
   completedAt?: number
 }
 
-// In-memory database using localStorage
+const QUIZZES_KEY = 'quizApp_quizzes';
+const ATTEMPTS_KEY = 'quizApp_attempts';
+
 class QuizStore {
-  private readonly QUIZZES_KEY = 'quizzes'
-  private readonly ATTEMPTS_KEY = 'quiz-attempts'
+  private quizzes: Quiz[] = [];
+  private attempts: QuizAttempt[] = [];
+  private initialized = false;
 
   constructor() {
-    // Initialize storage if needed
-    if (typeof window !== 'undefined') {
-      if (!localStorage.getItem(this.QUIZZES_KEY)) {
-        localStorage.setItem(this.QUIZZES_KEY, JSON.stringify({}))
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage() {
+    try {
+      // Load quizzes
+      const quizzesJson = localStorage.getItem(QUIZZES_KEY);
+      if (quizzesJson) {
+        this.quizzes = JSON.parse(quizzesJson);
       }
-      if (!localStorage.getItem(this.ATTEMPTS_KEY)) {
-        localStorage.setItem(this.ATTEMPTS_KEY, JSON.stringify({}))
+
+      // Load attempts
+      const attemptsJson = localStorage.getItem(ATTEMPTS_KEY);
+      if (attemptsJson) {
+        this.attempts = JSON.parse(attemptsJson);
       }
+
+      this.initialized = true;
+    } catch (error) {
+      console.error('Error loading from storage:', error);
+      // Initialize with empty arrays if there's an error
+      this.quizzes = [];
+      this.attempts = [];
+      this.initialized = true;
     }
   }
 
-  private getQuizzes(): Record<string, Quiz> {
-    if (typeof window === 'undefined') return {}
-    const data = localStorage.getItem(this.QUIZZES_KEY)
-    return data ? JSON.parse(data) : {}
+  private saveToStorage() {
+    try {
+      localStorage.setItem(QUIZZES_KEY, JSON.stringify(this.quizzes));
+      localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(this.attempts));
+      return true;
+    } catch (error) {
+      console.error('Error saving to storage:', error);
+      return false;
+    }
   }
 
-  private getAttempts(): Record<string, QuizAttempt> {
-    if (typeof window === 'undefined') return {}
-    const data = localStorage.getItem(this.ATTEMPTS_KEY)
-    return data ? JSON.parse(data) : {}
+  // Ensure storage is loaded before any operations
+  private ensureInitialized() {
+    if (!this.initialized) {
+      this.loadFromStorage();
+    }
   }
 
-  private saveQuizzes(quizzes: Record<string, Quiz>): void {
-    if (typeof window === 'undefined') return
-    localStorage.setItem(this.QUIZZES_KEY, JSON.stringify(quizzes))
-  }
-
-  private saveAttempts(attempts: Record<string, QuizAttempt>): void {
-    if (typeof window === 'undefined') return
-    localStorage.setItem(this.ATTEMPTS_KEY, JSON.stringify(attempts))
-  }
-
+  // Quiz CRUD operations
   getAllQuizzes(): Quiz[] {
-    const quizzes = this.getQuizzes()
-    return Object.values(quizzes).sort((a, b) => b.createdAt - a.createdAt)
+    this.ensureInitialized();
+    return [...this.quizzes];
   }
 
   getQuiz(id: string): Quiz | null {
-    const quizzes = this.getQuizzes()
-    return quizzes[id] || null
+    this.ensureInitialized();
+    return this.quizzes.find(quiz => quiz.id === id) || null;
   }
 
   saveQuiz(title: string, questions: Question[]): Quiz {
-    const quizzes = this.getQuizzes()
-    const id = nanoid(10)
-    const newQuiz: Quiz = {
-      id,
+    this.ensureInitialized();
+    
+    const quiz: Quiz = {
+      id: crypto.randomUUID(),
       title,
       questions,
       createdAt: Date.now()
-    }
-    
-    quizzes[id] = newQuiz
-    this.saveQuizzes(quizzes)
-    return newQuiz
+    };
+
+    this.quizzes.push(quiz);
+    this.saveToStorage();
+    return quiz;
   }
 
   updateQuiz(id: string, updates: Partial<Quiz>): Quiz | null {
-    const quizzes = this.getQuizzes()
-    if (!quizzes[id]) return null
+    this.ensureInitialized();
     
-    quizzes[id] = {
-      ...quizzes[id],
-      ...updates
-    }
-    
-    this.saveQuizzes(quizzes)
-    return quizzes[id]
+    const index = this.quizzes.findIndex(quiz => quiz.id === id);
+    if (index === -1) return null;
+
+    const updatedQuiz = { ...this.quizzes[index], ...updates };
+    this.quizzes[index] = updatedQuiz;
+    this.saveToStorage();
+    return updatedQuiz;
   }
 
   deleteQuiz(id: string): boolean {
-    const quizzes = this.getQuizzes()
-    if (!quizzes[id]) return false
+    this.ensureInitialized();
     
-    delete quizzes[id]
-    this.saveQuizzes(quizzes)
-    return true
+    const initialLength = this.quizzes.length;
+    this.quizzes = this.quizzes.filter(quiz => quiz.id !== id);
+    
+    // Also delete related attempts
+    this.attempts = this.attempts.filter(attempt => attempt.quizId !== id);
+    
+    this.saveToStorage();
+    return this.quizzes.length < initialLength;
   }
 
-  // Quiz attempt methods
+  // Quiz attempt operations
   startQuizAttempt(quizId: string): string {
-    const attempts = this.getAttempts()
-    const attemptId = nanoid(10)
+    this.ensureInitialized();
     
-    attempts[attemptId] = {
+    const quiz = this.getQuiz(quizId);
+    if (!quiz) return '';
+
+    const attempt: QuizAttempt = {
+      id: crypto.randomUUID(),
       quizId,
-      answers: [],
+      answers: new Array(quiz.questions.length).fill(-1),
       score: 0,
       completed: false,
       startedAt: Date.now()
-    }
-    
-    this.saveAttempts(attempts)
-    return attemptId
+    };
+
+    this.attempts.push(attempt);
+    this.saveToStorage();
+    return attempt.id;
   }
 
-  getQuizAttempt(attemptId: string): QuizAttempt | null {
-    const attempts = this.getAttempts()
-    return attempts[attemptId] || null
-  }
+  saveQuizAnswer(attemptId: string, questionIndex: number, answerIndex: number): boolean {
+    this.ensureInitialized();
+    
+    const attemptIndex = this.attempts.findIndex(a => a.id === attemptId);
+    if (attemptIndex === -1) return false;
 
-  saveQuizAnswer(attemptId: string, questionIndex: number, answerIndex: number): QuizAttempt | null {
-    const attempts = this.getAttempts()
-    if (!attempts[attemptId]) return null
-    
-    const attempt = attempts[attemptId]
-    const answers = [...attempt.answers]
-    answers[questionIndex] = answerIndex
-    
-    attempts[attemptId] = {
-      ...attempt,
-      answers
-    }
-    
-    this.saveAttempts(attempts)
-    return attempts[attemptId]
+    const attempt = this.attempts[attemptIndex];
+    if (attempt.completed) return false;
+
+    attempt.answers[questionIndex] = answerIndex;
+    this.attempts[attemptIndex] = attempt;
+    this.saveToStorage();
+    return true;
   }
 
   completeQuizAttempt(attemptId: string): QuizAttempt | null {
-    const attempts = this.getAttempts()
-    if (!attempts[attemptId]) return null
+    this.ensureInitialized();
     
-    const attempt = attempts[attemptId]
-    const quiz = this.getQuiz(attempt.quizId)
-    if (!quiz) return null
-    
+    const attemptIndex = this.attempts.findIndex(a => a.id === attemptId);
+    if (attemptIndex === -1) return null;
+
+    const attempt = this.attempts[attemptIndex];
+    if (attempt.completed) return attempt;
+
+    const quiz = this.getQuiz(attempt.quizId);
+    if (!quiz) return null;
+
     // Calculate score
-    let score = 0
+    let score = 0;
     attempt.answers.forEach((answer, index) => {
       if (index < quiz.questions.length && answer === quiz.questions[index].correctAnswer) {
-        score++
+        score++;
       }
-    })
-    
-    attempts[attemptId] = {
-      ...attempt,
-      score,
-      completed: true,
-      completedAt: Date.now()
-    }
-    
-    this.saveAttempts(attempts)
-    return attempts[attemptId]
+    });
+
+    // Update attempt
+    attempt.score = score;
+    attempt.completed = true;
+    attempt.completedAt = Date.now();
+    this.attempts[attemptIndex] = attempt;
+    this.saveToStorage();
+    return attempt;
+  }
+
+  getQuizAttempts(quizId: string): QuizAttempt[] {
+    this.ensureInitialized();
+    return this.attempts.filter(attempt => attempt.quizId === quizId);
   }
 }
 
-// Singleton instance
-export const quizStore = new QuizStore()
+// Create a singleton instance
+export const quizStore = new QuizStore();
