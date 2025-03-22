@@ -1,70 +1,88 @@
-import { getAuthSession } from "@/lib/authOptions"
-import { redirect } from "next/navigation"
-import { getCourses } from "@/app/actions/getCourses"
-import ConfirmChapters from "@/components/features/course/ConfirmChapters"
-import { getCourseData } from "@/app/actions/getCourseData"
-import { generatePageMetadata } from "@/lib/seo-utils"
 import type { Metadata } from "next"
-import CourseCreationVideo from "@/components/common/CourseCreationVideo"
+import { generatePageMetadata } from "@/lib/seo-utils"
+import { getCourseData } from "@/app/actions/getCourseData"
+import CoursePage from "@/components/features/course/CoursePage/CoursePage"
+import { notFound } from "next/navigation"
+import { Suspense } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+import CourseSchema from "@/app/schema/course-schema"
 
-export const fetchCache = "force-no-store"
-type Props = {
-  params: {
-    slug: string
-  }
+
+function LoadingSkeleton() {
+  return (
+    <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] gap-4 p-4">
+      <div className="flex-grow lg:w-3/4">
+        <Skeleton className="w-full aspect-video rounded-lg" />
+        <Skeleton className="h-[400px] w-full mt-4 rounded-lg" />
+      </div>
+      <div className="lg:w-1/4 lg:min-w-[300px]">
+        <Skeleton className="h-full w-full rounded-lg" />
+      </div>
+    </div>
+  )
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const course = await getCourseData(params.slug)
+// Generate metadata for the course page
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const { slug } = params
+  const course = await getCourseData(slug)
 
   if (!course) {
-    return {
-      title: "Course Creation | CourseAI",
-      description: "Create your own interactive programming course with our AI-powered tools.",
-    }
+    return generatePageMetadata({
+      title: "Course Not Found | CourseAI",
+      description: "The requested programming course could not be found. Explore our other coding education resources.",
+      path: `/dashboard/course/${slug}`,
+      noIndex: true,
+    })
   }
 
   return generatePageMetadata({
-    title: `Creating: ${course.title} | Course AI`,
-    description: `Design and build your ${course.title.toLowerCase()} course with our intuitive course creation tools. Share your expertise and engage learners effectively.`,
-    path: `/dashboard/course/${params.slug}`,
+    title: `${course.title} | Programming Course`,
+    description:
+      course.description ||
+      `Master ${course.title} with our interactive coding course. Enhance your programming skills with hands-on practice and expert guidance.`,
+    path: `/dashboard/course/${slug}`,
     keywords: [
-      `${course.title.toLowerCase()} course creation`,
-      "build online course",
-      "teaching platform",
-      "educational content",
-      "course design",
-      "AI course builder",
+      `${course.title.toLowerCase()} tutorial`,
+      `${course.title.toLowerCase()} programming`,
+      "coding education",
+      "interactive programming",
+      "developer learning",
     ],
-    ogType: "website",
+    ogImage: course.image || undefined,
+    ogType: "article",
   })
 }
 
-export default async function CreateChapters({ params }: Props) {
-  const slug = params.slug
-  const session = await getAuthSession()
-
-  if (!session?.user) {
-    return redirect("/dashboard")
-  }
-
-  const course = await getCourses(slug)
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const course = await getCourseData(slug)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
   if (!course) {
-    return redirect("/create")
+    notFound()
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-shadcn-primary-50">
-      <div className="flex flex-col flex-grow p-4 md:flex-row md:space-x-4">
-        <div className="w-full md:w-2/3 bg-shadcn-white rounded-lg shadow-md p-4 mb-4 md:mb-0">
-          <ConfirmChapters course={{ ...course, units: course.courseUnits }} />
-        </div>
-        <div className="w-full md:w-1/3">
-          <CourseCreationVideo />
-        </div>
-      </div>
-    </div>
+    <Suspense fallback={<LoadingSkeleton />}>
+      <CourseSchema
+        course={{
+          title: course.title,
+          description: course.description || `Learn ${course.title} with interactive lessons and exercises.`,
+          image: course.image,
+          createdAt: course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString(),
+          updatedAt: course.updatedAt ? new Date(course.updatedAt).toISOString() : undefined,
+          instructor: course.title
+            ? {
+                name: course.title || "CourseAI Instructor",
+                url: `${baseUrl}/dashboard/instructor/${course.slug}`,
+              }
+            : undefined,
+        }}
+      />
+
+      <CoursePage course={course} />
+    </Suspense>
   )
 }
 
