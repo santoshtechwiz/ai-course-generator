@@ -57,7 +57,7 @@ export const quizCreationSchema = z.object({
 });
 export const getQuestionsSchema = z.object({
   title: z.string(),
-  amount: z.number().int().positive().min(1).max(10),
+  amount: z.number().int().positive().min(1).max(20),
   type: z.enum(["mcq", "open_ended"]),
   difficulty: z.enum(["easy", "medium", "hard"]),
   userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
