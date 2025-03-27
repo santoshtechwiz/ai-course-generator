@@ -4,10 +4,13 @@ import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getQuiz } from "@/app/actions/getQuiz"
 import QuizDetailPage from "@/components/QuizDetailsPage"
-
+import { Suspense } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { notFound } from "next/navigation"
 
 type Params = Promise<{ slug: string }>
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params
   const quiz = await getQuiz(slug)
@@ -21,9 +24,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     })
   }
 
+
   return generatePageMetadata({
-    title: `${quiz.title} | Programming Flashcards`,
-    description: `Study and memorize key concepts about ${quiz.title.toLowerCase()} with our interactive flashcards. Improve your programming knowledge efficiently.`,
+    title: `${quiz.title} | Interactive Programming Flashcards`,
+    description: `Master ${quiz.title.toLowerCase()} concepts with our interactive flashcards. Perfect for all developers looking to strengthen their knowledge through active recall and spaced repetition.`,
     path: `/dashboard/flashcard/${slug}`,
     keywords: [
       `${quiz.title.toLowerCase()} flashcards`,
@@ -31,8 +35,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       "coding concepts",
       "developer learning tools",
       "programming memorization",
+      "spaced repetition",
+      "active recall",
+
+      "tech learning",
     ],
     ogType: "article",
+
   })
 }
 
@@ -47,28 +56,76 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   if (!quiz) {
-    return null // This will trigger the not-found page
+    notFound()
   }
 
   // Create breadcrumb items
   const breadcrumbItems = [
-  
-    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
+    { name: "Dashboard", url: `${baseUrl}/dashboard` },
+    { name: "Flashcards", url: `${baseUrl}/dashboard/quizzes?type=flashcard` },
     { name: quiz.title, url: `${baseUrl}/dashboard/flashcard/${slug}` },
-  ];
+  ]
+
+
 
   return (
-    <QuizDetailPage
-      title={quiz.title}
-      description="Study and memorize key concepts with these interactive flashcards."
-      slug={slug}
-      quizType="flashcard"
-      questionCount={quiz.questions?.length || 10}
-      estimatedTime="PT15M"
-      breadcrumbItems={breadcrumbItems}
-    >
-      <FlashCardsPageClient slug={slug} userId={userId} />
-    </QuizDetailPage>
+    <>
+
+      <QuizDetailPage
+        title={quiz.title}
+        description={`Study and memorize key ${quiz.title} concepts with these interactive flashcards. Perfect for all level developers looking to strengthen their knowledge through active recall.`}
+        slug={slug}
+        quizType="flashcard"
+        questionCount={quiz.questions?.length || 0}
+        estimatedTime="PT15M"
+        breadcrumbItems={breadcrumbItems}
+
+
+      >
+
+
+        <Suspense fallback={<FlashcardSkeleton />}>
+          <FlashCardsPageClient slug={slug} userId={userId} />
+        </Suspense>
+      </QuizDetailPage>
+    </>
+  )
+}
+
+function FlashcardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full border-b border-border/50 px-4 sm:px-6 py-4">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-5 w-24 mt-2 sm:mt-0" />
+      </div>
+
+      <div className="p-4 sm:p-6 md:p-8 border-b border-border/50">
+        <div className="relative min-h-[300px] w-full">
+          <Skeleton className="absolute inset-0 rounded-xl" />
+        </div>
+
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-3 sm:gap-0">
+          <Skeleton className="h-10 w-28" />
+          <Skeleton className="h-5 w-36" />
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-6 md:p-8">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-28" />
+          <Skeleton className="h-10 w-28" />
+        </div>
+
+        <div className="mt-6 px-1">
+          <Skeleton className="h-2 w-full rounded-full" />
+          <div className="flex justify-between mt-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
