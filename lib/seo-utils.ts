@@ -6,7 +6,7 @@ export const defaultSEO = {
   description:
     "Master coding with CourseAI's AI-powered MCQs, quizzes, and personalized learning resources. Enhance your programming skills through interactive practice and smart feedback.",
   siteName: "CourseAI",
-  baseUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev",
+  baseUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
   twitterHandle: process.env.NEXT_PUBLIC_TWITTER_HANDLE || "@courseai",
   locale: "en_US",
   type: "website",

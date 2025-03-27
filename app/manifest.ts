@@ -20,7 +20,7 @@ export default function manifest(): MetadataRoute.Manifest {
     related_applications: [
       {
         platform: 'web',
-        url: 'https://courseai.dev',
+        url: 'https://courseai.io',
         id: 'course-ai',
       },
     ],

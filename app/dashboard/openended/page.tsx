@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: "Open-Ended Quizzes | Course AI",
     description:
       "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
-    url: "https://courseai.dev/dashboard/openended",
+    url: "https://courseai.io/dashboard/openended",
     type: "website",
     images: [{ url: "/og-image-openended.jpg" }],
   },
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 }
 
 const Page = async () => {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // CreativeWork schema
   const creativeWorkSchema = {

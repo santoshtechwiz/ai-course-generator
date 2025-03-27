@@ -24,7 +24,7 @@ export default function TermsAndConditions() {
       <p className="mb-4">Last updated: {new Date().toLocaleDateString('en-US')}</p>
       
       <p className="mb-4">
-        Please read these Terms and Conditions ("Terms", "Terms and Conditions") carefully before using the courseai.dev website (the "Service") operated by CourseAI ("us", "we", or "our").
+        Please read these Terms and Conditions ("Terms", "Terms and Conditions") carefully before using the courseai.io website (the "Service") operated by CourseAI ("us", "we", or "our").
       </p>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4">1. Acceptance of Terms</h2>
@@ -117,7 +117,7 @@ export default function TermsAndConditions() {
       <h2 className="text-2xl font-semibold mt-6 mb-4">10. Contact Us</h2>
       
       <p className="mb-4">
-        If you have any questions about these Terms, please contact us at support@courseai.dev.
+        If you have any questions about these Terms, please contact us at support@courseai.io.
       </p>
       
       <p className="mt-8">

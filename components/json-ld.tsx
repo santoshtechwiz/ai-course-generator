@@ -264,7 +264,7 @@ function generateWebApplicationSchema(baseUrl: string) {
 
 export function JsonLd() {
   const pathname = usePathname()
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // Default breadcrumb schema based on current path
   const pathSegments = pathname.split("/").filter(Boolean)

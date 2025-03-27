@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     title,
     description: 'Default Description',
     image: {
-      url: 'https://courseai.dev/default-thumbnail.png',
+      url: 'https://courseai.io/default-thumbnail.png',
       alt: 'Image Alt Text',
     },
   });

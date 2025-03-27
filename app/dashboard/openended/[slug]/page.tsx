@@ -43,7 +43,7 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
   const { slug } = await params
   const session = await getServerSession(authOptions)
   const quizData = await getQuiz(slug)
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   if (!quizData) {
     notFound()

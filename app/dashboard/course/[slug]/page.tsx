@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const course = await getCourseData(slug)
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   if (!course) {
     notFound()

@@ -18,7 +18,7 @@ interface CourseSchemaProps {
 }
 
 export default function CourseSchema({ course }: CourseSchemaProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
   const courseUrl = `${baseUrl}/dashboard/course/${course?.title?.toLowerCase().replace(/\s+/g, "-")}`
 
   const courseSchema = generateCourseSchema({

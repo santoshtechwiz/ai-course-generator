@@ -49,7 +49,7 @@ async function protectAdminRoutes(req: NextRequest) {
 function setupGitHubCredentials(req: NextRequest) {
   const host = req.nextUrl.host || ""
 
-  const credentials = host.includes("courseai.dev") 
+  const credentials = host.includes("courseai.io") 
     ? {
         clientId: process.env.GITHUB_CLIENT_ID!,
         clientSecret: process.env.GITHUB_CLIENT_SECRET!,

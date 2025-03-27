@@ -29,13 +29,13 @@
   
       // Create iframe
       const iframe = document.createElement("iframe")
-      iframe.src = `https://courseai.dev/embed/${quizId}?theme=${theme}`
+      iframe.src = `https://courseai.io/embed/${quizId}?theme=${theme}`
       iframe.allow = "fullscreen"
       iframe.title = "CourseAI Quiz"
   
       // Add message listener for iframe height adjustments
       window.addEventListener("message", (e) => {
-        if (e.origin !== "https://courseai.dev") return
+        if (e.origin !== "https://courseai.io") return
   
         try {
           const data = JSON.parse(e.data)

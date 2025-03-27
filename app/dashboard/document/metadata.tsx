@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     title: "Document Analysis | Course AI",
     description:
       "Upload and analyze documents to generate quizzes, summaries, and learning materials from your own content.",
-    url: "https://courseai.dev/dashboard/document",
+    url: "https://courseai.io/dashboard/document",
     type: "website",
     images: [{ url: "/og-image-document.jpg" }],
   },
