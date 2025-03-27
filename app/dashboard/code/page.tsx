@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Code Challenges | Course AI",
     description: "Test and improve your programming skills with our interactive coding challenges and exercises.",
-    url: "https://courseai.dev/dashboard/code",
+    url: "https://courseai.io/dashboard/code",
     type: "website",
     images: [{ url: "/og-image-code.jpg" }],
   },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 }
 
 const Page = async () => {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // CreativeWork schema
   const creativeWorkSchema = {

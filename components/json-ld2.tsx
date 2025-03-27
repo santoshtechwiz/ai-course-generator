@@ -4,7 +4,7 @@ import { quizSchema } from "@/schema/schema"
 
 export function JsonLd({ currentPage = "home" }: { currentPage?: string }) {
   // Base URL for the site
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // Pricing data
   const pricingData = {

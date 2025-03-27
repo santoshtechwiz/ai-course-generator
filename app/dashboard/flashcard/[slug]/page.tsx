@@ -7,7 +7,7 @@ import QuizDetailPage from "@/components/QuizDetailsPage"
 
 
 type Params = Promise<{ slug: string }>
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io";
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params
   const quiz = await getQuiz(slug)
@@ -44,7 +44,7 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
   const userId = (await getAuthSession())?.user.id ?? ""
   const slug = (await params).slug
   const quiz = await getQuiz(slug)
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   if (!quiz) {
     return null // This will trigger the not-found page

@@ -24,7 +24,7 @@ export default function PrivacyPolicy() {
       <p className="mb-4 text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
       
       <p className="mb-4 text-foreground">
-        CourseAI ("we", "our", or "us") values your privacy and is committed to protecting your personal data. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you visit our website [https://courseai.dev] (the "Site") or use our services.
+        CourseAI ("we", "our", or "us") values your privacy and is committed to protecting your personal data. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you visit our website [https://courseai.io] (the "Site") or use our services.
       </p>
       
       <h2 className="text-2xl font-semibold mt-6 mb-4 text-foreground">1. Information We Collect</h2>

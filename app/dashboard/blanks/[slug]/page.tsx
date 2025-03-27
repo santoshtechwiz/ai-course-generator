@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
   const params = await props.params
   const { slug } = params
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
