@@ -5,13 +5,12 @@ import Link from "next/link"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { CreditCard, User, Settings, Bell, Shield, Key, FileText, Loader2 } from "lucide-react"
+import { CreditCard, User, Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import { BillingHistory } from "../components/billing-history"
-import { ManageSubscription } from "../components/manage-subscription"
-import { ReferralSystem } from "../components/referral-system"
-
+import { BillingHistory } from "../components/BillingHistory"
+import { ManageSubscription } from "../components/ManageSubscription"
+import { ReferralSystem } from "../components/ReferralSystem"
 
 export function AccountPageClient({ user }: { user: any }) {
   const { subscriptionStatus, isLoading, setSubscriptionStatus, setIsLoading } = useSubscriptionStore()
@@ -115,7 +114,6 @@ export function AccountPageClient({ user }: { user: any }) {
             <p className="text-muted-foreground">{user.email}</p>
           </div>
         </div>
-        
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -137,7 +135,6 @@ export function AccountPageClient({ user }: { user: any }) {
                 Learning Path
               </Link>
             </Button>
-           
           </div>
           <CardFooter className="flex flex-col items-start px-6 py-4">
             <div className="text-xs text-muted-foreground mb-2">
@@ -151,7 +148,6 @@ export function AccountPageClient({ user }: { user: any }) {
 
         <div className="md:col-span-3 space-y-6">
           <ManageSubscription userId={user.id} subscriptionData={formattedSubscriptionData} />
-
 
           <Tabs defaultValue="referrals" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
