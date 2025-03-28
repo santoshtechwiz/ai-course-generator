@@ -5,11 +5,23 @@ import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
 import { trackServerSideInteraction } from "@/lib/tracking"
 import { getToken } from "next-auth/jwt"
-import type { JWT } from "next-auth/jwt"
 
 // Define matcher to exclude API, static files, and favicon requests
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|unauthorized).*)"],
+}
+
+// Handle site-wide redirect to courseai.io
+function handleSiteWideRedirect(req: NextRequest) {
+  // Check if we're already on courseai.io to prevent redirect loops
+  if (!req.nextUrl.host.includes("courseai.io")) {
+    const url = new URL(req.url)
+    const redirectUrl = new URL(`https://courseai.io${url.pathname}${url.search}`)
+    return NextResponse.redirect(redirectUrl, {
+      status: 301, // Permanent redirect for better SEO
+    })
+  }
+  return null
 }
 
 // Handle WebSocket connections
@@ -33,7 +45,7 @@ async function protectAdminRoutes(req: NextRequest) {
 
   try {
     const token = await getToken({ req })
-    
+
     if (!token || !token.isAdmin) {
       return NextResponse.redirect(new URL("/unauthorized", req.url))
     }
@@ -49,7 +61,7 @@ async function protectAdminRoutes(req: NextRequest) {
 function setupGitHubCredentials(req: NextRequest) {
   const host = req.nextUrl.host || ""
 
-  const credentials = host.includes("courseai.dev") 
+  const credentials = host.includes("courseai.dev")
     ? {
         clientId: process.env.GITHUB_CLIENT_ID!,
         clientSecret: process.env.GITHUB_CLIENT_SECRET!,
@@ -66,7 +78,7 @@ function setupGitHubCredentials(req: NextRequest) {
 // Handle redirects based on route configuration
 async function handleRedirects(req: NextRequest) {
   const pathname = req.nextUrl.pathname
-  
+
   const redirect = routeConfig.redirects.find((r) => {
     const regex = new RegExp(`^${r.from.replace(/:\w+/g, "(\\d+)")}$`)
     return regex.test(pathname)
@@ -135,6 +147,10 @@ export async function middleware(req: NextRequest) {
   const wsResponse = handleWebSocketConnections(req)
   if (wsResponse) return wsResponse
 
+  // Handle site-wide redirect to courseai.io (added this line)
+  const siteWideRedirect = handleSiteWideRedirect(req)
+  if (siteWideRedirect) return siteWideRedirect
+
   // Protect admin routes - only check admin routes
   const adminResponse = await protectAdminRoutes(req)
   if (adminResponse) return adminResponse
@@ -156,3 +172,4 @@ export async function middleware(req: NextRequest) {
   const response = NextResponse.next()
   return setCacheHeaders(response)
 }
+
