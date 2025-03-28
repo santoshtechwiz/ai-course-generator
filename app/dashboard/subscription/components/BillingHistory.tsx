@@ -1,0 +1,204 @@
+"use client"
+
+import { useState } from "react"
+import { Download, FileText, ExternalLink, Loader2, Filter, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+interface BillingHistoryProps {
+  billingHistory: Array<{
+    id: string
+    amount: number
+    status: string
+    date: string
+    invoiceUrl?: string
+    receiptUrl?: string
+    description: string
+  }>
+}
+
+export function BillingHistory({ billingHistory }: BillingHistoryProps) {
+  const [isLoading, setIsLoading] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+
+  const handleDownload = async (url: string, id: string) => {
+    if (!url) return
+
+    setIsLoading(id)
+    try {
+      window.open(url, "_blank")
+    } catch (error) {
+      console.error("Error downloading invoice:", error)
+    } finally {
+      setIsLoading(null)
+    }
+  }
+
+  const filteredHistory = billingHistory.filter((item) => {
+    const matchesSearch = item.description.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === "all" || item.status.toLowerCase() === statusFilter.toLowerCase()
+    return matchesSearch && matchesStatus
+  })
+
+  if (billingHistory.length === 0) {
+    return (
+      <CardContent className="text-center py-12">
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+          <FileText className="h-10 w-10 text-muted-foreground opacity-50" />
+        </div>
+        <h3 className="mt-4 text-xl font-medium">No billing history</h3>
+        <div className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+          Your billing history will appear here once you have made a payment. Subscribe to a plan to get started.
+        </div>
+        <Button className="mt-6 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
+          View Subscription Plans
+        </Button>
+      </CardContent>
+    )
+  }
+
+  return (
+    <CardContent className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="relative w-full sm:w-auto flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search invoices..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 border-slate-200 dark:border-slate-700"
+          />
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px] border-slate-200 dark:border-slate-700">
+              <div className="flex items-center">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Filter by status" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="refunded">Refunded</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon" className="border-slate-200 dark:border-slate-700">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50 dark:bg-slate-800">
+                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold">Description</TableHead>
+                <TableHead className="font-semibold">Amount</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="text-right font-semibold">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredHistory.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    No results found. Try adjusting your search or filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredHistory.map((item) => (
+                  <TableRow key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <TableCell className="font-medium">{new Date(item.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{item.description}</TableCell>
+                    <TableCell className="font-semibold">${(item.amount / 100).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={item.status} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {item.invoiceUrl && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownload(item.invoiceUrl!, item.id)}
+                            disabled={isLoading === item.id}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          >
+                            {isLoading === item.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                            )}
+                            Invoice
+                          </Button>
+                        )}
+                        {item.receiptUrl && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownload(item.receiptUrl!, item.id)}
+                            disabled={isLoading === item.id}
+                            className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20"
+                          >
+                            {isLoading === item.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              <Download className="h-4 w-4 mr-1" />
+                            )}
+                            Receipt
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <div className="mt-4 text-center text-sm text-muted-foreground">
+        Showing {filteredHistory.length} of {billingHistory.length} transactions
+      </div>
+    </CardContent>
+  )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  switch (status.toLowerCase()) {
+    case "paid":
+      return (
+        <Badge variant="default" className="bg-gradient-to-r from-green-500 to-emerald-500">
+          Paid
+        </Badge>
+      )
+    case "pending":
+      return (
+        <Badge variant="outline" className="text-orange-500 border-orange-500">
+          Pending
+        </Badge>
+      )
+    case "failed":
+      return <Badge variant="destructive">Failed</Badge>
+    case "refunded":
+      return (
+        <Badge variant="outline" className="text-blue-500 border-blue-500">
+          Refunded
+        </Badge>
+      )
+    default:
+      return <Badge variant="outline">{status}</Badge>
+  }
+}
+

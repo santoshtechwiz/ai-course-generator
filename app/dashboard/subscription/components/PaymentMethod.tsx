@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
+import { Loader2, CreditCard, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { CardElement, useStripe, useElements, Elements } from "@stripe/react-stripe-js"
@@ -27,6 +27,7 @@ export function PaymentMethodForm({ onSuccess }: PaymentMethodFormProps) {
 function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isSuccess, setIsSuccess] = useState(false)
   const stripe = useStripe()
   const elements = useElements()
   const { toast } = useToast()
@@ -75,6 +76,8 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
         throw new Error(data.details || "Failed to update payment method")
       }
 
+      setIsSuccess(true)
+
       toast({
         title: "Payment Method Updated",
         description: "Your payment method has been updated successfully.",
@@ -85,7 +88,9 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
       cardElement.clear()
 
       if (onSuccess) {
-        onSuccess()
+        setTimeout(() => {
+          onSuccess()
+        }, 1500)
       }
 
       router.refresh()
@@ -104,42 +109,69 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <label htmlFor="card-element" className="text-sm font-medium">
-          Card Details
-        </label>
-        <div className="border rounded-md p-3">
-          <CardElement
-            id="card-element"
-            options={{
-              style: {
-                base: {
-                  fontSize: "16px",
-                  color: "#424770",
-                  "::placeholder": {
-                    color: "#aab7c4",
-                  },
-                },
-                invalid: {
-                  color: "#9e2146",
-                },
-              },
-            }}
-          />
+      {isSuccess ? (
+        <div className="text-center py-6">
+          <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Payment Method Updated</h3>
+          <p className="text-muted-foreground">Your payment method has been updated successfully.</p>
         </div>
-        {error && <p className="text-sm text-red-500">{error}</p>}
-      </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="card-element" className="text-sm font-medium">
+                Card Details
+              </label>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
+              <CardElement
+                id="card-element"
+                options={{
+                  style: {
+                    base: {
+                      fontSize: "16px",
+                      color: "#424770",
+                      "::placeholder": {
+                        color: "#aab7c4",
+                      },
+                    },
+                    invalid: {
+                      color: "#9e2146",
+                    },
+                  },
+                }}
+              />
+            </div>
+            {error && (
+              <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-md border border-red-200 dark:border-red-800">
+                {error}
+              </div>
+            )}
+          </div>
 
-      <Button type="submit" disabled={!stripe || isLoading} className="w-full">
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          "Save Payment Method"
-        )}
-      </Button>
+          <Button
+            type="submit"
+            disabled={!stripe || isLoading}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Save Payment Method"
+            )}
+          </Button>
+
+          <div className="text-xs text-center text-muted-foreground">
+            Your payment information is securely processed by Stripe. We don't store your card details.
+          </div>
+        </>
+      )}
     </form>
   )
 }
