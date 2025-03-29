@@ -54,13 +54,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       apiCallsPerDay: 10,
     },
     features: [
+      { name: 'Course Creation', available: true },
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
+      { name: 'Video Transcripts', available: false },
       { name: "Video Quiz", available: false },
       { name: "PDF Downloads", available: false },
-      { name: "Video Transcripts", available: false },
       { name: "AI Accuracy", available: false },
       { name: "Priority Support", available: false },
     ],
@@ -93,10 +94,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       apiCallsPerDay: 50,
     },
     features: [
+      { name: 'Course Creation', available: true },
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
+      { name: 'Video Transcripts', available: true },
       { name: "Video Quiz", available: true },
       { name: "PDF Downloads", available: true },
       { name: "Video Transcripts", available: true },
@@ -133,10 +136,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       apiCallsPerDay: 200,
     },
     features: [
+      { name: 'Course Creation', available: true },
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
+      { name: 'Video Transcripts', available: true },
       { name: "Video Quiz", available: true },
       { name: "PDF Downloads", available: true },
       { name: "Video Transcripts", available: true },
@@ -172,10 +177,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       apiCallsPerDay: 500,
     },
     features: [
+      { name: 'Course Creation', available: true },
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
+      { name: 'Video Transcripts', available: true },
       { name: "Video Quiz", available: true },
       { name: "PDF Downloads", available: true },
       { name: "Video Transcripts", available: true },
@@ -208,7 +215,7 @@ export const FAQ_ITEMS = [
   },
   {
     question: "Do unused tokens roll over to the next month?",
-    answer: 
+    answer:
       "Yes, unused tokens roll over to the next month as long as your subscription remains active. There is no expiration date for tokens while you maintain an active subscription.",
   },
   {
