@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { CreditCard, Loader2, CheckCircle2, Calendar, CreditCardIcon, AlertTriangle, ArrowRight } from "lucide-react"
 
@@ -44,6 +44,7 @@ interface ManageSubscriptionProps {
   }
 }
 
+// Optimize the component by memoizing expensive calculations
 export function ManageSubscription({ userId, subscriptionData }: ManageSubscriptionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -52,15 +53,25 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
 
   const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [] } = subscriptionData
 
-  const planDetails = SUBSCRIPTION_PLANS.find((plan) => plan.id === currentPlan) || SUBSCRIPTION_PLANS[0]
-  const tokenUsagePercentage = planDetails ? (tokensUsed / planDetails.tokens) * 100 : 0
-  const isActive = subscriptionStatus === "ACTIVE"
-  const isCancelled = subscriptionStatus === "CANCELED"
-  const isPastDue = subscriptionStatus === "PAST_DUE"
-  const isInactive = subscriptionStatus === "INACTIVE"
-  const isFree = currentPlan === "FREE"
+  // Memoize plan details to avoid recalculation on every render
+  const planDetails = useMemo(() => {
+    return SUBSCRIPTION_PLANS.find((plan) => plan.id === currentPlan) || SUBSCRIPTION_PLANS[0]
+  }, [currentPlan])
 
-  const handleCancelSubscription = async () => {
+  // Memoize derived state values
+  const { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree } = useMemo(() => {
+    const tokenUsagePercentage = planDetails ? (tokensUsed / planDetails.tokens) * 100 : 0
+    const isActive = subscriptionStatus === "ACTIVE"
+    const isCancelled = subscriptionStatus === "CANCELED"
+    const isPastDue = subscriptionStatus === "PAST_DUE"
+    const isInactive = subscriptionStatus === "INACTIVE"
+    const isFree = currentPlan === "FREE"
+
+    return { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree }
+  }, [subscriptionStatus, currentPlan, tokensUsed, planDetails])
+
+  // Use useCallback for event handlers to prevent unnecessary re-renders
+  const handleCancelSubscription = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await fetch("/api/subscriptions/cancel", {
@@ -91,9 +102,9 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast, router])
 
-  const handleResumeSubscription = async () => {
+  const handleResumeSubscription = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await fetch("/api/subscriptions/resume", {
@@ -123,20 +134,21 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast, router])
 
-  const handleUpgradeSubscription = () => {
+  const handleUpgradeSubscription = useCallback(() => {
     router.push("/dashboard/subscription")
-  }
+  }, [router])
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return "N/A"
-    return new Date(date).toLocaleDateString("en-US", {
+  // Memoize the formatted date to avoid recalculation on every render
+  const formattedEndDate = useMemo(() => {
+    if (!endDate) return "N/A"
+    return new Date(endDate).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     })
-  }
+  }, [endDate])
 
   return (
     <Card className="w-full border border-slate-200 dark:border-slate-700 shadow-md">
@@ -194,7 +206,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                     <div className="text-sm text-muted-foreground mb-1">Current Period Ends</div>
                     <div className="font-medium flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{formatDate(endDate)}</span>
+                      <span>{formattedEndDate}</span>
                     </div>
                   </div>
                 </div>

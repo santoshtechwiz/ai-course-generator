@@ -85,6 +85,15 @@ export function PricingPage({
       // Store the plan and duration in localStorage before redirecting to login
       localStorage.setItem("pendingSubscription", JSON.stringify({ planName, duration }))
 
+      // Get referral code from URL if present
+      const searchParams = new URLSearchParams(window.location.search)
+      const referralCode = searchParams.get("ref")
+
+      // Store referral code if present
+      if (referralCode) {
+        localStorage.setItem("pendingReferralCode", referralCode)
+      }
+
       toast({
         title: "Authentication Required",
         description: "Please log in to subscribe to a plan.",
@@ -150,7 +159,12 @@ export function PricingPage({
     try {
       // Check if there's a referral code in the URL
       const searchParams = new URLSearchParams(window.location.search)
-      const referralCode = searchParams.get("ref")
+      const referralCode = searchParams.get("ref") || localStorage.getItem("pendingReferralCode")
+
+      // Clear stored referral code after using it
+      if (localStorage.getItem("pendingReferralCode")) {
+        localStorage.removeItem("pendingReferralCode")
+      }
 
       const response = await fetch("/api/subscriptions/create", {
         method: "POST",

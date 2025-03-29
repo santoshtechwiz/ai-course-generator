@@ -37,6 +37,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
   const [isCopied, setIsCopied] = useState(false)
   const { toast } = useToast()
 
+  // Fix the referral code functionality by properly handling API responses and user state
   // Update the fetchReferralStats function to properly handle API responses
   const fetchReferralStats = async () => {
     if (!userId) {
@@ -46,21 +47,36 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
 
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/referrals`)
+      // Add proper error handling and timeout for the fetch request
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+      const response = await fetch(`/api/referrals`, {
+        signal: controller.signal,
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
-        throw new Error("Failed to fetch referral stats")
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || "Failed to fetch referral stats")
       }
 
       const data = await response.json()
       setReferralStats(data)
     } catch (error) {
       console.error("Error fetching referral stats:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load referral information. Please try again.",
-        variant: "destructive",
-      })
+      // Don't show error toast for aborted requests (user navigated away)
+      if (error.name !== "AbortError") {
+        toast({
+          title: "Error",
+          description: "Failed to load referral information. Please try again.",
+          variant: "destructive",
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -78,10 +94,14 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
     try {
       const response = await fetch(`/api/referrals/generate`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
 
       if (!response.ok) {
-        throw new Error("Failed to generate referral code")
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || "Failed to generate referral code")
       }
 
       const data = await response.json()
@@ -98,7 +118,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
       console.error("Error generating referral code:", error)
       toast({
         title: "Error",
-        description: "Failed to generate referral code. Please try again.",
+        description: error.message || "Failed to generate referral code. Please try again.",
         variant: "destructive",
       })
     } finally {
