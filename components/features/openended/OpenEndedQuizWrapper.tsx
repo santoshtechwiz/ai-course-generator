@@ -10,7 +10,6 @@ import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import { submitQuizData } from "@/app/actions/actions"
 import { QuizActions } from "@/components/QuizActions"
-import { FloatingQuizToolbar } from "@/components/FloatingQuizToolbar"
 
 
 interface QuizData {
