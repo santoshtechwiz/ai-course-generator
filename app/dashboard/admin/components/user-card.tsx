@@ -16,10 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { User } from "@/app/types/types"
+import type { User } from "@/app/types/types"
 import { useToast } from "@/hooks/use-toast"
-import { deleteUser } from "@/lib/db"
-
+import { deleteUser } from "@/app/actions/actions"
 
 interface UserCardProps {
   user: User
@@ -58,7 +57,11 @@ export function UserCard({ user, isSelected, onSelect }: UserCardProps) {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation() // Prevent the card click from firing
-    if (confirm(`Are you sure you want to delete ${user.name || "this user"}?`)) {
+    if (
+      confirm(
+        `Are you sure you want to delete ${user.name || "this user"}? This will remove all their data including subscriptions, quizzes, and course progress.`,
+      )
+    ) {
       try {
         // Call the server action to delete the user
         const result = await deleteUser(user.id)

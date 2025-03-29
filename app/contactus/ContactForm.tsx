@@ -8,6 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
 import Logo from "@/components/shared/Logo"
+import { createContactSubmission } from "@/app/actions/actions"
+import { Loader2 } from "lucide-react"
+
+interface ContactFormData {
+  name: string
+  email: string
+  message: string
+}
 
 export function ImprovedContactForm() {
   const {
@@ -15,27 +23,24 @@ export function ImprovedContactForm() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm()
+  } = useForm<ContactFormData>()
 
   const [success, setSuccess] = useState(false)
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: ContactFormData) => {
     try {
-      const response = await fetch("https://getform.io/f/apjjwpla", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
+      // Save to database using server action
+      const result = await createContactSubmission(data)
 
-      if (response.ok) {
+      if (result.success) {
         setSuccess(true)
         reset()
-        toast({ title: "Success!", description: "Your message has been sent." })
+        toast({ title: "Success!", description: "Your message has been sent. We'll get back to you soon." })
       } else {
-        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" })
+        throw new Error(result.error || "Something went wrong")
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to submit the form.", variant: "destructive" })
+      toast({ title: "Error", description: "Failed to submit the form. Please try again.", variant: "destructive" })
     }
   }
 
@@ -56,6 +61,9 @@ export function ImprovedContactForm() {
           <div className="text-center p-8 bg-primary/10 rounded-lg space-y-3">
             <p className="text-xl font-semibold text-primary">Thank you for reaching out!</p>
             <p className="mt-2 text-muted-foreground">We appreciate your message and will get back to you soon.</p>
+            <Button onClick={() => setSuccess(false)} variant="outline" className="mt-4">
+              Send another message
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -65,17 +73,23 @@ export function ImprovedContactForm() {
                 placeholder="Your Name"
                 className="w-full h-11"
               />
-              {errors.name && <p className="mt-2 text-sm text-destructive">{errors.name.message as string}</p>}
+              {errors.name && <p className="mt-2 text-sm text-destructive">{errors.name.message}</p>}
             </div>
 
             <div>
               <Input
                 type="email"
-                {...register("email", { required: "Email is required" })}
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address",
+                  },
+                })}
                 placeholder="Your Email"
                 className="w-full h-11"
               />
-              {errors.email && <p className="mt-2 text-sm text-destructive">{errors.email.message as string}</p>}
+              {errors.email && <p className="mt-2 text-sm text-destructive">{errors.email.message}</p>}
             </div>
 
             <div>
@@ -84,11 +98,18 @@ export function ImprovedContactForm() {
                 placeholder="Your Message"
                 className="w-full min-h-[160px] resize-y"
               />
-              {errors.message && <p className="mt-2 text-sm text-destructive">{errors.message.message as string}</p>}
+              {errors.message && <p className="mt-2 text-sm text-destructive">{errors.message.message}</p>}
             </div>
 
             <Button type="submit" disabled={isSubmitting} className="w-full h-11 text-base font-medium">
-              {isSubmitting ? "Sending..." : "Send Message"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Message"
+              )}
             </Button>
           </form>
         )}
