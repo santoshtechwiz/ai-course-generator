@@ -98,7 +98,7 @@ const tiles = [
     title: "AI Course Builder",
     description:
       "Leverage AI to structure and create comprehensive courses with dynamic content and personalized learning paths.",
-    url: "/dashboard/course/create",
+    url: "/dashboard/create",
     color: "purple",
     quotes: [
       "Build AI-powered courses that adapt to each learner!",

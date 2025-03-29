@@ -1,538 +1,94 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Fonts */
-  --font-sans: "Space Grotesk", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-
-  /* Color system - light mode */
-  --background: 210 40% 98%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 240 65.8% 53.9%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 262 83.3% 57.8%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 240 65.8% 53.9%;
-
-  /* Border radius system */
-  --radius-sm: 0.25rem;
-  --radius: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  --radius-full: 9999px;
-
-  /* Spacing system */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
-
-  /* Animation durations */
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-slow: 500ms;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.dark {
-  /* Color system - dark mode */
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 47.4% 11.2%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 47.4% 11.2%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 240 65.8% 65%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 75%;
-  --accent: 262 83.3% 65%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 50.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 25%;
-  --input: 217.2 32.6% 25%;
-  --ring: 240 65.8% 65%;
-
-  /* Dark mode shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-}
-
-/* Base element styles */
 @layer base {
-  html {
-    scroll-behavior: smooth;
-    font-size: 16px;
-    text-size-adjust: 100%;
-    -webkit-text-size-adjust: 100%;
-    height: 100%;
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
   }
 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
   body {
-    pointer-events: auto !important;
-    @apply antialiased text-foreground bg-background;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-    min-height: 100dvh;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    transition: background-color var(--duration-normal) ease-in-out, color var(--duration-normal) ease-in-out;
-    will-change: background-color, color;
-  }
-
-  /* Typography with consistent spacing */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
-    word-wrap: break-word;
-    max-width: 50ch;
-    margin-top: 0;
-  }
-
-  h1 {
-    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-6;
-    line-height: 1.1;
-  }
-  h2 {
-    @apply text-2xl sm:text-3xl md:text-4xl mb-5;
-    line-height: 1.2;
-  }
-  h3 {
-    @apply text-xl sm:text-2xl md:text-3xl mb-4;
-    line-height: 1.3;
-  }
-  h4 {
-    @apply text-lg sm:text-xl md:text-2xl mb-3;
-    line-height: 1.4;
-  }
-  h5 {
-    @apply text-base sm:text-lg md:text-xl mb-2;
-    line-height: 1.5;
-  }
-  h6 {
-    @apply text-sm sm:text-base md:text-lg mb-2;
-    line-height: 1.5;
-  }
-
-  p {
-    @apply mb-4 leading-relaxed;
-  }
-
-  /* Enhanced link animations */
-  a {
-    @apply text-primary relative;
-    text-underline-offset: 0.2em;
-    padding: 0.125rem 0;
-    transition: color var(--duration-fast) ease-in-out;
-  }
-
-  a:hover {
-    @apply text-primary/80;
-  }
-
-  a:not(.no-underline)::after {
-    content: "";
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: 0;
-    left: 0;
-    background-color: currentColor;
-    transition: width var(--duration-normal) cubic-bezier(0.65, 0, 0.35, 1);
-    transform-origin: left;
-  }
-
-  a:not(.no-underline):hover::after,
-  a:not(.no-underline):focus-visible::after {
-    width: 100%;
-  }
-
-  /* Code blocks with consistent styling */
-  code, pre {
-    @apply font-mono;
-    overflow-wrap: break-word;
-  }
-
-  code:not(pre code) {
-    @apply bg-muted px-1.5 py-0.5 rounded text-sm;
-  }
-
-  pre {
-    @apply bg-muted p-4 rounded-md overflow-x-auto text-sm my-4;
-  }
-
-  /* Other elements with consistent spacing */
-  blockquote {
-    @apply border-l-4 border-primary pl-4 italic my-6 py-2;
-  }
-  hr {
-    @apply border-border my-8;
-  }
-  ul, ol {
-    @apply pl-6 mb-4;
-  }
-  ul {
-    @apply list-disc;
-  }
-  ol {
-    @apply list-decimal;
-  }
-  li {
-    @apply mb-2 pl-1;
-  }
-
-  /* Focus styles */
-  :focus-visible {
-    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
-    transition: all var(--duration-fast) ease-out;
-  }
-
-  /* Scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-muted rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-primary/50 rounded-full;
-    transition: background-color var(--duration-fast) ease-in-out;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary/70;
-  }
-
-  ::selection {
-    @apply bg-primary/20 text-foreground;
-  }
-
-  /* Form elements */
-  input, textarea, select {
-    -webkit-appearance: none;
-    border-radius: var(--radius);
-    transition: all var(--duration-fast) ease-out;
-  }
-
-  /* Tables */
-  table {
-    @apply w-full border-collapse my-6;
-  }
-  th {
-    @apply text-left py-3 px-4 font-semibold border-b border-border;
-  }
-  td {
-    @apply py-3 px-4 border-b border-border/50;
-  }
-
-  /* Images and figures */
-  figure {
-    @apply my-6;
-  }
-  figcaption {
-    @apply text-sm text-muted-foreground mt-2 text-center;
-  }
-  img {
-    @apply max-w-full h-auto rounded-md;
+    @apply bg-background text-foreground;
   }
 }
 
-/* Component styles */
-@layer components {
-  /* Card component with smooth hover animation */
-  .card {
-    @apply bg-card text-card-foreground rounded-lg border border-border/50 p-4 sm:p-6;
-    box-shadow: var(--shadow);
-    transition: transform var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1), 
-                box-shadow var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1), 
-                border-color var(--duration-normal) ease-in-out;
-    will-change: transform, box-shadow;
-  }
-
-  @media (hover: hover) {
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-md);
-      @apply border-border;
-    }
-  }
-
-
-
-
-  /* Quiz components styling */
-  .quiz-container {
-    @apply rounded-lg shadow-md border bg-card transition-all duration-300;
-  }
-
-  .quiz-header {
-    @apply p-4 sm:p-6 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4;
-  }
-
-  .quiz-content {
-    @apply p-4 sm:p-6 space-y-6;
-  }
-
-  .quiz-footer {
-    @apply p-4 sm:p-6 border-t flex flex-col sm:flex-row sm:justify-between gap-4 mt-auto;
-  }
-
-  /* Quiz option styles */
-  .quiz-option {
-    @apply relative p-4 border rounded-lg transition-all duration-200 cursor-pointer;
-  }
-
-  .quiz-option:hover {
-    @apply border-primary/50 bg-primary/5;
-  }
-
-  .quiz-option.selected {
-    @apply border-primary bg-primary/10;
-  }
-
-  .quiz-option.correct {
-    @apply border-green-500 bg-green-500/10;
-  }
-
-  .quiz-option.incorrect {
-    @apply border-destructive bg-destructive/10;
-  }
-
-  /* Badge styles */
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-  }
-
-  .badge-primary {
-    @apply bg-primary/10 text-primary;
-  }
-
-  .badge-success {
-    @apply bg-green-500/10 text-green-500;
-  }
-
-  .badge-warning {
-    @apply bg-yellow-500/10 text-yellow-500;
-  }
-
-  .badge-error {
-    @apply bg-destructive/10 text-destructive;
-  }
-
-  .badge-info {
-    @apply bg-blue-500/10 text-blue-500;
-  }
-
-  /* Skeleton loading styles */
-  .skeleton {
-    @apply bg-muted/50 animate-pulse rounded;
-  }
-
-  .skeleton-text {
-    @apply h-4 w-full skeleton;
-  }
-
-  .skeleton-circle {
-    @apply rounded-full skeleton;
-  }
-
-  .skeleton-button {
-    @apply h-10 w-24 skeleton;
-  }
+/* Custom styles for flashcards */
+.perspective-1000 {
+  perspective: 1000px;
 }
 
-/* Animation keyframes */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.transform-style-3d {
+  transform-style: preserve-3d;
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+.backface-hidden {
+  backface-visibility: hidden;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.rotate-y-180 {
+  transform: rotateY(180deg);
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scale {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* Animation utility classes */
-.animate-fade-in {
-  animation: fadeIn 0.3s ease forwards;
-  will-change: opacity;
-}
-
-.animate-fade-out {
-  animation: fadeOut 0.3s ease forwards;
-  will-change: opacity;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s ease forwards;
-  will-change: transform, opacity;
-}
-
-.animate-slide-down {
-  animation: slideDown 0.3s ease forwards;
-  will-change: transform, opacity;
-}
-
-.animate-slide-in {
-  animation: slideIn 0.3s ease forwards;
-  will-change: transform, opacity;
-}
-
-.animate-scale {
-  animation: scale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
-}
-
-/* Animation delays */
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-400 { animation-delay: 400ms; }
-.delay-500 { animation-delay: 500ms; }
-
-/* Utility classes */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.safe-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-.text-ellipsis {
-  @apply overflow-hidden whitespace-nowrap;
-}
-
-.full-screen {
-  height: 100dvh;
-}
-
-.hover-lift {
-  transition: transform var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
-  will-change: transform, box-shadow;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-}
-
-.focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
-  transition: all var(--duration-fast) ease-out;
-}
-
-/* Accessibility: reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  html {
-    font-size: 16px;
-  }
-
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="tel"],
-  input[type="url"],
-  textarea,
-  select {
-    font-size: 16px;
-  }
-}
-
-/* Print styles */
-@media print {
-  body {
-    @apply text-black bg-white;
-  }
-  
-  a {
-    text-decoration: underline;
-    @apply text-black;
-  }
-  
-  .no-print {
-    display: none !important;
-  }
-  
-  .page-break {
-    page-break-before: always;
-  }
-}

@@ -1,17 +1,16 @@
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/authOptions"
-
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
-
-
 import { generatePageMetadata } from "@/lib/seo-utils"
-import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import QuizDetailsPage from "@/components/QuizDetailsPage"
-import { title } from "process"
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+import { QuizActions } from "@/components/QuizActions"
+import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
+import McqQuiz from "@/components/features/mcq/McqQuiz"
+
 
 // SEO metadata generation
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -23,7 +22,6 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       id: true,
       title: true,
       questions: true,
-    
       user: { select: { name: true } },
     },
   })
@@ -78,13 +76,12 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
 
   const { result: quizData, questions } = result
 
-
   // Create breadcrumb items
   const breadcrumbItems = [
-  
     { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
     { name: quizData.title, url: `${baseUrl}/dashboard/mcq/${slug}` },
-  ];
+  ]
+
   return (
     <QuizDetailsPage
       title={quizData.title}
@@ -95,8 +92,27 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       estimatedTime="PT30M"
       breadcrumbItems={breadcrumbItems}
     >
-      <McqQuizWrapper slug={slug} currentUserId={currentUserId} result={result} title={result.result.title} />
-   </QuizDetailsPage>
+      <div className="flex flex-col gap-8">
+        {/* Quiz Actions Component */}
+        <QuizActions
+          quizId={quizData.id?.toString() || ""}
+          userId={currentUserId}
+          ownerId={quizData.userId || ""}
+          quizSlug={quizData.slug || ""}
+          initialIsPublic={quizData.isPublic || false}
+          initialIsFavorite={quizData.isFavorite || false}
+          quizType="mcq"
+          position="left-center"
+        />
+
+        {/* Quiz Content with Suspense */}
+        <Suspense fallback={<QuizSkeleton />}>
+          {questions && (
+            <McqQuiz questions={questions} title={quizData.title} quizId={Number(quizData.id) || 0} slug={slug} />
+          )}
+        </Suspense>
+      </div>
+    </QuizDetailsPage>
   )
 }
 
