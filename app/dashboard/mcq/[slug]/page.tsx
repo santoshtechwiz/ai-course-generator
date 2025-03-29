@@ -11,7 +11,7 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import McqQuizWrapper from "@/components/features/mcq/McqQuizWrapper"
 import QuizDetailsPage from "@/components/QuizDetailsPage"
 import { title } from "process"
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
 // SEO metadata generation
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -64,7 +64,7 @@ export async function generateStaticParams() {
 
 const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   const { slug } = await props.params
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // Get current user session
   const session = await getServerSession(authOptions)

@@ -17,7 +17,7 @@ export const metadata = {
     title: "Flashcards | Course AI",
     description:
       "Create and study with interactive flashcards to reinforce your programming knowledge and improve retention of key concepts.",
-    url: "https://courseai.dev/dashboard/flashcard",
+    url: "https://courseai.io/dashboard/flashcard",
     type: "website",
     images: [{ url: "/og-image-flashcards.jpg" }],
   },
@@ -31,7 +31,7 @@ export const metadata = {
 }
 
 const Page = async () => {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // CreativeWork schema
   const creativeWorkSchema = {

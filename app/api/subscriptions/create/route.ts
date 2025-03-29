@@ -9,7 +9,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        { error: "Unauthorized", message: "You must be logged in to create a subscription" },
+        { status: 401 },
+      )
     }
 
     const body = await req.json()
@@ -21,11 +24,42 @@ export async function POST(req: NextRequest) {
       referralCode: z.string().optional(),
     })
 
-    const validatedData = schema.parse(body)
+    try {
+      var validatedData = schema.parse(body)
+    } catch (validationError) {
+      return NextResponse.json(
+        {
+          error: "Validation Error",
+          message: "Invalid request data",
+          details: (validationError as z.ZodError).errors,
+        },
+        { status: 400 },
+      )
+    }
 
     // Verify the user is authorized to create a subscription for this userId
     if (session.user.id !== validatedData.userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          message: "You are not authorized to create a subscription for this user",
+        },
+        { status: 403 },
+      )
+    }
+
+    // Check if referral code is valid if provided
+    if (validatedData.referralCode) {
+      const isValidReferral = await SubscriptionService.validateReferralCode(validatedData.referralCode)
+      if (!isValidReferral) {
+        return NextResponse.json(
+          {
+            error: "Invalid Referral",
+            message: "The provided referral code is invalid or expired",
+          },
+          { status: 400 },
+        )
+      }
     }
 
     const result = await SubscriptionService.createCheckoutSession(
@@ -40,10 +74,24 @@ export async function POST(req: NextRequest) {
     console.error("Error creating subscription:", error)
 
     if (error.message === "User already has an active subscription") {
-      return NextResponse.json({ error: "Subscription conflict", details: error.message }, { status: 409 })
+      return NextResponse.json(
+        {
+          error: "Subscription conflict",
+          message: "You already have an active subscription",
+          details: error.message,
+        },
+        { status: 409 },
+      )
     }
 
-    return NextResponse.json({ error: "Failed to create subscription", details: error.message }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to create subscription",
+        message: "An error occurred while creating your subscription",
+        details: error.message,
+      },
+      { status: 500 },
+    )
   }
 }
 

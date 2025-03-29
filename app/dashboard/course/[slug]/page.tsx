@@ -23,8 +23,8 @@ function LoadingSkeleton() {
 }
 
 // Generate metadata for the course page
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const { slug } = params
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
   const course = await getCourseData(slug)
 
   if (!course) {
@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const course = await getCourseData(slug)
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   if (!course) {
     notFound()

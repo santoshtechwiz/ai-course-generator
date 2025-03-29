@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     title: "Fill in the Blanks Quizzes | Course AI",
     description:
       "Enhance your learning with our interactive fill-in-the-blanks quizzes. Perfect for improving vocabulary, grammar, and subject-specific knowledge.",
-    url: "https://courseai.dev/dashboard/blanks",
+    url: "https://courseai.io/dashboard/blanks",
     type: "website",
     images: [{ url: "/og-image-blanks.jpg" }],
   },
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 }
 
 const Page = async () => {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // CreativeWork schema
   const creativeWorkSchema = {

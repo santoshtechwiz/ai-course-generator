@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { SubscriptionPlanType } from "./components/subscription.config"
-import { PricingPage } from "./components/subscription_plan"
+import { PricingPage } from "./components/PricingPage"
 
 
 export const metadata: Metadata = generatePageMetadata({
@@ -46,8 +46,7 @@ export default async function Page() {
     }
     try {
       const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId)
-      // You would need to  status } = await SubscriptionService.getSubscriptionStatus(userId);
-      // You would need to implement a method to get tokens used
+ 
       const tokensUsed = (await SubscriptionService.getTokensUsed(userId)) || 0
 
       return {

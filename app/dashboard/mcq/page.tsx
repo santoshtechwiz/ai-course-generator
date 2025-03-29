@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Multiple Choice Quiz | Course AI",
     description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-    url: "https://courseai.dev/dashboard/mcq",
+    url: "https://courseai.io/dashboard/mcq",
     type: "website",
     images: [{ url: "/og-image-mcq.jpg" }],
   },
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 }
 
 const Page = async () => {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // CreativeWork schema
   const creativeWorkSchema = {
