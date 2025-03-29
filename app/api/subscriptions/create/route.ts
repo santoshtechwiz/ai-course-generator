@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/authOptions"
 import { SubscriptionService } from "@/services/subscriptionService"
 import { z } from "zod"
 
-// Update the POST method to handle referral codes
+// Update the POST method to handle promo codes
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
       planName: z.string(),
       duration: z.number().int().positive(),
       referralCode: z.string().optional(),
+      promoCode: z.string().optional(),
+      promoDiscount: z.number().optional(),
     })
 
     try {
@@ -62,11 +64,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Validate promo code if provided
+    if (validatedData.promoCode) {
+      // For now, we'll only validate AILAUNCH20 directly
+      // In a production environment, this would call a service to validate the code
+      const isValidPromo = validatedData.promoCode === "AILAUNCH20" && validatedData.promoDiscount === 20
+      if (!isValidPromo) {
+        return NextResponse.json(
+          {
+            error: "Invalid Promo Code",
+            message: "The provided promo code is invalid or expired",
+          },
+          { status: 400 },
+        )
+      }
+    }
+
+    // Now we can pass the promo code and discount to the updated service method
     const result = await SubscriptionService.createCheckoutSession(
       validatedData.userId,
       validatedData.planName,
       validatedData.duration,
       validatedData.referralCode,
+      validatedData.promoCode,
+      validatedData.promoDiscount,
     )
 
     return NextResponse.json(result)

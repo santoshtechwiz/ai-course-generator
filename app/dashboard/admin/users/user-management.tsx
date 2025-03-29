@@ -2,15 +2,14 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { format } from "date-fns"
-import { Search, Plus, Loader2, CreditCard, User, Calendar, Edit, Trash2 } from "lucide-react"
+import { Search, Plus, Loader2, CreditCard, User, Edit, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -27,6 +26,10 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+
+// Optimization 1: Add virtualization for better performance with large user lists
+// Import the virtualization library at the top
+import { useVirtualizer } from "@tanstack/react-virtual"
 
 // Define user form schema
 const userFormSchema = z.object({
@@ -85,6 +88,23 @@ export function UserManagement() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("details")
 
+  // Add these state variables after the other state declarations
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  // Optimization 4: Add virtualization setup
+  // Add these near the top of the component, after the state declarations:
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredUsers.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 80,
+    overscan: 10,
+  })
+
   // Initialize form
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
@@ -101,7 +121,7 @@ export function UserManagement() {
 
   // Fetch users on component mount
   useEffect(() => {
-    fetchUsers()
+    fetchUsers(1, false)
   }, [])
 
   // Filter users when search query or filter changes
@@ -109,16 +129,35 @@ export function UserManagement() {
     filterUsers()
   }, [users, searchQuery, userTypeFilter])
 
-  // Fetch users from API
-  const fetchUsers = async () => {
-    setIsLoading(true)
+  // Replace the existing fetchUsers function with this paginated version
+  const fetchUsers = async (pageToFetch = 1, append = false) => {
+    if (pageToFetch === 1) {
+      setIsLoading(true)
+    } else {
+      setIsLoadingMore(true)
+    }
+
     try {
-      const response = await fetch("/api/users")
+      const response = await fetch(`/api/users?page=${pageToFetch}&limit=20`)
       if (!response.ok) {
         throw new Error("Failed to fetch users")
       }
+
       const data = await response.json()
-      setUsers(data)
+
+      // Check if we've reached the end of the data
+      if (data.length === 0 || data.length < 20) {
+        setHasMore(false)
+      } else {
+        setHasMore(true)
+      }
+
+      if (append) {
+        setUsers((prevUsers) => [...prevUsers, ...data])
+      } else {
+        setUsers(data)
+        setPage(1)
+      }
     } catch (error) {
       console.error("Error fetching users:", error)
       toast({
@@ -128,8 +167,40 @@ export function UserManagement() {
       })
     } finally {
       setIsLoading(false)
+      setIsLoadingMore(false)
     }
   }
+
+  // Add this function to load more users
+  const loadMoreUsers = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1
+      setPage(nextPage)
+      fetchUsers(nextPage, true)
+    }
+  }, [page, isLoadingMore, hasMore])
+
+  // Add this intersection observer effect
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoading && !isLoadingMore && hasMore) {
+          loadMoreUsers()
+        }
+      },
+      { threshold: 0.5 },
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
+    }
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current)
+      }
+    }
+  }, [loadMoreUsers, isLoading, isLoadingMore, hasMore])
 
   // Filter users based on search query and user type
   const filterUsers = () => {
@@ -149,16 +220,25 @@ export function UserManagement() {
     }
 
     setFilteredUsers(filtered)
+
+    // Reset pagination when filters change
+    if (searchQuery || userTypeFilter !== "all") {
+      setHasMore(false)
+    } else {
+      setHasMore(users.length >= 20)
+    }
   }
 
-  // Handle search input change
+  // Also update the handleSearchChange function to reset pagination
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
+    setPage(1)
   }
 
-  // Handle user type filter change
+  // And update the handleUserTypeFilterChange function to reset pagination
   const handleUserTypeFilterChange = (value: string) => {
     setUserTypeFilter(value)
+    setPage(1)
   }
 
   // Open create user dialog
@@ -346,7 +426,9 @@ export function UserManagement() {
   return (
     <div className="space-y-6">
       {/* Filters and actions */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+      {/* Optimization 2: Improve responsive layout for filters section
+      // Replace the filters and actions div with this improved version: */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start">
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="relative w-full sm:w-[300px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -364,27 +446,30 @@ export function UserManagement() {
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Users</SelectItem>
-              <SelectItem value="Free">Free</SelectItem>
-              <SelectItem value="Premium">Premium</SelectItem>
-              <SelectItem value="Pro">Pro</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="ULTIMATE">Ultimate</SelectItem>
+              <SelectItem value="FREE">Free</SelectItem>
+              <SelectItem value="BASIC">Basic</SelectItem>
+              <SelectItem value="PRO">Pro</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <Button onClick={handleCreateUser}>
+        <Button onClick={handleCreateUser} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           New User
         </Button>
       </div>
 
       {/* User list */}
+      {/* Optimization 3: Replace the user list rendering with virtualized list for better performance
+      // Replace the user list section with this optimized version: */}
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg">
+        <div className="text-center py-8 border rounded-lg bg-background">
           <User className="h-12 w-12 mx-auto text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-medium">No users found</h3>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -398,64 +483,118 @@ export function UserManagement() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredUsers.map((user) => (
-            <Card key={user.id} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="truncate">{user.name || "Unnamed User"}</CardTitle>
-                    <CardDescription className="truncate">{user.email}</CardDescription>
-                  </div>
-                  <Badge variant={user.isAdmin ? "default" : "outline"}>{user.isAdmin ? "Admin" : user.userType}</Badge>
-                </div>
-              </CardHeader>
+        <div className="border rounded-lg">
+          <div
+            ref={parentRef}
+            className="h-[600px] overflow-auto"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(155, 155, 155, 0.5) transparent",
+            }}
+          >
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: "100%",
+                position: "relative",
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const user = filteredUsers[virtualRow.index]
+                return (
+                  <div
+                    key={user.id}
+                    className="absolute top-0 left-0 w-full border-b last:border-b-0"
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <div className="p-4 h-full">
+                      <div className="flex flex-col sm:flex-row gap-4 justify-between h-full">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              {user.image ? (
+                                <img
+                                  src={user.image || "/placeholder.svg"}
+                                  alt={user.name || "User"}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <User className="h-5 w-5 text-primary" />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-medium truncate">{user.name || "Unnamed User"}</h3>
+                              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                            </div>
+                          </div>
+                        </div>
 
-              <CardContent className="pb-2">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center">
-                    <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>{user.credits} credits</span>
-                  </div>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                          <div className="flex items-center gap-1">
+                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{user.credits}</span>
+                          </div>
 
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>{format(new Date(user.createdAt), "MMM d, yyyy")}</span>
-                  </div>
+                          <Badge variant={user.isAdmin ? "default" : "outline"} className="whitespace-nowrap">
+                            {user.isAdmin ? "Admin" : user.userType}
+                          </Badge>
 
-                  {user.subscription && (
-                    <>
-                      <div className="flex items-center col-span-2">
-                        <Badge variant="outline" className="mr-2">
-                          {user.subscription.plan}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          Expires: {format(new Date(user.subscription.currentPeriodEnd), "MMM d, yyyy")}
-                        </span>
+                          <div className="flex gap-2 ml-auto">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditUser(user.id)}
+                              aria-label={`Edit ${user.name}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(user)}
+                              aria-label={`Delete ${user.name}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </>
-                  )}
-                </div>
-              </CardContent>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
 
-              <CardFooter className="flex justify-between pt-2">
-                <Button variant="outline" size="sm" onClick={() => handleEditUser(user.id)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(user)}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+            {/* Move the infinite loading indicator outside the virtualized area */}
+            {!isLoading && !searchQuery && userTypeFilter === "all" && (
+              <div ref={loadMoreRef} className="py-4 flex justify-center">
+                {isLoadingMore ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Loading more users...</span>
+                  </div>
+                ) : hasMore ? (
+                  <Button variant="outline" size="sm" onClick={loadMoreUsers} disabled={isLoadingMore}>
+                    Load more users
+                  </Button>
+                ) : users.length > 0 ? (
+                  <span className="text-sm text-muted-foreground">No more users to load</span>
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* Create user dialog */}
+      {/* Optimization 5: Improve dialog content for better mobile experience
+      // Update the create user dialog content: */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New User</DialogTitle>
             <DialogDescription>
@@ -499,16 +638,17 @@ export function UserManagement() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>User Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select user type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Free">Free</SelectItem>
-                        <SelectItem value="Premium">Premium</SelectItem>
-                        <SelectItem value="Pro">Pro</SelectItem>
+                        <SelectItem value="ULTIMATE">Ultimate</SelectItem>
+                        <SelectItem value="FREE">Free</SelectItem>
+                        <SelectItem value="BASIC">Basic</SelectItem>
+                        <SelectItem value="PRO">Pro</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -583,8 +723,9 @@ export function UserManagement() {
       </Dialog>
 
       {/* Edit user dialog */}
+      {/* Optimization 6: Improve edit user dialog content: */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>Update user information and settings</DialogDescription>
@@ -633,16 +774,17 @@ export function UserManagement() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>User Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select user type" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Free">Free</SelectItem>
-                            <SelectItem value="Premium">Premium</SelectItem>
-                            <SelectItem value="Pro">Pro</SelectItem>
+                            <SelectItem value="ULTIMATE">Ultimate</SelectItem>
+                            <SelectItem value="FREE">Free</SelectItem>
+                            <SelectItem value="BASIC">Basic</SelectItem>
+                            <SelectItem value="PRO">Pro</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -697,11 +839,13 @@ export function UserManagement() {
                     )}
                   />
 
+                  {/* Optimization 7: Add lazy loading for user transactions
+                  // Update the credit history section in the edit dialog: */}
                   {selectedUser?.TokenTransaction && selectedUser.TokenTransaction.length > 0 && (
                     <div className="border rounded-md p-3 mt-4">
                       <h4 className="font-medium mb-2">Credit History</h4>
-                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                        {selectedUser.TokenTransaction.map((transaction) => (
+                      <div className="space-y-2 max-h-[150px] overflow-y-auto">
+                        {selectedUser.TokenTransaction.slice(0, 5).map((transaction) => (
                           <div key={transaction.id} className="flex justify-between text-sm">
                             <div>
                               <span>{transaction.description || transaction.type}</span>
@@ -714,6 +858,22 @@ export function UserManagement() {
                             </span>
                           </div>
                         ))}
+                        {selectedUser.TokenTransaction.length > 5 && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => {
+                              // This would typically load more transactions
+                              toast({
+                                title: "Loading more transactions",
+                                description: "This would load more transaction history.",
+                              })
+                            }}
+                          >
+                            Load more ({selectedUser.TokenTransaction.length - 5} remaining)
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}

@@ -42,6 +42,11 @@ export function AccountPageClient({ user }: { user: any }) {
 
         // Only update state if component is still mounted
         if (isMounted) {
+          // Ensure tokens/credits are properly set even if they're 0
+          if (data.credits === undefined || data.credits === null) {
+            data.credits = 0
+          }
+
           setSubscriptionStatus(data)
         }
       } catch (error) {
@@ -116,11 +121,14 @@ export function AccountPageClient({ user }: { user: any }) {
 
   // Memoize formatted subscription data
   const formattedSubscriptionData = useMemo(() => {
+    // Ensure tokensUsed is always a number, defaulting to 0 if undefined/null
+    const normalizedTokensUsed = typeof subscriptionStatus?.credits === "number" ? subscriptionStatus.credits : 0
+
     return {
       currentPlan: subscriptionStatus?.subscriptionPlan || "FREE",
       subscriptionStatus: subscriptionStatus?.isSubscribed ? "ACTIVE" : "INACTIVE",
       endDate: subscriptionStatus?.expirationDate ? new Date(subscriptionStatus.expirationDate) : null,
-      tokensUsed: subscriptionStatus?.credits || 0,
+      tokensUsed: normalizedTokensUsed,
       billingHistory,
       paymentMethods,
     }
