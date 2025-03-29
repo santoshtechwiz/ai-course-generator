@@ -15,9 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { TokenTransaction, UserWithTransactions } from "@/app/types/types"
+import type { TokenTransaction, UserWithTransactions } from "@/app/types/types"
 import { createUser, deleteUser, updateUser } from "@/app/actions/actions"
-
 
 const userFormSchema = z.object({
   name: z.string().min(2, {
@@ -228,7 +227,11 @@ export function UserForm() {
   async function handleDelete() {
     if (!selectedUser) return
 
-    if (confirm(`Are you sure you want to delete ${selectedUser.name || "this user"}?`)) {
+    if (
+      confirm(
+        `Are you sure you want to delete ${selectedUser.name || "this user"}? This will remove all their data including subscriptions, quizzes, and course progress.`,
+      )
+    ) {
       setIsLoading(true)
 
       try {

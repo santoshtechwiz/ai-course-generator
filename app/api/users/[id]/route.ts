@@ -1,17 +1,32 @@
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/authOptions"
 import prisma from "@/lib/db"
-import { type NextRequest, NextResponse } from "next/server"
 
 
-// Get a single user by ID
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
+    // Check if user is authenticated and is an admin
+    const session = await getServerSession(authOptions)
+
+    if (!session || !session.user || session.user.isAdmin !== true) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = params.id
+
+    // Fetch user with their token transactions
     const user = await prisma.user.findUnique({
-      where: { id: (await params).id },
+      where: {
+        id: userId,
+      },
       include: {
         TokenTransaction: {
-          orderBy: { createdAt: "desc" },
-          take: 10,
+          orderBy: {
+            createdAt: "desc",
+          },
         },
+        subscription: true,
       },
     })
 
@@ -26,49 +41,71 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-// Update a user
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const data = await request.json()
+    // Check if user is authenticated and is an admin
+    const session = await getServerSession(authOptions)
 
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: (await params).id },
-      data: {
-        name: data.name,
-        email: data.email,
-        credits: data.credits,
-        isAdmin: data.isAdmin,
-        userType: data.userType,
-        updatedAt: new Date(),
+    if (!session || !session.user || session.user.isAdmin!== true) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = params.id
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
       },
     })
 
-    // If credits were changed, create a transaction record
-    if (data.previousCredits !== undefined && data.credits !== data.previousCredits) {
-      const amount = data.credits - data.previousCredits
-      await prisma.tokenTransaction.create({
-        data: {
-          userId: (await params).id,
-          amount,
-          type: amount > 0 ? "ADMIN_CREDIT" : "ADMIN_DEBIT",
-          description: data.creditNote || `Admin adjusted credits by ${amount}`,
-        },
-      })
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    return NextResponse.json(updatedUser)
-  } catch (error) {
-    console.error("Error updating user:", error)
-    return NextResponse.json({ error: "Failed to update user" }, { status: 500 })
-  }
-}
+    // Delete user and all related data
+    await prisma.$transaction(async (prisma) => {
+      // Delete token transactions
+      await prisma.tokenTransaction.deleteMany({
+        where: {
+          userId,
+        },
+      })
 
-// Delete a user
-export async function DELETE(request: NextRequest, { params }: { params: Promise< { id: string }> }) {
-  try {
-    await prisma.user.delete({
-      where: { id: (await params).id },
+      // Delete quiz attempts
+      await prisma.quizAttempt.deleteMany({
+        where: {
+          userId,
+        },
+      })
+
+      // Delete course progress
+      await prisma.courseProgress.deleteMany({
+        where: {
+          userId,
+        },
+      })
+
+      // Delete course ratings
+      await prisma.courseRating.deleteMany({
+        where: {
+          userId,
+        },
+      })
+
+      // Delete subscription
+      await prisma.subscription.deleteMany({
+        where: {
+          userId,
+        },
+      })
+
+      // Delete user
+      await prisma.user.delete({
+        where: {
+          id: userId,
+        },
+      })
     })
 
     return NextResponse.json({ success: true })
