@@ -100,7 +100,7 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({ courseName 
         await navigator.share({
           title: `${userName}'s Certificate for ${courseName}`,
           text: `Check out my certificate for completing ${courseName} on CourseAI!`,
-          url: `https://courseai.dev/certificate/${encodeURIComponent(courseName)}`,
+          url: `https://courseai.io/certificate/${encodeURIComponent(courseName)}`,
         })
       } else {
         // Fallback for browsers that don't support the Web Share API

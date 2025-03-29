@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Create Your Course | Course AI",
     description: "Design and build your own interactive course with our intuitive course creation tools.",
-    url: "https://courseai.dev/dashboard/explore",
+    url: "https://courseai.io/dashboard/explore",
     type: "website",
     images: [{ url: "/og-image-create-course.jpg" }],
   },
@@ -70,7 +70,7 @@ const Page = async ({
     console.warn("Failed to fetch course details:", error)
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // CreativeWork schema
   const creativeWorkSchema = {

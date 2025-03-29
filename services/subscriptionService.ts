@@ -5,12 +5,13 @@ import {
 import { prisma } from "@/lib/db"
 import Stripe from "stripe"
 
-const stripe = new Stripe(
-  "sk_test_51OiXtSCZXk4IQirdWlR6xQFyIV5eNYeUqMclwdjAxQ3UbMX0Tgi7LRBOvSCEXaPdWZySWyXbYCxm3LVmR8B4dmCY00F74ryT64",
-  {
-    apiVersion: "2024-10-28.acacia",
-  },
-)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2024-10-28.acacia",
+})
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY environment variable")
+}
 
 export class SubscriptionService {
   static async activateFreePlan(userId: string): Promise<{ success: boolean }> {
@@ -203,8 +204,8 @@ export class SubscriptionService {
         },
       ],
       mode: "subscription",
-      success_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.dev"}/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.dev"}/dashboard/cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/cancelled`,
       metadata: {
         userId,
         planName,
@@ -394,6 +395,9 @@ export class SubscriptionService {
       console.error("Error fetching payment methods:", error)
       throw new Error("Failed to fetch payment methods")
     }
+  }
+  static validateReferralCode(referralCode: string): Promise<boolean> {
+     return Promise.resolve(true);
   }
 }
 

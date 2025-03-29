@@ -8,16 +8,46 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          message: "You must be logged in to access subscription details",
+        },
+        { status: 401 },
+      )
     }
 
     const userId = session.user.id
-    const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId)
 
-    return NextResponse.json(subscriptionData)
+    // Add caching headers for better performance
+    const headers = new Headers({
+      "Cache-Control": "max-age=300, s-maxage=300, stale-while-revalidate=600",
+    })
+
+    try {
+      const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId)
+      return NextResponse.json(subscriptionData, { headers })
+    } catch (serviceError: any) {
+      console.error("Service error fetching subscription:", serviceError)
+      return NextResponse.json(
+        {
+          error: "Service Error",
+          message: "Failed to fetch subscription data from service",
+          details: serviceError.message,
+        },
+        { status: 500 },
+      )
+    }
   } catch (error: any) {
     console.error("Error fetching subscription:", error)
-    return NextResponse.json({ error: "Failed to fetch subscription", details: error.message }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Server Error",
+        message: "An unexpected error occurred while fetching subscription data",
+        details: error.message,
+      },
+      { status: 500 },
+    )
   }
 }
 
@@ -25,29 +55,80 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          message: "You must be logged in to perform this action",
+        },
+        { status: 401 },
+      )
     }
 
     const userId = session.user.id
-    const body = await req.json()
+
+    let body
+    try {
+      body = await req.json()
+    } catch (parseError) {
+      return NextResponse.json(
+        {
+          error: "Invalid Request",
+          message: "Request body must be valid JSON",
+        },
+        { status: 400 },
+      )
+    }
 
     const schema = z.object({
       action: z.enum(["purchase_tokens"]),
-      tokenAmount: z.number().min(10).max(500),
+      tokenAmount: z.number().int().min(10).max(500),
     })
 
-    const validatedData = schema.parse(body)
-
-    if (validatedData.action === "purchase_tokens") {
-      const result = await SubscriptionService.purchaseTokens(userId, validatedData.tokenAmount)
-      return NextResponse.json(result)
+    try {
+      var validatedData = schema.parse(body)
+    } catch (validationError) {
+      return NextResponse.json(
+        {
+          error: "Validation Error",
+          message: "Invalid request data",
+          details: (validationError as z.ZodError).errors,
+        },
+        { status: 400 },
+      )
     }
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 })
+    if (validatedData.action === "purchase_tokens") {
+      try {
+        const result = await SubscriptionService.purchaseTokens(userId, validatedData.tokenAmount)
+        return NextResponse.json(result)
+      } catch (serviceError: any) {
+        console.error("Service error purchasing tokens:", serviceError)
+        return NextResponse.json(
+          {
+            error: "Service Error",
+            message: "Failed to purchase tokens",
+            details: serviceError.message,
+          },
+          { status: 500 },
+        )
+      }
+    }
+
+    return NextResponse.json(
+      {
+        error: "Invalid Action",
+        message: "The requested action is not supported",
+      },
+      { status: 400 },
+    )
   } catch (error: any) {
     console.error("Error processing subscription action:", error)
     return NextResponse.json(
-      { error: "Failed to process subscription action", details: error.message },
+      {
+        error: "Server Error",
+        message: "An unexpected error occurred while processing your request",
+        details: error.message,
+      },
       { status: 500 },
     )
   }

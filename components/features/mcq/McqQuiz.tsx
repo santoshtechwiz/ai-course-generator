@@ -29,11 +29,11 @@ type Question = {
 interface McqQuizProps {
   questions: Question[]
   quizId: number
-  slug: string,
+  slug: string
   title: string
 }
 
-export default function McqQuiz({ questions, quizId, slug,title }: McqQuizProps) {
+export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [score, setScore] = useState(0)
@@ -51,24 +51,24 @@ export default function McqQuiz({ questions, quizId, slug,title }: McqQuizProps)
   const currentQuestion = questions[currentQuestionIndex]
   const [incorrectAnswers, setIncorrectAnswers] = useState(0)
   const [showMotivationalQuote, setShowMotivationalQuote] = useState(false)
-  const [currentQuote, setCurrentQuote] = useState("")
+  const [currentQuote, setCurrentQuote] = useState<any>("")
 
   const motivationalQuotes = [
-    "✨ Every mistake is a step toward success.",
-    "🚀 The only true failure is giving up.",
-    "💪 Your persistence is your measure of faith in yourself.",
-    "🌟 Success is stumbling from failure to failure with no loss of enthusiasm.",
-    "🌱 The expert in anything was once a beginner.",
-    "🏆 Progress, not perfection.",
-    "🧠 Challenges are what make life interesting.",
-    "⚡ The harder you work for something, the greater you'll feel when you achieve it.",
-    "⏱️ Don't watch the clock; do what it does. Keep going.",
-    "✅ Believe you can and you're halfway there.",
-    "🔥 Your potential is endless. Keep going!",
-    "🌈 Every expert was once a beginner.",
-    "💡 The difference between ordinary and extraordinary is practice.",
-    "🛠️ Skill comes from consistent effort and learning.",
-    "🌊 Small progress is still progress.",
+    { text: "Every mistake is a step toward success.", emoji: "✨" },
+    { text: "The only true failure is giving up.", emoji: "🚀" },
+    { text: "Your persistence is your measure of faith in yourself.", emoji: "💪" },
+    { text: "Success is stumbling from failure to failure with no loss of enthusiasm.", emoji: "🌟" },
+    { text: "The expert in anything was once a beginner.", emoji: "🌱" },
+    { text: "Progress, not perfection.", emoji: "🏆" },
+    { text: "Challenges are what make life interesting.", emoji: "🧠" },
+    { text: "The harder you work for something, the greater you'll feel when you achieve it.", emoji: "⚡" },
+    { text: "Don't watch the clock; do what it does. Keep going.", emoji: "⏱️" },
+    { text: "Believe you can and you're halfway there.", emoji: "✅" },
+    { text: "Your potential is endless. Keep going!", emoji: "🔥" },
+    { text: "Every expert was once a beginner.", emoji: "🌈" },
+    { text: "The difference between ordinary and extraordinary is practice.", emoji: "💡" },
+    { text: "Skill comes from consistent effort and learning.", emoji: "🛠️" },
+    { text: "Small progress is still progress.", emoji: "🌊" },
   ]
 
   const saveQuizResults = useCallback(
@@ -393,7 +393,7 @@ export default function McqQuiz({ questions, quizId, slug,title }: McqQuizProps)
               <Badge variant="outline" className="bg-primary/10 text-primary font-medium px-3 py-1">
                 Quiz
               </Badge>
-                <h1 className="text-xl font-bold">The Ultimate Quiz on {title}</h1>
+              <h1 className="text-xl font-bold">The Ultimate Quiz on {title}</h1>
             </div>
             <TooltipProvider>
               <Tooltip>
@@ -503,45 +503,68 @@ export default function McqQuiz({ questions, quizId, slug,title }: McqQuizProps)
         </CardFooter>
         {showMotivationalQuote && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              transition: {
-                type: "spring",
-                stiffness: 300,
-                damping: 15,
-              },
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.5,
-              transition: { duration: 0.2 },
-            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+            style={{ backdropFilter: "blur(8px)" }}
           >
             <motion.div
-              className="bg-gradient-to-r from-primary/90 to-primary/80 text-primary-foreground p-6 rounded-lg shadow-lg max-w-md text-center mx-auto backdrop-blur-sm"
-              initial={{ y: 20 }}
+              className="relative bg-gradient-to-r from-primary/90 to-primary/80 text-primary-foreground p-8 rounded-xl shadow-xl max-w-md text-center mx-4"
+              initial={{ y: 50, scale: 0.8, opacity: 0 }}
               animate={{
                 y: 0,
+                scale: 1,
+                opacity: 1,
                 transition: {
                   type: "spring",
-                  stiffness: 500,
-                  damping: 20,
+                  stiffness: 400,
+                  damping: 25,
                 },
               }}
+              exit={{
+                y: 50,
+                scale: 0.8,
+                opacity: 0,
+                transition: { duration: 0.3 },
+              }}
             >
-              <motion.p
-                className="text-lg font-medium"
+              <motion.div
+                className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground rounded-full w-24 h-24 flex items-center justify-center text-4xl"
+                initial={{ scale: 0, rotate: -30 }}
+                animate={{
+                  scale: 1,
+                  rotate: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 15,
+                    delay: 0.1,
+                  },
+                }}
+              >
+                {currentQuote.emoji}
+              </motion.div>
+              <motion.div
+                className="mt-8"
                 initial={{ opacity: 0 }}
                 animate={{
                   opacity: 1,
-                  transition: { delay: 0.2 },
+                  transition: { delay: 0.3 },
                 }}
               >
-                {currentQuote}
-              </motion.p>
+                <motion.p
+                  className="text-xl font-medium leading-relaxed"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    transition: { delay: 0.4, duration: 0.5 },
+                  }}
+                >
+                  {currentQuote.text}
+                </motion.p>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}

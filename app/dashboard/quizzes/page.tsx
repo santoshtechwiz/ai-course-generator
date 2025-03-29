@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Explore Quizzes | Course AI",
     description: "Discover a variety of interactive quizzes to test and enhance your programming knowledge and skills.",
-    url: "https://courseai.dev/dashboard/quizzes",
+    url: "https://courseai.io/dashboard/quizzes",
     type: "website",
     images: [{ url: "/og-image-quizzes.jpg" }],
   },
@@ -38,7 +38,7 @@ const QuizPage = async () => {
   const session = await getAuthSession()
   const userId = session?.user?.id
   const initialQuizzesData = await getQuizzes({ page: 1, limit: 5, searchTerm: "", userId: userId, quizTypes: [] })
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // CollectionPage schema
   const collectionPageSchema = {

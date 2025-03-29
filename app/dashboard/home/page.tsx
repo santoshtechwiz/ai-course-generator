@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     title: "Your Profile | Course AI",
     description:
       "Manage your Course AI profile, view your learning statistics, and track your progress across courses and quizzes.",
-    url: "https://courseai.dev/dashboard/profile",
+    url: "https://courseai.io/dashboard/profile",
     type: "profile",
     images: [{ url: "/og-image-profile.jpg" }],
   },
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 }
 
 export default function ProfilePage() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   // ProfilePage schema
   const profilePageSchema = {
