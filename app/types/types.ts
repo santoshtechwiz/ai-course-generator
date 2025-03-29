@@ -1,4 +1,4 @@
-import { Prisma, User } from "@prisma/client"
+import type { Prisma, User } from "@prisma/client"
 
 export interface DashboardUser extends User {
   courses: Course[]
@@ -143,7 +143,8 @@ export interface UserStats {
   difficultyProgression: number
 }
 
-export interface TopicPerformance { // Renamed from titlePerformance to TopicPerformance
+export interface TopicPerformance {
+  // Renamed from titlePerformance to TopicPerformance
   title: string // Renamed from title to topic
   averageScore: number
   attempts: number
@@ -261,7 +262,7 @@ export interface OpenEndedQuestion {
   answer: string
 }
 
-export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" |  "undefined"
+export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "undefined"
 
 export interface CodeChallenge {
   question: string
@@ -489,25 +490,29 @@ export interface FlashCard {
   slug?: string | null // Added missing field
 }
 
-export interface User {
+export interface AppUser {
   id: string
   name: string | null
   email: string | null
-  emailVerified: Date | null
   image: string | null
   credits: number
   isAdmin: boolean
   userType: string
-  totalCoursesWatched: number
-  totalQuizzesAttempted: number
-  totalTimeSpent: number
-  engagementScore: number
-  streakDays: number
-  lastStreakDate: Date | null
+  lastActiveAt: Date | null
   createdAt: Date
-  updatedAt: Date
-  lastLogin: Date
-  lastActiveAt: Date
+  subscription?: Subscription | null
+}
+
+export interface UserWithTransactions extends AppUser {
+  TokenTransaction: TokenTransaction[]
+}
+
+export interface Subscription {
+  id: string
+  userId: string
+  status: string
+  currentPeriodEnd: Date
+  planId: string
 }
 
 export interface TokenTransaction {
@@ -519,18 +524,16 @@ export interface TokenTransaction {
   createdAt: Date
 }
 
-export interface UserWithTransactions extends User {
-  TokenTransaction: TokenTransaction[]
+export interface ContactSubmission {
+  id: string
+  name: string
+  email: string
+  subject: string
+  message: string
+  status: string
+  response: string | null
+  adminNotes: string | null
+  createdAt: Date
+  updatedAt: Date
 }
-
-export interface PaginatedResponse<T> {
-  data: T[]
-  pagination: {
-    total: number
-    page: number
-    limit: number
-    totalPages: number
-  }
-}
-
 

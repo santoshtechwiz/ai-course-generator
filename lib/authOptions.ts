@@ -4,8 +4,9 @@ import GoogleProvider from "next-auth/providers/google"
 import GithubProvider from "next-auth/providers/github"
 import FacebookProvider from "next-auth/providers/facebook"
 import { NextResponse } from "next/server"
-import { type DefaultJWT, JWT } from "next-auth/jwt"
+import type { DefaultJWT } from "next-auth/jwt"
 import { prisma } from "./db"
+import { sendWelcomeEmail } from "@/lib/email"
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -60,7 +61,7 @@ export const authOptions: NextAuthOptions = {
           subscriptionExpirationDate: userSubscription?.currentPeriodEnd?.toISOString(),
         }
       }
-   
+
       return token
     },
     async session({ session, user }) {
@@ -77,7 +78,7 @@ export const authOptions: NextAuthOptions = {
 
         session.user.subscriptionPlan = subscription?.planId || null
         session.user.subscriptionStatus = subscription?.status || null
-        session.user.accessToken =  session.user.accessToken;
+        session.user.accessToken = session.user.accessToken
       }
       return session
     },
@@ -93,10 +94,16 @@ export const authOptions: NextAuthOptions = {
       })
     },
     async createUser({ user }) {
+      // Set default user type
       await prisma.user.update({
         where: { id: user.id },
         data: { userType: "Free" },
       })
+
+      // Send welcome email to new user
+      if (user.email && user.name) {
+        await sendWelcomeEmail(user.email, user.name)
+      }
     },
   },
   pages: {
@@ -107,10 +114,8 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       allowDangerousEmailAccountLinking: true,
-     
     }),
 
-   
     GithubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
