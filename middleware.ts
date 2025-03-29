@@ -63,13 +63,13 @@ function setupGitHubCredentials(req: NextRequest) {
 
   const credentials = host.includes("courseai.dev")
     ? {
-        clientId: process.env.GITHUB_CLIENT_ID!,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      }
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    }
     : {
-        clientId: process.env.GITHUB_CLIENT_ID_IO!,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET_IO!,
-      }
+      clientId: process.env.GITHUB_CLIENT_ID_IO!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET_IO!,
+    }
 
   process.env.GITHUB_CLIENT_ID = credentials.clientId
   process.env.GITHUB_CLIENT_SECRET = credentials.clientSecret
@@ -147,9 +147,12 @@ export async function middleware(req: NextRequest) {
   const wsResponse = handleWebSocketConnections(req)
   if (wsResponse) return wsResponse
 
-  // Handle site-wide redirect to courseai.io (added this line)
-  const siteWideRedirect = handleSiteWideRedirect(req)
-  if (siteWideRedirect) return siteWideRedirect
+  if (process.env.REDIRECT === "true") {
+    // Handle site-wide redirect to courseai.io (added this line)
+    const siteWideRedirect = handleSiteWideRedirect(req)
+    if (siteWideRedirect) return siteWideRedirect
+
+  }
 
   // Protect admin routes - only check admin routes
   const adminResponse = await protectAdminRoutes(req)
