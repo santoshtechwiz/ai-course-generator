@@ -43,12 +43,6 @@ interface PricingPageProps {
   tokensUsed?: number
 }
 
-const planColors: Record<SubscriptionPlanType, string> = {
-  FREE: "bg-secondary hover:bg-secondary/90",
-  BASIC: "bg-blue-500 hover:bg-blue-600",
-  PRO: "bg-purple-500 hover:bg-purple-600",
-  ULTIMATE: "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600",
-}
 
 const planIcons: Record<SubscriptionPlanType, React.ReactNode> = {
   FREE: <CreditCard className="h-6 w-6" />,
