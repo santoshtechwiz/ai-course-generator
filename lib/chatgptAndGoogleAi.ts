@@ -106,19 +106,19 @@ export async function generateVideoSummary(transcript: string): Promise<string> 
     return cachedSummary
   }
 
-  let summary: string;
-  try {
-    summary = await summarizeWithGemini(sampledTranscript);
-  } catch (geminiError) {
-    console.warn("Gemini summarization failed, trying OpenAI");
-    try {
-      summary = await summarizeWithOpenAI(sampledTranscript);
-    } catch (openaiError) {
-      console.warn("OpenAI summarization failed, using local summarization");
-       summary = "";
-    }
-  }
+  // let summary: string;
+  // try {
+  //   summary = await summarizeWithGemini(sampledTranscript);
+  // } catch (geminiError) {
+  //   console.warn("Gemini summarization failed, trying OpenAI");
+  //   try {
+  //     summary = await summarizeWithOpenAI(sampledTranscript);
+  //   } catch (openaiError) {
+  //     console.warn("OpenAI summarization failed, using local summarization");
+  //      summary = "";
+  //   }
+  // }
 
-  summaryCache.set(cacheKey, summary)
-  return summary
+  summaryCache.set(cacheKey, sampledTranscript)
+  return sampledTranscript
 }

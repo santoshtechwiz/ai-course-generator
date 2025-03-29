@@ -395,5 +395,8 @@ export class SubscriptionService {
       throw new Error("Failed to fetch payment methods")
     }
   }
+  static validateReferralCode(referralCode: string): Promise<boolean> {
+     return Promise.resolve(true);
+  }
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,55 +18,113 @@ export function AccountPageClient({ user }: { user: any }) {
   const [billingHistory, setBillingHistory] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
 
+  // Optimize data fetching with proper cleanup
   useEffect(() => {
-    const fetchSubscriptionData = async () => {
-      if (!user?.id) return
+    if (!user?.id) return
 
+    let isMounted = true
+    const controller = new AbortController()
+    const signal = controller.signal
+
+    const fetchSubscriptionData = async () => {
       setIsLoading(true)
       try {
-        // Fetch subscription data from API route
-        const response = await fetch("/api/account/subscription")
+        // Fetch subscription data from API route with timeout and abort controller
+        const response = await fetch("/api/account/subscription", {
+          signal,
+          headers: {
+            "Cache-Control": "no-cache",
+          },
+        })
+
         if (!response.ok) throw new Error("Failed to fetch subscription data")
         const data = await response.json()
 
-        // Update the store with the fetched data
-        setSubscriptionStatus(data)
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setSubscriptionStatus(data)
+        }
       } catch (error) {
-        console.error("Error fetching subscription data:", error)
+        if (error.name !== "AbortError" && isMounted) {
+          console.error("Error fetching subscription data:", error)
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchSubscriptionData()
+
+    // Cleanup function to prevent memory leaks and state updates on unmounted components
+    return () => {
+      isMounted = false
+      controller.abort()
+    }
   }, [user, setSubscriptionStatus, setIsLoading])
 
-  // Fetch billing history and payment methods separately
+  // Fetch billing history and payment methods with proper cleanup
   useEffect(() => {
-    const fetchBillingData = async () => {
-      if (!user?.id) return
+    if (!user?.id) return
 
+    let isMounted = true
+    const controller = new AbortController()
+    const signal = controller.signal
+
+    const fetchBillingData = async () => {
       try {
         // Fetch billing history from API route
-        const historyResponse = await fetch("/api/account/billing-history")
-        if (historyResponse.ok) {
+        const historyResponse = await fetch("/api/account/billing-history", { signal })
+        if (historyResponse.ok && isMounted) {
           const history = await historyResponse.json()
           setBillingHistory(history)
         }
 
         // Fetch payment methods from API route
-        const methodsResponse = await fetch("/api/account/payment-methods")
-        if (methodsResponse.ok) {
+        const methodsResponse = await fetch("/api/account/payment-methods", { signal })
+        if (methodsResponse.ok && isMounted) {
           const methods = await methodsResponse.json()
           setPaymentMethods(methods)
         }
       } catch (error) {
-        console.error("Error fetching billing data:", error)
+        if (error.name !== "AbortError" && isMounted) {
+          console.error("Error fetching billing data:", error)
+        }
       }
     }
 
     fetchBillingData()
+
+    // Cleanup function
+    return () => {
+      isMounted = false
+      controller.abort()
+    }
   }, [user])
+
+  // Memoize user initials to avoid recalculation on every render
+  const initials = useMemo(() => {
+    return user?.name
+      ? user.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+      : "U"
+  }, [user?.name])
+
+  // Memoize formatted subscription data
+  const formattedSubscriptionData = useMemo(() => {
+    return {
+      currentPlan: subscriptionStatus?.subscriptionPlan || "FREE",
+      subscriptionStatus: subscriptionStatus?.isSubscribed ? "ACTIVE" : "INACTIVE",
+      endDate: subscriptionStatus?.expirationDate ? new Date(subscriptionStatus.expirationDate) : null,
+      tokensUsed: subscriptionStatus?.credits || 0,
+      billingHistory,
+      paymentMethods,
+    }
+  }, [subscriptionStatus, billingHistory, paymentMethods])
 
   if (!user) {
     return null
@@ -81,24 +139,6 @@ export function AccountPageClient({ user }: { user: any }) {
         </div>
       </div>
     )
-  }
-
-  const initials = user.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-    : "U"
-
-  // Format subscription data for the ManageSubscription component
-  const formattedSubscriptionData = {
-    currentPlan: subscriptionStatus?.subscriptionPlan || "FREE",
-    subscriptionStatus: subscriptionStatus?.isSubscribed ? "ACTIVE" : "INACTIVE",
-    endDate: subscriptionStatus?.expirationDate ? new Date(subscriptionStatus.expirationDate) : null,
-    tokensUsed: subscriptionStatus?.credits || 0,
-    billingHistory,
-    paymentMethods,
   }
 
   return (
