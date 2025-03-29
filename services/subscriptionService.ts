@@ -5,12 +5,13 @@ import {
 import { prisma } from "@/lib/db"
 import Stripe from "stripe"
 
-const stripe = new Stripe(
-  "sk_test_51OiXtSCZXk4IQirdWlR6xQFyIV5eNYeUqMclwdjAxQ3UbMX0Tgi7LRBOvSCEXaPdWZySWyXbYCxm3LVmR8B4dmCY00F74ryT64",
-  {
-    apiVersion: "2024-10-28.acacia",
-  },
-)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2024-10-28.acacia",
+})
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY environment variable")
+}
 
 export class SubscriptionService {
   static async activateFreePlan(userId: string): Promise<{ success: boolean }> {
