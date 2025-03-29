@@ -1,74 +1,45 @@
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/authOptions"
 import prisma from "@/lib/db"
-import { type NextRequest, NextResponse } from "next/server"
 
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const filter = searchParams.get("filter") || "all"
-  const search = searchParams.get("search") || ""
-  const page = Number.parseInt(searchParams.get("page") || "1")
-  const limit = Number.parseInt(searchParams.get("limit") || "50")
-  const skip = (page - 1) * limit
-
+export async function GET() {
   try {
-    // Build filter conditions
-    const where: any = {}
+    // Check if user is authenticated and is an admin
+    const session = await getServerSession(authOptions)
 
-    // Apply filter
-    if (filter === "admin") {
-      where.isAdmin = true
-    } else if (filter === "premium") {
-      where.userType = { not: "Free" }
+    if (!session || !session.user || session.user.isAdmin!=true) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Apply search
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-      ]
-    }
-
-    // Get users with pagination
+    // Fetch all users with their subscription data
     const users = await prisma.user.findMany({
-      where,
       select: {
         id: true,
         name: true,
         email: true,
-        emailVerified: true,
         image: true,
         credits: true,
         isAdmin: true,
         userType: true,
-        totalCoursesWatched: true,
-        totalQuizzesAttempted: true,
-        totalTimeSpent: true,
-        engagementScore: true,
-        streakDays: true,
-        lastStreakDate: true,
-        createdAt: true,
-        updatedAt: true,
-        lastLogin: true,
         lastActiveAt: true,
+        createdAt: true,
+        subscription: {
+          select: {
+            id: true,
+            status: true,
+            currentPeriodEnd: true,
+            planId: true,
+          },
+        },
       },
-      orderBy: { lastActiveAt: "desc" },
-      skip,
-      take: limit,
-    })
-
-    // Get total count for pagination
-    const total = await prisma.user.count({ where })
-
-    return NextResponse.json({
-      users,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+      orderBy: {
+        createdAt: "desc",
       },
     })
+
+    return NextResponse.json(users)
   } catch (error) {
     console.error("Error fetching users:", error)
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 })

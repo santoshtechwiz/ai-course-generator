@@ -1,6 +1,7 @@
-'use server'
-import prisma from "@/lib/db";
-import { revalidatePath } from "next/cache";
+"use server"
+import prisma from "@/lib/db"
+import { revalidatePath } from "next/cache"
+import { sendWelcomeEmail } from "@/lib/email"
 
 interface SubmitQuizDataParams {
   slug: string
@@ -11,16 +12,12 @@ interface SubmitQuizDataParams {
   type: string
 }
 
-export async function submitQuizData({
-  slug,
-  quizId,
-  answers,
-  elapsedTime,
-  score,
-  type,
-}: SubmitQuizDataParams, setLoading?: (state: boolean) => void): Promise<void> {
+export async function submitQuizData(
+  { slug, quizId, answers, elapsedTime, score, type }: SubmitQuizDataParams,
+  setLoading?: (state: boolean) => void,
+): Promise<void> {
   try {
-    if (setLoading) setLoading(true); // Show 
+    if (setLoading) setLoading(true) // Show
     const response = await fetch(`/api/quiz/${slug}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -31,8 +28,6 @@ export async function submitQuizData({
         score,
         type,
       }),
-
-
     })
 
     if (!response.ok) {
@@ -41,12 +36,10 @@ export async function submitQuizData({
   } catch (error) {
     console.error("Error submitting quiz data:", error)
     throw error
-  }
-  finally {
-    if (setLoading) setLoading(false); // Hide loader
+  } finally {
+    if (setLoading) setLoading(false) // Hide loader
   }
 }
-
 
 export async function createUser(formData: FormData) {
   const name = formData.get("name") as string
@@ -56,7 +49,7 @@ export async function createUser(formData: FormData) {
   const userType = formData.get("userType") as string
 
   try {
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
@@ -65,6 +58,11 @@ export async function createUser(formData: FormData) {
         userType,
       },
     })
+
+    // Send welcome email to new user
+    if (email) {
+      await sendWelcomeEmail(email, name)
+    }
 
     revalidatePath("/")
     return { success: true }
@@ -118,13 +116,10 @@ export async function updateUser(userId: string, data: any) {
 export async function deleteUser(userId: string) {
   try {
     // First, delete all related records that reference this user
+
     // Reset user subscriptions
-    await prisma.userSubscription.updateMany({
+    await prisma.userSubscription.deleteMany({
       where: { userId },
-      data: {
-        status: "FREE",
-        updatedAt: new Date(),
-      },
     })
 
     // Delete token transactions
@@ -132,6 +127,59 @@ export async function deleteUser(userId: string) {
       where: { userId },
     })
 
+    // Delete user quiz attempts
+    await prisma.userQuizAttempt.deleteMany({
+      where: { userId },
+    })
+
+    // Delete user quizzes
+    const userQuizzes = await prisma.userQuiz.findMany({
+      where: { userId },
+      select: { id: true },
+    })
+
+    // Delete questions for each user quiz
+    for (const quiz of userQuizzes) {
+      await prisma.userQuizQuestion.deleteMany({
+        where: { userQuizId: quiz.id },
+      })
+    }
+
+    // Now delete the user quizzes
+    await prisma.userQuiz.deleteMany({
+      where: { userId },
+    })
+
+    // Delete course progress
+    await prisma.courseProgress.deleteMany({
+      where: { userId },
+    })
+
+    // Delete course ratings
+    await prisma.courseRating.deleteMany({
+      where: { userId },
+    })
+
+    // Delete favorites
+    await prisma.favorite.deleteMany({
+      where: { userId },
+    })
+
+    // Delete referrals
+    await prisma.userReferralUse.deleteMany({
+      where: {
+        OR: [{ referrerId: userId }, { referredId: userId }],
+      },
+    })
+
+    await prisma.userReferral.deleteMany({
+      where: { userId },
+    })
+
+    // Finally, delete the user
+    await prisma.user.delete({
+      where: { id: userId },
+    })
 
     revalidatePath("/")
     return { success: true }
@@ -192,3 +240,92 @@ export async function getCreditHistory(userId: string) {
     return { error: "Failed to fetch credit history" }
   }
 }
+
+export async function createContactSubmission(data: {
+  name: string
+  email: string
+  message: string
+  status?: string
+}) {
+  try {
+    const submission = await prisma.contactSubmission.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        message: data.message,
+        status: data.status || "NEW",
+      },
+    })
+
+    return { success: true, submission }
+  } catch (error) {
+    console.error("Error creating contact submission:", error)
+    return { error: "Failed to save contact submission" }
+  }
+}
+
+export async function getContactSubmissions(page = 1, limit = 10, status?: string) {
+  try {
+    const skip = (page - 1) * limit
+
+    const where = status ? { status } : {}
+
+    const [submissions, total] = await Promise.all([
+      prisma.contactSubmission.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.contactSubmission.count({ where }),
+    ])
+
+    return {
+      submissions,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    }
+  } catch (error) {
+    console.error("Error fetching contact submissions:", error)
+    return { error: "Failed to fetch contact submissions" }
+  }
+}
+
+export async function updateContactSubmission(
+  id: number,
+  data: {
+    status?: string
+    adminNotes?: string
+    responseMessage?: string
+  },
+) {
+  try {
+    const submission = await prisma.contactSubmission.update({
+      where: { id },
+      data,
+    })
+
+    return { success: true, submission }
+  } catch (error) {
+    console.error("Error updating contact submission:", error)
+    return { error: "Failed to update contact submission" }
+  }
+}
+
+export async function deleteContactSubmission(id: number) {
+  try {
+    await prisma.contactSubmission.delete({
+      where: { id },
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error deleting contact submission:", error)
+    return { error: "Failed to delete contact submission" }
+  }
+}
+
