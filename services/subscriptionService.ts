@@ -27,6 +27,15 @@ export class SubscriptionService {
       throw new Error("User already has an active paid subscription")
     }
 
+    // Check if user has a paid plan (even if not active) and prevent downgrade
+    if (
+      user.subscription &&
+      user.subscription.planId !== "FREE" &&
+      ["ACTIVE", "PAST_DUE", "PENDING"].includes(user.subscription.status || "")
+    ) {
+      throw new Error("Cannot downgrade from a paid plan to the FREE plan")
+    }
+
     const freePlan = SUBSCRIPTION_PLANS.find((p) => p.id === "FREE")
     if (!freePlan) throw new Error("Free plan not found")
 
@@ -78,7 +87,14 @@ export class SubscriptionService {
     return { success: true }
   }
 
-  static async createCheckoutSession(userId: string, planName: string, duration: number, referralCode?: string) {
+  static async createCheckoutSession(
+    userId: string,
+    planName: string,
+    duration: number,
+    referralCode?: string,
+    promoCode?: string,
+    promoDiscount?: number,
+  ) {
     const plan = SUBSCRIPTION_PLANS.find((p) => p.name === planName)
     if (!plan) {
       throw new Error("Invalid plan name")
@@ -184,6 +200,21 @@ export class SubscriptionService {
       }
     }
 
+    // Calculate the price with discount if a valid promo code is provided
+    let unitAmount = Math.round(option.price * 100)
+    let promoCodeApplied = false
+
+    if (promoCode && promoDiscount && promoDiscount > 0) {
+      // Apply the discount percentage
+      unitAmount = Math.round(unitAmount * (1 - promoDiscount / 100))
+      promoCodeApplied = true
+
+      // Log the promo code usage instead of storing in database
+      console.log(
+        `Promo code ${promoCode} with ${promoDiscount}% discount applied for user ${userId} on ${plan.name} plan`,
+      )
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomer,
       payment_method_types: ["card"],
@@ -193,8 +224,11 @@ export class SubscriptionService {
             currency: "usd",
             product_data: {
               name: `${plan.name} Plan - ${duration} month${duration > 1 ? "s" : ""}`,
+              description: promoCodeApplied
+                ? `Applied discount: ${promoDiscount}% off with code ${promoCode}`
+                : undefined,
             },
-            unit_amount: Math.round(option.price * 100),
+            unit_amount: unitAmount,
             recurring: {
               interval: duration === 1 ? "month" : "year",
               interval_count: duration === 1 ? 1 : duration / 12,
@@ -212,6 +246,8 @@ export class SubscriptionService {
         tokens: plan.tokens.toString(),
         referrerId: referrerUserId || "",
         referralUseId: referralUseId || "",
+        promoCode: promoCode || "",
+        promoDiscount: promoDiscount ? promoDiscount.toString() : "",
       },
     })
 
@@ -396,8 +432,29 @@ export class SubscriptionService {
       throw new Error("Failed to fetch payment methods")
     }
   }
-  static validateReferralCode(referralCode: string): Promise<boolean> {
-     return Promise.resolve(true);
+
+  static async validateReferralCode(referralCode: string): Promise<boolean> {
+    return Promise.resolve(true)
+  }
+
+  // New method to validate promo codes
+  static async validatePromoCode(promoCode: string): Promise<{ valid: boolean; discountPercentage: number }> {
+    // Hardcoded valid promo codes
+    const validPromoCodes: Record<string, number> = {
+      AILAUNCH20: 20,
+      WELCOME10: 10,
+      SPRING2025: 15,
+    }
+
+    // Check if the provided code exists in our valid codes
+    if (promoCode in validPromoCodes) {
+      return {
+        valid: true,
+        discountPercentage: validPromoCodes[promoCode],
+      }
+    }
+
+    return { valid: false, discountPercentage: 0 }
   }
 }
 

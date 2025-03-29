@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
   Check,
@@ -32,6 +32,7 @@ import type { SubscriptionPlanType, SubscriptionStatusType } from "./subscriptio
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
 
 import { ReferralSystem } from "./ReferralSystem"
 
@@ -42,7 +43,6 @@ interface PricingPageProps {
   isProd: boolean
   tokensUsed?: number
 }
-
 
 const planIcons: Record<SubscriptionPlanType, React.ReactNode> = {
   FREE: <CreditCard className="h-6 w-6" />,
@@ -66,18 +66,108 @@ export function PricingPage({
   const router = useRouter()
   const isAuthenticated = !!userId
 
+  // Add state for promo code
+  const [promoCode, setPromoCode] = useState<string>("")
+  const [isPromoValid, setIsPromoValid] = useState<boolean>(false)
+  const [promoDiscount, setPromoDiscount] = useState<number>(0)
+  const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false)
+
   // Normalize subscription status for case-insensitive comparison
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
   const isSubscribed = currentPlan && normalizedStatus === "ACTIVE"
 
-  // Update the handleSubscribe function to properly handle authentication and redirect to Stripe
+  // Mocked data for userPlan, tokenUsagePercentage, handleManageSubscription, and handleCancelSubscription
+  const userPlan = SUBSCRIPTION_PLANS.find((plan) => plan.id === currentPlan) || SUBSCRIPTION_PLANS[0] // Default to the first plan if currentPlan is not found
+  const tokenUsagePercentage = tokensUsed ? (tokensUsed / userPlan.tokens) * 100 : 0
+
+  const handleManageSubscription = () => {
+    toast({
+      title: "Manage Subscription",
+      description: "Redirecting to manage your subscription...",
+      variant: "default",
+    })
+    // Replace with actual logic to manage subscription
+  }
+
+  const handleCancelSubscription = () => {
+    toast({
+      title: "Cancel Subscription",
+      description: "Cancelling your subscription...",
+      variant: "destructive",
+    })
+    // Replace with actual logic to cancel subscription
+  }
+
+  // Add this function after the useState declarations
+  const validatePromoCode = useCallback(
+    async (code: string) => {
+      if (!code) return false
+
+      setIsApplyingPromo(true)
+      try {
+        // For the AILAUNCH20 code, we'll apply it directly
+        if (code.toUpperCase() === "AILAUNCH20") {
+          setPromoDiscount(20)
+          setIsPromoValid(true)
+
+          toast({
+            title: "Promo Code Applied!",
+            description: "20% discount will be applied to your subscription.",
+            variant: "default",
+          })
+
+          return true
+        }
+
+        // For other codes, we would validate with the server
+        // const response = await fetch("/api/subscriptions/validate-promo", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify({ code }),
+        // })
+        // const data = await response.json()
+        // setIsPromoValid(data.valid)
+        // setPromoDiscount(data.discountPercentage || 0)
+        // return data.valid
+
+        // For now, only AILAUNCH20 is valid
+        setIsPromoValid(false)
+        setPromoDiscount(0)
+
+        toast({
+          title: "Invalid Promo Code",
+          description: "The promo code you entered is invalid or expired.",
+          variant: "destructive",
+        })
+
+        return false
+      } catch (error) {
+        console.error("Error validating promo code:", error)
+        setIsPromoValid(false)
+        setPromoDiscount(0)
+        return false
+      } finally {
+        setIsApplyingPromo(false)
+      }
+    },
+    [toast],
+  )
+
+  // Modify the handleSubscribe function to include promo code
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
     // Clear any previous errors
     setSubscriptionError(null)
 
     if (!userId) {
       // Store the plan and duration in localStorage before redirecting to login
-      localStorage.setItem("pendingSubscription", JSON.stringify({ planName, duration }))
+      localStorage.setItem(
+        "pendingSubscription",
+        JSON.stringify({
+          planName,
+          duration,
+          promoCode: isPromoValid ? promoCode : undefined,
+        }),
+      )
 
       // Get referral code from URL if present
       const searchParams = new URLSearchParams(window.location.search)
@@ -98,13 +188,26 @@ export function PricingPage({
     }
 
     // If user has any active subscription, prevent new subscriptions
-    if (isSubscribed) {
+    if (isSubscribed && planName !== currentPlan) {
       setSubscriptionError(
         `You already have an active subscription. Please wait until it expires or cancel it before subscribing to a new plan.`,
       )
       toast({
         title: "Subscription Error",
         description: `You already have an active subscription. Please wait until it expires or cancel it before subscribing to a new plan.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Prevent downgrading from a paid plan to FREE
+    if (planName === "FREE" && currentPlan && currentPlan !== "FREE") {
+      setSubscriptionError(
+        `You cannot downgrade from a paid plan to the free plan. Please contact support if you need assistance.`,
+      )
+      toast({
+        title: "Subscription Error",
+        description: `You cannot downgrade from a paid plan to the free plan. Please contact support if you need assistance.`,
         variant: "destructive",
       })
       return
@@ -170,6 +273,8 @@ export function PricingPage({
           planName,
           duration,
           referralCode: referralCode || undefined,
+          promoCode: isPromoValid ? promoCode : undefined,
+          promoDiscount: isPromoValid ? promoDiscount : undefined,
         }),
       })
 
@@ -224,57 +329,28 @@ export function PricingPage({
     }
   }
 
-  const handleCancelSubscription = async () => {
-    if (!userId || !currentPlan || normalizedStatus !== "ACTIVE") {
-      return
-    }
-
-    try {
-      const response = await fetch("/api/subscriptions/cancel", {
-        method: "POST",
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.details || "Failed to cancel subscription")
-      }
-
-      toast({
-        title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled and will end at the end of your billing period.",
-        variant: "default",
-      })
-
-      // Refresh the page to update the UI
-      router.refresh()
-    } catch (error) {
-      console.error("Error cancelling subscription:", error)
-      toast({
-        title: "Error",
-        description: "Failed to cancel your subscription. Please try again or contact support.",
-        variant: "destructive",
-      })
-    }
+  // Add this function to calculate discounted price
+  const getDiscountedPrice = (originalPrice: number): number => {
+    if (!isPromoValid || promoDiscount <= 0) return originalPrice
+    return Number.parseFloat((originalPrice * (1 - promoDiscount / 100)).toFixed(2))
   }
 
-  const handleManageSubscription = () => {
-    router.push("/dashboard/subscription/account")
-  }
-
-  const userPlan = SUBSCRIPTION_PLANS.find((plan) => plan.id === currentPlan) || SUBSCRIPTION_PLANS[0]
-  const tokenUsagePercentage = userPlan ? (tokensUsed / userPlan.tokens) * 100 : 0
-
-  // Add useEffect to handle pending subscriptions after login
+  // Update useEffect to handle pending subscriptions with promo code
   useEffect(() => {
     // Check if there's a pending subscription after login
     const pendingSubscriptionData = localStorage.getItem("pendingSubscription")
 
     if (pendingSubscriptionData && userId) {
       try {
-        const { planName, duration } = JSON.parse(pendingSubscriptionData)
+        const { planName, duration, promoCode } = JSON.parse(pendingSubscriptionData)
         // Clear the pending subscription
         localStorage.removeItem("pendingSubscription")
+
+        // Apply promo code if it was saved
+        if (promoCode) {
+          setPromoCode(promoCode)
+          validatePromoCode(promoCode)
+        }
 
         // Proceed with subscription after a short delay to ensure everything is loaded
         setTimeout(() => {
@@ -284,7 +360,7 @@ export function PricingPage({
         console.error("Error processing pending subscription:", error)
       }
     }
-  }, [userId])
+  }, [userId, validatePromoCode])
 
   return (
     <div className="container max-w-6xl space-y-8 px-4 sm:px-6">
@@ -394,20 +470,45 @@ export function PricingPage({
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h3 className="text-xl font-bold mb-1">Limited Time Offer!</h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-3">
                 Get 20% off any plan with code{" "}
                 <span className="font-mono font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md">
                   AILAUNCH20
                 </span>
               </p>
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="Enter promo code"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value.trim())}
+                    className="pr-24 border-slate-300 dark:border-slate-600"
+                  />
+                  {isPromoValid && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <Badge className="bg-green-500">
+                        <Check className="h-3 w-3 mr-1" /> Valid
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => validatePromoCode(promoCode)}
+                  disabled={isApplyingPromo || !promoCode || isPromoValid}
+                  className="border-slate-300 dark:border-slate-600"
+                >
+                  {isApplyingPromo ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : isPromoValid ? (
+                    <Check className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Gift className="h-4 w-4 mr-2" />
+                  )}
+                  {isPromoValid ? "Applied" : "Apply Code"}
+                </Button>
+              </div>
             </div>
-            <Button
-              size="lg"
-              className="shrink-0 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-md"
-            >
-              <Gift className="mr-2 h-5 w-5" />
-              Claim Offer
-            </Button>
           </div>
         </div>
       )}
@@ -502,6 +603,10 @@ export function PricingPage({
         handleSubscribe={handleSubscribe}
         duration={selectedDuration}
         isSubscribed={isSubscribed}
+        promoCode={promoCode}
+        isPromoValid={isPromoValid}
+        promoDiscount={promoDiscount}
+        getDiscountedPrice={getDiscountedPrice}
       />
 
       {/* Why Upgrade Section - Redesigned */}
@@ -604,42 +709,6 @@ export function PricingPage({
       </div>
 
       {/* Referral Banner - Redesigned */}
-      <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl p-8 border border-slate-200 dark:border-slate-700 shadow-md mt-10">
-        <div className="flex flex-col md:flex-row gap-8 items-center">
-          <div className="md:w-1/2">
-            <h2 className="text-3xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-              Refer a Friend, Get Rewards
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              Invite your friends to join our platform and earn 10 free tokens for each successful referral. Your
-              friends will also receive 5 bonus tokens when they sign up.
-            </p>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-md">
-              <Gift className="mr-2 h-5 w-5" />
-              Start Referring
-            </Button>
-          </div>
-          <div className="md:w-1/2 flex justify-center">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-md w-full max-w-md">
-              <h3 className="font-semibold mb-4 text-lg">Your Referral Stats</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                  <span className="text-muted-foreground">Total Referrals</span>
-                  <span className="font-medium text-lg">0</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                  <span className="text-muted-foreground">Tokens Earned</span>
-                  <span className="font-medium text-lg">0</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                  <span className="text-muted-foreground">Pending Invites</span>
-                  <span className="font-medium text-lg">0</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -659,6 +728,10 @@ function PlanCards({
   handleSubscribe,
   duration,
   isSubscribed,
+  promoCode,
+  isPromoValid,
+  promoDiscount,
+  getDiscountedPrice,
 }: {
   plans: typeof SUBSCRIPTION_PLANS
   currentPlan: SubscriptionPlanType | null
@@ -667,6 +740,10 @@ function PlanCards({
   handleSubscribe: (planId: SubscriptionPlanType, duration: number) => Promise<void>
   duration: 1 | 6
   isSubscribed: boolean
+  promoCode: string
+  isPromoValid: boolean
+  promoDiscount: number
+  getDiscountedPrice: (originalPrice: number) => number
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
@@ -678,6 +755,7 @@ function PlanCards({
         const isPlanActive = currentPlan === plan.id
         const isBestValue = plan.name === bestPlan?.name
         const isCurrentActivePlan = isSubscribed && currentPlan === plan.id
+        const discountedPrice = getDiscountedPrice(priceOption.price)
 
         return (
           <div key={plan.id} className={`${isBestValue ? "order-first lg:order-none" : ""}`}>
@@ -714,7 +792,16 @@ function PlanCards({
                 <CardDescription className="min-h-[40px] text-center sm:text-left">{plan.description}</CardDescription>
                 <div className="mt-4 text-center sm:text-left">
                   <div className="flex items-baseline justify-center sm:justify-start">
-                    <span className="text-3xl font-bold">${priceOption.price}</span>
+                    {isPromoValid && promoDiscount > 0 ? (
+                      <>
+                        <span className="text-2xl font-bold line-through text-muted-foreground">
+                          ${priceOption.price}
+                        </span>
+                        <span className="text-3xl font-bold ml-2">${discountedPrice}</span>
+                      </>
+                    ) : (
+                      <span className="text-3xl font-bold">${priceOption.price}</span>
+                    )}
                     <span className="text-sm ml-1 text-muted-foreground">/{duration === 1 ? "month" : "6 months"}</span>
                   </div>
                   <div className="my-2 h-px bg-slate-200 dark:bg-slate-700" />

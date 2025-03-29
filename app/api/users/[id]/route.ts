@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/authOptions"
 import prisma from "@/lib/db"
 
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check if user is authenticated and is an admin
     const session = await getServerSession(authOptions)
@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = params.id
+    const userId = (await params).id
 
     // Fetch user with their token transactions
     const user = await prisma.user.findUnique({
@@ -73,7 +73,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       })
 
       // Delete quiz attempts
-      await prisma.quizAttempt.deleteMany({
+      await prisma.userQuizAttempt.deleteMany({
         where: {
           userId,
         },
@@ -94,7 +94,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       })
 
       // Delete subscription
-      await prisma.subscription.deleteMany({
+      await prisma.userSubscription.deleteMany({
         where: {
           userId,
         },
@@ -115,3 +115,56 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 }
 
+export async function PATCH(request: Request, { params }: { params: { id: string } }) { 
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session || !session.user || session.user.isAdmin !== true) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = params.id
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const body = await request.json()
+
+    // Update user data
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        userType: body.userType,
+        isAdmin: body.isAdmin,
+        credits: body.credits,
+      },
+    })
+
+    // Update subscription the planId in usersubscriptions also
+
+    if (body.userType) {
+      await prisma.userSubscription.update({
+        where: {
+          userId,
+        },
+        data: {
+          planId: body.userType,
+        },
+      })
+    }
+    return NextResponse.json(updatedUser)
+  } catch (error) {
+    console.error("Error updating user:", error)
+    return NextResponse.json({ error: "Failed to update user" }, { status: 500 })
+  }
+}

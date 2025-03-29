@@ -60,7 +60,13 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
 
   // Memoize derived state values
   const { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree } = useMemo(() => {
-    const tokenUsagePercentage = planDetails ? (tokensUsed / planDetails.tokens) * 100 : 0
+    // Fix token usage percentage calculation to handle edge cases
+    const maxTokens = planDetails?.tokens || 1 // Prevent division by zero
+    const tokenUsagePercentage = Math.min(
+      (tokensUsed / maxTokens) * 100,
+      100, // Cap at 100% to prevent overflow
+    )
+
     const isActive = subscriptionStatus === "ACTIVE"
     const isCancelled = subscriptionStatus === "CANCELED"
     const isPastDue = subscriptionStatus === "PAST_DUE"
@@ -140,6 +146,16 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
     router.push("/dashboard/subscription")
   }, [router])
 
+  // Update the handleManageSubscription function to redirect to the subscription page
+  const handleManageSubscription = useCallback(() => {
+    toast({
+      title: "Manage Subscription",
+      description: "Redirecting to manage your subscription...",
+      variant: "default",
+    })
+    router.push("/dashboard/subscription")
+  }, [toast, router])
+
   // Memoize the formatted date to avoid recalculation on every render
   const formattedEndDate = useMemo(() => {
     if (!endDate) return "N/A"
@@ -193,6 +209,11 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                       style={{ width: `${Math.min(tokenUsagePercentage, 100)}%` }}
                     />
                   </div>
+                  {tokensUsed > planDetails.tokens && (
+                    <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      You've exceeded your plan's token limit. Consider upgrading your plan.
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -274,7 +295,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                 )}
                 <Button
                   variant="outline"
-                  onClick={handleUpgradeSubscription}
+                  onClick={handleManageSubscription}
                   className="border-slate-300 dark:border-slate-600"
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
