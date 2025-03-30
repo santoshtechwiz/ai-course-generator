@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 
 // Redesigned StatusBadge component
-export default function StatusBadge({ status }: { status: string }) {
+export  function StatusBadge({ status }: { status: string }) {
   if (!status) return <Badge variant="outline">N/A</Badge>
 
   // Normalize status to uppercase for consistent comparison
