@@ -4,20 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import {
-  Check,
-  X,
-  Sparkles,
-  Gift,
-  Loader2,
-  AlertTriangle,
-  Lock,
-  Info,
-  CreditCard,
-  Zap,
-  Rocket,
-  Crown,
-} from "lucide-react"
+import { Check, X, Sparkles, Gift, Loader2, AlertTriangle, Info, CreditCard, Zap, Rocket, Crown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { useToast } from "@/hooks/use-toast"
 import { SUBSCRIPTION_PLANS, FAQ_ITEMS } from "./subscription.config"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "./subscription.config"
@@ -35,8 +23,6 @@ import { Input } from "@/components/ui/input"
 
 import { ReferralSystem } from "./ReferralSystem"
 import { calculateSavings } from "@/lib/subscription-formatter"
-import PlanCards from "./subscription-status/PlanCard"
-
 
 interface PricingPageProps {
   userId: string | null
@@ -51,6 +37,31 @@ const planIcons: Record<SubscriptionPlanType, React.ReactNode> = {
   BASIC: <Zap className="h-6 w-6" />,
   PRO: <Rocket className="h-6 w-6" />,
   ULTIMATE: <Crown className="h-6 w-6" />,
+}
+
+/**
+ * Utility function to calculate the discounted price with proper formatting
+ * @param originalPrice The original price before discount
+ * @param discountPercentage The percentage discount to apply
+ * @returns The discounted price, rounded to 2 decimal places
+ */
+export function calculateDiscountedPrice(originalPrice: number, discountPercentage: number): number {
+  if (discountPercentage <= 0) return originalPrice
+
+  // Calculate the discount amount
+  const discountAmount = (originalPrice * discountPercentage) / 100
+
+  // Apply the discount and round to 2 decimal places to avoid floating point issues
+  return Math.round((originalPrice - discountAmount) * 100) / 100
+}
+
+/**
+ * Utility function to format a price as a string with 2 decimal places
+ * @param price The price to format
+ * @returns Formatted price string with 2 decimal places
+ */
+export function formatPrice(price: number): string {
+  return price.toFixed(2)
 }
 
 export function PricingPage({
@@ -330,6 +341,11 @@ export function PricingPage({
       setLoading(null)
     }
   }
+  const getDiscountedPriceUtil = (originalPrice: number, discountPercentage: number): number => {
+    if (discountPercentage <= 0) return originalPrice
+    const discountAmount = (originalPrice * discountPercentage) / 100
+    return originalPrice - discountAmount
+  }
 
   // Add this function to calculate discounted price
   const getDiscountedPrice = (originalPrice: number): number => {
@@ -379,7 +395,7 @@ export function PricingPage({
 
       {/* Current Subscription Card - Redesigned */}
       {isAuthenticated && (
-        <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-md overflow-hidden">
+        <div className="bg-card rounded-xl shadow-sm border overflow-hidden">
           <div className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
@@ -388,7 +404,7 @@ export function PricingPage({
               </div>
               <Badge
                 variant={currentPlan === "FREE" ? "outline" : "default"}
-                className={`text-sm px-3 py-1 ${currentPlan !== "FREE" ? "bg-gradient-to-r from-blue-500 to-purple-500" : ""}`}
+                className={`text-sm px-3 py-1 ${currentPlan !== "FREE" ? "bg-primary hover:bg-primary" : ""}`}
               >
                 {currentPlan} PLAN
               </Badge>
@@ -402,27 +418,27 @@ export function PricingPage({
                     {tokensUsed} / {userPlan.tokens}
                   </span>
                 </div>
-                <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="relative h-2 w-full bg-muted rounded-full overflow-hidden">
                   <div
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
+                    className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-500 ease-in-out"
                     style={{ width: `${Math.min(tokenUsagePercentage, 100)}%` }}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                <div className="bg-muted/50 rounded-lg p-4 shadow-sm">
                   <div className="text-sm text-muted-foreground mb-1">Plan Features</div>
                   <div className="font-medium flex items-center">
                     {planIcons[currentPlan as SubscriptionPlanType]}
                     <span className="ml-2">{userPlan.name}</span>
                   </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                <div className="bg-muted/50 rounded-lg p-4 shadow-sm">
                   <div className="text-sm text-muted-foreground mb-1">Questions per Quiz</div>
                   <div className="font-medium">Up to {userPlan.limits.maxQuestionsPerQuiz}</div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                <div className="bg-muted/50 rounded-lg p-4 shadow-sm">
                   <div className="text-sm text-muted-foreground mb-1">Status</div>
                   <div className="font-medium flex items-center gap-2">
                     <StatusBadge status={subscriptionStatus || "INACTIVE"} />
@@ -432,19 +448,11 @@ export function PricingPage({
             </div>
 
             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
-              <Button
-                variant="outline"
-                onClick={handleManageSubscription}
-                className="border-slate-300 dark:border-slate-600"
-              >
+              <Button variant="outline" onClick={handleManageSubscription}>
                 Manage Subscription
               </Button>
               {isSubscribed && currentPlan !== "FREE" && (
-                <Button
-                  variant="destructive"
-                  onClick={handleCancelSubscription}
-                  className="bg-red-500 hover:bg-red-600"
-                >
+                <Button variant="destructive" onClick={handleCancelSubscription}>
                   Cancel Subscription
                 </Button>
               )}
@@ -455,28 +463,26 @@ export function PricingPage({
 
       {/* Promotional Banner - Redesigned */}
       {showPromotion && (
-        <div className="relative overflow-hidden rounded-xl border bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-6 shadow-md">
+        <div className="relative overflow-hidden rounded-xl border bg-muted/50 p-6 shadow-sm">
           <div className="absolute top-3 right-3">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800"
+              className="h-7 w-7 rounded-full hover:bg-muted"
               onClick={() => setShowPromotion(false)}
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-500 shadow-md">
-              <Sparkles className="h-7 w-7 text-white" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-sm">
+              <Sparkles className="h-7 w-7 text-primary-foreground" />
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h3 className="text-xl font-bold mb-1">Limited Time Offer!</h3>
               <p className="text-muted-foreground mb-3">
                 Get 20% off any plan with code{" "}
-                <span className="font-mono font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md">
-                  AILAUNCH20
-                </span>
+                <span className="font-mono font-bold bg-muted px-2 py-0.5 rounded-md">AILAUNCH20</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-2 mt-2">
                 <div className="relative flex-1">
@@ -484,11 +490,14 @@ export function PricingPage({
                     placeholder="Enter promo code"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value.trim())}
-                    className="pr-24 border-slate-300 dark:border-slate-600"
+                    className="pr-24"
                   />
                   {isPromoValid && (
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                      <Badge className="bg-green-500">
+                      <Badge
+                        variant="outline"
+                        className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800"
+                      >
                         <Check className="h-3 w-3 mr-1" /> Valid
                       </Badge>
                     </div>
@@ -498,7 +507,6 @@ export function PricingPage({
                   variant="outline"
                   onClick={() => validatePromoCode(promoCode)}
                   disabled={isApplyingPromo || !promoCode || isPromoValid}
-                  className="border-slate-300 dark:border-slate-600"
                 >
                   {isApplyingPromo ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -517,9 +525,7 @@ export function PricingPage({
 
       {/* Section Header - Redesigned */}
       <div className="text-center py-8">
-        <h2 className="text-4xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-          Choose Your Plan
-        </h2>
+        <h2 className="text-4xl font-bold mb-3">Choose Your Plan</h2>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
           Select the perfect plan to unlock your learning potential and take your skills to the next level.
         </p>
@@ -578,16 +584,7 @@ export function PricingPage({
           onClick={() => {
             const tabsElement = document.getElementById("plan-comparison-tabs")
             if (tabsElement) {
-              // Scroll to the tabs section
               tabsElement.scrollIntoView({ behavior: "smooth", block: "start" })
-
-              // Click the comparison tab
-              setTimeout(() => {
-                const comparisonTab = document.querySelector("[data-tab-comparison]")
-                if (comparisonTab instanceof HTMLElement) {
-                  comparisonTab.click()
-                }
-              }, 300)
             }
           }}
           className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
@@ -604,7 +601,7 @@ export function PricingPage({
         loading={loading}
         handleSubscribe={handleSubscribe}
         duration={selectedDuration}
-        isSubscribed={isSubscribed}
+        isSubscribed={isSubscribed ?? false}
         promoCode={promoCode}
         isPromoValid={isPromoValid}
         promoDiscount={promoDiscount}
@@ -625,16 +622,7 @@ export function PricingPage({
           onClick={() => {
             const tabsElement = document.getElementById("plan-comparison-tabs")
             if (tabsElement) {
-              // Scroll to the tabs section
               tabsElement.scrollIntoView({ behavior: "smooth", block: "start" })
-
-              // Click the comparison tab
-              setTimeout(() => {
-                const comparisonTab = document.querySelector("[data-tab-comparison]")
-                if (comparisonTab instanceof HTMLElement) {
-                  comparisonTab.click()
-                }
-              }, 300)
             }
           }}
           className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
@@ -647,49 +635,13 @@ export function PricingPage({
       <TokenUsageExplanation />
 
       {/* Tabs for Plan Information - New Addition */}
-      <Tabs defaultValue="features" className="mt-12" id="plan-comparison-tabs">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="features">Plan Features</TabsTrigger>
+      <Tabs defaultValue="comparison" className="mt-12" id="plan-comparison-tabs">
+        <TabsList className="grid w-full grid-cols-2 mb-8">
           <TabsTrigger value="comparison" data-tab-comparison>
-            Detailed Comparison
+            Plan Comparison
           </TabsTrigger>
           <TabsTrigger value="faq">FAQ</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="features" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {SUBSCRIPTION_PLANS.map((plan) => (
-              <Card
-                key={plan.id}
-                className="border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-300"
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-center mb-2">
-                    {plan.id === "FREE" && <CreditCard className="h-5 w-5 mr-2 text-slate-500" />}
-                    {plan.id === "BASIC" && <Zap className="h-5 w-5 mr-2 text-blue-500" />}
-                    {plan.id === "PRO" && <Rocket className="h-5 w-5 mr-2 text-purple-500" />}
-                    {plan.id === "ULTIMATE" && <Crown className="h-5 w-5 mr-2 text-amber-500" />}
-                    <CardTitle>{plan.name}</CardTitle>
-                  </div>
-                  <CardDescription className="text-center sm:text-left">{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {plan.features
-                      .filter((f) => f.available)
-                      .slice(0, 5)
-                      .map((feature, i) => (
-                        <li key={i} className="flex items-start">
-                          <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm">{feature.name}</span>
-                        </li>
-                      ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
 
         <TabsContent value="comparison">
           <ComparisonTable plans={SUBSCRIPTION_PLANS} />
@@ -715,7 +667,238 @@ export function PricingPage({
   )
 }
 
+// Use the imported calculateSavings function instead
 
+// Redesigned PlanCards component
+function PlanCards({
+  plans,
+  currentPlan,
+  subscriptionStatus,
+  loading,
+  handleSubscribe,
+  duration,
+  isSubscribed,
+  promoCode,
+  isPromoValid,
+  promoDiscount,
+  getDiscountedPrice,
+}: {
+  plans: typeof SUBSCRIPTION_PLANS
+  currentPlan: SubscriptionPlanType | null
+  subscriptionStatus: SubscriptionStatusType | null
+  loading: SubscriptionPlanType | null
+  handleSubscribe: (planId: SubscriptionPlanType, duration: number) => Promise<void>
+  duration: 1 | 6
+  isSubscribed: boolean
+  promoCode: string
+  isPromoValid: boolean
+  promoDiscount: number
+  getDiscountedPrice: (originalPrice: number) => number
+}) {
+  const bestPlan = plans.find((plan) => plan.name === "PRO")
+  const normalizedStatus = subscriptionStatus?.toUpperCase() || null
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      {plans.map((plan) => {
+        const priceOption = plan.options.find((o) => o.duration === duration) || plan.options[0]
+        const isPlanActive = currentPlan === plan.id
+        const isBestValue = plan.name === bestPlan?.name
+        const isCurrentActivePlan = isSubscribed && currentPlan === plan.id
+        const discountedPrice = getDiscountedPrice(priceOption.price)
+
+        return (
+          <div key={plan.id} className={`${isBestValue ? "order-first lg:order-none" : ""}`}>
+            <Card
+              className={`flex flex-col h-full transition-all duration-300 hover:shadow-xl ${
+                isPlanActive
+                  ? "border-2 border-blue-500 dark:border-blue-400"
+                  : "border-slate-200 dark:border-slate-700"
+              } ${isBestValue ? "transform lg:scale-105 shadow-lg" : "shadow-sm"}`}
+            >
+              {isBestValue && (
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1.5 text-sm font-medium">
+                  Most Popular
+                </div>
+              )}
+              <CardHeader className={`${isBestValue ? "pb-4" : "pb-2"}`}>
+                <div className="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between mb-1">
+                  <div className="flex items-center">
+                    {plan.id === "FREE" && <CreditCard className="h-5 w-5 mr-2 text-slate-500" />}
+                    {plan.id === "BASIC" && <Zap className="h-5 w-5 mr-2 text-blue-500" />}
+                    {plan.id === "PRO" && <Rocket className="h-5 w-5 mr-2 text-purple-500" />}
+                    {plan.id === "ULTIMATE" && <Crown className="h-5 w-5 mr-2 text-amber-500" />}
+                    <CardTitle className="text-xl">{plan.name}</CardTitle>
+                  </div>
+                  {isPlanActive && (
+                    <Badge
+                      variant={normalizedStatus === "ACTIVE" ? "default" : "destructive"}
+                      className="whitespace-nowrap mt-2 sm:mt-0"
+                    >
+                      {normalizedStatus === "ACTIVE" ? "Active" : "Inactive"}
+                    </Badge>
+                  )}
+                </div>
+                <CardDescription className="min-h-[40px] text-center sm:text-left">{plan.description}</CardDescription>
+                <div className="mt-4 text-center sm:text-left">
+                  <div className="flex items-baseline justify-center sm:justify-start">
+                    {isPromoValid && promoDiscount > 0 ? (
+                      <>
+                        <span className="text-2xl font-bold line-through text-muted-foreground">
+                          ${priceOption.price}
+                        </span>
+                        <span className="text-3xl font-bold ml-2">${discountedPrice}</span>
+                      </>
+                    ) : (
+                      <span className="text-3xl font-bold">${priceOption.price}</span>
+                    )}
+                    <span className="text-sm ml-1 text-muted-foreground">/{duration === 1 ? "month" : "6 months"}</span>
+                  </div>
+                  <div className="my-2 h-px bg-slate-200 dark:bg-slate-700" />
+                  <p className="text-sm text-muted-foreground">{plan.tokens} tokens included</p>
+                  <SavingsHighlight plan={plan} duration={duration} />
+                </div>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="mb-4">
+                  <p className="text-lg font-semibold text-center sm:text-left">{plan.tokens} tokens</p>
+                  <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-2">
+                    <div
+                      className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-in-out ${
+                        plan.id === "FREE"
+                          ? "bg-slate-400"
+                          : plan.id === "BASIC"
+                            ? "bg-blue-500"
+                            : plan.id === "PRO"
+                              ? "bg-purple-500"
+                              : "bg-gradient-to-r from-amber-500 to-orange-500"
+                      }`}
+                      style={{ width: `${(plan.tokens / 600) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <ul className="space-y-3">
+                  {plan.features
+                    .filter((feature) => feature.available)
+                    .slice(0, 5)
+                    .map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{feature.name}</span>
+                      </li>
+                    ))}
+                  {plan.features.filter((f) => f.available).length > 5 && (
+                    <li className="text-sm text-muted-foreground text-center pt-1">
+                      <Button
+                        variant="link"
+                        onClick={() => {
+                          const tabsElement = document.getElementById("plan-comparison-tabs")
+                          if (tabsElement) {
+                            tabsElement.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="p-0 h-auto"
+                      >
+                        See all features
+                      </Button>
+                    </li>
+                  )}
+                </ul>
+              </CardContent>
+              <CardFooter className="pt-4">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-full">
+                        <Button
+                          onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
+                          disabled={isSubscribed || loading !== null}
+                          className={`w-full text-primary-foreground ${
+                            plan.id === "FREE"
+                              ? "bg-slate-500 hover:bg-slate-600"
+                              : plan.id === "BASIC"
+                                ? "bg-blue-500 hover:bg-blue-600"
+                                : plan.id === "PRO"
+                                  ? "bg-purple-500 hover:bg-purple-600"
+                                  : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                          } ${
+                            plan.name === bestPlan?.name && !isCurrentActivePlan ? "animate-pulse" : ""
+                          } shadow-md hover:shadow-lg transition-all duration-300`}
+                        >
+                          {loading === plan.id ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : isCurrentActivePlan ? (
+                            "Current Active Plan"
+                          ) : isSubscribed ? (
+                            "Subscription Active"
+                          ) : plan.id === "FREE" ? (
+                            "Start for Free"
+                          ) : (
+                            "Subscribe Now"
+                          )}
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isCurrentActivePlan
+                        ? "This is your current active plan"
+                        : isSubscribed
+                          ? "You need to wait until your current subscription expires or cancel it before subscribing to a new plan"
+                          : plan.id === "FREE"
+                            ? "Start using the free plan"
+                            : `Subscribe to the ${plan.name} plan`}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </CardFooter>
+
+              {/* Add a note for current active plan */}
+              {isCurrentActivePlan && (
+                <div className="px-6 pb-4 text-center">
+                  <p className="text-sm text-muted-foreground italic">You are currently subscribed to this plan</p>
+                </div>
+              )}
+
+              {/* Add a note for other plans when user has an active subscription */}
+              {isSubscribed && !isCurrentActivePlan && (
+                <div className="px-6 pb-4 text-center">
+                  <p className="text-sm text-muted-foreground italic">
+                    You need to wait until your current subscription expires or cancel it before subscribing to this
+                    plan
+                  </p>
+                </div>
+              )}
+            </Card>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Redesigned SavingsHighlight component
+function SavingsHighlight({ plan, duration }: { plan: (typeof SUBSCRIPTION_PLANS)[0]; duration: 1 | 6 }) {
+  const monthlyPrice = plan.options.find((o) => o.duration === 1)?.price || 0
+  const biAnnualPrice = plan.options.find((o) => o.duration === 6)?.price || 0
+  const savings = calculateSavings(monthlyPrice, biAnnualPrice, 12)
+
+  if (duration === 1 || plan.name === "FREE" || savings <= 0) return null
+
+  return (
+    <div className="mt-2 p-2 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-md border border-green-100 dark:border-green-800">
+      <div className="text-sm text-green-700 dark:text-green-400 font-semibold flex items-center">
+        <Sparkles className="h-4 w-4 mr-1 text-green-500" />
+        Save {savings}% with bi-annual plan!
+      </div>
+      <div className="text-xs text-green-600 dark:text-green-500">
+        That's ${(monthlyPrice * 6 - biAnnualPrice).toFixed(2)} in savings!
+      </div>
+    </div>
+  )
+}
 
 // Redesigned StatusBadge component
 function StatusBadge({ status }: { status: string }) {
@@ -762,10 +945,10 @@ function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
       <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-md">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-48 bg-slate-50 dark:bg-slate-800 font-semibold">Feature</TableHead>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-48 font-semibold">Feature</TableHead>
               {plans.map((plan) => (
-                <TableHead key={plan.name} className="text-center bg-slate-50 dark:bg-slate-800 font-semibold">
+                <TableHead key={plan.name} className="text-center font-semibold">
                   <div className="flex flex-col items-center">
                     {plan.id === "FREE" && <CreditCard className="h-5 w-5 mb-1 text-slate-500" />}
                     {plan.id === "BASIC" && <Zap className="h-5 w-5 mb-1 text-blue-500" />}
