@@ -47,16 +47,21 @@ export default function PlanCards({
         const discountedPrice = getDiscountedPrice(priceOption.price)
 
         return (
-          <div key={plan.id} className={`${isBestValue ? "order-first lg:order-none" : ""}`}>
+          <div
+            key={plan.id}
+            className={`${isBestValue ? "order-first lg:order-none" : ""} transition-transform duration-300 ${
+              isBestValue ? "hover:scale-105" : "hover:scale-102"
+            }`}
+          >
             <Card
               className={`flex flex-col h-full transition-all duration-300 hover:shadow-xl ${
                 isPlanActive
                   ? "border-2 border-blue-500 dark:border-blue-400"
                   : "border-slate-200 dark:border-slate-700"
-              } ${isBestValue ? "transform lg:scale-105 shadow-lg" : "shadow-sm"}`}
+              } ${isBestValue ? "transform lg:scale-105 shadow-lg ring-2 ring-purple-500" : "shadow-sm"}`}
             >
               {isBestValue && (
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1.5 text-sm font-medium">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1.5 text-sm font-medium animate-pulse">
                   Most Popular
                 </div>
               )}

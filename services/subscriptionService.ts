@@ -106,7 +106,7 @@ export class SubscriptionService {
 
     if (!user) throw new Error("User not found")
 
-    if (user.subscription && user.subscription.status === "ACTIVE") {
+    if (user.subscription && user.subscription.planId!=="FREE" && user.subscription.status === "ACTIVE") {
       throw new Error("User already has an active subscription")
     }
     const option = plan.options.find((o) => o.duration === duration)
