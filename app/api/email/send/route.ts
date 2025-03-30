@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     }
 
     // Always use courseai@noreply.com as the sender
-    const senderEmail = "courseai@noreply.com"
+    const senderEmail = "courseai@courseai.io"
     const senderName = "CourseAI Support"
 
     const mailOptions = {

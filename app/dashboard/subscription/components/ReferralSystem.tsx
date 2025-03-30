@@ -68,15 +68,9 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
       const data = await response.json()
       setReferralStats(data)
     } catch (error) {
-      console.error("Error fetching referral stats:", error)
-      // Don't show error toast for aborted requests (user navigated away)
-      if (error.name !== "AbortError") {
-        toast({
-          title: "Error",
-          description: "Failed to load referral information. Please try again.",
-          variant: "destructive",
-        })
-      }
+      console.warn("Error fetching referral stats:", error)
+   
+      setIsLoading(false)
     } finally {
       setIsLoading(false)
     }

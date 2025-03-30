@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Save, Trash2, UserCog, CreditCard, Loader2 } from "lucide-react"
+import { Save, Trash2, UserCog, CreditCard, Loader2, History } from "lucide-react"
 import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import type { TokenTransaction, UserWithTransactions } from "@/app/types/types"
 import { createUser, deleteUser, updateUser } from "@/app/actions/actions"
+import { SubscriptionHistory } from "./subscription-management/subscription-history"
 
 const userFormSchema = z.object({
   name: z.string().min(2, {
@@ -297,7 +298,7 @@ export function UserForm() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="details" className="flex items-center gap-2">
             <UserCog className="h-4 w-4" />
             User Details
@@ -305,6 +306,10 @@ export function UserForm() {
           <TabsTrigger value="credits" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
             Credits
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            History
           </TabsTrigger>
         </TabsList>
 
@@ -438,6 +443,9 @@ export function UserForm() {
                   <p className="text-sm text-muted-foreground">No credit history available</p>
                 )}
               </div>
+            </TabsContent>
+            <TabsContent value="history" className="space-y-4">
+              {selectedUser && <SubscriptionHistory userId={selectedUser.id} />}
             </TabsContent>
 
             <div className="flex justify-end">

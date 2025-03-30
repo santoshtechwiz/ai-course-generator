@@ -32,6 +32,10 @@ import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subs
 import { PaymentMethodForm } from "./PaymentMethod"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+// Import the new status components
+import { StatusBadge } from "./subscription-status/status-badge"
+import { PlanBadge } from "./subscription-status/plan-badge"
+
 interface ManageSubscriptionProps {
   userId: string
   subscriptionData: {
@@ -80,15 +84,22 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const handleCancelSubscription = useCallback(async () => {
     setIsLoading(true)
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
       const response = await fetch("/api/subscriptions/cancel", {
         method: "POST",
+        signal: controller.signal,
       })
 
-      const data = await response.json()
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
-        throw new Error(data.details || "Failed to cancel subscription")
+        const errorData = await response.json().catch(() => ({ details: "Unknown error occurred" }))
+        throw new Error(errorData.details || "Failed to cancel subscription")
       }
+
+      const data = await response.json()
 
       toast({
         title: "Subscription Cancelled",
@@ -97,7 +108,13 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
       })
 
       setCancelDialogOpen(false)
+
+      // Use router.refresh() to update the page data
       router.refresh()
+
+      // Dispatch an event to notify other components
+      const event = new CustomEvent("subscription-changed")
+      window.dispatchEvent(event)
     } catch (error) {
       console.error("Error cancelling subscription:", error)
       toast({
@@ -113,15 +130,22 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const handleResumeSubscription = useCallback(async () => {
     setIsLoading(true)
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
       const response = await fetch("/api/subscriptions/resume", {
         method: "POST",
+        signal: controller.signal,
       })
 
-      const data = await response.json()
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
-        throw new Error(data.details || "Failed to resume subscription")
+        const errorData = await response.json().catch(() => ({ details: "Unknown error occurred" }))
+        throw new Error(errorData.details || "Failed to resume subscription")
       }
+
+      const data = await response.json()
 
       toast({
         title: "Subscription Resumed",
@@ -129,7 +153,12 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
         variant: "default",
       })
 
+      // Use router.refresh() to update the page data
       router.refresh()
+
+      // Dispatch an event to notify other components
+      const event = new CustomEvent("subscription-changed")
+      window.dispatchEvent(event)
     } catch (error) {
       console.error("Error resuming subscription:", error)
       toast({
@@ -143,6 +172,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   }, [toast, router])
 
   const handleUpgradeSubscription = useCallback(() => {
+    // Use router.push to navigate to the subscription page
     router.push("/dashboard/subscription")
   }, [router])
 
@@ -153,6 +183,8 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
       description: "Redirecting to manage your subscription...",
       variant: "default",
     })
+
+    // Use router.push instead of router.refresh to navigate to the subscription page
     router.push("/dashboard/subscription")
   }, [toast, router])
 
@@ -187,12 +219,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                   <h3 className="text-xl font-bold mb-1">Current Plan</h3>
                   <p className="text-muted-foreground">Your active subscription details</p>
                 </div>
-                <Badge
-                  variant={isFree ? "outline" : "default"}
-                  className={`text-sm px-3 py-1 ${!isFree ? "bg-gradient-to-r from-blue-500 to-purple-500" : ""}`}
-                >
-                  {currentPlan}
-                </Badge>
+                <PlanBadge plan={currentPlan} className="text-sm px-3 py-1" />
               </div>
 
               <div className="space-y-6">
@@ -511,36 +538,5 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
       </CardContent>
     </Card>
   )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  if (!status) return <Badge variant="outline">N/A</Badge>
-
-  switch (status.toUpperCase()) {
-    case "ACTIVE":
-      return (
-        <Badge variant="default" className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-          Active
-        </Badge>
-      )
-    case "CANCELED":
-      return (
-        <Badge variant="outline" className="text-orange-500 border-orange-500">
-          Cancelled
-        </Badge>
-      )
-    case "PAST_DUE":
-      return <Badge variant="destructive">Past Due</Badge>
-    case "INACTIVE":
-      return <Badge variant="outline">Inactive</Badge>
-    case "PENDING":
-      return (
-        <Badge variant="outline" className="text-blue-500 border-blue-500">
-          Pending
-        </Badge>
-      )
-    default:
-      return <Badge variant="outline">{status}</Badge>
-  }
 }
 

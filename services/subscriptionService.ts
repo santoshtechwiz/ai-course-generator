@@ -239,7 +239,7 @@ export class SubscriptionService {
       ],
       mode: "subscription",
       success_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/cancelled`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/cancelled?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         userId,
         planName,
@@ -249,6 +249,7 @@ export class SubscriptionService {
         promoCode: promoCode || "",
         promoDiscount: promoDiscount ? promoDiscount.toString() : "",
       },
+     
     })
 
     return { sessionId: session.id }
@@ -308,6 +309,16 @@ export class SubscriptionService {
           status: "CANCELED",
         },
       })
+      //reset the tokens to default in tokentransaction
+
+      await prisma.tokenTransaction.updateMany({
+        where: { userId },
+        data: {
+          amount: 0,
+        },
+      })
+
+      
 
       return true
     } catch (error) {
@@ -455,6 +466,41 @@ export class SubscriptionService {
     }
 
     return { valid: false, discountPercentage: 0 }
+  }
+
+  // Add this method to the SubscriptionService class
+
+  static async verifyPaymentStatus(sessionId: string): Promise<{
+    status: "succeeded" | "pending" | "failed" | "canceled"
+    subscription?: any
+  }> {
+    if (!sessionId) {
+      return { status: "failed" }
+    }
+
+    try {
+      // Only expand subscription, not payment_intent
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["subscription"],
+      })
+
+      // Check status without relying on payment_intent
+      if (session.status === "complete" && session.payment_status === "paid") {
+        return {
+          status: "succeeded",
+          subscription: session.subscription,
+        }
+      } else if (session.status === "open") {
+        return { status: "pending" }
+      } else if (session.payment_status === "unpaid") {
+        return { status: "failed" }
+      } else {
+        return { status: "canceled" }
+      }
+    } catch (error) {
+      console.error("Error verifying payment status:", error)
+      return { status: "failed" }
+    }
   }
 }
 

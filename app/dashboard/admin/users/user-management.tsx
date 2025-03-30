@@ -1,963 +1,513 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, useRef, useCallback } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { format } from "date-fns"
-import { Search, Plus, Loader2, CreditCard, User, Edit, Trash2 } from "lucide-react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import {
+  Search,
+  Plus,
+  Loader2,
+  User,
+  ArrowUpDown,
+  ChevronDown,
+  Filter,
+  RefreshCw,
+  UserCog,
+  CreditCard,
+  Shield,
+  Clock,
+} from "lucide-react"
+import { useInfiniteQuery } from "@tanstack/react-query"
+import { useVirtualizer } from "@tanstack/react-virtual"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
-// Optimization 1: Add virtualization for better performance with large user lists
-// Import the virtualization library at the top
-import { useVirtualizer } from "@tanstack/react-virtual"
+import { UserManagementProvider } from "../components/user-management/user-management-context"
+import { UserCard } from "../components/user-card"
+import { CreateUserDialog } from "../components/user-dialog/create-user-dialog"
+import { UserEditDialog } from "../components/user-dialog/user-edit-dialog"
+import { ResetSubscriptionDialog } from "../components/subscription-management/reset-subscription-dialog"
 
-// Define user form schema
-const userFormSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  credits: z.coerce.number().int().min(0),
-  isAdmin: z.boolean().default(false),
-  userType: z.string(),
-  creditNote: z.string().optional(),
-  sendWelcomeEmail: z.boolean().default(false),
-})
-
-type UserFormValues = z.infer<typeof userFormSchema>
-
-// Define user type
-interface UserType {
-  id: string
-  name: string
-  email: string
-  credits: number
-  isAdmin: boolean
-  userType: string
-  createdAt: string
-  updatedAt: string
-  image?: string
-  subscription?: {
-    id: string
-    status: string
-    plan: string
-    currentPeriodEnd: string
-  } | null
-  TokenTransaction?: {
-    id: string
-    amount: number
-    type: string
-    description: string
-    createdAt: string
-  }[]
-}
+// Define available user types (shared across components)
+export const USER_TYPES = [
+  { value: "FREE", label: "Free" },
+  { value: "BASIC", label: "Basic" },
+  { value: "PRO", label: "Pro" },
+  { value: "PREMIUM", label: "Premium" },
+  { value: "ULTIMATE", label: "Ultimate" },
+]
 
 export function UserManagement() {
+  // UI state
   const { toast } = useToast()
-  const [users, setUsers] = useState<UserType[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<UserType[]>([])
-  const [selectedUser, setSelectedUser] = useState<UserType | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [userTypeFilter, setUserTypeFilter] = useState("all")
+  const [userTypeFilter, setUserTypeFilter] = useState<string[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState("details")
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [sortField, setSortField] = useState<"name" | "createdAt" | "userType" | "credits">("createdAt")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery)
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
+  const [userToReset, setUserToReset] = useState<string | null>(null)
 
-  // Add these state variables after the other state declarations
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const loadMoreRef = useRef<HTMLDivElement>(null)
-
-  // Optimization 4: Add virtualization setup
-  // Add these near the top of the component, after the state declarations:
+  // Virtualization container ref
   const parentRef = useRef<HTMLDivElement>(null)
 
-  const rowVirtualizer = useVirtualizer({
-    count: filteredUsers.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 80,
-    overscan: 10,
-  })
-
-  // Initialize form
-  const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      credits: 3,
-      isAdmin: false,
-      userType: "Free",
-      creditNote: "",
-      sendWelcomeEmail: true,
-    },
-  })
-
-  // Fetch users on component mount
+  // Debounce search query
   useEffect(() => {
-    fetchUsers(1, false)
-  }, [])
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 300)
 
-  // Filter users when search query or filter changes
-  useEffect(() => {
-    filterUsers()
-  }, [users, searchQuery, userTypeFilter])
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
-  // Replace the existing fetchUsers function with this paginated version
-  const fetchUsers = async (pageToFetch = 1, append = false) => {
-    if (pageToFetch === 1) {
-      setIsLoading(true)
-    } else {
-      setIsLoadingMore(true)
+  // Fetch users with react-query (infinite pagination)
+  const fetchUsers = async ({ pageParam = 1 }) => {
+    // Build query parameters
+    const params = new URLSearchParams()
+    params.append("page", pageParam.toString())
+    params.append("limit", "50")
+
+    if (debouncedSearchQuery) {
+      params.append("search", debouncedSearchQuery)
     }
 
+    if (userTypeFilter.length > 0) {
+      userTypeFilter.forEach((type) => {
+        params.append("userTypes", type)
+      })
+    }
+
+    params.append("sortField", sortField)
+    params.append("sortOrder", sortOrder)
+
     try {
-      const response = await fetch(`/api/users?page=${pageToFetch}&limit=20`)
+      const response = await fetch(`/api/users?${params.toString()}`)
+
       if (!response.ok) {
-        throw new Error("Failed to fetch users")
+        throw new Error(`Failed to fetch users: ${response.status}`)
       }
 
       const data = await response.json()
 
-      // Check if we've reached the end of the data
-      if (data.length === 0 || data.length < 20) {
-        setHasMore(false)
-      } else {
-        setHasMore(true)
-      }
-
-      if (append) {
-        setUsers((prevUsers) => [...prevUsers, ...data])
-      } else {
-        setUsers(data)
-        setPage(1)
+      // Ensure we have a consistent response format
+      return {
+        users: Array.isArray(data.users) ? data.users : [],
+        nextPage: data.hasMore ? pageParam + 1 : undefined,
+        totalCount: data.totalCount || 0,
       }
     } catch (error) {
       console.error("Error fetching users:", error)
       toast({
-        title: "Error",
-        description: "Failed to fetch users. Please try again.",
+        title: "Error fetching users",
+        description: "Please try refreshing the page",
         variant: "destructive",
       })
-    } finally {
-      setIsLoading(false)
-      setIsLoadingMore(false)
+      return { users: [], nextPage: undefined, totalCount: 0 }
     }
   }
 
-  // Add this function to load more users
-  const loadMoreUsers = useCallback(() => {
-    if (!isLoadingMore && hasMore) {
-      const nextPage = page + 1
-      setPage(nextPage)
-      fetchUsers(nextPage, true)
-    }
-  }, [page, isLoadingMore, hasMore])
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch, isFetching } =
+    useInfiniteQuery({
+      queryKey: ["users", debouncedSearchQuery, userTypeFilter, sortField, sortOrder],
+      queryFn: fetchUsers,
+      getNextPageParam: (lastPage) => lastPage.nextPage,
+      initialPageParam: 1,
+    })
 
-  // Add this intersection observer effect
+  // Flatten users from all pages for virtualization
+  const users = useMemo(() => {
+    return data?.pages.flatMap((page) => page.users) || []
+  }, [data])
+
+  const totalCount = data?.pages[0]?.totalCount || 0
+
+  // Setup virtualized list
+  const rowVirtualizer = useVirtualizer({
+    count: users.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 72,
+    overscan: 10,
+  })
+
+  // Intersection observer for infinite scroll
+  const lastItemRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoading && !isLoadingMore && hasMore) {
-          loadMoreUsers()
+        const [entry] = entries
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
         }
       },
       { threshold: 0.5 },
     )
 
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current)
+    if (lastItemRef.current) {
+      observer.observe(lastItemRef.current)
     }
 
     return () => {
-      if (loadMoreRef.current) {
-        observer.unobserve(loadMoreRef.current)
+      if (lastItemRef.current) {
+        observer.unobserve(lastItemRef.current)
       }
     }
-  }, [loadMoreUsers, isLoading, isLoadingMore, hasMore])
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
-  // Filter users based on search query and user type
-  const filterUsers = () => {
-    let filtered = [...users]
+  // Handle user selection
+  const handleEditUser = useCallback((userId: string) => {
+    setSelectedUserId(userId)
+    setIsEditDialogOpen(true)
+  }, [])
 
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (user) => user.name?.toLowerCase().includes(query) || user.email?.toLowerCase().includes(query),
+  // Toggle user type filter
+  const toggleUserTypeFilter = useCallback((type: string) => {
+    setUserTypeFilter((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
+  }, [])
+
+  // Listen for user changes (from child components)
+  useEffect(() => {
+    const handleUserChange = () => {
+      refetch()
+    }
+
+    const handleResetSubscription = (event: CustomEvent) => {
+      if (event.detail && event.detail.userId) {
+        setUserToReset(event.detail.userId)
+        setIsResetDialogOpen(true)
+      }
+    }
+
+    const handleEditUser = (event: CustomEvent) => {
+      if (event.detail && event.detail.userId) {
+        handleEditUser(event.detail.userId)
+      }
+    }
+
+    window.addEventListener("user-changed", handleUserChange)
+    window.addEventListener("reset-subscription", handleResetSubscription as EventListener)
+    window.addEventListener("edit-user", handleEditUser as EventListener)
+
+    return () => {
+      window.removeEventListener("user-changed", handleUserChange)
+      window.removeEventListener("reset-subscription", handleResetSubscription as EventListener)
+      window.removeEventListener("edit-user", handleEditUser as EventListener)
+    }
+  }, [refetch, handleEditUser])
+
+  // Sort handler
+  const handleSort = (field: "name" | "createdAt" | "userType" | "credits") => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+    } else {
+      setSortField(field)
+      setSortOrder("desc") // Default to desc when changing fields
+    }
+  }
+
+  // Render content based on loading and error states
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="space-y-3 p-4">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="flex items-center space-x-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
+              </div>
+            </div>
+          ))}
+        </div>
       )
     }
 
-    // Apply user type filter
-    if (userTypeFilter !== "all") {
-      filtered = filtered.filter((user) => user.userType === userTypeFilter)
-    }
-
-    setFilteredUsers(filtered)
-
-    // Reset pagination when filters change
-    if (searchQuery || userTypeFilter !== "all") {
-      setHasMore(false)
-    } else {
-      setHasMore(users.length >= 20)
-    }
-  }
-
-  // Also update the handleSearchChange function to reset pagination
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-    setPage(1)
-  }
-
-  // And update the handleUserTypeFilterChange function to reset pagination
-  const handleUserTypeFilterChange = (value: string) => {
-    setUserTypeFilter(value)
-    setPage(1)
-  }
-
-  // Open create user dialog
-  const handleCreateUser = () => {
-    form.reset({
-      name: "",
-      email: "",
-      credits: 3,
-      isAdmin: false,
-      userType: "Free",
-      creditNote: "",
-      sendWelcomeEmail: true,
-    })
-    setIsCreateDialogOpen(true)
-  }
-
-  // Open edit user dialog
-  const handleEditUser = async (userId: string) => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/users/${userId}`)
-      if (!response.ok) {
-        throw new Error("Failed to fetch user")
-      }
-
-      const userData = await response.json()
-      setSelectedUser(userData)
-
-      form.reset({
-        name: userData.name || "",
-        email: userData.email || "",
-        credits: userData.credits || 0,
-        isAdmin: userData.isAdmin || false,
-        userType: userData.userType || "Free",
-        creditNote: "",
-        sendWelcomeEmail: false,
-      })
-
-      setActiveTab("details")
-      setIsEditDialogOpen(true)
-    } catch (error) {
-      console.error("Error fetching user:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch user details. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Open delete user dialog
-  const handleDeleteClick = (user: UserType) => {
-    setSelectedUser(user)
-    setIsDeleteDialogOpen(true)
-  }
-
-  // Create new user
-  const handleCreateSubmit = async (data: UserFormValues) => {
-    setIsSubmitting(true)
-    try {
-      const response = await fetch("/api/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to create user")
-      }
-
-      // Send welcome email if selected
-      if (data.sendWelcomeEmail) {
-        await fetch("/api/email/send", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "welcome",
-            email: data.email,
-            name: data.name,
-          }),
-        })
-      }
-
-      toast({
-        title: "Success",
-        description: "User created successfully.",
-      })
-
-      setIsCreateDialogOpen(false)
-      fetchUsers()
-    } catch (error) {
-      console.error("Error creating user:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create user. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Update existing user
-  const handleUpdateSubmit = async (data: UserFormValues) => {
-    if (!selectedUser) return
-
-    setIsSubmitting(true)
-    try {
-      const response = await fetch(`/api/users/${selectedUser.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          previousCredits: selectedUser.credits,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to update user")
-      }
-
-      toast({
-        title: "Success",
-        description: "User updated successfully.",
-      })
-
-      setIsEditDialogOpen(false)
-      fetchUsers()
-    } catch (error) {
-      console.error("Error updating user:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update user. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Delete user
-  const handleDeleteConfirm = async () => {
-    if (!selectedUser) return
-
-    setIsSubmitting(true)
-    try {
-      const response = await fetch(`/api/users/${selectedUser.id}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to delete user")
-      }
-
-      toast({
-        title: "Success",
-        description: "User deleted successfully.",
-      })
-
-      setIsDeleteDialogOpen(false)
-      fetchUsers()
-    } catch (error) {
-      console.error("Error deleting user:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete user. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Filters and actions */}
-      {/* Optimization 2: Improve responsive layout for filters section
-      // Replace the filters and actions div with this improved version: */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start">
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-[300px]">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search users..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
+    if (isError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4">
+          <div className="text-destructive rounded-full bg-destructive/10 p-3 mb-4 shadow-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-destructive"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
           </div>
-
-          <Select value={userTypeFilter} onValueChange={handleUserTypeFilterChange}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="ULTIMATE">Ultimate</SelectItem>
-              <SelectItem value="FREE">Free</SelectItem>
-              <SelectItem value="BASIC">Basic</SelectItem>
-              <SelectItem value="PRO">Pro</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button onClick={handleCreateUser} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          New User
-        </Button>
-      </div>
-
-      {/* User list */}
-      {/* Optimization 3: Replace the user list rendering with virtualized list for better performance
-      // Replace the user list section with this optimized version: */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredUsers.length === 0 ? (
-        <div className="text-center py-8 border rounded-lg bg-background">
-          <User className="h-12 w-12 mx-auto text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-medium">No users found</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {searchQuery || userTypeFilter !== "all"
-              ? "Try adjusting your search or filters"
-              : "Create a new user to get started"}
+          <h3 className="text-xl font-medium text-foreground">Failed to load users</h3>
+          <p className="text-muted-foreground mt-2 text-center max-w-md">
+            There was an error loading the user list. Please try again or contact support if the problem persists.
           </p>
-          <Button className="mt-4" onClick={handleCreateUser}>
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            className="mt-4 border-muted-foreground/20 hover:bg-primary/5 transition-all duration-200"
+          >
+            Try Again
+          </Button>
+        </div>
+      )
+    }
+
+    if (users.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4">
+          <User className="h-12 w-12 text-primary/20 mb-4" />
+          <h3 className="text-xl font-medium text-foreground">No users found</h3>
+          <p className="text-muted-foreground mt-2 text-center max-w-md">
+            {debouncedSearchQuery || userTypeFilter.length > 0
+              ? "Try adjusting your search or filters to find what you're looking for."
+              : "Get started by creating a new user."}
+          </p>
+          <Button
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="mt-4 shadow-sm hover:shadow-md transition-all duration-200"
+          >
             <Plus className="h-4 w-4 mr-2" />
             New User
           </Button>
         </div>
-      ) : (
-        <div className="border rounded-lg">
-          <div
-            ref={parentRef}
-            className="h-[600px] overflow-auto"
-            style={{
-              scrollbarWidth: "thin",
-              scrollbarColor: "rgba(155, 155, 155, 0.5) transparent",
-            }}
-          >
-            <div
-              style={{
-                height: `${rowVirtualizer.getTotalSize()}px`,
-                width: "100%",
-                position: "relative",
-              }}
+      )
+    }
+
+    return (
+      <div ref={parentRef} className="h-[calc(100vh-320px)] min-h-[400px] overflow-auto border rounded-md bg-card">
+        {/* Table header */}
+        <div className="sticky top-0 z-10 border-b bg-gradient-to-r from-card to-muted/10 px-4 py-3 grid grid-cols-12 gap-2 shadow-sm">
+          <div className="col-span-4 flex items-center">
+            <Button
+              variant="ghost"
+              className="p-1 h-8 hover:bg-primary/5 transition-all duration-200"
+              onClick={() => handleSort("name")}
             >
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const user = filteredUsers[virtualRow.index]
-                return (
-                  <div
-                    key={user.id}
-                    className="absolute top-0 left-0 w-full border-b last:border-b-0"
-                    style={{
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    <div className="p-4 h-full">
-                      <div className="flex flex-col sm:flex-row gap-4 justify-between h-full">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              {user.image ? (
-                                <img
-                                  src={user.image || "/placeholder.svg"}
-                                  alt={user.name || "User"}
-                                  className="w-10 h-10 rounded-full object-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <User className="h-5 w-5 text-primary" />
-                              )}
-                            </div>
-                            <div>
-                              <h3 className="font-medium truncate">{user.name || "Unnamed User"}</h3>
-                              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                          <div className="flex items-center gap-1">
-                            <CreditCard className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{user.credits}</span>
-                          </div>
-
-                          <Badge variant={user.isAdmin ? "default" : "outline"} className="whitespace-nowrap">
-                            {user.isAdmin ? "Admin" : user.userType}
-                          </Badge>
-
-                          <div className="flex gap-2 ml-auto">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditUser(user.id)}
-                              aria-label={`Edit ${user.name}`}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(user)}
-                              aria-label={`Delete ${user.name}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Move the infinite loading indicator outside the virtualized area */}
-            {!isLoading && !searchQuery && userTypeFilter === "all" && (
-              <div ref={loadMoreRef} className="py-4 flex justify-center">
-                {isLoadingMore ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Loading more users...</span>
-                  </div>
-                ) : hasMore ? (
-                  <Button variant="outline" size="sm" onClick={loadMoreUsers} disabled={isLoadingMore}>
-                    Load more users
-                  </Button>
-                ) : users.length > 0 ? (
-                  <span className="text-sm text-muted-foreground">No more users to load</span>
-                ) : null}
-              </div>
-            )}
+              <UserCog className="mr-2 h-4 w-4 text-primary/70" />
+              <span className="font-medium">User</span>
+              <ArrowUpDown
+                className={cn("ml-1 h-4 w-4", sortField === "name" ? "text-primary" : "text-muted-foreground/30")}
+              />
+            </Button>
+          </div>
+          <div className="col-span-2 flex items-center justify-center">
+            <Button
+              variant="ghost"
+              className="p-1 h-8 hover:bg-primary/5 transition-all duration-200"
+              onClick={() => handleSort("userType")}
+            >
+              <Shield className="mr-2 h-4 w-4 text-primary/70" />
+              <span className="font-medium">Type</span>
+              <ArrowUpDown
+                className={cn("ml-1 h-4 w-4", sortField === "userType" ? "text-primary" : "text-muted-foreground/30")}
+              />
+            </Button>
+          </div>
+          <div className="col-span-2 flex items-center justify-center">
+            <Button
+              variant="ghost"
+              className="p-1 h-8 hover:bg-primary/5 transition-all duration-200"
+              onClick={() => handleSort("credits")}
+            >
+              <CreditCard className="mr-2 h-4 w-4 text-primary/70" />
+              <span className="font-medium">Credits</span>
+              <ArrowUpDown
+                className={cn("ml-1 h-4 w-4", sortField === "credits" ? "text-primary" : "text-muted-foreground/30")}
+              />
+            </Button>
+          </div>
+          <div className="col-span-4 flex items-center justify-end">
+            <Clock className="mr-2 h-4 w-4 text-primary/70" />
+            <span className="text-xs font-medium text-muted-foreground">Last Active</span>
           </div>
         </div>
-      )}
 
-      {/* Create user dialog */}
-      {/* Optimization 5: Improve dialog content for better mobile experience
-      // Update the create user dialog content: */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
-            <DialogDescription>
-              Add a new user to the system. They will be able to log in with these credentials.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleCreateSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="john@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="userType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>User Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select user type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ULTIMATE">Ultimate</SelectItem>
-                        <SelectItem value="FREE">Free</SelectItem>
-                        <SelectItem value="BASIC">Basic</SelectItem>
-                        <SelectItem value="PRO">Pro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="credits"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Credits</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isAdmin"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Administrator</FormLabel>
-                      <FormDescription>Grant admin privileges to this user</FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="sendWelcomeEmail"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Send Welcome Email</FormLabel>
-                      <FormDescription>Send an automated welcome email to the new user</FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create User"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit user dialog */}
-      {/* Optimization 6: Improve edit user dialog content: */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>Update user information and settings</DialogDescription>
-          </DialogHeader>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="details">User Details</TabsTrigger>
-              <TabsTrigger value="credits">Credits</TabsTrigger>
-            </TabsList>
-
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleUpdateSubmit)} className="space-y-4 mt-4">
-                <TabsContent value="details" className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="john@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="userType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>User Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select user type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="ULTIMATE">Ultimate</SelectItem>
-                            <SelectItem value="FREE">Free</SelectItem>
-                            <SelectItem value="BASIC">Basic</SelectItem>
-                            <SelectItem value="PRO">Pro</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="isAdmin"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                          <FormLabel>Administrator</FormLabel>
-                          <FormDescription>Grant admin privileges to this user</FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-
-                <TabsContent value="credits" className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="credits"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Credits</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="creditNote"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Credit Adjustment Note</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Reason for credit adjustment" {...field} />
-                        </FormControl>
-                        <FormDescription>Add a note explaining why credits were adjusted</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Optimization 7: Add lazy loading for user transactions
-                  // Update the credit history section in the edit dialog: */}
-                  {selectedUser?.TokenTransaction && selectedUser.TokenTransaction.length > 0 && (
-                    <div className="border rounded-md p-3 mt-4">
-                      <h4 className="font-medium mb-2">Credit History</h4>
-                      <div className="space-y-2 max-h-[150px] overflow-y-auto">
-                        {selectedUser.TokenTransaction.slice(0, 5).map((transaction) => (
-                          <div key={transaction.id} className="flex justify-between text-sm">
-                            <div>
-                              <span>{transaction.description || transaction.type}</span>
-                              <span className="text-xs text-muted-foreground ml-2">
-                                {format(new Date(transaction.createdAt), "MMM dd, yyyy")}
-                              </span>
-                            </div>
-                            <span className={transaction.amount > 0 ? "text-green-600" : "text-red-600"}>
-                              {transaction.amount > 0 ? `+${transaction.amount}` : transaction.amount}
-                            </span>
-                          </div>
-                        ))}
-                        {selectedUser.TokenTransaction.length > 5 && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="w-full text-xs"
-                            onClick={() => {
-                              // This would typically load more transactions
-                              toast({
-                                title: "Loading more transactions",
-                                description: "This would load more transaction history.",
-                              })
-                            }}
-                          >
-                            Load more ({selectedUser.TokenTransaction.length - 5} remaining)
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Changes"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete user dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this user? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedUser && (
-            <div className="border rounded-md p-4 my-4">
-              <div className="font-medium">{selectedUser.name}</div>
-              <div className="text-sm text-muted-foreground">{selectedUser.email}</div>
-              <div className="mt-2 text-sm">
-                <span className="text-muted-foreground">User Type:</span> {selectedUser.userType}
-                {selectedUser.isAdmin && <Badge className="ml-2">Admin</Badge>}
+        {/* Virtualized user list */}
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: "100%",
+            position: "relative",
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const user = users[virtualRow.index]
+            return (
+              <div
+                key={user.id}
+                className="absolute top-0 left-0 w-full"
+                style={{
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <UserCard user={user} onEdit={() => handleEditUser(user.id)} />
               </div>
-              <div className="mt-1 text-sm">
-                <span className="text-muted-foreground">Credits:</span> {selectedUser.credits}
-              </div>
-              {selectedUser.subscription && (
-                <div className="mt-1 text-sm">
-                  <span className="text-muted-foreground">Subscription:</span> {selectedUser.subscription.plan}
-                </div>
-              )}
+            )
+          })}
+        </div>
+
+        {/* Infinite scroll loading indicator */}
+        <div ref={lastItemRef} className="py-4 flex justify-center">
+          {isFetchingNextPage && (
+            <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-full shadow-sm">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">Loading more users...</span>
             </div>
           )}
+        </div>
+      </div>
+    )
+  }
 
-          <div className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
-            <p>This will permanently delete the user and all associated data:</p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>User account and profile</li>
-              <li>Subscription information</li>
-              <li>Credit history</li>
-              <li>Course progress and quiz attempts</li>
-              <li>All other user-related data</li>
-            </ul>
-          </div>
+  return (
+    <UserManagementProvider>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="pb-3 bg-gradient-to-r from-background to-muted/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-bold text-foreground">User Management</CardTitle>
+                <CardDescription className="text-muted-foreground/80">
+                  Manage user accounts, subscriptions, and credits
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={isFetching && !isFetchingNextPage}
+                className="transition-all duration-200 hover:bg-primary/10"
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-2", isFetching && !isFetchingNextPage && "animate-spin")} />
+                Refresh
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="relative w-full sm:w-[300px]">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/70" />
+                  <Input
+                    type="search"
+                    placeholder="Search users..."
+                    className="pl-8 border-muted-foreground/20 focus-visible:ring-primary/30 transition-all duration-200"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete User"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto border-muted-foreground/20 transition-all duration-200 hover:bg-primary/5"
+                    >
+                      <Filter className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                      Filter
+                      {userTypeFilter.length > 0 && (
+                        <Badge variant="secondary" className="ml-2 bg-primary text-primary-foreground">
+                          {userTypeFilter.length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground/70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuLabel>User Type</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {USER_TYPES.map((type) => (
+                      <DropdownMenuCheckboxItem
+                        key={type.value}
+                        checked={userTypeFilter.includes(type.value)}
+                        onCheckedChange={() => toggleUserTypeFilter(type.value)}
+                      >
+                        {type.label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                    {userTypeFilter.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <Button
+                          variant="ghost"
+                          className="w-full h-8 justify-center text-xs"
+                          onClick={() => setUserTypeFilter([])}
+                        >
+                          Clear Filters
+                        </Button>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <span className="text-xs text-muted-foreground">
+                  {totalCount} user{totalCount !== 1 ? "s" : ""}
+                </span>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New User
+                </Button>
+              </div>
+            </div>
+
+            {renderContent()}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Create user dialog */}
+      <CreateUserDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+
+      {/* Edit user dialog */}
+      {selectedUserId && (
+        <UserEditDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          userId={selectedUserId}
+          onSuccess={() => {
+            refetch()
+          }}
+        />
+      )}
+
+      {/* Reset subscription dialog */}
+      {userToReset && (
+        <ResetSubscriptionDialog
+          open={isResetDialogOpen}
+          onOpenChange={setIsResetDialogOpen}
+          userId={userToReset}
+          onSuccess={() => {
+            setUserToReset(null)
+            refetch()
+          }}
+        />
+      )}
+    </UserManagementProvider>
   )
 }
 

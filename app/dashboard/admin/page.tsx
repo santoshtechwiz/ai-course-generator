@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, BookOpen, Settings, CreditCard, LineChart, Inbox } from "lucide-react"
+import { Users,Inbox } from "lucide-react"
 
 export default async function AdminDashboard() {
   // Check if user is authenticated and is an admin
@@ -22,36 +22,14 @@ export default async function AdminDashboard() {
       icon: <Users className="h-8 w-8 text-primary" />,
       link: "/dashboard/admin/users",
     },
-    {
-      title: "Course Management",
-      description: "Create, edit, and manage your educational courses",
-      icon: <BookOpen className="h-8 w-8 text-primary" />,
-      link: "/dashboard/admin/courses",
-    },
-    {
-      title: "Plan Management",
-      description: "Configure subscription plans and pricing",
-      icon: <CreditCard className="h-8 w-8 text-primary" />,
-      link: "/dashboard/admin/plans",
-    },
+   
     {
       title: "Contact Inquiries",
       description: "View and respond to user inquiries from the contact form",
       icon: <Inbox className="h-8 w-8 text-primary" />,
       link: "/dashboard/admin/contact",
     },
-    {
-      title: "Analytics",
-      description: "View usage statistics and platform performance",
-      icon: <LineChart className="h-8 w-8 text-primary" />,
-      link: "/dashboard/admin/analytics",
-    },
-    {
-      title: "Settings",
-      description: "Configure system settings and preferences",
-      icon: <Settings className="h-8 w-8 text-primary" />,
-      link: "/dashboard/admin/settings",
-    },
+  
   ]
 
   return (

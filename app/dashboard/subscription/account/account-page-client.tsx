@@ -11,6 +11,8 @@ import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { BillingHistory } from "../components/BillingHistory"
 import { ManageSubscription } from "../components/ManageSubscription"
 import { ReferralSystem } from "../components/ReferralSystem"
+// Import the new hook at the top of the file
+import { useSubscription } from "../hooks/use-subscription"
 
 export function AccountPageClient({ user }: { user: any }) {
   const { subscriptionStatus, isLoading, setSubscriptionStatus, setIsLoading } = useSubscriptionStore()
@@ -19,55 +21,36 @@ export function AccountPageClient({ user }: { user: any }) {
   const [paymentMethods, setPaymentMethods] = useState([])
 
   // Optimize data fetching with proper cleanup
+  // Replace the useEffect for subscription data with the hook
+  // Find this useEffect:
+
+  // And replace it with:
+  const { subscriptionData, isLoading: isSubscriptionLoading, refreshSubscription } = useSubscription(user?.id || null)
+
+  // Add an event listener for subscription changes
   useEffect(() => {
-    if (!user?.id) return
-
-    let isMounted = true
-    const controller = new AbortController()
-    const signal = controller.signal
-
-    const fetchSubscriptionData = async () => {
-      setIsLoading(true)
-      try {
-        // Fetch subscription data from API route with timeout and abort controller
-        const response = await fetch("/api/account/subscription", {
-          signal,
-          headers: {
-            "Cache-Control": "no-cache",
-          },
-        })
-
-        if (!response.ok) throw new Error("Failed to fetch subscription data")
-        const data = await response.json()
-
-        // Only update state if component is still mounted
-        if (isMounted) {
-          // Ensure tokens/credits are properly set even if they're 0
-          if (data.credits === undefined || data.credits === null) {
-            data.credits = 0
-          }
-
-          setSubscriptionStatus(data)
-        }
-      } catch (error) {
-        if (error.name !== "AbortError" && isMounted) {
-          console.error("Error fetching subscription data:", error)
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+    const handleSubscriptionChange = () => {
+      if (refreshSubscription) {
+        refreshSubscription()
       }
     }
 
-    fetchSubscriptionData()
+    // Listen for the subscription-changed event
+    window.addEventListener("subscription-changed", handleSubscriptionChange)
 
-    // Cleanup function to prevent memory leaks and state updates on unmounted components
+    // Cleanup function
     return () => {
-      isMounted = false
-      controller.abort()
+      window.removeEventListener("subscription-changed", handleSubscriptionChange)
     }
-  }, [user, setSubscriptionStatus, setIsLoading])
+  }, [refreshSubscription])
+
+  // Update the component to use the new subscription data
+  useEffect(() => {
+    if (subscriptionData) {
+      setSubscriptionStatus(subscriptionData)
+      setIsLoading(isSubscriptionLoading)
+    }
+  }, [subscriptionData, isSubscriptionLoading, setSubscriptionStatus, setIsLoading])
 
   // Fetch billing history and payment methods with proper cleanup
   useEffect(() => {
