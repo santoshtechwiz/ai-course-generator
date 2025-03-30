@@ -1,4 +1,10 @@
 // Enhanced quiz store with better persistence
+// Define local storage with a fallback for non-browser environments
+const localStorage = typeof window !== 'undefined' && window.localStorage ? window.localStorage : {
+  getItem: (key: string) => null,
+  setItem: (key: string, value: string) => {},
+  removeItem: (key: string) => {}
+};
 
 export interface Question {
   id: string
