@@ -51,6 +51,7 @@ model User {
   @@index([lastActiveAt]) // Added for user activity queries
   @@index([createdAt]) // Added for user registration analytics
   @@index([isAdmin]) // Added for admin filtering
+  PendingSubscription PendingSubscription[]
 }
 
 model Account {
@@ -599,4 +600,21 @@ model ContactSubmission {
   responseMessage String?  @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+model PendingSubscription {
+  id            String   @id @default(cuid())
+  userId        String
+  planId        String
+  duration      Int
+  referralCode  String?
+  promoCode     String?
+  promoDiscount Float?
+  status        String   @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }

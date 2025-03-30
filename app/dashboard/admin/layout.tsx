@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import AdminNav from "./components/admin-nav"
-import AdminHeader from "./components/admin-header"
+
 
 
 export default async function AdminLayout({
@@ -20,7 +20,7 @@ export default async function AdminLayout({
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <AdminHeader />
+    
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8">
         <aside className="hidden md:block">

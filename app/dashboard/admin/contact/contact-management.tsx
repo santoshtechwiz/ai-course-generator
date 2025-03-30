@@ -129,7 +129,7 @@ export default function ContactManagement() {
           subject: "Re: Your inquiry",
           originalMessage: message,
           responseMessage: responseText,
-          from: "courseai@noreply.com", // explicitly set the sender email
+          from: "courseai@courseai.io", // explicitly set the sender email
         }),
       })
 

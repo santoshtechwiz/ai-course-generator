@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/authOptions"
 import { SubscriptionService } from "@/services/subscriptionService"
 import { z } from "zod"
+import prisma from "@/lib/db"
 
-// Update the POST method to handle promo codes
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -66,10 +67,8 @@ export async function POST(req: NextRequest) {
 
     // Validate promo code if provided
     if (validatedData.promoCode) {
-      // For now, we'll only validate AILAUNCH20 directly
-      // In a production environment, this would call a service to validate the code
-      const isValidPromo = validatedData.promoCode === "AILAUNCH20" && validatedData.promoDiscount === 20
-      if (!isValidPromo) {
+      const promoValidation = await SubscriptionService.validatePromoCode(validatedData.promoCode)
+      if (!promoValidation.valid) {
         return NextResponse.json(
           {
             error: "Invalid Promo Code",
@@ -78,6 +77,29 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         )
       }
+
+      // Use the validated discount percentage from the service
+      validatedData.promoDiscount = promoValidation.discountPercentage
+    }
+
+    // Create a pending subscription record before redirecting to Stripe
+    // This helps track that a subscription attempt was started but not completed
+    try {
+      await prisma.pendingSubscription.create({
+        data: {
+          userId: validatedData.userId,
+          planId: validatedData.planName,
+          duration: validatedData.duration,
+          referralCode: validatedData.referralCode,
+          promoCode: validatedData.promoCode,
+          promoDiscount: validatedData.promoDiscount,
+          status: "PENDING",
+          createdAt: new Date(),
+        },
+      })
+    } catch (error) {
+      console.error("Error creating pending subscription record:", error)
+      // Continue with checkout even if recording fails
     }
 
     // Now we can pass the promo code and discount to the updated service method

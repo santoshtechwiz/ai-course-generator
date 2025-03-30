@@ -35,6 +35,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 
 import { ReferralSystem } from "./ReferralSystem"
+import { calculateSavings } from "@/lib/subscription-formatter"
+
 
 interface PricingPageProps {
   userId: string | null
@@ -332,7 +334,7 @@ export function PricingPage({
   // Add this function to calculate discounted price
   const getDiscountedPrice = (originalPrice: number): number => {
     if (!isPromoValid || promoDiscount <= 0) return originalPrice
-    return Number.parseFloat((originalPrice * (1 - promoDiscount / 100)).toFixed(2))
+    return getDiscountedPriceUtil(originalPrice, promoDiscount)
   }
 
   // Update useEffect to handle pending subscriptions with promo code
@@ -550,7 +552,7 @@ export function PricingPage({
             className="ml-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
           >
             Save up to{" "}
-            {calculateSavings(SUBSCRIPTION_PLANS[2].options[0].price, SUBSCRIPTION_PLANS[2].options[1].price)}%
+            {calculateSavings(SUBSCRIPTION_PLANS[2].options[0].price, SUBSCRIPTION_PLANS[2].options[1].price, 12)}%
           </Badge>
         </Label>
       </div>
@@ -713,11 +715,7 @@ export function PricingPage({
   )
 }
 
-function calculateSavings(monthlyPrice: number, biAnnualPrice: number): number {
-  const annualCostMonthly = monthlyPrice * 12
-  const annualCostBiAnnual = biAnnualPrice * 2
-  return Math.round((1 - annualCostBiAnnual / annualCostMonthly) * 100)
-}
+// Use the imported calculateSavings function instead
 
 // Redesigned PlanCards component
 function PlanCards({
@@ -943,7 +941,7 @@ function PlanCards({
 function SavingsHighlight({ plan, duration }: { plan: (typeof SUBSCRIPTION_PLANS)[0]; duration: 1 | 6 }) {
   const monthlyPrice = plan.options.find((o) => o.duration === 1)?.price || 0
   const biAnnualPrice = plan.options.find((o) => o.duration === 6)?.price || 0
-  const savings = calculateSavings(monthlyPrice, biAnnualPrice)
+  const savings = calculateSavings(monthlyPrice, biAnnualPrice, 12)
 
   if (duration === 1 || plan.name === "FREE" || savings <= 0) return null
 
