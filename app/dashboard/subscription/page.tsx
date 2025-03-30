@@ -6,8 +6,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import { SubscriptionPlanType } from "./components/subscription.config"
+import type { SubscriptionPlanType } from "./components/subscription.config"
 import { PricingPage } from "./components/PricingPage"
+// Add the new components to the imports
+import { StripeSecureCheckout } from "./components/StripeSecureCheckout"
 
 
 export const metadata: Metadata = generatePageMetadata({
@@ -46,7 +48,7 @@ export default async function Page() {
     }
     try {
       const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId)
- 
+
       const tokensUsed = (await SubscriptionService.getTokensUsed(userId)) || 0
 
       return {
@@ -90,6 +92,7 @@ function PricingPageSkeleton() {
   )
 }
 
+// Update the PricingPageWrapper function to include the new components
 function PricingPageWrapper({
   userId,
   subscriptionData,
@@ -105,7 +108,8 @@ function PricingPageWrapper({
   isProd: boolean
 }) {
   const { currentPlan, subscriptionStatus, tokensUsed, error } = subscriptionData
-
+console.log("Subscription Data:", subscriptionData)
+  
   if (error) {
     return (
       <Alert variant="destructive">
@@ -116,13 +120,27 @@ function PricingPageWrapper({
   }
 
   return (
-    <PricingPage
-      userId={userId}
-      currentPlan={currentPlan}
-      subscriptionStatus={subscriptionStatus}
-      tokensUsed={tokensUsed}
-      isProd={isProd}
-    />
+    <div className="space-y-8">
+      <PricingPage
+        userId={userId}
+        currentPlan={currentPlan}
+        subscriptionStatus={subscriptionStatus}
+        tokensUsed={tokensUsed}
+        isProd={isProd}
+      />
+
+      {/* Add the Stripe secure checkout component */}
+      <div className="max-w-md mx-auto">
+        <StripeSecureCheckout />
+      </div>
+
+      {/* Add the usage analytics component for authenticated users */}
+      {userId && (
+        <div className="mt-12">
+         
+        </div>
+      )}
+    </div>
   )
 }
 

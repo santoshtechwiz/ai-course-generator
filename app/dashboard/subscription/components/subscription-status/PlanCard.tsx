@@ -1,30 +1,15 @@
-"use client"
-
-import { TooltipContent } from "@/components/ui/tooltip"
-
 import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 
-import { TooltipTrigger } from "@/components/ui/tooltip"
+import { CreditCard, Zap, Lock, Rocket, Crown, Check, Loader2 } from "lucide-react"
 
-import { Tooltip } from "@/components/ui/tooltip"
-
-import { TooltipProvider } from "@/components/ui/tooltip"
-
-import { CardFooter } from "@/components/ui/card"
-
-import { CardContent } from "@/components/ui/card"
-
-import { CardDescription } from "@/components/ui/card"
-
+import { SUBSCRIPTION_PLANS, SubscriptionPlanType, SubscriptionStatusType } from "../subscription.config"
+import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
-import { CardTitle } from "@/components/ui/card"
-
-import { CardHeader } from "@/components/ui/card"
-
-import { Card } from "@/components/ui/card"
-
-function PlanCards({
+// Redesigned PlanCards component
+export default function PlanCards({
   plans,
   currentPlan,
   subscriptionStatus,
@@ -52,9 +37,6 @@ function PlanCards({
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
 
-  // Determine if the user has a paid plan (to prevent downgrading to FREE)
-  const hasPaidPlan = currentPlan && currentPlan !== "FREE"
-
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
       {plans.map((plan) => {
@@ -63,25 +45,6 @@ function PlanCards({
         const isBestValue = plan.name === bestPlan?.name
         const isCurrentActivePlan = isSubscribed && currentPlan === plan.id
         const discountedPrice = getDiscountedPrice(priceOption.price)
-
-        // Determine if this plan button should be disabled
-        // Disable if:
-        // 1. User has an active subscription (any plan)
-        // 2. Any plan is currently loading
-        // 3. This is the FREE plan and user has a paid plan (prevent downgrade)
-        const isDisabled = isSubscribed || loading !== null || (plan.id === "FREE" && hasPaidPlan)
-
-        // Custom tooltip message for FREE plan when user has a paid plan
-        const freeButtonTooltip =
-          hasPaidPlan && plan.id === "FREE"
-            ? "You cannot downgrade from a paid plan to the free plan"
-            : isCurrentActivePlan
-              ? "This is your current active plan"
-              : isSubscribed
-                ? "You need to wait until your current subscription expires or cancel it before subscribing to a new plan"
-                : plan.id === "FREE"
-                  ? "Start using the free plan"
-                  : `Subscribe to the ${plan.name} plan`
 
         return (
           <div key={plan.id} className={`${isBestValue ? "order-first lg:order-none" : ""}`}>
@@ -198,7 +161,11 @@ function PlanCards({
                       <div className="w-full">
                         <Button
                           onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
-                          disabled={isDisabled}
+                          disabled={
+                            plan.id === "FREE" || // Always disable the free plan
+                            (isSubscribed && currentPlan !== "FREE") || // Disable for paid users with active subscription
+                            loading !== null
+                          }
                           className={`w-full text-primary-foreground ${
                             plan.id === "FREE"
                               ? "bg-slate-500 hover:bg-slate-600"
@@ -218,7 +185,7 @@ function PlanCards({
                             </>
                           ) : isCurrentActivePlan ? (
                             "Current Active Plan"
-                          ) : isSubscribed ? (
+                          ) : isSubscribed && currentPlan !== "FREE" ? (
                             "Subscription Active"
                           ) : plan.id === "FREE" ? (
                             "Start for Free"
@@ -228,7 +195,15 @@ function PlanCards({
                         </Button>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent>{freeButtonTooltip}</TooltipContent>
+                    <TooltipContent>
+                      {isCurrentActivePlan
+                        ? "This is your current active plan"
+                        : isSubscribed && currentPlan !== "FREE"
+                          ? "You need to wait until your current subscription expires or cancel it before subscribing to a new plan"
+                          : plan.id === "FREE"
+                            ? "Start using the free plan"
+                            : `Subscribe to the ${plan.name} plan`}
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </CardFooter>
@@ -249,13 +224,6 @@ function PlanCards({
                   </p>
                 </div>
               )}
-
-              {/* Add a note for FREE plan when user has a paid plan */}
-              {!isSubscribed && !isCurrentActivePlan && hasPaidPlan && plan.id === "FREE" && (
-                <div className="px-6 pb-4 text-center">
-                  <p className="text-sm text-red-500 italic">You cannot downgrade from a paid plan to the free plan</p>
-                </div>
-              )}
             </Card>
           </div>
         )
@@ -263,4 +231,3 @@ function PlanCards({
     </div>
   )
 }
-
