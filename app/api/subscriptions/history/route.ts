@@ -31,14 +31,14 @@ export async function GET(req: NextRequest) {
     }
 
     // Get subscription history for the user
-    const events = await prisma.subscriptionEvent.findMany({
+    const events = await prisma.tokenTransaction.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
       take: 50, // Limit to 50 most recent events
     })
 
     // Get subscription history details
-    const subscriptionHistory = await prisma.subscriptionHistory.findMany({
+    const subscriptionHistory = await prisma.tokenTransaction.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
       take: 10, // Limit to 10 most recent subscriptions
