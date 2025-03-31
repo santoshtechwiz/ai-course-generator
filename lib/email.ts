@@ -1,7 +1,7 @@
 'use server'
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend("re_WHm98Ecp_EY6PpGXNghQLxFUszScAfEiT")
 
 // Send welcome email
 export async function sendWelcomeEmail(email: string, name: string) {
