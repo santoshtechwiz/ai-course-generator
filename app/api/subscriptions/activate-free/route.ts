@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/authOptions"
 import { SubscriptionService } from "@/services/subscriptionService"
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const session = await getAuthSession()
 
@@ -10,6 +10,22 @@ export async function POST() {
       return NextResponse.json(
         { error: "Unauthorized", details: "You must be logged in to activate a free plan" },
         { status: 401 },
+      )
+    }
+
+    // Parse the request body to check for explicit confirmation
+    let body
+    try {
+      body = await request.json()
+    } catch (e) {
+      body = {}
+    }
+
+    // Require explicit confirmation
+    if (!body.confirmed) {
+      return NextResponse.json(
+        { error: "Confirmation required", details: "Explicit confirmation is required to activate the free plan" },
+        { status: 400 },
       )
     }
 

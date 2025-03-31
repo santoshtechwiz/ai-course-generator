@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 export function StatusBadge({ status }: { status: string }) {
   if (!status) return <Badge variant="outline">N/A</Badge>
@@ -22,10 +23,14 @@ export function StatusBadge({ status }: { status: string }) {
     case "PAST_DUE":
       return <Badge variant="destructive">Past Due</Badge>
     case "INACTIVE":
-      return <Badge variant="outline">Inactive</Badge>
+      return (
+        <Badge variant="outline" className={cn("text-muted-foreground border-muted-foreground/50")}>
+          Inactive
+        </Badge>
+      )
     case "PENDING":
       return (
-        <Badge variant="outline" className="text-blue-500 border-blue-500">
+        <Badge variant="outline" className="text-primary border-primary">
           Pending
         </Badge>
       )

@@ -59,6 +59,10 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
         throw new Error(stripeError.message)
       }
 
+      // Add a timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+
       // Send the payment method to your server
       const response = await fetch("/api/subscriptions/payment-methods", {
         method: "POST",
@@ -68,7 +72,10 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
         body: JSON.stringify({
           paymentMethodId: paymentMethod.id,
         }),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       const data = await response.json()
 
@@ -126,27 +133,30 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
               </label>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
+            <div className="border border-input rounded-lg p-3 sm:p-4 bg-card">
               <CardElement
                 id="card-element"
                 options={{
                   style: {
                     base: {
                       fontSize: "16px",
-                      color: "#424770",
+                      color: "var(--card-foreground)",
                       "::placeholder": {
-                        color: "#aab7c4",
+                        color: "var(--muted-foreground)",
                       },
+                      iconColor: "var(--card-foreground)",
                     },
                     invalid: {
-                      color: "#9e2146",
+                      color: "var(--destructive)",
+                      iconColor: "var(--destructive)",
                     },
                   },
+                  hidePostalCode: true,
                 }}
               />
             </div>
             {error && (
-              <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-md border border-red-200 dark:border-red-800">
+              <div className="text-sm text-destructive bg-destructive/10 p-2 rounded-md border border-destructive/20">
                 {error}
               </div>
             )}
@@ -155,7 +165,7 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
           <Button
             type="submit"
             disabled={!stripe || isLoading}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+            className="w-full bg-gradient-to-r from-primary to-primary-foreground/80 hover:from-primary/90 hover:to-primary-foreground/70 text-primary-foreground"
           >
             {isLoading ? (
               <>

@@ -2,17 +2,14 @@ import { Suspense } from "react"
 import { getAuthSession } from "@/lib/authOptions"
 import { SubscriptionService } from "@/services/subscriptionService"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { syncUserCredits } from "@/lib/db"
 
 import { AlertTriangle } from "lucide-react"
-
-import { ManageSubscription } from "./ManageSubscription"
-import { BillingHistory } from "./component/BillingHistory"
 import SubscriptionDetails from "./component/SubscriptionDetails"
+
+
 
 export default async function SubscriptionAccountPage() {
   const session = await getAuthSession()
@@ -20,7 +17,7 @@ export default async function SubscriptionAccountPage() {
 
   if (!userId) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Authentication Required</AlertTitle>
@@ -55,7 +52,6 @@ export default async function SubscriptionAccountPage() {
         subscriptionStatus: status,
         endDate: endDate ? new Date(endDate) : null,
         tokensUsed: tokenData.used,
-     
         billingHistory,
         paymentMethods,
       }
@@ -76,9 +72,9 @@ export default async function SubscriptionAccountPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Subscription Management</h1>
+    <div className="container mx-auto px-4 py-6 sm:py-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Subscription Management</h1>
         <p className="text-muted-foreground">Manage your subscription, billing, and payment methods</p>
       </div>
 
@@ -91,9 +87,12 @@ export default async function SubscriptionAccountPage() {
 
 function SubscriptionDetailsSkeleton() {
   return (
-    <div className="space-y-8">
-      <Skeleton className="h-[300px] w-full" />
-      <Skeleton className="h-[200px] w-full" />
+    <div className="space-y-6">
+      <div className="flex items-center space-x-4 mb-6">
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-10 w-32" />
+      </div>
+      <Skeleton className="h-[300px] w-full rounded-xl" />
     </div>
   )
 }
