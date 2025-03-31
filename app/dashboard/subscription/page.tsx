@@ -8,7 +8,6 @@ import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import type { SubscriptionPlanType } from "./components/subscription.config"
 import { PricingPage } from "./components/PricingPage"
-// Add the new components to the imports
 import { StripeSecureCheckout } from "./components/StripeSecureCheckout"
 
 export const metadata: Metadata = generatePageMetadata({
@@ -48,7 +47,12 @@ export default async function Page() {
     try {
       const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId)
 
-      const tokensUsed = (await SubscriptionService.getTokensUsed(userId)) || 0
+      // Get token usage data
+      const tokenData = await SubscriptionService.getTokensUsed(userId)
+
+      // Extract the 'used' property from the token data object
+      // Make sure we're handling the case where tokenData might be null or not an object
+      const tokensUsed = typeof tokenData === "object" && tokenData !== null ? Number(tokenData.used) || 0 : 0
 
       return {
         currentPlan: plan as SubscriptionPlanType,

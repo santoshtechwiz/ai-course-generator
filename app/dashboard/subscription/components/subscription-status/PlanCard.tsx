@@ -40,6 +40,9 @@ export default function PlanCards({
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
 
+  // Check if the user is already on the free plan
+  const isOnFreePlan = currentPlan === "FREE" && normalizedStatus === "ACTIVE"
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
       {plans.map((plan) => {
@@ -48,6 +51,10 @@ export default function PlanCards({
         const isBestValue = plan.name === bestPlan?.name
         const isCurrentActivePlan = isSubscribed && currentPlan === plan.id
         const discountedPrice = getDiscountedPrice(priceOption.price)
+
+        // Determine if this specific plan should be disabled
+        const isPlanDisabled =
+          !isPlanAvailable(plan.id as SubscriptionPlanType) || loading !== null || (plan.id === "FREE" && isOnFreePlan)
 
         return (
           <div
@@ -67,6 +74,9 @@ export default function PlanCards({
                 <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1.5 text-sm font-medium animate-pulse">
                   Most Popular
                 </div>
+              )}
+              {isCurrentActivePlan && (
+                <div className="bg-green-500 text-white text-center py-1.5 text-sm font-medium">Current Plan</div>
               )}
               <CardHeader className={`${isBestValue ? "pb-4" : "pb-2"}`}>
                 <div className="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between mb-1">
@@ -166,7 +176,7 @@ export default function PlanCards({
                 <div className="w-full">
                   <Button
                     onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
-                    disabled={!isPlanAvailable(plan.id as SubscriptionPlanType) || loading !== null}
+                    disabled={isPlanDisabled}
                     className={`w-full text-primary-foreground ${
                       plan.id === "FREE"
                         ? "bg-slate-500 hover:bg-slate-600"
@@ -176,9 +186,7 @@ export default function PlanCards({
                             ? "bg-purple-500 hover:bg-purple-600"
                             : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                     } ${
-                      plan.name === bestPlan?.name && isPlanAvailable(plan.id as SubscriptionPlanType)
-                        ? "animate-pulse"
-                        : ""
+                      plan.name === bestPlan?.name && !isPlanDisabled ? "animate-pulse" : ""
                     } shadow-md hover:shadow-lg transition-all duration-300`}
                   >
                     {loading === plan.id ? (
@@ -190,6 +198,8 @@ export default function PlanCards({
                       "Current Plan"
                     ) : !isPlanAvailable(plan.id as SubscriptionPlanType) ? (
                       "Unavailable"
+                    ) : plan.id === "FREE" && isOnFreePlan ? (
+                      "Current Plan"
                     ) : plan.id === "FREE" ? (
                       "Start for Free"
                     ) : (
@@ -206,7 +216,14 @@ export default function PlanCards({
                 </div>
               )}
 
-              {!isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && (
+              {/* Add a note for free plan when already subscribed */}
+              {plan.id === "FREE" && isOnFreePlan && !isCurrentActivePlan && (
+                <div className="px-6 pb-4 text-center">
+                  <p className="text-sm text-muted-foreground italic">You are currently on the free plan</p>
+                </div>
+              )}
+
+              {!isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && plan.id !== "FREE" && (
                 <div className="px-6 pb-4 text-center">
                   <p className="text-sm text-muted-foreground italic">
                     You need to cancel your current subscription before subscribing to this plan

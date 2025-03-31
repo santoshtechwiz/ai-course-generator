@@ -43,71 +43,101 @@ declare module "next-auth/jwt" {
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
-    strategy: "database",
+    strategy: "jwt", // Changed from "database" to "jwt" for better consistency
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
-      if (token.sub) {
-        const userSubscription = await prisma.userSubscription.findUnique({
-          where: { userId: token.sub },
-        })
+    async jwt({ token, user, account, trigger }) {
+      // Initial sign in
+      if (user) {
+        token.id = user.id
+        token.credits = user.credits || 0
+        token.isAdmin = user.isAdmin || false
+        token.userType = user.userType || "Free"
+      }
 
-        token.user = {
-          ...(token.user || {}),
-          credits: userSubscription?.planId || 0,
-          subscriptionPlan: userSubscription?.planId || "FREE",
-          subscriptionStatus: userSubscription?.status || null,
-          subscriptionExpirationDate: userSubscription?.currentPeriodEnd?.toISOString(),
+      // On every JWT refresh, get the latest user data
+      if (token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id },
+            include: {
+              subscription: true,
+            },
+          })
+
+          if (dbUser) {
+            token.credits = dbUser.credits
+            token.isAdmin = dbUser.isAdmin
+            token.userType = dbUser.userType
+            token.subscriptionPlan = dbUser.subscription?.planId || null
+            token.subscriptionStatus = dbUser.subscription?.status || null
+          }
+        } catch (error) {
+          console.error("Error fetching user data for JWT:", error)
         }
       }
 
       return token
     },
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id
-        session.user.credits = user.credits || 0
-        session.user.isAdmin = user.isAdmin || false
-        session.user.userType = user.userType || "Free"
-
-        const subscription = await prisma.userSubscription.findUnique({
-          where: { userId: user.id },
-          select: { planId: true, status: true },
-        })
-
-        session.user.subscriptionPlan = subscription?.planId || null
-        session.user.subscriptionStatus = subscription?.status || null
-        session.user.accessToken = session.user.accessToken
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id
+        session.user.credits = token.credits || 0
+        session.user.isAdmin = token.isAdmin || false
+        session.user.userType = token.userType || "Free"
+        session.user.subscriptionPlan = token.subscriptionPlan || null
+        session.user.subscriptionStatus = token.subscriptionStatus || null
       }
       return session
     },
   },
   events: {
-    async signIn({ user }) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          lastLogin: new Date(),
-          userType: { set: user.userType || "Free" },
-        },
-      })
-    },
-    async createUser({ user }) {
-      // Set default user type
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { userType: "Free" },
-      })
+    async signIn({ user, account, isNewUser }) {
+      try {
+        // Update last login time for all sign-ins
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            lastLogin: new Date(),
+          },
+        })
 
-      // Send welcome email to new user
-      if (user.email && user.name) {
-        await sendWelcomeEmail(user.email, user.name)
+        // For new users, set default values
+        if (isNewUser) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              userType: "Free",
+              credits: 0, // Start with 0 credits - only add when subscribing
+              isAdmin: false,
+            },
+          })
+
+          // Send welcome email to new user
+          if (user.email && user.name) {
+            await sendWelcomeEmail(user.email, user.name)
+          }
+        }
+
+        // Record the sign-in provider for analytics
+        if (account) {
+          await prisma.userLoginHistory.create({
+            data: {
+              userId: user.id,
+              provider: account.provider,
+              success: true,
+            },
+          })
+        }
+      } catch (error) {
+        console.error("Error in signIn event:", error)
       }
     },
   },
   pages: {
     signIn: "/auth/signin",
+    error: "/auth/error",
   },
   providers: [
     GoogleProvider({
@@ -115,7 +145,6 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       allowDangerousEmailAccountLinking: true,
     }),
-
     GithubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
@@ -128,6 +157,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
 }
 
 export const getAuthSession = () => getServerSession(authOptions)

@@ -2,46 +2,29 @@
 
 import { useState, useEffect } from "react"
 
-interface TokenData {
-  used: number
-  received: number
-  remaining: number
-  transactions?: any[]
-}
-
-interface SubscriptionData {
-  plan: string
-  status: string
-  endDate: string | null
-}
-
 export function useSubscription() {
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
+  const [subscription, setSubscription] = useState<any>(null)
   const [tokensUsed, setTokensUsed] = useState<number>(0)
   const [tokensReceived, setTokensReceived] = useState<number>(0)
   const [tokensRemaining, setTokensRemaining] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchTokenUsage = async (): Promise<TokenData> => {
+  const fetchTokenUsage = async () => {
     try {
       const response = await fetch("/api/tokens/usage")
-      if (!response.ok) {
-        throw new Error("Failed to fetch token usage data")
-      }
-
       const data = await response.json()
 
       // Ensure we're returning numbers, not objects
       return {
-        used: Number(data.used) || 0,
-        received: Number(data.received) || 0,
-        remaining: Number(data.remaining) || 0,
+        used: typeof data.used === "number" ? data.used : 0,
+        received: typeof data.received === "number" ? data.received : 0,
+        remaining: typeof data.remaining === "number" ? data.remaining : 0,
         transactions: Array.isArray(data.transactions) ? data.transactions : [],
       }
     } catch (error) {
       console.error("Error fetching token usage:", error)
-      return { used: 0, received: 0, remaining: 0 }
+      return { used: 0, received: 0, remaining: 0, transactions: [] }
     }
   }
 
@@ -62,12 +45,12 @@ export function useSubscription() {
       setSubscription({
         plan: subscriptionData.plan || "FREE",
         status: subscriptionData.status || "INACTIVE",
-        endDate: subscriptionData.endDate ? subscriptionData.endDate : null,
+        endDate: subscriptionData.endDate ? new Date(subscriptionData.endDate) : null,
       })
 
-      setTokensUsed(tokenData.used)
-      setTokensReceived(tokenData.received)
-      setTokensRemaining(tokenData.remaining)
+      setTokensUsed(tokenData.used || 0)
+      setTokensReceived(tokenData.received || 0)
+      setTokensRemaining(tokenData.remaining || 0)
 
       setError(null)
     } catch (err: any) {
