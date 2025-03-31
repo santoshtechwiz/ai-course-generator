@@ -4,7 +4,7 @@ import { Resend } from "resend"
 const resend = new Resend("re_WHm98Ecp_EY6PpGXNghQLxFUszScAfEiT")
 
 // Send welcome email
-export async function sendWelcomeEmail(email: string, name: string) {
+export async function sendEmail(email: string, name: string) {
   try {
     const response = await resend.emails.send({
       from: process.env.EMAIL_FROM || "no-reply@yourdomain.com",
@@ -63,7 +63,7 @@ export async function sendAdminNotification(subject: string, name: string, email
 
     const response = await resend.emails.send({
       from: process.env.EMAIL_FROM || "admin@yourdomain.com",
-      to: adminEmail,
+      to: adminEmail || "fallback@yourdomain.com",
       subject: `New Contact Form Submission: ${subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
