@@ -14,9 +14,10 @@ model User {
   email                 String?                @unique
   emailVerified         DateTime?
   image                 String?
-  credits               Int                    @default(3)
+  credits               Int                    @default(0)
+  creditsUsed           Int                    @default(0)
   isAdmin               Boolean                @default(false)
-  userType              String                 @default("Free")
+  userType              String                 @default("FREE")
   totalCoursesWatched   Int                    @default(0)
   totalQuizzesAttempted Int                    @default(0)
   totalTimeSpent        Int                    @default(0)

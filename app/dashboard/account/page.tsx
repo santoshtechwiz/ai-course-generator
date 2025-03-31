@@ -5,11 +5,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ManageSubscription } from "../components/ManageSubscription"
-import { BillingHistory } from "../components/BillingHistory"
+
 import { syncUserCredits } from "@/lib/db"
 
 import { AlertTriangle } from "lucide-react"
+
+import { ManageSubscription } from "./ManageSubscription"
+import { BillingHistory } from "./component/BillingHistory"
+import SubscriptionDetails from "./component/SubscriptionDetails"
 
 export default async function SubscriptionAccountPage() {
   const session = await getAuthSession()
@@ -38,6 +41,10 @@ export default async function SubscriptionAccountPage() {
 
   async function getSubscriptionData() {
     try {
+      if (!userId) {
+        throw new Error("User ID is required but was null.")
+      }
+
       const { plan, status, endDate } = await SubscriptionService.getSubscriptionStatus(userId)
       const tokenData = await SubscriptionService.getTokensUsed(userId)
       const billingHistory = (await SubscriptionService.getBillingHistory(userId)) || []
@@ -48,8 +55,7 @@ export default async function SubscriptionAccountPage() {
         subscriptionStatus: status,
         endDate: endDate ? new Date(endDate) : null,
         tokensUsed: tokenData.used,
-        tokensRemaining: tokenData.remaining,
-        tokensReceived: tokenData.received,
+     
         billingHistory,
         paymentMethods,
       }
@@ -89,46 +95,6 @@ function SubscriptionDetailsSkeleton() {
       <Skeleton className="h-[300px] w-full" />
       <Skeleton className="h-[200px] w-full" />
     </div>
-  )
-}
-
-async function SubscriptionDetails({
-  userId,
-  getSubscriptionData,
-}: {
-  userId: string
-  getSubscriptionData: () => Promise<any>
-}) {
-  const subscriptionData = await getSubscriptionData()
-
-  if (subscriptionData.error) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{subscriptionData.error}</AlertDescription>
-      </Alert>
-    )
-  }
-
-  return (
-    <Tabs defaultValue="subscription" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-8">
-        <TabsTrigger value="subscription">Subscription Details</TabsTrigger>
-        <TabsTrigger value="billing">Billing History</TabsTrigger>
-      </TabsList>
-      <TabsContent value="subscription">
-        <ManageSubscription userId={userId} subscriptionData={subscriptionData} />
-      </TabsContent>
-      <TabsContent value="billing">
-        <Card>
-          <CardHeader>
-            <CardTitle>Billing History</CardTitle>
-            <CardDescription>View your past invoices and payment history</CardDescription>
-          </CardHeader>
-          <BillingHistory billingHistory={subscriptionData.billingHistory} />
-        </Card>
-      </TabsContent>
-    </Tabs>
   )
 }
 

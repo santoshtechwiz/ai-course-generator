@@ -85,7 +85,7 @@ export function UserMenu({ children }: UserMenuProps) {
               </DropdownMenuItem>
               
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/subscription/account" className="cursor-pointer">
+                <Link href="/dashboard/account" className="cursor-pointer">
                   <CreditCard className="mr-2 h-4 w-4" />
                   <span>Account</span>
                   {getSubscriptionBadge()}

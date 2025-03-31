@@ -53,7 +53,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.credits = user.credits || 0
         token.isAdmin = user.isAdmin || false
-        token.userType = user.userType || "Free"
+        token.userType = user.userType || "FREE"
       }
 
       // On every JWT refresh, get the latest user data
@@ -85,7 +85,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id
         session.user.credits = token.credits || 0
         session.user.isAdmin = token.isAdmin || false
-        session.user.userType = token.userType || "Free"
+        session.user.userType = token.userType || "FREE"
         session.user.subscriptionPlan = token.subscriptionPlan || null
         session.user.subscriptionStatus = token.subscriptionStatus || null
       }
@@ -122,11 +122,10 @@ export const authOptions: NextAuthOptions = {
 
         // Record the sign-in provider for analytics
         if (account) {
-          await prisma.userLoginHistory.create({
+          await prisma.userEngagementMetrics.create({
             data: {
               userId: user.id,
-              provider: account.provider,
-              success: true,
+              createdAt: new Date(),
             },
           })
         }

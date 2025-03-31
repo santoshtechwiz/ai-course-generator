@@ -394,7 +394,10 @@ export async function updateUserCredits(userId: string, type: QuizType): Promise
 
   await prisma.user.update({
     where: { id: userId },
-    data: { credits: { decrement: 1 } },
+    data: {
+      credits: { decrement: 1 },
+      creditsUsed: { increment: 1 },
+    },
   })
 }
 
