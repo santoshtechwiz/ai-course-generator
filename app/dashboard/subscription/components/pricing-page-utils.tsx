@@ -166,7 +166,7 @@ export function PricingPage({
     [toast],
   )
 
-  // Modify the handleSubscribe function to include promo code
+  // Modify the handleSubscribe function to fix the subscription logic
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
     // Clear any previous errors
     setSubscriptionError(null)
@@ -200,27 +200,14 @@ export function PricingPage({
       return
     }
 
-    // If user has any active subscription, prevent new subscriptions
-    if (isSubscribed && planName !== currentPlan) {
+    // If user has any active subscription that is not FREE, prevent new subscriptions
+    if (isSubscribed && currentPlan !== "FREE" && planName !== currentPlan) {
       setSubscriptionError(
         `You already have an active subscription. Please wait until it expires or cancel it before subscribing to a new plan.`,
       )
       toast({
         title: "Subscription Error",
         description: `You already have an active subscription. Please wait until it expires or cancel it before subscribing to a new plan.`,
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Prevent downgrading from a paid plan to FREE
-    if (planName === "FREE" && currentPlan && currentPlan !== "FREE") {
-      setSubscriptionError(
-        `You cannot downgrade from a paid plan to the free plan. Please contact support if you need assistance.`,
-      )
-      toast({
-        title: "Subscription Error",
-        description: `You cannot downgrade from a paid plan to the free plan. Please contact support if you need assistance.`,
         variant: "destructive",
       })
       return
@@ -249,6 +236,8 @@ export function PricingPage({
           variant: "default",
         })
 
+        // Dispatch an event to notify other components about the subscription change
+        window.dispatchEvent(new Event("subscription-changed"))
         router.refresh()
       } catch (error) {
         console.error("Free plan activation error:", error)

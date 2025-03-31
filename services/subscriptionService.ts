@@ -4,14 +4,12 @@ import {
 } from "@/app/dashboard/subscription/components/subscription.config"
 import { prisma } from "@/lib/db"
 import Stripe from "stripe"
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+const key="***REMOVED***";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || key, {
   apiVersion: "2024-10-28.acacia",
 })
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("Missing STRIPE_SECRET_KEY environment variable")
-}
+
 
 export class SubscriptionService {
   static async activateFreePlan(userId: string): Promise<{ success: boolean }> {
@@ -106,7 +104,7 @@ export class SubscriptionService {
 
     if (!user) throw new Error("User not found")
 
-    if (user.subscription && user.subscription.planId!=="FREE" && user.subscription.status === "ACTIVE") {
+    if (user.subscription && user.subscription.planId !== "FREE" && user.subscription.status === "ACTIVE") {
       throw new Error("User already has an active subscription")
     }
     const option = plan.options.find((o) => o.duration === duration)
@@ -242,14 +240,13 @@ export class SubscriptionService {
       cancel_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/cancelled?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         userId,
-        planName,
-        tokens: plan.tokens.toString(),
+        planName: plan.id, // Store plan ID instead of name for consistency
+        tokens: plan.tokens.toString(), // Store the correct token amount based on plan
         referrerId: referrerUserId || "",
         referralUseId: referralUseId || "",
         promoCode: promoCode || "",
         promoDiscount: promoDiscount ? promoDiscount.toString() : "",
       },
-     
     })
 
     return { sessionId: session.id }
@@ -280,13 +277,18 @@ export class SubscriptionService {
   }
 
   static async getTokensUsed(userId: string): Promise<number> {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    // Get token usage from transactions instead of user.credits
+    const tokenTransactions = await prisma.tokenTransaction.findMany({
+      where: {
+        userId,
+        type: "USAGE", // Only count transactions marked as usage
+      },
     })
-    if (!user) {
-      throw new Error("User not found")
-    }
-    return user.credits || 0
+
+    // Sum up the absolute values of usage transactions
+    const tokensUsed = tokenTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0)
+
+    return tokensUsed
   }
 
   static async cancelSubscription(userId: string): Promise<boolean> {
@@ -309,16 +311,6 @@ export class SubscriptionService {
           status: "CANCELED",
         },
       })
-      //reset the tokens to default in tokentransaction
-
-      await prisma.tokenTransaction.updateMany({
-        where: { userId },
-        data: {
-          amount: 0,
-        },
-      })
-
-      
 
       return true
     } catch (error) {
@@ -468,8 +460,6 @@ export class SubscriptionService {
     return { valid: false, discountPercentage: 0 }
   }
 
-  // Add this method to the SubscriptionService class
-
   static async verifyPaymentStatus(sessionId: string): Promise<{
     status: "succeeded" | "pending" | "failed" | "canceled"
     subscription?: any
@@ -486,6 +476,45 @@ export class SubscriptionService {
 
       // Check status without relying on payment_intent
       if (session.status === "complete" && session.payment_status === "paid") {
+        // Add credits for successful payment
+        if (session.metadata?.userId && session.metadata?.tokens) {
+          const userId = session.metadata.userId
+          const tokens = Number.parseInt(session.metadata.tokens, 10)
+
+          // Find the plan to get the correct token amount
+          const planId = session.metadata.planName
+          const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId)
+
+          // Use the plan tokens if available, otherwise fall back to metadata tokens
+          const tokensToAdd = plan ? plan.tokens : tokens
+
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+          })
+
+          if (user) {
+            console.log(`Adding ${tokensToAdd} tokens to user ${userId} from plan ${planId}`)
+
+            // Update user credits with the correct token amount
+            await prisma.user.update({
+              where: { id: userId },
+              data: {
+                credits: user.credits + tokensToAdd,
+              },
+            })
+
+            // Log the token addition with the correct amount
+            await prisma.tokenTransaction.create({
+              data: {
+                userId,
+                amount: tokensToAdd,
+                type: session.mode === "subscription" ? "SUBSCRIPTION" : "PURCHASE",
+                description: `Added ${tokensToAdd} tokens from ${planId || "subscription"} plan`,
+              },
+            })
+          }
+        }
+
         return {
           status: "succeeded",
           subscription: session.subscription,

@@ -9,7 +9,7 @@ import { ManageSubscription } from "../components/ManageSubscription"
 import { BillingHistory } from "../components/BillingHistory"
 
 import { AlertTriangle } from "lucide-react"
-import { AddOnPackages } from "../components/add-on-packages"
+
 
 export default async function SubscriptionAccountPage() {
   const session = await getAuthSession()

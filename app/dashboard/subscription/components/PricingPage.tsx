@@ -4,23 +4,10 @@ import type React from "react"
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import {
-  Check,
-  X,
-  Sparkles,
-  Gift,
-  Loader2,
-  AlertTriangle,
-  Lock,
-  Info,
-  CreditCard,
-  Zap,
-  Rocket,
-  Crown,
-} from "lucide-react"
+import { Check, X, Sparkles, Gift, Loader2, AlertTriangle, Info, CreditCard, Zap, Rocket, Crown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Switch } from "@/components/ui/switch"
@@ -36,7 +23,6 @@ import { Input } from "@/components/ui/input"
 import { ReferralSystem } from "./ReferralSystem"
 import { calculateSavings } from "@/lib/subscription-formatter"
 import PlanCards from "./subscription-status/PlanCard"
-
 
 interface PricingPageProps {
   userId: string | null
@@ -189,8 +175,6 @@ export function PricingPage({
       return
     }
 
-    
-
     // Prevent downgrading from a paid plan to FREE
     if (planName === "FREE" && currentPlan && currentPlan !== "FREE") {
       setSubscriptionError(
@@ -323,6 +307,10 @@ export function PricingPage({
   // Add this function to calculate discounted price
   const getDiscountedPrice = (originalPrice: number): number => {
     if (!isPromoValid || promoDiscount <= 0) return originalPrice
+    const getDiscountedPriceUtil = (price: number, discount: number) => {
+      const discountAmount = (price * discount) / 100
+      return price - discountAmount
+    }
     return getDiscountedPriceUtil(originalPrice, promoDiscount)
   }
 
@@ -353,6 +341,20 @@ export function PricingPage({
     }
   }, [userId, validatePromoCode])
 
+  // Add this function to determine if a plan is available for subscription
+  const isPlanAvailable = useCallback(
+    (planName: SubscriptionPlanType) => {
+      // If not subscribed or on FREE plan, all plans are available
+      if (!isSubscribed || currentPlan === "FREE") {
+        return true
+      }
+
+      // If already subscribed to a paid plan, only the current plan is available
+      return planName === currentPlan
+    },
+    [isSubscribed, currentPlan],
+  )
+
   return (
     <div className="container max-w-6xl space-y-8 px-4 sm:px-6">
       {!isProd && <DevModeBanner />}
@@ -367,7 +369,93 @@ export function PricingPage({
       )}
 
       {/* Current Subscription Card - Redesigned */}
-      {isAuthenticated && (
+      {isAuthenticated && isSubscribed && currentPlan !== "FREE" && (
+        <Alert className="mb-8 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 rounded-xl shadow-sm">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <AlertTitle className="text-blue-700 dark:text-blue-300 font-semibold">Active Subscription</AlertTitle>
+          <AlertDescription className="text-blue-600 dark:text-blue-400">
+            You currently have an active {currentPlan} plan. You need to wait until your subscription expires or cancel
+            it before subscribing to a new plan.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isAuthenticated && !isSubscribed && (
+        <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-md overflow-hidden">
+          <div className="p-6 md:p-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-1">Your Subscription</h2>
+                <p className="text-muted-foreground">Manage your plan and token usage</p>
+              </div>
+              <Badge
+                variant={currentPlan === "FREE" ? "outline" : "default"}
+                className={`text-sm px-3 py-1 ${currentPlan !== "FREE" ? "bg-gradient-to-r from-blue-500 to-purple-500" : ""}`}
+              >
+                {currentPlan} PLAN
+              </Badge>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">Token Usage</span>
+                  <span className="font-medium">
+                    {tokensUsed} / {userPlan.tokens}
+                  </span>
+                </div>
+                <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
+                    style={{ width: `${Math.min(tokenUsagePercentage, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div className="text-sm text-muted-foreground mb-1">Plan Features</div>
+                  <div className="font-medium flex items-center">
+                    {planIcons[currentPlan as SubscriptionPlanType]}
+                    <span className="ml-2">{userPlan.name}</span>
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div className="text-sm text-muted-foreground mb-1">Questions per Quiz</div>
+                  <div className="font-medium">Up to {userPlan.limits.maxQuestionsPerQuiz}</div>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div className="text-sm text-muted-foreground mb-1">Status</div>
+                  <div className="font-medium flex items-center gap-2">
+                    <StatusBadge status={subscriptionStatus || "INACTIVE"} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={handleManageSubscription}
+                className="border-slate-300 dark:border-slate-600"
+              >
+                Manage Subscription
+              </Button>
+              {isSubscribed && currentPlan !== "FREE" && (
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelSubscription}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Cancel Subscription
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isAuthenticated && (
         <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-md overflow-hidden">
           <div className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -598,6 +686,7 @@ export function PricingPage({
         isPromoValid={isPromoValid}
         promoDiscount={promoDiscount}
         getDiscountedPrice={getDiscountedPrice}
+        isPlanAvailable={isPlanAvailable}
       />
 
       {/* Why Upgrade Section - Redesigned */}
@@ -703,8 +792,6 @@ export function PricingPage({
     </div>
   )
 }
-
-
 
 // Redesigned StatusBadge component
 function StatusBadge({ status }: { status: string }) {

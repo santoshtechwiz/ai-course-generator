@@ -11,7 +11,6 @@ import { PricingPage } from "./components/PricingPage"
 // Add the new components to the imports
 import { StripeSecureCheckout } from "./components/StripeSecureCheckout"
 
-
 export const metadata: Metadata = generatePageMetadata({
   title: "Subscription Plans | Course AI",
   description:
@@ -92,7 +91,7 @@ function PricingPageSkeleton() {
   )
 }
 
-// Update the PricingPageWrapper function to include the new components
+// Simplify the PricingPageWrapper component to remove unnecessary components
 function PricingPageWrapper({
   userId,
   subscriptionData,
@@ -108,8 +107,7 @@ function PricingPageWrapper({
   isProd: boolean
 }) {
   const { currentPlan, subscriptionStatus, tokensUsed, error } = subscriptionData
-console.log("Subscription Data:", subscriptionData)
-  
+
   if (error) {
     return (
       <Alert variant="destructive">
@@ -133,13 +131,6 @@ console.log("Subscription Data:", subscriptionData)
       <div className="max-w-md mx-auto">
         <StripeSecureCheckout />
       </div>
-
-      {/* Add the usage analytics component for authenticated users */}
-      {userId && (
-        <div className="mt-12">
-         
-        </div>
-      )}
     </div>
   )
 }
