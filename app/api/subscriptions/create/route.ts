@@ -1,14 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/authOptions"
 import { SubscriptionService } from "@/services/subscriptionService"
 import { z } from "zod"
 import prisma from "@/lib/db"
 
-
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getAuthSession()
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized", message: "You must be logged in to create a subscription" },
@@ -83,7 +81,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Create a pending subscription record before redirecting to Stripe
-    // This helps track that a subscription attempt was started but not completed
     try {
       await prisma.pendingSubscription.create({
         data: {

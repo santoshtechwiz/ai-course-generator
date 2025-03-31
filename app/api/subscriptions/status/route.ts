@@ -21,13 +21,21 @@ export async function GET() {
     // Get token usage
     const tokenData = await SubscriptionService.getTokensUsed(userId)
 
-    return NextResponse.json({
-      plan,
-      status,
-      endDate,
-      tokensUsed: tokenData.used,
-      totalTokens: tokenData.total,
+    // Add caching headers for better performance
+    const headers = new Headers({
+      "Cache-Control": "max-age=300, s-maxage=300, stale-while-revalidate=600",
     })
+
+    return NextResponse.json(
+      {
+        plan,
+        status,
+        endDate,
+        tokensUsed: tokenData.used,
+        totalTokens: tokenData.total,
+      },
+      { headers },
+    )
   } catch (error: any) {
     console.error("Error getting subscription status:", error)
 
