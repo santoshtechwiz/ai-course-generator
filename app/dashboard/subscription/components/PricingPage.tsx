@@ -20,9 +20,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 
-import { ReferralSystem } from "./ReferralSystem"
+
 import { calculateSavings } from "@/lib/subscription-formatter"
 import PlanCards from "./subscription-status/PlanCard"
+import { ReferralSystem } from "../../account/component/ReferralSystem"
 
 interface PricingPageProps {
   userId: string | null
