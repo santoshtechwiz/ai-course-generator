@@ -4,14 +4,15 @@ import {
 } from "@/app/dashboard/subscription/components/subscription.config"
 import { prisma } from "@/lib/db"
 import Stripe from "stripe"
-const key="sk_test_51OiXtSCZXk4IQirdWlR6xQFyIV5eNYeUqMclwdjAxQ3UbMX0Tgi7LRBOvSCEXaPdWZySWyXbYCxm3LVmR8B4dmCY00F74ryT64";
+
+const key =
+  "sk_test_51OiXtSCZXk4IQirdWlR6xQFyIV5eNYeUqMclwdjAxQ3UbMX0Tgi7LRBOvSCEXaPdWZySWyXbYCxm3LVmR8B4dmCY00F74ryT64"
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || key, {
   apiVersion: "2024-10-28.acacia",
 })
 
-
-
 export class SubscriptionService {
+  // Update the activateFreePlan method to fix the token duplication bug
   static async activateFreePlan(userId: string) {
     try {
       // Check if user already has a subscription
@@ -19,12 +20,26 @@ export class SubscriptionService {
         where: { userId },
       })
 
+      // Get the user to check their current credits
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { credits: true },
+      })
+
+      // Check if there's a token transaction record for free plan tokens
+      const existingFreeTokens = await prisma.tokenTransaction.findFirst({
+        where: {
+          userId,
+          type: "SUBSCRIPTION",
+          description: "Added 5 tokens for free plan",
+        },
+      })
+
       if (existingSubscription) {
         // If user already has any subscription, they cannot activate the free plan
         // They must subscribe to a paid plan instead
         throw new Error("User already has a subscription. Please subscribe to a paid plan instead.")
       } else {
-        // Only new users with no subscription can activate the free plan
         // Create new free subscription
         await prisma.userSubscription.create({
           data: {
@@ -36,24 +51,27 @@ export class SubscriptionService {
           },
         })
 
-        // Add 5 tokens for new free plan users
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            credits: {
-              increment: 5,
+        // Only add tokens if the user hasn't received free tokens before
+        if (!existingFreeTokens) {
+          // Add 5 tokens for new free plan users
+          await prisma.user.update({
+            where: { id: userId },
+            data: {
+              credits: {
+                increment: 5,
+              },
             },
-          },
-        })
+          })
 
-        await prisma.tokenTransaction.create({
-          data: {
-            userId,
-            amount: 5,
-            type: "SUBSCRIPTION",
-            description: "Added 5 tokens for free plan",
-          },
-        })
+          await prisma.tokenTransaction.create({
+            data: {
+              userId,
+              amount: 5,
+              type: "SUBSCRIPTION",
+              description: "Added 5 tokens for free plan",
+            },
+          })
+        }
       }
 
       return { success: true, plan: "FREE" }
@@ -254,19 +272,28 @@ export class SubscriptionService {
     }
   }
 
-  static async getTokensUsed(userId: string): Promise<number> {
-    // Get token usage from transactions instead of user.credits
-    const tokenTransactions = await prisma.tokenTransaction.findMany({
-      where: {
-        userId,
-        type: "USAGE", // Only count transactions marked as usage
-      },
-    })
+  static async getTokensUsed(userId: string): Promise<{ used: number; total: number }> {
+    try {
+      // Get user's current credits directly from the user table
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { credits: true,creditsUsed: true }, // Assuming creditsUsed is the field for used tokens
+      })
 
-    // Sum up the absolute values of usage transactions
-    const tokensUsed = tokenTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0)
+      // Get the user's current plan to determine token limit
+      const { plan } = await this.getSubscriptionStatus(userId)
+     
+      const totalToken = user?.credits || 0
+      const tokensUsed =user?.creditsUsed||0; // Ensure used tokens are not negative
 
-    return tokensUsed
+      return {
+        used: tokensUsed,
+        total: totalToken,
+      }
+    } catch (error) {
+      console.error("Error getting token usage:", error)
+      return { used: 0, total: 0 }
+    }
   }
 
   static async cancelSubscription(userId: string): Promise<boolean> {

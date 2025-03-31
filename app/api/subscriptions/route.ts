@@ -117,22 +117,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (validatedData.action === "purchase_tokens") {
-      try {
-        const result = await SubscriptionService.purchaseTokens(userId, validatedData.tokenAmount)
-        return NextResponse.json(result)
-      } catch (serviceError: any) {
-        console.error("Service error purchasing tokens:", serviceError)
-        return NextResponse.json(
-          {
-            error: "Service Error",
-            message: "Failed to purchase tokens",
-            details: serviceError.message,
-          },
-          { status: 500 },
-        )
-      }
-    }
+    // if (validatedData.action === "purchase_tokens") {
+    //   try {
+    //     const result = await SubscriptionService.purchaseTokens(userId, validatedData.tokenAmount)
+    //     return NextResponse.json(result)
+    //   } catch (serviceError: any) {
+    //     console.error("Service error purchasing tokens:", serviceError)
+    //     return NextResponse.json(
+    //       {
+    //         error: "Service Error",
+    //         message: "Failed to purchase tokens",
+    //         details: serviceError.message,
+    //       },
+    //       { status: 500 },
+    //     )
+    //   }
+    // }
 
     return NextResponse.json(
       {

@@ -309,7 +309,7 @@ export function PricingPage({
     if (!isPromoValid || promoDiscount <= 0) return originalPrice
     const getDiscountedPriceUtil = (price: number, discount: number) => {
       const discountAmount = (price * discount) / 100
-      return price - discountAmount
+      return Math.round((price - discountAmount) * 100) / 100 // Round to 2 decimal places
     }
     return getDiscountedPriceUtil(originalPrice, promoDiscount)
   }
@@ -681,7 +681,7 @@ export function PricingPage({
         loading={loading}
         handleSubscribe={handleSubscribe}
         duration={selectedDuration}
-        isSubscribed={isSubscribed}
+        isSubscribed={!!isSubscribed}
         promoCode={promoCode}
         isPromoValid={isPromoValid}
         promoDiscount={promoDiscount}

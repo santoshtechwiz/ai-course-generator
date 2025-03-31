@@ -1,95 +1,65 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
-interface TokenData {
-  used: number
-  received: number
-  remaining: number
-  transactions?: any[]
-}
+type SubscriptionPlanType = "free" | "basic" | "premium" // Define your plan types
+type SubscriptionStatusType = "active" | "inactive" | "canceled" // Define your status types
 
+// Update the interface to include totalTokens and tokensUsed with proper naming
 interface SubscriptionData {
-  plan: string
-  status: string
+  plan: SubscriptionPlanType | null
+  status: SubscriptionStatusType
   endDate: string | null
 }
 
 export function useSubscription() {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
   const [tokensUsed, setTokensUsed] = useState<number>(0)
-  const [tokensReceived, setTokensReceived] = useState<number>(0)
-  const [tokensRemaining, setTokensRemaining] = useState<number>(0)
-  const [isLoading, setIsLoading] = useState(true)
+  const [totalTokens, setTotalTokens] = useState<number>(0)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchTokenUsage = async (): Promise<TokenData> => {
+  const fetchSubscriptionData = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
     try {
-      const response = await fetch("/api/tokens/usage")
+      const response = await fetch("/api/subscriptions/status")
+
       if (!response.ok) {
-        throw new Error("Failed to fetch token usage data")
+        throw new Error("Failed to fetch subscription data")
       }
 
       const data = await response.json()
 
-      // Ensure we're returning numbers, not objects
-      return {
-        used: Number(data.used) || 0,
-        received: Number(data.received) || 0,
-        remaining: Number(data.remaining) || 0,
-        transactions: Array.isArray(data.transactions) ? data.transactions : [],
-      }
-    } catch (error) {
-      console.error("Error fetching token usage:", error)
-      return { used: 0, received: 0, remaining: 0 }
-    }
-  }
-
-  const fetchSubscriptionData = async () => {
-    try {
-      setIsLoading(true)
-
-      // Fetch subscription status
-      const subscriptionResponse = await fetch("/api/subscriptions")
-      if (!subscriptionResponse.ok) {
-        throw new Error("Failed to fetch subscription data")
-      }
-      const subscriptionData = await subscriptionResponse.json()
-
-      // Fetch token usage data
-      const tokenData = await fetchTokenUsage()
-
       setSubscription({
-        plan: subscriptionData.plan || "FREE",
-        status: subscriptionData.status || "INACTIVE",
-        endDate: subscriptionData.endDate ? subscriptionData.endDate : null,
+        plan: data.plan,
+        status: data.status,
+        endDate: data.endDate,
       })
 
-      setTokensUsed(tokenData.used)
-      setTokensReceived(tokenData.received)
-      setTokensRemaining(tokenData.remaining)
-
-      setError(null)
+      // Update to use the actual credits and creditsUsed from the user table
+      setTotalTokens(data.totalTokens || 0)
+      setTokensUsed(data.tokensUsed || 0)
     } catch (err: any) {
-      console.error("Error fetching subscription data:", err)
+      console.error("Error fetching subscription:", err)
       setError(err.message || "Failed to load subscription data")
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchSubscriptionData()
-  }, [])
+  }, [fetchSubscriptionData])
 
   return {
     subscription,
     tokensUsed,
-    tokensReceived,
-    tokensRemaining,
+    totalTokens,
     isLoading,
     error,
-    refreshSubscription: fetchSubscriptionData,
+    refetch: fetchSubscriptionData,
   }
 }
 
