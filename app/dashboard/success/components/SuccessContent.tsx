@@ -143,7 +143,7 @@ export function SuccessContent({ sessionId }: SuccessContentProps) {
         <Button onClick={() => router.push("/dashboard")} className="gap-2">
           Go to Dashboard <ArrowRight className="h-4 w-4" />
         </Button>
-        <Button variant="outline" onClick={() => router.push("/dashboard/subscription/account")}>
+        <Button variant="outline" onClick={() => router.push("/dashboard/account")}>
           Manage Subscription
         </Button>
       </div>

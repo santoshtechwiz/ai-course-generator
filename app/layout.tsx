@@ -8,7 +8,9 @@ import { defaultSEO } from "@/lib/seo-utils"
 import { JsonLd } from "@/components/json-ld"
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/providers/provider"
-import { TrialBanner } from "@/components/TrialBanner"
+import { getAuthSession } from "@/lib/authOptions"
+import { SubscriptionService } from "@/services/subscriptionService"
+import TrialModal from "@/components/TrialModal"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -81,7 +83,24 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultSEO.baseUrl),
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await getAuthSession()
+  const userId = session?.user?.id ?? null
+
+  // Get subscription status for the modal
+  let isSubscribed = false
+  let currentPlan = null
+
+  if (userId) {
+    try {
+      const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId)
+      isSubscribed = status === "ACTIVE"
+      currentPlan = plan
+    } catch (error) {
+      console.error("Error fetching subscription status:", error)
+    }
+  }
+
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
       <head>
@@ -89,7 +108,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
-        <TrialBanner />
+          {/* Place the TrialModal here, inside the Providers */}
+          <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} />
+
           <JsonLd />
           <main className="flex-1 flex flex-col">{children}</main>
           <Analytics />

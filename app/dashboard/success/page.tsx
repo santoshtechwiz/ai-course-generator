@@ -128,7 +128,7 @@ async function SuccessPageContent({
                 View your subscription details, billing history, and manage your payment methods.
               </p>
               <Button asChild variant="outline" className="w-full border-slate-300 dark:border-slate-600">
-                <Link href="/dashboard/subscription/account">Account Settings</Link>
+                <Link href="/dashboard/account">Account Settings</Link>
               </Button>
             </div>
           </div>

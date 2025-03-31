@@ -2,7 +2,6 @@ import { Suspense } from "react"
 import { getAuthSession } from "@/lib/authOptions"
 import { SubscriptionService } from "@/services/subscriptionService"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
@@ -31,6 +30,7 @@ export default async function Page() {
   const userId = session?.user?.id ?? null
   const isProd = process.env.NODE_ENV === "production"
 
+  // Don't redirect if not authenticated - show plans to everyone
   async function getSubscriptionData(): Promise<{
     currentPlan: SubscriptionPlanType | null
     subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
@@ -39,30 +39,27 @@ export default async function Page() {
   }> {
     if (!userId) {
       return {
-        currentPlan: null,
+        currentPlan: "FREE",
         subscriptionStatus: null,
         tokensUsed: 0,
       }
     }
+
     try {
       const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId)
 
-      // Get token usage data
+      // Get token usage data directly from the service
       const tokenData = await SubscriptionService.getTokensUsed(userId)
-
-      // Extract the 'used' property from the token data object
-      // Make sure we're handling the case where tokenData might be null or not an object
-      const tokensUsed = typeof tokenData === "object" && tokenData !== null ? Number(tokenData.used) || 0 : 0
 
       return {
         currentPlan: plan as SubscriptionPlanType,
         subscriptionStatus: status as "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null,
-        tokensUsed,
+        tokensUsed: tokenData.used,
       }
     } catch (error) {
       console.error("Error fetching subscription data:", error)
       return {
-        currentPlan: null,
+        currentPlan: "FREE",
         subscriptionStatus: null,
         tokensUsed: 0,
         error: "Failed to fetch subscription data",
@@ -95,7 +92,6 @@ function PricingPageSkeleton() {
   )
 }
 
-// Simplify the PricingPageWrapper component to remove unnecessary components
 function PricingPageWrapper({
   userId,
   subscriptionData,

@@ -87,7 +87,7 @@ async function CancelledPageContent({ userId }: { userId: string | undefined }) 
                 Consider using a different payment method if you're experiencing issues with your current one.
               </p>
               <Button asChild variant="outline" className="w-full border-slate-300 dark:border-slate-600">
-                <Link href="/dashboard/subscription/account">Manage Payment Methods</Link>
+                <Link href="/dashboard/account">Manage Payment Methods</Link>
               </Button>
             </div>
           </div>
