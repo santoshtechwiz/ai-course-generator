@@ -1,12 +1,13 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 
 import { CreditCard, Zap, Lock, Rocket, Crown, Check, Loader2 } from "lucide-react"
 
-import { SUBSCRIPTION_PLANS, SubscriptionPlanType, SubscriptionStatusType } from "../subscription.config"
+import type { SUBSCRIPTION_PLANS, SubscriptionPlanType, SubscriptionStatusType } from "../subscription.config"
 import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 // Redesigned PlanCards component
 export default function PlanCards({
@@ -21,6 +22,7 @@ export default function PlanCards({
   isPromoValid,
   promoDiscount,
   getDiscountedPrice,
+  isPlanAvailable,
 }: {
   plans: typeof SUBSCRIPTION_PLANS
   currentPlan: SubscriptionPlanType | null
@@ -33,6 +35,7 @@ export default function PlanCards({
   isPromoValid: boolean
   promoDiscount: number
   getDiscountedPrice: (originalPrice: number) => number
+  isPlanAvailable: (planName: SubscriptionPlanType) => boolean
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
@@ -160,57 +163,40 @@ export default function PlanCards({
                 </div>
               </CardContent>
               <CardFooter className="pt-4">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="w-full">
-                        <Button
-                          onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
-                          disabled={
-                            plan.id === "FREE" || // Always disable the free plan
-                            (isSubscribed && currentPlan !== "FREE") || // Disable for paid users with active subscription
-                            loading !== null
-                          }
-                          className={`w-full text-primary-foreground ${
-                            plan.id === "FREE"
-                              ? "bg-slate-500 hover:bg-slate-600"
-                              : plan.id === "BASIC"
-                                ? "bg-blue-500 hover:bg-blue-600"
-                                : plan.id === "PRO"
-                                  ? "bg-purple-500 hover:bg-purple-600"
-                                  : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                          } ${
-                            plan.name === bestPlan?.name && !isCurrentActivePlan ? "animate-pulse" : ""
-                          } shadow-md hover:shadow-lg transition-all duration-300`}
-                        >
-                          {loading === plan.id ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Processing...
-                            </>
-                          ) : isCurrentActivePlan ? (
-                            "Current Active Plan"
-                          ) : isSubscribed && currentPlan !== "FREE" ? (
-                            "Subscription Active"
-                          ) : plan.id === "FREE" ? (
-                            "Start for Free"
-                          ) : (
-                            "Subscribe Now"
-                          )}
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {isCurrentActivePlan
-                        ? "This is your current active plan"
-                        : isSubscribed && currentPlan !== "FREE"
-                          ? "You need to wait until your current subscription expires or cancel it before subscribing to a new plan"
-                          : plan.id === "FREE"
-                            ? "Start using the free plan"
-                            : `Subscribe to the ${plan.name} plan`}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div className="w-full">
+                  <Button
+                    onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
+                    disabled={!isPlanAvailable(plan.id as SubscriptionPlanType) || loading !== null}
+                    className={`w-full text-primary-foreground ${
+                      plan.id === "FREE"
+                        ? "bg-slate-500 hover:bg-slate-600"
+                        : plan.id === "BASIC"
+                          ? "bg-blue-500 hover:bg-blue-600"
+                          : plan.id === "PRO"
+                            ? "bg-purple-500 hover:bg-purple-600"
+                            : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                    } ${
+                      plan.name === bestPlan?.name && isPlanAvailable(plan.id as SubscriptionPlanType)
+                        ? "animate-pulse"
+                        : ""
+                    } shadow-md hover:shadow-lg transition-all duration-300`}
+                  >
+                    {loading === plan.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : isCurrentActivePlan ? (
+                      "Current Plan"
+                    ) : !isPlanAvailable(plan.id as SubscriptionPlanType) ? (
+                      "Unavailable"
+                    ) : plan.id === "FREE" ? (
+                      "Start for Free"
+                    ) : (
+                      "Subscribe Now"
+                    )}
+                  </Button>
+                </div>
               </CardFooter>
 
               {/* Add a note for current active plan */}
@@ -220,12 +206,10 @@ export default function PlanCards({
                 </div>
               )}
 
-              {/* Add a note for other plans when user has an active subscription */}
-              {isSubscribed && !isCurrentActivePlan && (
+              {!isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
                   <p className="text-sm text-muted-foreground italic">
-                    You need to wait until your current subscription expires or cancel it before subscribing to this
-                    plan
+                    You need to cancel your current subscription before subscribing to this plan
                   </p>
                 </div>
               )}
@@ -236,3 +220,4 @@ export default function PlanCards({
     </div>
   )
 }
+

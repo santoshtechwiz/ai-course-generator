@@ -106,10 +106,12 @@ export function AccountPageClient({ user }: { user: any }) {
   const formattedSubscriptionData = useMemo(() => {
     // Ensure tokensUsed is always a number, defaulting to 0 if undefined/null
     const normalizedTokensUsed = typeof subscriptionStatus?.credits === "number" ? subscriptionStatus.credits : 0
+    const isActive = subscriptionStatus?.isSubscribed && subscriptionStatus?.subscriptionPlan !== "FREE"
 
     return {
       currentPlan: subscriptionStatus?.subscriptionPlan || "FREE",
       subscriptionStatus: subscriptionStatus?.isSubscribed ? "ACTIVE" : "INACTIVE",
+      isActive,
       endDate: subscriptionStatus?.expirationDate ? new Date(subscriptionStatus.expirationDate) : null,
       tokensUsed: normalizedTokensUsed,
       billingHistory,

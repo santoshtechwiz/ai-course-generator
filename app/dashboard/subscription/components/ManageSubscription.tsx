@@ -63,22 +63,27 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   }, [currentPlan])
 
   // Memoize derived state values
-  const { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree } = useMemo(() => {
-    // Fix token usage percentage calculation to handle edge cases
-    const maxTokens = planDetails?.tokens || 1 // Prevent division by zero
-    const tokenUsagePercentage = Math.min(
-      (tokensUsed / maxTokens) * 100,
-      100, // Cap at 100% to prevent overflow
-    )
+  const { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree, hasExceededLimit } =
+    useMemo(() => {
+      // Fix token usage percentage calculation to handle edge cases
+      const maxTokens = planDetails?.tokens || 1 // Prevent division by zero
+      const tokenUsagePercentage = Math.min(
+        (tokensUsed / maxTokens) * 100,
+        100, // Cap at 100% to prevent overflow
+      )
 
-    const isActive = subscriptionStatus === "ACTIVE"
-    const isCancelled = subscriptionStatus === "CANCELED"
-    const isPastDue = subscriptionStatus === "PAST_DUE"
-    const isInactive = subscriptionStatus === "INACTIVE"
-    const isFree = currentPlan === "FREE"
+      const isActive = subscriptionStatus === "ACTIVE"
+      const isCancelled = subscriptionStatus === "CANCELED"
+      const isPastDue = subscriptionStatus === "PAST_DUE"
+      const isInactive = subscriptionStatus === "INACTIVE"
+      const isFree = currentPlan === "FREE"
 
-    return { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree }
-  }, [subscriptionStatus, currentPlan, tokensUsed, planDetails])
+      // Only show the warning if tokens have actually been used AND they exceed the limit
+      // This is the key fix - we're checking if tokens have actually been used
+      const hasExceededLimit = tokensUsed > 0 && tokensUsed > planDetails.tokens
+
+      return { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree, hasExceededLimit }
+    }, [subscriptionStatus, currentPlan, tokensUsed, planDetails])
 
   // Use useCallback for event handlers to prevent unnecessary re-renders
   const handleCancelSubscription = useCallback(async () => {
@@ -232,11 +237,15 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                   </div>
                   <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
-                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
+                      className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-in-out ${
+                        hasExceededLimit
+                          ? "bg-gradient-to-r from-amber-500 to-red-500"
+                          : "bg-gradient-to-r from-blue-500 to-purple-500"
+                      }`}
                       style={{ width: `${Math.min(tokenUsagePercentage, 100)}%` }}
                     />
                   </div>
-                  {tokensUsed > planDetails.tokens && (
+                  {hasExceededLimit && (
                     <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                       You've exceeded your plan's token limit. Consider upgrading your plan.
                     </div>
