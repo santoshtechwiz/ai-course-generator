@@ -108,17 +108,6 @@ export function PricingPage({
           return true
         }
 
-        // For other codes, we would validate with the server
-        // const response = await fetch("/api/subscriptions/validate-promo", {
-        //   method: "POST",
-        //   headers: { "Content-Type": "application/json" },
-        //   body: JSON.stringify({ code }),
-        // })
-        // const data = await response.json()
-        // setIsPromoValid(data.valid)
-        // setPromoDiscount(data.discountPercentage || 0)
-        // return data.valid
-
         // For now, only AILAUNCH20 is valid
         setIsPromoValid(false)
         setPromoDiscount(0)

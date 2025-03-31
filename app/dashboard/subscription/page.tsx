@@ -1,13 +1,7 @@
-import { Suspense } from "react"
-import { getAuthSession } from "@/lib/authOptions"
-import { SubscriptionService } from "@/services/subscriptionService"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import type { SubscriptionPlanType } from "./components/subscription.config"
-import { PricingPage } from "./components/PricingPage"
-import { StripeSecureCheckout } from "./components/StripeSecureCheckout"
+import SubscriptionPageClient from "./components/SubscriptionPageClient"
+
 
 export const metadata: Metadata = generatePageMetadata({
   title: "Subscription Plans | Course AI",
@@ -26,112 +20,6 @@ export const metadata: Metadata = generatePageMetadata({
 })
 
 export default async function Page() {
-  const session = await getAuthSession()
-  const userId = session?.user?.id ?? null
-  const isProd = process.env.NODE_ENV === "production"
-
-  // Don't redirect if not authenticated - show plans to everyone
-  async function getSubscriptionData(): Promise<{
-    currentPlan: SubscriptionPlanType | null
-    subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
-    tokensUsed: number
-    error?: string
-  }> {
-    if (!userId) {
-      return {
-        currentPlan: "FREE",
-        subscriptionStatus: null,
-        tokensUsed: 0,
-      }
-    }
-
-    try {
-      const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId)
-
-      // Get token usage data directly from the service
-      const tokenData = await SubscriptionService.getTokensUsed(userId)
-
-      return {
-        currentPlan: plan as SubscriptionPlanType,
-        subscriptionStatus: status as "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null,
-        tokensUsed: tokenData.used,
-      }
-    } catch (error) {
-      console.error("Error fetching subscription data:", error)
-      return {
-        currentPlan: "FREE",
-        subscriptionStatus: null,
-        tokensUsed: 0,
-        error: "Failed to fetch subscription data",
-      }
-    }
-  }
-
-  const subscriptionData = await getSubscriptionData()
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <Suspense fallback={<PricingPageSkeleton />}>
-        <PricingPageWrapper userId={userId} subscriptionData={subscriptionData} isProd={isProd} />
-      </Suspense>
-    </div>
-  )
-}
-
-function PricingPageSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-[400px] w-full" />
-        ))}
-      </div>
-      <Skeleton className="h-[200px] w-full" />
-      <Skeleton className="h-[300px] w-full" />
-    </div>
-  )
-}
-
-function PricingPageWrapper({
-  userId,
-  subscriptionData,
-  isProd,
-}: {
-  userId: string | null
-  subscriptionData: {
-    currentPlan: SubscriptionPlanType | null
-    subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
-    tokensUsed: number
-    error?: string
-  }
-  isProd: boolean
-}) {
-  const { currentPlan, subscriptionStatus, tokensUsed, error } = subscriptionData
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    )
-  }
-
-  return (
-    <div className="space-y-8">
-      <PricingPage
-        userId={userId}
-        currentPlan={currentPlan}
-        subscriptionStatus={subscriptionStatus}
-        tokensUsed={tokensUsed}
-        isProd={isProd}
-      />
-
-      {/* Add the Stripe secure checkout component */}
-      <div className="max-w-md mx-auto">
-        <StripeSecureCheckout />
-      </div>
-    </div>
-  )
+  return <SubscriptionPageClient />
 }
 

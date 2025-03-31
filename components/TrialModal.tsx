@@ -30,7 +30,7 @@ export function TrialModal({ isSubscribed, currentPlan }: TrialModalProps) {
     if (shouldShowModal()) setIsVisible(true)
     const intervalId = setInterval(() => {
       if (shouldShowModal()) setIsVisible(true)
-    }, 60 * 1000)
+    }, 60 *10* 1000)
     return () => clearInterval(intervalId)
   }, [shouldShowModal])
 
