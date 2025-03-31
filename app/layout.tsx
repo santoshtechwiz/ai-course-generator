@@ -8,6 +8,7 @@ import { defaultSEO } from "@/lib/seo-utils"
 import { JsonLd } from "@/components/json-ld"
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/providers/provider"
+import { TrialBanner } from "@/components/TrialBanner"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -88,6 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
+        <TrialBanner />
           <JsonLd />
           <main className="flex-1 flex flex-col">{children}</main>
           <Analytics />

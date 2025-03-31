@@ -12,77 +12,55 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || key, {
 
 
 export class SubscriptionService {
-  static async activateFreePlan(userId: string): Promise<{ success: boolean }> {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { subscription: true },
-    })
-
-    if (!user) throw new Error("User not found")
-
-    // Check if user already has an active subscription
-    if (user.subscription && user.subscription.status === "ACTIVE" && user.subscription.planId !== "FREE") {
-      throw new Error("User already has an active paid subscription")
-    }
-
-    // Check if user has a paid plan (even if not active) and prevent downgrade
-    if (
-      user.subscription &&
-      user.subscription.planId !== "FREE" &&
-      ["ACTIVE", "PAST_DUE", "PENDING"].includes(user.subscription.status || "")
-    ) {
-      throw new Error("Cannot downgrade from a paid plan to the FREE plan")
-    }
-
-    const freePlan = SUBSCRIPTION_PLANS.find((p) => p.id === "FREE")
-    if (!freePlan) throw new Error("Free plan not found")
-
-    // Set up subscription period dates
-    const currentPeriodStart = new Date()
-    const currentPeriodEnd = new Date()
-    currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 100) // Free plan doesn't expire
-
-    // Create or update the user's subscription
-    await prisma.userSubscription.upsert({
-      where: { userId },
-      update: {
-        planId: "FREE",
-        status: "ACTIVE",
-        currentPeriodStart,
-        currentPeriodEnd,
-      },
-      create: {
-        userId,
-        planId: "FREE",
-        status: "ACTIVE",
-        currentPeriodStart,
-        currentPeriodEnd,
-      },
-    })
-
-    // Add free tokens to the user's account if they don't already have them
-    if (user.credits < freePlan.tokens) {
-      const tokensToAdd = freePlan.tokens - user.credits
-
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          credits: freePlan.tokens,
-        },
+  static async activateFreePlan(userId: string) {
+    try {
+      // Check if user already has a subscription
+      const existingSubscription = await prisma.userSubscription.findUnique({
+        where: { userId },
       })
 
-      // Log the token addition
-      await prisma.tokenTransaction.create({
-        data: {
-          userId,
-          amount: tokensToAdd,
-          type: "SUBSCRIPTION",
-          description: `Added ${tokensToAdd} tokens from FREE plan activation`,
-        },
-      })
-    }
+      if (existingSubscription) {
+        // If user already has any subscription, they cannot activate the free plan
+        // They must subscribe to a paid plan instead
+        throw new Error("User already has a subscription. Please subscribe to a paid plan instead.")
+      } else {
+        // Only new users with no subscription can activate the free plan
+        // Create new free subscription
+        await prisma.userSubscription.create({
+          data: {
+            userId,
+            planId: "FREE",
+            status: "ACTIVE",
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // 1 year from now
+          },
+        })
 
-    return { success: true }
+        // Add 5 tokens for new free plan users
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            credits: {
+              increment: 5,
+            },
+          },
+        })
+
+        await prisma.tokenTransaction.create({
+          data: {
+            userId,
+            amount: 5,
+            type: "SUBSCRIPTION",
+            description: "Added 5 tokens for free plan",
+          },
+        })
+      }
+
+      return { success: true, plan: "FREE" }
+    } catch (error) {
+      console.error("Error activating free plan:", error)
+      throw error
+    }
   }
 
   static async createCheckoutSession(

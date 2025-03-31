@@ -7,9 +7,9 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Skeleton } from "@/components/ui/skeleton"
 import { ManageSubscription } from "../components/ManageSubscription"
 import { BillingHistory } from "../components/BillingHistory"
+import { syncUserCredits } from "@/lib/db"
 
 import { AlertTriangle } from "lucide-react"
-
 
 export default async function SubscriptionAccountPage() {
   const session = await getAuthSession()
@@ -27,10 +27,19 @@ export default async function SubscriptionAccountPage() {
     )
   }
 
+  // Sync user credits to ensure data consistency
+  if (userId) {
+    try {
+      await syncUserCredits(userId)
+    } catch (error) {
+      console.error("Error syncing user credits:", error)
+    }
+  }
+
   async function getSubscriptionData() {
     try {
       const { plan, status, endDate } = await SubscriptionService.getSubscriptionStatus(userId)
-      const tokensUsed = (await SubscriptionService.getTokensUsed(userId)) || 0
+      const tokenData = await SubscriptionService.getTokensUsed(userId)
       const billingHistory = (await SubscriptionService.getBillingHistory(userId)) || []
       const paymentMethods = (await SubscriptionService.getPaymentMethods(userId)) || []
 
@@ -38,7 +47,9 @@ export default async function SubscriptionAccountPage() {
         currentPlan: plan,
         subscriptionStatus: status,
         endDate: endDate ? new Date(endDate) : null,
-        tokensUsed,
+        tokensUsed: tokenData.used,
+        tokensRemaining: tokenData.remaining,
+        tokensReceived: tokenData.received,
         billingHistory,
         paymentMethods,
       }
@@ -49,6 +60,8 @@ export default async function SubscriptionAccountPage() {
         subscriptionStatus: "INACTIVE",
         endDate: null,
         tokensUsed: 0,
+        tokensRemaining: 0,
+        tokensReceived: 0,
         billingHistory: [],
         paymentMethods: [],
         error: "Failed to fetch subscription data",
@@ -66,10 +79,6 @@ export default async function SubscriptionAccountPage() {
       <Suspense fallback={<SubscriptionDetailsSkeleton />}>
         <SubscriptionDetails userId={userId} getSubscriptionData={getSubscriptionData} />
       </Suspense>
-
-      {/* <div className="mt-12">
-        <AddOnPackages />
-      </div> */}
     </div>
   )
 }

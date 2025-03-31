@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/authOptions"
 import { SubscriptionService } from "@/services/subscriptionService"
+import { prisma } from "@/lib/db"
 import { z } from "zod"
 
 export async function GET(req: NextRequest) {
@@ -25,8 +26,27 @@ export async function GET(req: NextRequest) {
     })
 
     try {
+      // Get subscription data
       const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId)
-      return NextResponse.json(subscriptionData, { headers })
+
+      // Get user's current credits
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { credits: true },
+      })
+
+      // Get token usage data
+      const tokenData = await SubscriptionService.getTokensUsed(userId)
+
+      // Return combined data
+      return NextResponse.json(
+        {
+          ...subscriptionData,
+          credits: user?.credits || 0,
+          tokenUsage: tokenData,
+        },
+        { headers },
+      )
     } catch (serviceError: any) {
       console.error("Service error fetching subscription:", serviceError)
       return NextResponse.json(
