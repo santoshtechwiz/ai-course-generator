@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { Shield, Lock, CreditCard } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { SiStripe } from "react-icons/si"

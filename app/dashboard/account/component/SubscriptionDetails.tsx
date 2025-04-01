@@ -1,7 +1,8 @@
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { ManageSubscription } from "../ManageSubscription"
+
 import { BillingHistory } from "./BillingHistory"
+import { ManageSubscription } from "./ManageSubscription"
 
 export default async function SubscriptionDetails({
   userId,

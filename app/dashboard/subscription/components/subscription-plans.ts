@@ -6,8 +6,8 @@
  * plan details without changing the core functionality.
  */
 
+import { AddOnPackage, SubscriptionPlan } from "@/app/types/subscription"
 import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
-import type { SubscriptionPlan, FAQItem, AddOnPackage } from "@/types/subscription"
 
 // Define all subscription plans
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
