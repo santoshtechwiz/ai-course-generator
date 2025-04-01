@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users,Inbox } from "lucide-react"
+import { Users, Inbox } from "lucide-react"
 
 export default async function AdminDashboard() {
   // Check if user is authenticated and is an admin
@@ -22,14 +22,13 @@ export default async function AdminDashboard() {
       icon: <Users className="h-8 w-8 text-primary" />,
       link: "/dashboard/admin/users",
     },
-   
+
     {
       title: "Contact Inquiries",
       description: "View and respond to user inquiries from the contact form",
       icon: <Inbox className="h-8 w-8 text-primary" />,
       link: "/dashboard/admin/contact",
     },
-  
   ]
 
   return (
