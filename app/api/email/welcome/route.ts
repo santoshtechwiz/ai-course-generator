@@ -1,34 +1,11 @@
 import { NextResponse } from "next/server"
-import nodemailer from "nodemailer"
+
 import { render } from "@react-email/render"
+import { sendEmail } from "@/lib/email"
 import WelcomeEmail from "@/app/dashboard/admin/components/templates/welcome-email"
 
-// Create a test account for development
-const createTestAccount = async () => {
-  const testAccount = await nodemailer.createTestAccount()
-  return nodemailer.createTransport({
-    host: "smtp.ethereal.email",
-    port: 587,
-    secure: false,
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
-  })
-}
 
-// Create a production transport
-const createProductionTransport = () => {
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_SERVER_HOST,
-    port: Number(process.env.EMAIL_SERVER_PORT),
-    secure: process.env.EMAIL_SERVER_SECURE === "true",
-    auth: {
-      user: process.env.EMAIL_SERVER_USER,
-      pass: process.env.EMAIL_SERVER_PASSWORD,
-    },
-  })
-}
+
 
 export async function POST(request: Request) {
   try {
@@ -38,24 +15,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    // Create transport based on environment
-    const transport = process.env.NODE_ENV === "production" ? createProductionTransport() : await createTestAccount()
 
     // Render the welcome email
-    const html = await render(WelcomeEmail({ name: name || "there" }))
+    const html = render(WelcomeEmail({ name: name || "there" }))
 
-    // Send the email
-    const info = await transport.sendMail({
-      from: `"CourseAI" <${process.env.EMAIL_FROM || "noreply@courseai.io"}>`,
-      to: email,
-      subject: "Welcome to CourseAI!",
-      html,
-    })
+    const info = await sendEmail(email, name || "there", await html)
+ 
 
-    // For development, log the preview URL
-    if (process.env.NODE_ENV !== "production") {
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
-    }
 
     return NextResponse.json({ success: true, messageId: info.messageId })
   } catch (error) {

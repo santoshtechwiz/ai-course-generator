@@ -1,6 +1,5 @@
 "use server"
 import { Resend } from "resend"
-import { startEmailWorkflow } from "./email/index"
 
 const resend = new Resend(process.env.RESEND_API_KEY || "")
 
@@ -24,8 +23,6 @@ export async function sendEmail(email: string, name: string, html?: string) {
 
     console.log("Welcome email sent:", response.data)
 
-    // Start the email workflow for the sequence of promotional emails
-    await startEmailWorkflow(html || email, email, name)
 
     return { success: true, messageId: response.data }
   } catch (error) {
