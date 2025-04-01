@@ -8,8 +8,9 @@ import { SignInPrompt } from "@/components/SignInPrompt"
 import { toast } from "@/hooks/use-toast"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
-import { submitQuizData } from "@/app/actions/actions"
+
 import { QuizActions } from "@/components/QuizActions"
+import { submitQuizData } from "@/lib/slug"
 
 
 interface QuizData {

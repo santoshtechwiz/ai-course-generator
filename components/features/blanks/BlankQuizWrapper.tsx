@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useSession } from "next-auth/react"
-import { submitQuizData } from "@/app/actions/actions"
+
 
 import BlankQuizResults from "./BlankQuizResults"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
@@ -16,6 +16,7 @@ import { GuidedHelp } from "@/components/HelpModal"
 
 import { SignInPrompt } from "@/components/SignInPrompt"
 import { QuizActions } from "@/components/QuizActions"
+import { submitQuizData } from "@/lib/slug"
 
 interface Question {
   id: number

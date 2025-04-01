@@ -2,49 +2,8 @@
 import prisma from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { revalidatePath } from "next/cache"
-const URL=process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
 
-interface SubmitQuizDataParams {
-  slug: string
-  quizId: number
-  answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
-  elapsedTime: number
-  score: number
-  type: string
-}
 
-export async function submitQuizData(
-  { slug, quizId, answers, elapsedTime, score, type }: SubmitQuizDataParams,
-  setLoading?: (state: boolean) => void,
-): Promise<void> {
-  try {
-    if (setLoading) setLoading(true) // Show loader
-
-    // Make sure slug is properly encoded for URL
-    const encodedSlug = encodeURIComponent(slug)
-
-    const response = await fetch(`${URL}/api/quiz/${encodedSlug}/complete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        quizId,
-        answers,
-        totalTime: elapsedTime,
-        score,
-        type,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to update score: ${response.status}`)
-    }
-  } catch (error) {
-    console.error("Error submitting quiz data:", error)
-    throw error
-  } finally {
-    if (setLoading) setLoading(false) // Hide loader
-  }
-}
 
 export async function createUser(formData: FormData) {
   const name = formData.get("name") as string

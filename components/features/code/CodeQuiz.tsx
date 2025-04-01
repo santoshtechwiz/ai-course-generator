@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import QuizOptions from "./CodeQuizOptions"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
-import { submitQuizData } from "@/app/actions/actions"
+
 import { useSession } from "next-auth/react"
 
 import { useRouter } from "next/navigation"
@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { SignInPrompt } from "@/components/SignInPrompt"
+import { submitQuizData } from "@/lib/slug"
 
 interface CodeQuizProps {
   quizId: number
