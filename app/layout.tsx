@@ -95,8 +95,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   if (userId) {
     try {
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
-      const plan = subscriptionStatus?.plan
-      const status = subscriptionStatus?.status
+      const plan = subscriptionStatus?.subscriptionPlan
+      const status = subscriptionStatus?.isActive ? "ACTIVE" : "INACTIVE"
       isSubscribed = status === "ACTIVE"
       currentPlan = plan
     } catch (error) {
@@ -112,7 +112,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
           {/* Place the TrialModal here, inside the Providers */}
-          <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} />
+          <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
 
           <JsonLd />
           <main className="flex-1 flex flex-col">{children}</main>

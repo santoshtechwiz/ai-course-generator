@@ -2,27 +2,27 @@ import type { Metadata } from "next"
 
 // Default SEO values
 export const defaultSEO = {
-  title: "CourseAI: AI-Powered Coding Education Platform",
+  title: "CourseAI: Free AI-Powered Course & Quiz Creation",
   description:
-    "Master coding with CourseAI's AI-powered MCQs, quizzes, and personalized learning resources. Enhance your programming skills through interactive practice and smart feedback.",
+    "Create coding courses and quizzes for free with CourseAI's AI-powered platform. Automate course creation, generate MCQs instantly, and enhance learning with AI-driven insights.",
   siteName: "CourseAI",
   baseUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
   twitterHandle: process.env.NEXT_PUBLIC_TWITTER_HANDLE || "@courseai",
   locale: "en_US",
   type: "website",
   keywords: [
-    "coding MCQs",
-    "programming quizzes",
-    "AI learning",
-    "coding practice",
-    "programming resources",
-    "interactive coding",
-    "learn to code",
-    "coding assessment",
-    "programming education",
+    "AI course creation",
+    "AI quiz generator",
+    "free coding courses",
     "AI-powered learning",
+    "create quizzes with AI",
+    "automated course creation",
+    "interactive coding quizzes",
+    "AI-driven assessments",
+    "coding education platform",
+    "free online coding tests",
   ],
-}
+};
 
 // Interface for generatePageMetadata parameters
 export interface PageMetadataProps {
