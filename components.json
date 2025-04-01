@@ -17,7 +17,9 @@
     "utils": "@/lib/utils",
     "hooks": "@/hooks",
     "types": "@/types",
-    "features": "@/features"
+    "features": "@/features",
+    "config": "@/config",
+    "services": "@/services"
   },
   "iconLibrary": "lucide"
 }

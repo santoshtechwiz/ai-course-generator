@@ -1,15 +1,23 @@
 "use client"
 
+/**
+ * PlanCard Component
+ *
+ * This component displays a subscription plan card with pricing,
+ * features, and subscription button.
+ */
+
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Check, Loader2, Lock } from "lucide-react"
 
-import { CreditCard, Zap, Lock, Rocket, Crown, Check, Loader2 } from "lucide-react"
-
-import type { SUBSCRIPTION_PLANS, SubscriptionPlanType, SubscriptionStatusType } from "../subscription.config"
 import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
+import { planIcons } from "@/config/plan-icons"
+import { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+import { SUBSCRIPTION_PLANS } from "../subscription-plans"
 
-// Redesigned PlanCards component
+// Redesigned PlanCards component with reduced animations
 export default function PlanCards({
   plans,
   currentPlan,
@@ -43,35 +51,47 @@ export default function PlanCards({
   // Check if the user is already on the free plan
   const isOnFreePlan = currentPlan === "FREE" && normalizedStatus === "ACTIVE"
 
+  // Check if user has a paid subscription
+  const hasPaidSubscription = isSubscribed && currentPlan !== "FREE"
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
       {plans.map((plan) => {
-        const priceOption = plan.options.find((o) => o.duration === duration) || plan.options[0]
+        const priceOption = plan.options.find((o: { duration: number }) => o.duration === duration) || plan.options[0]
         const isPlanActive = currentPlan === plan.id
         const isBestValue = plan.name === bestPlan?.name
         const isCurrentActivePlan = isSubscribed && currentPlan === plan.id
         const discountedPrice = getDiscountedPrice(priceOption.price)
 
         // Determine if this specific plan should be disabled
+        // Now also disable FREE plan if user has a paid subscription
         const isPlanDisabled =
-          !isPlanAvailable(plan.id as SubscriptionPlanType) || loading !== null || (plan.id === "FREE" && isOnFreePlan)
+          loading !== null ||
+          (plan.id === "FREE" && (isOnFreePlan || hasPaidSubscription)) ||
+          (!isPlanAvailable(plan.id as SubscriptionPlanType) && plan.id !== "FREE")
+
+        // Determine button text and state
+        const buttonText = (() => {
+          if (loading === plan.id) return "Processing..."
+          if (plan.id === "FREE" && isOnFreePlan) return "Current Plan"
+          if (plan.id === "FREE" && hasPaidSubscription) return "Not Available"
+          if (isCurrentActivePlan) return "Current Plan"
+          if (!isPlanAvailable(plan.id as SubscriptionPlanType) && plan.id !== "FREE") return "Unavailable"
+          if (plan.id === "FREE") return "Start for Free"
+          return "Subscribe Now"
+        })()
 
         return (
-          <div
-            key={plan.id}
-            className={`${isBestValue ? "order-first lg:order-none" : ""} transition-transform duration-300 ${
-              isBestValue ? "hover:scale-105" : "hover:scale-102"
-            }`}
-          >
+          <div key={plan.id} className={`${isBestValue ? "order-first lg:order-none" : ""}`}>
             <Card
-              className={`flex flex-col h-full transition-all duration-300 hover:shadow-xl ${
+              className={`flex flex-col h-full ${
                 isPlanActive
                   ? "border-2 border-blue-500 dark:border-blue-400"
                   : "border-slate-200 dark:border-slate-700"
-              } ${isBestValue ? "transform lg:scale-105 shadow-lg ring-2 ring-purple-500" : "shadow-sm"}`}
+              } ${isBestValue ? "shadow-lg ring-1 ring-purple-500" : "shadow-sm"}`}
             >
               {isBestValue && (
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1.5 text-sm font-medium animate-pulse">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1.5 text-sm font-medium">
                   Most Popular
                 </div>
               )}
@@ -81,11 +101,8 @@ export default function PlanCards({
               <CardHeader className={`${isBestValue ? "pb-4" : "pb-2"}`}>
                 <div className="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between mb-1">
                   <div className="flex items-center">
-                    {plan.id === "FREE" && <CreditCard className="h-5 w-5 mr-2 text-slate-500" />}
-                    {plan.id === "BASIC" && <Zap className="h-5 w-5 mr-2 text-blue-500" />}
-                    {plan.id === "PRO" && <Rocket className="h-5 w-5 mr-2 text-purple-500" />}
-                    {plan.id === "ULTIMATE" && <Crown className="h-5 w-5 mr-2 text-amber-500" />}
-                    <CardTitle className="text-xl">{plan.name}</CardTitle>
+                    <div>{planIcons[plan.id as SubscriptionPlanType]}</div>
+                    <CardTitle className="text-xl ml-2">{plan.name}</CardTitle>
                   </div>
                   {isPlanActive && (
                     <Badge
@@ -104,7 +121,9 @@ export default function PlanCards({
                         <span className="text-2xl font-bold line-through text-muted-foreground">
                           ${priceOption.price}
                         </span>
-                        <span className="text-3xl font-bold ml-2">${discountedPrice}</span>
+                        <span className="text-3xl font-bold ml-2 text-green-600 dark:text-green-400">
+                          ${discountedPrice}
+                        </span>
                       </>
                     ) : (
                       <span className="text-3xl font-bold">${priceOption.price}</span>
@@ -121,7 +140,7 @@ export default function PlanCards({
                   <p className="text-lg font-semibold text-center sm:text-left">{plan.tokens} tokens</p>
                   <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-2">
                     <div
-                      className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-in-out ${
+                      className={`absolute top-0 left-0 h-full rounded-full ${
                         plan.id === "FREE"
                           ? "bg-slate-400"
                           : plan.id === "BASIC"
@@ -174,38 +193,52 @@ export default function PlanCards({
               </CardContent>
               <CardFooter className="pt-4">
                 <div className="w-full">
-                  <Button
-                    onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
-                    disabled={isPlanDisabled}
-                    className={`w-full text-primary-foreground ${
-                      plan.id === "FREE"
-                        ? "bg-slate-500 hover:bg-slate-600"
-                        : plan.id === "BASIC"
-                          ? "bg-blue-500 hover:bg-blue-600"
-                          : plan.id === "PRO"
-                            ? "bg-purple-500 hover:bg-purple-600"
-                            : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                    } ${
-                      plan.name === bestPlan?.name && !isPlanDisabled ? "animate-pulse" : ""
-                    } shadow-md hover:shadow-lg transition-all duration-300`}
-                  >
-                    {loading === plan.id ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : isCurrentActivePlan ? (
-                      "Current Plan"
-                    ) : !isPlanAvailable(plan.id as SubscriptionPlanType) ? (
-                      "Unavailable"
-                    ) : plan.id === "FREE" && isOnFreePlan ? (
-                      "Current Plan"
-                    ) : plan.id === "FREE" ? (
-                      "Start for Free"
-                    ) : (
-                      "Subscribe Now"
-                    )}
-                  </Button>
+                  {/* Free Plan Button */}
+                  {plan.id === "FREE" && (
+                    <Button
+                      onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
+                      disabled={isPlanDisabled}
+                      variant={isOnFreePlan ? "outline" : "default"}
+                      className="w-full"
+                    >
+                      {loading === plan.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Activating...
+                        </>
+                      ) : isOnFreePlan ? (
+                        "Current Plan"
+                      ) : hasPaidSubscription ? (
+                        "Cancel Paid Plan First"
+                      ) : (
+                        "Activate Free Plan"
+                      )}
+                    </Button>
+                  )}
+                  {plan.id !== "FREE" && (
+                    <Button
+                      onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
+                      disabled={isPlanDisabled}
+                      className={`w-full text-primary-foreground ${
+                        plan.id === "FREE"
+                          ? "bg-slate-500 hover:bg-slate-600"
+                          : plan.id === "BASIC"
+                            ? "bg-blue-500 hover:bg-blue-600"
+                            : plan.id === "PRO"
+                              ? "bg-purple-500 hover:bg-purple-600"
+                              : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                      } shadow-md`}
+                    >
+                      {loading === plan.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        buttonText
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardFooter>
 
@@ -216,7 +249,14 @@ export default function PlanCards({
                 </div>
               )}
 
-              {/* Add a note for free plan when already subscribed */}
+              {/* Add a note for free plan when already subscribed to paid plan */}
+              {plan.id === "FREE" && hasPaidSubscription && (
+                <div className="px-6 pb-4 text-center">
+                  <p className="text-sm text-muted-foreground italic">Not available with paid subscription</p>
+                </div>
+              )}
+
+              {/* Add a note for free plan when already on free plan */}
               {plan.id === "FREE" && isOnFreePlan && !isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
                   <p className="text-sm text-muted-foreground italic">You are currently on the free plan</p>

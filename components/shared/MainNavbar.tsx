@@ -80,8 +80,28 @@ export default function MainNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
-  const { subscriptionStatus, isLoading: isLoadingSubscription } = useSubscriptionStore()
+  const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription } = useSubscriptionStore()
   const pathname = usePathname()
+  const [creditScore, setCreditScore] = useState(0)
+
+  // Refresh subscription data on mount and periodically
+  useEffect(() => {
+    refreshSubscription()
+
+    // Set up a refresh interval (every 60 seconds)
+    const intervalId = setInterval(() => {
+      refreshSubscription()
+    }, 60000)
+
+    return () => clearInterval(intervalId)
+  }, [refreshSubscription])
+
+  // Update credit score whenever subscription status changes
+  useEffect(() => {
+    if (subscriptionStatus && subscriptionStatus.credits !== undefined) {
+      setCreditScore(subscriptionStatus.credits)
+    }
+  }, [subscriptionStatus])
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 20)
@@ -201,7 +221,7 @@ export default function MainNavbar() {
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <NotificationsMenu initialCount={subscriptionStatus?.credits ?? 0} />
+            <NotificationsMenu initialCount={creditScore} refreshCredits={refreshSubscription} />
           </motion.div>
 
           <motion.div

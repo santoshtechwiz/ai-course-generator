@@ -1,9 +1,15 @@
-import { type NextRequest, NextResponse } from "next/server"
+/**
+ * API Route: POST /api/subscriptions/resume
+ *
+ * Resumes a canceled subscription for the authenticated user.
+ */
+
+import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/authOptions"
-import { SubscriptionService } from "@/services/subscriptionService"
+import { SubscriptionService } from "@/services/subscription-service"
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {

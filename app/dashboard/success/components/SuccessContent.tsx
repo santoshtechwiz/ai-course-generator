@@ -6,7 +6,7 @@ import { Zap, CheckCircle, FileText, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription.config"
+import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 
 interface SuccessContentProps {
   sessionId: string

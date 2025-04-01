@@ -1,57 +1,90 @@
+/**
+ * Client Component: SubscriptionPageClient
+ *
+ * This component handles the client-side logic for the subscription page,
+ * including fetching subscription data and rendering the appropriate UI.
+ */
+
 "use client"
 
-import React from "react"
-
-import { Suspense, useEffect } from "react"
-import { getAuthSession } from "@/lib/authOptions"
-import { SubscriptionService } from "@/services/subscriptionService"
+import { useEffect, useState, useCallback, useMemo } from "react"
+import { useSession } from "next-auth/react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import TrialModal from "@/components/TrialModal"
 import { PricingPage } from "./PricingPage"
 import { StripeSecureCheckout } from "./StripeSecureCheckout"
-import { SubscriptionPlanType } from "./subscription.config"
 
+import { Loader2, AlertTriangle, Info } from "lucide-react"
+import type { SubscriptionPlanType } from "@/app/types/subscription"
+import { Button } from "@/components/ui/button"
 
+/**
+ * Client component for the subscription page with enhanced error handling and performance
+ */
 export default function SubscriptionPageClient() {
-  const [userId, setUserId] = React.useState<string | null>(null)
-  const [subscriptionData, setSubscriptionData] = React.useState<{
+  const [userId, setUserId] = useState<string | null>(null)
+  const [subscriptionData, setSubscriptionData] = useState<{
     currentPlan: SubscriptionPlanType | null
     subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
     tokensUsed: number
+    credits: number
+    expirationDate?: string
     error?: string
   }>({
     currentPlan: null,
     subscriptionStatus: null,
     tokensUsed: 0,
+    credits: 0,
   })
-  const [isSubscribed, setIsSubscribed] = React.useState(false)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const isProd = process.env.NODE_ENV === "production"
+  const { data: session, status: sessionStatus } = useSession()
+  const id = session?.user?.id ?? null
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const session = await getAuthSession()
-      const id = session?.user?.id ?? null
+  // Memoize the fetch function to prevent unnecessary re-renders
+  const fetchSubscriptionData = useCallback(async () => {
+    setIsLoading(true)
+    setFetchError(null)
+
+    try {
       setUserId(id)
 
       if (id) {
         try {
-          const { plan, status } = await SubscriptionService.getSubscriptionStatus(id)
-          const tokenData = await SubscriptionService.getTokensUsed(id)
+          // Fetch subscription status with improved error handling
+          const response = await fetch("/api/subscriptions/status")
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            throw new Error(errorData.message || `Failed to fetch subscription data: ${response.statusText}`)
+          }
+
+          const subscriptionResult = await response.json()
+
+          if (subscriptionResult.error) {
+            throw new Error(subscriptionResult.details || "Failed to fetch subscription data")
+          }
 
           setSubscriptionData({
-            currentPlan: plan as SubscriptionPlanType,
-            subscriptionStatus: status as "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null,
-            tokensUsed: tokenData.used,
+            currentPlan: subscriptionResult.subscriptionPlan as SubscriptionPlanType,
+            subscriptionStatus: subscriptionResult.isSubscribed ? "ACTIVE" : "INACTIVE",
+            tokensUsed: subscriptionResult.tokensUsed || 0,
+            credits: subscriptionResult.credits || 0,
+            expirationDate: subscriptionResult.expirationDate,
           })
-          setIsSubscribed(status === "ACTIVE")
+          setIsSubscribed(subscriptionResult.isSubscribed)
         } catch (error) {
           console.error("Error fetching subscription data:", error)
+          setFetchError(error instanceof Error ? error.message : "Failed to fetch subscription data")
           setSubscriptionData({
             currentPlan: "FREE",
             subscriptionStatus: null,
             tokensUsed: 0,
-            error: "Failed to fetch subscription data",
+            credits: 0,
           })
         }
       } else {
@@ -59,39 +92,153 @@ export default function SubscriptionPageClient() {
           currentPlan: "FREE",
           subscriptionStatus: null,
           tokensUsed: 0,
+          credits: 0,
         })
       }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [id])
+
+  // Handle retry logic
+  const handleRetry = useCallback(() => {
+    setRetryCount((prev) => prev + 1)
+    fetchSubscriptionData()
+  }, [fetchSubscriptionData])
+
+  // Effect to fetch data when session changes
+  useEffect(() => {
+    // Only fetch data if session is loaded
+    if (sessionStatus !== "loading") {
+      fetchSubscriptionData()
+    }
+  }, [id, sessionStatus, fetchSubscriptionData, retryCount])
+
+  // Add event listener for subscription changes
+  useEffect(() => {
+    const handleSubscriptionChange = () => {
+      // Refresh subscription data when subscription changes
+      fetchSubscriptionData()
     }
 
-    fetchData()
+    window.addEventListener("subscription-changed", handleSubscriptionChange)
+
+    return () => {
+      window.removeEventListener("subscription-changed", handleSubscriptionChange)
+    }
+  }, [fetchSubscriptionData])
+
+  // Memoize the pending subscription check to improve performance
+  const pendingSubscription = useMemo(() => {
+    if (typeof window === "undefined") return null
+    const pendingData = localStorage.getItem("pendingSubscription")
+    if (pendingData) {
+      try {
+        return JSON.parse(pendingData)
+      } catch (e) {
+        return null
+      }
+    }
+    return null
   }, [])
+
+  // Show loading state while session is loading
+  if (sessionStatus === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <span className="ml-2 text-lg">Loading subscription data...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Trial Modal - Client Component */}
       <TrialModal isSubscribed={isSubscribed} currentPlan={subscriptionData.currentPlan} />
 
-      <Suspense fallback={<PricingPageSkeleton />}>
+      {/* Show error state with retry button */}
+      {fetchError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle>Error loading subscription data</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>{fetchError}</p>
+            <Button variant="outline" size="sm" onClick={handleRetry} className="w-fit mt-2">
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Show pending subscription notification if applicable */}
+      {pendingSubscription && id && (
+        <Alert className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <AlertTitle>Pending Subscription</AlertTitle>
+          <AlertDescription>
+            You have a pending subscription to the {pendingSubscription.planName} plan. It will be processed
+            automatically.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isLoading ? (
+        <PricingPageSkeleton />
+      ) : (
         <PricingPageWrapper userId={userId} subscriptionData={subscriptionData} isProd={isProd} />
-      </Suspense>
+      )}
     </div>
   )
 }
 
+/**
+ * Enhanced skeleton loader for the pricing page with better visual feedback
+ */
 function PricingPageSkeleton() {
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="flex items-center justify-center mb-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <span className="text-lg">Loading subscription plans...</span>
+      </div>
+
+      {/* Current subscription skeleton */}
+      <Skeleton className="h-[150px] w-full rounded-xl mb-8" />
+
+      {/* Promo code skeleton */}
+      <Skeleton className="h-[100px] w-full rounded-xl mb-8" />
+
+      {/* Section header skeleton */}
+      <div className="flex flex-col items-center space-y-2 py-8">
+        <Skeleton className="h-10 w-64 rounded-lg" />
+        <Skeleton className="h-6 w-96 rounded-lg" />
+      </div>
+
+      {/* Billing toggle skeleton */}
+      <div className="flex justify-center py-4">
+        <Skeleton className="h-8 w-64 rounded-lg" />
+      </div>
+
+      {/* Plan cards skeleton with animation */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-[400px] w-full" />
+          <div key={i} className={`${i === 2 ? "lg:scale-105" : ""} transition-all duration-300`}>
+            <Skeleton className={`h-[450px] w-full rounded-xl ${i === 2 ? "animate-pulse" : ""}`} />
+          </div>
         ))}
       </div>
-      <Skeleton className="h-[200px] w-full" />
-      <Skeleton className="h-[300px] w-full" />
+
+      {/* Additional sections skeleton */}
+      <Skeleton className="h-[200px] w-full rounded-xl" />
+      <Skeleton className="h-[300px] w-full rounded-xl" />
     </div>
   )
 }
 
+/**
+ * Enhanced wrapper component for the pricing page with better error handling
+ */
 function PricingPageWrapper({
   userId,
   subscriptionData,
@@ -102,15 +249,13 @@ function PricingPageWrapper({
     currentPlan: SubscriptionPlanType | null
     subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
     tokensUsed: number
+    credits: number
+    expirationDate?: string
     error?: string
   }
   isProd: boolean
 }) {
-  const { currentPlan, subscriptionStatus, tokensUsed, error } = subscriptionData
-
-  useEffect(() => {
-    // No automatic activation, require user to click the button
-  }, [])
+  const { currentPlan, subscriptionStatus, tokensUsed, credits, error } = subscriptionData
 
   if (error) {
     return (
@@ -128,6 +273,7 @@ function PricingPageWrapper({
         currentPlan={currentPlan}
         subscriptionStatus={subscriptionStatus}
         tokensUsed={tokensUsed}
+        credits={credits}
         isProd={isProd}
       />
 

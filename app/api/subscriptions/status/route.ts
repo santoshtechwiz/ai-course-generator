@@ -1,10 +1,17 @@
-import { NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/authOptions"
-import { SubscriptionService } from "@/services/subscriptionService"
+/**
+ * API Route: GET /api/subscriptions/status
+ *
+ * Returns the current subscription status for the authenticated user.
+ */
 
-export async function GET() {
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/authOptions"
+import { SubscriptionService } from "@/services/subscription-service"
+
+export async function GET(request: Request) {
   try {
-    const session = await getAuthSession()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -16,7 +23,7 @@ export async function GET() {
     const userId = session.user.id
 
     // Get subscription status
-    const { plan, status, endDate } = await SubscriptionService.getSubscriptionStatus(userId)
+    const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
 
     // Get token usage
     const tokenData = await SubscriptionService.getTokensUsed(userId)
@@ -28,11 +35,9 @@ export async function GET() {
 
     return NextResponse.json(
       {
-        plan,
-        status,
-        endDate,
-        tokensUsed: tokenData.used,
-        totalTokens: tokenData.total,
+        ...subscriptionStatus,
+        tokensUsed: tokenData.completionTokens,
+        totalTokens: tokenData.totalTokens,
       },
       { headers },
     )

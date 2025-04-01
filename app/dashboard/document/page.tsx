@@ -17,7 +17,7 @@ import { SavedQuizList } from "@/components/features/document/SavedQuizList"
 import { PlanAwareButton } from "@/components/PlanAwareButton"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { useSession } from "next-auth/react"
-import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription.config"
+import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
 
 interface QuizOptionsType {
   numberOfQuestions: number

@@ -9,8 +9,9 @@ import { JsonLd } from "@/components/json-ld"
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/providers/provider"
 import { getAuthSession } from "@/lib/authOptions"
-import { SubscriptionService } from "@/services/subscriptionService"
+
 import TrialModal from "@/components/TrialModal"
+import { SubscriptionService } from "@/services/subscription-service"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -93,7 +94,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   if (userId) {
     try {
-      const { plan, status } = await SubscriptionService.getSubscriptionStatus(userId)
+      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
+      const plan = subscriptionStatus?.plan
+      const status = subscriptionStatus?.status
       isSubscribed = status === "ACTIVE"
       currentPlan = plan
     } catch (error) {

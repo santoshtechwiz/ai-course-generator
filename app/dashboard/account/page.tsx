@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import { getAuthSession } from "@/lib/authOptions"
-import { SubscriptionService } from "@/services/subscriptionService"
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -8,8 +8,7 @@ import { syncUserCredits } from "@/lib/db"
 
 import { AlertTriangle } from "lucide-react"
 import SubscriptionDetails from "./component/SubscriptionDetails"
-
-
+import { SubscriptionService } from "@/services/subscription-service"
 
 export default async function SubscriptionAccountPage() {
   const session = await getAuthSession()
@@ -42,16 +41,33 @@ export default async function SubscriptionAccountPage() {
         throw new Error("User ID is required but was null.")
       }
 
-      const { plan, status, endDate } = await SubscriptionService.getSubscriptionStatus(userId)
-      const tokenData = await SubscriptionService.getTokensUsed(userId)
-      const billingHistory = (await SubscriptionService.getBillingHistory(userId)) || []
-      const paymentMethods = (await SubscriptionService.getPaymentMethods(userId)) || []
+      // Use Promise.allSettled to handle potential errors in individual requests
+      const [subscriptionStatusResult, tokenDataResult, billingHistoryResult, paymentMethodsResult] =
+        await Promise.allSettled([
+          SubscriptionService.getSubscriptionStatus(userId),
+          SubscriptionService.getTokensUsed(userId),
+          SubscriptionService.getBillingHistory(userId),
+          SubscriptionService.getPaymentMethods(userId),
+        ])
+
+      // Extract values or use defaults for failed promises
+      const subscriptionStatus =
+        subscriptionStatusResult.status === "fulfilled"
+          ? subscriptionStatusResult.value
+          : { subscriptionPlan: "FREE", isSubscribed: false }
+
+      const tokenData = tokenDataResult.status === "fulfilled" ? tokenDataResult.value : { used: 0, total: 0 }
+
+      const billingHistory = billingHistoryResult.status === "fulfilled" ? billingHistoryResult.value : []
+
+      const paymentMethods = paymentMethodsResult.status === "fulfilled" ? paymentMethodsResult.value : []
 
       return {
-        currentPlan: plan,
-        subscriptionStatus: status,
-        endDate: endDate ? new Date(endDate) : null,
+        currentPlan: subscriptionStatus.subscriptionPlan,
+        subscriptionStatus: subscriptionStatus.isSubscribed ? "ACTIVE" : "INACTIVE",
+        endDate: subscriptionStatus.expirationDate ? new Date(subscriptionStatus.expirationDate) : null,
         tokensUsed: tokenData.used,
+        tokensTotal: tokenData.total,
         billingHistory,
         paymentMethods,
       }
@@ -66,7 +82,7 @@ export default async function SubscriptionAccountPage() {
         tokensReceived: 0,
         billingHistory: [],
         paymentMethods: [],
-        error: "Failed to fetch subscription data",
+        error: error instanceof Error ? error.message : "Failed to fetch subscription data",
       }
     }
   }

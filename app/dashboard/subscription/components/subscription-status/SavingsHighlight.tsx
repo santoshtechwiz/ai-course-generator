@@ -3,7 +3,7 @@
 import { TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { calculateSavings } from "@/lib/subscription-formatter";
 import { Sparkles, Table, CreditCard, Zap, Rocket, Crown, Check, Badge, X, AlertTriangle } from "lucide-react";
-import { SUBSCRIPTION_PLANS } from "../subscription.config";
+import { SUBSCRIPTION_PLANS } from "../subscription-plans";
 
 
 // Redesigned SavingsHighlight component

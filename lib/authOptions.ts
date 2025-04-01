@@ -6,7 +6,8 @@ import FacebookProvider from "next-auth/providers/facebook"
 import { NextResponse } from "next/server"
 import type { DefaultJWT } from "next-auth/jwt"
 import { prisma } from "./db"
-import { sendWelcomeEmail } from "@/lib/email"
+import { sendEmail } from "./email"
+
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -116,7 +117,7 @@ export const authOptions: NextAuthOptions = {
 
           // Send welcome email to new user
           if (user.email && user.name) {
-            await sendWelcomeEmail(user.email, user.name)
+            await sendEmail(user.email, user.name)
           }
         }
 
