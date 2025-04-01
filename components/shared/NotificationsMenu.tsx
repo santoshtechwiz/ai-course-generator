@@ -71,9 +71,9 @@ export default function NotificationsMenu({ initialCount = 0, refreshCredits }: 
               >
                 <Badge
                   variant="default"
-                  className="h-5 min-w-5 flex items-center justify-center rounded-full px-1 text-[10px] font-medium"
+                  className="h-5 min-w-5 flex bg-red-500 items-center justify-center rounded-full px-1 text-[10px] font-medium"
                 >
-                  {creditCount > 99 ? "99+" : creditCount}
+                  {creditCount> 0 ? creditCount : 0}
                 </Badge>
               </motion.div>
             )}
