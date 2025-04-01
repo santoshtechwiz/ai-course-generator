@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatDateWithTime } from "@/lib/subscription-formatter"
-import { PlanBadge } from "./plan-badge"
-import { StatusBadge } from "./status-badge"
+import { StatusBadge } from "@/app/dashboard/account/component/status-badge"
+import { PlanBadge } from "@/app/dashboard/subscription/components/subscription-status/plan-badge"
+
 
 interface SubscriptionEvent {
   id: string
@@ -79,6 +79,21 @@ export function SubscriptionHistory({ userId }: SubscriptionHistoryProps) {
         </CardContent>
       </Card>
     )
+  }
+
+  function formatDateWithTime(createdAt: string): React.ReactNode {
+    const date = new Date(createdAt)
+    if (isNaN(date.getTime())) {
+      return "Invalid date"
+    }
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
   }
 
   return (

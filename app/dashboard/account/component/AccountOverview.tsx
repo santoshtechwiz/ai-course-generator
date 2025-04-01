@@ -98,7 +98,9 @@ export function AccountOverview({ userId }: { userId: string }) {
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center">
-                    <StatusBadge status={subscriptionData?.isSubscribed ? "ACTIVE" : "INACTIVE"} />
+                    <StatusBadge
+                      status={subscriptionData?.status || (subscriptionData?.isSubscribed ? "ACTIVE" : "INACTIVE")}
+                    />
                     <span className="ml-2">
                       {subscriptionData?.isSubscribed ? "Active Subscription" : "No Active Subscription"}
                     </span>

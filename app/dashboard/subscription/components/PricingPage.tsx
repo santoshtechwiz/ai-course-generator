@@ -71,7 +71,7 @@ export function PricingPage({
   const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false)
 
   // Normalize subscription status for case-insensitive comparison
-  const normalizedStatus = subscriptionStatus?.toUpperCase() || null
+  const normalizedStatus = subscriptionStatus?.toUpperCase() as "ACTIVE" | "CANCELED" | null;
   const isSubscribed = currentPlan && normalizedStatus === "ACTIVE"
 
   // Format expiration date for display
@@ -373,8 +373,8 @@ export function PricingPage({
           <AlertDescription className="text-blue-600 dark:text-blue-400">
             <p>
               You currently have an active {currentPlan} plan that will{" "}
-              {normalizedStatus === ("CANCELED" as SubscriptionStatusType) ? "expire" : "renew"} on{" "}
-              {formattedExpirationDate}. You can manage your subscription details in your account page.
+              {normalizedStatus === "CANCELED" ? "expire" : normalizedStatus === "ACTIVE" ? "renew" : "update"} on {formattedExpirationDate}. You can manage your
+              subscription details in your account page.
             </p>
 
             <div className="mt-2 flex items-center gap-2">

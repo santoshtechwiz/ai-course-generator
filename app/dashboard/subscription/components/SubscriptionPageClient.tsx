@@ -71,9 +71,11 @@ export default function SubscriptionPageClient() {
             throw new Error(subscriptionResult.details || "Failed to fetch subscription data")
           }
 
+          // Update this part to correctly set the subscription status
           setSubscriptionData({
             currentPlan: subscriptionResult.subscriptionPlan as SubscriptionPlanType,
-            subscriptionStatus: subscriptionResult.isSubscribed ? "ACTIVE" : "INACTIVE",
+            // Use the actual status from the API if available, otherwise derive from isSubscribed
+            subscriptionStatus: subscriptionResult.status || (subscriptionResult.isSubscribed ? "ACTIVE" : "INACTIVE"),
             tokensUsed: subscriptionResult.tokensUsed || 0,
             credits: subscriptionResult.credits || 0,
             expirationDate: subscriptionResult.expirationDate,

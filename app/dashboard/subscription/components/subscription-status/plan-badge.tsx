@@ -1,5 +1,6 @@
+import { SubscriptionPlanType } from "@/app/types/subscription"
 import { Badge } from "@/components/ui/badge"
-import type { SubscriptionPlanType } from "../subscription-plans"
+
 
 interface PlanBadgeProps {
   plan: SubscriptionPlanType | string | null
