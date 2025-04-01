@@ -15,9 +15,10 @@ import TrialModal from "@/components/TrialModal"
 import { PricingPage } from "./PricingPage"
 import { StripeSecureCheckout } from "./StripeSecureCheckout"
 
-import { Loader2, AlertTriangle, Info } from "lucide-react"
+import { Loader2, AlertTriangle, Info, ArrowRight } from "lucide-react"
 import type { SubscriptionPlanType } from "@/app/types/subscription"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 /**
  * Client component for the subscription page with enhanced error handling and performance
@@ -44,6 +45,7 @@ export default function SubscriptionPageClient() {
   const isProd = process.env.NODE_ENV === "production"
   const { data: session, status: sessionStatus } = useSession()
   const id = session?.user?.id ?? null
+  const router = useRouter()
 
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchSubscriptionData = useCallback(async () => {
@@ -152,10 +154,12 @@ export default function SubscriptionPageClient() {
     )
   }
 
+  // Update the main component to load plans immediately
+  // Fix the return structure to show plans immediately
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Trial Modal - Client Component */}
-      <TrialModal isSubscribed={isSubscribed} currentPlan={subscriptionData.currentPlan} />
+      {!isLoading && <TrialModal isSubscribed={isSubscribed} currentPlan={subscriptionData.currentPlan} />}
 
       {/* Show error state with retry button */}
       {fetchError && (
@@ -183,10 +187,44 @@ export default function SubscriptionPageClient() {
         </Alert>
       )}
 
-      {isLoading ? (
-        <PricingPageSkeleton />
-      ) : (
-        <PricingPageWrapper userId={userId} subscriptionData={subscriptionData} isProd={isProd} />
+      {/* Show account management link for authenticated users */}
+      {id && (
+        <Alert className="mb-6 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
+          <Info className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+          <AlertTitle>Manage Your Subscription</AlertTitle>
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <p>You can view and manage your current subscription details in your account page.</p>
+            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/account")} className="sm:ml-auto">
+              Go to Account <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Always render pricing page, with or without user data */}
+      <div className="space-y-8">
+        <PricingPage
+          userId={userId}
+          currentPlan={subscriptionData.currentPlan}
+          subscriptionStatus={subscriptionData.subscriptionStatus}
+          tokensUsed={subscriptionData.tokensUsed}
+          credits={subscriptionData.credits}
+          isProd={isProd}
+          expirationDate={subscriptionData.expirationDate}
+        />
+
+        {/* Add the Stripe secure checkout component */}
+        <div className="max-w-md mx-auto">
+          <StripeSecureCheckout />
+        </div>
+      </div>
+
+      {/* Show loading indicator for user data only if needed */}
+      {isLoading && sessionStatus === "authenticated" && id && (
+        <div className="fixed bottom-4 right-4 bg-background border rounded-full shadow-lg p-2 flex items-center">
+          <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+          <span className="text-sm">Loading your data...</span>
+        </div>
       )}
     </div>
   )
@@ -232,55 +270,6 @@ function PricingPageSkeleton() {
       {/* Additional sections skeleton */}
       <Skeleton className="h-[200px] w-full rounded-xl" />
       <Skeleton className="h-[300px] w-full rounded-xl" />
-    </div>
-  )
-}
-
-/**
- * Enhanced wrapper component for the pricing page with better error handling
- */
-function PricingPageWrapper({
-  userId,
-  subscriptionData,
-  isProd,
-}: {
-  userId: string | null
-  subscriptionData: {
-    currentPlan: SubscriptionPlanType | null
-    subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
-    tokensUsed: number
-    credits: number
-    expirationDate?: string
-    error?: string
-  }
-  isProd: boolean
-}) {
-  const { currentPlan, subscriptionStatus, tokensUsed, credits, error } = subscriptionData
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    )
-  }
-
-  return (
-    <div className="space-y-8">
-      <PricingPage
-        userId={userId}
-        currentPlan={currentPlan}
-        subscriptionStatus={subscriptionStatus}
-        tokensUsed={tokensUsed}
-        credits={credits}
-        isProd={isProd}
-      />
-
-      {/* Add the Stripe secure checkout component */}
-      <div className="max-w-md mx-auto">
-        <StripeSecureCheckout />
-      </div>
     </div>
   )
 }

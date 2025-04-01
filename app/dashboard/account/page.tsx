@@ -3,12 +3,14 @@ import { getAuthSession } from "@/lib/authOptions"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 import { syncUserCredits } from "@/lib/db"
 
 import { AlertTriangle } from "lucide-react"
 import SubscriptionDetails from "./component/SubscriptionDetails"
 import { SubscriptionService } from "@/services/subscription-service"
+import { AccountOverview } from "./component/AccountOverview"
 
 export default async function SubscriptionAccountPage() {
   const session = await getAuthSession()
@@ -20,7 +22,7 @@ export default async function SubscriptionAccountPage() {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Authentication Required</AlertTitle>
-          <AlertDescription>Please sign in to access your subscription details.</AlertDescription>
+          <AlertDescription>Please sign in to access your account details.</AlertDescription>
         </Alert>
       </div>
     )
@@ -90,13 +92,44 @@ export default async function SubscriptionAccountPage() {
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Subscription Management</h1>
-        <p className="text-muted-foreground">Manage your subscription, billing, and payment methods</p>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Account Management</h1>
+        <p className="text-muted-foreground">Manage your account, subscription, and billing information</p>
       </div>
 
-      <Suspense fallback={<SubscriptionDetailsSkeleton />}>
-        <SubscriptionDetails userId={userId} getSubscriptionData={getSubscriptionData} />
-      </Suspense>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8">
+          <TabsTrigger value="overview">Account Overview</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          <TabsTrigger value="billing">Billing History</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="animate-in fade-in-50 slide-in-from-left-5">
+          <Suspense fallback={<AccountOverviewSkeleton />}>
+            <AccountOverview userId={userId} />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="subscription" className="animate-in fade-in-50 slide-in-from-left-5">
+          <Suspense fallback={<SubscriptionDetailsSkeleton />}>
+            <SubscriptionDetails userId={userId} getSubscriptionData={getSubscriptionData} />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="billing" className="animate-in fade-in-50 slide-in-from-right-5">
+          <Suspense fallback={<SubscriptionDetailsSkeleton />}>
+            <SubscriptionDetails userId={userId} getSubscriptionData={getSubscriptionData} activeTab="billing" />
+          </Suspense>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+function AccountOverviewSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-[200px] w-full rounded-xl" />
+      <Skeleton className="h-[300px] w-full rounded-xl" />
     </div>
   )
 }

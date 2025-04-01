@@ -17,24 +17,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
-import { PaymentMethodForm } from "./PaymentMethod"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Import the new status components
-import { StatusBadge } from "./subscription-status/status-badge"
-import { PlanBadge } from "./subscription-status/plan-badge"
+import { useSession } from "next-auth/react"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
+import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
+import { PaymentMethodForm } from "./PaymentMethod"
+import { StatusBadge } from "./status-badge"
 
 interface ManageSubscriptionProps {
   userId: string
@@ -45,17 +34,17 @@ interface ManageSubscriptionProps {
     tokensUsed: number
     billingHistory: any[]
     paymentMethods: any[]
+    totalTokens: number
   }
 }
 
 // Optimize the component by memoizing expensive calculations
 export function ManageSubscription({ userId, subscriptionData }: ManageSubscriptionProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
-
-  const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [] } = subscriptionData
+  const session = useSession()
+  const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [], totalTokens } = subscriptionData
 
   // Memoize plan details to avoid recalculation on every render
   const planDetails = useMemo(() => {
@@ -66,7 +55,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree, hasExceededLimit } =
     useMemo(() => {
       // Fix token usage percentage calculation to handle edge cases
-      const maxTokens = planDetails?.tokens || 1 // Prevent division by zero
+      const maxTokens = totalTokens || 1 // Prevent division by zero
       const tokenUsagePercentage = Math.min(
         (tokensUsed / maxTokens) * 100,
         100, // Cap at 100% to prevent overflow
@@ -80,58 +69,12 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
 
       // Only show the warning if tokens have actually been used AND they exceed the limit
       // This is the key fix - we're checking if tokens have actually been used
-      const hasExceededLimit = tokensUsed > 0 && tokensUsed > planDetails.tokens
+      const hasExceededLimit = tokensUsed > 0 && tokensUsed > totalTokens
 
       return { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree, hasExceededLimit }
-    }, [subscriptionStatus, currentPlan, tokensUsed, planDetails])
+    }, [subscriptionStatus, currentPlan, tokensUsed, planDetails, totalTokens])
 
   // Use useCallback for event handlers to prevent unnecessary re-renders
-  const handleCancelSubscription = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-
-      const response = await fetch("/api/subscriptions/cancel", {
-        method: "POST",
-        signal: controller.signal,
-      })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ details: "Unknown error occurred" }))
-        throw new Error(errorData.details || "Failed to cancel subscription")
-      }
-
-      const data = await response.json()
-
-      toast({
-        title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled and will end at the end of your billing period.",
-        variant: "default",
-      })
-
-      setCancelDialogOpen(false)
-
-      // Use router.refresh() to update the page data
-      router.refresh()
-
-      // Dispatch an event to notify other components
-      const event = new CustomEvent("subscription-changed")
-      window.dispatchEvent(event)
-    } catch (error) {
-      console.error("Error cancelling subscription:", error)
-      toast({
-        title: "Error",
-        description: "Failed to cancel your subscription. Please try again or contact support.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [toast, router])
-
   const handleResumeSubscription = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -232,7 +175,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">Token Usage</span>
                     <span className="font-medium">
-                      {tokensUsed} / {planDetails.tokens}
+                      {tokensUsed} / {session?.data?.user.credits}
                     </span>
                   </div>
                   <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -247,7 +190,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                   </div>
                   {hasExceededLimit && (
                     <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                      You've exceeded your plan's token limit. Consider upgrading your plan.
+                      You've exceeded your available tokens. Consider upgrading your plan.
                     </div>
                   )}
                 </div>
@@ -271,39 +214,9 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
 
               <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
                 {!isFree && isActive && (
-                  <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" className="bg-red-500 hover:bg-red-600">
-                        Cancel Subscription
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="border border-slate-200 dark:border-slate-700">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Your subscription will remain active until the end of your current billing period. After that,
-                          you will be downgraded to the FREE plan.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleCancelSubscription}
-                          disabled={isLoading}
-                          className="bg-red-500 hover:bg-red-600"
-                        >
-                          {isLoading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Processing...
-                            </>
-                          ) : (
-                            "Confirm Cancellation"
-                          )}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <div className="text-sm text-muted-foreground bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                    To cancel your subscription, please contact our support team.
+                  </div>
                 )}
                 {!isFree && isCancelled && (
                   <Button
