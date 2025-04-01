@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/components/SignInPrompt"
-import { submitQuizData } from "@/app/actions/actions"
+
 import { useRouter } from "next/navigation"
 import PageLoader from "@/components/ui/loader"
+import { submitQuizData } from "@/lib/slug"
 
 interface CodeQuizResultProps {
   correctCount: number

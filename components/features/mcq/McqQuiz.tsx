@@ -10,12 +10,13 @@ import { ArrowRight, Timer, HelpCircle, RefreshCcw, Trophy, Clock } from "lucide
 import { cn } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { useSession } from "next-auth/react"
-import { submitQuizData } from "@/app/actions/actions"
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import PageLoader from "@/components/ui/loader"
 import { SignInPrompt } from "@/components/SignInPrompt"
+import { submitQuizData } from "@/lib/slug"
 
 type Question = {
   id: number
