@@ -84,8 +84,7 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
           type: "mcq",
         })
         setLoading(false)
-        // Clear the stored results after successful submission
-        localStorage.removeItem("quizResults")
+        return true // Return success
       } catch (error) {
         console.error("Failed to update quiz score:", error)
         setLoading(false)
@@ -94,6 +93,7 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
           description: "Failed to update quiz score. Please try again.",
           variant: "destructive",
         })
+        return false // Return failure
       }
     },
     [slug, quizId],
@@ -276,13 +276,19 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
           userAnswers: savedUserAnswers,
           questionTimes: savedQuestionTimes,
         } = JSON.parse(savedResults)
+
         if (savedSlug === slug) {
           setScore(savedScore)
           setQuizCompleted(savedQuizCompleted)
           setTimeSpent(savedTimeSpent)
           setUserAnswers(savedUserAnswers)
           setQuestionTimes(savedQuestionTimes)
-          saveQuizResults(quizData)
+
+          // Save the results to the server and then clear localStorage
+          saveQuizResults(quizData).then(() => {
+            // Remove from localStorage after successful submission
+            localStorage.removeItem("quizResults")
+          })
         }
       }
     }
@@ -326,6 +332,27 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
             ? "Good effort!"
             : "Keep practicing!"
 
+    // If not authenticated, show sign-in prompt instead of results
+    if (!isAuthenticated) {
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center min-h-[50vh] p-4 w-full"
+        >
+          <Card className="max-w-full w-full md:max-w-2xl shadow-lg">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-2xl font-bold">Authentication Required</CardTitle>
+              <p className="text-muted-foreground mt-1">Please sign in to view your quiz results</p>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />
+            </CardContent>
+          </Card>
+        </motion.div>
+      )
+    }
+
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -368,16 +395,12 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
                 />
               </div>
             </div>
-
-            {!isAuthenticated && <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />}
           </CardContent>
           <CardFooter className="flex justify-center pt-2 pb-6">
-            {isAuthenticated && (
-              <Button onClick={() => window.location.reload()} size="lg" className="font-medium">
-                <RefreshCcw className="mr-2 h-4 w-4" />
-                Retake Quiz
-              </Button>
-            )}
+            <Button onClick={() => window.location.reload()} size="lg" className="font-medium">
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Retake Quiz
+            </Button>
           </CardFooter>
         </Card>
       </motion.div>
