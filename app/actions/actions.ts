@@ -1,7 +1,8 @@
 "use server"
 import prisma from "@/lib/db"
+import { sendEmail } from "@/lib/email"
 import { revalidatePath } from "next/cache"
-import { sendWelcomeEmail } from "@/lib/email"
+
 
 interface SubmitQuizDataParams {
   slug: string
@@ -61,7 +62,7 @@ export async function createUser(formData: FormData) {
 
     // Send welcome email to new user
     if (email) {
-      await sendWelcomeEmail(email, name)
+      await sendEmail(email, name)
     }
 
     revalidatePath("/")

@@ -1,65 +1,147 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { useSession } from "next-auth/react"
 
-type SubscriptionPlanType = "free" | "basic" | "premium" // Define your plan types
-type SubscriptionStatusType = "active" | "inactive" | "canceled" // Define your status types
-
-// Update the interface to include totalTokens and tokensUsed with proper naming
-interface SubscriptionData {
-  plan: SubscriptionPlanType | null
-  status: SubscriptionStatusType
-  endDate: string | null
-}
-
-export function useSubscription() {
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
-  const [tokensUsed, setTokensUsed] = useState<number>(0)
-  const [totalTokens, setTotalTokens] = useState<number>(0)
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchSubscriptionData = useCallback(async () => {
+export const useSubscription = () => {
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
+  const session=useSession();
+  const handleSubscribe = async (planName: string, duration: number, promoCode?: string, promoDiscount?: number) => {
     setIsLoading(true)
-    setError(null)
-
     try {
-      const response = await fetch("/api/subscriptions/status")
+      // Get the current user ID
+      const userId =session?.data?.user?.id;
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch subscription data")
-      }
-
-      const data = await response.json()
-
-      setSubscription({
-        plan: data.plan,
-        status: data.status,
-        endDate: data.endDate,
+      const response = await fetch("/api/subscriptions/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          planName,
+          duration,
+          promoCode,
+          promoDiscount,
+        }),
       })
 
-      // Update to use the actual credits and creditsUsed from the user table
-      setTotalTokens(data.totalTokens || 0)
-      setTokensUsed(data.tokensUsed || 0)
-    } catch (err: any) {
-      console.error("Error fetching subscription:", err)
-      setError(err.message || "Failed to load subscription data")
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to create subscription")
+      }
+
+      // Check if we have a checkout URL
+      if (result.url) {
+        toast({
+          title: "Redirecting to Checkout",
+          description: "You'll be redirected to complete your subscription payment.",
+          variant: "default",
+        })
+
+        // Redirect to the checkout URL
+        window.location.href = result.url
+        return true
+      } else if (result.sessionId) {
+        // Fallback if only sessionId is returned
+        console.warn("No checkout URL returned, but session ID is available:", result.sessionId)
+        toast({
+          title: "Checkout Ready",
+          description: "Your checkout session has been created. Please wait...",
+          variant: "default",
+        })
+        return true
+      }
+
+      return false
+    } catch (error: any) {
+      console.error("Error subscribing:", error)
+      toast({
+        title: "Subscription Failed",
+        description: error.message || "Failed to create subscription",
+        variant: "destructive",
+      })
+      return false
     } finally {
       setIsLoading(false)
     }
-  }, [])
-
-  useEffect(() => {
-    fetchSubscriptionData()
-  }, [fetchSubscriptionData])
-
-  return {
-    subscription,
-    tokensUsed,
-    totalTokens,
-    isLoading,
-    error,
-    refetch: fetchSubscriptionData,
   }
+
+  const cancelSubscription = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch("/api/subscriptions/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to cancel subscription")
+      }
+
+      toast({
+        title: "Subscription Cancelled",
+        description: "Your subscription has been cancelled successfully",
+        variant: "default",
+      })
+
+      return true
+    } catch (error: any) {
+      console.error("Error cancelling subscription:", error)
+      toast({
+        title: "Cancellation Failed",
+        description: error.message || "Failed to cancel subscription",
+        variant: "destructive",
+      })
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const resumeSubscription = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch("/api/subscriptions/resume", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to resume subscription")
+      }
+
+      toast({
+        title: "Subscription Resumed",
+        description: "Your subscription has been resumed successfully",
+        variant: "default",
+      })
+
+      return true
+    } catch (error: any) {
+      console.error("Error resuming subscription:", error)
+      toast({
+        title: "Resume Failed",
+        description: error.message || "Failed to resume subscription",
+        variant: "destructive",
+      })
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return { handleSubscribe, cancelSubscription, resumeSubscription, isLoading }
 }
 

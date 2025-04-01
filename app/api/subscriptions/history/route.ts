@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import prisma from "@/lib/db"
 
-
 export async function GET(req: NextRequest) {
   try {
     // Authenticate admin user

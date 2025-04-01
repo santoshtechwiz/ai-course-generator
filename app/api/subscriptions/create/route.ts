@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/authOptions"
-import { SubscriptionService } from "@/services/subscriptionService"
+
 import { z } from "zod"
 import prisma from "@/lib/db"
+import { SubscriptionService } from "@/services/subscription-service"
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
+    console.log("Incoming request body:", body)
 
     const schema = z.object({
       userId: z.string(),
@@ -28,6 +30,7 @@ export async function POST(req: NextRequest) {
     try {
       var validatedData = schema.parse(body)
     } catch (validationError) {
+      console.error("Validation Error:", (validationError as z.ZodError).errors)
       return NextResponse.json(
         {
           error: "Validation Error",
@@ -109,7 +112,12 @@ export async function POST(req: NextRequest) {
       validatedData.promoDiscount,
     )
 
-    return NextResponse.json(result)
+    // Ensure we return both sessionId and url to the client
+    return NextResponse.json({
+      sessionId: result.sessionId,
+      url: result.url,
+      success: true,
+    })
   } catch (error: any) {
     console.error("Error creating subscription:", error)
 

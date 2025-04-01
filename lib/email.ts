@@ -1,13 +1,15 @@
-'use server'
+"use server"
 import { Resend } from "resend"
+import { startEmailWorkflow } from "./email/index"
 
-const resend = new Resend("re_WHm98Ecp_EY6PpGXNghQLxFUszScAfEiT")
+const resend = new Resend(process.env.RESEND_API_KEY || "")
 
-// Send welcome email
-export async function sendEmail(email: string, name: string) {
+// Send welcome email and start the email workflow
+export async function sendEmail(email: string, name: string, userId?: string) {
   try {
+    // Send immediate welcome email
     const response = await resend.emails.send({
-      from: process.env.EMAIL_FROM || "no-reply@yourdomain.com",
+      from: process.env.EMAIL_FROM || "no-reply@courseai.io",
       to: email,
       subject: "Welcome to Our Platform!",
       html: `
@@ -21,6 +23,10 @@ export async function sendEmail(email: string, name: string) {
     })
 
     console.log("Welcome email sent:", response.id)
+
+    // Start the email workflow for the sequence of promotional emails
+    await startEmailWorkflow(userId || email, email, name)
+
     return { success: true, messageId: response.id }
   } catch (error) {
     console.error("Error sending welcome email:", error)
@@ -32,13 +38,13 @@ export async function sendEmail(email: string, name: string) {
 export async function sendContactResponse(email: string, name: string, subject: string, message: string) {
   try {
     const response = await resend.emails.send({
-      from: process.env.EMAIL_FROM || "support@yourdomain.com",
+      from: process.env.EMAIL_FROM || "support@courseai.io",
       to: email,
       subject: `Re: ${subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Hello ${name},</h2>
-          <p>Thank you for reaching out. Here’s our response to your inquiry:</p>
+          <p>Thank you for reaching out. Here's our response to your inquiry:</p>
           <div style="padding: 15px; background-color: #f5f5f5; border-left: 4px solid #007bff;">
             ${message}
           </div>
@@ -62,8 +68,8 @@ export async function sendAdminNotification(subject: string, name: string, email
     const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM
 
     const response = await resend.emails.send({
-      from: process.env.EMAIL_FROM || "admin@yourdomain.com",
-      to: adminEmail || "fallback@yourdomain.com",
+      from: process.env.EMAIL_FROM || "admin@courseai.io",
+      to: adminEmail || "fallback@courseai.io",
       subject: `New Contact Form Submission: ${subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -86,3 +92,4 @@ export async function sendAdminNotification(subject: string, name: string, email
     throw error
   }
 }
+

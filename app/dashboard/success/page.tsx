@@ -5,7 +5,9 @@ import { CheckCircle2, ArrowRight, Zap, FileText, ArrowLeft } from "lucide-react
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SubscriptionService } from "@/services/subscriptionService"
+import { SubscriptionService } from "@/services/subscription-service"
+import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
+
 
 export default async function PaymentSuccessPage({
   searchParams,
@@ -58,7 +60,8 @@ async function SuccessPageContent({
   if (userId) {
     try {
       // Get the user's subscription details
-      const { plan } = await SubscriptionService.getSubscriptionStatus(userId)
+      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
+      const plan = subscriptionStatus?.subscriptionPlan // Adjust this line based on the actual structure of SubscriptionStatus
 
       if (plan) {
         // Find the plan details to get token information
@@ -145,28 +148,4 @@ async function SuccessPageContent({
     </div>
   )
 }
-
-// Include the subscription plans configuration
-const SUBSCRIPTION_PLANS = [
-  {
-    id: "FREE",
-    name: "FREE",
-    tokens: 15,
-  },
-  {
-    id: "BASIC",
-    name: "BASIC",
-    tokens: 60,
-  },
-  {
-    id: "PRO",
-    name: "PRO",
-    tokens: 250,
-  },
-  {
-    id: "ULTIMATE",
-    name: "ULTIMATE",
-    tokens: 600,
-  },
-]
 

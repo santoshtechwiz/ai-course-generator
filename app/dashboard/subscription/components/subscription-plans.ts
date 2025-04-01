@@ -1,32 +1,15 @@
-import { CreditCard, Zap, Rocket, Crown } from 'lucide-react'
+/**
+ * Subscription Plans Configuration
+ *
+ * This file contains the configuration for all subscription plans.
+ * It's separated from the business logic to make it easier to modify
+ * plan details without changing the core functionality.
+ */
 
-export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE"
-export type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | "PENDING" | null
+import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
+import type { SubscriptionPlan, FAQItem, AddOnPackage } from "@/types/subscription"
 
-export interface SubscriptionPlan {
-  id: SubscriptionPlanType
-  name: string
-  description: string
-  icon: any
-  tokens: number
-  options: {
-    duration: 1 | 6 | 12
-    price: number
-    savings?: number
-  }[]
-  limits: {
-    maxQuestionsPerQuiz: number
-    maxCoursesPerMonth: number
-    apiCallsPerDay?: number
-  }
-  features: {
-    name: string
-    available: boolean
-    comingSoon?: boolean
-  }[]
-  popular?: boolean
-}
-
+// Define all subscription plans
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: "FREE",
@@ -54,12 +37,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       apiCallsPerDay: 10,
     },
     features: [
-      { name: 'Course Creation', available: true },
+      { name: "Course Creation", available: true },
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
-      { name: 'Video Transcripts', available: false },
+      { name: "Video Transcripts", available: false },
       { name: "Video Quiz", available: false },
       { name: "PDF Downloads", available: false },
       { name: "AI Accuracy", available: false },
@@ -94,12 +77,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       apiCallsPerDay: 50,
     },
     features: [
-      { name: 'Course Creation', available: true },
+      { name: "Course Creation", available: true },
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
-      { name: 'Video Transcripts', available: true },
+      { name: "Video Transcripts", available: true },
       { name: "Video Quiz", available: true },
       { name: "PDF Downloads", available: true },
       { name: "Video Transcripts", available: true },
@@ -136,12 +119,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       apiCallsPerDay: 200,
     },
     features: [
-      { name: 'Course Creation', available: true },
+      { name: "Course Creation", available: true },
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
-      { name: 'Video Transcripts', available: true },
+      { name: "Video Transcripts", available: true },
       { name: "Video Quiz", available: true },
       { name: "PDF Downloads", available: true },
       { name: "Video Transcripts", available: true },
@@ -177,12 +160,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       apiCallsPerDay: 500,
     },
     features: [
-      { name: 'Course Creation', available: true },
+      { name: "Course Creation", available: true },
       { name: "MCQ Generator", available: true },
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
-      { name: 'Video Transcripts', available: true },
+      { name: "Video Transcripts", available: true },
       { name: "Video Quiz", available: true },
       { name: "PDF Downloads", available: true },
       { name: "Video Transcripts", available: true },
@@ -192,7 +175,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   },
 ]
 
-export const FAQ_ITEMS = [
+// FAQ items
+export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "What are tokens and how do they work?",
     answer:
@@ -235,18 +219,14 @@ export const FAQ_ITEMS = [
   },
 ]
 
-export const ADD_ON_PACKAGES = [
+// Add-on packages
+export const ADD_ON_PACKAGES: AddOnPackage[] = [
   {
     id: "token-booster",
     name: "Token Booster",
     description: "Add more tokens to your account",
     price: 9.99,
-    features: [
-      "100 additional tokens",
-      "Never expires",
-      "Use anytime",
-      "Compatible with all plans"
-    ]
+    features: ["100 additional tokens", "Never expires", "Use anytime", "Compatible with all plans"],
   },
   {
     id: "analytics-pro",
@@ -257,31 +237,29 @@ export const ADD_ON_PACKAGES = [
       "Student performance tracking",
       "Quiz effectiveness metrics",
       "Learning pattern analysis",
-      "Exportable reports"
-    ]
+      "Exportable reports",
+    ],
   },
   {
     id: "api-package",
     name: "API Package",
     description: "Additional API calls for heavy users",
     price: 19.99,
-    features: [
-      "500 additional API calls",
-      "Higher rate limits",
-      "Priority processing",
-      "Advanced models access"
-    ]
+    features: ["500 additional API calls", "Higher rate limits", "Priority processing", "Advanced models access"],
   },
   {
     id: "support-plus",
     name: "Support Plus",
     description: "Enhanced support options",
     price: 7.99,
-    features: [
-      "Priority email support",
-      "Live chat assistance",
-      "1 hour response time",
-      "Dedicated support agent"
-    ]
-  }
+    features: ["Priority email support", "Live chat assistance", "1 hour response time", "Dedicated support agent"],
+  },
 ]
+
+// Valid promo codes with their discount percentages
+export const VALID_PROMO_CODES: Record<string, number> = {
+  AILAUNCH20: 20,
+  WELCOME10: 10,
+  SPRING2025: 15,
+}
+

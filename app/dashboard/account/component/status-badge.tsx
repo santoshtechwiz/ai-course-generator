@@ -1,7 +1,17 @@
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+/**
+ * StatusBadge Component
+ *
+ * This component displays a badge with the appropriate styling
+ * based on the subscription status.
+ */
 
-export function StatusBadge({ status }: { status: string }) {
+import { Badge } from "@/components/ui/badge"
+
+interface StatusBadgeProps {
+  status: string
+}
+
+export function StatusBadge({ status }: StatusBadgeProps) {
   if (!status) return <Badge variant="outline">N/A</Badge>
 
   // Normalize status to uppercase for consistent comparison
@@ -23,14 +33,10 @@ export function StatusBadge({ status }: { status: string }) {
     case "PAST_DUE":
       return <Badge variant="destructive">Past Due</Badge>
     case "INACTIVE":
-      return (
-        <Badge variant="outline" className={cn("text-muted-foreground border-muted-foreground/50")}>
-          Inactive
-        </Badge>
-      )
+      return <Badge variant="outline">Inactive</Badge>
     case "PENDING":
       return (
-        <Badge variant="outline" className="text-primary border-primary">
+        <Badge variant="outline" className="text-blue-500 border-blue-500">
           Pending
         </Badge>
       )

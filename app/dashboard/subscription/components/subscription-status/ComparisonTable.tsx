@@ -1,7 +1,7 @@
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { Check, X, CreditCard, Zap, Rocket, Crown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import type { SUBSCRIPTION_PLANS } from "../../components/subscription.config"
+import type { SUBSCRIPTION_PLANS } from "../subscription-plans"
 
 export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_PLANS }) {
   return (
@@ -15,13 +15,19 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
             <TableRow>
               <TableHead className="w-48 bg-slate-50 dark:bg-slate-800 font-semibold">Feature</TableHead>
               {plans.map((plan) => (
-                <TableHead key={plan.name} className="text-center bg-slate-50 dark:bg-slate-800 font-semibold">
+                <TableHead
+                  key={plan.name}
+                  className={`text-center bg-slate-50 dark:bg-slate-800 font-semibold ${
+                    plan.id === "PRO" ? "bg-purple-50 dark:bg-purple-900/20" : ""
+                  }`}
+                >
                   <div className="flex flex-col items-center">
                     {plan.id === "FREE" && <CreditCard className="h-5 w-5 mb-1 text-slate-500" />}
                     {plan.id === "BASIC" && <Zap className="h-5 w-5 mb-1 text-blue-500" />}
                     {plan.id === "PRO" && <Rocket className="h-5 w-5 mb-1 text-purple-500" />}
                     {plan.id === "ULTIMATE" && <Crown className="h-5 w-5 mb-1 text-amber-500" />}
                     {plan.name}
+                    {plan.id === "PRO" && <Badge className="mt-1 bg-purple-500 text-white text-xs">Recommended</Badge>}
                   </div>
                 </TableHead>
               ))}
@@ -31,7 +37,12 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
             <TableRow className="bg-slate-50/50 dark:bg-slate-800/50">
               <TableCell className="font-medium">Price</TableCell>
               {plans.map((plan) => (
-                <TableCell key={plan.name} className="text-center font-semibold">
+                <TableCell
+                  key={plan.name}
+                  className={`text-center font-semibold ${
+                    plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""
+                  }`}
+                >
                   ${plan.options[0].price}/mo
                 </TableCell>
               ))}
@@ -39,7 +50,10 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
             <TableRow>
               <TableCell className="font-medium">Tokens</TableCell>
               {plans.map((plan) => (
-                <TableCell key={plan.name} className="text-center">
+                <TableCell
+                  key={plan.name}
+                  className={`text-center ${plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
+                >
                   <span className="font-semibold">{plan.tokens}</span>
                 </TableCell>
               ))}
@@ -47,7 +61,10 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
             <TableRow className="bg-slate-50/50 dark:bg-slate-800/50">
               <TableCell className="font-medium">Max Questions Per Quiz</TableCell>
               {plans.map((plan) => (
-                <TableCell key={plan.name} className="text-center">
+                <TableCell
+                  key={plan.name}
+                  className={`text-center ${plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
+                >
                   {plan.limits.maxQuestionsPerQuiz}
                 </TableCell>
               ))}
@@ -68,7 +85,10 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
                 {plans.map((plan) => {
                   const featureInfo = plan.features.find((f) => f.name === feature)
                   return (
-                    <TableCell key={plan.name} className="text-center">
+                    <TableCell
+                      key={plan.name}
+                      className={`text-center ${plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
+                    >
                       {featureInfo?.available ? (
                         <div className="flex justify-center">
                           <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full">

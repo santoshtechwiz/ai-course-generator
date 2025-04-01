@@ -30,6 +30,17 @@ export default function AdminNav({ user }: AdminNavProps) {
       label: "Contact Inquiries",
       icon: <Inbox className="h-4 w-4 mr-2" />,
     },
+    {
+      href: "/dashboard/admin/email/campaigns",
+      label: "Email",
+      icon: <CreditCard className="h-4 w-4 mr-2" />,
+    },
+    {
+      href: "/dashboard/admin/email/templates",
+      label: "Email Templates",
+      icon: <BookOpen className="h-4 w-4 mr-2" />,
+    },
+  
    
   ]
 

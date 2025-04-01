@@ -1,6 +1,12 @@
-import Stripe from "stripe";
+// Create a helper file for Stripe
+import { loadStripe } from "@stripe/stripe-js"
 
-export const stripe = new Stripe(process.env.STRIPE_API_KEY as string, {
-  apiVersion: "2023-08-16",
-  typescript: true,
-});
+let stripePromise: Promise<any> | null = null
+
+export const getStripe = () => {
+  if (!stripePromise) {
+    stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+  }
+  return stripePromise
+}
+

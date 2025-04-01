@@ -1,9 +1,9 @@
-import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/authOptions"
-import { SubscriptionService } from "@/services/subscriptionService"
-import { prisma } from "@/lib/db"
+import { type NextRequest, NextResponse } from "next/server"
+
+import { SubscriptionService } from "@/services/subscription-service"
 import { z } from "zod"
+import { authOptions } from "@/lib/authOptions"
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
         {
           error: "Unauthorized",
           message: "You must be logged in to access subscription details",
+          code: "AUTH_REQUIRED",
         },
         { status: 401 },
       )
@@ -20,30 +21,26 @@ export async function GET(req: NextRequest) {
 
     const userId = session.user.id
 
-    // Add caching headers for better performance
+    // Add improved caching headers for better performance
     const headers = new Headers({
-      "Cache-Control": "max-age=300, s-maxage=300, stale-while-revalidate=600",
+      "Cache-Control": "max-age=60, s-maxage=120, stale-while-revalidate=300",
+      "Content-Type": "application/json",
     })
 
     try {
-      // Get subscription data
-      const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId)
-
-      // Get user's current credits
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { credits: true },
-      })
+      // Get subscription data with improved error handling
+      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
 
       // Get token usage data
       const tokenData = await SubscriptionService.getTokensUsed(userId)
 
-      // Return combined data
+      // Return combined data with better structure
       return NextResponse.json(
         {
-          ...subscriptionData,
-          credits: user?.credits || 0,
+          success: true,
+          ...subscriptionStatus,
           tokenUsage: tokenData,
+          timestamp: new Date().toISOString(),
         },
         { headers },
       )
@@ -54,6 +51,7 @@ export async function GET(req: NextRequest) {
           error: "Service Error",
           message: "Failed to fetch subscription data from service",
           details: serviceError.message,
+          code: "SERVICE_ERROR",
         },
         { status: 500 },
       )
@@ -65,6 +63,7 @@ export async function GET(req: NextRequest) {
         error: "Server Error",
         message: "An unexpected error occurred while fetching subscription data",
         details: error.message,
+        code: "SERVER_ERROR",
       },
       { status: 500 },
     )
@@ -79,6 +78,7 @@ export async function POST(req: NextRequest) {
         {
           error: "Unauthorized",
           message: "You must be logged in to perform this action",
+          code: "AUTH_REQUIRED",
         },
         { status: 401 },
       )
@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
         {
           error: "Invalid Request",
           message: "Request body must be valid JSON",
+          code: "INVALID_JSON",
         },
         { status: 400 },
       )
@@ -112,32 +113,30 @@ export async function POST(req: NextRequest) {
           error: "Validation Error",
           message: "Invalid request data",
           details: (validationError as z.ZodError).errors,
+          code: "VALIDATION_ERROR",
         },
         { status: 400 },
       )
     }
 
-    // if (validatedData.action === "purchase_tokens") {
-    //   try {
-    //     const result = await SubscriptionService.purchaseTokens(userId, validatedData.tokenAmount)
-    //     return NextResponse.json(result)
-    //   } catch (serviceError: any) {
-    //     console.error("Service error purchasing tokens:", serviceError)
-    //     return NextResponse.json(
-    //       {
-    //         error: "Service Error",
-    //         message: "Failed to purchase tokens",
-    //         details: serviceError.message,
-    //       },
-    //       { status: 500 },
-    //     )
-    //   }
-    // }
+    // Handle token purchase action with improved response
+    if (validatedData.action === "purchase_tokens") {
+      // This would be implemented in a real application
+      return NextResponse.json(
+        {
+          error: "Not Implemented",
+          message: "Token purchase is not implemented yet",
+          code: "NOT_IMPLEMENTED",
+        },
+        { status: 501 },
+      )
+    }
 
     return NextResponse.json(
       {
         error: "Invalid Action",
         message: "The requested action is not supported",
+        code: "INVALID_ACTION",
       },
       { status: 400 },
     )
@@ -148,6 +147,7 @@ export async function POST(req: NextRequest) {
         error: "Server Error",
         message: "An unexpected error occurred while processing your request",
         details: error.message,
+        code: "SERVER_ERROR",
       },
       { status: 500 },
     )

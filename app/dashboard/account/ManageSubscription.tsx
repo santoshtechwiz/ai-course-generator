@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription.config"
+import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
 import { PlanBadge } from "../subscription/components/subscription-status/plan-badge"
 import { PaymentMethodForm } from "./component/PaymentMethod"

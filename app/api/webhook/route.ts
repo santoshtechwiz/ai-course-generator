@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { prisma } from "@/lib/db"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription.config"
+import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-10-28.acacia",
