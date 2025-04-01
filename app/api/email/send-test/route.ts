@@ -1,31 +1,15 @@
 import { NextResponse } from "next/server"
-import nodemailer from "nodemailer"
-import { render } from "@react-email/render"
-import WelcomeEmail from "@/components/templates/welcome-email"
-import QuizPromoEmail from "@/components/templates/quiz-promo-email"
-import CoursePromoEmail from "@/components/templates/course-promo-email"
-import ReengagementEmail from "@/components/templates/reengagement-email"
 
-// Create a test account for development
-const createTestAccount = async () => {
-  const testAccount = await nodemailer.createTestAccount()
-  return nodemailer.createTransport({
-    host: "smtp.ethereal.email",
-    port: 587,
-    secure: false,
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
-  })
-}
+import { render } from "@react-email/render"
+import CoursePromoEmail from "@/app/dashboard/admin/components/templates/course-promo-email"
+import QuizPromoEmail from "@/app/dashboard/admin/components/templates/quiz-promo-email"
+import ReengagementEmail from "@/app/dashboard/admin/components/templates/reengagement-email"
+import WelcomeEmail from "@/app/dashboard/admin/components/templates/welcome-email"
+import { sendEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
   try {
     const { templateId, email, subject } = await request.json()
-
-    // Create transport
-    const transport = await createTestAccount()
 
     let html = ""
     let emailSubject = subject || "Test Email from CourseAI"
@@ -33,11 +17,11 @@ export async function POST(request: Request) {
     // Render the appropriate email template
     switch (templateId) {
       case "welcome":
-        html = render(WelcomeEmail({ name: "Test User" }))
+        html = await render(WelcomeEmail({ name: "Test User" }))
         if (!subject) emailSubject = "Welcome to CourseAI!"
         break
       case "quiz-promo":
-        html = render(
+        html = await render(
           QuizPromoEmail({
             name: "Test User",
             preferences: {
@@ -49,7 +33,7 @@ export async function POST(request: Request) {
         if (!subject) emailSubject = "Test Your Knowledge with Our Latest Quizzes!"
         break
       case "course-promo":
-        html = render(
+        html = await render(
           CoursePromoEmail({
             name: "Test User",
             recommendedCourses: [
@@ -71,7 +55,7 @@ export async function POST(request: Request) {
         if (!subject) emailSubject = "Courses Tailored Just for You!"
         break
       case "reengagement":
-        html = render(
+        html = await render(
           ReengagementEmail({
             name: "Test User",
           }),
@@ -82,25 +66,15 @@ export async function POST(request: Request) {
         throw new Error("Invalid template ID")
     }
 
-    // Send the email
-    const info = await transport.sendMail({
-      from: `"CourseAI Test" <test@courseai.io>`,
-      to: email,
-      subject: emailSubject,
-      html,
-    })
-
-    // Log the preview URL
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    // Send the email using your custom sendEmail function
+    const info = await sendEmail(email, emailSubject, html)
 
     return NextResponse.json({
       success: true,
       messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info),
     })
   } catch (error) {
     console.error("Error sending test email:", error)
     return NextResponse.json({ error: "Failed to send test email" }, { status: 500 })
   }
 }
-
