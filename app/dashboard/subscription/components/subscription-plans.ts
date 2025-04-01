@@ -6,7 +6,7 @@
  * plan details without changing the core functionality.
  */
 
-import { AddOnPackage, SubscriptionPlan } from "@/app/types/subscription"
+import { AddOnPackage, FAQItem, SubscriptionPlan } from "@/app/types/subscription"
 import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
 
 // Define all subscription plans
@@ -42,9 +42,9 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       { name: "Fill in the Blanks", available: true },
       { name: "Open-ended Questions", available: true },
       { name: "Code Quiz", available: true },
-      { name: "Video Transcripts", available: false },
-      { name: "Video Quiz", available: false },
-      { name: "PDF Downloads", available: false },
+      { name: "Video Transcripts", available: true },
+      { name: "Video Quiz", available: true },
+      { name: "PDF Downloads", available: true },
       { name: "AI Accuracy", available: false },
       { name: "Priority Support", available: false },
     ],
@@ -183,29 +183,24 @@ export const FAQ_ITEMS: FAQItem[] = [
       "Tokens are our platform's currency for generating content. Each token allows you to create one quiz or course. The number of tokens you have depends on your subscription plan, and you can purchase additional tokens as needed.",
   },
   {
-    question: "Can I upgrade my plan at any time?",
+    question: "Can I upgrade or downgrade my plan?",
     answer:
-      "Yes, you can upgrade your subscription plan at any time. When you upgrade, you'll be charged the prorated difference for the remainder of your billing cycle. Your unused tokens will carry over to your new plan.",
+      "You can upgrade or downgrade your subscription plan, but changes will only take effect once your current tokens are used up. This ensures that you get the full value of your purchased tokens before switching plans.",
   },
   {
     question: "What happens if I run out of tokens?",
     answer:
-      "If you run out of tokens, you can purchase additional tokens through our Token Booster add-on package or upgrade to a higher-tier plan that includes more tokens. Your existing quizzes and courses will remain accessible even if you run out of tokens.",
+      "If you run out of tokens, you can purchase additional tokens through our Token Booster add-on package. Your existing quizzes and courses will remain accessible even if you run out of tokens.",
   },
   {
     question: "How do I cancel my subscription?",
     answer:
-      "You can cancel your subscription at any time from your account settings. Your subscription will remain active until the end of your current billing period. After cancellation, you'll still have access to your created content, but you won't be able to create new quizzes or courses without an active subscription.",
+      "Subscription cancellation is currently not supported. Your plan remains active until all tokens are used. You can choose not to renew your plan once your tokens expire.",
   },
   {
     question: "Do unused tokens roll over to the next month?",
     answer:
       "Yes, unused tokens roll over to the next month as long as your subscription remains active. There is no expiration date for tokens while you maintain an active subscription.",
-  },
-  {
-    question: "What are API calls and why are they limited?",
-    answer:
-      "API calls are requests to our AI services that generate quiz questions and other content. Each plan has daily API call limits to ensure fair usage and system stability. Most users won't reach these limits during normal usage, but power users who need more can purchase additional API calls through our add-on packages.",
   },
   {
     question: "Is there a discount for educational institutions?",
@@ -215,10 +210,9 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "Can I try the premium features before subscribing?",
     answer:
-      "We offer a 7-day free trial of our Pro plan for new users. During the trial, you'll have access to all Pro features including Code Quiz and Video Quiz generation. No credit card is required to start your trial.",
+      "We offer a one-month free trial of our Pro plan for new users. During the trial, you'll have access to all Pro features including Code Quiz and Video Quiz generation. No credit card is required to start your trial.",
   },
-]
-
+];
 // Add-on packages
 export const ADD_ON_PACKAGES: AddOnPackage[] = [
   {
