@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 import { render } from "@react-email/render"
-import WelcomeEmail from "@/components/templates/welcome-email"
+import WelcomeEmail from "@/app/dashboard/admin/components/templates/welcome-email"
 
 // Create a test account for development
 const createTestAccount = async () => {
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const transport = process.env.NODE_ENV === "production" ? createProductionTransport() : await createTestAccount()
 
     // Render the welcome email
-    const html = render(WelcomeEmail({ name: name || "there" }))
+    const html = await render(WelcomeEmail({ name: name || "there" }))
 
     // Send the email
     const info = await transport.sendMail({

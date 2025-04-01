@@ -5,7 +5,7 @@ import { startEmailWorkflow } from "./email/index"
 const resend = new Resend(process.env.RESEND_API_KEY || "")
 
 // Send welcome email and start the email workflow
-export async function sendEmail(email: string, name: string, userId?: string) {
+export async function sendEmail(email: string, name: string, html?: string) {
   try {
     // Send immediate welcome email
     const response = await resend.emails.send({
@@ -22,12 +22,12 @@ export async function sendEmail(email: string, name: string, userId?: string) {
       `,
     })
 
-    console.log("Welcome email sent:", response.id)
+    console.log("Welcome email sent:", response.data)
 
     // Start the email workflow for the sequence of promotional emails
-    await startEmailWorkflow(userId || email, email, name)
+    await startEmailWorkflow(html || email, email, name)
 
-    return { success: true, messageId: response.id }
+    return { success: true, messageId: response.data }
   } catch (error) {
     console.error("Error sending welcome email:", error)
     throw error
@@ -54,8 +54,8 @@ export async function sendContactResponse(email: string, name: string, subject: 
       `,
     })
 
-    console.log("Contact response email sent:", response.id)
-    return { success: true, messageId: response.id }
+    console.log("Contact response email sent:", response.data)
+    return { success: true, messageId: response.data }
   } catch (error) {
     console.error("Error sending contact response email:", error)
     throw error
@@ -85,8 +85,8 @@ export async function sendAdminNotification(subject: string, name: string, email
       `,
     })
 
-    console.log("Admin notification email sent:", response.id)
-    return { success: true, messageId: response.id }
+    console.log("Admin notification email sent:", response.data)
+    return { success: true, messageId: response.data }
   } catch (error) {
     console.error("Error sending admin notification email:", error)
     throw error
