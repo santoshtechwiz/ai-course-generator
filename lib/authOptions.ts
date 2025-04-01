@@ -6,8 +6,7 @@ import FacebookProvider from "next-auth/providers/facebook"
 import { NextResponse } from "next/server"
 import type { DefaultJWT } from "next-auth/jwt"
 import { prisma } from "./db"
-import { sendEmail } from "./email"
-
+import { sendEmail } from "@/lib/email"
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -109,7 +108,7 @@ export const authOptions: NextAuthOptions = {
           await prisma.user.update({
             where: { id: user.id },
             data: {
-              userType: "Free",
+              userType: "FREE",
               credits: 0, // Start with 0 credits - only add when subscribing
               isAdmin: false,
             },
