@@ -9,13 +9,14 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
-import { Check, Loader2, Lock } from "lucide-react"
+import { Check, Loader2, Lock, AlertTriangle, Calendar, Info } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
 import { planIcons } from "@/config/plan-icons"
-import { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
-import { SUBSCRIPTION_PLANS } from "../subscription-plans"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+import type { SUBSCRIPTION_PLANS } from "../subscription-plans"
 
 // Redesigned PlanCards component with reduced animations
 export default function PlanCards({
@@ -31,6 +32,8 @@ export default function PlanCards({
   promoDiscount,
   getDiscountedPrice,
   isPlanAvailable,
+  getPlanUnavailableReason,
+  expirationDate,
 }: {
   plans: typeof SUBSCRIPTION_PLANS
   currentPlan: SubscriptionPlanType | null
@@ -44,6 +47,8 @@ export default function PlanCards({
   promoDiscount: number
   getDiscountedPrice: (originalPrice: number) => number
   isPlanAvailable: (planName: SubscriptionPlanType) => boolean
+  getPlanUnavailableReason?: (planName: SubscriptionPlanType) => string | undefined
+  expirationDate?: string | null
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
@@ -64,31 +69,34 @@ export default function PlanCards({
         const discountedPrice = getDiscountedPrice(priceOption.price)
 
         // Determine if this specific plan should be disabled
-        // Now also disable FREE plan if user has a paid subscription
-        const isPlanDisabled =
-          loading !== null ||
-          (plan.id === "FREE" && (isOnFreePlan || hasPaidSubscription)) ||
-          (!isPlanAvailable(plan.id as SubscriptionPlanType) && plan.id !== "FREE")
+        const isPlanDisabled = loading !== null || !isPlanAvailable(plan.id as SubscriptionPlanType)
+
+        // Get the reason why the plan is unavailable
+        const unavailableReason = getPlanUnavailableReason?.(plan.id as SubscriptionPlanType)
 
         // Determine button text and state
         const buttonText = (() => {
           if (loading === plan.id) return "Processing..."
-          if (plan.id === "FREE" && isOnFreePlan) return "Current Plan"
-          if (plan.id === "FREE" && hasPaidSubscription) return "Not Available"
           if (isCurrentActivePlan) return "Current Plan"
-          if (!isPlanAvailable(plan.id as SubscriptionPlanType) && plan.id !== "FREE") return "Unavailable"
+          if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return "Unavailable"
           if (plan.id === "FREE") return "Start for Free"
           return "Subscribe Now"
+        })()
+
+        // Determine card highlight style
+        const cardHighlightClass = (() => {
+          if (isPlanActive && normalizedStatus === "ACTIVE") return "border-2 border-green-500 dark:border-green-400"
+          if (isPlanActive && normalizedStatus === "CANCELED") return "border-2 border-amber-500 dark:border-amber-400"
+          if (isBestValue) return "shadow-lg ring-1 ring-purple-500"
+          return "shadow-sm"
         })()
 
         return (
           <div key={plan.id} className={`${isBestValue ? "order-first lg:order-none" : ""}`}>
             <Card
-              className={`flex flex-col h-full ${
-                isPlanActive
-                  ? "border-2 border-blue-500 dark:border-blue-400"
-                  : "border-slate-200 dark:border-slate-700"
-              } ${isBestValue ? "shadow-lg ring-1 ring-purple-500" : "shadow-sm"}`}
+              className={`flex flex-col h-full transition-all duration-300 hover:shadow-md ${
+                cardHighlightClass
+              } ${isPlanDisabled ? "opacity-75" : ""}`}
             >
               {isBestValue && (
                 <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1.5 text-sm font-medium">
@@ -96,7 +104,13 @@ export default function PlanCards({
                 </div>
               )}
               {isCurrentActivePlan && (
-                <div className="bg-green-500 text-white text-center py-1.5 text-sm font-medium">Current Plan</div>
+                <div
+                  className={`${
+                    normalizedStatus === "ACTIVE" ? "bg-green-500" : "bg-amber-500"
+                  } text-white text-center py-1.5 text-sm font-medium`}
+                >
+                  {normalizedStatus === "ACTIVE" ? "Current Plan" : "Canceled Plan"}
+                </div>
               )}
               <CardHeader className={`${isBestValue ? "pb-4" : "pb-2"}`}>
                 <div className="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between mb-1">
@@ -193,81 +207,75 @@ export default function PlanCards({
               </CardContent>
               <CardFooter className="pt-4">
                 <div className="w-full">
-                  {/* Free Plan Button */}
-                  {plan.id === "FREE" && (
-                    <Button
-                      onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
-                      disabled={isPlanDisabled}
-                      variant={isOnFreePlan ? "outline" : "default"}
-                      className="w-full"
-                    >
-                      {loading === plan.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Activating...
-                        </>
-                      ) : isOnFreePlan ? (
-                        "Current Plan"
-                      ) : hasPaidSubscription ? (
-                        "Cancel Paid Plan First"
-                      ) : (
-                        "Activate Free Plan"
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-full">
+                          <Button
+                            onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
+                            disabled={isPlanDisabled}
+                            variant={isCurrentActivePlan ? "outline" : "default"}
+                            className={`w-full text-primary-foreground ${
+                              plan.id === "FREE"
+                                ? "bg-slate-500 hover:bg-slate-600"
+                                : plan.id === "BASIC"
+                                  ? "bg-blue-500 hover:bg-blue-600"
+                                  : plan.id === "PRO"
+                                    ? "bg-purple-500 hover:bg-purple-600"
+                                    : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                            } shadow-md transition-all duration-300 ${
+                              isCurrentActivePlan ? "!bg-transparent !text-foreground border-2" : ""
+                            }`}
+                          >
+                            {loading === plan.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              buttonText
+                            )}
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      {!isPlanAvailable(plan.id as SubscriptionPlanType) && unavailableReason && (
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          <div className="flex items-start gap-2 p-1">
+                            <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-sm">{unavailableReason}</p>
+                              {expirationDate && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Your current plan {normalizedStatus === "CANCELED" ? "expires" : "renews"} on{" "}
+                                  {expirationDate}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </TooltipContent>
                       )}
-                    </Button>
-                  )}
-                  {plan.id !== "FREE" && (
-                    <Button
-                      onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
-                      disabled={isPlanDisabled}
-                      className={`w-full text-primary-foreground ${
-                        plan.id === "FREE"
-                          ? "bg-slate-500 hover:bg-slate-600"
-                          : plan.id === "BASIC"
-                            ? "bg-blue-500 hover:bg-blue-600"
-                            : plan.id === "PRO"
-                              ? "bg-purple-500 hover:bg-purple-600"
-                              : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                      } shadow-md`}
-                    >
-                      {loading === plan.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        buttonText
-                      )}
-                    </Button>
-                  )}
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </CardFooter>
 
               {/* Add a note for current active plan */}
               {isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
-                  <p className="text-sm text-muted-foreground italic">You are currently subscribed to this plan</p>
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-2">
+                    <Info className="h-4 w-4" />
+                    <p>You are currently subscribed to this plan</p>
+                  </div>
                 </div>
               )}
 
-              {/* Add a note for free plan when already subscribed to paid plan */}
-              {plan.id === "FREE" && hasPaidSubscription && (
+              {/* Add a note for unavailable plans */}
+              {!isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
-                  <p className="text-sm text-muted-foreground italic">Not available with paid subscription</p>
-                </div>
-              )}
-
-              {/* Add a note for free plan when already on free plan */}
-              {plan.id === "FREE" && isOnFreePlan && !isCurrentActivePlan && (
-                <div className="px-6 pb-4 text-center">
-                  <p className="text-sm text-muted-foreground italic">You are currently on the free plan</p>
-                </div>
-              )}
-
-              {!isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && plan.id !== "FREE" && (
-                <div className="px-6 pb-4 text-center">
-                  <p className="text-sm text-muted-foreground italic">
-                    You need to cancel your current subscription before subscribing to this plan
-                  </p>
+                  <div className="flex items-center justify-center gap-2 text-sm text-amber-600 dark:text-amber-400 mt-2">
+                    <Calendar className="h-4 w-4" />
+                    <p>Available after current plan {normalizedStatus === "CANCELED" ? "expires" : "ends"}</p>
+                  </div>
                 </div>
               )}
             </Card>

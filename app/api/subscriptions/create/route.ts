@@ -1,41 +1,48 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/authOptions"
-
+import { getServerSession } from "next-auth/next"
 import { z } from "zod"
-import prisma from "@/lib/db"
+
+import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/services/subscription-service"
+import { prisma } from "@/lib/db"
+
+// Define validation schema for request body
+const subscriptionSchema = z.object({
+  userId: z.string(),
+  planName: z.string(),
+  duration: z.number().int().positive(),
+  referralCode: z.string().optional(),
+  promoCode: z.string().optional(),
+  promoDiscount: z.number().optional(),
+})
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getAuthSession()
+    // Verify authentication
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "Unauthorized", message: "You must be logged in to create a subscription" },
+        {
+          error: "Unauthorized",
+          message: "You must be logged in to create a subscription",
+          errorType: "AUTHENTICATION_REQUIRED",
+        },
         { status: 401 },
       )
     }
 
+    // Parse and validate request body
     const body = await req.json()
-    console.log("Incoming request body:", body)
-
-    const schema = z.object({
-      userId: z.string(),
-      planName: z.string(),
-      duration: z.number().int().positive(),
-      referralCode: z.string().optional(),
-      promoCode: z.string().optional(),
-      promoDiscount: z.number().optional(),
-    })
 
     try {
-      var validatedData = schema.parse(body)
+      var validatedData = subscriptionSchema.parse(body)
     } catch (validationError) {
-      console.error("Validation Error:", (validationError as z.ZodError).errors)
       return NextResponse.json(
         {
           error: "Validation Error",
           message: "Invalid request data",
           details: (validationError as z.ZodError).errors,
+          errorType: "SERVER_ERROR",
         },
         { status: 400 },
       )
@@ -47,6 +54,24 @@ export async function POST(req: NextRequest) {
         {
           error: "Unauthorized",
           message: "You are not authorized to create a subscription for this user",
+          errorType: "AUTHENTICATION_REQUIRED",
+        },
+        { status: 403 },
+      )
+    }
+
+    // Check if user already has an active subscription
+    const existingSubscription = await prisma.userSubscription.findUnique({
+      where: { userId: validatedData.userId },
+    })
+
+    // If user has an active subscription, they can't change plans until it expires
+    if (existingSubscription && existingSubscription.status === "ACTIVE" && existingSubscription.planId !== "FREE") {
+      return NextResponse.json(
+        {
+          error: "Subscription Change Restricted",
+          message: "You cannot change your subscription until your current plan expires",
+          errorType: "PLAN_CHANGE_RESTRICTED",
         },
         { status: 403 },
       )
@@ -60,6 +85,7 @@ export async function POST(req: NextRequest) {
           {
             error: "Invalid Referral",
             message: "The provided referral code is invalid or expired",
+            errorType: "SERVER_ERROR",
           },
           { status: 400 },
         )
@@ -74,6 +100,7 @@ export async function POST(req: NextRequest) {
           {
             error: "Invalid Promo Code",
             message: "The provided promo code is invalid or expired",
+            errorType: "SERVER_ERROR",
           },
           { status: 400 },
         )
@@ -83,7 +110,7 @@ export async function POST(req: NextRequest) {
       validatedData.promoDiscount = promoValidation.discountPercentage
     }
 
-    // Create a pending subscription record before redirecting to Stripe
+    // Create a pending subscription record before redirecting to payment
     try {
       await prisma.pendingSubscription.create({
         data: {
@@ -102,7 +129,7 @@ export async function POST(req: NextRequest) {
       // Continue with checkout even if recording fails
     }
 
-    // Now we can pass the promo code and discount to the updated service method
+    // Create checkout session
     const result = await SubscriptionService.createCheckoutSession(
       validatedData.userId,
       validatedData.planName,
@@ -112,7 +139,6 @@ export async function POST(req: NextRequest) {
       validatedData.promoDiscount,
     )
 
-    // Ensure we return both sessionId and url to the client
     return NextResponse.json({
       sessionId: result.sessionId,
       url: result.url,
@@ -127,6 +153,7 @@ export async function POST(req: NextRequest) {
           error: "Subscription conflict",
           message: "You already have an active subscription",
           details: error.message,
+          errorType: "ALREADY_SUBSCRIBED",
         },
         { status: 409 },
       )
@@ -137,6 +164,7 @@ export async function POST(req: NextRequest) {
         error: "Failed to create subscription",
         message: "An error occurred while creating your subscription",
         details: error.message,
+        errorType: "SERVER_ERROR",
       },
       { status: 500 },
     )

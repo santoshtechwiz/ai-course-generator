@@ -53,7 +53,7 @@ export interface SubscriptionPlan {
 export interface UserSubscription {
   userId: string
   planId: SubscriptionPlanType
-  status: string
+  status: SubscriptionStatusType
   currentPeriodStart?: Date
   currentPeriodEnd?: Date
   cancelAtPeriodEnd?: boolean
@@ -71,7 +71,7 @@ export interface TokenUsage {
 export interface SubscriptionStatus {
   credits: number
   isSubscribed: boolean
-  subscriptionPlan: SubscriptionPlanType | "FREE"
+  subscriptionPlan: SubscriptionPlanType
   expirationDate?: string
 }
 
@@ -82,7 +82,7 @@ export interface PaymentGateway {
     planName: string,
     duration: number,
     options?: PaymentOptions,
-  ): Promise<{ sessionId: string }>
+  ): Promise<{ sessionId: string; url: string }>
 
   cancelSubscription(userId: string): Promise<boolean>
 
@@ -123,4 +123,21 @@ export interface AddOnPackage {
   price: number
   features: string[]
 }
+
+// Subscription action result
+export interface SubscriptionActionResult {
+  success: boolean
+  message?: string
+  redirectUrl?: string
+}
+
+// Subscription error types
+export type SubscriptionErrorType =
+  | "AUTHENTICATION_REQUIRED"
+  | "PLAN_CHANGE_RESTRICTED"
+  | "DOWNGRADE_RESTRICTED"
+  | "ALREADY_SUBSCRIBED"
+  | "SERVER_ERROR"
+  | "PAYMENT_FAILED"
+  | "NETWORK_ERROR"
 
