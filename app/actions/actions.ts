@@ -2,7 +2,7 @@
 import prisma from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { revalidatePath } from "next/cache"
-
+const URL=process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
 
 interface SubmitQuizDataParams {
   slug: string
@@ -18,8 +18,12 @@ export async function submitQuizData(
   setLoading?: (state: boolean) => void,
 ): Promise<void> {
   try {
-    if (setLoading) setLoading(true) // Show
-    const response = await fetch(`/api/quiz/${slug}/complete`, {
+    if (setLoading) setLoading(true) // Show loader
+
+    // Make sure slug is properly encoded for URL
+    const encodedSlug = encodeURIComponent(slug)
+
+    const response = await fetch(`${URL}/api/quiz/${encodedSlug}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -32,7 +36,7 @@ export async function submitQuizData(
     })
 
     if (!response.ok) {
-      throw new Error("Failed to update score")
+      throw new Error(`Failed to update score: ${response.status}`)
     }
   } catch (error) {
     console.error("Error submitting quiz data:", error)

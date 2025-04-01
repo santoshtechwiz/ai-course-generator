@@ -32,8 +32,8 @@ import type { QueryParams } from "@/app/types/types"
 import { SignInBanner } from "@/components/features/quiz/SignInBanner"
 import { ConfirmDialog } from "@/components/features/quiz/ConfirmDialog"
 const flashcardSchema = z.object({
-  topic: z.string().nonempty("Topic is required"),
-  amount: z.number().int().min(1, "Amount must be at least 1").max(100, "Amount must be at most 100"),
+  title: z.string().nonempty("Topic is required"),
+  count: z.number().int().min(1, "Amount must be at least 1").max(100, "Amount must be at most 100"),
   difficulty: z.enum(["easy", "medium", "hard"]),
 });
 
@@ -57,8 +57,8 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { subscriptionStatus } = useSubscriptionStore()
 
   const [formData, setFormData] = usePersistentState<FlashCardFormData>("flashcardFormData", {
-    topic: params?.title || "",
-    amount: params?.amount ? Number.parseInt(params.amount, 10) : maxCards,
+    title: params?.title || "",
+    count: params?.amount ? Number.parseInt(params.amount, 10) : maxCards,
     difficulty: "medium",
   })
 
@@ -77,12 +77,12 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
 
   React.useEffect(() => {
     if (params?.title) {
-      setValue("topic", params.title)
+      setValue("title", params.title)
     }
     if (params?.amount) {
       const amount = Number.parseInt(params.amount, 10)
       if (amount !== maxCards) {
-        setValue("amount", Math.min(amount, maxCards))
+        setValue("count", Math.min(amount, maxCards))
       }
     }
   }, [params?.title, params?.amount, maxCards, setValue])
@@ -95,7 +95,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { mutateAsync: createFlashCardsMutation } = useMutation({
     mutationFn: async (data: FlashCardFormData) => {
       data.userType = subscriptionStatus?.subscriptionPlan
-      const response = await axios.post("/api/flashcards", data)
+      const response = await axios.post("/api/flashcard", data)
       return response.data
     },
     onError: (error) => {
@@ -112,7 +112,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
       if (isLoading) return
 
       if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: "/dashboard/flashcards" })
+        signIn("credentials", { callbackUrl: "/dashboard/flashcard" })
         return
       }
 
@@ -136,7 +136,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
         description: "Your flashcards have been created.",
       })
 
-      router.push(`/dashboard/flashcards/${response?.slug}`)
+      router.push(`/dashboard/flashcard/${response?.slug}`)
     } catch (error) {
       // Error is handled in the mutation's onError callback
     } finally {
@@ -144,13 +144,13 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
     }
   }, [createFlashCardsMutation, watch, toast, router])
 
-  const amount = watch("amount")
+  const count = watch("count")
   const difficulty = watch("difficulty")
-  const topic = watch("topic")
+  const title = watch("title")
 
   const isFormValid = React.useMemo(() => {
-    return !!topic && !!amount && !!difficulty && isValid
-  }, [topic, amount, difficulty, isValid])
+    return !!title && !!count && !!difficulty && isValid
+  }, [title, count, difficulty, isValid])
 
   const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
 
@@ -187,35 +187,35 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Label htmlFor="topic" className="text-base font-medium text-foreground flex items-center gap-2">
-                Topic
+              <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
+                Title
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                      <p className="w-[200px]">Enter any topic you'd like to create flashcards for</p>
+                      <p className="w-[200px]">Enter any title you'd like to create flashcards for</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Label>
               <div className="relative">
                 <Input
-                  id="topic"
-                  placeholder="Enter the flashcard topic"
+                  id="title"
+                  placeholder="Enter the flashcard title"
                   className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
-                  {...register("topic")}
+                  {...register("title")}
                   aria-describedby="topic-description"
                 />
               </div>
-              {errors.topic && (
+              {errors.title && (
                 <p className="text-sm text-destructive mt-1" id="topic-error">
-                  {errors.topic.message}
+                  {errors.title.message}
                 </p>
               )}
               <p className="text-sm text-muted-foreground" id="topic-description">
-                Choose a specific topic for more focused flashcards
+                Choose a specific title for more focused flashcards
               </p>
             </motion.div>
 
@@ -243,16 +243,16 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                   <Timer className="w-5 h-5 text-muted-foreground" />
                   <motion.span
                     className="text-2xl font-bold text-primary"
-                    key={amount}
+                    key={count}
                     initial={{ scale: 1.2, color: "#00ff00" }}
                     animate={{ scale: 1, color: "var(--primary)" }}
                     transition={{ type: "spring", stiffness: 300, damping: 10 }}
                   >
-                    {amount}
+                    {count}
                   </motion.span>
                 </div>
                 <Controller
-                  name="amount"
+                  name="count"
                   control={control}
                   render={({ field }) => (
                     <SubscriptionSlider
@@ -264,11 +264,11 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                 />
                 <p className="text-sm text-muted-foreground text-center">Select between 1 and {maxCards} flashcards</p>
               </div>
-              {errors.amount && <p className="text-sm text-destructive mt-1">{errors.amount.message}</p>}
+              {errors.count && <p className="text-sm text-destructive mt-1">{errors.count.message}</p>}
               <p className="text-sm text-muted-foreground mt-2">
                 {isLoggedIn
                   ? "Unlimited flashcard sets available"
-                  : `This set will use ${amount} credit${amount > 1 ? "s" : ""}`}
+                  : `This set will use ${count} credit${count > 1 ? "s" : ""}`}
               </p>
             </motion.div>
 
