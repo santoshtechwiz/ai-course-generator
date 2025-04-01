@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { StatusBadge } from "./status-badge"
+
 
 interface BillingHistoryProps {
   billingHistory: Array<{
@@ -128,7 +130,7 @@ export function BillingHistory({ billingHistory }: BillingHistoryProps) {
                     <TableCell className="hidden md:table-cell">{item.description}</TableCell>
                     <TableCell className="font-semibold">${(item.amount / 100).toFixed(2)}</TableCell>
                     <TableCell>
-                      <StatusBadge status={item.status} />
+                      <StatusBadge status={item?.status} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1 sm:gap-2">
@@ -181,30 +183,4 @@ export function BillingHistory({ billingHistory }: BillingHistoryProps) {
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
-  switch (status.toLowerCase()) {
-    case "paid":
-      return (
-        <Badge variant="default" className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-          Paid
-        </Badge>
-      )
-    case "pending":
-      return (
-        <Badge variant="outline" className="text-orange-500 border-orange-500">
-          Pending
-        </Badge>
-      )
-    case "failed":
-      return <Badge variant="destructive">Failed</Badge>
-    case "refunded":
-      return (
-        <Badge variant="outline" className="text-blue-500 border-blue-500">
-          Refunded
-        </Badge>
-      )
-    default:
-      return <Badge variant="outline">{status}</Badge>
-  }
-}
 

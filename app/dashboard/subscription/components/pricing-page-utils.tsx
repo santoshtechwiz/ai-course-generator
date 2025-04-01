@@ -15,14 +15,15 @@ import { Label } from "@/components/ui/label"
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { useToast } from "@/hooks/use-toast"
 import { SUBSCRIPTION_PLANS, FAQ_ITEMS } from "./subscription-plans"
-import type { SubscriptionPlanType, SubscriptionStatusType } from "./subscription-plans"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 
-import { ReferralSystem } from "./ReferralSystem"
+
 import { calculateSavings } from "@/lib/subscription-formatter"
+import { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+import { ReferralSystem } from "../../account/component/ReferralSystem"
 
 interface PricingPageProps {
   userId: string | null

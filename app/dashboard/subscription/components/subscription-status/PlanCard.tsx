@@ -19,6 +19,7 @@ import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/s
 import type { SUBSCRIPTION_PLANS } from "../subscription-plans"
 
 // Redesigned PlanCards component with reduced animations
+// Add isAuthenticated to the props interface
 export default function PlanCards({
   plans,
   currentPlan,
@@ -34,6 +35,7 @@ export default function PlanCards({
   isPlanAvailable,
   getPlanUnavailableReason,
   expirationDate,
+  isAuthenticated = true, // Add this prop with default value
 }: {
   plans: typeof SUBSCRIPTION_PLANS
   currentPlan: SubscriptionPlanType | null
@@ -49,6 +51,7 @@ export default function PlanCards({
   isPlanAvailable: (planName: SubscriptionPlanType) => boolean
   getPlanUnavailableReason?: (planName: SubscriptionPlanType) => string | undefined
   expirationDate?: string | null
+  isAuthenticated?: boolean // Add this prop
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
@@ -69,24 +72,32 @@ export default function PlanCards({
         const discountedPrice = getDiscountedPrice(priceOption.price)
 
         // Determine if this specific plan should be disabled
-        const isPlanDisabled = loading !== null || !isPlanAvailable(plan.id as SubscriptionPlanType)
+        // If not authenticated, only disable during loading
+        const isPlanDisabled =
+          loading !== null || (isAuthenticated && !isPlanAvailable(plan.id as SubscriptionPlanType))
 
         // Get the reason why the plan is unavailable
-        const unavailableReason = getPlanUnavailableReason?.(plan.id as SubscriptionPlanType)
+        const unavailableReason = isAuthenticated
+          ? getPlanUnavailableReason?.(plan.id as SubscriptionPlanType)
+          : undefined
 
         // Determine button text and state
         const buttonText = (() => {
           if (loading === plan.id) return "Processing..."
-          if (isCurrentActivePlan) return "Current Plan"
-          if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return "Unavailable"
+          if (isAuthenticated) {
+            if (isCurrentActivePlan) return "Current Plan"
+            if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return "Unavailable"
+          }
           if (plan.id === "FREE") return "Start for Free"
           return "Subscribe Now"
         })()
 
         // Determine card highlight style
         const cardHighlightClass = (() => {
-          if (isPlanActive && normalizedStatus === "ACTIVE") return "border-2 border-green-500 dark:border-green-400"
-          if (isPlanActive && normalizedStatus === "CANCELED") return "border-2 border-amber-500 dark:border-amber-400"
+          if (isAuthenticated && isPlanActive && normalizedStatus === ("ACTIVE" as SubscriptionStatusType))
+            return "border-2 border-green-500 dark:border-green-400"
+          if (isAuthenticated && isPlanActive && normalizedStatus === ("CANCELED" as SubscriptionStatusType))
+            return "border-2 border-amber-500 dark:border-amber-400"
           if (isBestValue) return "shadow-lg ring-1 ring-purple-500"
           return "shadow-sm"
         })()
@@ -106,10 +117,10 @@ export default function PlanCards({
               {isCurrentActivePlan && (
                 <div
                   className={`${
-                    normalizedStatus === "ACTIVE" ? "bg-green-500" : "bg-amber-500"
+                    normalizedStatus === ("ACTIVE" as SubscriptionStatusType) ? "bg-green-500" : "bg-amber-500"
                   } text-white text-center py-1.5 text-sm font-medium`}
                 >
-                  {normalizedStatus === "ACTIVE" ? "Current Plan" : "Canceled Plan"}
+                  {normalizedStatus === ("ACTIVE" as SubscriptionStatusType) ? "Current Plan" : "Canceled Plan"}
                 </div>
               )}
               <CardHeader className={`${isBestValue ? "pb-4" : "pb-2"}`}>
@@ -118,12 +129,12 @@ export default function PlanCards({
                     <div>{planIcons[plan.id as SubscriptionPlanType]}</div>
                     <CardTitle className="text-xl ml-2">{plan.name}</CardTitle>
                   </div>
-                  {isPlanActive && (
+                  {isPlanActive && isAuthenticated && (
                     <Badge
-                      variant={normalizedStatus === "ACTIVE" ? "default" : "destructive"}
+                      variant={normalizedStatus === ("ACTIVE" as SubscriptionStatusType) ? "default" : "destructive"}
                       className="whitespace-nowrap mt-2 sm:mt-0"
                     >
-                      {normalizedStatus === "ACTIVE" ? "Active" : "Inactive"}
+                      {normalizedStatus === ("ACTIVE" as SubscriptionStatusType) ? "Active" : "Inactive"}
                     </Badge>
                   )}
                 </div>
@@ -238,7 +249,7 @@ export default function PlanCards({
                           </Button>
                         </div>
                       </TooltipTrigger>
-                      {!isPlanAvailable(plan.id as SubscriptionPlanType) && unavailableReason && (
+                      {isAuthenticated && !isPlanAvailable(plan.id as SubscriptionPlanType) && unavailableReason && (
                         <TooltipContent side="bottom" className="max-w-xs">
                           <div className="flex items-start gap-2 p-1">
                             <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
@@ -246,8 +257,9 @@ export default function PlanCards({
                               <p className="font-medium text-sm">{unavailableReason}</p>
                               {expirationDate && (
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Your current plan {normalizedStatus === "CANCELED" ? "expires" : "renews"} on{" "}
-                                  {expirationDate}
+                                  Your current plan{" "}
+                                  {normalizedStatus === ("CANCELED" as SubscriptionStatusType) ? "expires" : "renews"}{" "}
+                                  on {expirationDate}
                                 </p>
                               )}
                             </div>
@@ -260,7 +272,7 @@ export default function PlanCards({
               </CardFooter>
 
               {/* Add a note for current active plan */}
-              {isCurrentActivePlan && (
+              {isAuthenticated && isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-2">
                     <Info className="h-4 w-4" />
@@ -270,11 +282,24 @@ export default function PlanCards({
               )}
 
               {/* Add a note for unavailable plans */}
-              {!isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && (
+              {isAuthenticated && !isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
                   <div className="flex items-center justify-center gap-2 text-sm text-amber-600 dark:text-amber-400 mt-2">
                     <Calendar className="h-4 w-4" />
-                    <p>Available after current plan {normalizedStatus === "CANCELED" ? "expires" : "ends"}</p>
+                    <p>
+                      Available after current plan{" "}
+                      {normalizedStatus === ("CANCELED" as SubscriptionStatusType) ? "expires" : "ends"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Add a note for unauthenticated users */}
+              {!isAuthenticated && plan.id !== "FREE" && (
+                <div className="px-6 pb-4 text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-600 dark:text-blue-400 mt-2">
+                    <Info className="h-4 w-4" />
+                    <p>Sign in to subscribe</p>
                   </div>
                 </div>
               )}
