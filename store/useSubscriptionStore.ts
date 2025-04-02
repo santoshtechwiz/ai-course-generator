@@ -61,7 +61,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
       return data
     } catch (error) {
-      console.error("Error refreshing subscription:", error)
+      console.warn("Error refreshing subscription:", error)
       set({
         error: error instanceof Error ? error.message : "An unknown error occurred",
         isLoading: false,

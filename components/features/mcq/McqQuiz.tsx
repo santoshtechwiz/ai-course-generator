@@ -16,7 +16,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge"
 import PageLoader from "@/components/ui/loader"
 import { SignInPrompt } from "@/components/SignInPrompt"
-import { submitQuizData } from "@/lib/slug"
+
+import { useSubmitQuiz } from "@/hooks/useQuizData"
+
+// Ensure that `useSubmitQuiz` is correctly implemented in `useQuizData` and returns an object with `mutateAsync`.
 
 type Question = {
   id: number
@@ -72,45 +75,48 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
     { text: "Small progress is still progress.", emoji: "🌊" },
   ]
 
+  const { mutateAsync: submitQuiz } = useSubmitQuiz();
+
   const saveQuizResults = useCallback(
     async (quizData: any) => {
       try {
-        setLoading(true)
-        await submitQuizData({
+        setLoading(true);
+        await submitQuiz({
           slug,
           quizId,
           answers: quizData.answers,
           elapsedTime: quizData.totalTime,
           score: quizData.score,
           type: "mcq",
-        })
-        setLoading(false)
-        return true // Return success
+        });
+
+        setLoading(false);
+        return true; // Return success
       } catch (error) {
-        console.error("Failed to update quiz score:", error)
-        setLoading(false)
+        console.error("Failed to update quiz score:", error);
+        setLoading(false);
         toast({
           title: "Error",
           description: "Failed to update quiz score. Please try again.",
           variant: "destructive",
-        })
-        return false // Return failure
+        });
+        return false; // Return failure
       }
     },
-    [slug, quizId],
-  )
+    [slug, quizId, submitQuiz],
+  );
 
-  const handleQuizCompletion = useCallback(() => {
-    const duration = Math.floor((Date.now() - startTime) / 1000)
+  const handleQuizCompletion = useCallback(async () => {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
 
-    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
-    const finalUserAnswers = [...userAnswers, selectedAnswer || ""]
-    const finalQuestionTimes = [...questionTimes, currentTime]
+    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0);
+    const finalUserAnswers = [...userAnswers, selectedAnswer || ""];
+    const finalQuestionTimes = [...questionTimes, currentTime];
 
-    setQuizCompleted(true)
+    setQuizCompleted(true);
 
-    const finalScore = finalUserAnswers.filter((answer, index) => answer === questions[index].answer).length
-    setScore(finalScore)
+    const finalScore = finalUserAnswers.filter((answer, index) => answer === questions[index].answer).length;
+    setScore(finalScore);
 
     const quizData = {
       quizId,
@@ -122,10 +128,10 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
         isCorrect: finalUserAnswers[index] === q.answer,
         timeSpent: finalQuestionTimes[index] || 0,
       })),
-    }
+    };
 
     if (isAuthenticated) {
-      saveQuizResults(quizData)
+      await saveQuizResults(quizData); // Ensure this is awaited
     } else {
       localStorage.setItem(
         "quizResults",
@@ -138,7 +144,7 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
           userAnswers: finalUserAnswers,
           questionTimes: finalQuestionTimes,
         }),
-      )
+      );
     }
   }, [
     isAuthenticated,
@@ -151,7 +157,7 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
     timeSpent,
     userAnswers,
     questionTimes,
-  ])
+  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {

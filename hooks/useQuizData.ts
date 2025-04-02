@@ -7,6 +7,7 @@ interface SubmitQuizDataParams {
   elapsedTime: number
   score: number
   type: string
+  userId?: string // New optional parameter
 }
 
 const submitQuizData = async ({
@@ -16,6 +17,7 @@ const submitQuizData = async ({
   elapsedTime,
   score,
   type,
+  userId, // Include userId
 }: SubmitQuizDataParams): Promise<void> => {
   const response = await fetch(`/api/quiz/${slug}/complete`, {
     method: "POST",
@@ -26,6 +28,7 @@ const submitQuizData = async ({
       totalTime: elapsedTime,
       score,
       type,
+      ...(userId && { userId }), // Conditionally include userId
     }),
   })
 
