@@ -46,37 +46,5 @@ const getUnitSlug = (unit: CourseUnit) => {
     return `${titleToSlug(unit.name)}-${unit.id}`;
 };
 
-export async function submitQuizData(
-  { slug, quizId, answers, elapsedTime, score, type }: SubmitQuizDataParams,
-  setLoading?: (state: boolean) => void,
-): Promise<void> {
-  try {
-    if (setLoading) setLoading(true) // Show loader
-
-    // Make sure slug is properly encoded for URL
-    const encodedSlug = encodeURIComponent(slug)
-
-    const response = await fetch(`${URL}/api/quiz/${encodedSlug}/complete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        quizId,
-        answers,
-        totalTime: elapsedTime,
-        score,
-        type,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to update score: ${response.status}`)
-    }
-  } catch (error) {
-    console.error("Error submitting quiz data:", error)
-    throw error
-  } finally {
-    if (setLoading) setLoading(false) // Hide loader
-  }
-}
 
 export  { titleToSlug, getCourseSlug, getUnitSlug, titleSubTopicToSlug, };
