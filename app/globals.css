@@ -1022,3 +1022,40 @@
   transition-duration: 300ms;
 }
 
+/* Add this to your globals.css file */
+.ag-theme-alpine {
+  --ag-background-color: var(--card);
+  --ag-header-background-color: var(--muted);
+  --ag-odd-row-background-color: var(--muted);
+  --ag-row-hover-color: var(--accent);
+  --ag-selected-row-background-color: var(--accent);
+  --ag-font-family: var(--font-sans);
+  --ag-font-size: 14px;
+  --ag-border-color: var(--border);
+  --ag-cell-horizontal-border: none;
+  --ag-row-border-color: var(--border);
+  --ag-header-column-separator-display: none;
+  --ag-header-foreground-color: var(--foreground);
+  --ag-foreground-color: var(--foreground);
+  --ag-alpine-active-color: var(--primary);
+  --ag-range-selection-border-color: var(--primary);
+  --ag-range-selection-background-color: var(--primary-foreground);
+  --ag-checkbox-checked-color: var(--primary);
+  --ag-checkbox-unchecked-color: var(--muted-foreground);
+  --ag-checkbox-background-color: var(--background);
+  --ag-checkbox-indeterminate-color: var(--primary);
+  --ag-input-focus-border-color: var(--ring);
+  --ag-input-focus-box-shadow: 0 0 0 2px var(--ring);
+  --ag-disabled-foreground-color: var(--muted-foreground);
+  --ag-input-disabled-background-color: var(--muted);
+  --ag-input-disabled-border-color: var(--border);
+  --ag-input-disabled-foreground-color: var(--muted-foreground);
+  --ag-borders: none;
+  --ag-border-radius: var(--radius);
+  --ag-row-height: 48px;
+  --ag-header-height: 48px;
+  --ag-list-item-height: 40px;
+  --ag-cell-horizontal-padding: 12px;
+  --ag-grid-size: 4px;
+}
+

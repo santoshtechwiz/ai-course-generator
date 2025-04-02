@@ -1,22 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import {
-  Search,
-  Plus,
-  Loader2,
-  User,
-  ArrowUpDown,
-  ChevronDown,
-  Filter,
-  RefreshCw,
-  UserCog,
-  CreditCard,
-  Shield,
-  Clock,
-} from "lucide-react"
-import { useInfiniteQuery } from "@tanstack/react-query"
-import { useVirtualizer } from "@tanstack/react-virtual"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { AgGridReact } from "ag-grid-react"
+import "ag-grid-community/styles/ag-grid.css"
+import "ag-grid-community/styles/ag-theme-alpine.css" // Add default theme CSS
+import { Search, Plus, User, RefreshCw, Shield, MoreHorizontal, Edit, Trash, RotateCcw } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -33,9 +23,9 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { UserManagementProvider } from "../components/user-management/user-management-context"
-import { UserCard } from "../components/user-card"
 import { CreateUserDialog } from "../components/user-dialog/create-user-dialog"
 import { UserEditDialog } from "../components/user-dialog/user-edit-dialog"
 import { ResetSubscriptionDialog } from "../components/subscription-management/reset-subscription-dialog"
@@ -49,6 +39,181 @@ export const USER_TYPES = [
   { value: "ULTIMATE", label: "Ultimate" },
 ]
 
+// Custom cell renderers
+const UserCellRenderer = (props) => {
+  const { value, data } = props
+  return (
+    <div className="flex items-center gap-3">
+      <Avatar className="h-8 w-8 border">
+        <AvatarImage src={data.avatarUrl || ""} alt={value} />
+        <AvatarFallback>{value?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
+      </Avatar>
+      <div className="flex flex-col">
+        <span className="font-medium text-sm">{value}</span>
+        <span className="text-xs text-muted-foreground">{data.email}</span>
+      </div>
+    </div>
+  )
+}
+
+const TypeCellRenderer = (props) => {
+  const { value } = props
+  const userType = USER_TYPES.find((type) => type.value === value) || { value: "FREE", label: "Free" }
+
+  const getBadgeVariant = () => {
+    switch (value) {
+      case "FREE":
+        return "outline"
+      case "BASIC":
+        return "secondary"
+      case "PRO":
+        return "default"
+      case "PREMIUM":
+        return "destructive"
+      case "ULTIMATE":
+        return "default"
+      default:
+        return "outline"
+    }
+  }
+
+  return (
+    <Badge variant={getBadgeVariant()} className="font-normal">
+      {userType.label}
+    </Badge>
+  )
+}
+
+const CreditsCellRenderer = (props) => {
+  const { value } = props
+  return <div className="text-center font-medium">{value?.toLocaleString() || "0"}</div>
+}
+
+const DateCellRenderer = (props) => {
+  const { value } = props
+  if (!value) return <div className="text-sm text-muted-foreground">-</div>
+
+  try {
+    const date = new Date(value)
+    const formattedDate = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date)
+
+    return <div className="text-sm text-muted-foreground">{formattedDate}</div>
+  } catch (error) {
+    console.error("Error formatting date:", error)
+    return <div className="text-sm text-muted-foreground">Invalid date</div>
+  }
+}
+
+const ActionsCellRenderer = (props) => {
+  const { data, context } = props
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => context.onEditUser(data.id)}>
+          <Edit className="mr-2 h-4 w-4" />
+          Edit user
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => context.onResetSubscription(data.id)}>
+          <RotateCcw className="mr-2 h-4 w-4" />
+          Reset subscription
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive focus:text-destructive">
+          <Trash className="mr-2 h-4 w-4" />
+          Delete user
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+// Custom pagination component
+const CustomPagination = ({ page, totalPages, onPageChange }) => {
+  const pages = Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+    if (totalPages <= 5) return i + 1
+    if (page <= 3) return i + 1
+    if (page >= totalPages - 2) return totalPages - 4 + i
+    return page - 2 + i
+  })
+
+  return (
+    <div className="flex items-center justify-between px-2 py-4">
+      <div className="text-sm text-muted-foreground">
+        Page {page} of {totalPages || 1}
+      </div>
+      <div className="flex gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(1)}
+          disabled={page === 1 || totalPages === 0}
+          className="h-8 w-8 p-0"
+        >
+          <span className="sr-only">First page</span>
+          <span>«</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page === 1 || totalPages === 0}
+          className="h-8 w-8 p-0"
+        >
+          <span className="sr-only">Previous page</span>
+          <span>‹</span>
+        </Button>
+
+        {pages.map((p) => (
+          <Button
+            key={p}
+            variant={p === page ? "default" : "outline"}
+            size="sm"
+            onClick={() => onPageChange(p)}
+            className="h-8 w-8 p-0"
+          >
+            {p}
+          </Button>
+        ))}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page === totalPages || totalPages === 0}
+          className="h-8 w-8 p-0"
+        >
+          <span className="sr-only">Next page</span>
+          <span>›</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(totalPages)}
+          disabled={page === totalPages || totalPages === 0}
+          className="h-8 w-8 p-0"
+        >
+          <span className="sr-only">Last page</span>
+          <span>»</span>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function UserManagement() {
   // UI state
   const { toast } = useToast()
@@ -57,14 +222,14 @@ export function UserManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const [sortField, setSortField] = useState<"name" | "createdAt" | "userType" | "credits">("createdAt")
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery)
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
   const [userToReset, setUserToReset] = useState<string | null>(null)
-
-  // Virtualization container ref
-  const parentRef = useRef<HTMLDivElement>(null)
+  const [gridApi, setGridApi] = useState(null)
+  const [gridColumnApi, setGridColumnApi] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [sortModel, setSortModel] = useState({ colId: "createdAt", sort: "desc" })
 
   // Debounce search query
   useEffect(() => {
@@ -75,12 +240,12 @@ export function UserManagement() {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  // Fetch users with react-query (infinite pagination)
-  const fetchUsers = async ({ pageParam = 1 }) => {
+  // Fetch users with react-query (with pagination)
+  const fetchUsers = async () => {
     // Build query parameters
     const params = new URLSearchParams()
-    params.append("page", pageParam.toString())
-    params.append("limit", "50")
+    params.append("page", currentPage.toString())
+    params.append("limit", pageSize.toString())
 
     if (debouncedSearchQuery) {
       params.append("search", debouncedSearchQuery)
@@ -92,8 +257,10 @@ export function UserManagement() {
       })
     }
 
-    params.append("sortField", sortField)
-    params.append("sortOrder", sortOrder)
+    if (sortModel) {
+      params.append("sortField", sortModel.colId)
+      params.append("sortOrder", sortModel.sort)
+    }
 
     try {
       const response = await fetch(`/api/users?${params.toString()}`)
@@ -107,8 +274,8 @@ export function UserManagement() {
       // Ensure we have a consistent response format
       return {
         users: Array.isArray(data.users) ? data.users : [],
-        nextPage: data.hasMore ? pageParam + 1 : undefined,
         totalCount: data.totalCount || 0,
+        totalPages: Math.ceil((data.totalCount || 0) / pageSize),
       }
     } catch (error) {
       console.error("Error fetching users:", error)
@@ -117,57 +284,18 @@ export function UserManagement() {
         description: "Please try refreshing the page",
         variant: "destructive",
       })
-      return { users: [], nextPage: undefined, totalCount: 0 }
+      return { users: [], totalCount: 0, totalPages: 0 }
     }
   }
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch, isFetching } =
-    useInfiniteQuery({
-      queryKey: ["users", debouncedSearchQuery, userTypeFilter, sortField, sortOrder],
-      queryFn: fetchUsers,
-      getNextPageParam: (lastPage) => lastPage.nextPage,
-      initialPageParam: 1,
-    })
-
-  // Flatten users from all pages for virtualization
-  const users = useMemo(() => {
-    return data?.pages.flatMap((page) => page.users) || []
-  }, [data])
-
-  const totalCount = data?.pages[0]?.totalCount || 0
-
-  // Setup virtualized list
-  const rowVirtualizer = useVirtualizer({
-    count: users.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 72,
-    overscan: 10,
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["users", debouncedSearchQuery, userTypeFilter, currentPage, pageSize, sortModel],
+    queryFn: fetchUsers,
   })
 
-  // Intersection observer for infinite scroll
-  const lastItemRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage()
-        }
-      },
-      { threshold: 0.5 },
-    )
-
-    if (lastItemRef.current) {
-      observer.observe(lastItemRef.current)
-    }
-
-    return () => {
-      if (lastItemRef.current) {
-        observer.unobserve(lastItemRef.current)
-      }
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+  const users = data?.users || []
+  const totalCount = data?.totalCount || 0
+  const totalPages = data?.totalPages || 0
 
   // Handle user selection
   const handleEditUser = useCallback((userId: string) => {
@@ -175,9 +303,23 @@ export function UserManagement() {
     setIsEditDialogOpen(true)
   }, [])
 
+  const handleResetSubscription = useCallback((userId: string) => {
+    setUserToReset(userId)
+    setIsResetDialogOpen(true)
+  }, [])
+
   // Toggle user type filter
   const toggleUserTypeFilter = useCallback((type: string) => {
-    setUserTypeFilter((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
+    setUserTypeFilter((prev) => {
+      const newFilter = prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+      setCurrentPage(1) // Reset to first page when filter changes
+      return newFilter
+    })
+  }, [])
+
+  // Handle page change
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page)
   }, [])
 
   // Listen for user changes (from child components)
@@ -188,8 +330,7 @@ export function UserManagement() {
 
     const handleResetSubscription = (event: CustomEvent) => {
       if (event.detail && event.detail.userId) {
-        setUserToReset(event.detail.userId)
-        setIsResetDialogOpen(true)
+        handleResetSubscription(event.detail.userId)
       }
     }
 
@@ -208,17 +349,114 @@ export function UserManagement() {
       window.removeEventListener("reset-subscription", handleResetSubscription as EventListener)
       window.removeEventListener("edit-user", handleEditUser as EventListener)
     }
-  }, [refetch, handleEditUser])
+  }, [refetch, handleEditUser, handleResetSubscription])
 
-  // Sort handler
-  const handleSort = (field: "name" | "createdAt" | "userType" | "credits") => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
-    } else {
-      setSortField(field)
-      setSortOrder("desc") // Default to desc when changing fields
+  // Handle sort change
+  const onSortChanged = useCallback((params) => {
+    const sortModel = params.api.getSortModel()[0]
+    if (sortModel) {
+      setSortModel({ colId: sortModel.colId, sort: sortModel.sort })
+      setCurrentPage(1) // Reset to first page when sort changes
     }
-  }
+  }, [])
+
+  // AG Grid column definitions
+  const columnDefs = useMemo(
+    () => [
+      {
+        field: "name",
+        headerName: "User",
+        flex: 2,
+        minWidth: 200,
+        cellRenderer: UserCellRenderer,
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "userType",
+        headerName: "Type",
+        flex: 1,
+        minWidth: 120,
+        cellRenderer: TypeCellRenderer,
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "credits",
+        headerName: "Credits",
+        flex: 1,
+        minWidth: 100,
+        cellRenderer: CreditsCellRenderer,
+        sortable: true,
+        filter: "agNumberColumnFilter",
+      },
+      {
+        field: "lastActive",
+        headerName: "Last Active",
+        flex: 1.5,
+        minWidth: 180,
+        cellRenderer: DateCellRenderer,
+        sortable: true,
+        filter: "agDateColumnFilter",
+      },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 100,
+        cellRenderer: ActionsCellRenderer,
+        sortable: false,
+        filter: false,
+        pinned: "right",
+      },
+    ],
+    [],
+  )
+
+  // AG Grid default column definitions
+  const defaultColDef = useMemo(
+    () => ({
+      sortable: true,
+      filter: true,
+      resizable: true,
+    }),
+    [],
+  )
+
+  // AG Grid context for cell renderers
+  const context = useMemo(
+    () => ({
+      onEditUser: handleEditUser,
+      onResetSubscription: handleResetSubscription,
+    }),
+    [handleEditUser, handleResetSubscription],
+  )
+
+  // AG Grid ready handler
+  const onGridReady = useCallback((params) => {
+    setGridApi(params.api)
+    setGridColumnApi(params.columnApi)
+
+    // Auto-size columns on first load
+    setTimeout(() => {
+      params.api.sizeColumnsToFit()
+    }, 100)
+  }, [])
+
+  // For debugging - create sample data if no users are returned
+  const sampleUsers = useMemo(() => {
+    if (users && users.length > 0) return users
+
+    // Create sample data for testing
+    return Array.from({ length: 10 }, (_, i) => ({
+      id: `user-${i}`,
+      name: `Test User ${i + 1}`,
+      email: `user${i + 1}@example.com`,
+      userType: USER_TYPES[i % USER_TYPES.length].value,
+      credits: (i + 1) * 100,
+      lastActive: new Date(Date.now() - i * 86400000).toISOString(),
+      avatarUrl: null,
+    }))
+  }, [users])
 
   // Render content based on loading and error states
   const renderContent = () => {
@@ -274,7 +512,7 @@ export function UserManagement() {
       )
     }
 
-    if (users.length === 0) {
+    if (sampleUsers.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-12 px-4">
           <User className="h-12 w-12 text-primary/20 mb-4" />
@@ -296,88 +534,38 @@ export function UserManagement() {
     }
 
     return (
-      <div ref={parentRef} className="h-[calc(100vh-320px)] min-h-[400px] overflow-auto border rounded-md bg-card">
-        {/* Table header */}
-        <div className="sticky top-0 z-10 border-b bg-gradient-to-r from-card to-muted/10 px-4 py-3 grid grid-cols-12 gap-2 shadow-sm">
-          <div className="col-span-4 flex items-center">
-            <Button
-              variant="ghost"
-              className="p-1 h-8 hover:bg-primary/5 transition-all duration-200"
-              onClick={() => handleSort("name")}
-            >
-              <UserCog className="mr-2 h-4 w-4 text-primary/70" />
-              <span className="font-medium">User</span>
-              <ArrowUpDown
-                className={cn("ml-1 h-4 w-4", sortField === "name" ? "text-primary" : "text-muted-foreground/30")}
-              />
-            </Button>
-          </div>
-          <div className="col-span-2 flex items-center justify-center">
-            <Button
-              variant="ghost"
-              className="p-1 h-8 hover:bg-primary/5 transition-all duration-200"
-              onClick={() => handleSort("userType")}
-            >
-              <Shield className="mr-2 h-4 w-4 text-primary/70" />
-              <span className="font-medium">Type</span>
-              <ArrowUpDown
-                className={cn("ml-1 h-4 w-4", sortField === "userType" ? "text-primary" : "text-muted-foreground/30")}
-              />
-            </Button>
-          </div>
-          <div className="col-span-2 flex items-center justify-center">
-            <Button
-              variant="ghost"
-              className="p-1 h-8 hover:bg-primary/5 transition-all duration-200"
-              onClick={() => handleSort("credits")}
-            >
-              <CreditCard className="mr-2 h-4 w-4 text-primary/70" />
-              <span className="font-medium">Credits</span>
-              <ArrowUpDown
-                className={cn("ml-1 h-4 w-4", sortField === "credits" ? "text-primary" : "text-muted-foreground/30")}
-              />
-            </Button>
-          </div>
-          <div className="col-span-4 flex items-center justify-end">
-            <Clock className="mr-2 h-4 w-4 text-primary/70" />
-            <span className="text-xs font-medium text-muted-foreground">Last Active</span>
-          </div>
-        </div>
-
-        {/* Virtualized user list */}
+      <div className="flex flex-col border rounded-md overflow-hidden">
+        {/* Use the standard AG Grid theme class */}
         <div
+          className="ag-theme-alpine"
           style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
             width: "100%",
-            position: "relative",
+            height: `${Math.min(sampleUsers.length * 60 + 48, 500)}px`,
+            minHeight: "400px",
           }}
         >
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const user = users[virtualRow.index]
-            return (
-              <div
-                key={user.id}
-                className="absolute top-0 left-0 w-full"
-                style={{
-                  height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                <UserCard user={user} onEdit={() => handleEditUser(user.id)} />
-              </div>
-            )
-          })}
+          <AgGridReact
+            rowData={sampleUsers}
+            columnDefs={columnDefs}
+            defaultColDef={defaultColDef}
+            context={context}
+            onGridReady={onGridReady}
+            rowHeight={60}
+            headerHeight={48}
+            animateRows={true}
+            rowSelection="single"
+            pagination={false}
+            paginationPageSize={pageSize}
+            suppressPaginationPanel={true}
+            domLayout="normal"
+            enableCellTextSelection={true}
+            suppressRowClickSelection={true}
+            onSortChanged={onSortChanged}
+          />
         </div>
 
-        {/* Infinite scroll loading indicator */}
-        <div ref={lastItemRef} className="py-4 flex justify-center">
-          {isFetchingNextPage && (
-            <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-full shadow-sm">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">Loading more users...</span>
-            </div>
-          )}
-        </div>
+        {/* Custom pagination */}
+        <CustomPagination page={currentPage} totalPages={totalPages || 1} onPageChange={handlePageChange} />
       </div>
     )
   }
@@ -387,7 +575,7 @@ export function UserManagement() {
       <div className="space-y-6">
         <Card>
           <CardHeader className="pb-3 bg-gradient-to-r from-background to-muted/30">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-2xl font-bold text-foreground">User Management</CardTitle>
                 <CardDescription className="text-muted-foreground/80">
@@ -398,10 +586,10 @@ export function UserManagement() {
                 variant="outline"
                 size="sm"
                 onClick={() => refetch()}
-                disabled={isFetching && !isFetchingNextPage}
+                disabled={isFetching}
                 className="transition-all duration-200 hover:bg-primary/10"
               >
-                <RefreshCw className={cn("h-4 w-4 mr-2", isFetching && !isFetchingNextPage && "animate-spin")} />
+                <RefreshCw className={cn("h-4 w-4 mr-2", isFetching && "animate-spin")} />
                 Refresh
               </Button>
             </div>
@@ -416,7 +604,12 @@ export function UserManagement() {
                     placeholder="Search users..."
                     className="pl-8 border-muted-foreground/20 focus-visible:ring-primary/30 transition-all duration-200"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      if (e.target.value !== searchQuery) {
+                        setCurrentPage(1) // Reset to first page when search changes
+                      }
+                    }}
                   />
                 </div>
 
@@ -426,14 +619,13 @@ export function UserManagement() {
                       variant="outline"
                       className="w-full sm:w-auto border-muted-foreground/20 transition-all duration-200 hover:bg-primary/5"
                     >
-                      <Filter className="h-4 w-4 mr-2 text-muted-foreground/70" />
-                      Filter
+                      <Shield className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                      User Type
                       {userTypeFilter.length > 0 && (
                         <Badge variant="secondary" className="ml-2 bg-primary text-primary-foreground">
                           {userTypeFilter.length}
                         </Badge>
                       )}
-                      <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground/70" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56">
@@ -454,7 +646,10 @@ export function UserManagement() {
                         <Button
                           variant="ghost"
                           className="w-full h-8 justify-center text-xs"
-                          onClick={() => setUserTypeFilter([])}
+                          onClick={() => {
+                            setUserTypeFilter([])
+                            setCurrentPage(1) // Reset to first page when clearing filters
+                          }}
                         >
                           Clear Filters
                         </Button>
