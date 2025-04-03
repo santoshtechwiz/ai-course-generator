@@ -1,8 +1,6 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  reactStrictMode: false,
-  distDir: '.next',
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
   async rewrites() {
     return [
       {
@@ -11,53 +9,106 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  env: {
-    DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || 'no-static',
+  images: {
+    domains: [
+      'images.unsplash.com',
+      'courseai.io',
+      'res.cloudinary.com',
+      'lh3.googleusercontent.com',
+      'avatars.githubusercontent.com',
+    ],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
   },
+  experimental: {
+    webpackBuildWorker: true,
+    parallelServerBuildTraces: true,
+    parallelServerCompiles: true,
+    optimizeCss: true,
+    scrollRestoration: true,
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  poweredByHeader: false,
+  compress: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
     ignoreBuildErrors: true,
   },
-  images: {
-    deviceSizes: [320, 420, 768, 1024, 1200], // Customize based on responsive needs
-    imageSizes: [16, 32, 48, 64, 96], // Common icon sizes
-    remotePatterns: [
+  headers: async () => {
+    return [
       {
-        protocol: 'https',
-        hostname: 'img.clerk.com',
-        pathname: '/**',
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
       },
       {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        pathname: '/**',
+        source: '/api/(.*)',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+        ]
       },
       {
-        protocol: 'https',
-        hostname: 'avatars.githubusercontent.com',
-        pathname: '/**',
+        source: '/:path*\\.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
       },
       {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
+        source: '/:path*\\.css',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
       },
-    ],
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+    ];
   },
-
-  compress: true, // Ensures Gzip compression for faster performance
-
-  experimental: {
-    optimizePackageImports: [],
-  },
-
- 
-};
+}
 
 export default nextConfig;
+

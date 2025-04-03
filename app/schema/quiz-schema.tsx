@@ -1,31 +1,46 @@
-"use client"
-
-import { generateQuizSchema } from "@/components/json-ld"
+import type React from "react"
 
 interface QuizSchemaProps {
   quiz: {
     title: string
-    description?: string
+    description: string
+    url: string
     questionCount: number
-    estimatedTime?: string
-    level?: string
-    slug: string
+    timeRequired?: string // ISO 8601 duration format (e.g., "PT30M" for 30 minutes)
+    educationalLevel?: string
+    author?: {
+      name: string
+      url: string
+    }
   }
 }
 
-export default function QuizSchema({ quiz }: QuizSchemaProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
-  const quizUrl = `${baseUrl}/dashboard/mcq/${quiz.slug}`
-
-  const quizSchema = generateQuizSchema({
-    name: `${quiz.title} Quiz`,
-    description: quiz.description || `Test your knowledge on ${quiz.title} with this interactive quiz.`,
-    url: quizUrl,
+const QuizSchema: React.FC<QuizSchemaProps> = ({ quiz }) => {
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Quiz",
+    name: quiz.title,
+    description: quiz.description,
+    url: quiz.url,
     numberOfQuestions: quiz.questionCount,
-    timeRequired: quiz.estimatedTime || "PT10M", // Default 10 minutes in ISO 8601 duration format
-    educationalLevel: quiz.level,
-  })
+    provider: {
+      "@type": "Organization",
+      name: "CourseAI",
+      sameAs: process.env.NEXT_PUBLIC_SITE_URL,
+    },
+    ...(quiz.timeRequired && { timeRequired: quiz.timeRequired }),
+    ...(quiz.educationalLevel && { educationalLevel: quiz.educationalLevel }),
+    ...(quiz.author && {
+      author: {
+        "@type": "Person",
+        name: quiz.author.name,
+        url: quiz.author.url,
+      },
+    }),
+  }
 
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(quizSchema) }} />
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }} />
 }
+
+export default QuizSchema
 

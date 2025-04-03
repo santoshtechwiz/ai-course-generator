@@ -33,42 +33,25 @@ const quotes = [
 ]
 
 export const RandomQuote = () => {
-  const [currentIndex, setCurrentIndex] = useState(Math.floor(Math.random() * quotes.length))
+  const [currentIndex, setCurrentIndex] = useState(0) // Start with index 0
   const [direction, setDirection] = useState(0) // -1 for left, 1 for right, 0 for initial
+  const [hasMounted, setHasMounted] = useState(false)
 
-  // Auto-rotate quotes
+  useEffect(() => {
+    setCurrentIndex(Math.floor(Math.random() * quotes.length)) // Set random index only on the client
+    setHasMounted(true) // Indicate that component has mounted
+  }, [])
+
   useEffect(() => {
     const interval = setInterval(() => {
       setDirection(1)
       setCurrentIndex((prev) => (prev + 1) % quotes.length)
-    }, 8000) // Rotate every 8 seconds
+    }, 8000)
 
     return () => clearInterval(interval)
   }, [])
 
-  // Handle manual navigation through indicator dots
-  const goToQuote = (index: number) => {
-    setDirection(index > currentIndex ? 1 : -1)
-    setCurrentIndex(index)
-  }
-
-  const variants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 30 : -30,
-      opacity: 0,
-      scale: 0.95,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? 30 : -30,
-      opacity: 0,
-      scale: 0.95,
-    }),
-  }
+  if (!hasMounted) return null // Avoid hydration mismatch by rendering nothing initially
 
   return (
     <div className="relative overflow-hidden rounded-lg w-full border border-border/50 shadow-sm bg-background/80 backdrop-blur-sm py-2 px-3">
@@ -79,50 +62,34 @@ export const RandomQuote = () => {
           <motion.div
             key={currentIndex}
             custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: "spring", stiffness: 350, damping: 30 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.4 }}
             className="flex flex-col items-center text-center"
           >
-            <motion.p
-              className="text-sm font-medium text-foreground italic"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
+            <motion.p className="text-sm font-medium text-foreground italic">
               "{quotes[currentIndex].text}"
             </motion.p>
-            <motion.div
-              className="text-xs text-muted-foreground mt-1"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
+            <motion.div className="text-xs text-muted-foreground mt-1">
               – {quotes[currentIndex].author}
             </motion.div>
           </motion.div>
         </AnimatePresence>
 
         <div className="flex justify-center mt-2">
-          <motion.div
-            className="flex gap-1"
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
+          <div className="flex gap-1">
             {quotes.map((_, index) => (
               <button
                 key={index}
-                onClick={() => goToQuote(index)}
+                onClick={() => setCurrentIndex(index)}
                 className={`h-1 rounded-full transition-all ${
                   index === currentIndex ? "w-3 bg-primary" : "w-1 bg-primary/30 hover:bg-primary/50"
                 }`}
                 aria-label={`Go to quote ${index + 1}`}
               />
             ))}
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
