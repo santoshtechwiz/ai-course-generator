@@ -42,7 +42,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         userId,
         quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
       }),
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    getNextPageParam: (lastPage) => lastPage ? lastPage?.nextCursor : undefined,
     initialPageParam: 1,
     initialData: {
       pages: [initialQuizzesData],

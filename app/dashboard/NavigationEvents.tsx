@@ -1,21 +1,21 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import NProgress from "nprogress";
-import { useTheme } from "next-themes";
+import { useEffect } from "react"
+import { usePathname, useSearchParams } from "next/navigation"
+import NProgress from "nprogress"
+import { useTheme } from "next-themes"
 
 // Remove default styles
-import "nprogress/nprogress.css";
+import "nprogress/nprogress.css"
 
 // Custom styles
 const npProgressStyles = `
   #nprogress {
-    
+    pointer-events: none;
   }
   
   #nprogress .bar {
-    background: hsl(var(--primary));
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
     position: fixed;
     z-index: 1031;
     top: 0;
@@ -56,37 +56,39 @@ const npProgressStyles = `
   .dark #nprogress::after {
     box-shadow: 0 0 10px hsl(var(--primary)), 0 0 5px hsl(var(--primary));
   }
-`;
+`
 
 NProgress.configure({
-  minimum: 0.3,
-  easing: 'ease',
-  speed: 500,
+  minimum: 0.2,
+  easing: "ease-out",
+  speed: 400,
   showSpinner: false,
-});
+  trickleSpeed: 200,
+})
 
 export function NavigationEvents() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { theme } = useTheme();
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { theme } = useTheme()
 
   useEffect(() => {
-    NProgress.done();
+    NProgress.done()
     return () => {
-      NProgress.start();
-    };
-  }, [pathname, searchParams]);
+      NProgress.start()
+    }
+  }, [pathname, searchParams])
 
   useEffect(() => {
     // Apply custom styles
-    const styleElement = document.createElement("style");
-    styleElement.textContent = npProgressStyles;
-    document.head.appendChild(styleElement);
+    const styleElement = document.createElement("style")
+    styleElement.textContent = npProgressStyles
+    document.head.appendChild(styleElement)
 
     return () => {
-      document.head.removeChild(styleElement);
-    };
-  }, []);
+      document.head.removeChild(styleElement)
+    }
+  }, [])
 
-  return null;
+  return null
 }
+

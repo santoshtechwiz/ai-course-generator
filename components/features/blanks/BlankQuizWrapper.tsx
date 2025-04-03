@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import { AlertCircle, HelpCircle, Timer, CheckCircle, RotateCcw, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useSession } from "next-auth/react"
-
 
 import BlankQuizResults from "./BlankQuizResults"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
@@ -16,7 +15,8 @@ import { GuidedHelp } from "@/components/HelpModal"
 
 import { SignInPrompt } from "@/components/SignInPrompt"
 import { QuizActions } from "@/components/QuizActions"
-import { submitQuizData } from "@/lib/slug"
+
+import { type BlanksQuizAnswer, saveQuizResult } from "@/lib/quiz-result-service"
 
 interface Question {
   id: number
@@ -37,11 +37,7 @@ interface QuizData {
   userId: string
 }
 
-interface QuizAnswer {
-  answer: string
-  timeSpent: number
-  hintsUsed: boolean
-}
+const MemoizedQuizActions = memo(QuizActions)
 
 const saveQuizState = (state: any) => {
   if (typeof window !== "undefined") {
@@ -60,7 +56,7 @@ const loadQuizState = () => {
 export default function BlankQuizWrapper({ slug }: { slug: string }) {
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState<QuizAnswer[]>([])
+  const [answers, setAnswers] = useState<BlanksQuizAnswer[]>([])
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -140,7 +136,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
         })
       }
     },
-    [elapsedTime, quizData, currentQuestion, answers]
+    [elapsedTime, quizData, currentQuestion, answers],
   )
 
   const handleRestart = useCallback(() => {
@@ -157,23 +153,23 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
     async (score: number) => {
       if (isAuthenticated && quizData) {
         try {
-          setScore(true)
-          await submitQuizData({
-            slug,
+          setScore(true) // Show loading indicator
+          await saveQuizResult({
             quizId: quizData.id,
             answers,
+            totalTime: elapsedTime,
             elapsedTime,
             score,
-            type: "fill-in-the-blank",
+            type: "fill-blanks",
           })
-          setScore(false)
         } catch (error) {
-          setScore(false)
           console.error("Error saving quiz results:", error)
+        } finally {
+          setScore(false) // Hide loading indicator regardless of success/failure
         }
       }
     },
-    [isAuthenticated, quizData, slug, answers, elapsedTime]
+    [isAuthenticated, quizData, answers, elapsedTime],
   )
 
   if (error) {
@@ -222,7 +218,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
   return (
     <>
       <div className="mb-6">
-        <QuizActions
+        <MemoizedQuizActions
           userId={session?.user?.id || ""}
           ownerId={quizData.userId}
           quizId={quizData.id.toString()}
@@ -296,3 +292,4 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
     </>
   )
 }
+

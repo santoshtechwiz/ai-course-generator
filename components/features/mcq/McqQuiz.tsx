@@ -16,8 +16,9 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge"
 import PageLoader from "@/components/ui/loader"
 import { SignInPrompt } from "@/components/SignInPrompt"
+import { saveQuizResult } from "@/lib/quiz-result-service"
 
-import { useSubmitQuiz } from "@/hooks/useQuizData"
+
 
 // Ensure that `useSubmitQuiz` is correctly implemented in `useQuizData` and returns an object with `mutateAsync`.
 
@@ -75,16 +76,17 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
     { text: "Small progress is still progress.", emoji: "🌊" },
   ]
 
-  const { mutateAsync: submitQuiz } = useSubmitQuiz();
+
 
   const saveQuizResults = useCallback(
     async (quizData: any) => {
       try {
         setLoading(true);
-        await submitQuiz({
-          slug,
+        await saveQuizResult({
+        
           quizId,
           answers: quizData.answers,
+          totalTime: quizData.totalTime,
           elapsedTime: quizData.totalTime,
           score: quizData.score,
           type: "mcq",
@@ -103,7 +105,7 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
         return false; // Return failure
       }
     },
-    [slug, quizId, submitQuiz],
+    [slug, quizId],
   );
 
   const handleQuizCompletion = useCallback(async () => {
