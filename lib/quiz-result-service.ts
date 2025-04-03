@@ -19,6 +19,7 @@ export interface BlanksQuizAnswer {
 export type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer
 
 interface SaveQuizResultParams {
+  slug?: string
   quizId: string | number
   answers: QuizAnswerUnion[]
   totalTime: number,
@@ -31,7 +32,7 @@ interface SaveQuizResultParams {
  * Unified service for saving quiz results across all quiz types
  * This can be used by any quiz component without changing their existing logic
  */
-export async function saveQuizResult({ quizId, answers, totalTime,elapsedTime, score, type }: SaveQuizResultParams): Promise<{
+export async function saveQuizResult({ slug,quizId, answers, totalTime,elapsedTime, score, type }: SaveQuizResultParams): Promise<{
   success: boolean
   result?: any
   error?: string

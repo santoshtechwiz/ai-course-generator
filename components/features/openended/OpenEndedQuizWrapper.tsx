@@ -10,7 +10,8 @@ import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 
 import { QuizActions } from "@/components/QuizActions"
-import { submitQuizData } from "@/lib/slug"
+import { saveQuizResult } from "@/lib/quiz-result-service"
+
 
 
 interface QuizData {
@@ -48,7 +49,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
       isSaving.current = true
 
       try {
-        await submitQuizData(
+        await saveQuizResult(
           {
             slug,
             quizId: quizData?.id,
@@ -56,8 +57,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
             elapsedTime: finalAnswers.reduce((total, ans) => total + ans.timeSpent, 0),
             score,
             type: "openended",
-          },
-          () => {},
+          }
         )
         toast({
           variant: "success",
@@ -173,7 +173,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
   return (
     <div className="flex flex-col gap-8">
       <QuizActions
-        quizId={quizData.id.toString()}
+      quizId={quizData.id.toString()}
         quizSlug={slug}
         userId={quizData.userId}
         ownerId={quizData.userId}
