@@ -11,7 +11,8 @@ import { SignInPrompt } from "@/components/SignInPrompt"
 
 import { useRouter } from "next/navigation"
 import PageLoader from "@/components/ui/loader"
-import { submitQuizData } from "@/lib/slug"
+import { saveQuizResult } from "@/lib/quiz-result-service"
+
 
 interface CodeQuizResultProps {
   correctCount: number
@@ -46,7 +47,7 @@ const CodeQuizResult: React.FC<CodeQuizResultProps> = ({
     const submitSavedResults = async () => {
       if (session && savedResults) {
         try {
-          await submitQuizData(savedResults)
+          await saveQuizResult(savedResults)
           // Clear saved results after successful submission
           localStorage.removeItem("quizResults")
         } catch (error) {
