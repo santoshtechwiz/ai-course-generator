@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { RefreshCcw, Trophy, HelpCircle, ArrowRight, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,6 @@ import { formatQuizTime } from "@/lib/quiz-result-service"
 import { useSaveQuizResult } from "@/hooks/use-save-quiz-result"
 import { QuizResultDisplay } from "../mcq/QuizResultDisplay"
 import { QuizBase } from "../mcq/QuizBase"
-
 
 interface CodeQuizProps {
   quizId: number
@@ -61,14 +60,21 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
   const { data: session, status } = useSession()
   const { saveQuizResult, isSaving } = useSaveQuizResult()
 
-  const currentQuestion: CodeChallenge = quizData.questions[currentQuestionIndex] ?? {
-    question: "",
-    options: [],
-    correctAnswer: "",
-    codeSnippet: null,
-    language: "javascript",
-  }
-  const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : []
+  const currentQuestion = useMemo(() => {
+    return (
+      quizData.questions[currentQuestionIndex] ?? {
+        question: "",
+        options: [],
+        correctAnswer: "",
+        codeSnippet: null,
+        language: "javascript",
+      }
+    )
+  }, [currentQuestionIndex, quizData.questions])
+
+  const options = useMemo(() => {
+    return Array.isArray(currentQuestion.options) ? currentQuestion.options : []
+  }, [currentQuestion.options])
 
   useEffect(() => {
     setStartTimes((prev) => {
@@ -137,7 +143,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
           timeSpent.reduce((sum, time) => sum + time, 0) + (Date.now() - startTimes[currentQuestionIndex]) / 1000
 
         const answers = selectedOptions.map((answer, index) => ({
-          answer: answer || "",
+          userAnswer: answer || "",
           isCorrect: answer === quizData.questions[index].correctAnswer,
           timeSpent: index === currentQuestionIndex ? (Date.now() - startTimes[index]) / 1000 : timeSpent[index],
           hintsUsed: false,
@@ -167,7 +173,12 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
           const results = {
             slug,
             quizId: quizId,
-            answers,
+            answers: selectedOptions.map((answer, index) => ({
+              userAnswer: answer || "",
+              isCorrect: answer === quizData.questions[index].correctAnswer,
+              timeSpent: index === currentQuestionIndex ? (Date.now() - startTimes[index]) / 1000 : timeSpent[index],
+              hintsUsed: false,
+            })),
             elapsedTime: Math.round(totalTimeSpent),
             score,
             type: "code",

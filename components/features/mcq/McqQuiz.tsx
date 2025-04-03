@@ -18,8 +18,6 @@ import PageLoader from "@/components/ui/loader"
 import { SignInPrompt } from "@/components/SignInPrompt"
 import { saveQuizResult } from "@/lib/quiz-result-service"
 
-
-
 // Ensure that `useSubmitQuiz` is correctly implemented in `useQuizData` and returns an object with `mutateAsync`.
 
 type Question = {
@@ -52,12 +50,12 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const [loading, setLoading] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const currentQuestion = questions[currentQuestionIndex]
   const [incorrectAnswers, setIncorrectAnswers] = useState(0)
   const [showMotivationalQuote, setShowMotivationalQuote] = useState(false)
   const [currentQuote, setCurrentQuote] = useState<any>("")
-
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const motivationalQuotes = [
     { text: "Every mistake is a step toward success.", emoji: "✨" },
     { text: "The only true failure is giving up.", emoji: "🚀" },
@@ -76,49 +74,51 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
     { text: "Small progress is still progress.", emoji: "🌊" },
   ]
 
-
-
   const saveQuizResults = useCallback(
     async (quizData: any) => {
       try {
-        setLoading(true);
-        await saveQuizResult({
-        
+        setLoading(true)
+        const { success, details, result } = await saveQuizResult({
           quizId,
           answers: quizData.answers,
           totalTime: quizData.totalTime,
           elapsedTime: quizData.totalTime,
           score: quizData.score,
           type: "mcq",
-        });
+        })
 
-        setLoading(false);
-        return true; // Return success
+        setLoading(false)
+        toast({
+          title: "Success",
+          description: "Quiz score updated successfully!",
+          variant: "default",
+        })
+        return true // Return success
       } catch (error) {
-        console.error("Failed to update quiz score:", error);
-        setLoading(false);
+        console.error("Failed to update quiz score:", error)
+        setLoading(false)
         toast({
           title: "Error",
           description: "Failed to update quiz score. Please try again.",
           variant: "destructive",
-        });
-        return false; // Return failure
+        })
+        return false // Return failure
       }
     },
-    [slug, quizId],
-  );
+    [quizId, toast],
+  )
 
   const handleQuizCompletion = useCallback(async () => {
-    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const duration = Math.floor((Date.now() - startTime) / 1000)
 
-    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0);
-    const finalUserAnswers = [...userAnswers, selectedAnswer || ""];
-    const finalQuestionTimes = [...questionTimes, currentTime];
+    const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
+    const finalUserAnswers = [...userAnswers, selectedAnswer || ""]
+    const finalQuestionTimes = [...questionTimes, currentTime]
 
-    setQuizCompleted(true);
+    setQuizCompleted(true)
 
-    const finalScore = finalUserAnswers.filter((answer, index) => answer === questions[index].answer).length;
-    setScore(finalScore);
+    const finalScore = finalUserAnswers.filter((answer, index) => answer === questions[index].answer).length
+    setScore(finalScore)
 
     const quizData = {
       quizId,
@@ -130,10 +130,10 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
         isCorrect: finalUserAnswers[index] === q.answer,
         timeSpent: finalQuestionTimes[index] || 0,
       })),
-    };
+    }
 
     if (isAuthenticated) {
-      await saveQuizResults(quizData); // Ensure this is awaited
+      await saveQuizResults(quizData) // Ensure this is awaited
     } else {
       localStorage.setItem(
         "quizResults",
@@ -146,7 +146,7 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
           userAnswers: finalUserAnswers,
           questionTimes: finalQuestionTimes,
         }),
-      );
+      )
     }
   }, [
     isAuthenticated,
@@ -159,7 +159,7 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
     timeSpent,
     userAnswers,
     questionTimes,
-  ]);
+  ])
 
   useEffect(() => {
     const timer = setInterval(() => {

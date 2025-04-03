@@ -13,7 +13,7 @@ interface QuizAnswer {
 }
 
 interface SaveQuizResultParams {
-  s
+
   quizId: string | number
   answers: QuizAnswer[]
   totalTime: number
