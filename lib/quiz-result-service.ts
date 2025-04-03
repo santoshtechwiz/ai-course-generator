@@ -56,7 +56,7 @@ export async function saveQuizResult({ slug,quizId, answers, totalTime,elapsedTi
     // Ensure proper serialization of union types
     const serializedAnswers = answers.map((answer) => ({
       ...answer,
-      answerType: "hintsUsed" in answer ? "BlanksQuizAnswer" : "QuizAnswer",
+    
     }))
 
     // Make API request to save quiz result

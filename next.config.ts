@@ -26,9 +26,7 @@ const nextConfig = {
     parallelServerCompiles: true,
     optimizeCss: true,
     scrollRestoration: true,
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
+   
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {

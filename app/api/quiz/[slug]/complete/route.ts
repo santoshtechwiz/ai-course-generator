@@ -2,238 +2,283 @@ import { prisma } from "@/lib/db"
 import { getAuthSession } from "@/lib/authOptions"
 import { NextResponse } from "next/server"
 import type { QuizType } from "@/app/types/types"
+
+// Type definitions
 export interface QuizAnswer {
-  answer: string | string[]
+  userAnswer: string | string[]
   isCorrect: boolean
   timeSpent: number
 }
 
 export interface BlanksQuizAnswer {
-  answer: string
+  userAnswer: string
   timeSpent: number
-  hintsUsed: boolean,
+  hintsUsed: boolean
   elapsedTime?: number
 }
-// Define a union type for different answer structures
-type QuizAnswerUnion =
-  | QuizAnswer
-  | BlanksQuizAnswer
-  
 
-export async function POST(request: Request) {
-  const session = await getAuthSession()
-  const userId = session?.user?.id
+type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer
 
-  if (!userId) {
-    return NextResponse.json({ success: false, error: "User not authenticated" }, { status: 401 })
+interface QuizSubmission {
+  quizId: string
+  answers: QuizAnswerUnion[]
+  totalTime: number
+  score: number
+  type: QuizType
+}
+
+// Helper functions
+function validateSubmissionData(body: any): { isValid: boolean; error?: string; details?: any } {
+  if (
+    !body.quizId ||
+    !Array.isArray(body.answers) ||
+    typeof body.totalTime !== "number" ||
+    typeof body.score !== "number" ||
+    !body.type
+  ) {
+    return {
+      isValid: false,
+      error: "Invalid request data",
+      details: {
+        quizId: !body.quizId ? "Missing quiz ID" : null,
+        answers: !Array.isArray(body.answers) ? "Answers must be an array" : null,
+        totalTime: typeof body.totalTime !== "number" ? "Total time must be a number" : null,
+        score: typeof body.score !== "number" ? "Score must be a number" : null,
+        type: !body.type ? "Missing quiz type" : null,
+      },
+    }
   }
 
+  return { isValid: true }
+}
+
+function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { isValid: boolean; error?: string } {
+  let invalidAnswers = false
+
+  if (type === "mcq") {
+    invalidAnswers = answers.some(
+      (a: any): boolean => typeof a.isCorrect === "undefined" || typeof a.timeSpent === "undefined",
+    )
+  } else if (type === "openended" || type === "fill-blanks" || type === "code") {
+    invalidAnswers = answers.some(
+      (a: any): boolean => typeof a.userAnswer === "undefined" ,
+    )
+  }
+
+  if (invalidAnswers) {
+    return {
+      isValid: false,
+      error: "Answer format doesn't match the quiz type requirements",
+    }
+  }
+
+  return { isValid: true }
+}
+
+function calculatePercentageScore(score: number, totalQuestions: number, type: QuizType): number {
+  if (type !== "openended" && type !== "fill-blanks" && type !== "code") {
+    return (score / totalQuestions) * 100
+  } else {
+    return score
+  }
+}
+
+// Database operations
+async function getQuizWithQuestions(quizId: string) {
+  return prisma.userQuiz.findUnique({
+    where: { id: Number(quizId) },
+    include: { questions: true },
+  })
+}
+
+async function processQuizSubmission(userId: string, submission: QuizSubmission, quiz: any, percentageScore: number) {
   try {
-    const body = await request.json()
-
-    if (
-      !body.quizId ||
-      !Array.isArray(body.answers) ||
-      typeof body.totalTime !== "number" ||
-      typeof body.score !== "number" ||
-      !body.type
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid request data",
-          details: {
-            quizId: !body.quizId ? "Missing quiz ID" : null,
-            answers: !Array.isArray(body.answers) ? "Answers must be an array" : null,
-            totalTime: typeof body.totalTime !== "number" ? "Total time must be a number" : null,
-            score: typeof body.score !== "number" ? "Score must be a number" : null,
-            type: !body.type ? "Missing quiz type" : null,
+    return await prisma.$transaction(
+      async (tx) => {
+        // 1. Update user quiz record
+        const updatedUserQuiz = await tx.userQuiz.update({
+          where: { id: Number(submission.quizId) },
+          data: {
+            timeEnded: new Date(),
+            lastAttempted: new Date(),
+            bestScore: { set: Math.max(percentageScore, quiz.bestScore ?? 0) },
           },
-        },
-        { status: 400 },
-      )
-    }
-
-    const { quizId, answers, totalTime, score, type } = body as {
-      quizId: string
-      answers: QuizAnswerUnion[]
-      totalTime: number
-      score: number
-      type: QuizType
-    }
-
-    // Validate answers array structure based on quiz type
-    let invalidAnswers = false
-
-    if (type === "mcq" ) {
-      // For MCQ, validate isCorrect property exists
-      invalidAnswers = answers.some(
-        (a: any): boolean =>
-          typeof a.isCorrect === "undefined" || typeof a.timeSpent === "undefined",
-      )
-    } else if (type === "openended" || type === "fill-blanks" || type === "code") {
-      // For open-ended, fill-blanks, and code quizzes
-      invalidAnswers = answers.some(
-        (a: any): boolean => typeof a.answer === "undefined" || typeof a.timeSpent === "undefined",
-      )
-    }
-
-    if (invalidAnswers) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid answer format",
-          details: "Answer format doesn't match the quiz type requirements",
-        },
-        { status: 400 },
-      )
-    }
-
-    const quiz = await prisma.userQuiz.findUnique({
-      where: { id: Number(quizId) },
-      include: { questions: true },
-    })
-
-    if (!quiz) {
-      return NextResponse.json({ success: false, error: "Quiz not found" }, { status: 404 })
-    }
-
-    // Validate answers count matches questions count
-    if (quiz.questions && answers.length !== quiz.questions.length) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Answer count mismatch",
-          details: `Expected ${quiz.questions.length} answers, got ${answers.length}`,
-        },
-        { status: 400 },
-      )
-    }
-
-    // Calculate percentage score
-    let percentageScore: number
-    const totalQuestions = quiz.questions ? quiz.questions.length : 0
-
-    if (type !== "openended" && type !== "fill-blanks" && type !== "code") {
-      percentageScore = (score / totalQuestions) * 100
-    } else {
-      percentageScore = score
-    }
-
-    try {
-      const result = await prisma.$transaction(async (tx) => {
-        const [updatedUserQuiz, , quizAttempt] = await Promise.all([
-          tx.userQuiz.update({
-            where: { id: Number(quizId) },
-            data: {
-              timeEnded: new Date(),
-              lastAttempted: new Date(),
-              bestScore: { set: Math.max(percentageScore, quiz.bestScore ?? 0) },
-            },
-          }),
-          tx.user.update({
-            where: { id: userId },
-            data: {
-              totalQuizzesAttempted: { increment: 1 },
-              totalTimeSpent: { increment: Math.round(totalTime) },
-            },
-          }),
-          tx.userQuizAttempt.upsert({
-            where: {
-              userId_userQuizId: {
-                userId,
-                userQuizId: Number(quizId),
-              },
-            },
-            update: {
-              score: percentageScore,
-              timeSpent: Math.round(totalTime),
-              accuracy: percentageScore,
-            },
-            create: {
-              userId,
-              userQuizId: Number(quizId),
-              score: percentageScore,
-              timeSpent: Math.round(totalTime),
-              accuracy: percentageScore,
-            },
-          }),
-        ])
-
-        const attemptId = quizAttempt.id
-
-        // Process each question answer based on quiz type
-        const questionPromises = quiz.questions?.map((question: { id: number }, index: number) => {
-          // Default values
-          const userAnswer = answers[index].answer
-          let isCorrect = false
-
-          // Handle different quiz types
-          if (type === "mcq") {
-            // For MCQ, we can directly use the isCorrect flag from the client
-            isCorrect = (answers[index] as { isCorrect: boolean }).isCorrect
-          } else if (type === "openended" || type === "fill-blanks" || type === "code") {
-            // For open-ended questions, we don't have a simple isCorrect flag
-            // The score is already calculated on the client side
-            // We'll set isCorrect to null or false depending on your schema
-            isCorrect = false // or null if your schema allows it
-          }
-
-            return tx.userQuizAttemptQuestion.upsert({
-            where: {
-              attemptId_questionId: {
-              attemptId: attemptId,
-              questionId: question.id,
-              },
-            },
-            update: {
-              userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
-              isCorrect: isCorrect,
-              timeSpent: Math.round(answers[index].timeSpent),
-            },
-            create: {
-              attemptId,
-              questionId: question.id,
-              userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
-              isCorrect: isCorrect,
-              timeSpent: Math.round(answers[index].timeSpent),
-            },
-            })
         })
 
-        await Promise.all(questionPromises)
+        // 2. Update user stats
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            totalQuizzesAttempted: { increment: 1 },
+            totalTimeSpent: { increment: Math.round(submission.totalTime) },
+          },
+        })
+
+        // 3. Create or update quiz attempt
+        const quizAttempt = await tx.userQuizAttempt.upsert({
+          where: {
+            userId_userQuizId: {
+              userId,
+              userQuizId: Number(submission.quizId),
+            },
+          },
+          update: {
+            score: percentageScore,
+            timeSpent: Math.round(submission.totalTime),
+            accuracy: percentageScore,
+          },
+          create: {
+            userId,
+            userQuizId: Number(submission.quizId),
+            score: percentageScore,
+            timeSpent: Math.round(submission.totalTime),
+            accuracy: percentageScore,
+          },
+        })
+
+        // 4. Process individual question answers
+        await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
 
         return {
           updatedUserQuiz,
           quizAttempt,
           percentageScore,
-          totalQuestions,
+          totalQuestions: quiz.questions ? quiz.questions.length : 0,
         }
-      })
+      },
+      {
+        isolationLevel: "Serializable",
+        maxWait: 5000, // 5 seconds max wait time
+        timeout: 10000, // 10 seconds transaction timeout
+      },
+    )
+  } catch (error) {
+    console.error("Transaction error:", error)
+    throw error
+  }
+}
 
-      return NextResponse.json({
-        success: true,
-        result: {
-          ...result,
-          score: percentageScore,
-          totalTime: Math.round(totalTime),
+async function processQuestionAnswers(
+  tx: any,
+  questions: any[],
+  answers: QuizAnswerUnion[],
+  attemptId: number,
+  quizType: QuizType,
+) {
+  const questionPromises = questions.map((question, index) => {
+    const answer = answers[index]
+    const userAnswer = answer.userAnswer
+    let isCorrect = false
+
+    if (quizType === "mcq") {
+      isCorrect = (answer as QuizAnswer).isCorrect
+    }
+
+    return tx.userQuizAttemptQuestion.upsert({
+      where: {
+        attemptId_questionId: {
+          attemptId: attemptId,
+          questionId: question.id,
         },
-      })
-    } catch (txError) {
-      console.error("Transaction error:", txError)
+      },
+      update: {
+        userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
+        isCorrect: isCorrect,
+        timeSpent: Math.round(answer.timeSpent),
+      },
+      create: {
+        attemptId,
+        questionId: question.id,
+        userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
+        isCorrect: isCorrect,
+        timeSpent: Math.round(answer.timeSpent),
+      },
+    })
+  })
+
+  return Promise.all(questionPromises)
+}
+
+// Main handler
+export async function POST(request: Request) {
+  try {
+    // 1. Authentication check
+    const session = await getAuthSession()
+    const userId = session?.user?.id
+
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "User not authenticated" }, { status: 401 })
+    }
+
+    // 2. Parse and validate request body
+    const body = await request.json()
+    const validationResult = validateSubmissionData(body)
+
+    if (!validationResult.isValid) {
+      return NextResponse.json(
+        { success: false, error: validationResult.error, details: validationResult.details },
+        { status: 400 },
+      )
+    }
+
+    const submission = body as QuizSubmission
+
+    // 3. Validate answer format
+    const answerFormatResult = validateAnswersFormat(submission.answers, submission.type)
+
+    if (!answerFormatResult.isValid) {
+      return NextResponse.json(
+        { success: false, error: "Invalid answer format", details: answerFormatResult.error },
+        { status: 400 },
+      )
+    }
+
+    // 4. Get quiz data
+    const quiz = await getQuizWithQuestions(submission.quizId)
+
+    if (!quiz) {
+      return NextResponse.json({ success: false, error: "Quiz not found" }, { status: 404 })
+    }
+
+    // 5. Validate answers count
+    if (quiz.questions && submission.answers.length !== quiz.questions.length) {
       return NextResponse.json(
         {
           success: false,
-          error: "Database transaction failed",
-          details: txError instanceof Error ? txError.message : "Unknown transaction error",
+          error: "Answer count mismatch",
+          details: `Expected ${quiz.questions.length} answers, got ${submission.answers.length}`,
         },
-        { status: 500 },
+        { status: 400 },
       )
     }
+
+    // 6. Calculate score
+    const totalQuestions = quiz.questions ? quiz.questions.length : 0
+    const percentageScore = calculatePercentageScore(submission.score, totalQuestions, submission.type)
+
+    // 7. Process submission in transaction
+    const result = await processQuizSubmission(userId, submission, quiz, percentageScore)
+
+    // 8. Return success response
+    return NextResponse.json({
+      success: true,
+      result: {
+        ...result,
+        score: percentageScore,
+        totalTime: Math.round(submission.totalTime),
+      },
+    })
   } catch (error) {
-    console.error("Error processing quiz:", error)
+    // Log the full error for debugging
+    console.error("Error processing quiz submission:", error)
+
+    // Return a user-friendly error
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "An error occurred" },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "An error occurred",
+        stack: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
+      },
       { status: 500 },
     )
   }
