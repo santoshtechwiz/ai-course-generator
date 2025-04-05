@@ -19,11 +19,11 @@ export const metadata: Metadata = {
     title: "CourseAI: Free AI Course & Quiz Generator | MCQs, Flashcards & More",
     description:
       "Generate professional courses for free with our AI technology. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
-    url: "https://courseai.example.com",
+    url: "https://courseai.io",
     siteName: "CourseAI",
     images: [
       {
-        url: "https://courseai.example.com/og-image.jpg",
+        url: "https://courseai.io/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "CourseAI - Free AI Course Creator with Quiz, MCQ & Flashcard Generator",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     title: "CourseAI: Free AI Course & Quiz Generator | MCQs, Flashcards & More",
     description:
       "Generate professional courses for free. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
-    images: ["https://courseai.example.com/twitter-image.jpg"],
+    images: ["https://courseai.io/twitter-image.jpg"],
   },
   robots: {
     index: true,
