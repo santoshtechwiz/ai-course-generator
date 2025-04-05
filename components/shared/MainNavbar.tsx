@@ -11,13 +11,317 @@ import { navItems } from "@/constants/navItems"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import SearchModal from "./SearchModal"
-import { Badge, badgeVariants } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
-import { containerVariants, itemVariants, iconVariants, underlineVariants, headerVariants, dropdownVariants, mobileMenuVariants } from "./animation-variants"
+// Enhanced animation variants for shadcn UI components
+// These variants are designed to be reusable across the application
+
+// Main container animations
+export const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.07,
+      delayChildren: 0.1,
+      when: "beforeChildren",
+    }
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      staggerChildren: 0.05,
+      staggerDirection: -1,
+      when: "afterChildren",
+    }
+  }
+};
+
+// Header animations with improved staggering
+export const headerVariants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
+    }
+  }
+};
+
+// Item animations with improved spring physics
+export const itemVariants = {
+  hidden: { opacity: 0, y: -10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { 
+      type: "spring", 
+      stiffness: 500, 
+      damping: 30,
+      duration: 0.3
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: 10,
+    transition: { 
+      type: "spring", 
+      stiffness: 500, 
+      damping: 30,
+      duration: 0.2
+    }
+  },
+  hover: {
+    scale: 1.05,
+    transition: { 
+      type: "spring", 
+      stiffness: 400, 
+      damping: 17 
+    }
+  },
+  tap: {
+    scale: 0.95,
+    transition: { 
+      type: "spring", 
+      stiffness: 400, 
+      damping: 17 
+    }
+  }
+};
+
+// Dropdown menu animations
+export const dropdownVariants = {
+  hidden: { 
+    opacity: 0, 
+    scale: 0.95,
+    y: -5
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 25,
+      staggerChildren: 0.05,
+      delayChildren: 0.05
+    }
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    y: -5,
+    transition: {
+      duration: 0.2,
+      ease: "easeInOut"
+    }
+  }
+};
+
+// Mobile menu animations
+export const mobileMenuVariants = {
+  hidden: { 
+    opacity: 0, 
+    x: "-100%" 
+  },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
+      staggerChildren: 0.07,
+      delayChildren: 0.1
+    }
+  },
+  exit: {
+    opacity: 0,
+    x: "-100%",
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 40,
+      staggerChildren: 0.05,
+      staggerDirection: -1
+    }
+  }
+};
+
+// Page transition animations
+export const pageTransitionVariants = {
+  hidden: { 
+    opacity: 0,
+    y: 20
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0.25, 0.1, 0.25, 1.0], // Custom cubic bezier for smooth entry
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    transition: {
+      duration: 0.3,
+      ease: [0.25, 0.1, 0.25, 1.0],
+    }
+  }
+};
+
+// Badge animations
+export const badgeVariants = {
+  hidden: { 
+    opacity: 0, 
+    scale: 0.8 
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 500,
+      damping: 20
+    }
+  },
+  pulse: {
+    scale: [1, 1.1, 1],
+    transition: {
+      duration: 0.6,
+      ease: "easeInOut",
+      times: [0, 0.5, 1],
+      repeat: 0
+    }
+  }
+};
+
+// Notification animation
+export const notificationVariants = {
+  hidden: { 
+    opacity: 0, 
+    y: -20, 
+    scale: 0.9 
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 25
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    scale: 0.9,
+    transition: {
+      duration: 0.2,
+      ease: "easeOut"
+    }
+  }
+};
+
+// Icon animations
+export const iconVariants = {
+  hidden: { 
+    opacity: 0, 
+    rotate: -10, 
+    scale: 0.9 
+  },
+  visible: {
+    opacity: 1,
+    rotate: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 500,
+      damping: 25
+    }
+  },
+  hover: {
+    scale: 1.15,
+    rotate: 5,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 17
+    }
+  },
+  tap: {
+    scale: 0.9,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 17
+    }
+  }
+};
+
+// Underline animations for navigation
+export const underlineVariants = {
+  hidden: { 
+    opacity: 0, 
+    width: 0 
+  },
+  visible: {
+    opacity: 1,
+    width: "100%",
+    transition: {
+      duration: 0.3,
+      ease: "easeOut"
+    }
+  },
+  exit: {
+    opacity: 0,
+    width: 0,
+    transition: {
+      duration: 0.2,
+      ease: "easeIn"
+    }
+  }
+};
+
+// Scroll-triggered animations
+export const scrollAnimationVariants = {
+  hidden: { 
+    opacity: 0, 
+    y: 30 
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
+      duration: 0.6
+    }
+  }
+};
 
 
 
