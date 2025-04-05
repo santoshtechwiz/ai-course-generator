@@ -3,8 +3,6 @@ import prisma from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { revalidatePath } from "next/cache"
 
-
-
 export async function createUser(formData: FormData) {
   const name = formData.get("name") as string
   const email = formData.get("email") as string
@@ -32,7 +30,11 @@ export async function createUser(formData: FormData) {
     return { success: true }
   } catch (error) {
     console.error("Error creating user:", error)
-    return { error: "Failed to create user" }
+    throw new Error(
+      `Failed to create user. ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
@@ -73,7 +75,11 @@ export async function updateUser(userId: string, data: any) {
     return { success: true, user: updatedUser }
   } catch (error) {
     console.error("Error updating user:", error)
-    return { error: "Failed to update user" }
+    throw new Error(
+      `Failed to update user with ID "${userId}". ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
@@ -149,7 +155,11 @@ export async function deleteUser(userId: string) {
     return { success: true }
   } catch (error) {
     console.error("Error deleting user:", error)
-    return { error: "Failed to delete user. " + (error instanceof Error ? error.message : String(error)) }
+    throw new Error(
+      `Failed to delete user with ID "${userId}". ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
@@ -186,7 +196,11 @@ export async function getUserStats() {
     }
   } catch (error) {
     console.error("Error fetching user stats:", error)
-    return { error: "Failed to fetch user stats" }
+    throw new Error(
+      `Failed to fetch user stats. ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
@@ -201,7 +215,11 @@ export async function getCreditHistory(userId: string) {
     return { transactions }
   } catch (error) {
     console.error("Error fetching credit history:", error)
-    return { error: "Failed to fetch credit history" }
+    throw new Error(
+      `Failed to fetch credit history for user with ID "${userId}". ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
@@ -224,7 +242,11 @@ export async function createContactSubmission(data: {
     return { success: true, submission }
   } catch (error) {
     console.error("Error creating contact submission:", error)
-    return { error: "Failed to save contact submission" }
+    throw new Error(
+      `Failed to save contact submission. ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
@@ -255,7 +277,11 @@ export async function getContactSubmissions(page = 1, limit = 10, status?: strin
     }
   } catch (error) {
     console.error("Error fetching contact submissions:", error)
-    return { error: "Failed to fetch contact submissions" }
+    throw new Error(
+      `Failed to fetch contact submissions. ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
@@ -276,7 +302,11 @@ export async function updateContactSubmission(
     return { success: true, submission }
   } catch (error) {
     console.error("Error updating contact submission:", error)
-    return { error: "Failed to update contact submission" }
+    throw new Error(
+      `Failed to update contact submission with ID "${id}". ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
@@ -289,7 +319,11 @@ export async function deleteContactSubmission(id: number) {
     return { success: true }
   } catch (error) {
     console.error("Error deleting contact submission:", error)
-    return { error: "Failed to delete contact submission" }
+    throw new Error(
+      `Failed to delete contact submission with ID "${id}". ${
+        error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
+      }`
+    )
   }
 }
 
