@@ -6,18 +6,19 @@ export const metadata: Metadata = {
   description:
     "Create professional courses instantly with CourseAI. Our free AI generator builds customized learning materials, MCQs, open-ended questions, quizzes, and flashcards tailored to your needs.",
   keywords: [
-    "AI course creator", 
-    "free quiz generator", 
-    "MCQ creator", 
-    "open-ended questions", 
-    "flashcard generator", 
-    "CourseAI", 
-    "free learning platform", 
-    "custom course generation"
+    "AI course creator",
+    "free quiz generator",
+    "MCQ creator",
+    "open-ended questions",
+    "flashcard generator",
+    "CourseAI",
+    "free learning platform",
+    "custom course generation",
   ],
   openGraph: {
     title: "CourseAI: Free AI Course & Quiz Generator | MCQs, Flashcards & More",
-    description: "Generate professional courses for free with our AI technology. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
+    description:
+      "Generate professional courses for free with our AI technology. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
     url: "https://courseai.example.com",
     siteName: "CourseAI",
     images: [
@@ -34,7 +35,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "CourseAI: Free AI Course & Quiz Generator | MCQs, Flashcards & More",
-    description: "Generate professional courses for free. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
+    description:
+      "Generate professional courses for free. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
     images: ["https://courseai.example.com/twitter-image.jpg"],
   },
   robots: {
@@ -43,9 +45,9 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-      'max-video-preview': -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
     },
   },
 }
@@ -61,3 +63,4 @@ const HomePage = () => {
 }
 
 export default HomePage
+

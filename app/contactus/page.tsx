@@ -3,17 +3,21 @@ import { ImprovedContactForm } from "./ContactForm"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
 export const metadata: Metadata = generatePageMetadata({
-  title: "Contact CourseAI | Programming Education Support",
+  title: "Contact CourseAI | Get Support for AI Coding Education Platform",
   description:
-    "Get in touch with our coding education experts. We're here to help with your programming learning journey and answer any questions.",
+    "Have questions about CourseAI's AI-powered coding education platform? Contact our team for support, partnership inquiries, or feedback on our programming learning tools.",
   path: "/contactus",
   keywords: [
-    "contact coding support",
-    "programming education help",
-    "coding learning assistance",
-    "developer education contact",
-    "programming learning support",
+    "contact courseai",
+    "coding education support",
+    "ai learning platform help",
+    "programming education contact",
+    "courseai support",
+    "coding question generator help",
+    "programming learning assistance",
+    "ai education platform contact",
   ],
+  ogImage: "/api/og?title=Contact+CourseAI&description=Get+Support+for+AI+Coding+Education",
 })
 
 

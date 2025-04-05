@@ -24,24 +24,29 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     })
   }
 
+  // Extract keywords from quiz title
+  const titleWords = quiz.title.toLowerCase().split(" ")
+  const keyTerms = titleWords.filter((word) => word.length > 3)
 
   return generatePageMetadata({
     title: `${quiz.title} | Interactive Programming Flashcards`,
-    description: `Master ${quiz.title.toLowerCase()} concepts with our interactive flashcards. Perfect for all developers looking to strengthen their knowledge through active recall and spaced repetition.`,
+    description: `Master ${quiz.title.toLowerCase()} concepts with our interactive flashcards. Perfect for all developers looking to strengthen their knowledge through active recall and spaced repetition. ${quiz.questions?.length || 0} practice questions included.`,
     path: `/dashboard/flashcard/${slug}`,
     keywords: [
       `${quiz.title.toLowerCase()} flashcards`,
+      `${quiz.title.toLowerCase()} practice questions`,
+      `learn ${quiz.title.toLowerCase()}`,
       "programming study aids",
       "coding concepts",
       "developer learning tools",
       "programming memorization",
       "spaced repetition",
       "active recall",
-
       "tech learning",
+      ...keyTerms.map((term) => `${term} programming flashcards`),
     ],
     ogType: "article",
-
+    ogImage: `/api/og?title=${encodeURIComponent(quiz.title)}&description=${encodeURIComponent("Interactive Programming Flashcards")}`,
   })
 }
 
@@ -66,11 +71,8 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
     { name: quiz.title, url: `${baseUrl}/dashboard/flashcard/${slug}` },
   ]
 
-
-
   return (
     <>
-
       <QuizDetailPage
         title={quiz.title}
         description={`Study and memorize key ${quiz.title} concepts with these interactive flashcards. Perfect for all level developers looking to strengthen their knowledge through active recall.`}
@@ -79,11 +81,7 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
         questionCount={quiz.questions?.length || 0}
         estimatedTime="PT15M"
         breadcrumbItems={breadcrumbItems}
-
-
       >
-
-
         <Suspense fallback={<FlashcardSkeleton />}>
           <FlashCardsPageClient slug={slug} userId={userId} />
         </Suspense>
