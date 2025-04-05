@@ -13,7 +13,7 @@ const FAQSchema: React.FC<FAQSchemaProps> = ({ items }) => {
   const schemaData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: items.map((item) => ({
+    mainEntity: items?.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {
