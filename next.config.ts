@@ -21,9 +21,6 @@ const nextConfig = {
     minimumCacheTTL: 60,
   },
   experimental: {
-    webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
-    parallelServerCompiles: true,
     optimizeCss: true,
     scrollRestoration: true,
   },
@@ -45,26 +42,11 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
       {
@@ -74,7 +56,7 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
           { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
-        ]
+        ],
       },
       {
         source: '/:path*\\.js',
@@ -105,11 +87,7 @@ const nextConfig = {
       },
     ];
   },
-  // Enable SWC for faster builds and minify
- 
-  //output: 'standalone', // Standalone output for smaller deploys (optional)
-  // Optional: Bundle analyzer (optional for analysis)
-  webpack(config: { resolve: { fallback: { fs: boolean; path: boolean; }; }; }, { isServer }: any) {
+  webpack(config, { isServer }) {
     if (!isServer) {
       config.resolve.fallback = {
         fs: false,
@@ -118,11 +96,6 @@ const nextConfig = {
     }
     return config;
   },
-  // Enable bundle analyzer (optional, run `ANALYZE=true npm run build`)
-  // Uncomment to use bundle analyzer
-  // withBundleAnalyzer: {
-  //   enabled: process.env.ANALYZE === 'true',
-  // },
 };
 
 export default nextConfig;
