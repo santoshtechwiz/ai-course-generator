@@ -26,7 +26,7 @@ const NavItems = () => {
   const pathname = usePathname()
 
   return (
-    <motion.nav 
+    <motion.nav
       className="mx-6 hidden items-center space-x-4 md:flex"
       variants={containerVariants}
       initial="hidden"
@@ -43,11 +43,10 @@ const NavItems = () => {
         >
           <Link
             href={item.href}
-            className={`relative flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-300 ${
-              pathname === item.href
+            className={`relative flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-300 ${pathname === item.href
                 ? "bg-primary text-primary-foreground"
                 : "text-foreground hover:bg-accent hover:text-accent-foreground"
-            } overflow-hidden group`}
+              } overflow-hidden group`}
           >
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -169,9 +168,8 @@ export default function MainNavbar() {
 
   return (
     <motion.header
-      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ${
-        scrolled ? "shadow-md border-transparent" : ""
-      }`}
+      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ${scrolled ? "shadow-md border-transparent" : ""
+        }`}
       variants={headerVariants}
       initial="hidden"
       animate="visible"
@@ -191,8 +189,8 @@ export default function MainNavbar() {
           <NavItems />
         </motion.div>
 
-        <motion.div 
-          className="flex items-center gap-2 md:gap-4 flex-shrink-0" 
+        <motion.div
+          className="flex items-center gap-2 md:gap-4 flex-shrink-0"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -322,8 +320,8 @@ export default function MainNavbar() {
               whileTap="tap"
               className="hidden md:block"
             >
-              <Link 
-                href="/auth/signin" 
+              <Link
+                href="/auth/signin"
                 onClick={(e) => {
                   e.preventDefault();
                   handleSignIn();
@@ -414,11 +412,10 @@ export default function MainNavbar() {
                         <SheetClose asChild>
                           <Link
                             href={item.href}
-                            className={`flex items-center justify-start rounded-md w-full px-3 py-2 transition-all duration-200 ${
-                              pathname === item.href
+                            className={`flex items-center justify-start rounded-md w-full px-3 py-2 transition-all duration-200 ${pathname === item.href
                                 ? "bg-accent text-accent-foreground font-medium"
                                 : "hover:bg-accent/50"
-                            }`}
+                              }`}
                           >
                             <item.icon className={`mr-2 h-4 w-4 ${pathname === item.href ? "text-primary" : ""}`} />
                             {item.name}
