@@ -69,7 +69,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
-  
+    "critters": "^0.0.25",
     "delay": "^6.0.0",
     "depcheck": "^1.4.7",
     "diff": "^7.0.0",
@@ -146,7 +146,6 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
-   
     "@tailwindcss/typography": "^0.5.15",
     "@types/canvas-confetti": "^1.9.0",
     "@types/date-fns": "^2.6.3",
