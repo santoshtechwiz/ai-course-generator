@@ -71,7 +71,7 @@ function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { is
     case "openended":
     case "fill-blanks":
       invalidAnswers = answers.some(
-        (a: any) => typeof a.userAnswer === "undefined" || typeof a.timeSpent === "undefined",
+        (a: any) => typeof a.answer === "undefined" || typeof a.timeSpent === "undefined",
       )
       break
   

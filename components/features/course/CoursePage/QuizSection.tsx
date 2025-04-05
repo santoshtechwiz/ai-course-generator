@@ -17,7 +17,7 @@ function QuizSection({ isLoading, quizData, currentChapter, course }: { isLoadin
       )
     }
   
-    return <CourseDetailsQuiz chapter={currentChapter} course={course} />
+    return <CourseDetailsQuiz chapter={currentChapter} course={course} isPremium={false} isPublicCourse={false} />
   }
   
   function QuizSkeleton() {

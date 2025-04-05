@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -20,7 +20,44 @@ import {
 import type { CourseCardProps } from "@/app/types/types"
 import { cn } from "@/lib/utils"
 
-// Add this after the imports
+// Animation variants for consistent animations
+const cardVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  hover: { 
+    scale: 1.03, 
+    y: -5,
+    transition: { type: "spring", stiffness: 400, damping: 25 }
+  }
+}
+
+const iconVariants = {
+  initial: { scale: 1 },
+  hover: { 
+    scale: 1.15, 
+    rotate: [-5, 5, -5, 0],
+    y: -3,
+    transition: {
+      rotate: { repeat: Number.POSITIVE_INFINITY, repeatType: "mirror", duration: 1.5 },
+      scale: { type: "spring", stiffness: 500, damping: 15 },
+      y: { type: "spring", stiffness: 500, damping: 15 },
+    }
+  }
+}
+
+const statVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: 0.1 * i }
+  }),
+  hover: {
+    scale: 1.05,
+    backgroundColor: "rgba(var(--primary), 0.15)",
+  }
+}
+
 const progressPulseKeyframes = `
 @keyframes progressPulse {
   0% { opacity: 0.6; }
@@ -71,10 +108,9 @@ const determineCourseLevel = (
   return "Advanced"
 }
 
-// Add this right before the CourseCard component definition
 export const CourseCard: React.FC<CourseCardProps> = React.memo(
   ({ name, description, rating, slug, unitCount, lessonCount, quizCount, viewCount, category }) => {
-    // Add this line
+    // Add keyframes for progress pulse animation
     React.useEffect(() => {
       const style = document.createElement("style")
       style.innerHTML = progressPulseKeyframes
@@ -101,7 +137,7 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
       }
     }, [description])
 
-    // Add this after the existing useEffect
+    // Add progress pulse animation when hovered
     React.useEffect(() => {
       if (isHovered) {
         const progressBar = document.querySelector(`.progress-${slug}`) as HTMLElement
@@ -114,14 +150,10 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
 
     return (
       <motion.div
-        whileHover={{
-          scale: 1.03,
-          y: -5,
-          transition: { type: "spring", stiffness: 400, damping: 25 },
-        }}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        variants={cardVariants}
+        initial="initial"
+        animate="animate"
+        whileHover="hover"
         className="h-full pt-6"
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => {
@@ -136,12 +168,7 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
           <div className="relative h-full">
             <motion.div
               className={cn("absolute -top-6 left-6 p-3 rounded-xl shadow-lg z-10", config.icon)}
-              whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0], y: -3 }}
-              transition={{
-                rotate: { repeat: Number.POSITIVE_INFINITY, repeatType: "mirror", duration: 1.5 },
-                scale: { type: "spring", stiffness: 500, damping: 15 },
-                y: { type: "spring", stiffness: 500, damping: 15 },
-              }}
+              variants={iconVariants}
             >
               <GraduationCap className="w-5 h-5 text-white" />
             </motion.div>
@@ -245,16 +272,11 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                     <motion.div
                       key={index}
                       className="flex flex-col items-center justify-center p-2 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
-                      whileHover={{
-                        scale: 1.05,
-                        backgroundColor: "rgba(var(--primary), 0.15)",
-                      }}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{
-                        opacity: 1,
-                        y: 0,
-                        transition: { delay: 0.1 * index },
-                      }}
+                      variants={statVariants}
+                      custom={index}
+                      initial="initial"
+                      animate="animate"
+                      whileHover="hover"
                     >
                       <motion.div whileHover={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 0.5 }}>
                         <stat.icon className="w-4 h-4 mb-1 text-primary" />
@@ -291,51 +313,58 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
                 </motion.div>
               </CardFooter>
 
-              <AnimatePresence>
-                {isHovered && !showFullDescription && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/70 to-transparent flex items-center justify-center"
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isHovered && !showFullDescription ? 1 : 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/70 to-transparent flex items-center justify-center pointer-events-none"
+              >
+                <motion.div
+                  initial={{ scale: 0.8, y: 20, opacity: 0 }}
+                  animate={{ 
+                    scale: isHovered && !showFullDescription ? 1 : 0.8, 
+                    y: isHovered && !showFullDescription ? 0 : 20, 
+                    opacity: isHovered && !showFullDescription ? 1 : 0 
+                  }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.1 }}
+                  className="bg-card p-4 rounded-xl shadow-lg border border-primary/20 max-w-[80%] text-center"
+                >
+                  <motion.h4
+                    className="font-semibold mb-2 text-primary"
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ 
+                      y: isHovered && !showFullDescription ? 0 : -10, 
+                      opacity: isHovered && !showFullDescription ? 1 : 0 
+                    }}
+                    transition={{ delay: 0.2 }}
                   >
-                    <motion.div
-                      initial={{ scale: 0.8, y: 20, opacity: 0 }}
-                      animate={{ scale: 1, y: 0, opacity: 1 }}
-                      exit={{ scale: 0.8, y: 20, opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.1 }}
-                      className="bg-card p-4 rounded-xl shadow-lg border border-primary/20 max-w-[80%] text-center"
-                    >
-                      <motion.h4
-                        className="font-semibold mb-2 text-primary"
-                        initial={{ y: -10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        {name}
-                      </motion.h4>
-                      <motion.p
-                        className="text-foreground text-sm mb-3"
-                        initial={{ y: -5, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        Start your learning journey today!
-                      </motion.p>
-                      <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                      >
-                        <Badge variant="default" className="mx-auto">
-                          {unitCount} Units • {lessonCount} Lessons • {quizCount} Quizzes
-                        </Badge>
-                      </motion.div>
-                    </motion.div>
+                    {name}
+                  </motion.h4>
+                  <motion.p
+                    className="text-foreground text-sm mb-3"
+                    initial={{ y: -5, opacity: 0 }}
+                    animate={{ 
+                      y: isHovered && !showFullDescription ? 0 : -5, 
+                      opacity: isHovered && !showFullDescription ? 1 : 0 
+                    }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    Start your learning journey today!
+                  </motion.p>
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ 
+                      scale: isHovered && !showFullDescription ? 1 : 0.9, 
+                      opacity: isHovered && !showFullDescription ? 1 : 0 
+                    }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Badge variant="default" className="mx-auto">
+                      {unitCount} Units • {lessonCount} Lessons • {quizCount} Quizzes
+                    </Badge>
                   </motion.div>
-                )}
-              </AnimatePresence>
+                </motion.div>
+              </motion.div>
             </Card>
           </div>
         </Link>
@@ -345,4 +374,3 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
 )
 
 CourseCard.displayName = "CourseCard"
-
