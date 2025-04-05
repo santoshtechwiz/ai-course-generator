@@ -60,10 +60,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     },
     getNextPageParam: (lastPage) => {
       if (!lastPage || typeof lastPage !== "object" || !("nextCursor" in lastPage)) {
-        console.warn("Unexpected lastPage format:", lastPage)
-        return undefined
+        console.warn("Unexpected lastPage format or missing nextCursor:", lastPage);
+        return undefined; // Safeguard to prevent errors
       }
-      return lastPage.nextCursor
+      return lastPage.nextCursor;
     },
     initialPageParam: 1,
     initialData: {

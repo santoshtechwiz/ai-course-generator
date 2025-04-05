@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   async rewrites() {
     return [
       {
@@ -20,23 +20,23 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
   },
-  experimental: {
-    optimizeCss: true,
-    scrollRestoration: true,
-  },
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
-  },
-  poweredByHeader: false,
-  compress: true,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // experimental: {
+  //   optimizeCss: true,
+  //   scrollRestoration: true,
+  // },
+  // compiler: {
+  //   removeConsole: process.env.NODE_ENV === 'production' ? {
+  //     exclude: ['error', 'warn'],
+  //   } : false,
+  // },
+  // poweredByHeader: false,
+  // compress: true,
+  // eslint: {
+  //   ignoreDuringBuilds: true,
+  // },
+  // typescript: {
+  //   ignoreBuildErrors: true,
+  // },
   headers: async () => {
     return [
       {
@@ -87,15 +87,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack(config, { isServer }) {
-    if (!isServer) {
-      config.resolve.fallback = {
-        fs: false,
-        path: false,
-      };
-    }
-    return config;
-  },
+ 
 };
 
 export default nextConfig;

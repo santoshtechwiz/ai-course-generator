@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server"
 
 import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
-import { trackServerSideInteraction } from "@/lib/tracking"
+
 import { getToken } from "next-auth/jwt"
 
 // Define matcher to exclude API, static files, and favicon requests
@@ -107,15 +107,6 @@ async function handleRedirects(req: NextRequest) {
   return null
 }
 
-// Track user interaction if userId is available in cookies
-function trackUserInteraction(req: NextRequest) {
-  const userId = req.cookies.get("userId")?.value
-  if (userId) {
-    const interactionType = "page_view"
-    trackServerSideInteraction(userId, interactionType, req.nextUrl.pathname)
-  }
-}
-
 // Handle course view count increment
 function incrementCourseViewCount(req: NextRequest) {
   const coursePattern = new URLPattern({ pathname: "/dashboard/course/:slug" })
@@ -165,8 +156,7 @@ export async function middleware(req: NextRequest) {
   const redirectResponse = await handleRedirects(req)
   if (redirectResponse) return redirectResponse
 
-  // Track user interaction
-  trackUserInteraction(req)
+
 
   // Increment course view count
   incrementCourseViewCount(req)
