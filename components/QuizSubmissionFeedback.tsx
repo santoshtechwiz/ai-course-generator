@@ -13,7 +13,7 @@ interface QuizSubmissionFeedbackProps {
   isError: boolean
   score?: number
   totalQuestions?: number
-  onContinue?: () => void
+  onContinue?: (proceed: boolean) => boolean
   errorMessage?: string
   quizType?: string
 }
@@ -126,7 +126,7 @@ export function QuizSubmissionFeedback({
                     </div>
                   )}
 
-                  <Button onClick={onContinue} className="w-full">
+                  <Button onClick={() => onContinue?.(true)} className="w-full">
                     Continue
                   </Button>
                 </motion.div>
@@ -146,7 +146,7 @@ export function QuizSubmissionFeedback({
 
                   <p className="text-muted-foreground">{errorMessage}</p>
 
-                  <Button onClick={onContinue} variant="outline" className="w-full">
+                  <Button onClick={() => onContinue?.(true)} variant="outline" className="w-full">
                     Try Again
                   </Button>
                 </motion.div>

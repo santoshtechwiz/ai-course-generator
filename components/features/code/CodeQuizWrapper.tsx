@@ -61,7 +61,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
         />
    
         <CodeQuiz
-          quizId={quizData.quizId}
+          quizId={quizData.quizId.toString()}
           slug={quizData.slug}
           isFavorite={quizData.isFavorite}
           isPublic={quizData.isPublic}

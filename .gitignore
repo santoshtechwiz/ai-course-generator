@@ -53,3 +53,4 @@ a.mjs
 /components/shared
 src.zip
 /.build
+/next.config.ts
