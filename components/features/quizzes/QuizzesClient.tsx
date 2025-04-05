@@ -95,7 +95,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     })
   }, [])
 
-  const quizzes = useMemo(() => data?.pages.flatMap((page) => page.quizzes) || [], [data?.pages])
+  const quizzes = useMemo(() => data?.pages.flatMap((page) => page?.quizzes) || [], [data?.pages])
   const isSearching = debouncedSearch.trim() !== "" || selectedTypes.length > 0
   const hasNoQuizzes = !isLoading && quizzes.length === 0
 

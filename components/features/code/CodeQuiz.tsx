@@ -6,24 +6,40 @@ import { RefreshCcw, Trophy, HelpCircle, ArrowRight, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import QuizOptions from "./CodeQuizOptions"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
-
+import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 import { useSession } from "next-auth/react"
-
-import { useRouter } from "next/navigation"
 import type { CodeChallenge } from "@/app/types/types"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { SignInPrompt } from "@/components/SignInPrompt"
-import { formatTime } from "@/lib/quiz-result-service"
 import { QuizResultDisplay } from "../mcq/QuizResultDisplay"
 import { QuizBase } from "../mcq/QuizBase"
 import { useQuizResult } from "@/hooks/use-quiz-result"
 import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
+import { formatQuizTime } from "@/lib/quiz-result-service"
+
+const formatQuizTimeLocal = (seconds: number): string => {
+  if (typeof formatQuizTime === "function") {
+    return formatQuizTime(seconds)
+  }
+
+  // Fallback implementation
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${remainingSeconds}s`
+  } else if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`
+  } else {
+    return `${remainingSeconds}s`
+  }
+}
 
 interface CodeQuizProps {
-  quizId: number
+  quizId: string
   slug: string
   isFavorite: boolean
   isPublic: boolean
@@ -50,26 +66,18 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>(
-    new Array(quizData.questions.length).fill(null),
+    new Array(quizData.questions.length).fill(null)
   )
   const [startTimes, setStartTimes] = useState<number[]>(new Array(quizData.questions.length).fill(Date.now()))
   const [timeSpent, setTimeSpent] = useState<number[]>(new Array(quizData.questions.length).fill(0))
   const [quizCompleted, setQuizCompleted] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
   const [quizResults, setQuizResults] = useState<any>(null)
-  const router = useRouter()
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+
   const { data: session, status } = useSession()
 
-  // Use the centralized quiz result hook
   const { submitQuizResult, isSubmitting, isSuccess, isError, errorMessage, resetSubmissionState, result } =
-    useQuizResult({
-      onSuccess: (result) => {
-        setQuizCompleted(true)
-        if (onComplete) {
-          onComplete()
-        }
-      },
-    })
+    useQuizResult()
 
   const currentQuestion = useMemo(() => {
     return (
@@ -90,16 +98,20 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
   useEffect(() => {
     setStartTimes((prev) => {
       const newStartTimes = [...prev]
-      newStartTimes[0] = Date.now()
+      newStartTimes[currentQuestionIndex] = Date.now()
       return newStartTimes
     })
 
-    const savedResults = localStorage.getItem(`quizResults-${userId}`)
+    const savedResults = localStorage.getItem(`quizResults-${userId}-${quizId}`)
     if (savedResults) {
-      setQuizResults(JSON.parse(savedResults))
-      setQuizCompleted(true)
+      try {
+        setQuizResults(JSON.parse(savedResults))
+        setQuizCompleted(true)
+      } catch (error) {
+        console.error("Error parsing saved quiz results:", error)
+      }
     }
-  }, [userId])
+  }, [userId, quizId, currentQuestionIndex])
 
   const handleSelectOption = (option: string) => {
     setSelectedOptions((prev) => {
@@ -107,6 +119,15 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
       newSelectedOptions[currentQuestionIndex] = option
       return newSelectedOptions
     })
+
+    if (onSubmitAnswer) {
+      const answerData = {
+        answer: option,
+        isCorrect: option === currentQuestion.correctAnswer,
+        questionIndex: currentQuestionIndex,
+      }
+      onSubmitAnswer(answerData)
+    }
   }
 
   const calculateScore = useCallback(() => {
@@ -126,14 +147,12 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
       return newTimeSpent
     })
 
-    // Create answer data for the current question
     const answerData = {
       answer: selectedOptions[currentQuestionIndex] || "",
       isCorrect: selectedOptions[currentQuestionIndex] === currentQuestion.correctAnswer,
       timeSpent: timeSpentOnQuestion,
     }
 
-    // Call the onSubmitAnswer prop if provided
     if (onSubmitAnswer) {
       onSubmitAnswer(answerData)
     }
@@ -146,7 +165,6 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
         return newStartTimes
       })
     } else {
-      setSubmitting(true)
       try {
         const correctCount = calculateScore()
         const score = (correctCount / quizData.questions.length) * 100
@@ -161,13 +179,12 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
         }))
 
         if (status === "authenticated") {
-          // Use the centralized quiz submission hook
-          await submitQuizResult(quizId.toString(), answers, Math.round(totalTimeSpent), correctCount, "code")
-
-          // Store results for display
+          setShowFeedbackModal(true)
+          await submitQuizResult(quizId, answers, Math.round(totalTimeSpent), correctCount, "code")
+          
           setQuizResults({
             slug,
-            quizId: quizId,
+            quizId,
             answers,
             elapsedTime: Math.round(totalTimeSpent),
             score,
@@ -176,7 +193,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
         } else {
           const results = {
             slug,
-            quizId: quizId,
+            quizId,
             answers: selectedOptions.map((answer, index) => ({
               userAnswer: answer || "",
               isCorrect: answer === quizData.questions[index].correctAnswer,
@@ -187,19 +204,13 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
             score,
             type: "code",
           }
-          localStorage.setItem(`quizResults-${userId}`, JSON.stringify(results))
+          localStorage.setItem(`quizResults-${userId}-${quizId}`, JSON.stringify(results))
           setQuizResults(results)
           setQuizCompleted(true)
-
-          // Call the onComplete prop if provided
-          if (onComplete) {
-            onComplete()
-          }
+          if (onComplete) onComplete()
         }
       } catch (error) {
         console.error("Error submitting quiz data:", error)
-      } finally {
-        setSubmitting(false)
       }
     }
   }, [
@@ -219,27 +230,28 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
     userId,
   ])
 
-  const handleContinue = useCallback(() => {
-    if (isSuccess) {
-      router.push(`/dashboard/code/${slug}/results?id=${result?.id || result?.quizAttempt?.id}`)
-    } else if (isError) {
-      resetSubmissionState()
-    }
-  }, [isSuccess, isError, resetSubmissionState, router, slug, result])
+  const handleFeedbackContinue = useCallback((proceed: boolean): boolean => {
+    setShowFeedbackModal(false)
+    setQuizCompleted(true)
+    if (onComplete) onComplete?.()
+    resetSubmissionState?.()
+    return proceed
+  }, [onComplete, resetSubmissionState])
 
   const restartQuiz = useCallback(() => {
-    localStorage.removeItem(`quizResults-${userId}`)
+    localStorage.removeItem(`quizResults-${userId}-${quizId}`)
     setCurrentQuestionIndex(0)
     setSelectedOptions(new Array(quizData.questions.length).fill(null))
     setStartTimes(new Array(quizData.questions.length).fill(Date.now()))
     setTimeSpent(new Array(quizData.questions.length).fill(0))
     setQuizCompleted(false)
-    setSubmitting(false)
     setQuizResults(null)
     resetSubmissionState()
-  }, [quizData.questions.length, userId, resetSubmissionState])
+  }, [quizData.questions.length, userId, quizId, resetSubmissionState])
 
   const renderQuestionText = useCallback((text: string) => {
+    if (!text) return null
+
     const [questionText, ...codeBlocks] = text.split("```")
 
     return (
@@ -265,6 +277,8 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
   }, [])
 
   const renderCode = useCallback((code: string, language = "javascript") => {
+    if (!code) return null
+
     const cleanCode = code.replace(/^```[\w]*\n?|\n?```$/g, "")
 
     return (
@@ -288,6 +302,8 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
 
   const renderOptionContent = useCallback(
     (option: string) => {
+      if (!option) return null
+
       const codeRegex = /```[\s\S]*?```/g
       const parts = option.split(codeRegex)
       const codes = option.match(codeRegex) || []
@@ -306,14 +322,8 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
     [currentQuestion.language, renderCode],
   )
 
-  // Format time using the service utility
-  const formatTime = useCallback((seconds: number) => {
-    return formatQuizTime(seconds)
-  }, [])
-
-  // Wrap the component with QuizBase
-  const quizContent = () => {
-    if (quizCompleted && !isSubmitting && !isSuccess && !isError) {
+  const renderQuizContent = () => {
+    if (quizCompleted) {
       const correctCount = calculateScore()
       const totalQuestions = quizData.questions.length
       const percentage = (correctCount / totalQuestions) * 100
@@ -322,7 +332,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
       if (status === "authenticated") {
         return (
           <QuizResultDisplay
-            quizId={quizId.toString()}
+            quizId={quizId}
             title={quizData.title}
             score={percentage}
             totalQuestions={totalQuestions}
@@ -330,7 +340,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
             correctAnswers={correctCount}
             type="code"
             slug={slug}
-            isLoading={submitting}
+            isLoading={isSubmitting}
           />
         )
       }
@@ -340,7 +350,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
           <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
             <Trophy className="w-16 h-16 text-primary" />
             <h2 className="text-2xl font-bold">Quiz Completed!</h2>
-            <p className="text-muted-foreground">Time taken: {formatTime(totalTime)}</p>
+            <p className="text-muted-foreground">Time taken: {formatQuizTimeLocal(totalTime)}</p>
             {session ? (
               <>
                 <div className="bg-muted rounded-lg p-6 space-y-4 w-full">
@@ -368,13 +378,13 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
       <Card className="w-full">
         <CardHeader className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold">Coding Quiz Challenge {quizData.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">{quizData.title}</h1>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-help">
                     <Timer className="w-4 h-4" />
-                    {formatTime(timeSpent.reduce((a, b) => a + b, 0))}
+                    {formatQuizTimeLocal(timeSpent.reduce((a, b) => a + b, 0))}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -417,7 +427,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
                   options={options}
                   selectedOption={selectedOptions[currentQuestionIndex]}
                   onSelect={handleSelectOption}
-                  disabled={submitting || isSubmitting}
+                  disabled={isSubmitting}
                   renderOptionContent={renderOptionContent}
                 />
               </div>
@@ -426,14 +436,14 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
         </CardContent>
         <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
           <p className="text-sm text-muted-foreground">
-            Question time: {formatTime(timeSpent[currentQuestionIndex] || 0)}
+            Question time: {formatQuizTimeLocal(timeSpent[currentQuestionIndex] || 0)}
           </p>
           <Button
             onClick={handleNextQuestion}
-            disabled={selectedOptions[currentQuestionIndex] === null || submitting || isSubmitting}
+            disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
             className="w-full sm:w-auto"
           >
-            {submitting || isSubmitting ? (
+            {isSubmitting ? (
               "Submitting..."
             ) : currentQuestionIndex === quizData.questions.length - 1 ? (
               "Finish Quiz"
@@ -451,22 +461,22 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
 
   return (
     <QuizBase quizId={quizId} slug={slug} title={quizData.title} type="code" totalQuestions={quizData.questions.length}>
-      {quizContent()}
+      {renderQuizContent()}
 
-      {/* Add the QuizSubmissionFeedback component */}
-      <QuizSubmissionFeedback
-        isSubmitting={isSubmitting}
-        isSuccess={isSuccess}
-        isError={isError}
-        score={calculateScore()}
-        totalQuestions={quizData.questions.length}
-        onContinue={handleContinue}
-        errorMessage={errorMessage}
-        quizType="code"
-      />
+      {showFeedbackModal && (
+        <QuizSubmissionFeedback
+          isSubmitting={isSubmitting}
+          isSuccess={isSuccess}
+          isError={isError}
+          score={calculateScore()}
+          onContinue={(proceed) => handleFeedbackContinue(proceed)}
+      
+          errorMessage={errorMessage}
+          quizType="code"
+        />
+      )}
     </QuizBase>
   )
 }
 
 export default CodingQuiz
-
