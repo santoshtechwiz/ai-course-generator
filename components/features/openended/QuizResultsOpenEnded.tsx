@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -9,7 +9,7 @@ import { CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, RotateCw }
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 interface QuizResultsProps {
-  answers: { answer: string; timeSpent: number; hintsUsed: boolean; isCorrect: boolean }[]
+  answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
   questions: { id: number; question: string; answer: string }[]
   onRestart: () => void
   onComplete: (score: number) => void
@@ -19,12 +19,25 @@ export default function QuizResultsOpenEnded({ answers, questions, onRestart, on
   const [score, setScore] = useState<number | null>(null)
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const hasCalledComplete = useRef(false)
 
+  // Calculate score only once when component mounts
   useEffect(() => {
+    // Calculate the score
     const calculatedScore = calculateScore(answers, questions)
     setScore(calculatedScore)
-    onComplete(calculatedScore)
-  }, [answers, questions, onComplete])
+
+    // Only call onComplete once using a ref flag
+    if (!hasCalledComplete.current) {
+      hasCalledComplete.current = true
+
+      // Use setTimeout to break the render cycle
+      // This is crucial to prevent the infinite loop
+      setTimeout(() => {
+        onComplete(calculatedScore)
+      }, 0)
+    }
+  }, []) // Empty dependency array - only run once on mount
 
   const calculateScore = (answers: { answer: string }[], questions: { answer: string }[]): number => {
     const totalSimilarity = answers.reduce((acc, answer, index) => {

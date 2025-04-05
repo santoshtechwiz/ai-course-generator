@@ -1,6 +1,6 @@
 "use client"
 
-import type * as React from "react"
+import * as React from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -20,6 +20,24 @@ import { cn } from "@/lib/utils"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+
+// Animation variants for consistent animations
+const cardVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  hover: { 
+    scale: 1.01,
+    transition: { type: "spring", stiffness: 300, damping: 30 }
+  }
+}
+
+const iconVariants = {
+  initial: { scale: 1 },
+  hover: { 
+    scale: 1.1, 
+    transition: { type: "spring", stiffness: 400, damping: 15 }
+  }
+}
 
 interface QuizCardProps {
   title: string
@@ -112,12 +130,17 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 }) => {
   const QuizTypeIcon = quizTypeIcons[quizType]
   const config = quizTypeConfig[quizType]
+  const [isHovered, setIsHovered] = React.useState(false)
 
   return (
     <motion.div
-      whileHover={{ scale: 1.01 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      whileHover="hover"
       className="h-full flex"
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
     >
       <Link
         href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}
@@ -133,9 +156,12 @@ export const QuizCard: React.FC<QuizCardProps> = ({
           <CardHeader className="relative z-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className={cn("p-2 rounded-md", config.icon)}>
+                <motion.div 
+                  className={cn("p-2 rounded-md", config.icon)}
+                  variants={iconVariants}
+                >
                   <QuizTypeIcon className="w-4 h-4 text-white" />
-                </div>
+                </motion.div>
                 <Badge variant="outline" className={cn(config.badge)}>
                   {quizTypeLabels[quizType]}
                 </Badge>
@@ -147,7 +173,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                 </div>
               )}
             </div>
-            <CardTitle className="mt-3 text-xl">{title}</CardTitle>
+            <CardTitle className="mt-3 text-xl group-hover:text-primary transition-colors">{title}</CardTitle>
             <CardDescription className="line-clamp-2 mt-1">{description}</CardDescription>
           </CardHeader>
           <CardContent className="relative z-10 flex-grow space-y-4">
@@ -184,7 +210,10 @@ export const QuizCard: React.FC<QuizCardProps> = ({
               </div>
               <Progress
                 value={completionRate}
-                className="h-1.5 bg-muted/50"
+                className={cn(
+                  "h-1.5 bg-muted/50 overflow-hidden relative",
+                  isHovered && "progress-pulse"
+                )}
                 indicatorClassName={cn(
                   completionRate === 100 ? "bg-emerald-500" : completionRate > 50 ? "bg-amber-500" : "bg-primary",
                 )}
@@ -192,14 +221,19 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             </div>
           </CardContent>
           <CardFooter className="relative z-10 pt-0">
-            <div className="flex items-center gap-1 text-primary font-medium ml-auto text-sm group-hover:text-primary/80 transition-colors">
+            <motion.div 
+              className="flex items-center gap-1 text-primary font-medium ml-auto text-sm group-hover:text-primary/80 transition-colors"
+              animate={{ 
+                x: isHovered ? 3 : 0 
+              }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
               Start Quiz
               <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </div>
+            </motion.div>
           </CardFooter>
         </Card>
       </Link>
     </motion.div>
   )
 }
-

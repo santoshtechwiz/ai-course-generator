@@ -32,17 +32,39 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     triggerOnce: false,
   })
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteQuery({
     queryKey: ["quizzes", debouncedSearch, userId, selectedTypes],
-    queryFn: ({ pageParam = 1 }) =>
-      getQuizzes({
-        page: pageParam,
-        limit: 5,
-        searchTerm: debouncedSearch,
-        userId,
-        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
-      }),
-    getNextPageParam: (lastPage) => lastPage ? lastPage?.nextCursor : undefined,
+    queryFn: async ({ pageParam = 1 }) => {
+      try {
+        const result = await getQuizzes({
+          page: pageParam,
+          limit: 1,
+          searchTerm: debouncedSearch,
+          userId,
+          quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
+        });
+        return result;
+      } catch (error) {
+        console.warn("Error fetching quizzes:", error);
+        // Return a valid data structure even on error
+        return { quizzes: [], nextCursor: null };
+      }
+    },
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || typeof lastPage !== "object" || !("nextCursor" in lastPage)) {
+        console.warn("Unexpected lastPage format:", lastPage)
+        return undefined
+      }
+      return lastPage.nextCursor
+    },
     initialPageParam: 1,
     initialData: {
       pages: [initialQuizzesData],
@@ -74,10 +96,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   }, [])
 
   const quizzes = useMemo(() => data?.pages.flatMap((page) => page.quizzes) || [], [data?.pages])
-
   const isSearching = debouncedSearch.trim() !== "" || selectedTypes.length > 0
-
-  // Check if there are no quizzes to display
   const hasNoQuizzes = !isLoading && quizzes.length === 0
 
   return (
@@ -110,8 +129,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
                 <div className="text-center space-y-4 p-8 bg-muted/30 rounded-lg">
                   <h3 className="text-xl font-semibold">No quizzes found</h3>
                   <p className="text-muted-foreground">
-                    We couldn't find any quizzes matching your search criteria. Try adjusting your filters or create a
-                    new quiz.
+                    We couldn't find any quizzes matching your search criteria. Try adjusting your filters or create a new quiz.
                   </p>
                   <button
                     onClick={handleClearSearch}
@@ -158,4 +176,3 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     </motion.div>
   )
 }
-
