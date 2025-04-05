@@ -1,117 +1,65 @@
-"use client"
-import type { QuizType } from "@/app/types/types"
+import { toast } from "@/hooks/use-toast"
 
-export interface QuizAnswer {
-  answer: string | string[]
-  isCorrect: boolean
-  timeSpent: number
-
-}
-
-export interface BlanksQuizAnswer {
-  answer: string
-  timeSpent: number
-  hintsUsed: boolean
-  elapsedTime?: number
-}
-
-// Union type for all answer types
-export type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer
-
-interface SaveQuizResultParams {
-  slug?: string
-  quizId: string | number
-  answers: QuizAnswerUnion[]
-  totalTime: number,
-  elapsedTime?: number
+export interface QuizResultData {
+  slug: string
+  quizId: number
+  answers: any[]
+  elapsedTime: number
   score: number
-  type: QuizType
+  type: string
 }
 
-/**
- * Unified service for saving quiz results across all quiz types
- * This can be used by any quiz component without changing their existing logic
- */
-export async function saveQuizResult({ slug,quizId, answers, totalTime,elapsedTime, score, type }: SaveQuizResultParams): Promise<{
-  success: boolean
-  result?: any
-  error?: string
-  details?: any
-}> {
+export function formatTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+}
+
+export function extractUserAnswer(answer: any): string | string[] {
+  if (!answer) return ""
+
+  if (typeof answer.userAnswer !== "undefined") {
+    return answer.userAnswer
+  }
+
+  if (typeof answer.answer !== "undefined") {
+    return answer.answer
+  }
+
+  return ""
+}
+
+export async function saveQuizResult(data: QuizResultData): Promise<boolean> {
   try {
-    // Validate inputs
-    if (!quizId || !Array.isArray(answers) || typeof totalTime !== "number" || typeof score !== "number") {
-      return {
-        success: false,
-        error: "Invalid input parameters",
-        details: {
-          quizId: !quizId ? "Missing quiz ID" : null,
-          answers: !Array.isArray(answers) ? "Answers must be an array" : null,
-          totalTime: typeof totalTime !== "number" ? "Total time must be a number" : null,
-          score: typeof score !== "number" ? "Score must be a number" : null,
-        },
-      }
-    }
-
-    // Ensure proper serialization of union types
-    const serializedAnswers = answers.map((answer) => ({
-      ...answer,
-    
-    }))
-
-    // Make API request to save quiz result
-    const response = await fetch(`/api/quiz/${quizId}/complete`, {
+    const response = await fetch(`/api/quiz/${data.slug}/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        quizId,
-        answers: serializedAnswers,
-        totalTime,
-        score,
-        type,
+        quizId: data.quizId.toString(),
+        answers: data.answers,
+        totalTime: data.elapsedTime,
+        score: data.score,
+        type: data.type,
       }),
     })
 
     if (!response.ok) {
       const errorData = await response.json()
-      return {
-        success: false,
-        error: errorData.error || "Failed to save quiz results",
-        details: errorData.details || {},
-      }
+      console.error("Error saving quiz result:", errorData)
+      throw new Error(errorData.error || "Failed to save quiz results")
     }
 
-    const data = await response.json()
-    return {
-      success: true,
-      result: data.result,
-    }
+    return true
   } catch (error) {
-    console.error("Error saving quiz result:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "An unexpected error occurred",
-    }
+    console.error("Error in saveQuizResult:", error)
+    toast({
+      variant: "destructive",
+      title: "Error saving quiz results",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+    })
+    return false
   }
 }
 
-/**
- * Format time in seconds to mm:ss format
- */
-export function formatQuizTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs < 10 ? "0" : ""}${secs}`
-}
-
-/**
- * Calculate percentage score based on quiz type
- */
-export function calculateQuizScore(score: number, totalQuestions: number, type: QuizType): number {
-  if (type !== "openended" && type !== "fill-blanks" && type !== "code") {
-    return (score / totalQuestions) * 100
-  }
-  return score
-}

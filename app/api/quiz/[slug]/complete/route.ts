@@ -2,9 +2,11 @@ import { prisma } from "@/lib/db"
 import { getAuthSession } from "@/lib/authOptions"
 import { NextResponse } from "next/server"
 import type { QuizType } from "@/app/types/types"
+import { extractUserAnswer } from "@/lib/quiz-result-service"
 
 // Type definitions
 export interface QuizAnswer {
+  answer: string | string[]
   userAnswer: string | string[]
   isCorrect: boolean
   timeSpent: number
@@ -53,16 +55,28 @@ function validateSubmissionData(body: any): { isValid: boolean; error?: string; 
 }
 
 function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { isValid: boolean; error?: string } {
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return { isValid: false, error: "Answers must be a non-empty array" }
+  }
+
   let invalidAnswers = false
 
-  if (type === "mcq") {
-    invalidAnswers = answers.some(
-      (a: any): boolean => typeof a.isCorrect === "undefined" || typeof a.timeSpent === "undefined",
-    )
-  } else if (type === "openended" || type === "fill-blanks" || type === "code") {
-    invalidAnswers = answers.some(
-      (a: any): boolean => typeof a.userAnswer === "undefined" ,
-    )
+  switch (type) {
+    case "mcq":
+    case "code":
+      invalidAnswers = answers.some(
+        (a: any) => typeof a.isCorrect === "undefined" || typeof a.timeSpent === "undefined",
+      )
+      break
+    case "openended":
+    case "fill-blanks":
+      invalidAnswers = answers.some(
+        (a: any) => typeof a.userAnswer === "undefined" || typeof a.timeSpent === "undefined",
+      )
+      break
+  
+    default:
+      return { isValid: false, error: `Unsupported quiz type: ${type}` }
   }
 
   if (invalidAnswers) {
@@ -92,70 +106,65 @@ async function getQuizWithQuestions(quizId: string) {
 }
 
 async function processQuizSubmission(userId: string, submission: QuizSubmission, quiz: any, percentageScore: number) {
-  try {
-    return await prisma.$transaction(
-      async (tx) => {
-        // 1. Update user quiz record
-        const updatedUserQuiz = await tx.userQuiz.update({
-          where: { id: Number(submission.quizId) },
-          data: {
-            timeEnded: new Date(),
-            lastAttempted: new Date(),
-            bestScore: { set: Math.max(percentageScore, quiz.bestScore ?? 0) },
-          },
-        })
+  // Move update outside transaction to avoid deadlocks
+  const updatedUserQuiz = await prisma.userQuiz.update({
+    where: { id: Number(submission.quizId) },
+    data: {
+      timeEnded: new Date(),
+      lastAttempted: new Date(),
+      bestScore: { set: Math.max(percentageScore, quiz.bestScore ?? 0) },
+    },
+  })
 
-        // 2. Update user stats
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            totalQuizzesAttempted: { increment: 1 },
-            totalTimeSpent: { increment: Math.round(submission.totalTime) },
-          },
-        })
+  // Continue rest inside transaction
+  const result = await prisma.$transaction(
+    async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          totalQuizzesAttempted: { increment: 1 },
+          totalTimeSpent: { increment: Math.round(submission.totalTime) },
+        },
+      })
 
-        // 3. Create or update quiz attempt
-        const quizAttempt = await tx.userQuizAttempt.upsert({
-          where: {
-            userId_userQuizId: {
-              userId,
-              userQuizId: Number(submission.quizId),
-            },
-          },
-          update: {
-            score: percentageScore,
-            timeSpent: Math.round(submission.totalTime),
-            accuracy: percentageScore,
-          },
-          create: {
+      const quizAttempt = await tx.userQuizAttempt.upsert({
+        where: {
+          userId_userQuizId: {
             userId,
             userQuizId: Number(submission.quizId),
-            score: percentageScore,
-            timeSpent: Math.round(submission.totalTime),
-            accuracy: percentageScore,
           },
-        })
+        },
+        update: {
+          score: percentageScore,
+          timeSpent: Math.round(submission.totalTime),
+          accuracy: percentageScore,
+        },
+        create: {
+          userId,
+          userQuizId: Number(submission.quizId),
+          score: percentageScore,
+          timeSpent: Math.round(submission.totalTime),
+          accuracy: percentageScore,
+        },
+      })
 
-        // 4. Process individual question answers
-        await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
+      await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
 
-        return {
-          updatedUserQuiz,
-          quizAttempt,
-          percentageScore,
-          totalQuestions: quiz.questions ? quiz.questions.length : 0,
-        }
-      },
-      {
-        isolationLevel: "Serializable",
-        maxWait: 5000, // 5 seconds max wait time
-        timeout: 10000, // 10 seconds transaction timeout
-      },
-    )
-  } catch (error) {
-    console.error("Transaction error:", error)
-    throw error
-  }
+      return {
+        updatedUserQuiz,
+        quizAttempt,
+        percentageScore,
+        totalQuestions: quiz.questions ? quiz.questions.length : 0,
+      }
+    },
+    {
+      isolationLevel: "Serializable",
+      maxWait: 5000,
+      timeout: 10000,
+    },
+  )
+
+  return result
 }
 
 async function processQuestionAnswers(
@@ -167,14 +176,14 @@ async function processQuestionAnswers(
 ) {
   const questionPromises = questions.map((question, index) => {
     const answer = answers[index]
-    const userAnswer = answer.userAnswer
+    const userAnswer = extractUserAnswer(answer)
     let isCorrect = false
 
     if (quizType === "mcq") {
       isCorrect = (answer as QuizAnswer).isCorrect
     }
 
-    return tx.userQuizAttemptQuestion.upsert({
+    const txs = tx.userQuizAttemptQuestion.upsert({
       where: {
         attemptId_questionId: {
           attemptId: attemptId,
@@ -194,15 +203,35 @@ async function processQuestionAnswers(
         timeSpent: Math.round(answer.timeSpent),
       },
     })
+
+    return txs.catch((error) => {
+      console.error("Error in upsert transaction:", error)
+      throw error
+    })
   })
 
   return Promise.all(questionPromises)
 }
 
+// Optional retry wrapper
+async function retryTransaction(fn: () => Promise<any>, retries = 3): Promise<any> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn()
+    } catch (err: any) {
+      if (i < retries - 1 && err.code === "P2034") {
+        console.warn(`Retrying transaction... (${i + 1})`)
+        await new Promise((res) => setTimeout(res, 100 * (i + 1)))
+        continue
+      }
+      throw err
+    }
+  }
+}
+
 // Main handler
 export async function POST(request: Request) {
   try {
-    // 1. Authentication check
     const session = await getAuthSession()
     const userId = session?.user?.id
 
@@ -210,7 +239,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "User not authenticated" }, { status: 401 })
     }
 
-    // 2. Parse and validate request body
     const body = await request.json()
     const validationResult = validateSubmissionData(body)
 
@@ -222,8 +250,6 @@ export async function POST(request: Request) {
     }
 
     const submission = body as QuizSubmission
-
-    // 3. Validate answer format
     const answerFormatResult = validateAnswersFormat(submission.answers, submission.type)
 
     if (!answerFormatResult.isValid) {
@@ -233,14 +259,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // 4. Get quiz data
     const quiz = await getQuizWithQuestions(submission.quizId)
 
     if (!quiz) {
       return NextResponse.json({ success: false, error: "Quiz not found" }, { status: 404 })
     }
 
-    // 5. Validate answers count
     if (quiz.questions && submission.answers.length !== quiz.questions.length) {
       return NextResponse.json(
         {
@@ -252,14 +276,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // 6. Calculate score
     const totalQuestions = quiz.questions ? quiz.questions.length : 0
     const percentageScore = calculatePercentageScore(submission.score, totalQuestions, submission.type)
 
-    // 7. Process submission in transaction
-    const result = await processQuizSubmission(userId, submission, quiz, percentageScore)
+    const result = await retryTransaction(() => processQuizSubmission(userId, submission, quiz, percentageScore))
 
-    // 8. Return success response
     return NextResponse.json({
       success: true,
       result: {
@@ -269,10 +290,8 @@ export async function POST(request: Request) {
       },
     })
   } catch (error) {
-    // Log the full error for debugging
     console.error("Error processing quiz submission:", error)
 
-    // Return a user-friendly error
     return NextResponse.json(
       {
         success: false,

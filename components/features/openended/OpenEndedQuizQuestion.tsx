@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { LightbulbIcon, SendIcon, ChevronRightIcon, CheckCircleIcon } from "lucide-react"
+import { LightbulbIcon, SendIcon, CheckCircleIcon, ChevronRightIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Progress } from "@/components/ui/progress"
 
 interface QuizQuestionProps {
   question: {
@@ -19,6 +18,7 @@ interface QuizQuestionProps {
       hints: string | string[]
       difficulty: string
       tags: string | string[]
+      inputType: string
     }
   }
   onAnswer: (answer: string) => void
@@ -35,72 +35,22 @@ export default function OpenEndedQuizQuestion({
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [progress, setProgress] = useState(0)
   const [hintLevel, setHintLevel] = useState(0)
 
-  const hints = useMemo(() => {
-    const baseHints = Array.isArray(question.openEndedQuestion.hints)
-      ? question.openEndedQuestion.hints
-      : question.openEndedQuestion.hints.split("|")
-
-    const correctAnswer = question.answer.toLowerCase()
-    const words = correctAnswer.split(/\s+/)
-    const sentences = correctAnswer.split(/[.!?]+/).filter(Boolean)
-
-    const generateKeyConcepts = () => {
-      const concepts = words.filter((word) => word.length > 5)
-      return concepts.slice(0, Math.min(5, concepts.length))
-    }
-
-    const keyConcepts = generateKeyConcepts()
-
-    const contextualHints = [
-      `This answer relates to ${Array.isArray(question.openEndedQuestion.tags) ? question.openEndedQuestion.tags.join(", ") : question.openEndedQuestion.tags}.`,
-      `The response is approximately ${words.length} words long and consists of ${sentences.length} sentence${sentences.length > 1 ? "s" : ""}.`,
-      `Key concepts to consider: ${keyConcepts.join(", ")}.`,
-      `The answer covers topics at a ${question.openEndedQuestion.difficulty} level.`,
-    ]
-
-    const structuralHints = sentences.map((sentence, index) => {
-      const words = sentence.trim().split(/\s+/)
-      return `Sentence ${index + 1} (${words.length} words): "${words[0]} ... ${words[words.length - 1]}"`
-    })
-
-    const conceptHints = keyConcepts.map((concept) => {
-      const regex = new RegExp(`\\b${concept}\\b`, "i")
-      const sentenceWithConcept = sentences.find((sentence) => regex.test(sentence))
-      return sentenceWithConcept
-        ? `About "${concept}": "${sentenceWithConcept}"`
-        : `The answer includes the concept "${concept}".`
-    })
-
-    const detailedHints = baseHints.map((hint) => `Additional information: ${hint}`)
-
-    return [...contextualHints, ...structuralHints, ...conceptHints, ...detailedHints]
-  }, [
-    question.openEndedQuestion?.hints,
-    question.answer,
-    question.openEndedQuestion?.tags,
-    question.openEndedQuestion?.difficulty,
-  ])
-
-  const tags = Array.isArray(question.openEndedQuestion.tags)
-    ? question.openEndedQuestion.tags
-    : question.openEndedQuestion.tags.split("|")
+  const hints = Array.isArray(question.openEndedQuestion.hints)
+    ? question.openEndedQuestion.hints
+    : question.openEndedQuestion.hints.split("|")
 
   useEffect(() => {
-    setProgress((questionNumber / totalQuestions) * 100)
     setShowHints(Array(hints.length).fill(false))
     setHintLevel(0)
-  }, [questionNumber, totalQuestions, hints.length])
+    setAnswer("") // Reset answer when question changes
+  }, [question.id, hints.length])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
-    await new Promise((resolve) => setTimeout(resolve, 500)) // Animation delay
+    await new Promise((resolve) => setTimeout(resolve, 300)) // Animation delay
     onAnswer(answer)
-    setAnswer("")
-    setShowHints(Array(hints.length).fill(false))
-    setHintLevel(0)
     setIsSubmitting(false)
   }
 
@@ -130,6 +80,7 @@ export default function OpenEndedQuizQuestion({
 
   return (
     <motion.div
+      key={question.id} // Important: Add key to ensure proper animation when question changes
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -157,7 +108,6 @@ export default function OpenEndedQuizQuestion({
               {question.openEndedQuestion.difficulty}
             </Badge>
           </div>
-          <Progress value={progress} className="w-full h-2" />
           <motion.h2
             className="text-2xl font-bold leading-tight text-primary"
             initial={{ opacity: 0 }}
@@ -166,18 +116,6 @@ export default function OpenEndedQuizQuestion({
           >
             {question.question}
           </motion.h2>
-          <motion.div
-            className="flex flex-wrap gap-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            {tags.map((tag, index) => (
-              <Badge key={index} variant="outline" className="bg-secondary text-secondary-foreground">
-                {tag}
-              </Badge>
-            ))}
-          </motion.div>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -227,8 +165,17 @@ export default function OpenEndedQuizQuestion({
             disabled={!answer.trim() || isSubmitting}
             className="w-full sm:w-auto ml-auto bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            <SendIcon className="w-4 h-4 mr-2" />
-            {isSubmitting ? "Submitting..." : "Submit Answer"}
+            {isSubmitting ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Submitting...
+              </>
+            ) : (
+              <>
+                <SendIcon className="w-4 h-4 mr-2" />
+                Submit Answer
+              </>
+            )}
           </Button>
         </CardFooter>
       </Card>
