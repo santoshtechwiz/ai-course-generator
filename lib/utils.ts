@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 
 import { nanoid } from 'nanoid';
 import slugify from 'slugify';
+import { QuizAnswerUnion } from "./quiz-result-service";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -91,3 +92,14 @@ export const PLAYBACK_SPEEDS = [
   { value: 2, label: '2x' },
 ];
 
+export const extractUserAnswer = (answer: Object): string | string[] => {
+  if (typeof answer === "object" && answer !== null) {
+    if ("userAnswer" in answer && typeof answer.userAnswer === "string") {
+      return answer.userAnswer;
+    }
+    if ("answer" in answer && typeof answer.answer === "string") {
+      return answer.answer;
+    }
+  }
+  return "";
+};

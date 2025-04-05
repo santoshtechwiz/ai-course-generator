@@ -10,15 +10,15 @@ import { ArrowRight, Timer, HelpCircle, RefreshCcw, Trophy, Clock } from "lucide
 import { cn } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import PageLoader from "@/components/ui/loader"
 import { SignInPrompt } from "@/components/SignInPrompt"
-import { saveQuizResult } from "@/lib/quiz-result-service"
-
-// Ensure that `useSubmitQuiz` is correctly implemented in `useQuizData` and returns an object with `mutateAsync`.
+import { useQuizResult } from "@/hooks/use-quiz-result"
+import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
 
 type Question = {
   id: number
@@ -50,12 +50,25 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const router = useRouter()
 
   const currentQuestion = questions[currentQuestionIndex]
   const [incorrectAnswers, setIncorrectAnswers] = useState(0)
   const [showMotivationalQuote, setShowMotivationalQuote] = useState(false)
   const [currentQuote, setCurrentQuote] = useState<any>("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const { submitQuizResult, isSubmitting, isSuccess, isError, errorMessage, resetSubmissionState } = useQuizResult({
+    onSuccess: (result) => {
+      // This will be called after successful submission
+      if (result && result.id) {
+        router.push(`/dashboard/mcq/${slug}/results?id=${result.id}`)
+      } else {
+        router.push(`/dashboard/mcq/${slug}/results`)
+      }
+    },
+  })
+
   const motivationalQuotes = [
     { text: "Every mistake is a step toward success.", emoji: "✨" },
     { text: "The only true failure is giving up.", emoji: "🚀" },
@@ -78,14 +91,9 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
     async (quizData: any) => {
       try {
         setLoading(true)
-        const { success, details, result } = await saveQuizResult({
-          quizId,
-          answers: quizData.answers,
-          totalTime: quizData.totalTime,
-          elapsedTime: quizData.totalTime,
-          score: quizData.score,
-          type: "mcq",
-        })
+
+        // Submit the quiz results using the centralized hook
+        await submitQuizResult(quizId.toString(), quizData.answers, quizData.totalTime, quizData.score, "mcq")
 
         setLoading(false)
         toast({
@@ -105,8 +113,18 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
         return false // Return failure
       }
     },
-    [quizId, toast],
+    [quizId, toast, submitQuizResult],
   )
+
+  const handleContinue = () => {
+    if (isSuccess) {
+      // Navigate to results page
+      router.push(`/dashboard/mcq/${slug}/results`)
+    } else if (isError) {
+      // Reset the submission state to try again
+      resetSubmissionState()
+    }
+  }
 
   const handleQuizCompletion = useCallback(async () => {
     const duration = Math.floor((Date.now() - startTime) / 1000)
@@ -219,10 +237,10 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
   const getRandomQuote = useCallback(() => {
     const randomIndex = Math.floor(Math.random() * motivationalQuotes.length)
     return motivationalQuotes[randomIndex]
-  }, [])
+  }, [motivationalQuotes])
 
   const nextQuestion = useCallback(() => {
-    setIsSubmitting(true)
+    setSubmitting(true)
     setTimeout(() => {
       const currentTime = timeSpent - (questionTimes.length > 0 ? questionTimes.reduce((a, b) => a + b, 0) : 0)
       setUserAnswers((prev) => [...prev, selectedAnswer || ""])
@@ -257,17 +275,17 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
       } else {
         handleQuizCompletion()
       }
-      setIsSubmitting(false)
+      setSubmitting(false)
     }, 500)
   }, [
     currentQuestion.answer,
     currentQuestionIndex,
+    getRandomQuote,
     handleQuizCompletion,
     questions.length,
     questionTimes,
     selectedAnswer,
     timeSpent,
-    getRandomQuote,
   ])
 
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
@@ -517,11 +535,11 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
 
           <Button
             onClick={nextQuestion}
-            disabled={!selectedAnswer || isSubmitting}
+            disabled={!selectedAnswer || submitting}
             className="w-full md:w-auto"
             size="lg"
           >
-            {isSubmitting ? (
+            {submitting ? (
               "Submitting..."
             ) : currentQuestionIndex === questions.length - 1 ? (
               "Finish Quiz"
@@ -601,6 +619,16 @@ export default function McqQuiz({ questions, quizId, slug, title }: McqQuizProps
           </motion.div>
         )}
       </Card>
+      <QuizSubmissionFeedback
+        isSubmitting={isSubmitting}
+        isSuccess={isSuccess}
+        isError={isError}
+        score={score}
+        totalQuestions={questions.length}
+        onContinue={handleContinue}
+        errorMessage={errorMessage}
+        quizType="mcq"
+      />
     </div>
   )
 }

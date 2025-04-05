@@ -26,7 +26,6 @@ const nextConfig = {
     parallelServerCompiles: true,
     optimizeCss: true,
     scrollRestoration: true,
-   
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
@@ -106,7 +105,24 @@ const nextConfig = {
       },
     ];
   },
-}
+  // Enable SWC for faster builds and minify
+ 
+  //output: 'standalone', // Standalone output for smaller deploys (optional)
+  // Optional: Bundle analyzer (optional for analysis)
+  webpack(config: { resolve: { fallback: { fs: boolean; path: boolean; }; }; }, { isServer }: any) {
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        path: false,
+      };
+    }
+    return config;
+  },
+  // Enable bundle analyzer (optional, run `ANALYZE=true npm run build`)
+  // Uncomment to use bundle analyzer
+  // withBundleAnalyzer: {
+  //   enabled: process.env.ANALYZE === 'true',
+  // },
+};
 
 export default nextConfig;
-

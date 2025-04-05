@@ -1,22 +1,20 @@
 "use client"
 
 import { useState, useEffect, useCallback, memo } from "react"
-import { AlertCircle, HelpCircle, Timer, CheckCircle, RotateCcw, Info } from "lucide-react"
+import { AlertCircle, HelpCircle, Timer, RotateCcw, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 import BlankQuizResults from "./BlankQuizResults"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
-
 import PageLoader from "@/components/ui/loader"
 import { GuidedHelp } from "@/components/HelpModal"
-
 import { SignInPrompt } from "@/components/SignInPrompt"
 import { QuizActions } from "@/components/QuizActions"
-
-import { type BlanksQuizAnswer, saveQuizResult } from "@/lib/quiz-result-service"
+import { useQuizResult } from "@/hooks/use-quiz-result"
+import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
 
 interface Question {
   id: number
@@ -35,6 +33,12 @@ interface QuizData {
   questions: Question[]
   title: string
   userId: string
+}
+
+interface BlanksQuizAnswer {
+  answer: string
+  timeSpent: number
+  hintsUsed: boolean
 }
 
 const MemoizedQuizActions = memo(QuizActions)
@@ -64,8 +68,17 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
-  const [score, setScore] = useState(false)
   const [showGuidedHelp, setShowGuidedHelp] = useState(false)
+  const router = useRouter()
+
+  // Use the centralized quiz result hook
+  const { submitQuizResult, isSubmitting, isSuccess, isError, errorMessage, resetSubmissionState, result } =
+    useQuizResult({
+      onSuccess: (result) => {
+        // This will be called when the submission is successful
+        console.log("Quiz submission successful:", result)
+      },
+    })
 
   const fetchQuizData = useCallback(async () => {
     try {
@@ -153,24 +166,34 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
     async (score: number) => {
       if (isAuthenticated && quizData) {
         try {
-          setScore(true) // Show loading indicator
-          await saveQuizResult({
-            quizId: quizData.id,
-            answers,
-            totalTime: elapsedTime,
-            elapsedTime,
-            score,
-            type: "fill-blanks",
-          })
+          // Format answers for submission
+          const formattedAnswers = answers.map((answer, index) => ({
+            userAnswer: answer.answer,
+            isCorrect: answer.answer.toLowerCase() === quizData.questions[index].answer.toLowerCase(),
+            timeSpent: answer.timeSpent,
+            hintsUsed: answer.hintsUsed,
+          }))
+
+          // Use the centralized quiz submission
+          await submitQuizResult(quizData.id.toString(), formattedAnswers, elapsedTime, score, "fill-blanks")
         } catch (error) {
           console.error("Error saving quiz results:", error)
-        } finally {
-          setScore(false) // Hide loading indicator regardless of success/failure
         }
       }
     },
-    [isAuthenticated, quizData, answers, elapsedTime],
+    [isAuthenticated, quizData, answers, elapsedTime, submitQuizResult],
   )
+
+  // Handle navigation after submission
+  const handleContinue = useCallback(() => {
+    if (isSuccess && result) {
+      // Navigate to results page with the result ID
+      router.push(`/dashboard/blanks/${slug}/results?id=${result.quizAttempt?.id || ""}`)
+    } else if (isError) {
+      // Reset the submission state to try again
+      resetSubmissionState()
+    }
+  }, [isSuccess, isError, resetSubmissionState, router, slug, result])
 
   if (error) {
     return (
@@ -215,6 +238,16 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
     )
   }
 
+  // Calculate score for the feedback component
+  const calculateScore = () => {
+    if (!quizData || !answers.length) return 0
+
+    return answers.reduce((score, answer, index) => {
+      const isCorrect = answer.answer.toLowerCase() === quizData.questions[index].answer.toLowerCase()
+      return score + (isCorrect ? 1 : 0)
+    }, 0)
+  }
+
   return (
     <>
       <div className="mb-6">
@@ -257,38 +290,41 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
         <div className="px-6 py-4">
           {quizCompleted ? (
             isAuthenticated ? (
-              <BlankQuizResults
-                answers={answers}
-                questions={quizData.questions}
-                onRestart={handleRestart}
-                onComplete={handleComplete}
-              />
+              <>
+                <BlankQuizResults
+                  answers={answers}
+                  questions={quizData.questions}
+                  onRestart={handleRestart}
+                  onComplete={handleComplete}
+                />
+                {/* Add the submission feedback component */}
+                {isSuccess && result && (
+                  <QuizSubmissionFeedback
+                    score={calculateScore()}
+                    totalQuestions={quizData.questions.length}
+                    isSubmitting={isSubmitting}
+                    isSuccess={isSuccess}
+                    isError={isError}
+                    errorMessage={errorMessage}
+                    onContinue={handleContinue}
+                    quizType="fill-blanks"
+                  />
+                )}
+              </>
             ) : (
-              <div className="text-center py-8">
-                <CheckCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-4">Quiz Completed!</h3>
-                <p className="mb-6 text-muted-foreground max-w-md mx-auto">
-                  Sign in to see your results and save your progress.
-                </p>
-                <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
-              </div>
+              <SignInPrompt message="Please sign in to view your results." />
             )
-          ) : quizData.questions.length > 0 ? (
+          ) : (
             <FillInTheBlanksQuiz
               question={quizData.questions[currentQuestion]}
-              onAnswer={handleAnswer}
               questionNumber={currentQuestion + 1}
               totalQuestions={quizData.questions.length}
+              onAnswer={handleAnswer}
             />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No questions available for this quiz.</p>
-            </div>
           )}
         </div>
       </div>
-      <GuidedHelp isOpen={showGuidedHelp} onClose={handleCloseGuidedHelp} />
+      {showGuidedHelp && <GuidedHelp onClose={handleCloseGuidedHelp} isOpen={false} />}
     </>
   )
 }
