@@ -1,6 +1,9 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+type JsonLdProps = {
+  data: Record<string, any>
+}
 
 // Define types for the schema generators
 type QuizSchemaParams = {
@@ -61,6 +64,9 @@ function generateQuizSchema(params: QuizSchemaParams) {
   }
 }
 
+export function JsonLdV1({ data }: JsonLdProps) {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+}
 function generateCourseSchema(params: CourseSchemaParams) {
   return {
     "@context": "https://schema.org",
