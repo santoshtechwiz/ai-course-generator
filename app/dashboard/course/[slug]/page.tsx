@@ -7,7 +7,6 @@ import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import CourseSchema from "@/app/schema/course-schema"
 
-
 function LoadingSkeleton() {
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] gap-4 p-4">
@@ -36,20 +35,34 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     })
   }
 
+  // Extract keywords from course title and category
+  const courseKeywords = course.title.toLowerCase().split(" ")
+  const categoryKeyword = course.category?.name?.toLowerCase() || ""
+
+  // Create a more detailed description
+  const enhancedDescription =
+    course.description ||
+    `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${course.difficulty || "all"} level developers.`
+
   return generatePageMetadata({
-    title: `${course.title} | Programming Course`,
-    description:
-      course.description ||
-      `Master ${course.title} with our interactive coding course. Enhance your programming skills with hands-on practice and expert guidance.`,
+    title: `${course.title} Programming Course | Learn with AI`,
+    description: enhancedDescription,
     path: `/dashboard/course/${slug}`,
     keywords: [
       `${course.title.toLowerCase()} tutorial`,
       `${course.title.toLowerCase()} programming`,
+      `learn ${course.title.toLowerCase()}`,
+      `${course.title.toLowerCase()} course`,
+      `${categoryKeyword} programming`,
       "coding education",
       "interactive programming",
-      "developer learning",
+      "AI learning",
+      "developer skills",
+      ...courseKeywords.filter((k) => k.length > 3).map((k) => `${k} programming`),
     ],
-    ogImage: course.image || undefined,
+    ogImage:
+      course.image ||
+      `/api/og?title=${encodeURIComponent(course.title)}&description=${encodeURIComponent("Interactive Programming Course")}`,
     ogType: "article",
   })
 }

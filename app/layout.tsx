@@ -22,7 +22,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: {
     default: defaultSEO.title,
-    template: `%s | ${defaultSEO.siteName}`,
+    template: `%s - ${defaultSEO.siteName}`,
   },
   description: defaultSEO.description,
   keywords: defaultSEO.keywords,
