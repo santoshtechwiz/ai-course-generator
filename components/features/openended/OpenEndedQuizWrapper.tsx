@@ -133,7 +133,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
         try {
           const formattedAnswers = answers.map((answer, index) => ({
             userAnswer: answer.answer,
-            isCorrect: answer.isCorrect,
+          
             timeSpent: answer.timeSpent,
             hintsUsed: answer.hintsUsed,
           }))
@@ -159,7 +159,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
         }
       }
     },
-    [answers, isAuthenticated, quizData, quizStartTime, submitQuizResult]
+    [answers, isAuthenticated, quizData, quizStartTime]
   )
 
   if (!quizData || !quizData.questions || quizData.questions.length === 0) {
