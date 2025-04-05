@@ -11,24 +11,15 @@ import { navItems } from "@/constants/navItems"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import SearchModal from "./SearchModal"
-import { Badge } from "@/components/ui/badge"
+import { Badge, badgeVariants } from "@/components/ui/badge"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
+import { containerVariants, itemVariants, iconVariants, underlineVariants, headerVariants, dropdownVariants, mobileMenuVariants } from "./animation-variants"
 
-// Import our custom animation variants
-import {
-  headerVariants,
-  itemVariants,
-  containerVariants,
-  dropdownVariants,
-  mobileMenuVariants,
-  badgeVariants,
-  underlineVariants,
-  iconVariants
-} from "./animation-variants"
+
 
 // Enhanced NavItems component with improved animations and Link instead of Button
 const NavItems = () => {
