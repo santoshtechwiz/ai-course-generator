@@ -5,7 +5,8 @@ import CoursePage from "@/components/features/course/CoursePage/CoursePage"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import CourseSchema from "@/app/schema/course-schema"
+import { JsonLd } from "@/app/schema/components/json-ld"
+
 
 function LoadingSkeleton() {
   return (
@@ -78,8 +79,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <CourseSchema
-        course={{
+      <JsonLd
+      type="course"
+        data={{
           title: course.title,
           description: course.description || `Learn ${course.title} with interactive lessons and exercises.`,
           image: course.image,
