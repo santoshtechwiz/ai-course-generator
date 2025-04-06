@@ -1,4 +1,4 @@
-import type { Prisma, User } from "@prisma/client"
+import type { CourseRating, Prisma, User, UserQuizAttempt } from "@prisma/client"
 
 export interface DashboardUser extends User {
   courses: Course[]
@@ -356,7 +356,14 @@ export interface ContactSubmission {
 }
 
 
-
+export interface UserWithTransactions extends User {
+  transactions: {
+    id: string
+    amount: number
+    status: string
+    createdAt: Date
+  }[]
+}
 
 //subscription
 
