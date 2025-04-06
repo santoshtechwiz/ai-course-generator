@@ -107,6 +107,7 @@
     "react": "^18.2.0",
     "react-aspect-ratio": "^1.1.9",
     "react-circular-progressbar": "^2.1.0",
+    "react-confetti": "^6.4.0",
     "react-confetti-explosion": "^2.1.2",
     "react-dom": "^18.2.0",
     "react-error-boundary": "^5.0.0",

@@ -1,5 +1,5 @@
 "use client"
-import React, { useMemo } from "react"
+import React, { useMemo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -13,6 +13,9 @@ interface BlankQuizResultsProps {
 }
 
 export default function BlankQuizResults({ answers, questions, onRestart, onComplete }: BlankQuizResultsProps) {
+  // Use a ref to track if we've already called onComplete
+  const hasCalledComplete = useRef(false)
+
   const { score, results } = useMemo(() => {
     const calculatedResults = questions.map((question, index) => {
       const userAnswer = answers[index].answer.trim().toLowerCase()
@@ -33,8 +36,12 @@ export default function BlankQuizResults({ answers, questions, onRestart, onComp
     return { score: averageScore, results: calculatedResults }
   }, [answers, questions])
 
+  // Fix the infinite loop by only calling onComplete once
   React.useEffect(() => {
-    onComplete(score)
+    if (!hasCalledComplete.current) {
+      onComplete(score)
+      hasCalledComplete.current = true
+    }
   }, [score, onComplete])
 
   return (

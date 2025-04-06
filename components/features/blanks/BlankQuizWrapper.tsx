@@ -74,10 +74,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
   // Use the centralized quiz result hook
   const { submitQuizResult, isSubmitting, isSuccess, isError, errorMessage, resetSubmissionState, result } =
     useQuizResult({
-      onSuccess: (result) => {
-        // This will be called when the submission is successful
-        console.log("Quiz submission successful:", result)
-      },
+     
     })
 
   const fetchQuizData = useCallback(async () => {
@@ -185,14 +182,17 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
   )
 
   // Handle navigation after submission
-  const handleContinue = useCallback(() => {
-    if (isSuccess && result) {
+  const handleContinue = useCallback((proceed: boolean): boolean => {
+    if (proceed && isSuccess && result) {
       // Navigate to results page with the result ID
       router.push(`/dashboard/blanks/${slug}/results?id=${result.quizAttempt?.id || ""}`)
-    } else if (isError) {
+      return true
+    } else if (!proceed && isError) {
       // Reset the submission state to try again
       resetSubmissionState()
+      return false
     }
+    return false
   }, [isSuccess, isError, resetSubmissionState, router, slug, result])
 
   if (error) {

@@ -69,12 +69,18 @@ function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { is
       )
       break
     case "openended":
-    case "fill-blanks":
+  
       invalidAnswers = answers.some(
         (a: any) => typeof a.answer === "undefined" || typeof a.timeSpent === "undefined",
       )
       break
-  
+     
+        case "fill-blanks":
+          invalidAnswers = answers.some(
+            (a: any) => typeof a.userAnswer === "undefined" || typeof a.timeSpent === "undefined",
+          )
+          break
+      
     default:
       return { isValid: false, error: `Unsupported quiz type: ${type}` }
   }
