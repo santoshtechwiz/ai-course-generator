@@ -5,7 +5,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Code, BookOpen, Zap, Users, Award, CheckCircle } from "lucide-react"
-import FaqSchema from "@/app/schema/faq-schema"
+import SchemaRenderer from "../schema/components/SchemaRenderer"
+import { JsonLd } from "../schema/components/json-ld"
+
 
 export const metadata: Metadata = generatePageMetadata({
   title: "About CourseAI | AI-Powered Coding Education Platform",
@@ -187,7 +189,7 @@ const AboutUs = () => {
       </section>
 
       {/* Schema.org FAQ markup */}
-      <FaqSchema faqs={faqs} />
+      <JsonLd type="faq" data={faqs} />
     </div>
   )
 }
