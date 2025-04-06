@@ -176,6 +176,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
         } catch (error) {
           console.error("Error saving quiz results:", error)
         }
+        
       }
     },
     [isAuthenticated, quizData, answers, elapsedTime, submitQuizResult],
@@ -185,7 +186,7 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
   const handleContinue = useCallback((proceed: boolean): boolean => {
     if (proceed && isSuccess && result) {
       // Navigate to results page with the result ID
-      router.push(`/dashboard/blanks/${slug}/results?id=${result.quizAttempt?.id || ""}`)
+     // router.push(`/dashboard/blanks/${slug}/results?id=${result.quizAttempt?.id || ""}`)
       return true
     } else if (!proceed && isError) {
       // Reset the submission state to try again
