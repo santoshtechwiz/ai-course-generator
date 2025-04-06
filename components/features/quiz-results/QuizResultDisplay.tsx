@@ -1,78 +1,56 @@
-"use client"
+'use client'
 
-import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { useRouter } from "next/navigation"
 import type { QuizType } from "@/app/types/types"
-import { formatTime } from "@/lib/utils"
-import { motion } from "framer-motion"
-import { BookOpen, Clock, HelpCircle, RotateCw, Trophy } from "lucide-react"
+import { buildQuizUrl, formatTime } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
+import { BookOpen, Clock, HelpCircle, RotateCw, Trophy, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Sparkles } from "lucide-react"
+import { SimilarQuizzes } from "./similar-quizzes"
 
-interface QuizResultDisplayProps {
-  quizId: string | number
-  title: string
-  score: number
-  totalQuestions: number
-  totalTime: number // in seconds
-  correctAnswers: number
-  type: QuizType
-  slug: string
-}
-
-// Performance thresholds
-const PERFORMANCE_THRESHOLDS = {
-  MASTERY: 90,
-  PROFICIENT: 70,
-  DEVELOPING: 50,
-} as const
-
-// Performance levels with associated styles and labels
 const PERFORMANCE_LEVELS = [
   {
-    threshold: PERFORMANCE_THRESHOLDS.MASTERY,
-    colorClass: "text-green-500",
-    badgeLabel: "Master",
-    bgColorClass: "bg-green-500",
+    threshold: 90,
+    color: "text-green-500",
+    bgColor: "bg-green-500",
+    label: "Master",
     message: "Mastery achieved! You're crushing it!",
   },
   {
-    threshold: PERFORMANCE_THRESHOLDS.PROFICIENT,
-    colorClass: "text-blue-500",
-    badgeLabel: "Proficient",
-    bgColorClass: "bg-blue-500",
+    threshold: 70,
+    color: "text-blue-500",
+    bgColor: "bg-blue-500",
+    label: "Proficient",
     message: "Great job! You have a strong understanding.",
   },
   {
-    threshold: PERFORMANCE_THRESHOLDS.DEVELOPING,
-    colorClass: "text-yellow-500",
-    badgeLabel: "Developing",
-    bgColorClass: "bg-yellow-500",
+    threshold: 50,
+    color: "text-yellow-500",
+    bgColor: "bg-yellow-500",
+    label: "Developing",
     message: "Good effort! Review these areas to improve.",
   },
   {
     threshold: 0,
-    colorClass: "text-red-500",
-    badgeLabel: "Needs Practice",
-    bgColorClass: "bg-red-500",
+    color: "text-red-500",
+    bgColor: "bg-red-500",
+    label: "Needs Practice",
     message: "Keep learning! Let's strengthen these concepts.",
   },
 ] as const
 
-const buildQuizUrl = (quizId: string | number, type: QuizType) => {
-  const routes: Record<QuizType, string> = {
-    mcq: `/dashboard/mcq/${quizId}`,
-    "fill-blanks": `/dashboard/blanks/${quizId}`,
-    openended: `/dashboard/open-ended/${quizId}`,
-    code: `/dashboard/code/${quizId}`,
-    flashcard: `/dashboard/flashcard/${quizId}`,
-    default: `/dashboard/quiz/${quizId}`,
-  }
-
-  return routes[type] || routes.default
+interface QuizResultDisplayProps {
+  quizId: string
+  title: string
+  score: number
+  totalQuestions: number
+  totalTime: number
+  correctAnswers: number
+  type: QuizType
+  slug: string
 }
 
 export function QuizResultDisplay({
@@ -85,26 +63,23 @@ export function QuizResultDisplay({
   type,
   slug,
 }: QuizResultDisplayProps) {
-  const router = useRouter()
-  const percentage = Math.round((score / totalQuestions) * 100)
-  const questionsPerMinute = totalTime > 0 ? (totalQuestions / (totalTime / 60)) : 0
-  const normalizedSpeed = Math.min(100, Math.round(questionsPerMinute * 10))
+  // Safely calculate percentage (0-100)
+  const percentage = Math.min(100, Math.max(0, 
+    Math.round((correctAnswers / Math.max(1, totalQuestions)) * 100
+  )));
 
-  // Calculate performance level based on thresholds
-  const getPerformanceLevel = () => {
-    return PERFORMANCE_LEVELS.find(level => percentage >= level.threshold) || PERFORMANCE_LEVELS[PERFORMANCE_LEVELS.length - 1]
-  }
+  // Calculate questions per minute with safeguards
+  const questionsPerMinute = totalTime > 0 
+    ? (totalQuestions / (totalTime / 60)) 
+    : 0
+  const normalizedSpeed = Math.min(20, questionsPerMinute) // Cap at 20 q/min for display
 
-  const performance = getPerformanceLevel()
+  const performance = PERFORMANCE_LEVELS.find(
+    level => percentage >= level.threshold
+  ) || PERFORMANCE_LEVELS[PERFORMANCE_LEVELS.length - 1]
 
-  // Format quiz type for display
-  const formatQuizType = (quizType: QuizType) => {
-    return quizType
-      .replace(/-/g, " ")
-      .split(" ")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-  }
+  const isHighPerformer = percentage >= 70
+  const needsImprovement = percentage < 70
 
   return (
     <motion.div
@@ -113,230 +88,275 @@ export function QuizResultDisplay({
       transition={{ duration: 0.5 }}
       className="w-full max-w-4xl mx-auto"
     >
-      <Card className="w-full">
+      <Card className="w-full shadow-lg overflow-hidden">
         <CardHeader className="text-center relative">
-          {percentage >= PERFORMANCE_LEVELS[0].threshold && (
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="absolute -top-4 -right-4"
-            >
-              <Sparkles className="h-8 w-8 text-yellow-400" />
-            </motion.div>
-          )}
-          <CardTitle className="text-3xl font-bold tracking-tight">{title}</CardTitle>
-          <div className="flex justify-center mt-2">
-            <Badge variant="outline" className={`text-sm ${performance.colorClass}`}>
-              {performance.badgeLabel}
-            </Badge>
-          </div>
+          <AnimatePresence>
+            {isHighPerformer && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.5, type: 'spring' }}
+                className="absolute -top-4 -right-4"
+              >
+                <Sparkles className="h-8 w-8 text-yellow-400" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <CardTitle className="text-3xl font-bold tracking-tight">
+              {title}
+            </CardTitle>
+            <div className="flex justify-center mt-2">
+              <Badge variant="outline" className={`text-sm ${performance.color}`}>
+                {performance.label}
+              </Badge>
+            </div>
+          </motion.div>
         </CardHeader>
 
         <CardContent className="space-y-6 px-6">
           {/* Main Score Display */}
           <motion.div 
-            initial={{ scale: 0.9 }}
+            initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 100 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
             {/* Percentage Circle */}
-            <div className="flex flex-col items-center justify-center space-y-2 p-6 rounded-lg bg-muted/50">
+            <motion.div 
+              className="flex flex-col items-center justify-center space-y-2 p-6 rounded-lg bg-muted/50"
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="relative">
                 <Progress
                   value={percentage}
                   className="h-32 w-32 rounded-full [&>div]:bg-transparent"
-                  indicatorClassName={`${performance.bgColorClass} [&>div]:stroke-[8]`}
+                  indicatorClassName={`${performance.bgColor} [&>div]:stroke-[8]`}
                 />
-                <div className={`absolute inset-0 flex items-center justify-center text-3xl font-bold ${performance.colorClass}`}>
+                <motion.div
+                  className={`absolute inset-0 flex items-center justify-center text-3xl font-bold ${performance.color}`}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
                   {percentage}%
-                </div>
+                </motion.div>
               </div>
-              <p className="text-center text-sm text-muted-foreground">{performance.message}</p>
-            </div>
+              <motion.p 
+                className="text-center text-sm text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                {performance.message}
+              </motion.p>
+            </motion.div>
 
             {/* Stats */}
             <div className="flex flex-col justify-center space-y-4">
-              <div className="flex items-center space-x-4">
-                <Trophy className="h-6 w-6 text-yellow-500" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Score</p>
-                  <p className="font-semibold">
-                    {correctAnswers} / {totalQuestions} correct
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Clock className="h-6 w-6 text-blue-500" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Time</p>
-                  <p className="font-semibold">{formatTime(totalTime)}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <HelpCircle className="h-6 w-6 text-purple-500" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Quiz Type</p>
-                  <p className="font-semibold">{formatQuizType(type)}</p>
-                </div>
-              </div>
+              <StatItem 
+                icon={<Trophy className="h-6 w-6 text-yellow-500" />}
+                label="Score"
+                value={`${correctAnswers} / ${totalQuestions} correct`}
+              />
+              <StatItem 
+                icon={<Clock className="h-6 w-6 text-blue-500" />}
+                label="Time"
+                value={formatTime(totalTime)}
+              />
+              <StatItem 
+                icon={<HelpCircle className="h-6 w-6 text-purple-500" />}
+                label="Quiz Type"
+                value={formatQuizType(type)}
+              />
             </div>
 
             {/* Progress Bars */}
             <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Accuracy</span>
-                  <span>{percentage}%</span>
-                </div>
-                <Progress
-                  value={percentage}
-                  className="h-2"
-                  indicatorClassName={performance.bgColorClass}
-                />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Completion</span>
-                  <span>100%</span>
-                </div>
-                <Progress value={100} className="h-2" indicatorClassName="bg-green-500" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Speed</span>
-                  <span>{questionsPerMinute.toFixed(1)} q/min</span>
-                </div>
-                <Progress
-                  value={normalizedSpeed}
-                  className="h-2"
-                  indicatorClassName="bg-blue-500"
-                />
-              </div>
+              <ProgressBar 
+                label="Accuracy"
+                value={percentage}
+                maxValue={100}
+                indicatorColor={performance.bgColor}
+              />
+              <ProgressBar 
+                label="Completion"
+                value={100}
+                maxValue={100}
+                indicatorColor="bg-green-500"
+              />
+              <ProgressBar 
+                label="Speed"
+                value={normalizedSpeed}
+                maxValue={20}
+                indicatorColor="bg-blue-500"
+                displayValue={`${questionsPerMinute.toFixed(1)} q/min`}
+              />
             </div>
           </motion.div>
 
           <Separator />
 
           {/* Improvement Suggestions */}
-          {percentage < PERFORMANCE_THRESHOLDS.PROFICIENT && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="space-y-4"
-            >
-              <h3 className="text-lg font-semibold flex items-center">
-                <BookOpen className="h-5 w-5 mr-2 text-orange-500" />
-                Ways to Improve
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-2">Review Concepts</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Create a custom course to focus on areas needing improvement.
-                    </p>
-                    <Button variant="link" size="sm" className="mt-2 px-0">
-                      Create Course →
-                    </Button>
-                  </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-2">Practice Variations</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Try different question types on the same material.
-                    </p>
-                    <div className="flex gap-2 mt-2">
-                      <Button variant="link" size="sm" className="px-0">
-                        Fill-in-Blanks →
-                      </Button>
-                      <Button variant="link" size="sm" className="px-0">
-                        Open-Ended →
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-2">Flashcards</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Create flashcards for key concepts to reinforce learning.
-                    </p>
-                    <Button variant="link" size="sm" className="mt-2 px-0">
-                      Make Flashcards →
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {needsImprovement && (
+              <ImprovementSection percentage={percentage} />
+            )}
+          </AnimatePresence>
 
-          {percentage >= PERFORMANCE_THRESHOLDS.PROFICIENT && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="space-y-4"
-            >
-              <h3 className="text-lg font-semibold flex items-center">
-                <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
-                Next Challenges
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="hover:shadow-md transition-shadow bg-gradient-to-br from-green-50 to-white">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-2">Advanced Topics</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Ready to level up? Try more advanced material on this subject.
-                    </p>
-                    <Button variant="link" size="sm" className="mt-2 px-0">
-                      Explore Advanced →
-                    </Button>
-                  </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50 to-white">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-2">Teach Others</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Create a study guide to reinforce your knowledge and help others.
-                    </p>
-                    <Button variant="link" size="sm" className="mt-2 px-0">
-                      Create Guide →
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </motion.div>
-          )}
+          {/* Similar Quizzes - Only shown for high performers */}
+          <AnimatePresence>
+            {isHighPerformer && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <SimilarQuizzes />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </CardContent>
 
         <CardFooter className="flex flex-col sm:flex-row gap-3 justify-center px-6 pb-6">
-          <Button
-            onClick={() => router.push(`${buildQuizUrl(slug, type)}`)}
-            className="w-full sm:w-auto"
-            variant={percentage < PERFORMANCE_THRESHOLDS.PROFICIENT ? "default" : "outline"}
-          >
-            <RotateCw className="h-4 w-4 mr-2" />
-            Try Again
-          </Button>
-          <Button
-            onClick={() => router.push("/dashboard/quizzes")}
-            variant="outline"
-            className="w-full sm:w-auto"
-          >
-            Back to Quizzes
-          </Button>
-          <Button
-            onClick={() => router.push("/dashboard")}
-            variant="ghost"
-            className="w-full sm:w-auto"
-          >
-            Dashboard
-          </Button>
+          <motion.div whileHover={{ scale: 1.03 }}>
+            <Link
+              href={buildQuizUrl(slug, type)}
+              className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 w-full sm:w-auto ${needsImprovement ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-input bg-background hover:bg-accent hover:text-accent-foreground"}`}
+            >
+              <RotateCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Link>
+          </motion.div>
+          
+          <motion.div whileHover={{ scale: 1.03 }}>
+            <Link
+              href="/dashboard/quizzes"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full sm:w-auto"
+            >
+              Back to Quizzes
+            </Link>
+          </motion.div>
+          
+          <motion.div whileHover={{ scale: 1.03 }}>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full sm:w-auto"
+            >
+              Dashboard
+            </Link>
+          </motion.div>
         </CardFooter>
       </Card>
     </motion.div>
   )
+}
+
+// Helper Components
+
+function StatItem({ icon, label, value }: {
+  icon: React.ReactNode
+  label: string
+  value: string
+}) {
+  return (
+    <motion.div 
+      className="flex items-center space-x-4"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ type: 'spring' }}
+    >
+      {icon}
+      <div>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="font-semibold">{value}</p>
+      </div>
+    </motion.div>
+  )
+}
+
+function ProgressBar({
+  label,
+  value,
+  maxValue,
+  indicatorColor,
+  displayValue,
+}: {
+  label: string
+  value: number
+  maxValue: number
+  indicatorColor: string
+  displayValue?: string
+}) {
+  const progressValue = Math.min(100, (value / maxValue) * 100)
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.2 }}
+    >
+      <div className="flex justify-between text-sm mb-1">
+        <span>{label}</span>
+        <span>{displayValue || `${Math.round(progressValue)}%`}</span>
+      </div>
+      <Progress 
+        value={progressValue}
+        className="h-2" 
+        indicatorClassName={indicatorColor} 
+      />
+    </motion.div>
+  )
+}
+
+function ImprovementSection({
+  percentage,
+}: {
+  percentage: number
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="space-y-4"
+    >
+      <h3 className="text-lg font-semibold flex items-center">
+        <BookOpen className="h-5 w-5 mr-2 text-orange-500" />
+        Ways to Improve
+      </h3>
+      <motion.div 
+        className="grid gap-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Card className="bg-orange-50 border-orange-100">
+          <CardContent className="p-4">
+            <h4 className="font-medium mb-2">Focus Areas</h4>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+              {percentage < 50 && (
+                <li>Review fundamental concepts in this subject area</li>
+              )}
+              <li>Practice similar questions to build consistency</li>
+              <li>Take your time to read questions carefully</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function formatQuizType(quizType: QuizType): string {
+  return quizType
+    .replace(/-/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
 }
