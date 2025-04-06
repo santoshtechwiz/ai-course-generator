@@ -223,17 +223,11 @@ const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ slug }) => {
     [isAuthenticated, quizData, answers, elapsedTime, submitQuizResult],
   )
 
-  // Handle navigation after submission with proper dependencies
-  const handleContinue = useCallback(() => {
-    if (isSuccess && result && !isSubmittingRef.current) {
-      // Navigate to results page with the result ID
-      router.push(`/dashboard/quizzes`)
-    } else if (isError) {
-      // Reset the submission state to try again
-      resetSubmissionState()
-      isSubmittingRef.current = false
-    }
-  }, [isSuccess, isError, resetSubmissionState, router, result])
+  const handleFeedbackContinue = useCallback(() => {
+    setQuizCompleted(true)
+    resetSubmissionState?.()
+    // Don't return anything here
+  }, [resetSubmissionState])
 
   // Calculate score for the feedback component
   const calculateScore = () => {
@@ -300,6 +294,12 @@ const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ slug }) => {
         initialIsFavorite={false}
         position="left-center"
       />
+      {isSubmitting && (
+        <div className="bg-secondary/20 p-4 rounded-md text-center">
+          <div className="animate-spin inline-block w-6 h-6 border-2 border-current border-t-transparent text-primary rounded-full mb-2"></div>
+          <p>Saving your quiz results...</p>
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto rounded-lg shadow-md border overflow-hidden">
         <header className="flex items-center justify-between px-6 py-4 bg-muted/30">
@@ -330,14 +330,16 @@ const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ slug }) => {
           {quizCompleted ? (
             isAuthenticated ? (
               <>
-                <BlankQuizResults
-                  answers={answers}
-                  questions={quizData.questions}
-                  onRestart={handleRestart}
-                  onComplete={handleComplete}
-                />
-                {/* Show feedback when submission is successful */}
-                {isSuccess && result && !isSubmitting && (
+                {!isSuccess && (
+                  <BlankQuizResults
+                    answers={answers}
+                    questions={quizData.questions}
+                    onRestart={handleRestart}
+                    onComplete={handleComplete}
+                  />
+                )}
+                {/* Show feedback only when submission is successful and result is available */}
+                {isSuccess && result && (
                   <QuizSubmissionFeedback
                     score={score || calculateScore()}
                     totalQuestions={quizData.questions.length}
@@ -345,7 +347,7 @@ const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ slug }) => {
                     isSuccess={isSuccess}
                     isError={isError}
                     errorMessage={errorMessage}
-                    onContinue={handleContinue}
+                    onContinue={handleFeedbackContinue}
                     quizType="fill-blanks"
                   />
                 )}

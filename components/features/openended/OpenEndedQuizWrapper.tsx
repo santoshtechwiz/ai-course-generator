@@ -61,17 +61,11 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
   }, [isSuccess, result])
 
   // Handle navigation after submission with proper dependencies
-  const handleContinue = useCallback(() => {
-    if (isSuccess && result && !isSubmitting) {
-      // Navigate to results page with the result ID
-      router.push(`/dashboard/quizzes`)
-    } else if (isError) {
-      // Reset the submission state to try again
-      resetSubmissionState()
-      setIsSubmitting(false)
-      isSubmittingRef.current = false
-    }
-  }, [isSuccess, isError, resetSubmissionState, router, slug, result, isSubmitting])
+   const handleFeedbackContinue = useCallback(() => {
+     setQuizCompleted(true)
+     resetSubmissionState?.()
+     // Don't return anything here
+   }, [resetSubmissionState])
 
   // Reset submission state when success or error changes
   useEffect(() => {
@@ -231,7 +225,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
                 isSuccess={isSuccess}
                 isError={isError}
                 errorMessage={errorMessage}
-                onContinue={handleContinue}
+                onContinue={handleFeedbackContinue}
                 quizType="openended"
               />
             )}
