@@ -12,11 +12,7 @@ export interface DashboardUser extends User {
   lastStreakDate: Date | null
 }
 
-export interface CourseMetadata {
-  rating?: number
-  difficulty?: string | null
-  estimatedHours?: number | null
-}
+
 
 export interface CourseCardProps {
   id: string
@@ -46,23 +42,6 @@ export interface Course extends CourseMetadata {
     id: number
     name: string
   }
-}
-
-export interface CourseUnit {
-  id: number
-  title: string // Renamed from name to title
-  chapters: Chapter[]
-  isCompleted?: boolean | null // Added missing field
-}
-
-export interface Chapter {
-  id: number
-  title: string // Renamed from name to title
-  videoId?: string | null // Added missing field
-  summary?: string | null // Added missing field
-  isCompleted?: boolean | null // Added missing field
-  order?: number // Added missing field
-  questions?: CourseQuiz[]
 }
 
 export interface UserQuiz {
@@ -98,33 +77,6 @@ export interface Favorite {
   courseId?: number // Added missing field
 }
 
-export interface UserQuizAttempt {
-  id: number
-  userQuizId: number
-  score: number | null
-  timeSpent: number | null
-  createdAt: Date
-  improvement: number | null
-  accuracy: number | null
-  attemptQuestions: AttemptQuestion[]
-  userQuiz: {
-    id: number
-    title: string
-    questions: {
-      id: number
-      question: string
-      answer: string
-    }[]
-  }
-}
-
-export interface AttemptQuestion {
-  id: number
-  questionId: number
-  userAnswer: string | null
-  isCorrect: boolean | null
-  timeSpent: number
-}
 
 export interface UserStats {
   totalQuizzes: number
@@ -149,14 +101,6 @@ export interface TopicPerformance {
   averageScore: number
   attempts: number
   averageTimeSpent: number
-}
-
-export interface CourseQuiz {
-  id: number
-  question: string
-  answer: string
-  options?: string // Added missing field
-  chapterId?: number // Added missing field
 }
 
 export interface CourseDetails {
@@ -191,15 +135,6 @@ export type CourseQuestion = {
   question: string
   options: string[] | string // Fixed to allow string or string[]
   answer: string
-}
-
-export type UserQuizQuestion = {
-  id: number
-  question: string
-  options: string[] | string // Fixed to allow string or string[]
-  answer: string
-  questionType?: string // Added missing field
-  codeSnippet?: string | null // Added missing field
 }
 
 export type Question = {
@@ -241,13 +176,7 @@ export interface QuizListItem {
   lastAttempted?: Date | null
 }
 
-export interface CreateQuizCardConfig {
-  title?: string
-  description?: string
-  createUrl?: string
-  animationDuration?: number
-  className?: string
-}
+
 
 export interface MultipleChoiceQuestion {
   question: string
@@ -272,13 +201,7 @@ export interface CodeChallenge {
   correctAnswer: string
 }
 
-export interface QuizQuestion {
-  question: string
-  options: string[]
-  codeSnippet: string | null
-  language?: string
-  correctAnswer: string
-}
+
 
 export interface CodingQuizProps {
   isFavorite: boolean
@@ -293,43 +216,10 @@ export interface CodingQuizProps {
   }
 }
 
-/* CHAT GPT */
-
-export interface GPTQuizQuestion {
-  question: string
-  correct_answer: string
-  hints: string[]
-  difficulty: string
-  tags: string[]
-}
-
-export interface Quiz {
-  quiz_title: string
-  questions: GPTQuizQuestion[] // Renamed to GPTQuizQuestion to avoid conflict
-}
-
-export interface OpenAIFunction {
-  name: string
-  description: string
-  parameters: {
-    type: string
-    properties: {
-      [key: string]: any
-    }
-    required: string[]
-  }
-}
 
 export interface OpenAIMessage {
   role: "system" | "user" | "assistant"
   content: string
-}
-
-export interface QuizGenerationParams {
-  model: string
-  messages: OpenAIMessage[]
-  functions: OpenAIFunction[]
-  functionCall: { name: string }
 }
 
 export interface FullCourseType {
@@ -356,15 +246,7 @@ export interface FullCourseType {
   updatedAt: Date
 }
 
-export interface CourseRating {
-  id: number
-  courseId: number
-  userId: string
-  rating: number
-  reviewText: string | null
-  createdAt: Date
-  updatedAt?: Date // Added missing field
-}
+
 
 export interface FullCourseUnit {
   id: number
@@ -390,15 +272,6 @@ export interface FullChapter {
   videoStatus?: string // Added missing field
 }
 
-export interface FullCourseQuiz {
-  id: number
-  question: string
-  answer: string
-  options?: string // Added missing field
-  attempts: CourseQuizAttempt[]
-  chapterId?: number // Added missing field
-}
-
 export interface CourseProgress {
   id: number
   userId: string
@@ -421,17 +294,6 @@ export interface CourseProgress {
   updatedAt?: Date // Added missing field
 }
 
-export interface CourseQuizAttempt {
-  id: number
-  userId: string
-  courseQuizId: number
-  score: number | null
-  timeSpent: number | null
-  createdAt: Date
-  updatedAt: Date
-  improvement: number | null
-  accuracy: number | null
-}
 
 export interface QuestionOpenEnded {
   id: number
@@ -443,20 +305,6 @@ export interface QuestionOpenEnded {
     tags: string
     inputType: string
   }
-}
-
-export interface YoutubeSearchResponse {
-  items: Array<{
-    id: {
-      videoId: string
-    }
-  }>
-}
-
-export interface TranscriptItem {
-  text: string
-  start: number
-  duration: number
 }
 
 export interface TranscriptResponse {
@@ -490,39 +338,9 @@ export interface FlashCard {
   slug?: string | null // Added missing field
 }
 
-export interface AppUser {
-  id: string
-  name: string | null
-  email: string | null
-  image: string | null
-  credits: number
-  isAdmin: boolean
-  userType: string
-  lastActiveAt: Date | null
-  createdAt: Date
-  subscription?: Subscription | null
-}
 
-export interface UserWithTransactions extends AppUser {
-  TokenTransaction: TokenTransaction[]
-}
 
-export interface Subscription {
-  id: string
-  userId: string
-  status: string
-  currentPeriodEnd: Date
-  planId: string
-}
 
-export interface TokenTransaction {
-  id: string
-  userId: string
-  amount: number
-  type: string
-  description: string | null
-  createdAt: Date
-}
 
 export interface ContactSubmission {
   id: string

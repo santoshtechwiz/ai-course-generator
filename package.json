@@ -13,7 +13,8 @@
     "prod:migrate": "npx prisma migrate deploy",
     "prod:start": "cross-env NODE_ENV=production node server.js",
     "export": "next export",
-    "prod:build": "npm run prod:migrate && npm run build"
+    "prod:build": "npm run prod:migrate && npm run build",
+    "knip": "knip"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",
@@ -155,7 +156,7 @@
     "@types/lodash": "^4.17.13",
     "@types/lodash.throttle": "^4.1.9",
     "@types/micro": "^10.0.0",
-    "@types/node": "^20",
+    "@types/node": "^20.17.30",
     "@types/nodemailer": "^6.4.17",
     "@types/nprogress": "^0.2.3",
     "@types/react": "^18",
@@ -163,8 +164,9 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^8",
     "eslint-config-next": "15.0.3",
+    "knip": "^5.47.0",
     "prisma": "^6.3.0",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5.8.3"
   }
 }
