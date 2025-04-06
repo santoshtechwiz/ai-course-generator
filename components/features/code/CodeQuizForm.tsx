@@ -70,8 +70,11 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   const [formData, setFormData] = usePersistentState<CodeQuizFormData>("codeQuizFormData", {
     title: params?.title || "",
     amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
-    difficulty: "medium",
-    language: "JavaScript",
+    difficulty: (["easy", "medium", "hard"].includes(params?.difficulty || "") ? params?.difficulty : "easy") as
+      | "easy"
+      | "medium"
+      | "hard",
+    language: params?.language || "JavaScript",
   })
 
   const {
@@ -97,7 +100,13 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
         setValue("amount", Math.min(amount, maxQuestions))
       }
     }
-  }, [params?.title, params?.amount, maxQuestions, setValue])
+    if (params?.difficulty && ["easy", "medium", "hard"].includes(params.difficulty)) {
+      setValue("difficulty", params.difficulty as "easy" | "medium" | "hard")
+    }
+    if (params?.language && PROGRAMMING_LANGUAGES.includes(params.language)) {
+      setValue("language", params.language)
+    }
+  }, [params?.title, params?.amount, params?.difficulty, params?.language, maxQuestions, setValue])
 
   React.useEffect(() => {
     const subscription = watch((value) => setFormData(value as CodeQuizFormData))
@@ -123,6 +132,14 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
     (data: CodeQuizFormData) => {
       if (isLoading) return
 
+      if (!data.title || !data.amount || !data.difficulty || !data.language) {
+        toast({
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        })
+        return
+      }
+
       if (!isLoggedIn) {
         signIn("credentials", { callbackUrl: "/dashboard/code" })
         return
@@ -131,14 +148,21 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
       setIsLoading(true)
       setIsConfirmDialogOpen(true)
     },
-    [isLoading, isLoggedIn],
+    [isLoading, isLoggedIn, toast],
   )
 
   const handleConfirm = React.useCallback(async () => {
     setIsConfirmDialogOpen(false)
 
     try {
-      const response = await createCodeQuizMutation(watch())
+      const formValues = watch()
+      const response = await createCodeQuizMutation({
+        title: formValues.title,
+        amount: formValues.amount,
+        difficulty: formValues.difficulty,
+        language: formValues.language,
+        userType: subscriptionStatus?.subscriptionPlan,
+      })
       const userQuizId = response?.userQuizId
 
       if (!userQuizId) throw new Error("Code Quiz ID not found")
@@ -154,7 +178,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
     } finally {
       setIsLoading(false)
     }
-  }, [createCodeQuizMutation, watch, toast, router])
+  }, [createCodeQuizMutation, watch, toast, router, subscriptionStatus?.subscriptionPlan])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")

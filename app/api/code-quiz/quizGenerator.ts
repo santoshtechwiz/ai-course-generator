@@ -7,7 +7,7 @@ export async function generateCodingMCQs(
   language: string,
   title: string,
   difficulty: string,
-  amount: number = 2,
+  amount:number
 ): Promise<CodeChallenge[]> {
   try {
     const response = await openai.chat.completions.create({

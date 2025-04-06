@@ -7,7 +7,7 @@ import { generateCodingMCQs } from "./quizGenerator";
 
 
 export async function POST(req: Request) {
-  let { language, title, difficulty, questionCount: amount } = await req.json();
+  let { language, title, difficulty,  amount } = await req.json();
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json(
