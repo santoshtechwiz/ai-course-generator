@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback, memo } from "react"
+import type React from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { useSession } from "next-auth/react"
 import { AlertCircle, HelpCircle, Timer, RotateCcw, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
 import BlankQuizResults from "./BlankQuizResults"
@@ -41,7 +42,9 @@ interface BlanksQuizAnswer {
   hintsUsed: boolean
 }
 
-const MemoizedQuizActions = memo(QuizActions)
+interface BlankQuizWrapperProps {
+  slug: string
+}
 
 const saveQuizState = (state: any) => {
   if (typeof window !== "undefined") {
@@ -57,7 +60,7 @@ const loadQuizState = () => {
   return null
 }
 
-export default function BlankQuizWrapper({ slug }: { slug: string }) {
+const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ slug }) => {
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<BlanksQuizAnswer[]>([])
@@ -66,16 +69,21 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [showGuidedHelp, setShowGuidedHelp] = useState(false)
+  const [score, setScore] = useState<number | null>(null)
+
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
-  const [showGuidedHelp, setShowGuidedHelp] = useState(false)
   const router = useRouter()
+
+  // Use refs to prevent multiple submissions
+  const hasCalledComplete = useRef(false)
+  const isSubmittingRef = useRef(false)
+  const hasCalledSuccessCallback = useRef(false)
 
   // Use the centralized quiz result hook
   const { submitQuizResult, isSubmitting, isSuccess, isError, errorMessage, resetSubmissionState, result } =
-    useQuizResult({
-     
-    })
+    useQuizResult({})
 
   const fetchQuizData = useCallback(async () => {
     try {
@@ -120,6 +128,21 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
     }
   }, [isAuthenticated])
 
+  // Handle success manually with useEffect
+  useEffect(() => {
+    if (isSuccess && result && !hasCalledSuccessCallback.current) {
+      hasCalledSuccessCallback.current = true
+      console.log("Quiz submission successful:", result)
+    }
+  }, [isSuccess, result])
+
+  // Reset submission state when success or error changes
+  useEffect(() => {
+    if (isSuccess || isError) {
+      isSubmittingRef.current = false
+    }
+  }, [isSuccess, isError])
+
   const handleCloseGuidedHelp = () => {
     setShowGuidedHelp(false)
   }
@@ -156,11 +179,29 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
       setQuizCompleted(false)
       setStartTime(Date.now())
       setElapsedTime(0)
+      setScore(null)
+      hasCalledComplete.current = false
+      isSubmittingRef.current = false
+      hasCalledSuccessCallback.current = false
+      console.log("Quiz restarted")
     }
   }, [])
 
   const handleComplete = useCallback(
-    async (score: number) => {
+    async (calculatedScore: number) => {
+      // Prevent multiple submissions
+      if (hasCalledComplete.current || isSubmittingRef.current) {
+        console.log("Submission already in progress or completed, ignoring")
+        return
+      }
+
+      // Set the refs immediately to prevent race conditions
+      hasCalledComplete.current = true
+      isSubmittingRef.current = true
+
+      // Set the score
+      setScore(calculatedScore)
+
       if (isAuthenticated && quizData) {
         try {
           // Format answers for submission
@@ -172,29 +213,37 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
           }))
 
           // Use the centralized quiz submission
-          await submitQuizResult(quizData.id.toString(), formattedAnswers, elapsedTime, score, "fill-blanks")
+          await submitQuizResult(quizData.id.toString(), formattedAnswers, elapsedTime, calculatedScore, "fill-blanks")
         } catch (error) {
           console.error("Error saving quiz results:", error)
+          isSubmittingRef.current = false
         }
-        
       }
     },
     [isAuthenticated, quizData, answers, elapsedTime, submitQuizResult],
   )
 
-  // Handle navigation after submission
-  const handleContinue = useCallback((proceed: boolean): boolean => {
-    if (proceed && isSuccess && result) {
+  // Handle navigation after submission with proper dependencies
+  const handleContinue = useCallback(() => {
+    if (isSuccess && result && !isSubmittingRef.current) {
       // Navigate to results page with the result ID
-     // router.push(`/dashboard/blanks/${slug}/results?id=${result.quizAttempt?.id || ""}`)
-      return true
-    } else if (!proceed && isError) {
+      router.push(`/dashboard/quizzes`)
+    } else if (isError) {
       // Reset the submission state to try again
       resetSubmissionState()
-      return false
+      isSubmittingRef.current = false
     }
-    return false
-  }, [isSuccess, isError, resetSubmissionState, router, slug, result])
+  }, [isSuccess, isError, resetSubmissionState, router, result])
+
+  // Calculate score for the feedback component
+  const calculateScore = () => {
+    if (!quizData || !answers.length) return 0
+
+    return answers.reduce((score, answer, index) => {
+      const isCorrect = answer.answer.toLowerCase() === quizData.questions[index].answer.toLowerCase()
+      return score + (isCorrect ? 1 : 0)
+    }, 0)
+  }
 
   if (error) {
     return (
@@ -239,31 +288,20 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
     )
   }
 
-  // Calculate score for the feedback component
-  const calculateScore = () => {
-    if (!quizData || !answers.length) return 0
-
-    return answers.reduce((score, answer, index) => {
-      const isCorrect = answer.answer.toLowerCase() === quizData.questions[index].answer.toLowerCase()
-      return score + (isCorrect ? 1 : 0)
-    }, 0)
-  }
-
   return (
-    <>
-      <div className="mb-6">
-        <MemoizedQuizActions
-          userId={session?.user?.id || ""}
-          ownerId={quizData.userId}
-          quizId={quizData.id.toString()}
-          quizSlug={slug}
-          quizType="blanks"
-          initialIsPublic={false}
-          initialIsFavorite={false}
-          position="left-center"
-        />
-      </div>
-      <div className="mb-8 max-w-4xl mx-auto rounded-lg shadow-md border overflow-hidden">
+    <div className="flex flex-col gap-8">
+      <QuizActions
+        userId={session?.user?.id || ""}
+        ownerId={quizData.userId}
+        quizId={quizData.id.toString()}
+        quizSlug={slug}
+        quizType="blanks"
+        initialIsPublic={false}
+        initialIsFavorite={false}
+        position="left-center"
+      />
+
+      <div className="max-w-4xl mx-auto rounded-lg shadow-md border overflow-hidden">
         <header className="flex items-center justify-between px-6 py-4 bg-muted/30">
           <p className="text-sm text-muted-foreground">Fill in the Blanks Quiz</p>
           <div className="flex items-center gap-3">
@@ -298,10 +336,10 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
                   onRestart={handleRestart}
                   onComplete={handleComplete}
                 />
-                {/* Add the submission feedback component */}
-                {isSuccess && result && (
+                {/* Show feedback when submission is successful */}
+                {isSuccess && result && !isSubmitting && (
                   <QuizSubmissionFeedback
-                    score={calculateScore()}
+                    score={score || calculateScore()}
                     totalQuestions={quizData.questions.length}
                     isSubmitting={isSubmitting}
                     isSuccess={isSuccess}
@@ -313,7 +351,11 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
                 )}
               </>
             ) : (
-              <SignInPrompt message="Please sign in to view your results." />
+              <div className="max-w-4xl mx-auto p-4">
+                <h2 className="text-2xl font-bold mb-4">Quiz Completed</h2>
+                <p className="mb-4">Sign in to view your results and save your progress.</p>
+                <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
+              </div>
             )
           ) : (
             <FillInTheBlanksQuiz
@@ -326,7 +368,9 @@ export default function BlankQuizWrapper({ slug }: { slug: string }) {
         </div>
       </div>
       {showGuidedHelp && <GuidedHelp onClose={handleCloseGuidedHelp} isOpen={false} />}
-    </>
+    </div>
   )
 }
+
+export default BlankQuizWrapper
 

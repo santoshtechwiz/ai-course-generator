@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useMemo } from "react"
+import React, { useEffect, useMemo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -33,20 +33,14 @@ export default function BlankQuizResults({ answers, questions, onRestart, onComp
     return { score: averageScore, results: calculatedResults }
   }, [answers, questions])
 
-const hasCalledComplete = React.useRef(false);
+  const hasCalledComplete = useRef(false)
 
-useEffect(() => {
-  // Only call onComplete once using a ref flag
-  if (!hasCalledComplete.current) {
-    hasCalledComplete.current = true;
-
-    // Use setTimeout to break the render cycle
-    // This is crucial to prevent the infinite loop
-    setTimeout(() => {
-      onComplete(score);
-    }, 0);
-  }
-}, [onComplete, score]); // Dependencies to ensure proper behavior
+  useEffect(() => {
+    if (!hasCalledComplete.current) {
+      hasCalledComplete.current = true
+      onComplete(score)
+    }
+  }, [score, onComplete])
 
   return (
     <div className="max-w-4xl mx-auto p-4">

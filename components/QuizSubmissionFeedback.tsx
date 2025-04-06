@@ -13,7 +13,7 @@ interface QuizSubmissionFeedbackProps {
   isError: boolean
   score?: number
   totalQuestions?: number
-  onContinue?: (proceed: boolean) => boolean
+  onContinue?: (proceed: boolean) => void
   errorMessage?: string
   quizType?: string
 }
@@ -57,6 +57,14 @@ export function QuizSubmissionFeedback({
       setProgress(100)
     }
   }, [isSubmitting, isSuccess])
+
+  // Handle continue button click
+  const handleContinue = (proceed: boolean) => {
+    setShowFeedback(false) // Close the modal
+    if (onContinue) {
+      onContinue(proceed)
+    }
+  }
 
   // Calculate percentage score
   const percentageScore = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0
@@ -126,7 +134,7 @@ export function QuizSubmissionFeedback({
                     </div>
                   )}
 
-                  <Button onClick={() => onContinue?.(true)} className="w-full">
+                  <Button onClick={() => handleContinue(true)} className="w-full">
                     Continue
                   </Button>
                 </motion.div>
@@ -146,7 +154,7 @@ export function QuizSubmissionFeedback({
 
                   <p className="text-muted-foreground">{errorMessage}</p>
 
-                  <Button onClick={() => onContinue?.(true)} variant="outline" className="w-full">
+                  <Button onClick={() => handleContinue(false)} variant="outline" className="w-full">
                     Try Again
                   </Button>
                 </motion.div>
