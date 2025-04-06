@@ -1,5 +1,6 @@
+import { JsonLd } from "@/app/schema/components/json-ld"
 import { CreateComponent } from "@/components/features/explore/CreateComponent"
-import { JsonLdV1 } from "@/components/json-ld"
+
 import type { Metadata } from "next"
 
 // Enhanced metadata for better SEO
@@ -55,33 +56,6 @@ export const metadata: Metadata = {
   },
 }
 
-// Schema.org structured data for SoftwareApplication
-const toolsSchema = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "CourseAI Content Creation Tools",
-  applicationCategory: "EducationalApplication",
-  operatingSystem: "Web",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.8",
-    ratingCount: "256",
-  },
-  featureList: [
-    "AI-powered MCQ generation",
-    "Open-ended question creation",
-    "Fill-in-the-blank exercise generator",
-    "Complete course authoring",
-    "Programming quiz creation",
-    "Educational content optimization",
-  ],
-}
-
 // Schema.org structured data for FAQs
 const faqSchema = {
   "@context": "https://schema.org",
@@ -126,8 +100,8 @@ export default function ExplorePage() {
   return (
     <>
       {/* Add structured data */}
-      <JsonLdV1 data={toolsSchema} />
-      <JsonLdV1 data={faqSchema} />
+     
+      <JsonLd data={faqSchema} type="faq"/>
 
       {/* Main component */}
       <CreateComponent />

@@ -5,7 +5,7 @@ import "./globals.css"
 
 import { Analytics } from "@/app/analytics"
 import { defaultSEO } from "@/lib/seo-utils"
-import { JsonLd } from "@/components/json-ld"
+import { JsonLd } from "@/app/schema/components/json-ld"
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/providers/provider"
 import { getAuthSession } from "@/lib/authOptions"
