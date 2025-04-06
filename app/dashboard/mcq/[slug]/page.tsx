@@ -8,8 +8,19 @@ import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import QuizDetailsPage from "@/components/QuizDetailsPage"
 import { QuizActions } from "@/components/QuizActions"
-import { QuizSkeleton } from "@/components/features/mcq/QuizSkeleton"
+
 import McqQuiz from "@/components/features/mcq/McqQuiz"
+
+import { Skeleton } from "@/components/ui/skeleton"
+
+export const QuizSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-8 w-3/4" />
+    <Skeleton className="h-32 w-full" />
+    <Skeleton className="h-8 w-1/2" />
+    <Skeleton className="h-8 w-1/4" />
+  </div>
+)
 
 
 // SEO metadata generation
@@ -108,8 +119,9 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
         {/* Quiz Content with Suspense */}
         <Suspense fallback={<QuizSkeleton />}>
           {questions && (
-            <McqQuiz quizData={quizData}  quizId={quizData.id.toString()} slug={slug} />
+            <McqQuiz questions={questions} title={quizData.title} quizId={Number(quizData.id) || 0} slug={slug} />
           )}
+
         </Suspense>
       </div>
     </QuizDetailsPage>

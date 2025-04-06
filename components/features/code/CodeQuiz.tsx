@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { RefreshCcw, Trophy, HelpCircle, ArrowRight, Timer } from "lucide-react"
+import { Trophy, HelpCircle, ArrowRight, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import QuizOptions from "./CodeQuizOptions"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
@@ -13,8 +13,8 @@ import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { SignInPrompt } from "@/components/SignInPrompt"
-import { QuizResultDisplay } from "../mcq/QuizResultDisplay"
-import { QuizBase } from "../mcq/QuizBase"
+import { QuizResultDisplay } from "../quiz-results/QuizResultDisplay"
+import { QuizBase } from "../quiz-results/QuizBase"
 import { useQuizResult } from "@/hooks/use-quiz-result"
 import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
 import { formatQuizTime } from "@/lib/quiz-result-service"
@@ -66,7 +66,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>(
-    new Array(quizData.questions.length).fill(null)
+    new Array(quizData.questions.length).fill(null),
   )
   const [startTimes, setStartTimes] = useState<number[]>(new Array(quizData.questions.length).fill(Date.now()))
   const [timeSpent, setTimeSpent] = useState<number[]>(new Array(quizData.questions.length).fill(0))
@@ -75,7 +75,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
 
   const { data: session, status } = useSession()
-
+  const isAuthenticated = status === "authenticated"
   const { submitQuizResult, isSubmitting, isSuccess, isError, errorMessage, resetSubmissionState, result } =
     useQuizResult()
 
@@ -181,7 +181,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
         if (status === "authenticated") {
           setShowFeedbackModal(true)
           await submitQuizResult(quizId, answers, Math.round(totalTimeSpent), correctCount, "code")
-          
+
           setQuizResults({
             slug,
             quizId,
@@ -230,13 +230,16 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
     userId,
   ])
 
-  const handleFeedbackContinue = useCallback((proceed: boolean): boolean => {
-    setShowFeedbackModal(false)
-    setQuizCompleted(true)
-    if (onComplete) onComplete?.()
-    resetSubmissionState?.()
-    return proceed
-  }, [onComplete, resetSubmissionState])
+  const handleFeedbackContinue = useCallback(
+    (proceed: boolean) => {
+      setShowFeedbackModal(false)
+      setQuizCompleted(true)
+      if (onComplete) onComplete()
+      resetSubmissionState?.()
+      // Don't return anything here
+    },
+    [onComplete, resetSubmissionState],
+  )
 
   const restartQuiz = useCallback(() => {
     localStorage.removeItem(`quizResults-${userId}-${quizId}`)
@@ -329,7 +332,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
       const percentage = (correctCount / totalQuestions) * 100
       const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0)
 
-      if (status === "authenticated") {
+      if (isAuthenticated) {
         return (
           <QuizResultDisplay
             quizId={quizId}
@@ -340,7 +343,6 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
             correctAnswers={correctCount}
             type="code"
             slug={slug}
-            isLoading={isSubmitting}
           />
         )
       }
@@ -349,24 +351,12 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
         <Card className="w-full max-w-2xl mx-auto">
           <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
             <Trophy className="w-16 h-16 text-primary" />
-            <h2 className="text-2xl font-bold">Quiz Completed!</h2>
-            <p className="text-muted-foreground">Time taken: {formatQuizTimeLocal(totalTime)}</p>
-            {session ? (
+
+            {!session ? (
               <>
-                <div className="bg-muted rounded-lg p-6 space-y-4 w-full">
-                  <div className="text-4xl font-bold">{Math.round(percentage).toFixed(2)}%</div>
-                  <p className="text-muted-foreground">
-                    You got {correctCount} out of {totalQuestions} questions correct
-                  </p>
-                </div>
-                <Button onClick={restartQuiz} className="w-full sm:w-auto">
-                  <RefreshCcw className="mr-2 h-4 w-4" />
-                  Retake Quiz
-                </Button>
+                <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} />
               </>
-            ) : (
-              <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} />
-            )}
+            ) : null}
           </CardContent>
         </Card>
       )
@@ -469,8 +459,8 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
           isSuccess={isSuccess}
           isError={isError}
           score={calculateScore()}
-          onContinue={(proceed) => handleFeedbackContinue(proceed)}
-      
+          totalQuestions={quizData.questions.length}
+          onContinue={handleFeedbackContinue}
           errorMessage={errorMessage}
           quizType="code"
         />
@@ -480,3 +470,4 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
 }
 
 export default CodingQuiz
+
