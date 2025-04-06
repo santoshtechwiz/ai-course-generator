@@ -3,7 +3,8 @@ import { twMerge } from "tailwind-merge";
 
 import { nanoid } from 'nanoid';
 import slugify from 'slugify';
-import { QuizAnswerUnion } from "./quiz-result-service";
+import { QuizType } from "@/app/types/types";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -103,3 +104,19 @@ export const extractUserAnswer = (answer: Object): string | string[] => {
   }
   return "";
 };
+
+export const buildQuizUrl = (slug: string, type: QuizType) => {
+
+  switch (type) {
+    case "mcq":
+      return `/dashboard/mcq/${slug}`
+    case "fill-blanks":
+      return `/dashboard/blanks/${slug}`
+    case "openended":
+      return `/dashboard/openended/${slug}`
+    case "flashcard":
+      return `/dashboard/flashcard/${slug}`
+    default:
+      return `/dashboard/quiz/${slug}`
+  }
+}
