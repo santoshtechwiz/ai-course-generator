@@ -46,6 +46,7 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     generateOrganizationSchema2(),
     generateWebsiteSchema(),
     generateBreadcrumbSchema(breadcrumbItems),
+    generateWebApplicationSchema(),
   ]
 
   // Add page-specific schemas
