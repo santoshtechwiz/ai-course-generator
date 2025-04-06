@@ -2,19 +2,7 @@
 import prisma from "@/lib/db";
 import { Question } from "../types/types";
 
-// Define return type
-export interface McqQuestionsResponse {
-  result: {
-    id: number;
-    title: string;
-    slug: string;
-    isPublic: boolean;
-    isFavorite: boolean;
-    userId: string;
-    user: { id: string };
-  } | null;
-  questions: Question[];
-}
+
 
 const getMcqQuestions = async (slug: string): Promise<McqQuestionsResponse> => {
   const result = await prisma.userQuiz.findUnique({
