@@ -21,8 +21,8 @@ const footerLinks = [
     links: [
       { name: "Learning Path", href: "/dashboard/dashboard" },
       { name: "Membership", href: "/dashboard/subscription" },
-      { name: "About Us", href: "/about" },
-      { name: "Help Center", href: "/contactus" },
+    
+    
     ],
   },
   {
