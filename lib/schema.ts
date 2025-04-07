@@ -373,11 +373,12 @@ export function generateCourseSchema(course: CourseData): Schema {
       : defaultProvider,
     educationalLevel: course.difficulty || "Beginner",
     timeRequired: course.estimatedHours ? `PT${course.estimatedHours}H` : undefined,
-    courseWorkload: "PT1H",
+    courseWorkload: course.estimatedHours ? `Approximately ${course.estimatedHours} hours` : "Self-paced",
     category: "Programming",
     dateCreated: course.createdAt,
     hasCourseInstance: {
       "@type": "CourseInstance",
+      courseWorkload: course.estimatedHours ? `Approximately ${course.estimatedHours} hours` : "Self-paced",
       name: course.title,
       description: courseDescription,
       courseMode: "online",
@@ -407,12 +408,12 @@ export function generateCourseSchema(course: CourseData): Schema {
           name: "CourseAI",
           sameAs: baseUrl,
         },
-
       })),
     }),
     offers: {
       "@type": "Offer",
       price: course.price || "0",
+      category: "https://schema.org/OnlineCourse",
       priceCurrency: course.priceCurrency || "USD",
       url: course.url,
       availability: "https://schema.org/InStock",
