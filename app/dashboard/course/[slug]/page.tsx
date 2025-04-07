@@ -36,14 +36,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   // Extract keywords from course title and category
-  const courseKeywords = course.title.toLowerCase().split(" ")
-  const categoryKeyword = course.category?.name?.toLowerCase() || ""
-  const difficultyLevel = course.difficulty?.toLowerCase() || "all levels"
+  const courseKeywords = course?.title.toLowerCase().split(" ")
+  const categoryKeyword = course?.category?.name?.toLowerCase() || ""
+  const difficultyLevel = course?.difficulty?.toLowerCase() || "all levels"
 
   // Create a more detailed description
   const enhancedDescription =
-    course.description ||
-    `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${difficultyLevel} developers. Includes ${course.courseUnits?.length || "multiple"} comprehensive units with quizzes and practical examples.`
+   
+    `Master ${course?.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${difficultyLevel} developers. Includes ${course.courseUnits?.length || "multiple"} comprehensive units with quizzes and practical examples.`
 
   return generatePageMetadata({
     title: `${course.title} Programming Course | Learn with AI | CourseAI`,
