@@ -25,7 +25,24 @@ export const metadata: Metadata = {
     template: `%s - ${defaultSEO.siteName}`,
   },
   description: defaultSEO.description,
-  keywords: defaultSEO.keywords,
+  keywords: [
+    ...defaultSEO.keywords,
+    "programming education",
+    "coding courses",
+    "learn to code",
+    "developer skills",
+    "programming quizzes",
+    "coding exercises",
+    "AI learning platform",
+    "tech education",
+    "software development learning",
+    "web development courses",
+    "JavaScript tutorials",
+    "Python learning",
+    "programming practice",
+    "coding flashcards",
+    "developer training",
+  ],
   authors: [
     {
       name: process.env.NEXT_PUBLIC_AUTHOR_NAME || "CourseAI Team",
@@ -104,6 +121,31 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     }
   }
 
+  // FAQ items for the site
+    // FAQ items for the homepage
+    const faqItems = [
+      {
+        question: "What is CourseAI?",
+        answer:
+          "CourseAI is an AI-powered platform that helps you create professional programming courses, quizzes, flashcards, and learning materials instantly. Our tools use advanced AI to generate customized educational content tailored to your specific needs.",
+      },
+      {
+        question: "Is CourseAI free to use?",
+        answer:
+          "Yes, CourseAI offers a free tier that gives you access to essential features. We also offer premium plans with advanced features for more demanding educational needs.",
+      },
+      {
+        question: "What types of content can I create with CourseAI?",
+        answer:
+          "You can create full programming courses, multiple-choice questions (MCQs), open-ended questions, interactive quizzes, flashcards, and other educational materials focused on coding and development skills.",
+      },
+      {
+        question: "How does the AI generate programming content?",
+        answer:
+          "Our AI analyzes vast amounts of programming knowledge to create accurate, relevant, and engaging educational content. It can generate questions, explanations, code examples, and learning materials across various programming languages and concepts.",
+      },
+    ]
+
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
       <head>
@@ -114,7 +156,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {/* Place the TrialModal here, inside the Providers */}
           <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
 
-          <JsonLd />
+          <JsonLd type="default" />
+          <JsonLd type="faq" data={faqItems} />
+
           <main className="flex-1 flex flex-col">{children}</main>
           <Analytics />
           <Footer />

@@ -21,7 +21,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 
 import { useToast } from "@/hooks/use-toast"
-import { USER_TYPES } from "../../users/user-management"
+
+
+const USER_TYPES = [
+  { value: "FREE", label: "Free" },
+  { value: "BASIC", label: "Basic" },
+  { value: "PRO", label: "Pro" },
+  { value: "PREMIUM", label: "Premium" },
+  { value: "ULTIMATE", label: "Ultimate" },
+] as const
+
+
 
 
 // Define the form schema
@@ -43,6 +53,7 @@ type CreateUserFormValues = z.infer<typeof createUserSchema>
 interface CreateUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
 export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {
