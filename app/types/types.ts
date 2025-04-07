@@ -1,4 +1,6 @@
-import type { CourseRating, Prisma, User, UserQuizAttempt } from "@prisma/client"
+import type { CourseRating, CourseUnit, Prisma, User, UserQuizAttempt, UserQuizQuestion } from "@prisma/client"
+// Type definitions
+export type UserType = "FREE" | "BASIC" | "PRO" | "PREMIUM" | "ULTIMATE"
 
 export interface DashboardUser extends User {
   courses: Course[]
@@ -27,6 +29,12 @@ export interface CourseCardProps {
   userId: string
   viewCount: number
   category?: string
+}
+
+// Define or import CourseMetadata
+export interface CourseMetadata {
+  duration?: number
+  difficulty?: string
 }
 
 export interface Course extends CourseMetadata {
@@ -366,5 +374,4 @@ export interface UserWithTransactions extends User {
 }
 
 //subscription
-
 
