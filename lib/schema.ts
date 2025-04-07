@@ -1,118 +1,165 @@
 // Base URL utility
 export function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io";
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 }
 
 // Types for schema data
 export interface BreadcrumbItem {
-  name: string;
-  url: string;
+  name: string
+  url: string
 }
 
 export interface ArticleData {
-  headline: string;
-  description: string;
-  url: string;
-  imageUrl: string;
-  datePublished: string;
-  dateModified?: string;
-  authorName: string;
-  publisherName: string;
-  publisherLogoUrl: string;
+  headline: string
+  description: string
+  url: string
+  imageUrl: string
+  datePublished: string
+  dateModified?: string
+  authorName: string
+  publisherName: string
+  publisherLogoUrl: string
 }
 
 export interface CourseData {
-  title: string;
-  description: string;
-  url: string;
-  image?: string;
-  createdAt: string;
-  updatedAt?: string;
+  title: string
+  description: string
+  url: string
+  image?: string
+  createdAt: string
+  updatedAt?: string
   instructor?: {
-    name: string;
-    url: string;
-  };
-  difficulty?: string;
-  estimatedHours?: number;
-  courseUnits?: Array<{ title: string }>;
-  price?: string;
-  priceCurrency?: string;
-  priceValidUntil?: string;
+    name: string
+    url: string
+  }
+  difficulty?: string
+  estimatedHours?: number
+  courseUnits?: Array<{ title: string }>
+  price?: string
+  priceCurrency?: string
+  priceValidUntil?: string
 }
 
 export interface QuizData {
-  title: string;
-  description: string;
-  url: string;
+  title: string
+  description: string
+  url: string
   questions?: Array<{
-    question: string;
-    acceptedAnswer: string;
-  }>;
-  dateCreated?: string;
+    question: string
+    acceptedAnswer: string
+  }>
+  dateCreated?: string
   author?: {
-    name: string;
-    url: string;
-  };
+    name: string
+    url: string
+  }
 }
 
 export interface FAQItem {
-  question: string;
-  answer: string;
+  question: string
+  answer: string
 }
 
 export interface HowToStep {
-  name: string;
-  text: string;
-  url?: string;
-  imageUrl?: string;
+  name: string
+  text: string
+  url?: string
+  imageUrl?: string
 }
 
 export interface HowToData {
-  name: string;
-  description: string;
-  url: string;
-  imageUrl: string;
-  totalTime: string;
-  steps: HowToStep[];
+  name: string
+  description: string
+  url: string
+  imageUrl: string
+  totalTime: string
+  steps: HowToStep[]
 }
 
 export interface PricingPlan {
-  name: string;
-  price: string;
-  priceCurrency: string;
-  description: string;
-  url: string;
+  name: string
+  price: string
+  priceCurrency: string
+  description: string
+  url: string
 }
 
-export type Schema = Record<string, any>;
+export interface SoftwareApplicationData {
+  name: string
+  description: string
+  url: string
+  applicationCategory: string
+  operatingSystem?: string
+  offers?: {
+    price: string
+    priceCurrency: string
+    priceValidUntil?: string
+  }
+  aggregateRating?: {
+    ratingValue: string
+    ratingCount: string
+  }
+  screenshot?: string
+  featureList?: string[]
+}
+
+export interface PersonData {
+  name: string
+  url?: string
+  image?: string
+  jobTitle?: string
+  worksFor?: {
+    name: string
+    url?: string
+  }
+  description?: string
+  sameAs?: string[]
+}
+
+export interface VideoData {
+  name: string
+  description: string
+  thumbnailUrl: string
+  uploadDate: string
+  contentUrl?: string
+  embedUrl?: string
+  duration?: string // ISO 8601 format
+  publisher?: {
+    name: string
+    url?: string
+    logo?: string
+  }
+}
+
+export type Schema = Record<string, any>
 
 // Generate breadcrumb items from URL path
 export function generateBreadcrumbItemsFromPath(path: string): BreadcrumbItem[] {
-  const baseUrl = getBaseUrl();
-  const segments = path.split("/").filter(Boolean);
+  const baseUrl = getBaseUrl()
+  const segments = path.split("/").filter(Boolean)
 
-  const breadcrumbs: BreadcrumbItem[] = [{ name: "Home", url: baseUrl }];
+  const breadcrumbs: BreadcrumbItem[] = [{ name: "Home", url: baseUrl }]
 
-  let currentPath = "";
+  let currentPath = ""
   for (const segment of segments) {
-    currentPath += `/${segment}`;
+    currentPath += `/${segment}`
     const name = segment
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+      .join(" ")
 
     breadcrumbs.push({
       name,
       url: `${baseUrl}${currentPath}`,
-    });
+    })
   }
 
-  return breadcrumbs;
+  return breadcrumbs
 }
 
 // Schema Generators
 export function generateWebsiteSchema(): Schema {
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl()
 
   return {
     "@context": "https://schema.org",
@@ -127,6 +174,8 @@ export function generateWebsiteSchema(): Schema {
       logo: {
         "@type": "ImageObject",
         url: `${baseUrl}/logo.png`,
+        width: 112,
+        height: 112,
       },
     },
     potentialAction: {
@@ -134,11 +183,11 @@ export function generateWebsiteSchema(): Schema {
       target: `${baseUrl}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
-  };
+  }
 }
 
 export function generateWebApplicationSchema(): Schema {
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl()
 
   return {
     "@context": "https://schema.org",
@@ -157,12 +206,69 @@ export function generateWebApplicationSchema(): Schema {
       "@type": "AggregateRating",
       ratingValue: "4.8",
       ratingCount: "250",
+      bestRating: "5",
     },
-  };
+  }
+}
+
+export function generateSoftwareApplicationSchema(data?: Partial<SoftwareApplicationData>): Schema {
+  const baseUrl = getBaseUrl()
+  const defaultData: SoftwareApplicationData = {
+    name: "CourseAI",
+    description: "AI-powered coding education platform with interactive courses, quizzes, and learning tools",
+    url: baseUrl,
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Web, iOS, Android",
+    offers: {
+      price: "0",
+      priceCurrency: "USD",
+    },
+    aggregateRating: {
+      ratingValue: "4.8",
+      ratingCount: "250",
+    },
+    screenshot: `${baseUrl}/images/app-screenshot.jpg`,
+    featureList: [
+      "AI-generated quizzes",
+      "Interactive coding exercises",
+      "Course creation tools",
+      "Learning analytics",
+    ],
+  }
+
+  const mergedData = { ...defaultData, ...data }
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: mergedData.name,
+    description: mergedData.description,
+    url: mergedData.url,
+    applicationCategory: mergedData.applicationCategory,
+    operatingSystem: mergedData.operatingSystem,
+    offers: mergedData.offers
+      ? {
+          "@type": "Offer",
+          price: mergedData.offers.price,
+          priceCurrency: mergedData.offers.priceCurrency,
+          ...(mergedData.offers.priceValidUntil && { priceValidUntil: mergedData.offers.priceValidUntil }),
+        }
+      : undefined,
+    ...(mergedData.aggregateRating && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: mergedData.aggregateRating.ratingValue,
+        ratingCount: mergedData.aggregateRating.ratingCount,
+        bestRating: "5",
+      },
+    }),
+    ...(mergedData.screenshot && { screenshot: mergedData.screenshot }),
+    ...(mergedData.featureList && { featureList: mergedData.featureList.join(", ") }),
+  }
 }
 
 export function generateOrganizationSchema(): Schema {
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl()
 
   return {
     "@context": "https://schema.org",
@@ -185,9 +291,9 @@ export function generateOrganizationSchema(): Schema {
       "@type": "ContactPoint",
       contactType: "customer support",
       email: "support@courseai.io",
-      url: baseUrl,
+      url: `${baseUrl}/contact`,
     },
-  };
+  }
 }
 
 export function generateBreadcrumbSchema(items: BreadcrumbItem[]): Schema {
@@ -200,7 +306,7 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]): Schema {
       name: item.name,
       item: item.url,
     })),
-  };
+  }
 }
 
 export function generateArticleSchema(data: ArticleData): Schema {
@@ -226,14 +332,16 @@ export function generateArticleSchema(data: ArticleData): Schema {
       logo: {
         "@type": "ImageObject",
         url: data.publisherLogoUrl,
+        width: 112,
+        height: 112,
       },
     },
-  };
+  }
 }
 
 export function generateCourseSchema(course: CourseData): Schema {
-  const baseUrl = getBaseUrl();
-  const defaultCourseImage = `${baseUrl}/images/default-course.jpg`;
+  const baseUrl = getBaseUrl()
+  const defaultCourseImage = `${baseUrl}/images/default-course.jpg`
 
   return {
     "@context": "https://schema.org",
@@ -249,7 +357,7 @@ export function generateCourseSchema(course: CourseData): Schema {
     },
     educationalLevel: course.difficulty || "Beginner",
     timeRequired: course.estimatedHours ? `PT${course.estimatedHours}H` : undefined,
-    courseWorkload: course.estimatedHours|| "PT10H",
+    courseWorkload: course.estimatedHours ? `PT${course.estimatedHours}H` : "PT10H",
     dateCreated: course.createdAt,
     hasCourseInstance: {
       "@type": "CourseInstance",
@@ -257,7 +365,7 @@ export function generateCourseSchema(course: CourseData): Schema {
       description: course.description,
       courseMode: "online",
       startDate: course.createdAt,
-      endDate: course.updatedAt,
+      endDate: course.updatedAt || course.createdAt,
       location: {
         "@type": "VirtualLocation",
         url: course.url,
@@ -266,8 +374,8 @@ export function generateCourseSchema(course: CourseData): Schema {
     ...(course.instructor && {
       instructor: {
         "@type": "Person",
-        name: "CourseAI Instructor",
-        url: getBaseUrl(),
+        name: course.instructor.name || "CourseAI Instructor",
+        url: course.instructor.url || getBaseUrl(),
       },
     }),
     ...(course.courseUnits && {
@@ -284,11 +392,11 @@ export function generateCourseSchema(course: CourseData): Schema {
       availability: "https://schema.org/InStock",
       ...(course.priceValidUntil && { priceValidUntil: course.priceValidUntil }),
     },
-  };
+  }
 }
 
 export function generateQuizSchema(data: QuizData): Schema {
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl()
 
   return {
     "@context": "https://schema.org",
@@ -322,7 +430,7 @@ export function generateQuizSchema(data: QuizData): Schema {
       "@type": "Thing",
       name: "Programming Education",
     },
-  };
+  }
 }
 
 export function generateFAQSchema(items: FAQItem[]): Schema {
@@ -337,7 +445,7 @@ export function generateFAQSchema(items: FAQItem[]): Schema {
         text: item.answer,
       },
     })),
-  };
+  }
 }
 
 export function generateHowToSchema(data: HowToData): Schema {
@@ -358,11 +466,11 @@ export function generateHowToSchema(data: HowToData): Schema {
       },
       ...(step.imageUrl && { image: step.imageUrl }),
     })),
-  };
+  }
 }
 
 export function generatePricingSchema(plans: PricingPlan[] = []): Schema {
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl()
   const defaultPlans: PricingPlan[] = [
     {
       name: "Free Plan",
@@ -385,7 +493,7 @@ export function generatePricingSchema(plans: PricingPlan[] = []): Schema {
       description: "Full access to all premium features with annual billing (save 17%)",
       url: `${baseUrl}/pricing`,
     },
-  ];
+  ]
 
   const offers = (plans.length > 0 ? plans : defaultPlans).map((plan) => ({
     "@type": "Offer",
@@ -394,7 +502,7 @@ export function generatePricingSchema(plans: PricingPlan[] = []): Schema {
     priceCurrency: plan.priceCurrency,
     description: plan.description,
     url: plan.url,
-  }));
+  }))
 
   return {
     "@context": "https://schema.org",
@@ -407,6 +515,145 @@ export function generatePricingSchema(plans: PricingPlan[] = []): Schema {
       "@type": "AggregateRating",
       ratingValue: "4.8",
       reviewCount: "250",
+      bestRating: "5",
     },
-  };
+  }
 }
+
+export function generatePersonSchema(data: PersonData): Schema {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: data.name,
+    ...(data.url && { url: data.url }),
+    ...(data.image && { image: data.image }),
+    ...(data.jobTitle && { jobTitle: data.jobTitle }),
+    ...(data.worksFor && {
+      worksFor: {
+        "@type": "Organization",
+        name: data.worksFor.name,
+        ...(data.worksFor.url && { url: data.worksFor.url }),
+      },
+    }),
+    ...(data.description && { description: data.description }),
+    ...(data.sameAs && { sameAs: data.sameAs }),
+  }
+}
+
+export function generateVideoSchema(data: VideoData): Schema {
+  return {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: data.name,
+    description: data.description,
+    thumbnailUrl: data.thumbnailUrl,
+    uploadDate: data.uploadDate,
+    ...(data.contentUrl && { contentUrl: data.contentUrl }),
+    ...(data.embedUrl && { embedUrl: data.embedUrl }),
+    ...(data.duration && { duration: data.duration }),
+    ...(data.publisher && {
+      publisher: {
+        "@type": "Organization",
+        name: data.publisher.name,
+        ...(data.publisher.url && { url: data.publisher.url }),
+        ...(data.publisher.logo && {
+          logo: {
+            "@type": "ImageObject",
+            url: data.publisher.logo,
+            width: 112,
+            height: 112,
+          },
+        }),
+      },
+    }),
+  }
+}
+
+// Schema Registry for better organization and extensibility
+export const SchemaRegistry = {
+  Website: generateWebsiteSchema,
+  WebApplication: generateWebApplicationSchema,
+  SoftwareApplication: generateSoftwareApplicationSchema,
+  Organization: generateOrganizationSchema,
+  Breadcrumb: generateBreadcrumbSchema,
+  Article: generateArticleSchema,
+  Course: generateCourseSchema,
+  Quiz: generateQuizSchema,
+  FAQ: generateFAQSchema,
+  HowTo: generateHowToSchema,
+  Pricing: generatePricingSchema,
+  Person: generatePersonSchema,
+  Video: generateVideoSchema,
+}
+
+// Helper function to validate schema data
+export function validateSchema(schema: Schema): boolean {
+  try {
+    // Basic validation - ensure required fields are present
+    if (!schema["@context"] || !schema["@type"]) {
+      console.error("Schema missing required fields: @context or @type")
+      return false
+    }
+
+    // Check for nested objects without required fields
+    const validateNestedObjects = (obj: any) => {
+      for (const key in obj) {
+        if (typeof obj[key] === "object" && obj[key] !== null && !Array.isArray(obj[key])) {
+          if (obj[key]["@type"] && !validateTypeSpecificFields(obj[key])) {
+            return false
+          }
+          if (!validateNestedObjects(obj[key])) {
+            return false
+          }
+        }
+      }
+      return true
+    }
+
+    // Validate fields specific to schema type
+    const validateTypeSpecificFields = (obj: any) => {
+      const type = obj["@type"]
+
+      switch (type) {
+        case "ImageObject":
+          if (!obj.url) {
+            console.error("ImageObject missing required field: url")
+            return false
+          }
+          break
+        case "Organization":
+          if (!obj.name) {
+            console.error("Organization missing required field: name")
+            return false
+          }
+          break
+        case "Person":
+          if (!obj.name) {
+            console.error("Person missing required field: name")
+            return false
+          }
+          break
+        case "Offer":
+          if (obj.price === undefined || !obj.priceCurrency) {
+            console.error("Offer missing required fields: price or priceCurrency")
+            return false
+          }
+          break
+        case "AggregateRating":
+          if (!obj.ratingValue || !obj.ratingCount) {
+            console.error("AggregateRating missing required fields: ratingValue or ratingCount")
+            return false
+          }
+          break
+      }
+
+      return true
+    }
+
+    return validateTypeSpecificFields(schema) && validateNestedObjects(schema)
+  } catch (error) {
+    console.error("Schema validation error:", error)
+    return false
+  }
+}
+

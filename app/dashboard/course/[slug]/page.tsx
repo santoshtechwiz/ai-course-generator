@@ -6,7 +6,7 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { JsonLd } from "@/app/schema/components/json-ld"
-
+import { extractKeywords, generateMetaDescription } from "@/lib/seo-utils"
 
 function LoadingSkeleton() {
   return (
@@ -36,14 +36,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     })
   }
 
+  // Extract keywords from course content
+  const contentKeywords = course.description ? extractKeywords(course.description, 5) : []
+
   // Extract keywords from course title and category
-  const courseKeywords = course.title?.toLowerCase().split(" ")
+  const courseKeywords = course.title?.toLowerCase().split(" ") || []
   const categoryKeyword = course.category?.name?.toLowerCase() || ""
 
   // Create a more detailed description
-  const enhancedDescription =
-    course.title ||
-    `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${course.difficulty || "all"} level developers.`
+  const enhancedDescription = course.description
+    ? generateMetaDescription(course.description, 160)
+    : `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${course.difficulty || "all"} level developers.`
 
   return generatePageMetadata({
     title: `${course.title} Programming Course | Learn with AI`,
@@ -59,19 +62,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       "interactive programming",
       "AI learning",
       "developer skills",
+      ...contentKeywords,
       ...courseKeywords.filter((k) => k.length > 3).map((k) => `${k} programming`),
     ],
     ogImage:
       course.image ||
       `/api/og?title=${encodeURIComponent(course.title)}&description=${encodeURIComponent("Interactive Programming Course")}`,
     ogType: "article",
+    publishedTime: course.createdAt.toISOString(),
+    modifiedTime: (course.updatedAt || course.createdAt).toISOString(),
   })
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const course = await getCourseData(slug)
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   if (!course) {
     notFound()
@@ -79,10 +84,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <JsonLd
-      type="course"
-        data={course}
-      />
+      <JsonLd type="course" data={course} />
 
       <CoursePage course={course} />
     </Suspense>

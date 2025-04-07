@@ -2,34 +2,33 @@
 
 import { usePathname } from "next/navigation"
 import {
-  type ArticleData,
   type CourseData,
-  type FAQItem,
-  type HowToStep,
   type QuizData,
   type Schema,
-  generateArticleSchema,
+  SchemaRegistry,
   generateBreadcrumbItemsFromPath,
-  generateBreadcrumbSchema,
-  generateCourseSchema,
-  generateFAQSchema,
-  generateHowToSchema,
-  generatePricingSchema,
-  generateQuizSchema,
-  generateWebApplicationSchema,
-  generateWebsiteSchema,
-  getBaseUrl,
-  generateOrganizationSchema2,
+  validateSchema,
 } from "@/lib/schema"
 
+export type JsonLdType =
+  | "default"
+  | "article"
+  | "course"
+  | "quiz"
+  | "faq"
+  | "howTo"
+  | "person"
+  | "video"
+  | "softwareApplication"
+  | "pricing"
+
 interface JsonLdProps {
-  type?: "default" | "article" | "course" | "quiz" | "faq" | "howTo"
+  type?: JsonLdType
   data?: any
 }
 
 export function JsonLd({ type = "default", data }: JsonLdProps) {
   const pathname = usePathname()
-  const baseUrl = getBaseUrl()
   const breadcrumbItems = generateBreadcrumbItemsFromPath(pathname)
 
   const isCoursePage = pathname.includes("/course/") && pathname.split("/").filter(Boolean).length > 1
@@ -40,108 +39,87 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
   try {
     const schemas: Schema[] = []
 
-    // Always include these basic schemas
-    schemas.push(generateOrganizationSchema2())
-    schemas.push(generateWebsiteSchema())
-
-    // Add breadcrumb schema if available
-    if (breadcrumbItems.length > 0) {
-      schemas.push(generateBreadcrumbSchema(breadcrumbItems))
-    }
-
-    // Handle content-specific schemas
-    const lastBreadcrumb = breadcrumbItems[breadcrumbItems.length - 1]
-    const defaultUrl = lastBreadcrumb?.url || `${baseUrl}${pathname}`
-    const defaultTitle = lastBreadcrumb?.name || "CourseAI Content"
-
-    switch (type) {
-    
-      case "course":
-      case "default":
-        if (isCoursePage || type === "course") {
-          const courseData = (data as CourseData) || {
-            title: defaultTitle,
-            description: "Comprehensive programming course with interactive lessons and exercises.",
-            createdAt: new Date().toISOString(),
-            estimatedHours: 10,
-            difficulty: "Beginner to Advanced",
-            image: `${baseUrl}/default-course-image.jpg`,
-            courseUnits: [
-              { title: "Master programming fundamentals" },
-              { title: "Build practical coding skills" },
-              { title: "Complete hands-on projects" },
-            ],
-            offers: {
-              price: "99.99",
-              priceCurrency: "USD",
-              url: defaultUrl,
-              priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-              availability: "https://schema.org/InStock",
-            },
-            url: defaultUrl,
-            validFrom: new Date().toISOString(),
-          }
-          schemas.push(generateCourseSchema(courseData))
-        }
-        break
-
-      case "quiz":
-      case "default":
-        if (isQuizPage || type === "quiz") {
-          const quizData = (data as QuizData) || {
-            title: defaultTitle,
-            description: "Test your programming knowledge with this interactive quiz.",
-            url: defaultUrl,
-            dateCreated: new Date().toISOString(),
-            author: {
-              name: "CourseAI",
-              url: baseUrl,
-            },
-          }
-          schemas.push(generateQuizSchema(quizData))
-        }
-        break
-
-      case "faq":
-        if (Array.isArray(data)) {
-          const faqItems = data as FAQItem[]
-          if (faqItems.length > 0) {
-            schemas.push(generateFAQSchema(faqItems))
-          }
-        }
-        break
-
-      case "howTo":
-        if (data) {
-          const howToData = data as {
-            name: string
-            description: string
-            url: string
-            imageUrl: string
-            totalTime: string
-            steps: HowToStep[]
-          }
-          if (howToData.name && Array.isArray(howToData.steps)) {
-            schemas.push(generateHowToSchema(howToData))
-          }
-        }
-        break
-    }
-
-    // Handle special page types
+    // Always include these basic schemas for default type
     if (type === "default") {
+      schemas.push(SchemaRegistry.Organization())
+      schemas.push(SchemaRegistry.Website())
+
+      // Add breadcrumb schema if available
+      if (breadcrumbItems.length > 0) {
+        schemas.push(SchemaRegistry.Breadcrumb(breadcrumbItems))
+      }
+
+      // Handle special page types
       if (isPricingPage) {
-        schemas.push(generatePricingSchema())
+        schemas.push(SchemaRegistry.Pricing())
       }
 
       if (pathname === "/" || pathname === "/home") {
-        schemas.push(generateWebApplicationSchema())
+        schemas.push(SchemaRegistry.WebApplication())
+        schemas.push(SchemaRegistry.SoftwareApplication())
+      }
+
+      // Handle content-specific schemas based on URL patterns
+      if (isCoursePage) {
+        const courseData = (data as CourseData) || {
+          title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Course",
+          description: "Comprehensive programming course with interactive lessons and exercises.",
+          url: pathname,
+          createdAt: new Date().toISOString(),
+        }
+        schemas.push(SchemaRegistry.Course(courseData))
+      }
+
+      if (isQuizPage) {
+        const quizData = (data as QuizData) || {
+          title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Quiz",
+          description: "Test your programming knowledge with this interactive quiz.",
+          url: pathname,
+          dateCreated: new Date().toISOString(),
+        }
+        schemas.push(SchemaRegistry.Quiz(quizData))
+      }
+    } else {
+      // Handle specific schema types
+      switch (type) {
+        case "course":
+          schemas.push(SchemaRegistry.Course(data))
+          break
+        case "quiz":
+          schemas.push(SchemaRegistry.Quiz(data))
+          break
+        case "faq":
+          if (Array.isArray(data)) {
+            schemas.push(SchemaRegistry.FAQ(data))
+          }
+          break
+        case "howTo":
+          schemas.push(SchemaRegistry.HowTo(data))
+          break
+        case "article":
+          schemas.push(SchemaRegistry.Article(data))
+          break
+        case "person":
+          schemas.push(SchemaRegistry.Person(data))
+          break
+        case "video":
+          schemas.push(SchemaRegistry.Video(data))
+          break
+        case "softwareApplication":
+          schemas.push(SchemaRegistry.SoftwareApplication(data))
+          break
+        case "pricing":
+          schemas.push(SchemaRegistry.Pricing(data))
+          break
       }
     }
 
+    // Validate schemas before rendering
+    const validSchemas = schemas.filter((schema) => validateSchema(schema))
+
     // Remove duplicate schemas
-    const uniqueSchemas = schemas.reduce((acc: Schema[], current) => {
-      const x = acc.find(item => JSON.stringify(item) === JSON.stringify(current))
+    const uniqueSchemas = validSchemas.reduce((acc: Schema[], current) => {
+      const x = acc.find((item) => JSON.stringify(item) === JSON.stringify(current))
       if (!x) {
         return acc.concat([current])
       } else {
@@ -162,6 +140,7 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     )
   } catch (error) {
     console.error("Error generating JSON-LD:", error)
+    // Fallback to basic website schema in case of error
     return (
       <script
         type="application/ld+json"
@@ -170,10 +149,11 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
             "@context": "https://schema.org",
             "@type": "WebSite",
             name: "CourseAI",
-            url: baseUrl,
+            url: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
           }),
         }}
       />
     )
   }
 }
+
