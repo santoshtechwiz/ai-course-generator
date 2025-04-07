@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   // Extract keywords from course title and category
   const courseKeywords = course.title?.toLowerCase().split(" ")
-  const categoryKeyword = course.category?.name??.toLowerCase() || ""
+  const categoryKeyword = course.category?.name?.toLowerCase() || ""
 
   // Create a more detailed description
   const enhancedDescription =

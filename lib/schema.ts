@@ -234,7 +234,7 @@ export function generateCourseSchema(data: CourseData): Schema {
       name: "CourseAI",
       sameAs: baseUrl,
     },
-    url: `${baseUrl}/dashboard/course/${data?.title??.toLowerCase().replace(/\s+/g, "-")}`,
+    url: `${baseUrl}/dashboard/course/${data?.title?.toLowerCase().replace(/\s+/g, "-")}`,
     dateCreated: data.createdAt,
     dateModified: data.updatedAt || data.createdAt,
     image: data.image || `${baseUrl}/default-course-image.jpg`,

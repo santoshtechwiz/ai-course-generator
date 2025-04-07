@@ -166,7 +166,7 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                                   (q) => q.id === question.questionId,
                                 )?.answer
                                 const isCorrect =
-                                  question.userAnswer??.toLowerCase().trim() === correctAnswer??.toLowerCase().trim()
+                                  question.userAnswer?.toLowerCase().trim() === correctAnswer?.toLowerCase().trim()
                                 return (
                                   <motion.div
                                     key={question.id}
