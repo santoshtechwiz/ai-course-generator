@@ -59,7 +59,7 @@ const HomePage = () => {
     <div className="flex flex-col min-h-screen">
       <JsonLd type="default" />
       <JsonLd type="softwareApplication" data={softwareAppData} />
-      <SchemaRenderer type={"Organization"}></SchemaRenderer>
+     
       <div className="flex-grow p-2 md:p-4">
         <LandingComponent />
       </div>
