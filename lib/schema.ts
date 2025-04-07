@@ -399,6 +399,15 @@ export function generateCourseSchema(course: CourseData): Schema {
       hasPart: course.courseUnits.map((unit) => ({
         "@type": "Course",
         name: unit.title,
+        description: unit.title || "Course unit",
+        url: `${course.url}#${unit.title.replace(/\s+/g, "-").toLowerCase()}`,
+        image: course.image || defaultCourseImage,
+        provider: {
+          "@type": "Organization",
+          name: "CourseAI",
+          sameAs: baseUrl,
+        },
+
       })),
     }),
     offers: {
