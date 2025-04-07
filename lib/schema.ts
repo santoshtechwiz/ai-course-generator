@@ -347,7 +347,7 @@ export function generateCourseSchema(course: CourseData): Schema {
     "@context": "https://schema.org",
     "@type": "Course",
     name: course.title,
-    description: course.description,
+    description: course.description|| `Learn ${course.title} with CourseAI`,
     url: course.url,
     image: course.image || defaultCourseImage,
     provider: {
