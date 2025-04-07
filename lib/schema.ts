@@ -1,37 +1,47 @@
-/**
- * Unified schema management module
- * Contains all types, generators, and utilities for structured data
- */
+// Base URL utility
+export function getBaseUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+}
 
-// Base Schema type for all JSON-LD schemas
-export type Schema = Record<string, any>
-
-// Common schema types
+// Types for schema data
 export interface BreadcrumbItem {
   name: string
   url: string
+}
+
+export interface ArticleData {
+  headline: string
+  description: string
+  url: string
+  imageUrl: string
+  datePublished: string
+  dateModified?: string
+  authorName: string
+  publisherName: string
+  publisherLogoUrl: string
 }
 
 export interface CourseData {
   title: string
   description: string
   image?: string
-  url?: string
   createdAt: string
   updatedAt?: string
   instructor?: {
     name: string
     url: string
   }
+  difficulty?: string
+  estimatedHours?: number
+  courseUnits?: any[]
 }
 
 export interface QuizData {
   title: string
   description: string
   url: string
-  questionCount: number
-  timeRequired?: string
-  educationalLevel?: string
+  questions?: any[]
+  dateCreated?: string
   author?: {
     name: string
     url: string
@@ -50,85 +60,114 @@ export interface HowToStep {
   imageUrl?: string
 }
 
-export interface ArticleData {
-  headline: string
-  description: string
-  url: string
-  imageUrl: string
-  datePublished: string
-  dateModified?: string
-  authorName: string
-  authorUrl?: string
-  publisherName: string
-  publisherLogoUrl: string
-}
+export type Schema = Record<string, any>
 
-/**
- * Get the base URL for the site
- */
-export function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
-}
-
-/**
- * Create a schema for an organization
- */
-export function createOrganizationSchema(options?: {
-  name?: string
-  url?: string
-  logoUrl?: string
-  sameAs?: string[]
-  contactPhone?: string
-  contactEmail?: string
-}): Schema {
+// Generate breadcrumb items from URL path
+export function generateBreadcrumbItemsFromPath(path: string): BreadcrumbItem[] {
   const baseUrl = getBaseUrl()
-  const name = options?.name || "CourseAI"
+  const segments = path.split("/").filter(Boolean)
+
+  const breadcrumbs: BreadcrumbItem[] = [{ name: "Home", url: baseUrl }]
+
+  let currentPath = ""
+  segments.forEach((segment) => {
+    currentPath += `/${segment}`
+    const name = segment
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+
+    breadcrumbs.push({
+      name,
+      url: `${baseUrl}${currentPath}`,
+    })
+  })
+
+  return breadcrumbs
+}
+
+// Generate website schema
+export function generateWebsiteSchema(): Schema {
+  const baseUrl = getBaseUrl()
 
   return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${baseUrl}/#website`,
+    url: baseUrl,
+    name: "CourseAI",
+    description: "AI-powered coding education platform with interactive courses, quizzes, and learning tools",
+    publisher: {
+      "@type": "Organization",
+      name: "CourseAI",
+      logo: {
+        "@type": "ImageObject",
+        url: `${baseUrl}/logo.png`,
+      },
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${baseUrl}/search?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  }
+}
+
+// Generate web application schema
+export function generateWebApplicationSchema(): Schema {
+  const baseUrl = getBaseUrl()
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "CourseAI",
+    url: baseUrl,
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "All",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    description: "AI-powered coding education platform with interactive courses, quizzes, and learning tools",
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      ratingCount: "250",
+    },
+  }
+}
+
+// Generate organization schema
+export function generateOrganizationSchema2(): Schema {
+  const baseUrl = getBaseUrl()
+
+  return {
+    "@context": "https://schema.org",
     "@type": "Organization",
-    name,
-    url: options?.url || baseUrl,
+    "@id": `${baseUrl}/#organization`,
+    name: "CourseAI",
+    url: baseUrl,
     logo: {
       "@type": "ImageObject",
-      url: options?.logoUrl || `${baseUrl}/logo.png`,
-      width: "180",
-      height: "60",
+      url: `${baseUrl}/logo.png`,
+      width: 112,
+      height: 112,
     },
-    sameAs:
-      options?.sameAs ||
-      [
-        "https://twitter.com/courseai",
-        "https://facebook.com/courseai",
-        "https://linkedin.com/company/courseai",
-        "https://github.com/courseai",
-        "https://youtube.com/courseai",
-        "https://instagram.com/courseai.official",
-      ].filter(Boolean),
+    sameAs: [
+      "https://twitter.com/courseai",
+      "https://www.linkedin.com/company/courseai",
+      "https://github.com/courseai",
+    ],
     contactPoint: {
       "@type": "ContactPoint",
-      telephone: options?.contactPhone || process.env.NEXT_PUBLIC_CONTACT_PHONE || "+1-800-123-4567",
-      contactType: "customer service",
-      email: options?.contactEmail || process.env.NEXT_PUBLIC_CONTACT_EMAIL || "webmaster.codeguru@gmail.com",
-      availableLanguage: ["English", "Spanish", "French", "German"],
-      contactOption: "TollFree",
+      contactType: "customer support",
+      email: "support@courseai.io",
     },
   }
 }
 
-/**
- * Create a schema for a person
- */
-export function createPersonSchema(name: string, url?: string): Schema {
-  return {
-    "@type": "Person",
-    name,
-    ...(url && { url }),
-  }
-}
-
-/**
- * Generate breadcrumb schema
- */
+// Generate breadcrumb schema
 export function generateBreadcrumbSchema(items: BreadcrumbItem[]): Schema {
   return {
     "@context": "https://schema.org",
@@ -142,92 +181,129 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]): Schema {
   }
 }
 
-/**
- * Generate breadcrumb items from pathname
- */
-export function generateBreadcrumbItemsFromPath(pathname: string): BreadcrumbItem[] {
-  const baseUrl = getBaseUrl()
-  const pathSegments = pathname.split("/").filter(Boolean)
-  const breadcrumbItems: BreadcrumbItem[] = [{ name: "Home", url: baseUrl }]
-
-  // Build breadcrumb items based on path segments
-  let currentPath = ""
-  pathSegments.forEach((segment) => {
-    currentPath += `/${segment}`
-    const readableName = segment
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-
-    breadcrumbItems.push({
-      name: readableName,
-      url: `${baseUrl}${currentPath}`,
-    })
-  })
-
-  return breadcrumbItems
-}
-
-/**
- * Generate course schema
- */
-export function generateCourseSchema(course: CourseData): Schema {
-  const baseUrl = getBaseUrl()
-
+// Generate article schema
+export function generateArticleSchema(data: ArticleData): Schema {
   return {
     "@context": "https://schema.org",
-    "@type": "Course",
-    name: course.title,
-    description: course.description,
-    provider: createOrganizationSchema(),
-    dateCreated: course.createdAt,
-    dateModified: course.updatedAt || course.createdAt,
-    url: course.url || baseUrl,
-    ...(course.image && { image: course.image }),
-    ...(course.instructor && {
-      instructor: createPersonSchema(course.instructor.name, course.instructor.url),
-    }),
-    inLanguage: "en",
-    hasCourseInstance: {
-      "@type": "CourseInstance",
-      courseMode: "online",
-      provider: createOrganizationSchema(),
+    "@type": "Article",
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": data.url,
+    },
+    headline: data.headline,
+    description: data.description,
+    image: data.imageUrl,
+    datePublished: data.datePublished,
+    dateModified: data.dateModified || data.datePublished,
+    author: {
+      "@type": "Person",
+      name: data.authorName,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: data.publisherName,
+      logo: {
+        "@type": "ImageObject",
+        url: data.publisherLogoUrl,
+      },
     },
   }
 }
 
-/**
- * Generate quiz schema
- */
-export function generateQuizSchema(quiz: QuizData): Schema {
+// Generate course schema with required fields
+export function generateCourseSchema(data: CourseData): Schema {
+  const baseUrl = getBaseUrl()
+
+  // Calculate course workload based on estimated hours or default to a reasonable value
+  const workload = data.estimatedHours ? `PT${data.estimatedHours}H` : "PT10H" // Default 10 hours if not specified
+
+  // Create course units as learning objectives if available
+  const learningObjectives = data.courseUnits?.map((unit) => unit.title) || [
+    "Master programming fundamentals",
+    "Build practical coding skills",
+    "Complete hands-on projects",
+  ]
+
   return {
     "@context": "https://schema.org",
-    "@type": "Quiz",
-    name: quiz.title,
-    description: quiz.description,
-    url: quiz.url,
-    numberOfQuestions: quiz.questionCount,
-    provider: createOrganizationSchema(),
-    isAccessibleForFree: true,
-    ...(quiz.timeRequired && { timeRequired: quiz.timeRequired }),
-    ...(quiz.educationalLevel && {
-      educationalAlignment: {
-        "@type": "AlignmentObject",
-        educationalFramework: "Programming Skills",
-        targetName: "Coding Knowledge Assessment",
-        alignmentType: "assesses",
-        educationalLevel: quiz.educationalLevel,
-      },
-    }),
-    ...(quiz.author && {
-      author: createPersonSchema(quiz.author.name, quiz.author.url),
-    }),
+    "@type": "Course",
+    name: data.title,
+    description: data.description,
+    provider: {
+      "@type": "Organization",
+      name: "CourseAI",
+      sameAs: baseUrl,
+    },
+    url: `${baseUrl}/dashboard/course/${data.title.toLowerCase().replace(/\s+/g, "-")}`,
+    dateCreated: data.createdAt,
+    dateModified: data.updatedAt || data.createdAt,
+    image: data.image || `${baseUrl}/default-course-image.jpg`,
+    inLanguage: "en",
+    courseWorkload: workload,
+    timeRequired: workload,
+    educationalLevel: data.difficulty || "Beginner to Advanced",
+    teaches: learningObjectives.join(", "),
+    hasCourseInstance: {
+      "@type": "CourseInstance",
+      courseMode: "online",
+      courseWorkload: workload,
+      instructor: data.instructor
+        ? {
+            "@type": "Person",
+            name: data.instructor.name,
+            url: data.instructor.url,
+          }
+        : {
+            "@type": "Person",
+            name: "CourseAI Instructor",
+          },
+    },
+    mainEntity: {
+      "@type": "LearningResource",
+      name: data.title,
+      description: data.description,
+      learningResourceType: "Course",
+      educationalLevel: data.difficulty || "Beginner to Advanced",
+      teaches: learningObjectives.join(", "),
+    },
   }
 }
 
-/**
- * Generate FAQ schema
- */
+// Generate quiz schema
+export function generateQuizSchema(data: QuizData): Schema {
+  const baseUrl = getBaseUrl()
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Quiz",
+    name: data.title,
+    description: data.description,
+    url: data.url,
+    dateCreated: data.dateCreated || new Date().toISOString(),
+    author: data.author
+      ? {
+          "@type": "Person",
+          name: data.author.name,
+          url: data.author.url,
+        }
+      : {
+          "@type": "Organization",
+          name: "CourseAI",
+          url: baseUrl,
+        },
+    mainEntity: {
+      "@type": "Question",
+      name: data.title,
+      text: data.description,
+    },
+    about: {
+      "@type": "Thing",
+      name: "Programming Education",
+    },
+  }
+}
+
+// Generate FAQ schema
 export function generateFAQSchema(items: FAQItem[]): Schema {
   return {
     "@context": "https://schema.org",
@@ -243,157 +319,8 @@ export function generateFAQSchema(items: FAQItem[]): Schema {
   }
 }
 
-/**
- * Generate website schema
- */
-export function generateWebsiteSchema(): Schema {
-  const baseUrl = getBaseUrl()
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    url: baseUrl,
-    name: "CourseAI - Free Programming Education Platform",
-    alternateName: ["CourseAI Free Coding Resources", "CourseAI Programming Tutorials"],
-    description:
-      "An intelligent learning platform offering 100% free coding quizzes, programming courses, and AI-powered educational resources.",
-    potentialAction: [
-      {
-        "@type": "SearchAction",
-        target: `${baseUrl}/search?q={search_term_string}`,
-        "query-input": "required name=search_term_string",
-      },
-    ],
-    publisher: createOrganizationSchema(),
-  }
-}
-
-/**
- * Generate web application schema
- */
-export function generateWebApplicationSchema(): Schema {
-  const baseUrl = getBaseUrl()
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: "CourseAI Quiz Generator",
-    applicationCategory: "EducationalApplication",
-    applicationSubCategory: "Learning Tool",
-    operatingSystem: "Web, iOS, Android",
-    description: "100% free AI-powered platform for creating quizzes, assessments, and educational content instantly.",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-      availability: "https://schema.org/InStock",
-      validFrom: "2023-01-01",
-      priceValidUntil: "2099-12-31",
-    },
-    featureList: [
-      "Free AI Quiz Generation",
-      "Free Multiple Choice Questions",
-      "Free Custom Templates",
-      "Free Analytics Dashboard",
-      "Free Automated Grading",
-    ],
-    provider: createOrganizationSchema(),
-  }
-}
-
-/**
- * Generate pricing schema
- */
-export function generatePricingSchema(): Schema {
-  const baseUrl = getBaseUrl()
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: "CourseAI Learning Platform",
-    description: "AI-powered platform for creating courses, quizzes, and educational content with a generous free tier",
-    image: [`${baseUrl}/images/courseai-logo.png`, `${baseUrl}/images/courseai-dashboard.png`],
-    offers: {
-      "@type": "AggregateOffer",
-      priceCurrency: "USD",
-      lowPrice: "0",
-      highPrice: "49.99",
-      offerCount: "3",
-      offers: [
-        {
-          "@type": "Offer",
-          name: "Free Forever Plan",
-          price: "0",
-          priceCurrency: "USD",
-          description: "Unlimited access to all basic features with no time limits or trial periods",
-          url: `${baseUrl}/pricing#free-forever`,
-          availability: "https://schema.org/InStock",
-          priceValidUntil: "2099-12-31",
-        },
-        {
-          "@type": "Offer",
-          name: "Basic Plan",
-          price: "19.99",
-          priceCurrency: "USD",
-          description: "25 Hosted Courses plus advanced features",
-          url: `${baseUrl}/pricing#basic`,
-          availability: "https://schema.org/InStock",
-          priceValidUntil: "2024-12-31",
-        },
-        {
-          "@type": "Offer",
-          name: "Premium Plan",
-          price: "49.99",
-          priceCurrency: "USD",
-          description: "Unlimited courses and premium features",
-          url: `${baseUrl}/pricing#premium`,
-          availability: "https://schema.org/InStock",
-          priceValidUntil: "2024-12-31",
-        },
-      ],
-    },
-    brand: {
-      "@type": "Brand",
-      name: "CourseAI",
-    },
-  }
-}
-
-/**
- * Generate article schema
- */
-export function generateArticleSchema(article: ArticleData): Schema {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: article.headline,
-    description: article.description,
-    image: article.imageUrl,
-    datePublished: new Date(article.datePublished).toISOString(),
-    ...(article.dateModified && { dateModified: new Date(article.dateModified).toISOString() }),
-    author: createPersonSchema(article.authorName, article.authorUrl),
-    publisher: {
-      "@type": "Organization",
-      name: article.publisherName,
-      logo: {
-        "@type": "ImageObject",
-        url: article.publisherLogoUrl,
-        width: "180",
-        height: "60",
-      },
-    },
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": article.url,
-    },
-    isAccessibleForFree: true,
-  }
-}
-
-/**
- * Generate how-to schema
- */
-export function generateHowToSchema(params: {
+// Generate How-To schema
+export function generateHowToSchema(data: {
   name: string
   description: string
   url: string
@@ -404,30 +331,64 @@ export function generateHowToSchema(params: {
   return {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: params.name,
-    description: params.description,
-    image: params.imageUrl,
-    totalTime: params.totalTime,
-    step: params.steps.map((step, index) => ({
+    name: data.name,
+    description: data.description,
+    image: data.imageUrl,
+    totalTime: data.totalTime,
+    step: data.steps.map((step, index) => ({
       "@type": "HowToStep",
-      position: index + 1,
+      url: step.url || `${data.url}#step-${index + 1}`,
       name: step.name,
-      text: step.text,
-      ...(step.url && { url: step.url }),
-      ...(step.imageUrl && {
-        image: {
-          "@type": "ImageObject",
-          url: step.imageUrl,
-        },
-      }),
+      itemListElement: {
+        "@type": "HowToDirection",
+        text: step.text,
+      },
+      image: step.imageUrl,
     })),
-    isAccessibleForFree: true,
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": params.url,
+  }
+}
+
+// Generate pricing schema
+export function generatePricingSchema(): Schema {
+  const baseUrl = getBaseUrl()
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "CourseAI Premium Subscription",
+    description: "Access to all premium features of CourseAI's coding education platform",
+    image: `${baseUrl}/premium-subscription.jpg`,
+    offers: [
+      {
+        "@type": "Offer",
+        name: "Free Plan",
+        price: "0",
+        priceCurrency: "USD",
+        description: "Basic access to CourseAI's learning platform",
+        url: `${baseUrl}/dashboard/subscription`,
+      },
+      {
+        "@type": "Offer",
+        name: "Premium Monthly",
+        price: "19.99",
+        priceCurrency: "USD",
+        description: "Full access to all premium features with monthly billing",
+        url: `${baseUrl}/dashboard/subscription`,
+      },
+      {
+        "@type": "Offer",
+        name: "Premium Annual",
+        price: "199.99",
+        priceCurrency: "USD",
+        description: "Full access to all premium features with annual billing (save 17%)",
+        url: `${baseUrl}/dashboard/subscription`,
+      },
+    ],
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      reviewCount: "250",
     },
   }
 }
-export function generateOrganizationSchema2(): Schema {
-  return createOrganizationSchema()
-}
+

@@ -1,6 +1,8 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  reactStrictMode: false,
+  distDir: '.next',
   async rewrites() {
     return [
       {
@@ -9,120 +11,53 @@ const nextConfig = {
       },
     ];
   },
-  images: {
-    domains: [
-      'images.unsplash.com',
-      'courseai.io',
-      'res.cloudinary.com',
-      'lh3.googleusercontent.com',
-      'avatars.githubusercontent.com',
-    ],
-    formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60,
+  env: {
+    DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || 'no-static',
   },
-  experimental: {
-    webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
-    parallelServerCompiles: true,
-    optimizeCss: true,
-    scrollRestoration: true,
-  },
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
-  },
-  poweredByHeader: false,
-  compress: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
     ignoreBuildErrors: true,
   },
-  headers: async () => {
-    return [
+  images: {
+    deviceSizes: [320, 420, 768, 1024, 1200], // Customize based on responsive needs
+    imageSizes: [16, 32, 48, 64, 96], // Common icon sizes
+    remotePatterns: [
       {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-        ],
+        protocol: 'https',
+        hostname: 'img.clerk.com',
+        pathname: '/**',
       },
       {
-        source: '/api/(.*)',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
-        ]
+        protocol: 'https',
+        hostname: 'placehold.co',
+        pathname: '/**',
       },
       {
-        source: '/:path*\\.js',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+        pathname: '/**',
       },
       {
-        source: '/:path*\\.css',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
       },
-      {
-        source: '/images/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400, stale-while-revalidate=604800',
-          },
-        ],
-      },
-    ];
+    ],
   },
-  // Enable SWC for faster builds and minify
-  swcMinify: true,
-  //output: 'standalone', // Standalone output for smaller deploys (optional)
-  // Optional: Bundle analyzer (optional for analysis)
-  webpack(config: { resolve: { fallback: { fs: boolean; path: boolean; }; }; }, { isServer }: any) {
-    if (!isServer) {
-      config.resolve.fallback = {
-        fs: false,
-        path: false,
-      };
-    }
-    return config;
+
+  compress: true, // Ensures Gzip compression for faster performance
+
+  experimental: {
+    optimizePackageImports: [],
   },
-  // Enable bundle analyzer (optional, run `ANALYZE=true npm run build`)
-  // Uncomment to use bundle analyzer
-  // withBundleAnalyzer: {
-  //   enabled: process.env.ANALYZE === 'true',
-  // },
+
+ 
 };
 
 export default nextConfig;
