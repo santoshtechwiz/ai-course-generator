@@ -81,19 +81,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     <Suspense fallback={<LoadingSkeleton />}>
       <JsonLd
       type="course"
-        data={{
-          title: course.title,
-          description: course.description || `Learn ${course.title} with interactive lessons and exercises.`,
-          image: course.image,
-          createdAt: course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString(),
-          updatedAt: course.updatedAt ? new Date(course.updatedAt).toISOString() : undefined,
-          instructor: course.title
-            ? {
-                name: course.title || "CourseAI Instructor",
-                url: `${baseUrl}/dashboard/instructor/${course.slug}`,
-              }
-            : undefined,
-        }}
+        data={course}
       />
 
       <CoursePage course={course} />
