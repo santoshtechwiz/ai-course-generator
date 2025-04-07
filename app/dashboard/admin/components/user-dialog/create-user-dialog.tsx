@@ -43,6 +43,7 @@ type CreateUserFormValues = z.infer<typeof createUserSchema>
 interface CreateUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
 export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {

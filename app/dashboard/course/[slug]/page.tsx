@@ -7,7 +7,6 @@ import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { JsonLd } from "@/app/schema/components/json-ld"
 
-
 function LoadingSkeleton() {
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] gap-4 p-4">
@@ -39,14 +38,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // Extract keywords from course title and category
   const courseKeywords = course.title.toLowerCase().split(" ")
   const categoryKeyword = course.category?.name?.toLowerCase() || ""
+  const difficultyLevel = course.difficulty?.toLowerCase() || "all levels"
 
   // Create a more detailed description
   const enhancedDescription =
     course.description ||
-    `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${course.difficulty || "all"} level developers.`
+    `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${difficultyLevel} developers. Includes ${course.courseUnits?.length || "multiple"} comprehensive units with quizzes and practical examples.`
 
   return generatePageMetadata({
-    title: `${course.title} Programming Course | Learn with AI`,
+    title: `${course.title} Programming Course | Learn with AI | CourseAI`,
     description: enhancedDescription,
     path: `/dashboard/course/${slug}`,
     keywords: [
@@ -55,10 +55,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       `learn ${course.title.toLowerCase()}`,
       `${course.title.toLowerCase()} course`,
       `${categoryKeyword} programming`,
+      `${difficultyLevel} ${course.title.toLowerCase()}`,
       "coding education",
       "interactive programming",
       "AI learning",
       "developer skills",
+      "programming practice",
+      "coding exercises",
       ...courseKeywords.filter((k) => k.length > 3).map((k) => `${k} programming`),
     ],
     ogImage:
@@ -77,22 +80,32 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     notFound()
   }
 
+  // Create learning objectives from course units
+  const learningObjectives = course.courseUnits?.map((unit) => unit.title) || [
+    "Master programming fundamentals",
+    "Build practical coding skills",
+    "Complete hands-on projects",
+  ]
+
   return (
     <Suspense fallback={<LoadingSkeleton />}>
       <JsonLd
-      type="course"
+        type="course"
         data={{
           title: course.title,
           description: course.description || `Learn ${course.title} with interactive lessons and exercises.`,
           image: course.image,
           createdAt: course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString(),
           updatedAt: course.updatedAt ? new Date(course.updatedAt).toISOString() : undefined,
-          instructor: course.title
-            ? {
-                name: course.title || "CourseAI Instructor",
-                url: `${baseUrl}/dashboard/instructor/${course.slug}`,
-              }
-            : undefined,
+          estimatedHours: course.estimatedHours || 10,
+          difficulty: course.difficulty || "Beginner to Advanced",
+          courseUnits:
+            course.courseUnits?.map((unit) => ({ title: unit.title })) ||
+            learningObjectives.map((obj) => ({ title: obj })),
+          instructor: {
+            name: "CourseAI Instructor",
+            url: `${baseUrl}/dashboard/instructor/${course.slug}`,
+          },
         }}
       />
 

@@ -14,10 +14,8 @@ import {
   generateCourseSchema,
   generateFAQSchema,
   generateHowToSchema,
-
   generatePricingSchema,
   generateQuizSchema,
-
   generateWebApplicationSchema,
   generateWebsiteSchema,
   getBaseUrl,
@@ -36,17 +34,16 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
 
   // Determine page type based on pathname if not explicitly provided
   const isBlogPost = pathname.startsWith("/blog/") && pathname.split("/").filter(Boolean).length > 1
-  const isCoursePage = pathname.startsWith("/courses/") && pathname.split("/").filter(Boolean).length > 1
-  const isPricingPage = pathname === "/pricing"
+  const isCoursePage = pathname.includes("/course/") && pathname.split("/").filter(Boolean).length > 1
+  const isQuizPage =
+    (pathname.includes("/quiz/") || pathname.includes("/quizzes/")) && pathname.split("/").filter(Boolean).length > 1
+  const isPricingPage = pathname === "/pricing" || pathname.includes("/subscription")
 
   // Always include these schemas
   const schemas: Schema[] = [
-   
-    ...(breadcrumbItems.length > 0 ? [generateBreadcrumbSchema(breadcrumbItems)] : []),
     generateOrganizationSchema2(),
     generateWebsiteSchema(),
-    generateBreadcrumbSchema(breadcrumbItems),
-    generateWebApplicationSchema(),
+    ...(breadcrumbItems.length > 0 ? [generateBreadcrumbSchema(breadcrumbItems)] : []),
   ]
 
   // Add page-specific schemas
@@ -67,18 +64,32 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
   if (type === "course" || isCoursePage) {
     const courseData = (data as CourseData) || {
       title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Course",
-      description: "Comprehensive programming course with interactive lessons.",
+      description: "Comprehensive programming course with interactive lessons and exercises.",
       createdAt: new Date().toISOString(),
-      url: breadcrumbItems[breadcrumbItems.length - 1]?.url,
+      estimatedHours: 10, // Default 10 hours if not specified
+      difficulty: "Beginner to Advanced",
+      image: `${baseUrl}/default-course-image.jpg`,
+      courseUnits: [
+        { title: "Master programming fundamentals" },
+        { title: "Build practical coding skills" },
+        { title: "Complete hands-on projects" },
+      ],
     }
     schemas.push(generateCourseSchema(courseData))
   }
 
-  if (type === "quiz") {
-    const quizData = data as QuizData
-    if (quizData) {
-      schemas.push(generateQuizSchema(quizData))
+  if (type === "quiz" || isQuizPage) {
+    const quizData = (data as QuizData) || {
+      title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Quiz",
+      description: "Test your programming knowledge with this interactive quiz.",
+      url: breadcrumbItems[breadcrumbItems.length - 1]?.url || `${baseUrl}${pathname}`,
+      dateCreated: new Date().toISOString(),
+      author: {
+        name: "CourseAI",
+        url: baseUrl,
+      },
     }
+    schemas.push(generateQuizSchema(quizData))
   }
 
   if (type === "faq") {
