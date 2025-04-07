@@ -1,94 +1,118 @@
 // Base URL utility
-export function getBaseUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+export function getBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io";
 }
 
 // Types for schema data
 export interface BreadcrumbItem {
-  name: string
-  url: string
+  name: string;
+  url: string;
 }
 
 export interface ArticleData {
-  headline: string
-  description: string
-  url: string
-  imageUrl: string
-  datePublished: string
-  dateModified?: string
-  authorName: string
-  publisherName: string
-  publisherLogoUrl: string
+  headline: string;
+  description: string;
+  url: string;
+  imageUrl: string;
+  datePublished: string;
+  dateModified?: string;
+  authorName: string;
+  publisherName: string;
+  publisherLogoUrl: string;
 }
 
 export interface CourseData {
-  title: string
-  description: string
-  image?: string
-  createdAt: string
-  updatedAt?: string
+  title: string;
+  description: string;
+  url: string;
+  image?: string;
+  createdAt: string;
+  updatedAt?: string;
   instructor?: {
-    name: string
-    url: string
-  }
-  difficulty?: string
-  estimatedHours?: number
-  courseUnits?: any[]
+    name: string;
+    url: string;
+  };
+  difficulty?: string;
+  estimatedHours?: number;
+  courseUnits?: Array<{ title: string }>;
+  price?: string;
+  priceCurrency?: string;
+  priceValidUntil?: string;
 }
 
 export interface QuizData {
-  title: string
-  description: string
-  url: string
-  questions?: any[]
-  dateCreated?: string
+  title: string;
+  description: string;
+  url: string;
+  questions?: Array<{
+    question: string;
+    acceptedAnswer: string;
+  }>;
+  dateCreated?: string;
   author?: {
-    name: string
-    url: string
-  }
+    name: string;
+    url: string;
+  };
 }
 
 export interface FAQItem {
-  question: string
-  answer: string
+  question: string;
+  answer: string;
 }
 
 export interface HowToStep {
-  name: string
-  text: string
-  url?: string
-  imageUrl?: string
+  name: string;
+  text: string;
+  url?: string;
+  imageUrl?: string;
 }
 
-export type Schema = Record<string, any>
+export interface HowToData {
+  name: string;
+  description: string;
+  url: string;
+  imageUrl: string;
+  totalTime: string;
+  steps: HowToStep[];
+}
+
+export interface PricingPlan {
+  name: string;
+  price: string;
+  priceCurrency: string;
+  description: string;
+  url: string;
+}
+
+export type Schema = Record<string, any>;
 
 // Generate breadcrumb items from URL path
 export function generateBreadcrumbItemsFromPath(path: string): BreadcrumbItem[] {
-  const baseUrl = getBaseUrl()
-  const segments = path.split("/").filter(Boolean)
+  const baseUrl = getBaseUrl();
+  const segments = path.split("/").filter(Boolean);
 
-  const breadcrumbs: BreadcrumbItem[] = [{ name: "Home", url: baseUrl }]
+  const breadcrumbs: BreadcrumbItem[] = [{ name: "Home", url: baseUrl }];
 
-  let currentPath = ""
-  segments.forEach((segment) => {
-    currentPath += `/${segment}`
+  let currentPath = "";
+  for (const segment of segments) {
+    currentPath += `/${segment}`;
     const name = segment
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
+      .join(" ");
 
     breadcrumbs.push({
       name,
       url: `${baseUrl}${currentPath}`,
-    })
-  })
+    });
+  }
 
-  return breadcrumbs
+  return breadcrumbs;
 }
 
-// Generate website schema
+// Schema Generators
 export function generateWebsiteSchema(): Schema {
-  const baseUrl = getBaseUrl()
+  const baseUrl = getBaseUrl();
 
   return {
     "@context": "https://schema.org",
@@ -110,12 +134,11 @@ export function generateWebsiteSchema(): Schema {
       target: `${baseUrl}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
-  }
+  };
 }
 
-// Generate web application schema
 export function generateWebApplicationSchema(): Schema {
-  const baseUrl = getBaseUrl()
+  const baseUrl = getBaseUrl();
 
   return {
     "@context": "https://schema.org",
@@ -135,12 +158,11 @@ export function generateWebApplicationSchema(): Schema {
       ratingValue: "4.8",
       ratingCount: "250",
     },
-  }
+  };
 }
 
-// Generate organization schema
-export function generateOrganizationSchema2(): Schema {
-  const baseUrl = getBaseUrl()
+export function generateOrganizationSchema(): Schema {
+  const baseUrl = getBaseUrl();
 
   return {
     "@context": "https://schema.org",
@@ -163,11 +185,11 @@ export function generateOrganizationSchema2(): Schema {
       "@type": "ContactPoint",
       contactType: "customer support",
       email: "support@courseai.io",
+      url: baseUrl,
     },
-  }
+  };
 }
 
-// Generate breadcrumb schema
 export function generateBreadcrumbSchema(items: BreadcrumbItem[]): Schema {
   return {
     "@context": "https://schema.org",
@@ -178,10 +200,9 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]): Schema {
       name: item.name,
       item: item.url,
     })),
-  }
+  };
 }
 
-// Generate article schema
 export function generateArticleSchema(data: ArticleData): Schema {
   return {
     "@context": "https://schema.org",
@@ -207,50 +228,67 @@ export function generateArticleSchema(data: ArticleData): Schema {
         url: data.publisherLogoUrl,
       },
     },
-  }
+  };
 }
 
-// Generate course schema with required fields
 export function generateCourseSchema(course: CourseData): Schema {
+  const baseUrl = getBaseUrl();
+  const defaultCourseImage = `${baseUrl}/images/default-course.jpg`;
+
   return {
     "@context": "https://schema.org",
     "@type": "Course",
-    "name": course.title,
-    "description": course.description,
-    "provider": {
+    name: course.title,
+    description: course.description,
+    url: course.url,
+    image: course.image || defaultCourseImage,
+    provider: {
       "@type": "Organization",
-      "name": "CourseAI",
-      "sameAs": getBaseUrl(),
+      name: "CourseAI",
+      sameAs: baseUrl,
     },
-    "educationalLevel": course.difficulty,
-    "hasCourseInstance": {
+    educationalLevel: course.difficulty || "Beginner",
+    timeRequired: course.estimatedHours ? `PT${course.estimatedHours}H` : undefined,
+    courseWorkload: course.estimatedHours|| "PT10H",
+    dateCreated: course.createdAt,
+    hasCourseInstance: {
       "@type": "CourseInstance",
-      "name": course.title,
-      "description": course.description,
-      "courseMode": "online",
-      "startDate": course.createdAt,
-      "endDate": undefined,
-      "location": {
+      name: course.title,
+      description: course.description,
+      courseMode: "online",
+      startDate: course.createdAt,
+      endDate: course.updatedAt,
+      location: {
         "@type": "VirtualLocation",
-        "url": getBaseUrl(),
+        url: course.url,
       },
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD",
-        "availability": "https://schema.org/InStock",
-        "url": `${getBaseUrl()}/dashboard/course/${course.title}`,
-        "validFrom": course.createdAt,
-      }
     },
-    "image": course.image,
-  }
+    ...(course.instructor && {
+      instructor: {
+        "@type": "Person",
+        name: "CourseAI Instructor",
+        url: getBaseUrl(),
+      },
+    }),
+    ...(course.courseUnits && {
+      hasPart: course.courseUnits.map((unit) => ({
+        "@type": "Course",
+        name: unit.title,
+      })),
+    }),
+    offers: {
+      "@type": "Offer",
+      price: course.price || "0",
+      priceCurrency: course.priceCurrency || "USD",
+      url: course.url,
+      availability: "https://schema.org/InStock",
+      ...(course.priceValidUntil && { priceValidUntil: course.priceValidUntil }),
+    },
+  };
 }
 
-
-// Generate quiz schema
 export function generateQuizSchema(data: QuizData): Schema {
-  const baseUrl = getBaseUrl()
+  const baseUrl = getBaseUrl();
 
   return {
     "@context": "https://schema.org",
@@ -270,19 +308,23 @@ export function generateQuizSchema(data: QuizData): Schema {
           name: "CourseAI",
           url: baseUrl,
         },
-    mainEntity: {
-      "@type": "Question",
-      name: data.title,
-      text: data.description,
-    },
+    ...(data.questions && {
+      hasPart: data.questions.map((q) => ({
+        "@type": "Question",
+        name: q.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: q.acceptedAnswer,
+        },
+      })),
+    }),
     about: {
       "@type": "Thing",
       name: "Programming Education",
     },
-  }
+  };
 }
 
-// Generate FAQ schema
 export function generateFAQSchema(items: FAQItem[]): Schema {
   return {
     "@context": "https://schema.org",
@@ -295,18 +337,10 @@ export function generateFAQSchema(items: FAQItem[]): Schema {
         text: item.answer,
       },
     })),
-  }
+  };
 }
 
-// Generate How-To schema
-export function generateHowToSchema(data: {
-  name: string
-  description: string
-  url: string
-  imageUrl: string
-  totalTime: string
-  steps: HowToStep[]
-}): Schema {
+export function generateHowToSchema(data: HowToData): Schema {
   return {
     "@context": "https://schema.org",
     "@type": "HowTo",
@@ -322,52 +356,57 @@ export function generateHowToSchema(data: {
         "@type": "HowToDirection",
         text: step.text,
       },
-      image: step.imageUrl,
+      ...(step.imageUrl && { image: step.imageUrl }),
     })),
-  }
+  };
 }
 
-// Generate pricing schema
-export function generatePricingSchema(): Schema {
-  const baseUrl = getBaseUrl()
+export function generatePricingSchema(plans: PricingPlan[] = []): Schema {
+  const baseUrl = getBaseUrl();
+  const defaultPlans: PricingPlan[] = [
+    {
+      name: "Free Plan",
+      price: "0",
+      priceCurrency: "USD",
+      description: "Basic access to CourseAI's learning platform",
+      url: `${baseUrl}/pricing`,
+    },
+    {
+      name: "Premium Monthly",
+      price: "19.99",
+      priceCurrency: "USD",
+      description: "Full access to all premium features with monthly billing",
+      url: `${baseUrl}/pricing`,
+    },
+    {
+      name: "Premium Annual",
+      price: "199.99",
+      priceCurrency: "USD",
+      description: "Full access to all premium features with annual billing (save 17%)",
+      url: `${baseUrl}/pricing`,
+    },
+  ];
+
+  const offers = (plans.length > 0 ? plans : defaultPlans).map((plan) => ({
+    "@type": "Offer",
+    name: plan.name,
+    price: plan.price,
+    priceCurrency: plan.priceCurrency,
+    description: plan.description,
+    url: plan.url,
+  }));
 
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: "CourseAI Premium Subscription",
     description: "Access to all premium features of CourseAI's coding education platform",
-    image: `${baseUrl}/premium-subscription.jpg`,
-    offers: [
-      {
-        "@type": "Offer",
-        name: "Free Plan",
-        price: "0",
-        priceCurrency: "USD",
-        description: "Basic access to CourseAI's learning platform",
-        url: `${baseUrl}/dashboard/subscription`,
-      },
-      {
-        "@type": "Offer",
-        name: "Premium Monthly",
-        price: "19.99",
-        priceCurrency: "USD",
-        description: "Full access to all premium features with monthly billing",
-        url: `${baseUrl}/dashboard/subscription`,
-      },
-      {
-        "@type": "Offer",
-        name: "Premium Annual",
-        price: "199.99",
-        priceCurrency: "USD",
-        description: "Full access to all premium features with annual billing (save 17%)",
-        url: `${baseUrl}/dashboard/subscription`,
-      },
-    ],
+    image: `${baseUrl}/images/premium-subscription.jpg`,
+    offers,
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "4.8",
       reviewCount: "250",
     },
-  }
+  };
 }
-
