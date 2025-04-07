@@ -211,63 +211,42 @@ export function generateArticleSchema(data: ArticleData): Schema {
 }
 
 // Generate course schema with required fields
-export function generateCourseSchema(data: CourseData): Schema {
-  const baseUrl = getBaseUrl()
-
-  // Calculate course workload based on estimated hours or default to a reasonable value
-  const workload = "PT10H" // Default 10 hours if not specified
-
-  // Create course units as learning objectives if available
-  const learningObjectives = data?.courseUnits?.map((unit) => unit.title) || [
-    "Master programming fundamentals",
-    "Build practical coding skills",
-    "Complete hands-on projects",
-  ]
-
+export function generateCourseSchema(course: CourseData): Schema {
   return {
     "@context": "https://schema.org",
     "@type": "Course",
-    name: data.title,
-    description: data.title,
-    provider: {
+    "name": course.title,
+    "description": course.description,
+    "provider": {
       "@type": "Organization",
-      name: "CourseAI",
-      sameAs: baseUrl,
+      "name": "CourseAI",
+      "sameAs": getBaseUrl(),
     },
-    url: `${baseUrl}/dashboard/course/${data?.title?.toLowerCase().replace(/\s+/g, "-")}`,
-    dateCreated: data.createdAt,
-    dateModified: data.updatedAt || data.createdAt,
-    image: data.image || `${baseUrl}/default-course-image.jpg`,
-    inLanguage: "en",
-    courseWorkload: workload,
-    timeRequired: workload,
-    educationalLevel: "Beginner to Advanced",
-    teaches: learningObjectives.join(", "),
-    hasCourseInstance: {
+    "educationalLevel": course.difficulty,
+    "hasCourseInstance": {
       "@type": "CourseInstance",
-      courseMode: "online",
-      courseWorkload: "PT10H", // Default 10 hours if not specified
-      instructor: data.instructor
-        ? {
-            "@type": "Person",
-            name: "CourseAI Instructor",
-            url: "https://courseai.io",
-          }
-        : {
-            "@type": "Person",
-            name: "CourseAI Instructor",
-          },
+      "name": course.title,
+      "description": course.description,
+      "courseMode": "online",
+      "startDate": course.createdAt,
+      "endDate": undefined,
+      "location": {
+        "@type": "VirtualLocation",
+        "url": getBaseUrl(),
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "url": `${getBaseUrl()}/dashboard/course/${course.title}`,
+        "validFrom": course.createdAt,
+      }
     },
-    mainEntity: {
-      "@type": "LearningResource",
-      name: data.title,
-      description: data.title,
-      learningResourceType: "Course",
-      educationalLevel: data.difficulty || "Beginner to Advanced",
-      teaches: learningObjectives.join(", "),
-    },
+    "image": course.image,
   }
 }
+
 
 // Generate quiz schema
 export function generateQuizSchema(data: QuizData): Schema {
