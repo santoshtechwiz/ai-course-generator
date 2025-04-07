@@ -76,6 +76,14 @@ interface UserEditDialogProps {
   onSuccess?: () => void
 }
 
+const USER_TYPES = [
+  { value: "FREE", label: "Free" },
+  { value: "BASIC", label: "Basic" },
+  { value: "PRO", label: "Pro" },
+  { value: "PREMIUM", label: "Premium" },
+  { value: "ULTIMATE", label: "Ultimate" },
+] as const
+
 export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEditDialogProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)

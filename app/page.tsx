@@ -1,10 +1,11 @@
 import LandingComponent from "@/components/landing/LandingComponent"
 import type { Metadata } from "next"
+import { JsonLd } from "@/app/schema/components/json-ld"
 
 export const metadata: Metadata = {
   title: "CourseAI: AI Course Creator | Free Quiz, MCQ, Flashcard Generator",
   description:
-    "Create professional courses instantly with CourseAI. Our free AI generator builds customized learning materials, MCQs, open-ended questions, quizzes, and flashcards tailored to your needs.",
+    "Create professional programming courses instantly with CourseAI. Our free AI generator builds customized learning materials, MCQs, open-ended questions, quizzes, and flashcards tailored to your coding education needs.",
   keywords: [
     "AI course creator",
     "free quiz generator",
@@ -14,11 +15,18 @@ export const metadata: Metadata = {
     "CourseAI",
     "free learning platform",
     "custom course generation",
+    "programming education",
+    "coding quizzes",
+    "developer learning",
+    "tech education",
+    "AI learning platform",
+    "interactive coding lessons",
+    "programming practice",
   ],
   openGraph: {
     title: "CourseAI: Free AI Course & Quiz Generator | MCQs, Flashcards & More",
     description:
-      "Generate professional courses for free with our AI technology. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
+      "Generate professional programming courses for free with our AI technology. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
     url: "https://courseai.io",
     siteName: "CourseAI",
     images: [
@@ -36,7 +44,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "CourseAI: Free AI Course & Quiz Generator | MCQs, Flashcards & More",
     description:
-      "Generate professional courses for free. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
+      "Generate professional programming courses for free. Create customized MCQs, open-ended questions, quizzes, and interactive flashcards instantly.",
     images: ["https://courseai.io/twitter-image.jpg"],
   },
   robots: {
@@ -53,8 +61,12 @@ export const metadata: Metadata = {
 }
 
 const HomePage = () => {
+
+
   return (
     <div className="flex flex-col min-h-screen">
+     
+      <JsonLd type="default" />
       <div className="flex-grow p-2 md:p-4">
         <LandingComponent />
       </div>

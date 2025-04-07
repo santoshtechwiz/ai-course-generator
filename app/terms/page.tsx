@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from "next"
 import { generatePageMetadata } from '@/lib/seo-utils';
-
+import { JsonLd } from '../schema/components/json-ld';
 export const metadata: Metadata = generatePageMetadata({
   title: "Terms of Service | CourseAI Coding Education",
   description:
@@ -13,12 +13,40 @@ export const metadata: Metadata = generatePageMetadata({
     "developer education agreement",
     "coding platform terms",
     "programming learning policies",
+    "tech education terms of service",
+    "developer training agreement",
+    "coding course terms",
+    "programming quiz terms",
+    "AI learning platform policies",
   ],
 })
 
 export default function TermsAndConditions() {
+  const termsSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "CourseAI Terms of Service",
+    "description": "Terms and conditions for using CourseAI's programming education platform.",
+    "mainEntity": {
+      "@type": "Article",
+      "name": "Terms of Service",
+      "headline": "CourseAI Terms of Service",
+      "description": "Understanding our policies for a better programming learning experience.",
+      "datePublished": new Date().toISOString(),
+      "dateModified": new Date().toISOString(),
+      "author": {
+        "@type": "Organization",
+        "name": "CourseAI"
+      }
+    }
+  }
   return (
     <div className="container mx-auto px-4 py-8">
+        <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(termsSchema) }}
+      />
+      <JsonLd type="default" />
       <h1 className="text-3xl font-bold mb-6">Terms and Conditions</h1>
       
       <p className="mb-4">Last updated: {new Date().toLocaleDateString('en-US')}</p>
