@@ -355,9 +355,10 @@ export function generateCourseSchema(course: CourseData): Schema {
       name: "CourseAI",
       sameAs: baseUrl,
     },
-    educationalLevel: course.difficulty || "Beginner",
+      educationalLevel: course.difficulty || "Beginner",
     timeRequired: course.estimatedHours ? `PT${course.estimatedHours}H` : undefined,
-    courseWorkload: course.estimatedHours ? `PT${course.estimatedHours}H` : "PT10H",
+    courseWorkload: "PT1H",
+    category: "Programming",
     dateCreated: course.createdAt,
     hasCourseInstance: {
       "@type": "CourseInstance",
