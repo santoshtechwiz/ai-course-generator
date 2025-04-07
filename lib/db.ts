@@ -432,7 +432,7 @@ export async function syncUserCredits(userId: string): Promise<void> {
 
     console.log(`Credits synchronized for user ${userId}. New balance: ${calculatedBalance}`)
   } catch (error) {
-    console.error(`Error synchronizing credits for user ${userId}:`, error)
+    console.warn(`Error synchronizing credits for user ${userId}:`, error)
     throw error
   }
 }
