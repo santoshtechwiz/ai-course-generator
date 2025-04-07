@@ -17,7 +17,7 @@ export default function robots(): MetadataRoute.Robots {
         "/dashboard/subscription/components/",
       ],
     },
-    sitemap: `${baseUrl}/api/sitemap`,
+    sitemap: `${baseUrl}/sitemap.xml`,
     host: baseUrl,
   }
 }
