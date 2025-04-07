@@ -46,8 +46,8 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     ...(breadcrumbItems.length > 0 ? [generateBreadcrumbSchema(breadcrumbItems)] : []),
   ]
 
-  // Add page-specific schemas
-  if (type === "article" || isBlogPost) {
+  // Add page-specific schemas - only add each schema once
+  if (type === "article" || (isBlogPost && type !== "course" && type !== "quiz" && type !== "faq" && type !== "howTo")) {
     const articleData = (data as ArticleData) || {
       headline: `CourseAI - ${breadcrumbItems[breadcrumbItems.length - 1]?.name || "Article"}`,
       description: "Learn programming concepts with CourseAI's comprehensive guides.",
@@ -61,7 +61,8 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     schemas.push(generateArticleSchema(articleData))
   }
 
-  if (type === "course" || isCoursePage) {
+  // Only add course schema if explicitly requested or on a course page and no other specific type is requested
+  else if (type === "course" || (isCoursePage && type === "default")) {
     const courseData = (data as CourseData) || {
       title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Course",
       description: "Comprehensive programming course with interactive lessons and exercises.",
@@ -78,7 +79,8 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     schemas.push(generateCourseSchema(courseData))
   }
 
-  if (type === "quiz" || isQuizPage) {
+  // Only add quiz schema if explicitly requested or on a quiz page and no other specific type is requested
+  else if (type === "quiz" || (isQuizPage && type === "default")) {
     const quizData = (data as QuizData) || {
       title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Quiz",
       description: "Test your programming knowledge with this interactive quiz.",
@@ -92,14 +94,16 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     schemas.push(generateQuizSchema(quizData))
   }
 
-  if (type === "faq") {
+  // Only add FAQ schema if explicitly requested
+  else if (type === "faq") {
     const faqItems = data as FAQItem[]
     if (faqItems && faqItems.length > 0) {
       schemas.push(generateFAQSchema(faqItems))
     }
   }
 
-  if (type === "howTo") {
+  // Only add howTo schema if explicitly requested
+  else if (type === "howTo") {
     const howToData = data as {
       name: string
       description: string
@@ -113,11 +117,13 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     }
   }
 
-  if (isPricingPage) {
+  // Add pricing schema only on pricing pages and when no specific schema type is requested
+  if (isPricingPage && type === "default") {
     schemas.push(generatePricingSchema())
   }
 
-  if (pathname === "/" || pathname === "/home") {
+  // Add web application schema only on home page and when no specific schema type is requested
+  if ((pathname === "/" || pathname === "/home") && type === "default") {
     schemas.push(generateWebApplicationSchema())
   }
 
@@ -133,4 +139,3 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     </>
   )
 }
-
