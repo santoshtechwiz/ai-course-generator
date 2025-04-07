@@ -23,7 +23,7 @@ export interface ArticleData {
 
 export interface CourseData {
   title: string
-  description: string
+  description?: string
   url: string
   image?: string
   createdAt: string
@@ -31,6 +31,10 @@ export interface CourseData {
   instructor?: {
     name: string
     url: string
+  }
+  provider?: {
+    name: string
+    url?: string
   }
   difficulty?: string
   estimatedHours?: number
@@ -343,19 +347,31 @@ export function generateCourseSchema(course: CourseData): Schema {
   const baseUrl = getBaseUrl()
   const defaultCourseImage = `${baseUrl}/images/default-course.jpg`
 
+  // Default provider if not specified
+  const defaultProvider = {
+    "@type": "Organization",
+    name: "CourseAI",
+    sameAs: baseUrl,
+  }
+
+  // Ensure description is always present
+  const courseDescription = course.description || `Learn ${course.title} with CourseAI`
+
   return {
     "@context": "https://schema.org",
     "@type": "Course",
     name: course.title,
-    description: course.description|| `Learn ${course.title} with CourseAI`,
+    description: courseDescription,
     url: course.url,
     image: course.image || defaultCourseImage,
-    provider: {
-      "@type": "Organization",
-      name: "CourseAI",
-      sameAs: baseUrl,
-    },
-      educationalLevel: course.difficulty || "Beginner",
+    provider: course.provider
+      ? {
+          "@type": "Organization",
+          name: course.provider.name,
+          ...(course.provider.url && { sameAs: course.provider.url }),
+        }
+      : defaultProvider,
+    educationalLevel: course.difficulty || "Beginner",
     timeRequired: course.estimatedHours ? `PT${course.estimatedHours}H` : undefined,
     courseWorkload: "PT1H",
     category: "Programming",
@@ -363,7 +379,7 @@ export function generateCourseSchema(course: CourseData): Schema {
     hasCourseInstance: {
       "@type": "CourseInstance",
       name: course.title,
-      description: course.description,
+      description: courseDescription,
       courseMode: "online",
       startDate: course.createdAt,
       endDate: course.updatedAt || course.createdAt,
@@ -644,6 +660,16 @@ export function validateSchema(schema: Schema): boolean {
           if (!obj.ratingValue || !obj.ratingCount) {
             console.error("AggregateRating missing required fields: ratingValue or ratingCount")
             return false
+          }
+          break
+        case "Course":
+          if (!obj.name || !obj.description) {
+            console.error("Course missing required fields: name or description")
+            return false
+          }
+          if (!obj.provider) {
+            console.error("Course missing recommended field: provider")
+            // Don't return false for non-critical issues
           }
           break
       }
