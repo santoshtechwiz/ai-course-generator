@@ -181,8 +181,8 @@ export const UserManagement = () => {
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchesSearch = searchQuery === "" || 
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        user.name?.toLowerCase().includes(searchQuery?.toLowerCase()) || 
+        user.email?.toLowerCase().includes(searchQuery?.toLowerCase())
       
       const matchesType = userTypeFilter.length === 0 || 
         userTypeFilter.includes(user.userType)

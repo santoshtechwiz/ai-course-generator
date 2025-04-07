@@ -55,7 +55,7 @@ export class LangChain {
 
     while ((match = regex.exec(text)) !== null) {
       recommendations.push({
-        type: match[2].toLowerCase() as "next" | "review" | "practice",
+        type: match[2]?.toLowerCase() as "next" | "review" | "practice",
         message: match[3],
         courseId: Number.parseInt(match[4]),
         chapterId: Number.parseInt(match[5]),

@@ -13,7 +13,7 @@ class Trie {
 
   insert(word: string, id: number) {
     let node = this.root;
-    for (const char of word.toLowerCase()) {
+    for (const char of word?.toLowerCase()) {
       if (!node.children[char]) {
         node.children[char] = new TrieNode();
       }
@@ -24,7 +24,7 @@ class Trie {
 
   search(prefix: string): number[] {
     let node = this.root;
-    for (const char of prefix.toLowerCase()) {
+    for (const char of prefix?.toLowerCase()) {
       if (!node.children[char]) return [];
       node = node.children[char];
     }
@@ -45,7 +45,7 @@ const initializeTrie = async () => {
     });
 
     courses.forEach((course) => {
-      courseTrie.insert(course.title.toLowerCase(), course.id);
+      courseTrie.insert(course.title?.toLowerCase(), course.id);
     });
 
     console.log('Trie initialized with courses data.');
@@ -78,7 +78,7 @@ export async function GET(request: Request) {
 
   try {
     // Search for matching courses using the Trie and additional fields
-    const courseIds = courseTrie.search(query.toLowerCase());
+    const courseIds = courseTrie.search(query?.toLowerCase());
     const courses = await prisma.course.findMany({
       where: {
         OR: [

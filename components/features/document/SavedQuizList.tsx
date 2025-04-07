@@ -67,11 +67,11 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
 
     // Apply search filter
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery?.toLowerCase()
       result = result.filter(
         (quiz) =>
-          quiz.title.toLowerCase().includes(query) ||
-          quiz.questions.some((q) => q.question.toLowerCase().includes(query)),
+          quiz.title?.toLowerCase().includes(query) ||
+          quiz.questions.some((q) => q.question?.toLowerCase().includes(query)),
       )
     }
 

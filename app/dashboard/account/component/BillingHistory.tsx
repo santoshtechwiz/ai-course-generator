@@ -44,8 +44,8 @@ export function BillingHistory({ billingHistory }: BillingHistoryProps) {
   // Memoize filtered history to prevent recalculation on every render
   const filteredHistory = useMemo(() => {
     return billingHistory.filter((item) => {
-      const matchesSearch = item.description.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = statusFilter === "all" || item.status.toLowerCase() === statusFilter.toLowerCase()
+      const matchesSearch = item.description?.toLowerCase().includes(searchTerm?.toLowerCase())
+      const matchesStatus = statusFilter === "all" || item.status?.toLowerCase() === statusFilter?.toLowerCase()
       return matchesSearch && matchesStatus
     })
   }, [billingHistory, searchTerm, statusFilter])

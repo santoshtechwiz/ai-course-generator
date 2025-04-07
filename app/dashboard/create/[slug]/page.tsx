@@ -26,10 +26,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return generatePageMetadata({
     title: `Creating: ${course.title} | Course AI`,
-    description: `Design and build your ${course.title.toLowerCase()} course with our intuitive course creation tools. Share your expertise and engage learners effectively.`,
+    description: `Design and build your ${course.title?.toLowerCase()} course with our intuitive course creation tools. Share your expertise and engage learners effectively.`,
     path: `/dashboard/explore/${params.slug}`,
     keywords: [
-      `${course.title.toLowerCase()} course creation`,
+      `${course.title?.toLowerCase()} course creation`,
       "build online course",
       "teaching platform",
       "educational content",

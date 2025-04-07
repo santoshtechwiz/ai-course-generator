@@ -10,7 +10,7 @@ export class TrieNode {
       for (let i = 0; i < word.length; i++) {
         let node = this.root;
         for (let j = i; j < word.length; j++) {
-          const char = word[j].toLowerCase();
+          const char = word[j]?.toLowerCase();
           if (!node.children[char]) {
             node.children[char] = new TrieNode();
           }
@@ -22,7 +22,7 @@ export class TrieNode {
   
     search(query: string): number[] {
       let node = this.root;
-      for (const char of query.toLowerCase()) {
+      for (const char of query?.toLowerCase()) {
         if (!node.children[char]) return [];
         node = node.children[char];
       }

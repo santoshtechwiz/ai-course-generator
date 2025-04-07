@@ -25,17 +25,17 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 
   // Extract keywords from quiz title
-  const titleWords = quiz.title.toLowerCase().split(" ")
+  const titleWords = quiz.title?.toLowerCase().split(" ")
   const keyTerms = titleWords.filter((word) => word.length > 3)
 
   return generatePageMetadata({
     title: `${quiz.title} | Interactive Programming Flashcards`,
-    description: `Master ${quiz.title.toLowerCase()} concepts with our interactive flashcards. Perfect for all developers looking to strengthen their knowledge through active recall and spaced repetition. ${quiz.questions?.length || 0} practice questions included.`,
+    description: `Master ${quiz.title?.toLowerCase()} concepts with our interactive flashcards. Perfect for all developers looking to strengthen their knowledge through active recall and spaced repetition. ${quiz.questions?.length || 0} practice questions included.`,
     path: `/dashboard/flashcard/${slug}`,
     keywords: [
-      `${quiz.title.toLowerCase()} flashcards`,
-      `${quiz.title.toLowerCase()} practice questions`,
-      `learn ${quiz.title.toLowerCase()}`,
+      `${quiz.title?.toLowerCase()} flashcards`,
+      `${quiz.title?.toLowerCase()} practice questions`,
+      `learn ${quiz.title?.toLowerCase()}`,
       "programming study aids",
       "coding concepts",
       "developer learning tools",

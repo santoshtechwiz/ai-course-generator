@@ -904,7 +904,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
                                           </div>
                                           <p className="text-sm mt-1">
                                             {log.description ||
-                                              `User performed ${log.action.toLowerCase().replace("_", " ")}`}
+                                              `User performed ${log.action?.toLowerCase().replace("_", " ")}`}
                                           </p>
                                           {log.metadata && (
                                             <div className="mt-1 text-xs text-muted-foreground">

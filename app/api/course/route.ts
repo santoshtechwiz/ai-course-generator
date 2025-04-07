@@ -88,9 +88,9 @@ const removeDuplicate = (data: OutputUnits): OutputUnits => {
       const uniqueItem = {
         ...item,
         chapters: item.chapters.reduce((accChapters, chapter) => {
-          const normalizedQuery = chapter.youtube_search_query.trim().toLowerCase();
+          const normalizedQuery = chapter.youtube_search_query.trim()?.toLowerCase();
           const existingChapter = accChapters.find(
-            (c) => c.youtube_search_query.trim().toLowerCase() === normalizedQuery
+            (c) => c.youtube_search_query.trim()?.toLowerCase() === normalizedQuery
           );
           if (!existingChapter) {
             accChapters.push(chapter);

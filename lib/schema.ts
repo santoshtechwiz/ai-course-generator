@@ -218,7 +218,7 @@ export function generateCourseSchema(data: CourseData): Schema {
   const workload = "PT10H" // Default 10 hours if not specified
 
   // Create course units as learning objectives if available
-  const learningObjectives = data.courseUnits?.map((unit) => unit.title) || [
+  const learningObjectives = data?.courseUnits?.map((unit) => unit.title) || [
     "Master programming fundamentals",
     "Build practical coding skills",
     "Complete hands-on projects",
@@ -228,13 +228,13 @@ export function generateCourseSchema(data: CourseData): Schema {
     "@context": "https://schema.org",
     "@type": "Course",
     name: data.title,
-    description: data.description,
+    description: data.title,
     provider: {
       "@type": "Organization",
       name: "CourseAI",
       sameAs: baseUrl,
     },
-    url: `${baseUrl}/dashboard/course/${data.title.toLowerCase().replace(/\s+/g, "-")}`,
+    url: `${baseUrl}/dashboard/course/${data?.title??.toLowerCase().replace(/\s+/g, "-")}`,
     dateCreated: data.createdAt,
     dateModified: data.updatedAt || data.createdAt,
     image: data.image || `${baseUrl}/default-course-image.jpg`,

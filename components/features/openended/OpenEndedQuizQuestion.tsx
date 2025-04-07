@@ -66,7 +66,7 @@ export default function OpenEndedQuizQuestion({
   }
 
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
+    switch (difficulty?.toLowerCase()) {
       case "easy":
         return "bg-green-500"
       case "medium":

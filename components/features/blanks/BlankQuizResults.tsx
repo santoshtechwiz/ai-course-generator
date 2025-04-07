@@ -15,8 +15,8 @@ interface BlankQuizResultsProps {
 export default function BlankQuizResults({ answers, questions, onRestart, onComplete }: BlankQuizResultsProps) {
   const { score, results } = useMemo(() => {
     const calculatedResults = questions.map((question, index) => {
-      const userAnswer = answers[index].answer.trim().toLowerCase()
-      const correctAnswer = question.answer.trim().toLowerCase()
+      const userAnswer = answers[index].answer.trim()?.toLowerCase()
+      const correctAnswer = question.answer.trim()?.toLowerCase()
       const similarity = calculateSimilarity(correctAnswer, userAnswer)
       return {
         ...question,
@@ -97,7 +97,7 @@ export default function BlankQuizResults({ answers, questions, onRestart, onComp
 
 function calculateSimilarity(str1: string, str2: string): number {
   // Normalize strings by removing extra spaces and converting to lowercase
-  const normalize = (str: string) => str.replace(/\s+/g, " ").trim().toLowerCase()
+  const normalize = (str: string) => str.replace(/\s+/g, " ").trim()?.toLowerCase()
   const normalizedStr1 = normalize(str1)
   const normalizedStr2 = normalize(str2)
 

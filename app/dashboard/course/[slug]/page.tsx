@@ -37,12 +37,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   // Extract keywords from course title and category
-  const courseKeywords = course.title.toLowerCase().split(" ")
-  const categoryKeyword = course.category?.name?.toLowerCase() || ""
+  const courseKeywords = course.title?.toLowerCase().split(" ")
+  const categoryKeyword = course.category?.name??.toLowerCase() || ""
 
   // Create a more detailed description
   const enhancedDescription =
-    course.description ||
+    course.title ||
     `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${course.difficulty || "all"} level developers.`
 
   return generatePageMetadata({
@@ -50,10 +50,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description: enhancedDescription,
     path: `/dashboard/course/${slug}`,
     keywords: [
-      `${course.title.toLowerCase()} tutorial`,
-      `${course.title.toLowerCase()} programming`,
-      `learn ${course.title.toLowerCase()}`,
-      `${course.title.toLowerCase()} course`,
+      `${course.title?.toLowerCase()} tutorial`,
+      `${course.title?.toLowerCase()} programming`,
+      `learn ${course.title?.toLowerCase()}`,
+      `${course.title?.toLowerCase()} course`,
       `${categoryKeyword} programming`,
       "coding education",
       "interactive programming",

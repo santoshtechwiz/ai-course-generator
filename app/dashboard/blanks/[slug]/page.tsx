@@ -25,10 +25,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return generatePageMetadata({
     title: `${quiz.title} | Programming Fill in the Blanks Quiz`,
-    description: `Test your coding knowledge with this ${quiz.title.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
+    description: `Test your coding knowledge with this ${quiz.title?.toLowerCase()} fill in the blanks quiz. Practice programming concepts and improve your skills.`,
     path: `/dashboard/blanks/${slug}`,
     keywords: [
-      `${quiz.title.toLowerCase()} quiz`,
+      `${quiz.title?.toLowerCase()} quiz`,
       "programming fill in the blanks",
       "coding assessment",
       "developer knowledge test",

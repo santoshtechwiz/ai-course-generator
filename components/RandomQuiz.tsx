@@ -48,7 +48,7 @@ export const RandomQuiz: React.FC = () => {
     refresh()
   }
 
-  const filteredQuizzes = filter ? quizzes.filter((quiz) => quiz.quizType.toLowerCase() === filter) : quizzes
+  const filteredQuizzes = filter ? quizzes.filter((quiz) => quiz.quizType?.toLowerCase() === filter) : quizzes
 
   return (
     <div className="h-full flex flex-col bg-background">
