@@ -113,7 +113,7 @@ export function SimilarQuizzes() {
 
 function QuizCard({ quiz, index }: { quiz: SimilarQuiz, index: number }) {
   const difficultyColor = QUIZ_DIFFICULTY_COLORS[
-    quiz.difficulty.toLowerCase() as keyof typeof QUIZ_DIFFICULTY_COLORS
+    quiz.difficulty?.toLowerCase() as keyof typeof QUIZ_DIFFICULTY_COLORS
   ] || "bg-gray-100 text-gray-800"
 
   return (

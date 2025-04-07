@@ -105,14 +105,14 @@ export default function ContactManagement() {
   }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value.toLowerCase())
+    setSearchQuery(e.target.value?.toLowerCase())
   }
 
   const filteredSubmissions = submissions.filter(
     (submission) =>
-      submission.name.toLowerCase().includes(searchQuery) ||
-      submission.email.toLowerCase().includes(searchQuery) ||
-      submission.message.toLowerCase().includes(searchQuery),
+      submission.name?.toLowerCase().includes(searchQuery) ||
+      submission.email?.toLowerCase().includes(searchQuery) ||
+      submission.message?.toLowerCase().includes(searchQuery),
   )
 
   const sendEmailResponse = async (email: string, name: string, message: string, responseText: string) => {

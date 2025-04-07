@@ -27,10 +27,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
   return generatePageMetadata({
     title: `${quiz.title} | Programming Code Challenge`,
-    description: `Test your coding skills with this ${quiz.title.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
+    description: `Test your coding skills with this ${quiz.title?.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
     path: `/dashboard/code/${slug}`,
     keywords: [
-      `${quiz.title.toLowerCase()} challenge`,
+      `${quiz.title?.toLowerCase()} challenge`,
       "programming exercise",
       "coding practice",
       "developer skills test",

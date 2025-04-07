@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
           : sortField === "userType"
             ? "userType"
             : "createdAt"
-    ] = sortOrder.toLowerCase()
+    ] = sortOrder?.toLowerCase()
 
     // Fetch users with pagination, filtering, and sorting
     const users = await prisma.user.findMany({

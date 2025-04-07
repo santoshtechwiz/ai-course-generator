@@ -26,13 +26,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
   return generatePageMetadata({
     title: `${quizData.title} | Open-Ended Programming Quiz`,
-    description: `Develop your programming problem-solving skills with this ${quizData.title.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
+    description: `Develop your programming problem-solving skills with this ${quizData.title?.toLowerCase()} open-ended coding quiz. Enhance critical thinking.`,
     path: `/dashboard/openended/${slug}`,
     keywords: [
       "open-ended coding questions",
       "programming problem solving",
       "coding critical thinking",
-      `${quizData.title.toLowerCase()} practice`,
+      `${quizData.title?.toLowerCase()} practice`,
       "developer reasoning skills",
     ],
     ogType: "article",

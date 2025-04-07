@@ -43,8 +43,8 @@ export default function QuizResultsOpenEnded({ answers, questions, onRestart, on
     const totalSimilarity = answers.reduce((acc, answer, index) => {
       if (!answer || !questions[index]) return acc
 
-      const correctAnswer = questions[index].answer.toLowerCase()
-      const userAnswer = answer.answer.toLowerCase()
+      const correctAnswer = questions[index].answer?.toLowerCase()
+      const userAnswer = answer.answer?.toLowerCase()
       const similarity = calculateSimilarity(correctAnswer, userAnswer)
       return acc + similarity
     }, 0)
@@ -89,7 +89,7 @@ export default function QuizResultsOpenEnded({ answers, questions, onRestart, on
   const renderDiff = (correct: string, user: string) => {
     if (!correct || !user) return null
 
-    const diff = diffChars(correct.toLowerCase(), user.toLowerCase())
+    const diff = diffChars(correct?.toLowerCase(), user?.toLowerCase())
     return diff.map((part, index) => (
       <span
         key={index}
@@ -111,7 +111,7 @@ export default function QuizResultsOpenEnded({ answers, questions, onRestart, on
       return { added: 0, removed: 0, unchanged: 0 }
     }
 
-    const diff = diffChars(correct.toLowerCase(), user.toLowerCase())
+    const diff = diffChars(correct?.toLowerCase(), user?.toLowerCase())
     return diff.reduce(
       (acc, part) => {
         if (part.added) acc.added += part.count || 0

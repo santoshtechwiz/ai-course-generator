@@ -85,15 +85,15 @@ export default function FAQSection() {
 
   const filteredFAQs = faqData.filter(
     (faq) =>
-      faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchTerm.toLowerCase()),
+      faq.question?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+      faq.answer?.toLowerCase().includes(searchTerm?.toLowerCase()),
   )
 
   useEffect(() => {
     if (searchTerm) {
       setHighlightedTerms(
         searchTerm
-          .toLowerCase()
+          ?.toLowerCase()
           .split(" ")
           .filter((term) => term.length > 2),
       )

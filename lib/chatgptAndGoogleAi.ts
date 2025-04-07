@@ -84,7 +84,7 @@ function summarizeLocally(text: string): string {
   const sentences = text.match(/[^.!?]+[.!?]/g) || []
   const importantSentences = sentences
     .filter((sentence) => {
-      const words = sentence.toLowerCase().split(/\s+/)
+      const words = sentence?.toLowerCase().split(/\s+/)
       return words.some((word) => ["important", "significant", "key", "main", "crucial", "essential"].includes(word))
     })
     .slice(0, 5)

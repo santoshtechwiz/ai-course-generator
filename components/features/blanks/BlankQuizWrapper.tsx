@@ -207,7 +207,7 @@ const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ slug }) => {
           // Format answers for submission
           const formattedAnswers = answers.map((answer, index) => ({
             userAnswer: answer.answer,
-            isCorrect: answer.answer.toLowerCase() === quizData.questions[index].answer.toLowerCase(),
+            isCorrect: answer.answer?.toLowerCase() === quizData.questions[index].answer?.toLowerCase(),
             timeSpent: answer.timeSpent,
             hintsUsed: answer.hintsUsed,
           }))
@@ -234,7 +234,7 @@ const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ slug }) => {
     if (!quizData || !answers.length) return 0
 
     return answers.reduce((score, answer, index) => {
-      const isCorrect = answer.answer.toLowerCase() === quizData.questions[index].answer.toLowerCase()
+      const isCorrect = answer.answer?.toLowerCase() === quizData.questions[index].answer?.toLowerCase()
       return score + (isCorrect ? 1 : 0)
     }, 0)
   }

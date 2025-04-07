@@ -18,7 +18,7 @@ export function AuthButton({ provider, logo, text, callbackUrl }: AuthButtonProp
   const handleClick = async () => {
     try {
       setIsLoading(true)
-      await signIn(provider.toLowerCase(), { callbackUrl })
+      await signIn(provider?.toLowerCase(), { callbackUrl })
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error)
     } finally {

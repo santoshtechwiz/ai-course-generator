@@ -59,7 +59,7 @@ const Timer = ({ elapsedTime }: { elapsedTime: number }) => {
 // Reusable BadgeGroup Component
 const BadgeGroup = ({ tags, difficulty }: { tags: string[]; difficulty: string }) => {
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
+    switch (difficulty?.toLowerCase()) {
       case "easy":
         return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30"
       case "medium":
@@ -125,7 +125,7 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
   }, [question.question])
 
   const progressiveHints = useMemo(() => {
-    const correctAnswer = question.answer.toLowerCase()
+    const correctAnswer = question.answer?.toLowerCase()
     const hintSteps = Math.ceil(correctAnswer.length / 3)
     const hints = []
 
@@ -161,8 +161,8 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
 
   const handleInputChange = (value: string) => {
     setAnswer(value)
-    const userInput = value.trim().toLowerCase()
-    const correctAnswer = question.answer.trim().toLowerCase()
+    const userInput = value.trim()?.toLowerCase()
+    const correctAnswer = question.answer.trim()?.toLowerCase()
 
     if (userInput.length < minimumPrefixLength) {
       setIsValidInput(false)
@@ -174,7 +174,7 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
   }
 
   const handleSubmit = () => {
-    const distance = levenshtein(answer.trim().toLowerCase(), question.answer.trim().toLowerCase())
+    const distance = levenshtein(answer.trim()?.toLowerCase(), question.answer.trim()?.toLowerCase())
     const isAnswerCorrect = distance <= similarityThreshold
     setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
