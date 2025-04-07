@@ -39,103 +39,117 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     (pathname.includes("/quiz/") || pathname.includes("/quizzes/")) && pathname.split("/").filter(Boolean).length > 1
   const isPricingPage = pathname === "/pricing" || pathname.includes("/subscription")
 
-  // Always include these schemas
-  const schemas: Schema[] = [
-    generateOrganizationSchema2(),
-    generateWebsiteSchema(),
-    ...(breadcrumbItems.length > 0 ? [generateBreadcrumbSchema(breadcrumbItems)] : []),
-  ]
+  try {
+    // Always include these schemas
+    const schemas: Schema[] = [generateOrganizationSchema2(), generateWebsiteSchema()]
 
-  // Add page-specific schemas - only add each schema once
-  if (type === "article" || (isBlogPost && type !== "course" && type !== "quiz" && type !== "faq" && type !== "howTo")) {
-    const articleData = (data as ArticleData) || {
-      headline: `CourseAI - ${breadcrumbItems[breadcrumbItems.length - 1]?.name || "Article"}`,
-      description: "Learn programming concepts with CourseAI's comprehensive guides.",
-      url: breadcrumbItems[breadcrumbItems.length - 1]?.url || baseUrl,
-      imageUrl: `${baseUrl}/images/default-article.jpg`,
-      datePublished: new Date().toISOString(),
-      authorName: "CourseAI Team",
-      publisherName: "CourseAI",
-      publisherLogoUrl: `${baseUrl}/logo.png`,
+    // Only add breadcrumb if we have items
+    if (breadcrumbItems.length > 0) {
+      schemas.push(generateBreadcrumbSchema(breadcrumbItems))
     }
-    schemas.push(generateArticleSchema(articleData))
-  }
 
-  // Only add course schema if explicitly requested or on a course page and no other specific type is requested
-  else if (type === "course" || (isCoursePage && type === "default")) {
-    const courseData = (data as CourseData) || {
-      title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Course",
-      description: "Comprehensive programming course with interactive lessons and exercises.",
-      createdAt: new Date().toISOString(),
-      estimatedHours: 10, // Default 10 hours if not specified
-      difficulty: "Beginner to Advanced",
-      image: `${baseUrl}/default-course-image.jpg`,
-      courseUnits: [
-        { title: "Master programming fundamentals" },
-        { title: "Build practical coding skills" },
-        { title: "Complete hands-on projects" },
-      ],
+    // Determine which specific schema to add based on type prop
+    // Only add ONE content-specific schema
+    if (type === "article" || (type === "default" && isBlogPost)) {
+      const articleData = (data as ArticleData) || {
+        headline: `CourseAI - ${breadcrumbItems[breadcrumbItems.length - 1]?.name || "Article"}`,
+        description: "Learn programming concepts with CourseAI's comprehensive guides.",
+        url: breadcrumbItems[breadcrumbItems.length - 1]?.url || baseUrl,
+        imageUrl: `${baseUrl}/images/default-article.jpg`,
+        datePublished: new Date().toISOString(),
+        authorName: "CourseAI Team",
+        publisherName: "CourseAI",
+        publisherLogoUrl: `${baseUrl}/logo.png`,
+      }
+      schemas.push(generateArticleSchema(articleData))
+    } else if (type === "course" || (type === "default" && isCoursePage)) {
+      const courseData = (data as CourseData) || {
+        title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Course",
+        description: "Comprehensive programming course with interactive lessons and exercises.",
+        createdAt: new Date().toISOString(),
+        estimatedHours: 10,
+        difficulty: "Beginner to Advanced",
+        image: `${baseUrl}/default-course-image.jpg`,
+        courseUnits: [
+          { title: "Master programming fundamentals" },
+          { title: "Build practical coding skills" },
+          { title: "Complete hands-on projects" },
+        ],
+        price: "99.99",
+        currency: "USD",
+        url: `${baseUrl}${pathname}`,
+        validFrom: new Date().toISOString(),
+      }
+      schemas.push(generateCourseSchema(courseData))
+    } else if (type === "quiz" || (type === "default" && isQuizPage)) {
+      const quizData = (data as QuizData) || {
+        title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Quiz",
+        description: "Test your programming knowledge with this interactive quiz.",
+        url: breadcrumbItems[breadcrumbItems.length - 1]?.url || `${baseUrl}${pathname}`,
+        dateCreated: new Date().toISOString(),
+        author: {
+          name: "CourseAI",
+          url: baseUrl,
+        },
+      }
+      schemas.push(generateQuizSchema(quizData))
+    } else if (type === "faq" && Array.isArray(data)) {
+      const faqItems = data as FAQItem[]
+      if (faqItems && faqItems.length > 0) {
+        schemas.push(generateFAQSchema(faqItems))
+      }
+    } else if (type === "howTo" && data) {
+      const howToData = data as {
+        name: string
+        description: string
+        url: string
+        imageUrl: string
+        totalTime: string
+        steps: HowToStep[]
+      }
+      if (howToData.name && howToData.steps && Array.isArray(howToData.steps)) {
+        schemas.push(generateHowToSchema(howToData))
+      }
     }
-    schemas.push(generateCourseSchema(courseData))
-  }
 
-  // Only add quiz schema if explicitly requested or on a quiz page and no other specific type is requested
-  else if (type === "quiz" || (isQuizPage && type === "default")) {
-    const quizData = (data as QuizData) || {
-      title: breadcrumbItems[breadcrumbItems.length - 1]?.name || "Programming Quiz",
-      description: "Test your programming knowledge with this interactive quiz.",
-      url: breadcrumbItems[breadcrumbItems.length - 1]?.url || `${baseUrl}${pathname}`,
-      dateCreated: new Date().toISOString(),
-      author: {
-        name: "CourseAI",
-        url: baseUrl,
-      },
+    // Add page-specific schemas only when no specific content type is requested
+    if (type === "default") {
+      if (isPricingPage) {
+        schemas.push(generatePricingSchema())
+      }
+
+      if (pathname === "/" || pathname === "/home") {
+        schemas.push(generateWebApplicationSchema())
+      }
     }
-    schemas.push(generateQuizSchema(quizData))
-  }
 
-  // Only add FAQ schema if explicitly requested
-  else if (type === "faq") {
-    const faqItems = data as FAQItem[]
-    if (faqItems && faqItems.length > 0) {
-      schemas.push(generateFAQSchema(faqItems))
-    }
+    return (
+      <>
+        {schemas.map((schema, index) => (
+          <script
+            key={`schema-${index}`}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          />
+        ))}
+      </>
+    )
+  } catch (error) {
+    console.error("Error generating JSON-LD:", error)
+    // Return minimal valid schema to prevent rendering errors
+    return (
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "CourseAI",
+            url: baseUrl,
+          }),
+        }}
+      />
+    )
   }
-
-  // Only add howTo schema if explicitly requested
-  else if (type === "howTo") {
-    const howToData = data as {
-      name: string
-      description: string
-      url: string
-      imageUrl: string
-      totalTime: string
-      steps: HowToStep[]
-    }
-    if (howToData) {
-      schemas.push(generateHowToSchema(howToData))
-    }
-  }
-
-  // Add pricing schema only on pricing pages and when no specific schema type is requested
-  if (isPricingPage && type === "default") {
-    schemas.push(generatePricingSchema())
-  }
-
-  // Add web application schema only on home page and when no specific schema type is requested
-  if ((pathname === "/" || pathname === "/home") && type === "default") {
-    schemas.push(generateWebApplicationSchema())
-  }
-
-  return (
-    <>
-      {schemas.map((schema, index) => (
-        <script
-          key={`schema-${index}`}
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-        />
-      ))}
-    </>
-  )
 }
+
