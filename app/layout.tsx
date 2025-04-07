@@ -122,28 +122,29 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   // FAQ items for the site
-  const faqItems = [
-    {
-      question: "What is CourseAI?",
-      answer:
-        "CourseAI is an AI-powered platform that helps you create and consume programming courses, quizzes, and learning materials. Our tools use advanced AI to generate customized educational content for developers.",
-    },
-    {
-      question: "How can I get started with CourseAI?",
-      answer:
-        "You can sign up for a free account and immediately start exploring our courses, creating quizzes, or generating learning materials. No credit card required to get started.",
-    },
-    {
-      question: "What programming languages do you support?",
-      answer:
-        "We support all major programming languages including JavaScript, Python, Java, C++, Ruby, PHP, Go, and many more. Our AI can generate content for virtually any programming language or framework.",
-    },
-    {
-      question: "Is CourseAI suitable for beginners?",
-      answer:
-        "CourseAI offers content for all skill levels from complete beginners to advanced developers. Our courses and quizzes are designed to meet you at your current skill level.",
-    },
-  ]
+    // FAQ items for the homepage
+    const faqItems = [
+      {
+        question: "What is CourseAI?",
+        answer:
+          "CourseAI is an AI-powered platform that helps you create professional programming courses, quizzes, flashcards, and learning materials instantly. Our tools use advanced AI to generate customized educational content tailored to your specific needs.",
+      },
+      {
+        question: "Is CourseAI free to use?",
+        answer:
+          "Yes, CourseAI offers a free tier that gives you access to essential features. We also offer premium plans with advanced features for more demanding educational needs.",
+      },
+      {
+        question: "What types of content can I create with CourseAI?",
+        answer:
+          "You can create full programming courses, multiple-choice questions (MCQs), open-ended questions, interactive quizzes, flashcards, and other educational materials focused on coding and development skills.",
+      },
+      {
+        question: "How does the AI generate programming content?",
+        answer:
+          "Our AI analyzes vast amounts of programming knowledge to create accurate, relevant, and engaging educational content. It can generate questions, explanations, code examples, and learning materials across various programming languages and concepts.",
+      },
+    ]
 
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
