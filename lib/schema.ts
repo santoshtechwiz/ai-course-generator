@@ -246,7 +246,7 @@ export function generateCourseSchema(data: CourseData): Schema {
     hasCourseInstance: {
       "@type": "CourseInstance",
       courseMode: "online",
-      courseWorkload: workload,
+      courseWorkload: "PT10H", // Default 10 hours if not specified
       instructor: data.instructor
         ? {
             "@type": "Person",
