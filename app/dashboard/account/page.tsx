@@ -67,9 +67,9 @@ export default async function SubscriptionAccountPage() {
       return {
         currentPlan: subscriptionStatus.subscriptionPlan,
         subscriptionStatus: subscriptionStatus.isSubscribed ? "ACTIVE" : "INACTIVE",
-        endDate: subscriptionStatus.expirationDate ? new Date(subscriptionStatus.expirationDate) : null,
-        tokensUsed: tokenData.used,
-        tokensTotal: tokenData.total,
+        endDate: "expirationDate" in subscriptionStatus && subscriptionStatus.expirationDate ? new Date(subscriptionStatus.expirationDate) : null,
+        tokensUsed: "used" in tokenData ? tokenData.used : 0,
+        tokensTotal: "total" in tokenData ? tokenData.total : 0,
         billingHistory,
         paymentMethods,
       }

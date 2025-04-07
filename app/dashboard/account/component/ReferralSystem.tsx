@@ -28,10 +28,17 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
   useEffect(() => {
     // Simulate fetching referral data
     if (userId) {
-      // In a real app, fetch from API
-      setReferralCode("FRIEND" + userId.substring(0, 5).toUpperCase())
-      setReferrals(Math.floor(Math.random() * 5))
-      setRewards(Math.floor(Math.random() * 100))
+      //get the referral code from the server
+      fetch(`/api/referral/${userId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setReferralCode(data.referralCode)
+          setReferrals(data.referrals)
+          setRewards(data.rewards)
+        })
+        .catch((error) => {
+          console.error("Error fetching referral data:", error)
+        })
     }
   }, [userId])
 
