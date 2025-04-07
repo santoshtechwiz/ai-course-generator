@@ -19,9 +19,8 @@ import { ColDef } from "ag-grid-community"
 import { CreateUserDialog } from "../components/user-dialog/create-user-dialog"
 import { UserEditDialog } from "../components/user-dialog/user-edit-dialog"
 import { ResetSubscriptionDialog } from "../components/subscription-management/reset-subscription-dialog"
+import { UserType } from "@/app/types/types"
 
-// Type definitions
-type UserType = "FREE" | "BASIC" | "PRO" | "PREMIUM" | "ULTIMATE"
 
 interface User {
   id: string
