@@ -215,7 +215,7 @@ export function generateCourseSchema(data: CourseData): Schema {
   const baseUrl = getBaseUrl()
 
   // Calculate course workload based on estimated hours or default to a reasonable value
-  const workload = data.estimatedHours ? `PT${data.estimatedHours}H` : "PT10H" // Default 10 hours if not specified
+  const workload = "PT10H" // Default 10 hours if not specified
 
   // Create course units as learning objectives if available
   const learningObjectives = data.courseUnits?.map((unit) => unit.title) || [
@@ -241,7 +241,7 @@ export function generateCourseSchema(data: CourseData): Schema {
     inLanguage: "en",
     courseWorkload: workload,
     timeRequired: workload,
-    educationalLevel: data.difficulty || "Beginner to Advanced",
+    educationalLevel: "Beginner to Advanced",
     teaches: learningObjectives.join(", "),
     hasCourseInstance: {
       "@type": "CourseInstance",
@@ -250,8 +250,8 @@ export function generateCourseSchema(data: CourseData): Schema {
       instructor: data.instructor
         ? {
             "@type": "Person",
-            name: data.instructor.name,
-            url: data.instructor.url,
+            name: "CourseAI Instructor",
+            url: "https://courseai.io",
           }
         : {
             "@type": "Person",
@@ -261,7 +261,7 @@ export function generateCourseSchema(data: CourseData): Schema {
     mainEntity: {
       "@type": "LearningResource",
       name: data.title,
-      description: data.description,
+      description: data.title,
       learningResourceType: "Course",
       educationalLevel: data.difficulty || "Beginner to Advanced",
       teaches: learningObjectives.join(", "),
