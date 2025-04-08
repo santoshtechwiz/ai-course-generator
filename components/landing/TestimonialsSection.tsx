@@ -96,17 +96,12 @@ export default function TestimonialsSection() {
   const resumeAutoplay = () => setAutoplay(true)
 
   return (
-    <section
-      ref={sectionRef}
-      className="py-10 md:py-16 bg-gradient-to-b from-background to-secondary/20"
-      onMouseEnter={pauseAutoplay}
-      onMouseLeave={resumeAutoplay}
-    >
+    <section ref={sectionRef} className="py-10 md:py-16" onMouseEnter={pauseAutoplay} onMouseLeave={resumeAutoplay}>
       <div className="container px-4 md:px-6 max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           viewport={{ once: true }}
           className="relative"
         >
@@ -115,7 +110,7 @@ export default function TestimonialsSection() {
               className="flex"
               animate={{
                 x: `-${currentIndex * (100 / cardsPerView)}%`,
-                transition: { type: "spring", stiffness: 300, damping: 30 },
+                transition: { type: "spring", stiffness: 300, damping: 30, ease: [0.25, 0.1, 0.25, 1] },
               }}
             >
               {testimonials.map((testimonial, index) => (
@@ -144,7 +139,7 @@ export default function TestimonialsSection() {
               variant="outline"
               size="icon"
               onClick={prevTestimonial}
-              className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:flex"
+              className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:flex bg-background/80 backdrop-blur-sm border-border/30"
               aria-label="Previous testimonials"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -161,7 +156,7 @@ export default function TestimonialsSection() {
               variant="outline"
               size="icon"
               onClick={nextTestimonial}
-              className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:flex"
+              className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:flex bg-background/80 backdrop-blur-sm border-border/30"
               aria-label="Next testimonials"
             >
               <ChevronRight className="h-5 w-5" />
@@ -188,6 +183,7 @@ export default function TestimonialsSection() {
                     repeat: index === currentIndex ? Number.POSITIVE_INFINITY : 0,
                     duration: 2,
                     repeatType: "reverse",
+                    ease: [0.25, 0.1, 0.25, 1],
                   },
                 }}
               />
@@ -220,25 +216,25 @@ function TestimonialCard({ testimonial, isHovered, index }: TestimonialCardProps
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      transition={{ duration: 0.5, delay: index * 0.1, ease: [0.25, 0.1, 0.25, 1] }}
     >
       <Card
         className={cn(
-          "h-full bg-card shadow-md transition-all duration-300",
-          isHovered && "shadow-lg transform -translate-y-1",
+          "h-full bg-card/30 backdrop-blur-sm shadow-md transition-all duration-300 rounded-2xl border-border/30",
+          isHovered && "shadow-lg transform -translate-y-2",
         )}
       >
         <CardContent className="p-6 flex flex-col h-full">
           <motion.div
             className="flex items-center space-x-4 mb-4"
             animate={isHovered ? { x: [0, 5, 0] } : {}}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           >
             <motion.div
               className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center"
               whileHover={{ rotate: 10 }}
               animate={isHovered ? { scale: [1, 1.1, 1] } : {}}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
             >
               <Icon className="w-6 h-6 text-primary" />
             </motion.div>
@@ -248,7 +244,10 @@ function TestimonialCard({ testimonial, isHovered, index }: TestimonialCardProps
             </div>
           </motion.div>
           <blockquote className="text-foreground flex-grow">
-            <motion.div animate={isHovered ? { rotate: [0, 5, 0, -5, 0] } : {}} transition={{ duration: 1 }}>
+            <motion.div
+              animate={isHovered ? { rotate: [0, 5, 0, -5, 0] } : {}}
+              transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
+            >
               <Quote className="h-6 w-6 text-primary mb-2" />
             </motion.div>
             <motion.p
@@ -260,7 +259,7 @@ function TestimonialCard({ testimonial, isHovered, index }: TestimonialCardProps
                     }
                   : {}
               }
-              transition={{ duration: 1.5 }}
+              transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
             >
               {testimonial.quote}
             </motion.p>
@@ -270,4 +269,3 @@ function TestimonialCard({ testimonial, isHovered, index }: TestimonialCardProps
     </motion.div>
   )
 }
-

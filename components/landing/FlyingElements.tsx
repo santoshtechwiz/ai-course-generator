@@ -1,7 +1,9 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState, useRef } from "react"
-import { motion, useAnimation, useInView } from "framer-motion"
+import { motion, useAnimation } from "framer-motion"
 import { Video, FileQuestion, Bot, Sparkle } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -28,11 +30,42 @@ export default function FlyingElements() {
   const [elements, setElements] = useState<FlyingElement[]>([])
   const { theme } = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
-  const isInView = useInView(containerRef)
   const controls = useAnimation()
 
   // Reduce the number of elements for better performance
-  const ELEMENT_COUNT = 15
+  const ELEMENT_COUNT = 10
+
+  // Custom hook for checking if element is in view
+  function useInView(ref: React.RefObject<HTMLElement>, threshold = 0.3) {
+    const [isIntersecting, setIntersecting] = useState(false)
+
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          setIntersecting(entry.isIntersecting)
+        },
+        {
+          rootMargin: "0px",
+          threshold,
+        },
+      )
+
+      const currentRef = ref.current
+      if (currentRef) {
+        observer.observe(currentRef)
+      }
+
+      return () => {
+        if (currentRef) {
+          observer.unobserve(currentRef)
+        }
+      }
+    }, [ref, threshold])
+
+    return isIntersecting
+  }
+
+  const isInView = useInView(containerRef)
 
   useEffect(() => {
     if (isInView) {
@@ -55,8 +88,8 @@ export default function FlyingElements() {
         x: Math.random() * 100,
         y: Math.random() * 100,
         icon: icons[Math.floor(Math.random() * icons.length)],
-        size: Math.random() * 16 + 8, // Smaller size range between 8 and 24
-        duration: Math.random() * 15 + 10, // Random duration between 10 and 25 seconds
+        size: Math.random() * 12 + 8, // Smaller size range between 8 and 20
+        duration: Math.random() * 15 + 15, // Random duration between 15 and 30 seconds
         color: colors[Math.floor(Math.random() * colors.length)],
         delay: Math.random() * 5,
         rotate: Math.random() * 360,
@@ -79,7 +112,7 @@ export default function FlyingElements() {
           animate={{
             x: [`${element.x}%`, `${(element.x + 10) % 100}%`, `${(element.x - 5) % 100}%`, `${element.x}%`],
             y: [`${element.y}%`, `${(element.y - 10) % 100}%`, `${(element.y + 5) % 100}%`, `${element.y}%`],
-            opacity: [0, 0.4, 0.4, 0],
+            opacity: [0, 0.2, 0.2, 0],
             rotate: [0, element.rotate, -element.rotate, 0],
             scale: [0.8, 1, 1.1, 0.9],
           }}
@@ -88,7 +121,7 @@ export default function FlyingElements() {
             delay: element.delay,
             repeat: Number.POSITIVE_INFINITY,
             repeatType: "loop",
-            ease: "easeInOut",
+            ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
           }}
           className="absolute will-change-transform"
         >
@@ -101,4 +134,3 @@ export default function FlyingElements() {
     </div>
   )
 }
-

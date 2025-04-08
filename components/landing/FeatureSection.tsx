@@ -67,7 +67,7 @@ const FeatureSections = () => {
 
   return (
     <Element name="features">
-      <section ref={sectionRef} className="py-6 px-4 bg-gradient-to-b from-background to-secondary/20">
+      <section ref={sectionRef} className="py-6 px-4">
         <div className="container mx-auto max-w-6xl">
           <motion.div
             initial="hidden"
@@ -97,27 +97,28 @@ const FeatureSections = () => {
                 <motion.div
                   key={idx}
                   variants={{
-                    hidden: { opacity: 0, y: 50 },
+                    hidden: { opacity: 0, y: 30 },
                     visible: {
                       opacity: 1,
                       y: 0,
                       transition: {
                         duration: 0.6,
-                        ease: "easeOut",
+                        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
                       },
                     },
                   }}
                   whileHover={{
-                    scale: 1.03,
-                    transition: { duration: 0.2 },
+                    y: -8,
+                    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
                   }}
                   onHoverStart={() => setHoveredCard(idx)}
                   onHoverEnd={() => setHoveredCard(null)}
                 >
                   <Card
                     className={cn(
-                      "relative overflow-hidden border-none bg-card/50 transition-all duration-300 h-full",
-                      "hover:bg-card/80 transform hover:-translate-y-1 hover:shadow-lg",
+                      "relative overflow-hidden border-none h-full",
+                      "bg-card/30 backdrop-blur-sm shadow-sm",
+                      "hover:shadow-lg transition-all duration-300 rounded-2xl",
                     )}
                   >
                     <motion.div
@@ -127,7 +128,7 @@ const FeatureSections = () => {
                         scale: hoveredCard === idx ? 1.1 : 1,
                         opacity: hoveredCard === idx ? 0.15 : 0.1,
                       }}
-                      transition={{ duration: 0.6 }}
+                      transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
                     />
                     <CardHeader className="p-6">
                       <motion.div
@@ -162,7 +163,7 @@ const FeatureSections = () => {
                       }}
                       initial={{ width: 0 }}
                       animate={{ width: hoveredCard === idx ? "100%" : "0%" }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                     />
                   </Card>
                 </motion.div>
@@ -176,4 +177,3 @@ const FeatureSections = () => {
 }
 
 export default FeatureSections
-

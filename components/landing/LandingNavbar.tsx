@@ -26,7 +26,7 @@ const navItemVariants = {
     transition: {
       delay: i * 0.1,
       duration: 0.5,
-      ease: "easeOut",
+      ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
     },
   }),
 }
@@ -82,7 +82,7 @@ export default function Navbar({ activeSection = "" }: NavbarProps) {
           backdropFilter: navBlur,
           backgroundColor: isScrolled ? navBackground : "transparent",
         }}
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50 w-full transition-all duration-300 bg-background/90 dark:bg-background/90"
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/10 w-full transition-all duration-300 bg-background/90 dark:bg-background/90"
       >
         <motion.div
           whileHover={{ scale: 1.05 }}
@@ -112,7 +112,7 @@ export default function Navbar({ activeSection = "" }: NavbarProps) {
                   className={`absolute -bottom-1 left-0 h-0.5 bg-primary
                     ${activeSection === item.to ? "w-full" : "w-0"}`}
                   whileHover={{ width: "100%" }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 />
               </ScrollLink>
             </motion.div>
@@ -127,7 +127,7 @@ export default function Navbar({ activeSection = "" }: NavbarProps) {
           >
             <Button
               onClick={handleGetStarted}
-              className="px-6 py-2 text-base font-medium relative overflow-hidden group"
+              className="px-6 py-2 text-base font-medium relative overflow-hidden group rounded-full"
             >
               <motion.span
                 className="absolute inset-0 w-0 bg-white/20 transition-all duration-300 group-hover:w-full"
@@ -140,7 +140,7 @@ export default function Navbar({ activeSection = "" }: NavbarProps) {
         </div>
 
         <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="md:hidden">
-          <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+          <Button variant="ghost" size="icon" onClick={toggleMobileMenu} className="rounded-full">
             <Menu className="w-6 h-6" />
           </Button>
         </motion.div>
@@ -153,13 +153,13 @@ export default function Navbar({ activeSection = "" }: NavbarProps) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-y-0 right-0 z-50 w-72 bg-background shadow-lg md:hidden dark:bg-background"
+            className="fixed inset-y-0 right-0 z-50 w-72 bg-background/90 backdrop-blur-lg shadow-lg md:hidden dark:bg-background/90"
           >
             <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center p-4 border-b border-border">
+              <div className="flex justify-between items-center p-4 border-b border-border/10">
                 <Logo />
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                  <Button variant="ghost" size="icon" onClick={closeMobileMenu}>
+                  <Button variant="ghost" size="icon" onClick={closeMobileMenu} className="rounded-full">
                     <X className="w-6 h-6" />
                   </Button>
                 </motion.div>
@@ -184,9 +184,9 @@ export default function Navbar({ activeSection = "" }: NavbarProps) {
                       smooth={true}
                       offset={-64}
                       duration={500}
-                      className={`px-6 py-3 text-base font-medium hover:bg-accent transition-colors cursor-pointer
+                      className={`px-6 py-3 text-base font-medium hover:bg-accent/50 transition-colors cursor-pointer rounded-lg mx-2
                         ${activeSection === item.to ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                      activeClass="text-primary"
+                      activeClass="text-primary bg-accent/30"
                       onClick={closeMobileMenu}
                     >
                       {item.name}
@@ -194,14 +194,14 @@ export default function Navbar({ activeSection = "" }: NavbarProps) {
                   </motion.div>
                 ))}
               </motion.div>
-              <div className="mt-auto p-4 border-t border-border">
+              <div className="mt-auto p-4 border-t border-border/10">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
                   <Button
-                    className="w-full px-6 py-2 text-base font-medium"
+                    className="w-full px-6 py-2 text-base font-medium rounded-full"
                     onClick={() => {
                       handleGetStarted()
                       closeMobileMenu()
@@ -222,7 +222,7 @@ export default function Navbar({ activeSection = "" }: NavbarProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.7 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden dark:bg-background/80"
             onClick={closeMobileMenu}
           />
