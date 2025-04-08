@@ -8,7 +8,7 @@ import { RevealAnimation } from "../AppleLandingPage"
 import MissionIcon from "../svg/MissionIcon"
 import VisionIcon from "../svg/VisionIcon"
 import TeamIcon from "../svg/TeamIcon"
-import FutureIcon from "../svg/FutureIcon"
+
 import TeamIllustration from "../svg/TeamIllustration"
 import ValueIcon from "../svg/ValueIcon"
 
@@ -38,13 +38,7 @@ const AboutSection = () => {
       icon: TeamIcon,
       color: "from-amber-500 to-amber-600",
     },
-    {
-      title: "Future Plans",
-      description:
-        "We're constantly innovating to improve CourseAI. Our future plans include expanding AI capabilities for more interactive courses, introducing new subscription tiers with premium features, and building a thriving community.",
-      icon: FutureIcon,
-      color: "from-emerald-500 to-emerald-600",
-    },
+   
   ]
 
   const values = [
@@ -123,38 +117,6 @@ const AboutSection = () => {
         ))}
       </div>
 
-      {/* Team section with Apple-style SVG illustration */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-24 relative rounded-2xl overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5" />
-        <div className="relative p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center">
-          <div>
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">Meet our leadership team</h3>
-            <p className="text-muted-foreground mb-6">
-              Our diverse team brings together expertise in artificial intelligence, education, and product design to
-              create the most intuitive and powerful course creation platform.
-            </p>
-            <Button className="rounded-full group" size="lg">
-              Join our team
-              <motion.span
-                className="inline-block ml-2"
-                initial={{ x: 0 }}
-                whileHover={{ x: 5 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <ArrowRight className="h-4 w-4" />
-              </motion.span>
-            </Button>
-          </div>
-          <div className="relative h-[300px] md:h-[400px] rounded-xl overflow-hidden flex items-center justify-center">
-            <TeamIllustration />
-          </div>
-        </div>
-      </motion.div>
 
       {/* Values section */}
       <motion.div
