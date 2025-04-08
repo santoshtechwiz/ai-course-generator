@@ -126,24 +126,45 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     {
       question: "What is CourseAI?",
       answer:
-        "CourseAI is an AI-powered platform that helps you create professional programming courses, quizzes, flashcards, and learning materials instantly. Our tools use advanced AI to generate customized educational content tailored to your specific needs.",
+        "CourseAI is an AI-powered platform that helps you instantly create professional programming courses, quizzes, flashcards, and learning materials. Our tools use advanced AI to generate customized content tailored to your learning or teaching goals.",
     },
     {
       question: "Is CourseAI free to use?",
       answer:
-        "Yes, CourseAI offers a free tier that gives you access to essential features. We also offer premium plans with advanced features for more demanding educational needs.",
+        "Yes, CourseAI offers a free tier with access to essential features. We also provide premium plans with advanced capabilities for educators, trainers, and institutions who need more powerful tools.",
     },
     {
       question: "What types of content can I create with CourseAI?",
       answer:
-        "You can create full programming courses, multiple-choice questions (MCQs), open-ended questions, interactive quizzes, flashcards, and other educational materials focused on coding and development skills.",
+        "You can create complete programming courses, multiple-choice questions (MCQs), open-ended questions, coding quizzes, interactive exercises, flashcards, and various educational materials focused on coding and software development.",
     },
     {
-      question: "How does the AI generate programming content?",
+      question: "How does CourseAI generate programming content?",
       answer:
-        "Our AI analyzes vast amounts of programming knowledge to create accurate, relevant, and engaging educational content. It can generate questions, explanations, code examples, and learning materials across various programming languages and concepts.",
+        "CourseAI uses a combination of advanced AI technologies, including large language models, code analysis engines, and adaptive learning algorithms. This allows us to generate accurate, engaging, and relevant content across different programming languages and topics.",
     },
-  ]
+    {
+      question: "Can I create private courses or content?",
+      answer:
+        "Yes, you can create private courses and materials that are only accessible to you or your selected audience.",
+    },
+    {
+      question: "Can I share my content with others?",
+      answer:
+        "Absolutely! You can easily share your courses, quizzes, or flashcards with students, peers, or the public using shareable links or through your dashboard.",
+    },
+    {
+      question: "Can I track learner progress?",
+      answer:
+        "Yes, CourseAI includes tools to monitor progress, view completion rates, quiz scores, and other engagement metrics to help you understand how your learners are performing.",
+    },
+    {
+      question: "Can learners see correct answers and explanations?",
+      answer:
+        "Yes, learners can view the correct answers and detailed explanations for questions, helping them understand concepts better and improve their skills.",
+    },
+  ];
+  
 
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">

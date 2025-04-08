@@ -47,7 +47,7 @@ const iconVariants = {
 
 const statVariants = {
   initial: { opacity: 0, y: 10 },
-  animate: (i) => ({
+  animate: (i: number) => ({
     opacity: 1,
     y: 0,
     transition: { delay: 0.1 * i }
@@ -58,11 +58,12 @@ const statVariants = {
   }
 }
 
+// Updated keyframes with a slightly stronger gradient stop for pulse effect
 const progressPulseKeyframes = `
 @keyframes progressPulse {
-  0% { opacity: 0.6; }
+  0% { opacity: 0.5; }
   50% { opacity: 1; }
-  100% { opacity: 0.6; }
+  100% { opacity: 0.5; }
 }
 
 .progress-pulse::after {
@@ -72,28 +73,29 @@ const progressPulseKeyframes = `
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(var(--primary), 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--primary), 0.4), transparent);
   animation: progressPulse 2s infinite;
 }
 `
 
+// Updated gradient and color configs for increased opacity/contrast on a white background
 const courseLevelConfig = {
   Beginner: {
-    gradient: "bg-gradient-to-br from-emerald-500/10 to-emerald-500/30 dark:from-emerald-500/20 dark:to-emerald-500/40",
+    gradient: "bg-gradient-to-br from-emerald-500/20 to-emerald-500/50 dark:from-emerald-500/30 dark:to-emerald-500/60",
     icon: "bg-emerald-500 dark:bg-emerald-600",
     badge:
-      "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300",
+      "border-emerald-500/40 bg-emerald-500/20 text-emerald-700 dark:border-emerald-500/50 dark:bg-emerald-500/30 dark:text-emerald-300",
   },
   Intermediate: {
-    gradient: "bg-gradient-to-br from-amber-500/10 to-amber-500/30 dark:from-amber-500/20 dark:to-amber-500/40",
+    gradient: "bg-gradient-to-br from-amber-500/20 to-amber-500/50 dark:from-amber-500/30 dark:to-amber-500/60",
     icon: "bg-amber-500 dark:bg-amber-600",
     badge:
-      "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-300",
+      "border-amber-500/40 bg-amber-500/20 text-amber-700 dark:border-amber-500/50 dark:bg-amber-500/30 dark:text-amber-300",
   },
   Advanced: {
-    gradient: "bg-gradient-to-br from-red-500/10 to-red-500/30 dark:from-red-500/20 dark:to-red-500/40",
+    gradient: "bg-gradient-to-br from-red-500/20 to-red-500/50 dark:from-red-500/30 dark:to-red-500/60",
     icon: "bg-red-500 dark:bg-red-600",
-    badge: "border-red-500/20 bg-red-500/10 text-red-700 dark:border-red-500/30 dark:bg-red-500/20 dark:text-red-300",
+    badge: "border-red-500/40 bg-red-500/20 text-red-700 dark:border-red-500/50 dark:bg-red-500/30 dark:text-red-300",
   },
 }
 
@@ -110,7 +112,7 @@ const determineCourseLevel = (
 
 export const CourseCard: React.FC<CourseCardProps> = React.memo(
   ({ name, description, rating, slug, unitCount, lessonCount, quizCount, viewCount, category }) => {
-    // Add keyframes for progress pulse animation
+    // Inject the progress pulse keyframes into the document head
     React.useEffect(() => {
       const style = document.createElement("style")
       style.innerHTML = progressPulseKeyframes
@@ -173,7 +175,8 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(
               <GraduationCap className="w-5 h-5 text-white" />
             </motion.div>
 
-            <Card className="relative flex flex-col h-[450px] overflow-hidden group border-2 transition-all duration-500 hover:border-primary/50 hover:shadow-lg">
+            {/* Updated Card: Added a subtle off-white background and a refined shadow for better contrast */}
+            <Card className="relative flex flex-col h-[450px] overflow-hidden group border-2 border-gray-200 bg-white shadow-sm transition-all duration-500 hover:border-primary/50 hover:shadow-lg">
               <div className={cn("absolute inset-0 opacity-100 transition-opacity duration-300", config.gradient)} />
 
               <CardContent className="relative flex flex-col flex-grow p-6 space-y-5">
