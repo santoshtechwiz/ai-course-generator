@@ -5,7 +5,7 @@ import type React from "react"
 import { useRef, useState, useEffect } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "framer-motion"
 import { ChevronDown, ArrowRight, Play } from "lucide-react"
-import VideoPlayer from "./VideoPlayer"
+
 import { useMobile } from "@/hooks/use-mobile"
 
 interface HeroSectionProps {
@@ -220,8 +220,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
         className="w-full max-w-5xl mx-auto mt-16 px-4 relative z-0"
       >
         <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-          <VideoPlayer />
-
+         
           {/* Enhanced reflection effect */}
           <div className="absolute bottom-0 left-0 right-0 h-[20%] bg-gradient-to-t from-white/10 to-transparent transform scale-y-[-1] blur-sm opacity-30"></div>
 
