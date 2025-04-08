@@ -1,24 +1,27 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
-import { motion, useScroll, useTransform, AnimatePresence, useInView } from "framer-motion"
+import { motion, useScroll, useTransform, AnimatePresence, useInView, useSpring } from "framer-motion"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { ChevronDown, ArrowRight, Menu, X, Play, ArrowUpRight, Check, ArrowUp } from "lucide-react"
+import { ArrowRight, Menu, X, ArrowUpRight, Check, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import AboutSection from "./sections/AboutSection"
 import FaqAccordion from "./sections/FaqAccordion"
 import FeatureShowcase from "./sections/FeatureShowcase"
 import HowItWorksSection from "./sections/HowItWorksSection"
 import ProductGallery from "./sections/ProductGallery"
 import TestimonialsSlider from "./sections/TestimonialsSlider"
-import VideoPlayer from "./sections/VideoPlayer"
-
-
+import HeroSection from "./sections/HeroSection"
+import Footer from "./sections/Footer"
+import { useMobile } from "@/hooks/use-mobile"
 
 const AppleLandingPage = () => {
   const { theme } = useTheme()
+  const isMobile = useMobile()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState("hero")
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -27,6 +30,7 @@ const AppleLandingPage = () => {
   const heroRef = useRef<HTMLDivElement>(null)
   const featuresRef = useRef<HTMLDivElement>(null)
   const productRef = useRef<HTMLDivElement>(null)
+  const aboutRef = useRef<HTMLDivElement>(null)
   const howItWorksRef = useRef<HTMLDivElement>(null)
   const testimonialsRef = useRef<HTMLDivElement>(null)
   const faqRef = useRef<HTMLDivElement>(null)
@@ -37,23 +41,28 @@ const AppleLandingPage = () => {
     { id: "hero", label: "Home", ref: heroRef },
     { id: "features", label: "Features", ref: featuresRef },
     { id: "product", label: "Product", ref: productRef },
+    { id: "about", label: "About Us", ref: aboutRef },
     { id: "how-it-works", label: "How It Works", ref: howItWorksRef },
     { id: "testimonials", label: "Testimonials", ref: testimonialsRef },
     { id: "faq", label: "FAQ", ref: faqRef },
   ]
 
-  // Scroll animations
+  // Scroll animations with spring physics for smoother animations
   const { scrollY } = useScroll()
-  const headerBg = useTransform(scrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.8)"])
-  const headerBgDark = useTransform(scrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.8)"])
-  const headerBorder = useTransform(scrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.1)"])
-  const headerBorderDark = useTransform(scrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.1)"])
-  const logoScale = useTransform(scrollY, [0, 100], [1, 0.9])
 
-  // Parallax effects for hero section
-  const heroY = useTransform(scrollY, [0, 500], [0, 150])
-  const heroScale = useTransform(scrollY, [0, 500], [1, 1.1])
-  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0])
+  // Use spring for smoother animations
+  const smoothScrollY = useSpring(scrollY, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  })
+
+  const headerBg = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.8)"])
+  const headerBgDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.8)"])
+  const headerBorder = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.1)"])
+  const headerBorderDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.1)"])
+  const logoScale = useTransform(smoothScrollY, [0, 100], [1, 0.9])
+  const logoOpacity = useTransform(smoothScrollY, [0, 100], [1, 0.95])
 
   // Handle scroll events
   useEffect(() => {
@@ -61,27 +70,31 @@ const AppleLandingPage = () => {
       const scrollPosition = window.scrollY
       setShowScrollTop(scrollPosition > 500)
 
-      // Determine active section
-      const sections = [
-        { id: "hero", ref: heroRef },
-        { id: "features", ref: featuresRef },
-        { id: "product", ref: productRef },
-        { id: "how-it-works", ref: howItWorksRef },
-        { id: "testimonials", ref: testimonialsRef },
-        { id: "faq", ref: faqRef },
-        { id: "cta", ref: ctaRef },
-      ]
+      // Use requestAnimationFrame for smoother performance
+      requestAnimationFrame(() => {
+        // Determine active section
+        const sections = [
+          { id: "hero", ref: heroRef },
+          { id: "features", ref: featuresRef },
+          { id: "product", ref: productRef },
+          { id: "about", ref: aboutRef },
+          { id: "how-it-works", ref: howItWorksRef },
+          { id: "testimonials", ref: testimonialsRef },
+          { id: "faq", ref: faqRef },
+          { id: "cta", ref: ctaRef },
+        ]
 
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const section = sections[i]
-        if (section.ref.current) {
-          const rect = section.ref.current.getBoundingClientRect()
-          if (rect.top <= window.innerHeight / 2) {
-            setActiveSection(section.id)
-            break
+        for (let i = sections.length - 1; i >= 0; i--) {
+          const section = sections[i]
+          if (section.ref.current) {
+            const rect = section.ref.current.getBoundingClientRect()
+            if (rect.top <= window.innerHeight / 3) {
+              setActiveSection(section.id)
+              break
+            }
           }
         }
-      }
+      })
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
@@ -105,33 +118,59 @@ const AppleLandingPage = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isMenuOpen])
+
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
-      {/* Header */}
+      {/* Header with Apple-style animations */}
       <motion.header
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 transition-all duration-300"
         style={{
           backgroundColor: theme === "dark" ? headerBgDark : headerBg,
           borderBottom: `1px solid ${theme === "dark" ? headerBorderDark : headerBorder}`,
-          backdropFilter: "blur(10px)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          willChange: "background-color, border-bottom",
         }}
+        role="banner"
       >
-        <motion.div style={{ scale: logoScale }} className="flex items-center">
-          <Link href="/" className="text-xl font-semibold">
+        <motion.div
+          style={{ scale: logoScale, opacity: logoOpacity }}
+          className="flex items-center"
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+          <Link href="/" className="text-xl font-semibold" aria-label="CourseAI Home">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">CourseAI</span>
           </Link>
         </motion.div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
+        {/* Desktop Navigation with Apple-style animations */}
+        <nav className="hidden md:flex items-center space-x-8" aria-label="Main navigation">
           {navItems.map((item) => (
-            <button
+            <motion.button
               key={item.id}
               onClick={() => scrollToSection(item.id)}
               className={cn(
-                "text-sm font-medium transition-colors relative",
+                "text-sm font-medium transition-colors relative px-2 py-1",
                 activeSection === item.id ? "text-primary" : "text-muted-foreground hover:text-foreground",
               )}
+              aria-current={activeSection === item.id ? "page" : undefined}
+              whileHover={{
+                scale: 1.05,
+                transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
+              }}
+              whileTap={{ scale: 0.95 }}
             >
               {item.label}
               {activeSection === item.id && (
@@ -141,38 +180,53 @@ const AppleLandingPage = () => {
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
               )}
-            </button>
+            </motion.button>
           ))}
         </nav>
 
-        {/* CTA Button */}
+        {/* CTA Button with Apple-style animations */}
         <div className="hidden md:block">
           <motion.div
-            whileHover={{ scale: 1.05 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 25px -5px rgba(var(--primary-rgb), 0.3)",
+            }}
             whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
           >
             <Button
               className="rounded-full px-6 py-2 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={() => scrollToSection("cta")}
             >
               Get Started
-              <ArrowUpRight className="ml-2 h-4 w-4" />
+              <motion.span
+                className="inline-block ml-2"
+                initial={{ x: 0 }}
+                whileHover={{ x: 3 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <ArrowUpRight className="h-4 w-4" />
+              </motion.span>
             </Button>
           </motion.div>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
+        {/* Mobile Menu Button with Apple-style animations */}
+        <motion.button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="md:hidden text-foreground p-2 rounded-full hover:bg-muted/50 transition-colors"
-          aria-label="Toggle menu"
+          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={isMenuOpen}
+          aria-controls="mobile-menu"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <Menu className="h-6 w-6" />
-        </button>
+        </motion.button>
       </motion.header>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu with Apple-style animations */}
       <AnimatePresence>
         {isMenuOpen && (
           <>
@@ -180,50 +234,99 @@ const AppleLandingPage = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+              className="fixed inset-0 bg-background/80 backdrop-blur-lg z-40"
               onClick={() => setIsMenuOpen(false)}
+              aria-hidden="true"
             />
             <motion.div
+              id="mobile-menu"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed top-0 right-0 bottom-0 w-72 bg-background/90 backdrop-blur-lg z-50 shadow-xl"
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+                ease: [0.25, 0.1, 0.25, 1],
+              }}
+              className="fixed top-0 right-0 bottom-0 w-72 bg-background/90 backdrop-blur-xl z-50 shadow-xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Main navigation"
+              style={{ willChange: "transform" }}
             >
               <div className="flex justify-end p-4">
-                <button
+                <motion.button
                   onClick={() => setIsMenuOpen(false)}
                   className="p-2 rounded-full hover:bg-muted/50 transition-colors"
                   aria-label="Close menu"
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                 >
                   <X className="h-6 w-6" />
-                </button>
+                </motion.button>
               </div>
-              <div className="flex flex-col p-4 space-y-4">
-                {navItems.map((item) => (
-                  <button
+              <nav className="flex flex-col p-4 space-y-4">
+                {navItems.map((item, index) => (
+                  <motion.button
                     key={item.id}
                     onClick={() => scrollToSection(item.id)}
                     className={cn(
                       "text-left py-3 px-4 rounded-lg transition-colors",
                       activeSection === item.id ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted/50",
                     )}
+                    aria-current={activeSection === item.id ? "page" : undefined}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      duration: 0.3,
+                      delay: 0.1 * index,
+                      ease: [0.25, 0.1, 0.25, 1],
+                    }}
+                    whileHover={{
+                      x: 5,
+                      transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
+                    }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     {item.label}
-                  </button>
+                  </motion.button>
                 ))}
-                <Button
-                  className="mt-4 w-full rounded-full"
-                  onClick={() => {
-                    scrollToSection("cta")
-                    setIsMenuOpen(false)
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: 0.7,
+                    ease: [0.25, 0.1, 0.25, 1],
                   }}
                 >
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
+                  <Button
+                    className="mt-4 w-full rounded-full"
+                    onClick={() => {
+                      scrollToSection("cta")
+                      setIsMenuOpen(false)
+                    }}
+                    whileHover={{
+                      scale: 1.03,
+                      boxShadow: "0 10px 25px -5px rgba(var(--primary-rgb), 0.3)",
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Get Started
+                    <motion.span
+                      className="inline-block ml-2"
+                      initial={{ x: 0 }}
+                      whileHover={{ x: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </motion.span>
+                  </Button>
+                </motion.div>
+              </nav>
             </motion.div>
           </>
         )}
@@ -231,112 +334,11 @@ const AppleLandingPage = () => {
 
       <main>
         {/* Hero Section */}
-        <section
-          id="hero"
-          ref={heroRef}
-          className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20"
-        >
-          {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20 pointer-events-none" />
-
-          {/* Content */}
-          <div className="container max-w-6xl mx-auto px-4 md:px-6 z-10 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="mb-6"
-            >
-              <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                Introducing CourseAI
-              </span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto"
-            >
-              Learn anything with
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 ml-2">
-                AI-powered
-              </span>
-              <br />
-              course creation
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10"
-            >
-              Transform your knowledge into engaging courses with AI-generated content, interactive quizzes, and
-              personalized learning paths.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
-              <Button
-                size="lg"
-                className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl group"
-                onClick={() => scrollToSection("features")}
-              >
-                Get Started
-                <motion.span
-                  className="inline-block ml-2"
-                  initial={{ x: 0 }}
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  <ArrowRight className="h-5 w-5" />
-                </motion.span>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="px-8 py-6 text-lg rounded-full border-primary/20 hover:bg-primary/10 transition-all duration-300 flex items-center gap-2"
-                onClick={() => scrollToSection("how-it-works")}
-              >
-                <Play className="h-5 w-5" />
-                Watch Demo
-              </Button>
-            </motion.div>
-          </div>
-
-          {/* Hero Video/Image */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            style={{ y: heroY, scale: heroScale, opacity: heroOpacity }}
-            className="w-full max-w-5xl mx-auto mt-16 px-4 relative z-0"
-          >
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-              <VideoPlayer />
-            </div>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute bottom-10 left-1/2 transform -translate-x-1/2 cursor-pointer"
-            onClick={() => scrollToSection("features")}
-          >
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-            >
-              <ChevronDown className="h-8 w-8 text-muted-foreground" />
-            </motion.div>
-          </motion.div>
+        <section id="hero" ref={heroRef}>
+          <HeroSection
+            scrollToFeatures={() => scrollToSection("features")}
+            scrollToHowItWorks={() => scrollToSection("how-it-works")}
+          />
         </section>
 
         {/* Features Section */}
@@ -347,6 +349,11 @@ const AppleLandingPage = () => {
         {/* Product Gallery Section */}
         <section id="product" ref={productRef} className="py-20 md:py-32 relative bg-muted/10">
           <ProductGallery />
+        </section>
+
+        {/* About Us Section */}
+        <section id="about" ref={aboutRef} className="py-20 md:py-32 relative">
+          <AboutSection />
         </section>
 
         {/* How It Works Section */}
@@ -374,7 +381,9 @@ const AppleLandingPage = () => {
               {/* Content */}
               <div className="relative p-8 md:p-16 text-center">
                 <RevealAnimation>
-                  <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to transform your learning?</h2>
+                  <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
+                    Ready to transform your learning?
+                  </h2>
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.1}>
@@ -386,44 +395,74 @@ const AppleLandingPage = () => {
 
                 <RevealAnimation delay={0.2}>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Button
-                      size="lg"
-                      className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl group"
+                    <motion.div
+                      whileHover={{
+                        scale: 1.05,
+                        boxShadow: "0 10px 25px -5px rgba(var(--primary-rgb), 0.3)",
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                     >
-                      Start for free
-                      <motion.span
-                        className="inline-block ml-2"
-                        initial={{ x: 0 }}
-                        whileHover={{ x: 5 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      <Button
+                        size="lg"
+                        className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl group"
                       >
-                        <ArrowRight className="h-5 w-5" />
-                      </motion.span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="px-8 py-6 text-lg rounded-full border-primary/20 hover:bg-primary/10 transition-all duration-300"
+                        Start for free
+                        <motion.span
+                          className="inline-block ml-2"
+                          initial={{ x: 0 }}
+                          whileHover={{ x: 5 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                        >
+                          <ArrowRight className="h-5 w-5" />
+                        </motion.span>
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{
+                        scale: 1.05,
+                        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                     >
-                      Contact sales
-                    </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="px-8 py-6 text-lg rounded-full border-primary/20 hover:bg-primary/10 transition-all duration-300"
+                      >
+                        Contact sales
+                      </Button>
+                    </motion.div>
                   </div>
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.3}>
-                  <div className="mt-10 flex items-center justify-center space-x-8">
-                    <div className="flex items-center">
+                  <div className="mt-10 flex flex-wrap items-center justify-center gap-4 md:gap-8">
+                    <motion.div
+                      className="flex items-center"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                    >
                       <Check className="h-5 w-5 text-primary mr-2" />
                       <span className="text-sm">No credit card required</span>
-                    </div>
-                    <div className="flex items-center">
+                    </motion.div>
+                    <motion.div
+                      className="flex items-center"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                    >
                       <Check className="h-5 w-5 text-primary mr-2" />
                       <span className="text-sm">14-day free trial</span>
-                    </div>
-                    <div className="flex items-center">
+                    </motion.div>
+                    <motion.div
+                      className="flex items-center"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                    >
                       <Check className="h-5 w-5 text-primary mr-2" />
                       <span className="text-sm">Cancel anytime</span>
-                    </div>
+                    </motion.div>
                   </div>
                 </RevealAnimation>
               </div>
@@ -433,25 +472,37 @@ const AppleLandingPage = () => {
       </main>
 
       {/* Footer */}
-   
-      {/* Scroll to top button */}
+      <Footer />
+
+      {/* Scroll to top button with Apple-style animations */}
       <AnimatePresence>
         {showScrollTop && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <Button
-              variant="default"
-              size="icon"
-              className="rounded-full shadow-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-              onClick={scrollToTop}
+            <motion.div
+              whileHover={{
+                scale: 1.1,
+                y: -5,
+                boxShadow: "0 10px 25px -5px rgba(var(--primary-rgb), 0.3)",
+              }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
             >
-              <ArrowUp className="h-5 w-5" />
-            </Button>
+              <Button
+                variant="default"
+                size="icon"
+                className="rounded-full shadow-lg bg-primary hover:bg-primary/90 transition-all duration-300"
+                onClick={scrollToTop}
+                aria-label="Scroll to top"
+              >
+                <ArrowUp className="h-5 w-5" />
+              </Button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -461,17 +512,67 @@ const AppleLandingPage = () => {
 
 export default AppleLandingPage
 
-// Reusable animation component
-const RevealAnimation = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
+// Enhanced RevealAnimation component with Apple-style animations
+export const RevealAnimation = ({
+  children,
+  delay = 0,
+  direction = "up",
+  distance = 30,
+  duration = 0.8,
+  className = "",
+}: {
+  children: React.ReactNode
+  delay?: number
+  direction?: "up" | "down" | "left" | "right"
+  distance?: number
+  duration?: number
+  className?: string
+}) => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const isInView = useInView(ref, { once: true, amount: 0.2, rootMargin: "50px" })
+
+  // Define initial position based on direction
+  const getInitialPosition = () => {
+    switch (direction) {
+      case "up":
+        return { opacity: 0, y: distance }
+      case "down":
+        return { opacity: 0, y: -distance }
+      case "left":
+        return { opacity: 0, x: distance }
+      case "right":
+        return { opacity: 0, x: -distance }
+      default:
+        return { opacity: 0, y: distance }
+    }
+  }
+
+  // Define animation target based on direction
+  const getAnimationTarget = () => {
+    switch (direction) {
+      case "up":
+      case "down":
+        return isInView ? { opacity: 1, y: 0 } : getInitialPosition()
+      case "left":
+      case "right":
+        return isInView ? { opacity: 1, x: 0 } : getInitialPosition()
+      default:
+        return isInView ? { opacity: 1, y: 0 } : getInitialPosition()
+    }
+  }
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+      initial={getInitialPosition()}
+      animate={getAnimationTarget()}
+      transition={{
+        duration,
+        delay,
+        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing curve
+      }}
+      className={className}
+      style={{ willChange: "transform, opacity" }}
     >
       {children}
     </motion.div>

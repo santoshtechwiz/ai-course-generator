@@ -160,11 +160,7 @@ const HowItWorksSection = () => {
       <div className="relative max-w-5xl mx-auto">
         {/* Step Navigation */}
         <div className="flex justify-between items-center mb-8">
-          <motion.div
-            whileHover={{ scale: 1.1, x: -3 }}
-            whileTap={{ scale: 0.95 }}
-            className="hidden md:block"
-          >
+          <motion.div whileHover={{ scale: 1.1, x: -3 }} whileTap={{ scale: 0.95 }} className="hidden md:block">
             <Button
               variant="outline"
               size="icon"
@@ -177,7 +173,14 @@ const HowItWorksSection = () => {
           </motion.div>
 
           <div className="flex-1 mx-4">
-            <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="relative h-2 bg-muted rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+              aria-label="Step progress"
+            >
               <motion.div
                 className={`absolute top-0 left-0 h-full rounded-full bg-gradient-to-r ${steps[activeStep].color}`}
                 style={{ width: `${progress}%` }}
@@ -192,21 +195,23 @@ const HowItWorksSection = () => {
                   className={cn(
                     "flex flex-col items-center transition-all duration-300",
                     "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 rounded-lg p-1",
-                    index === activeStep ? "scale-110" : "scale-100 opacity-70 hover:opacity-100"
+                    index === activeStep ? "scale-110" : "scale-100 opacity-70 hover:opacity-100",
                   )}
                   whileHover={{ scale: index === activeStep ? 1.1 : 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  aria-label={`Go to step ${index + 1}: ${step.title}`}
+                  aria-current={index === activeStep ? "step" : undefined}
                 >
                   <div
                     className={cn(
                       "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2",
                       index === activeStep
                         ? `bg-gradient-to-br ${step.color} text-white shadow-lg`
-                        : "bg-muted text-muted-foreground"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     {index < activeStep ? (
-                      <CheckCircle className="h-5 w-5" />
+                      <CheckCircle className="h-5 w-5" aria-hidden="true" />
                     ) : (
                       <motion.div
                         animate={
@@ -223,14 +228,14 @@ const HowItWorksSection = () => {
                           duration: 3,
                         }}
                       >
-                        <step.icon className="h-5 w-5" />
+                        <step.icon className="h-5 w-5" aria-hidden="true" />
                       </motion.div>
                     )}
                   </div>
                   <span
                     className={cn(
                       "text-xs md:text-sm font-medium text-center hidden md:block",
-                      index === activeStep ? "text-foreground" : "text-muted-foreground"
+                      index === activeStep ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
                     {step.title}
@@ -240,11 +245,7 @@ const HowItWorksSection = () => {
             </div>
           </div>
 
-          <motion.div
-            whileHover={{ scale: 1.1, x: 3 }}
-            whileTap={{ scale: 0.95 }}
-            className="hidden md:block"
-          >
+          <motion.div whileHover={{ scale: 1.1, x: 3 }} whileTap={{ scale: 0.95 }} className="hidden md:block">
             <Button
               variant="outline"
               size="icon"
@@ -263,12 +264,15 @@ const HowItWorksSection = () => {
           style={{ minHeight: "500px" }}
           onMouseEnter={() => setIsAutoPlaying(false)}
           onMouseLeave={() => setIsAutoPlaying(true)}
+          role="region"
+          aria-label={`Step ${activeStep + 1}: ${steps[activeStep].title}`}
         >
           {/* Background gradient */}
           <motion.div
             className={`absolute inset-0 opacity-10 bg-gradient-to-br ${steps[activeStep].color}`}
             animate={{ opacity: [0.05, 0.1, 0.05] }}
             transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" }}
+            aria-hidden="true"
           />
 
           {/* Step Content */}
@@ -294,13 +298,14 @@ const HowItWorksSection = () => {
                       repeat: Number.POSITIVE_INFINITY,
                       repeatType: "reverse",
                     }}
+                    aria-hidden="true"
                   >
                     {/* @ts-expect-error steps[activeStep].icon is a valid JSX element */}\
                     {React.createElement(steps[activeStep].icon, { className: "h-8 w-8" })}
                   </motion.div>
                   <h3 className="text-2xl md:text-3xl font-bold mb-4">{steps[activeStep].title}</h3>
                   <p className="text-muted-foreground text-lg mb-6">{steps[activeStep].description}</p>
-                  
+
                   <div className="flex space-x-4">
                     <Button
                       variant="default"
@@ -310,13 +315,14 @@ const HowItWorksSection = () => {
                       {activeStep === steps.length - 1 ? "Get Started" : "Next Step"}
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
-                    
+
                     <Button
                       variant="outline"
                       size="icon"
                       className="rounded-full"
                       onClick={() => setIsAutoPlaying(!isAutoPlaying)}
                       aria-label={isAutoPlaying ? "Pause animation" : "Play animation"}
+                      aria-pressed={isAutoPlaying}
                     >
                       {isAutoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </Button>
@@ -350,18 +356,21 @@ const HowItWorksSection = () => {
 
 // Component to render different animations based on the current step
 const AnimationRenderer = ({ step, isActive }: { step: (typeof steps)[0]; isActive: boolean }) => {
-  switch (step.id) {
-    case "choose":
-      return <TypingAnimation isActive={isActive} />
-    case "generate":
-      return <ProcessingAnimation isActive={isActive} color={step.color} />
-    case "customize":
-      return <ArrangingAnimation isActive={isActive} color={step.color} />
-    case "publish":
-      return <PublishingAnimation isActive={isActive} color={step.color} />
-    default:
-      return null
-  }
+  // Use React.memo to prevent unnecessary re-renders
+  return React.useMemo(() => {
+    switch (step.id) {
+      case "choose":
+        return <TypingAnimation isActive={isActive} />
+      case "generate":
+        return <ProcessingAnimation isActive={isActive} color={step.color} />
+      case "customize":
+        return <ArrangingAnimation isActive={isActive} color={step.color} />
+      case "publish":
+        return <PublishingAnimation isActive={isActive} color={step.color} />
+      default:
+        return null
+    }
+  }, [step.id, step.color, isActive])
 }
 
 // Animation for the "Choose your topic" step
