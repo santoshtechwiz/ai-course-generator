@@ -95,10 +95,10 @@ export default function HowItWorks() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
         viewport={{ once: true }}
       >
-        <Card className="mb-8 bg-card hover:shadow-lg transition-all duration-300">
+        <Card className="mb-8 bg-card/30 backdrop-blur-sm hover:shadow-lg transition-all duration-300 rounded-2xl border-border/30">
           <CardHeader>
             <CardTitle className="text-2xl">Create Your Learning Journey</CardTitle>
             <CardDescription>Watch AI transform your topic into a complete course</CardDescription>
@@ -106,18 +106,23 @@ export default function HowItWorks() {
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-grow">
-                <Input value={topic} disabled={true} readOnly className="font-mono flex-grow pr-10" />
+                <Input
+                  value={topic}
+                  disabled={true}
+                  readOnly
+                  className="font-mono flex-grow pr-10 rounded-full h-12 bg-background/50 backdrop-blur-sm border-border/30"
+                />
                 <motion.span
                   className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-0.5 bg-primary"
                   animate={{ opacity: [0, 1, 0] }}
-                  transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1 }}
+                  transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
                   style={{ display: topic.length < fullTopic.length ? "block" : "none" }}
                 />
               </div>
               <Button
                 onClick={handleManualControl}
                 className={cn(
-                  "w-full sm:w-auto whitespace-nowrap transition-all duration-300",
+                  "w-full sm:w-auto whitespace-nowrap transition-all duration-300 rounded-full h-12",
                   stage > 0 ? "bg-primary/80" : "bg-primary",
                 )}
               >
@@ -144,7 +149,7 @@ export default function HowItWorks() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           >
             <div className="space-y-4">
               {stages.map((s, index) => (
@@ -161,12 +166,13 @@ export default function HowItWorks() {
                     duration: 0.5,
                     delay: index * 0.1,
                     x: { repeat: stage === index + 1 ? Number.POSITIVE_INFINITY : 0, duration: 0.5 },
+                    ease: [0.25, 0.1, 0.25, 1],
                   }}
                 >
                   <Card
                     className={cn(
-                      "bg-card/50 backdrop-blur-sm transition-all duration-300",
-                      stage === index + 1 && "border-primary shadow-md",
+                      "bg-card/30 backdrop-blur-sm transition-all duration-300 rounded-2xl border-border/30",
+                      stage === index + 1 && "border-primary/30 shadow-md",
                     )}
                   >
                     <CardContent className="flex items-center p-4">
@@ -179,7 +185,7 @@ export default function HowItWorks() {
                               }
                             : {}
                         }
-                        transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
+                        transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2, ease: [0.25, 0.1, 0.25, 1] }}
                       >
                         <s.icon className="w-8 h-8 mr-4 text-primary" />
                       </motion.div>
@@ -204,14 +210,14 @@ export default function HowItWorks() {
             key="playlist"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            <Card className="bg-card hover:shadow-lg transition-all duration-300">
+            <Card className="bg-card/30 backdrop-blur-sm hover:shadow-lg transition-all duration-300 rounded-2xl border-border/30">
               <CardHeader>
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
+                  transition={{ delay: 0.2, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                 >
                   <CardTitle className="text-2xl">Your Web Development Course is Ready!</CardTitle>
                   <CardDescription>Start your learning journey with these curated lessons</CardDescription>
@@ -222,13 +228,14 @@ export default function HowItWorks() {
                   {playlist.map((video, index) => (
                     <motion.li
                       key={index}
-                      className="flex items-center p-3 rounded-lg border bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-200 cursor-pointer"
+                      className="flex items-center p-3 rounded-xl border border-border/30 bg-card/20 backdrop-blur-sm hover:bg-card/40 transition-all duration-200 cursor-pointer"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       whileHover={{ scale: 1.02, x: 5 }}
                       transition={{
                         delay: index * 0.1,
                         scale: { duration: 0.2 },
+                        ease: [0.25, 0.1, 0.25, 1],
                       }}
                     >
                       <motion.div
@@ -249,7 +256,7 @@ export default function HowItWorks() {
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
-                  <Button className="w-full sm:w-auto relative overflow-hidden group">
+                  <Button className="w-full sm:w-auto relative overflow-hidden group rounded-full">
                     <motion.span
                       className="absolute inset-0 w-0 bg-white/20 transition-all duration-300 group-hover:w-full"
                       initial={{ width: 0 }}
@@ -266,4 +273,3 @@ export default function HowItWorks() {
     </div>
   )
 }
-

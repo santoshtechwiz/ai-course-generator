@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation"
 import RevealAnimation from "../shared/RevealAnimation"
 import FeatureVideo from "./FeatureVideo"
 
-
 const stagger = {
   visible: {
     transition: {
@@ -54,7 +53,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({ onTopicSubmit }) => {
                   onClick={() => onTopicSubmit(topic)}
                   type="submit"
                   size="lg"
-                  className="w-full sm:w-auto px-8 py-3 text-base font-medium"
+                  className="w-full sm:w-auto px-8 py-3 text-base font-medium rounded-full"
                 >
                   Generate Course
                 </Button>

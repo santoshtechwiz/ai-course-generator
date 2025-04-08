@@ -120,7 +120,7 @@ export default function FAQSection() {
       const regex = new RegExp(`(${term})`, "gi")
       highlightedText = highlightedText.replace(
         regex,
-        '<mark class="bg-primary/20 text-foreground px-1 rounded">$1</mark>',
+        '<mark class="bg-primary/20 text-foreground px-1 rounded-sm">$1</mark>',
       )
     })
 
@@ -128,26 +128,26 @@ export default function FAQSection() {
   }
 
   return (
-    <section ref={sectionRef} className="py-10 md:py-16 bg-gradient-to-b from-background to-secondary/20">
+    <section ref={sectionRef} className="py-10 md:py-16">
       <div className="container px-4 md:px-6 max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           className="space-y-8"
         >
           <motion.div
             className="relative mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
           >
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               ref={searchInputRef}
               type="text"
               placeholder="Search FAQs..."
-              className="pl-10 w-full bg-background border-border focus:ring-2 focus:ring-primary/30 transition-all duration-300"
+              className="pl-10 w-full bg-background/50 backdrop-blur-sm border-border/30 focus:ring-2 focus:ring-primary/30 transition-all duration-300 rounded-full h-12"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -159,7 +159,7 @@ export default function FAQSection() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0 }}
                 whileHover={{ rotate: 90 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
               >
                 ✕
               </motion.button>
@@ -173,7 +173,7 @@ export default function FAQSection() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               >
                 <Accordion
                   type="single"
@@ -187,21 +187,21 @@ export default function FAQSection() {
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      transition={{ duration: 0.3, delay: index * 0.05, ease: [0.25, 0.1, 0.25, 1] }}
                     >
                       <AccordionItem
                         value={`item-${index}`}
                         className={cn(
-                          "border rounded-lg overflow-hidden",
+                          "border rounded-2xl overflow-hidden backdrop-blur-sm",
                           "transition-all duration-200 ease-in-out",
                           "hover:shadow-md",
-                          expandedItem === `item-${index}` && "shadow-md border-primary/50",
+                          expandedItem === `item-${index}` ? "shadow-md border-primary/30 bg-card/30" : "bg-card/10",
                         )}
                       >
                         <AccordionTrigger
                           className={cn(
-                            "px-5 py-4 flex items-center justify-between text-left bg-card hover:bg-muted/50 transition-colors duration-200",
-                            expandedItem === `item-${index}` && "bg-muted/30",
+                            "px-5 py-4 flex items-center justify-between text-left hover:bg-muted/30 transition-colors duration-200",
+                            expandedItem === `item-${index}` && "bg-muted/10",
                           )}
                         >
                           <div className="flex items-center space-x-3">
@@ -215,7 +215,7 @@ export default function FAQSection() {
                                     }
                                   : {}
                               }
-                              transition={{ duration: 0.5 }}
+                              transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                             >
                               <HelpCircle className="flex-shrink-0 w-5 h-5 text-primary" />
                             </motion.div>
@@ -224,11 +224,11 @@ export default function FAQSection() {
                             </span>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="px-5 py-4 text-base text-muted-foreground bg-background">
+                        <AccordionContent className="px-5 py-4 text-base text-muted-foreground bg-background/50">
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
+                            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                           >
                             {highlightText(item.answer)}
                           </motion.div>
@@ -244,15 +244,15 @@ export default function FAQSection() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 className="text-center py-12"
               >
                 <motion.div
                   animate={{
-                    scale: [1, 1.1, 1],
-                    rotate: [0, 5, 0, -5, 0],
+                    scale: [1, 1.05, 1],
+                    rotate: [0, 3, 0, -3, 0],
                   }}
-                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: [0.25, 0.1, 0.25, 1] }}
                   className="inline-block mb-4"
                 >
                   <HelpCircle className="h-12 w-12 text-muted-foreground mx-auto" />
@@ -265,6 +265,7 @@ export default function FAQSection() {
                   className="text-primary hover:underline"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                 >
                   Clear search and show all FAQs
                 </motion.button>
@@ -276,4 +277,3 @@ export default function FAQSection() {
     </section>
   )
 }
-
