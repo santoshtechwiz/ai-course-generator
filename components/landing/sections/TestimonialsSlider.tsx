@@ -190,29 +190,29 @@ const TestimonialsSlider = () => {
                 <AnimatePresence mode="wait">
                   {activeIndex === index && (
                     <motion.div
-                      initial={{ opacity: 0, y: 20, rotateX: 5 }}
+                      initial={{ opacity: 0, y: 30, rotateX: 10 }}
                       animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                      exit={{ opacity: 0, y: -20, rotateX: -5 }}
-                      transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+                      exit={{ opacity: 0, y: -30, rotateX: -10 }}
+                      transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
                       className="bg-card/30 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-border/10 shadow-lg text-center"
                       style={{
-                        transformPerspective: "1000px",
+                        transformPerspective: "1200px",
                         willChange: "transform, opacity",
                       }}
                     >
                       <motion.div
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 0.3 }}
-                        transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                        transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                       >
-                        <Quote className="h-12 w-12 text-primary/30 mx-auto mb-6" aria-hidden="true" />
+                        <Quote className="h-14 w-14 text-primary/30 mx-auto mb-6" aria-hidden="true" />
                       </motion.div>
 
                       <motion.p
-                        className="text-xl md:text-2xl italic mb-8"
+                        className="text-xl md:text-2xl italic mb-8 leading-relaxed"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                        transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                       >
                         {testimonial.quote}
                       </motion.p>
@@ -221,13 +221,13 @@ const TestimonialsSlider = () => {
                         className="flex items-center justify-center"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                        transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
                       >
                         <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                          whileHover={{ scale: 1.1, y: -2 }}
+                          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                         >
-                          <Avatar className="h-14 w-14 mr-4">
+                          <Avatar className="h-16 w-16 mr-4 border-2 border-primary/10">
                             <AvatarImage src={testimonial.avatar} alt={testimonial.author} />
                             <AvatarFallback>
                               {testimonial.author
@@ -238,7 +238,7 @@ const TestimonialsSlider = () => {
                           </Avatar>
                         </motion.div>
                         <div className="text-left">
-                          <div className="font-semibold">{testimonial.author}</div>
+                          <div className="font-semibold text-lg">{testimonial.author}</div>
                           <div className="text-sm text-muted-foreground">{testimonial.role}</div>
                         </div>
                       </motion.div>
@@ -251,20 +251,18 @@ const TestimonialsSlider = () => {
         </div>
 
         {/* Dots indicator with Apple-style animations */}
-        <div className="flex justify-center mt-8 space-x-2" role="tablist" aria-label="Testimonial navigation">
+        <div className="flex justify-center mt-8 space-x-3" role="tablist" aria-label="Testimonial navigation">
           {testimonials.map((_, index) => (
             <motion.button
               key={index}
-              className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                index === activeIndex ? "bg-primary" : "bg-muted"
-              }`}
+              className={`w-3 h-3 rounded-full transition-colors ${index === activeIndex ? "bg-primary" : "bg-muted"}`}
               onClick={() => setActiveIndex(index)}
               aria-label={`Go to testimonial ${index + 1}`}
               aria-selected={index === activeIndex}
               role="tab"
-              whileHover={{ scale: 1.5 }}
+              whileHover={{ scale: 1.6 }}
               whileTap={{ scale: 0.9 }}
-              transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             />
           ))}
         </div>

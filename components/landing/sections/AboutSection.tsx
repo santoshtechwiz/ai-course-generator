@@ -8,8 +8,6 @@ import { RevealAnimation } from "../AppleLandingPage"
 import MissionIcon from "../svg/MissionIcon"
 import VisionIcon from "../svg/VisionIcon"
 import TeamIcon from "../svg/TeamIcon"
-
-import TeamIllustration from "../svg/TeamIllustration"
 import ValueIcon from "../svg/ValueIcon"
 
 const AboutSection = () => {
@@ -38,7 +36,6 @@ const AboutSection = () => {
       icon: TeamIcon,
       color: "from-amber-500 to-amber-600",
     },
-   
   ]
 
   const values = [
@@ -97,15 +94,15 @@ const AboutSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{
-              duration: 0.6,
+              duration: 0.7,
               delay: 0.3 + index * 0.1,
-              ease: [0.16, 1, 0.3, 1],
+              ease: [0.25, 0.1, 0.25, 1],
             }}
           >
-            <div className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 h-full rounded-2xl border border-border/10 bg-card/30 backdrop-blur-sm">
+            <div className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-2 h-full rounded-2xl border border-border/10 bg-card/30 backdrop-blur-sm">
               <div className="p-6 sm:p-8 space-y-5 h-full flex flex-col">
                 <div className="flex items-center space-x-4">
-                  <div className={`p-3 rounded-full bg-gradient-to-br ${section.color} text-white`}>
+                  <div className={`p-3 rounded-full bg-gradient-to-br ${section.color} text-white shadow-lg`}>
                     <section.icon className="w-6 h-6" />
                   </div>
                   <h3 className="text-xl font-semibold tracking-tight">{section.title}</h3>
@@ -117,20 +114,19 @@ const AboutSection = () => {
         ))}
       </div>
 
-
       {/* Values section */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.6, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.7, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
         className="mt-24 text-center"
       >
         <h3 className="text-2xl md:text-3xl font-bold mb-12">Our Values</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {values.map((value, index) => (
             <RevealAnimation key={value.title} delay={0.9 + index * 0.1}>
-              <div className="bg-card/30 backdrop-blur-sm rounded-xl p-6 border border-border/10 h-full flex flex-col items-center">
-                <div className={`p-4 rounded-full bg-gradient-to-br ${value.color} text-white mb-4`}>
+              <div className="bg-card/30 backdrop-blur-sm rounded-xl p-6 border border-border/10 h-full flex flex-col items-center hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div className={`p-4 rounded-full bg-gradient-to-br ${value.color} text-white mb-4 shadow-lg`}>
                   <ValueIcon index={index} className="w-8 h-8" />
                 </div>
                 <h4 className="text-xl font-semibold mb-2">{value.title}</h4>
@@ -144,12 +140,12 @@ const AboutSection = () => {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.6, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.7, delay: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
         className="text-center mt-24"
       >
         <Button
           size="lg"
-          className="px-8 py-3 text-lg font-medium rounded-full"
+          className="px-8 py-3 text-lg font-medium rounded-full hover:shadow-lg hover:-translate-y-1 transition-all"
           onClick={() => (window.location.href = "/contactus")}
         >
           Get in Touch

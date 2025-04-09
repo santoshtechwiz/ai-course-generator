@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Pause,
   Play,
+  ArrowRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -321,7 +322,7 @@ const ProductGallery = () => {
                 {filteredProducts.map((product, index) => (
                   <motion.div
                     key={product.id}
-                    initial={{ opacity: 0, rotateY: index > activeIndex ? 45 : -45, scale: 0.8 }}
+                    initial={{ opacity: 0, rotateY: index > activeIndex ? 60 : -60, scale: 0.8 }}
                     animate={{
                       opacity: index === activeIndex ? 1 : 0,
                       rotateY: 0,
@@ -330,12 +331,12 @@ const ProductGallery = () => {
                     }}
                     exit={{
                       opacity: 0,
-                      rotateY: index < activeIndex ? -45 : 45,
+                      rotateY: index < activeIndex ? -60 : 60,
                       scale: 0.8,
                     }}
                     transition={{
                       type: "spring",
-                      stiffness: 300,
+                      stiffness: 280,
                       damping: 30,
                       opacity: { duration: 0.5 },
                     }}
@@ -345,6 +346,7 @@ const ProductGallery = () => {
                     )}
                     style={{
                       display: Math.abs(index - activeIndex) <= 1 ? "block" : "none", // Only render nearby slides
+                      transformStyle: "preserve-3d",
                     }}
                   >
                     <ProductCard product={product} isActive={index === activeIndex} theme={theme} />
@@ -499,6 +501,8 @@ const ProgressBar = ({
 }
 
 // Improve the product card component with better accessibility and animations
+const APPLE_EASING = [0.17, 0.67, 0.83, 0.67]
+
 const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center p-6 md:p-8 h-full">
@@ -506,7 +510,7 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+          transition={{ delay: 0.2, duration: 0.6, ease: APPLE_EASING }}
         >
           <div className="flex items-center mb-4">
             <Badge variant={product.type === "course" ? "default" : "secondary"} className="rounded-full mr-2">
@@ -532,8 +536,22 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
 
           <p className="text-muted-foreground mb-6 line-clamp-3">{product.description}</p>
 
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button className="rounded-full">{product.type === "course" ? "Start Learning" : "Take Quiz"}</Button>
+          <motion.div
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.98, y: 0 }}
+            transition={{ duration: 0.3, ease: APPLE_EASING }}
+          >
+            <Button className="rounded-full px-6 py-2">
+              {product.type === "course" ? "Start Learning" : "Take Quiz"}
+              <motion.span
+                className="inline-block ml-2"
+                initial={{ x: 0 }}
+                whileHover={{ x: 3 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <ArrowRight className="h-4 w-4" />
+              </motion.span>
+            </Button>
           </motion.div>
         </motion.div>
       </div>
@@ -542,7 +560,7 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
         className="order-1 md:order-2 flex justify-center items-center"
         initial={{ opacity: 0, scale: 0.8, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
+        transition={{ delay: 0.3, duration: 0.6, ease: APPLE_EASING }}
       >
         <div className="relative w-full max-w-md aspect-video rounded-xl overflow-hidden shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5"></div>
@@ -558,9 +576,10 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
                 : {}
             }
             transition={{
-              duration: 5,
+              duration: 6,
               repeat: Number.POSITIVE_INFINITY,
               repeatType: "reverse",
+              ease: APPLE_EASING,
             }}
           >
             {product.type === "course" ? (
@@ -570,10 +589,10 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
             )}
           </motion.div>
 
-          {/* Floating particles with reduced count for better performance */}
+          {/* Enhanced floating particles */}
           {isActive && (
             <>
-              {[...Array(4)].map((_, i) => (
+              {[...Array(6)].map((_, i) => (
                 <motion.div
                   key={`particle-${product.id}-${i}`}
                   className="absolute w-2 h-2 rounded-full bg-primary/30"
@@ -585,14 +604,15 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
                   animate={{
                     x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`, `${Math.random() * 100}%`],
                     y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                    opacity: [0, 0.7, 0],
+                    opacity: [0, 0.8, 0],
+                    scale: [0.8, 1.2, 0.8],
                   }}
                   transition={{
-                    duration: 5 + Math.random() * 5,
+                    duration: 6 + Math.random() * 6,
                     repeat: Number.POSITIVE_INFINITY,
                     repeatType: "loop",
                     ease: "linear",
-                    delay: i * 0.5,
+                    delay: i * 0.7,
                   }}
                 />
               ))}

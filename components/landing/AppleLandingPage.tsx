@@ -15,8 +15,12 @@ import HowItWorksSection from "./sections/HowItWorksSection"
 import ProductGallery from "./sections/ProductGallery"
 import TestimonialsSlider from "./sections/TestimonialsSlider"
 import HeroSection from "./sections/HeroSection"
-import Footer from "./sections/Footer"
+
 import { useMobile } from "@/hooks/use-mobile"
+import { useRouter } from "next/navigation"
+
+// Update the APPLE_EASING constant for smoother animations
+const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
 const AppleLandingPage = () => {
   const { theme } = useTheme()
@@ -24,6 +28,20 @@ const AppleLandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState("hero")
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const router = useRouter()
+
+  // Add this at the top of the component, after the router declaration
+  const scrollVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: APPLE_EASING,
+      },
+    },
+  }
 
   // Refs for sections
   const heroRef = useRef<HTMLDivElement>(null)
@@ -54,12 +72,15 @@ const AppleLandingPage = () => {
     mass: 0.5,
   })
 
-  const headerBg = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.9)"])
-  const headerBgDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.9)"])
+  // Update the headerBg transform to make it more subtle
+  const headerBg = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.8)"])
+  const headerBgDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.8)"])
   const headerBorder = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(0, 0, 0, 0.08)"])
   const headerBorderDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(255, 255, 255, 0.08)"])
-  const logoScale = useTransform(smoothScrollY, [0, 100], [1, 0.95])
-  const logoOpacity = useTransform(smoothScrollY, [0, 100], [1, 0.98])
+
+  // Enhance the logo animation
+  const logoScale = useTransform(smoothScrollY, [0, 100], [1, 0.92])
+  const logoOpacity = useTransform(smoothScrollY, [0, 100], [1, 0.95])
 
   // Handle scroll events
   useEffect(() => {
@@ -95,6 +116,9 @@ const AppleLandingPage = () => {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  const startTrial = () => {
+    router.push("/dashboard/subscription")
+  }
   // Scroll to section function
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId)
@@ -109,9 +133,9 @@ const AppleLandingPage = () => {
 
   // Scroll to top function
   const scrollToTop = () => {
-    window.scrollTo({ 
-      top: 0, 
-      behavior: "smooth" 
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
     })
   }
 
@@ -164,7 +188,7 @@ const AppleLandingPage = () => {
               aria-current={activeSection === item.id ? "page" : undefined}
               whileHover={{
                 scale: 1.05,
-                transition: { duration: 0.2, ease: [0.32, 0.72, 0, 1] },
+                transition: { duration: 0.3, ease: APPLE_EASING },
               }}
               whileTap={{ scale: 0.95 }}
             >
@@ -184,8 +208,8 @@ const AppleLandingPage = () => {
         <div className="hidden md:block">
           <motion.div
             whileHover={{
-              scale: 1.03,
-              transition: { duration: 0.2, ease: [0.32, 0.72, 0, 1] },
+              scale: 1.05,
+              transition: { duration: 0.3, ease: APPLE_EASING },
             }}
             whileTap={{ scale: 0.97 }}
           >
@@ -197,7 +221,7 @@ const AppleLandingPage = () => {
               <motion.span
                 className="inline-block ml-2"
                 initial={{ x: 0 }}
-                whileHover={{ x: 3 }}
+                whileHover={{ x: 5 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
                 <ArrowUpRight className="h-4 w-4" />
@@ -229,7 +253,7 @@ const AppleLandingPage = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+              transition={{ duration: 0.3, ease: APPLE_EASING }}
               className="fixed inset-0 bg-background/80 backdrop-blur-lg z-40"
               onClick={() => setIsMenuOpen(false)}
               aria-hidden="true"
@@ -241,9 +265,9 @@ const AppleLandingPage = () => {
               exit={{ x: "100%" }}
               transition={{
                 type: "spring",
-                stiffness: 300,
-                damping: 30,
-                ease: [0.32, 0.72, 0, 1],
+                stiffness: 270,
+                damping: 35,
+                ease: APPLE_EASING,
               }}
               className="fixed top-0 right-0 bottom-0 w-80 bg-background/95 backdrop-blur-xl z-50 shadow-xl"
               role="dialog"
@@ -276,11 +300,11 @@ const AppleLandingPage = () => {
                     transition={{
                       duration: 0.4,
                       delay: 0.05 * index,
-                      ease: [0.32, 0.72, 0, 1],
+                      ease: APPLE_EASING,
                     }}
                     whileHover={{
                       x: 5,
-                      transition: { duration: 0.2, ease: [0.32, 0.72, 0, 1] },
+                      transition: { duration: 0.3, ease: APPLE_EASING },
                     }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -293,7 +317,7 @@ const AppleLandingPage = () => {
                   transition={{
                     duration: 0.4,
                     delay: 0.4,
-                    ease: [0.32, 0.72, 0, 1],
+                    ease: APPLE_EASING,
                   }}
                 >
                   <Button
@@ -303,8 +327,8 @@ const AppleLandingPage = () => {
                       setIsMenuOpen(false)
                     }}
                     whileHover={{
-                      scale: 1.02,
-                      transition: { duration: 0.2, ease: [0.32, 0.72, 0, 1] },
+                      scale: 1.05,
+                      transition: { duration: 0.3, ease: APPLE_EASING },
                     }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -312,7 +336,7 @@ const AppleLandingPage = () => {
                     <motion.span
                       className="inline-block ml-2"
                       initial={{ x: 0 }}
-                      whileHover={{ x: 3 }}
+                      whileHover={{ x: 5 }}
                       transition={{ type: "spring", stiffness: 500, damping: 15 }}
                     >
                       <ArrowRight className="h-4 w-4" />
@@ -369,7 +393,7 @@ const AppleLandingPage = () => {
           <div className="container max-w-6xl mx-auto px-4 md:px-6">
             <div className="relative rounded-3xl overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />
-              
+
               <div className="relative p-8 md:p-16 text-center">
                 <RevealAnimation>
                   <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
@@ -387,13 +411,17 @@ const AppleLandingPage = () => {
                   <motion.div
                     className="flex justify-center"
                     whileHover={{
-                      scale: 1.02,
-                      transition: { duration: 0.3, ease: [0.32, 0.72, 0, 1] },
+                      scale: 1.05,
+                      transition: { duration: 0.3, ease: APPLE_EASING },
                     }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <Button
                       size="lg"
+                      onClick={() => {
+                        scrollToSection("cta")
+                        setIsMenuOpen(false)
+                      }}
                       className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
                     >
                       Start 1-month free trial
@@ -414,7 +442,7 @@ const AppleLandingPage = () => {
                     <motion.div
                       className="flex items-center"
                       whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+                      transition={{ duration: 0.3, ease: APPLE_EASING }}
                     >
                       <Check className="h-5 w-5 text-primary mr-2" />
                       <span className="text-sm">No credit card required</span>
@@ -422,7 +450,7 @@ const AppleLandingPage = () => {
                     <motion.div
                       className="flex items-center"
                       whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+                      transition={{ duration: 0.3, ease: APPLE_EASING }}
                     >
                       <Check className="h-5 w-5 text-primary mr-2" />
                       <span className="text-sm">1-month free trial</span>
@@ -435,8 +463,6 @@ const AppleLandingPage = () => {
         </section>
       </main>
 
-   
-
       {/* Scroll to top button */}
       <AnimatePresence>
         {showScrollTop && (
@@ -444,14 +470,14 @@ const AppleLandingPage = () => {
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+            transition={{ duration: 0.3, ease: APPLE_EASING }}
             className="fixed bottom-6 right-6 z-50"
           >
             <motion.div
               whileHover={{
                 scale: 1.1,
                 y: -5,
-                transition: { duration: 0.2, ease: [0.32, 0.72, 0, 1] },
+                transition: { duration: 0.3, ease: APPLE_EASING },
               }}
               whileTap={{ scale: 0.9 }}
             >
@@ -480,7 +506,7 @@ const RevealAnimation = ({
   delay = 0,
   direction = "up",
   distance = 20,
-  duration = 0.6,
+  duration = 0.8, // Slightly increased duration for smoother animations
   className = "",
 }: {
   children: React.ReactNode
@@ -495,11 +521,16 @@ const RevealAnimation = ({
 
   const getInitialPosition = () => {
     switch (direction) {
-      case "up": return { opacity: 0, y: distance }
-      case "down": return { opacity: 0, y: -distance }
-      case "left": return { opacity: 0, x: distance }
-      case "right": return { opacity: 0, x: -distance }
-      default: return { opacity: 0, y: distance }
+      case "up":
+        return { opacity: 0, y: distance }
+      case "down":
+        return { opacity: 0, y: -distance }
+      case "left":
+        return { opacity: 0, x: distance }
+      case "right":
+        return { opacity: 0, x: -distance }
+      default:
+        return { opacity: 0, y: distance }
     }
   }
 
@@ -524,7 +555,7 @@ const RevealAnimation = ({
       transition={{
         duration,
         delay,
-        ease: [0.32, 0.72, 0, 1], // Apple's custom easing curve
+        ease: APPLE_EASING, // Updated easing curve
       }}
       className={className}
     >
