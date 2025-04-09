@@ -117,6 +117,6 @@ export const buildQuizUrl = (slug: string, type: QuizType) => {
     case "flashcard":
       return `/dashboard/flashcard/${slug}`
     default:
-      return `/dashboard/quiz/${slug}`
+      return `/dashboard/course/${slug}`
   }
 }

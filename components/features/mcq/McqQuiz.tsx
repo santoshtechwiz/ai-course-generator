@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Trophy, HelpCircle, ArrowRight, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -18,6 +18,9 @@ import { QuizBase } from "../quiz-results/QuizBase"
 import { useQuizResult } from "@/hooks/use-quiz-result"
 import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
 import { formatQuizTime } from "@/lib/quiz-result-service"
+import { useAnimation } from "@/providers/animation-provider"
+import { MotionTransition, MotionWrapper } from "@/components/ui/animations/motion-wrapper"
+
 
 const formatQuizTimeLocal = (seconds: number): string => {
   if (typeof formatQuizTime === "function") {
@@ -270,6 +273,8 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
   }, [questions.length, userId, quizId, resetSubmissionState])
 
   const renderQuizContent = () => {
+    const { animationsEnabled:anim } = useAnimation()
+
     if (hasError) {
       return (
         <Card className="w-full max-w-2xl mx-auto">
@@ -289,79 +294,81 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
 
       if (isAuthenticated) {
         return (
-          <QuizResultDisplay
-            quizId={quizId.toString()}
-            title={title}
-            score={percentage}
-            totalQuestions={totalQuestions}
-            totalTime={totalTime}
-            correctAnswers={correctCount}
-            type="mcq"
-            slug={slug}
-          />
+          <MotionWrapper animate={anim} variant="fade" duration={0.6}>
+            <QuizResultDisplay
+              quizId={quizId.toString()}
+              title={title}
+              score={percentage}
+              totalQuestions={totalQuestions}
+              totalTime={totalTime}
+              correctAnswers={correctCount}
+              type="mcq"
+              slug={slug}
+            />
+          </MotionWrapper>
         )
       }
       return (
-        <Card className="w-full max-w-2xl mx-auto">
-          <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
-            <Trophy className="w-16 h-16 text-primary" />
+        <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.6}>
+          <Card className="w-full max-w-2xl mx-auto">
+            <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
+              <Trophy className="w-16 h-16 text-primary" />
 
-            {!session ? (
-              <>
-                <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />
-              </>
-            ) : null}
-          </CardContent>
-        </Card>
+              {!session ? (
+                <>
+                  <SignInPrompt callbackUrl={`/dashboard/mcq/${slug}`} />
+                </>
+              ) : null}
+            </CardContent>
+          </Card>
+        </MotionWrapper>
       )
     }
 
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100
+    const animationsEnabled = useAnimation().animationsEnabled
 
     return (
       <Card className="w-full">
         <CardHeader className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-primary/10 text-primary font-medium px-3 py-1">
-                Quiz
-              </Badge>
-              <h1 className="text-xl sm:text-2xl font-bold">{title}</h1>
+          <MotionWrapper animate={animationsEnabled} variant="slide" direction="down" duration={0.4}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-primary/10 text-primary font-medium px-3 py-1">
+                  Quiz
+                </Badge>
+                <h1 className="text-xl sm:text-2xl font-bold">{title}</h1>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-help">
+                      <Timer className="w-4 h-4" />
+                      {formatQuizTimeLocal(timeSpent.reduce((a, b) => a + b, 0))}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Total time spent on the quiz</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-help">
-                    <Timer className="w-4 h-4" />
-                    {formatQuizTimeLocal(timeSpent.reduce((a, b) => a + b, 0))}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Total time spent on the quiz</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="space-y-2">
-            <Progress value={progress} className="h-2" />
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Progress: {Math.round(progress)}%</span>
-              <span>
-                Question {currentQuestionIndex + 1} of {questions.length}
-              </span>
+          </MotionWrapper>
+          <MotionWrapper animate={animationsEnabled} variant="slide" direction="up" duration={0.4} delay={0.1}>
+            <div className="space-y-2">
+              <Progress value={progress} className="h-2" />
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Progress: {Math.round(progress)}%</span>
+                <span>
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </span>
+              </div>
             </div>
-          </div>
+          </MotionWrapper>
         </CardHeader>
         <CardContent>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={currentQuestionIndex}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
+          <MotionTransition key={currentQuestionIndex}>
+            <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
@@ -377,7 +384,7 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
                       key={`${index}-${option}`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ delay: index * 0.1, ease: [0.25, 0.1, 0.25, 1] }}
                     >
                       <div
                         className={cn(
@@ -400,8 +407,8 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
                   ))}
                 </RadioGroup>
               </div>
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          </MotionTransition>
         </CardContent>
         <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
           <p className="text-sm text-muted-foreground">
@@ -447,4 +454,3 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
     </QuizBase>
   )
 }
-

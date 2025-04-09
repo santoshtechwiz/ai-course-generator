@@ -83,7 +83,7 @@ export async function getQuizzes({
         tags: [],
         questions: quiz.questions.map(q => ({
           ...q,
-          options: q.options ? q.options.split(',') : [],
+          options: q.options ? q.options : null,
         })),
       }),
     )

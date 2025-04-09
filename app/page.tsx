@@ -1,8 +1,7 @@
-import LandingComponent from "@/components/landing/LandingComponent"
+import AppleLandingPage from "@/components/landing/AppleLandingPage"
 import type { Metadata } from "next"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import { SchemaRenderer } from "./schema/components/SchemaRenderer"
 
 export const metadata: Metadata = generatePageMetadata({
   title: "CourseAI: AI Course Creator | Free Quiz, MCQ, Flashcard Generator",
@@ -59,13 +58,12 @@ const HomePage = () => {
     <div className="flex flex-col min-h-screen">
       <JsonLd type="default" />
       <JsonLd type="softwareApplication" data={softwareAppData} />
-     
-      <div className="flex-grow p-2 md:p-4">
-        <LandingComponent />
+
+      <div className="flex-grow">
+        <AppleLandingPage />
       </div>
     </div>
   )
 }
 
 export default HomePage
-
