@@ -17,23 +17,23 @@ const AboutSection = () => {
 
   const sections = [
     {
-      title: "Our Mission",
+      title: "Empowering Content Creators",
       description:
-        "At CourseAI, we aim to simplify content creation by leveraging the power of AI. Our mission is to empower everyone worldwide with seamless tools to share knowledge and ideas.",
+        "At CourseAI, we are dedicated to empowering educators, professionals, and learners by simplifying content creation. Our mission is to provide intuitive AI tools that enable anyone to share knowledge effectively and efficiently.",
       icon: MissionIcon,
       color: "from-rose-500 to-rose-600",
     },
     {
-      title: "Our Vision",
+      title: "A Vision for Smarter Learning",
       description:
-        "Our vision is to create a world where learning and sharing knowledge is accessible, affordable, and engaging for everyone. We aspire to make CourseAI the go-to platform for personalized and interactive content, helping individuals unlock their potential.",
+        "Our vision is to revolutionize the way people learn and share knowledge. By combining AI with user-friendly tools, we aim to make education more accessible, engaging, and impactful for everyone.",
       icon: VisionIcon,
       color: "from-cyan-500 to-cyan-600",
     },
     {
-      title: "Our Team",
+      title: "Driven by Passion and Expertise",
       description:
-        "CourseAI is a solo-founder project, built with passion and dedication. As an independent developer with a strong background in AI and content creation, I personally handle everything — from design to development — to create innovative solutions that make sharing knowledge more effective and enjoyable.",
+        "CourseAI is a solo-founder initiative, built with a passion for AI and education. With a strong background in technology and content creation, we are committed to delivering innovative solutions that make learning and teaching more effective.",
       icon: TeamIcon,
       color: "from-amber-500 to-amber-600",
     },
@@ -41,18 +41,18 @@ const AboutSection = () => {
 
   const values = [
     {
-      title: "Innovation",
-      description: "We constantly push the boundaries of what's possible with AI in content creation.",
+      title: "Innovation at the Core",
+      description: "We continuously explore new possibilities to enhance content creation with cutting-edge AI technology.",
       color: "from-purple-500 to-indigo-500",
     },
     {
-      title: "Accessibility",
-      description: "We believe quality content should be accessible to everyone, everywhere.",
+      title: "Accessible for Everyone",
+      description: "We believe that high-quality educational tools should be available to everyone, regardless of location or background.",
       color: "from-blue-500 to-sky-500",
     },
     {
-      title: "Excellence",
-      description: "We're committed to delivering the highest quality tools and experiences.",
+      title: "Commitment to Excellence",
+      description: "We strive to deliver exceptional tools and experiences that exceed expectations and drive meaningful results.",
       color: "from-orange-500 to-amber-500",
     },
   ]
