@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
+import { buildQuizUrl, cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 
 // Types based on the API response
@@ -51,14 +51,13 @@ const useProducts = () => {
       try {
         setIsLoading(true)
         setError(null)
-
-        // Simulate API call with a timeout for demo purposes
-        // In a real implementation, this would be your API endpoint
-        setTimeout(() => {
-          // Use mock data directly for demo purposes
-          setProducts(mockProducts)
-          setIsLoading(false)
-        }, 1000)
+        const response= await fetch("/api/carousel-items") // Replace with your API endpoint
+        if (!response.ok) {
+          throw new Error("Network response was not ok")
+        }
+        const data = await response.json()
+        setProducts(data)
+        setIsLoading(false)
       } catch (err) {
         console.error("Error fetching products:", err)
         setError("Failed to load products. Please try again.")
@@ -541,7 +540,16 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
             whileTap={{ scale: 0.98, y: 0 }}
             transition={{ duration: 0.3, ease: APPLE_EASING }}
           >
-            <Button className="rounded-full px-6 py-2">
+            <Button className="rounded-full px-6 py-2"
+            
+            onClick={() => {  
+              console.log(`Navigating to ${product.name}...`)
+             
+                product.quizType ? buildQuizUrl(product.slug, product.quizType) : console.error("Quiz type is undefined")
+             
+            }}
+
+            >
               {product.type === "course" ? "Start Learning" : "Take Quiz"}
               <motion.span
                 className="inline-block ml-2"
