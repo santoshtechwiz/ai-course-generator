@@ -18,21 +18,21 @@ const AboutSection = () => {
     {
       title: "Our Mission",
       description:
-        "At CourseAI, we aim to simplify course creation by leveraging the power of AI. Our mission is to empower educators and learners worldwide with seamless tools to share knowledge.",
+        "At CourseAI, I aim to simplify course creation by leveraging the power of AI. My mission is to empower educators and learners worldwide with seamless tools to share knowledge.",
       icon: MissionIcon,
       color: "from-rose-500 to-rose-600",
     },
     {
       title: "Our Vision",
       description:
-        "Our vision is to create a world where learning is accessible, affordable, and engaging for everyone. We aspire to become the go-to platform for personalized and interactive learning, helping individuals unlock their potential.",
+        "My vision is to create a world where learning is accessible, affordable, and engaging for everyone. I aspire to make CourseAI the go-to platform for personalized and interactive learning, helping individuals unlock their potential.",
       icon: VisionIcon,
       color: "from-cyan-500 to-cyan-600",
     },
     {
       title: "Our Team",
       description:
-        "We are a team of passionate professionals with extensive experience in artificial intelligence and education. Our diverse expertise allows us to create innovative solutions that make learning more effective and enjoyable for everyone.",
+        "CourseAI is a solo-founder project, built with passion and dedication. As an independent developer with a strong background in AI and education, I personally handle everything — from design to development — to create innovative solutions that make learning more effective and enjoyable.",
       icon: TeamIcon,
       color: "from-amber-500 to-amber-600",
     },
@@ -41,17 +41,17 @@ const AboutSection = () => {
   const values = [
     {
       title: "Innovation",
-      description: "We constantly push the boundaries of what's possible with AI in education.",
+      description: "I constantly push the boundaries of what's possible with AI in education.",
       color: "from-purple-500 to-indigo-500",
     },
     {
       title: "Accessibility",
-      description: "We believe quality education should be accessible to everyone, everywhere.",
+      description: "I believe quality education should be accessible to everyone, everywhere.",
       color: "from-blue-500 to-sky-500",
     },
     {
       title: "Excellence",
-      description: "We're committed to delivering the highest quality tools and experiences.",
+      description: "I'm committed to delivering the highest quality tools and experiences.",
       color: "from-orange-500 to-amber-500",
     },
   ]
@@ -83,7 +83,7 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
         >
-          We're on a mission to make learning more accessible, personalized, and effective for everyone
+          I'm on a mission to make learning more accessible, personalized, and effective through AI-powered tools and hands-on experiences.
         </motion.p>
       </div>
 
@@ -121,7 +121,7 @@ const AboutSection = () => {
         transition={{ duration: 0.7, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
         className="mt-24 text-center"
       >
-        <h3 className="text-2xl md:text-3xl font-bold mb-12">Our Values</h3>
+        <h3 className="text-2xl md:text-3xl font-bold mb-12">My Values</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {values.map((value, index) => (
             <RevealAnimation key={value.title} delay={0.9 + index * 0.1}>

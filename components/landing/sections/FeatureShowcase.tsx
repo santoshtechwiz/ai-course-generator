@@ -2,50 +2,60 @@
 
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
-import { Zap, Lightbulb, BarChart, Workflow, Bot, Shield } from "lucide-react"
+import { Zap, Lightbulb, BarChart, Workflow, Bot, Shield, CreditCard, FileText, HelpCircle, Layers, Users, Youtube } from "lucide-react"
 
 const features = [
   {
-    icon: Workflow,
-    title: "Workflow Automation",
-    description:
-      "Automate repetitive tasks and complex business processes with our intuitive drag-and-drop workflow builder.",
+    icon: Youtube,
+    title: "YouTube Integration",
+    description: "Effortlessly create comprehensive courses by leveraging existing YouTube videos on any topic.",
+    gradient: "from-red-500 to-pink-500",
+    color: "from-red-500 to-pink-500",
+  },
+  {
+    icon: FileText,
+    title: "Automated Transcripts",
+    description: "Generate accurate transcripts automatically from video content to enhance learning materials.",
+    gradient: "from-blue-500 to-cyan-500",
     color: "from-blue-500 to-cyan-500",
   },
   {
-    icon: Bot,
-    title: "AI-Powered Insights",
+    icon: HelpCircle,
+    title: "Smart Quiz Generation",
     description:
-      "Leverage machine learning algorithms to analyze your business data and receive actionable recommendations.",
-    color: "from-purple-500 to-pink-500",
+      "Create engaging quizzes with multiple question types including MCQs, open-ended, and fill-in-the-blanks.",
+    gradient: "from-green-500 to-emerald-500",
+    color: "from-green-500 to-emerald-500",
+
+
+  },
+  {
+    icon: Layers,
+    title: "Customizable Content",
+    description: "Tailor course content and structure to meet specific learning objectives and student needs.",
+    gradient: "from-purple-500 to-violet-500",
+    color: "from-purple-500 to-violet-500",
   },
   {
     icon: Zap,
-    title: "Real-time Processing",
-    description:
-      "Process transactions and data in real-time, enabling immediate decision-making and faster response times.",
-    color: "from-amber-500 to-orange-500",
+    title: "Quick Course Creation",
+    description: "Build full-fledged courses in minutes, making course creation accessible for everyone.",
+    gradient: "from-yellow-500 to-orange-500",
+    color: "from-yellow-500 to-orange-500",
   },
   {
-    icon: Lightbulb,
-    title: "Smart Suggestions",
-    description:
-      "Receive intelligent suggestions for process improvements based on your team's usage patterns and industry benchmarks.",
-    color: "from-green-500 to-emerald-500",
+    icon: Users,
+    title: "Inclusive Learning",
+    description: "Cater to diverse learning styles with a mix of video, text, and interactive elements.",
+    gradient: "from-indigo-500 to-blue-500",
+    color: "from-indigo-500 to-blue-500",
   },
   {
-    icon: BarChart,
-    title: "Advanced Analytics",
-    description:
-      "Gain deep insights into your business operations with comprehensive dashboards and customizable reports.",
-    color: "from-red-500 to-rose-500",
-  },
-  {
-    icon: Shield,
-    title: "Enterprise Security",
-    description:
-      "Protect your business data with enterprise-grade security features, encryption, and compliance tools.",
-    color: "from-indigo-500 to-violet-500",
+    icon: CreditCard,
+    title: "Flexible Pricing Plans",
+    description: "Choose from Free, Basic, and Pro plans to suit your course creation needs and budget.",
+    gradient: "from-pink-500 to-rose-500",
+    color: "from-pink-500 to-rose-500",
   },
 ]
 

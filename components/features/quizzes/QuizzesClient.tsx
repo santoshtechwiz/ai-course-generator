@@ -3,15 +3,17 @@
 import React, { useState, useCallback, useEffect } from "react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
-import { motion } from "framer-motion"
-import { QuizSidebar } from "./QuizSidebar"
 import { useInView } from "react-intersection-observer"
 
 import type { QuizListItem, QuizType } from "@/app/types/types"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { CreateCard } from "@/components/CreateCard"
-import { QuizzesSkeleton } from "./QuizzesSkeleton"
+import { QuizSidebar } from "./QuizSidebar"
+
+import { useAnimation } from "@/providers/animation-provider"
+import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
+import { QuizzesListSkeleton } from "@/components/ui/loading/loading-skeleton"
 
 const LazyQuizList = React.lazy(() => import("./QuizList"))
 
@@ -25,8 +27,8 @@ interface QuizzesClientProps {
 
 function extractQuizzes(data: any): QuizListItem[] {
   if (!data?.pages) return []
-  
-  return data.pages.reduce((acc: QuizListItem[], page) => {
+
+  return data.pages.reduce((acc: QuizListItem[], page: { quizzes: any }) => {
     if (page?.quizzes) {
       return [...acc, ...page.quizzes]
     }
@@ -43,14 +45,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     triggerOnce: false,
   })
 
-  const {
-    data,
-    isLoading,
-    isError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["quizzes", debouncedSearch, selectedTypes.join(",")], // Added userId only if it exists
     queryFn: async ({ pageParam = 1 }) => {
       const result = await getQuizzes({
@@ -96,20 +91,20 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   }, [])
 
   const toggleQuizType = useCallback((type: QuizType) => {
-    setSelectedTypes((prev) => 
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    )
+    setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
   }, [])
 
   const quizzes = extractQuizzes(data)
   const isSearching = debouncedSearch.trim() !== "" || selectedTypes.length > 0
   const hasNoQuizzes = !isLoading && quizzes.length === 0
 
+  const { animationsEnabled } = useAnimation()
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
+    <MotionWrapper
+      animate={animationsEnabled}
+      variant="fade"
+      duration={0.5}
       className="flex flex-col lg:flex-row gap-6 min-h-[50vh]"
     >
       <QuizSidebar
@@ -130,7 +125,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
           }
         >
           {hasNoQuizzes ? (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-8">
+            <MotionWrapper animate={animationsEnabled} variant="slide" direction="up" duration={0.5} className="py-8">
               {isSearching ? (
                 <div className="text-center space-y-4 p-8 bg-muted/30 rounded-lg">
                   <h3 className="text-xl font-semibold">No quizzes found</h3>
@@ -159,9 +154,9 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
                   />
                 </div>
               )}
-            </motion.div>
+            </MotionWrapper>
           ) : (
-            <React.Suspense fallback={<QuizzesSkeleton />}>
+            <React.Suspense fallback={<QuizzesListSkeleton />}>
               <LazyQuizList
                 quizzes={quizzes}
                 isLoading={isLoading}
@@ -179,6 +174,6 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
           )}
         </ErrorBoundary>
       </div>
-    </motion.div>
+    </MotionWrapper>
   )
 }

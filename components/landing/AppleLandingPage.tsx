@@ -419,8 +419,8 @@ const AppleLandingPage = () => {
                     <Button
                       size="lg"
                       onClick={() => {
-                        scrollToSection("cta")
-                        setIsMenuOpen(false)
+                       
+                        startTrial()
                       }}
                       className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
                     >
