@@ -590,7 +590,7 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
             <>
               {[...Array(6)].map((_, i) => (
                 <motion.div
-                  key={`particle-${product.id}-${i}`}
+                  key={`particle-${product.id}`}
                   className="absolute w-2 h-2 rounded-full bg-primary/30"
                   initial={{
                     x: `${Math.random() * 100}%`,
