@@ -65,7 +65,7 @@ const AboutSection = () => {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
-          About Us
+          About CourseAI
         </motion.div>
 
         <motion.h2
@@ -74,7 +74,7 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Transforming education through AI
+          Redefining Learning with AI
         </motion.h2>
 
         <motion.p
@@ -83,7 +83,7 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
         >
-          I'm on a mission to make learning more accessible, personalized, and effective through AI-powered tools and hands-on experiences.
+          CourseAI is built to simplify and accelerate the way people learn, teach, and share knowledge. Using AI, we empower anyone—from individuals to teams—to create engaging, interactive learning experiences without the complexity. Our goal is simple: make knowledge more accessible, customizable, and intelligent for everyone.
         </motion.p>
       </div>
 
