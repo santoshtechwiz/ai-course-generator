@@ -397,14 +397,14 @@ const AppleLandingPage = () => {
               <div className="relative p-8 md:p-16 text-center">
                 <RevealAnimation>
                   <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
-                    Ready to transform your learning?
+                    Ready to create something amazing?
                   </h2>
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.1}>
-                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-                    Discover how thousands of users are enhancing their skills with CourseAI's personalized tools.
-                    </p>
+                  <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+                    Whether you're passionate about cooking, coding, or cats—CourseAI helps you build interactive courses and quizzes on any topic you love. Fast, fun, and beginner-friendly.
+                  </p>
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.2}>
@@ -419,7 +419,6 @@ const AppleLandingPage = () => {
                     <Button
                       size="lg"
                       onClick={() => {
-                       
                         startTrial()
                       }}
                       className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
@@ -445,7 +444,7 @@ const AppleLandingPage = () => {
                       transition={{ duration: 0.3, ease: APPLE_EASING }}
                     >
                       <Check className="h-5 w-5 text-primary mr-2" />
-                      <span className="text-sm">No credit card required</span>
+                      <span className="text-sm">No experience required</span>
                     </motion.div>
                     <motion.div
                       className="flex items-center"
