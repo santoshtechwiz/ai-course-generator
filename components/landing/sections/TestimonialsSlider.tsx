@@ -10,33 +10,33 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 const testimonials = [
   {
     quote:
-      "CourseAI has completely transformed how I create educational content. What used to take weeks now takes minutes, and the quality is even better.",
+      "CourseAI has completely transformed how I create content. What used to take weeks now takes minutes, and the quality is even better.",
     author: "Sarah Johnson",
-    role: "University Professor",
+    role: "Content Creator",
     avatar: "/placeholder.svg?height=100&width=100&text=SJ",
     id: "testimonial-1",
   },
   {
     quote:
-      "As a corporate trainer, I need to create courses quickly without sacrificing quality. CourseAI delivers exactly that, saving me countless hours of work.",
+      "As a professional, I need to create content quickly without sacrificing quality. CourseAI delivers exactly that, saving me countless hours of work.",
     author: "Michael Chen",
-    role: "Corporate Trainer",
+    role: "Professional Trainer",
     avatar: "/placeholder.svg?height=100&width=100&text=MC",
     id: "testimonial-2",
   },
   {
     quote:
-      "The AI-generated quizzes are incredibly effective at testing comprehension. My students' retention rates have improved significantly since I started using CourseAI.",
+      "The AI-generated quizzes are incredibly effective at testing comprehension. My audience's engagement has improved significantly since I started using CourseAI.",
     author: "Emily Rodriguez",
-    role: "High School Teacher",
+    role: "Online Educator",
     avatar: "/placeholder.svg?height=100&width=100&text=ER",
     id: "testimonial-3",
   },
   {
     quote:
-      "I was skeptical about AI-generated content, but CourseAI has exceeded all my expectations. The courses are engaging, accurate, and save me so much time.",
+      "I was skeptical about AI-generated content, but CourseAI has exceeded all my expectations. The materials are engaging, accurate, and save me so much time.",
     author: "David Kim",
-    role: "Online Course Creator",
+    role: "Digital Creator",
     avatar: "/placeholder.svg?height=100&width=100&text=DK",
     id: "testimonial-4",
   },
@@ -115,9 +115,8 @@ const TestimonialsSlider = () => {
         </motion.h2>
 
         <motion.p variants={itemVariants} className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Join thousands of users, creators, and developers who are building smarter learning experiences with CourseAI
+          Join thousands of creators who are building smarter content experiences with CourseAI
         </motion.p>
-
       </motion.div>
 
       <div className="relative max-w-4xl mx-auto">

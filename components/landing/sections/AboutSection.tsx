@@ -4,11 +4,12 @@ import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { RevealAnimation } from "../AppleLandingPage"
+
 import MissionIcon from "../svg/MissionIcon"
 import VisionIcon from "../svg/VisionIcon"
 import TeamIcon from "../svg/TeamIcon"
 import ValueIcon from "../svg/ValueIcon"
+import RevealAnimation from "../RevealAnimation"
 
 const AboutSection = () => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -18,21 +19,21 @@ const AboutSection = () => {
     {
       title: "Our Mission",
       description:
-        "At CourseAI, I aim to simplify course creation by leveraging the power of AI. My mission is to empower educators and learners worldwide with seamless tools to share knowledge.",
+        "At CourseAI, we aim to simplify content creation by leveraging the power of AI. Our mission is to empower everyone worldwide with seamless tools to share knowledge and ideas.",
       icon: MissionIcon,
       color: "from-rose-500 to-rose-600",
     },
     {
       title: "Our Vision",
       description:
-        "My vision is to create a world where learning is accessible, affordable, and engaging for everyone. I aspire to make CourseAI the go-to platform for personalized and interactive learning, helping individuals unlock their potential.",
+        "Our vision is to create a world where learning and sharing knowledge is accessible, affordable, and engaging for everyone. We aspire to make CourseAI the go-to platform for personalized and interactive content, helping individuals unlock their potential.",
       icon: VisionIcon,
       color: "from-cyan-500 to-cyan-600",
     },
     {
       title: "Our Team",
       description:
-        "CourseAI is a solo-founder project, built with passion and dedication. As an independent developer with a strong background in AI and education, I personally handle everything — from design to development — to create innovative solutions that make learning more effective and enjoyable.",
+        "CourseAI is a solo-founder project, built with passion and dedication. As an independent developer with a strong background in AI and content creation, I personally handle everything — from design to development — to create innovative solutions that make sharing knowledge more effective and enjoyable.",
       icon: TeamIcon,
       color: "from-amber-500 to-amber-600",
     },
@@ -41,17 +42,17 @@ const AboutSection = () => {
   const values = [
     {
       title: "Innovation",
-      description: "I constantly push the boundaries of what's possible with AI in education.",
+      description: "We constantly push the boundaries of what's possible with AI in content creation.",
       color: "from-purple-500 to-indigo-500",
     },
     {
       title: "Accessibility",
-      description: "I believe quality education should be accessible to everyone, everywhere.",
+      description: "We believe quality content should be accessible to everyone, everywhere.",
       color: "from-blue-500 to-sky-500",
     },
     {
       title: "Excellence",
-      description: "I'm committed to delivering the highest quality tools and experiences.",
+      description: "We're committed to delivering the highest quality tools and experiences.",
       color: "from-orange-500 to-amber-500",
     },
   ]
@@ -74,7 +75,7 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Redefining Learning with AI
+          Redefining Content Creation with AI
         </motion.h2>
 
         <motion.p
@@ -83,7 +84,9 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
         >
-          CourseAI is built to simplify and accelerate the way people learn, teach, and share knowledge. Using AI, we empower anyone—from individuals to teams—to create engaging, interactive learning experiences without the complexity. Our goal is simple: make knowledge more accessible, customizable, and intelligent for everyone.
+          CourseAI is built to simplify and accelerate the way people create, learn, and share knowledge. Using AI, we
+          empower anyone—from individuals to teams—to create engaging, interactive content without the complexity. Our
+          goal is simple: make knowledge sharing more accessible, customizable, and intelligent for everyone.
         </motion.p>
       </div>
 
