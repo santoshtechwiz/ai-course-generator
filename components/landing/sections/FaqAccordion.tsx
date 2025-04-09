@@ -5,55 +5,67 @@ import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Plus, Minus, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
-// Update the FAQ questions to be more broadly appealing
+// Update the FAQ questions to reflect the new questions and answers provided by the user
 const faqs = [
   {
     id: "faq-1",
     question: "How does CourseAI generate content?",
     answer:
-      "CourseAI uses advanced natural language processing and machine learning algorithms to analyze your topic and generate comprehensive, structured content. It draws from a vast knowledge base to create accurate and engaging materials tailored to your specific needs.",
+      "CourseAI uses AI to generate comprehensive, structured content tailored to your specific needs. It leverages advanced natural language processing and machine learning algorithms to analyze topics and create high-quality educational materials. The AI ensures that the content is accurate, engaging, and relevant to your audience.",
   },
   {
     id: "faq-2",
     question: "Can I edit the AI-generated content?",
     answer:
-      "While CourseAI creates high-quality content, you have full control to edit, rearrange, or enhance any part of the generated materials. This allows you to add your personal touch and expertise to the content.",
+      "No, the AI-generated content cannot be edited directly. However, you can use the generated content as a reference or starting point to create your own customized materials outside the platform.",
   },
   {
     id: "faq-3",
-    question: "What types of quizzes can CourseAI create?",
+    question: "Can I import existing content into CourseAI?",
     answer:
-      "CourseAI can generate multiple types of assessments including multiple-choice questions, true/false, fill-in-the-blanks, short answer questions, and even coding challenges for technical subjects. All quizzes are designed to effectively test comprehension and retention.",
+      "No, importing existing content is not supported at this time. CourseAI focuses on generating new content based on the topics you provide, ensuring originality and relevance.",
   },
   {
     id: "faq-4",
-    question: "Is CourseAI suitable for all subject matters?",
+    question: "What happens if my course fails?",
     answer:
-      "Yes, CourseAI is designed to handle virtually any subject matter, from technical topics like programming and mathematics to humanities, languages, business, and creative fields. The AI adapts its approach based on the specific requirements of each subject.",
+      "If your course fails, please contact our support team. We will review your case and return your token, allowing you to create a new course or make adjustments to improve your outcomes.",
   },
   {
     id: "faq-5",
-    question: "How much does CourseAI cost?",
+    question: "Can I delete or make my course private?",
     answer:
-      "CourseAI offers flexible pricing plans to suit different needs. We have a free tier that allows you to create up to 3 pieces of content per month, and premium plans starting at $29/month for creators who need to produce more content. Enterprise plans are also available for organizations.",
+      "Yes, you can delete your course or make it private. This ensures that you have full control over your content and can manage its visibility according to your preferences.",
   },
   {
     id: "faq-6",
-    question: "Can I import existing content into CourseAI?",
+    question: "Does CourseAI create videos?",
     answer:
-      "Yes, CourseAI allows you to import existing content in various formats including text documents, PDFs, and presentations. The AI can then enhance, reorganize, or expand upon this content to create more comprehensive materials.",
+      "No, CourseAI does not create videos. Instead, it fetches relevant videos from platforms like YouTube and other sources. This allows you to integrate high-quality video content into your courses without the need for video production.",
   },
   {
     id: "faq-7",
-    question: "How does CourseAI handle updates to content?",
+    question: "Can I share my course?",
     answer:
-      "CourseAI can automatically suggest updates to your content when new information becomes available in your field. You can review these suggestions and implement them with a single click, ensuring your materials always contain the most current information.",
+      "Yes, you can share your course with others. CourseAI provides sharing options to help you distribute your content to your intended audience effectively.",
   },
   {
     id: "faq-8",
-    question: "Is my content private and secure?",
+    question: "Do videos have quizzes?",
     answer:
-      "Yes, we take privacy and security very seriously. All your content is encrypted and stored securely. We do not share your content with third parties, and you retain full ownership and control over all materials you create with CourseAI.",
+      "Yes, quizzes can be generated for videos if a transcript is available. If no transcript is provided, you can use our feature to create a quiz manually based on the video's topic. This ensures that your learners can test their understanding of the material.",
+  },
+  {
+    id: "faq-9",
+    question: "Can I see my progress?",
+    answer:
+      "Yes, you can track your progress through the platform. CourseAI provides detailed analytics and progress tracking features to help you monitor your learning journey and identify areas for improvement.",
+  },
+  {
+    id: "faq-10",
+    question: "Can I see my answers?",
+    answer:
+      "Only signed-in users can view their answers. This ensures that your data is secure and accessible only to you, providing a personalized learning experience.",
   },
 ]
 
@@ -237,7 +249,7 @@ const FaqAccordion = () => {
         <p className="text-muted-foreground">
           Still have questions?{" "}
           <motion.a
-            href="#"
+            href="/contactus"
             className="text-primary font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 rounded-sm"
             whileHover={{
               scale: 1.05,
