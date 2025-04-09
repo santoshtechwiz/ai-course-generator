@@ -131,7 +131,24 @@ function setCacheHeaders(response: NextResponse) {
   response.headers.set("Cache-Control", "no-store, max-age=0")
   return response
 }
+async function protectAuthenticatedRoutes(req: NextRequest) {
+  const protectedPaths = ["/code", "/blanks", "/mcq", "/course"]
+  const isProtected = protectedPaths.some((path) => req.nextUrl.pathname.startsWith(path))
 
+  if (!isProtected) return null
+
+  try {
+    const token = await getToken({ req })
+    if (!token) {
+      return NextResponse.redirect(new URL("/unauthorized", req.url))
+    }
+  } catch (error) {
+    console.error("Error checking auth for protected route:", error)
+    return NextResponse.redirect(new URL("/unauthorized", req.url))
+  }
+
+  return null
+}
 // Middleware function
 export async function middleware(req: NextRequest) {
   // Handle WebSocket connections
@@ -148,7 +165,9 @@ export async function middleware(req: NextRequest) {
   // Protect admin routes - only check admin routes
   const adminResponse = await protectAdminRoutes(req)
   if (adminResponse) return adminResponse
-
+  
+  const authResponse = await protectAuthenticatedRoutes(req)
+  if (authResponse) return authResponse
   // Setup GitHub credentials
   setupGitHubCredentials(req)
 
