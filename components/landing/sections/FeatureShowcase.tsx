@@ -2,7 +2,7 @@
 
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
-import { Zap, Lightbulb, BarChart, Workflow, Bot, Shield, CreditCard, FileText, HelpCircle, Layers, Users, Youtube } from "lucide-react"
+import { Zap, CreditCard, FileText, HelpCircle, Layers, Users, Youtube } from "lucide-react"
 
 const features = [
   {
@@ -109,7 +109,7 @@ const FeatureShowcase = () => {
           custom={0}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
-          Powerful Features
+          Smarter Learning Experiences
         </motion.div>
 
         <motion.h2
@@ -119,7 +119,7 @@ const FeatureShowcase = () => {
           custom={0.1}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Transform your business operations
+          Build Interactive Courses in Minutes with AI
         </motion.h2>
 
         <motion.p
@@ -129,7 +129,7 @@ const FeatureShowcase = () => {
           custom={0.2}
           className="text-xl text-muted-foreground max-w-2xl mx-auto"
         >
-          Discover how our platform streamlines workflows, reduces costs, and drives business growth
+          CourseAI lets anyone create dynamic, personalized learning content—automatically. From tutorials and quizzes to full learning paths, build and launch faster than ever.
         </motion.p>
       </div>
 

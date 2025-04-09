@@ -115,8 +115,9 @@ const TestimonialsSlider = () => {
         </motion.h2>
 
         <motion.p variants={itemVariants} className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Join thousands of satisfied educators who have transformed their teaching with CourseAI
+          Join thousands of users, creators, and developers who are building smarter learning experiences with CourseAI
         </motion.p>
+
       </motion.div>
 
       <div className="relative max-w-4xl mx-auto">
