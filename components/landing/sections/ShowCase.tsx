@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { buildQuizUrl, cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 
@@ -221,7 +221,7 @@ const ProductGallery = () => {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
-          Product Showcase
+          AI-Powered Learning
         </motion.div>
 
         <motion.h2
@@ -230,7 +230,7 @@ const ProductGallery = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Powerful tools for every educator
+          Smart Learning with CourseAI
         </motion.h2>
 
         <motion.p
@@ -239,7 +239,7 @@ const ProductGallery = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8"
         >
-          Explore our suite of AI-powered tools designed to transform how you create and deliver educational content
+          Discover AI-curated courses and adaptive quizzes tailored to your learning style and pace
         </motion.p>
 
         <motion.div
@@ -259,10 +259,10 @@ const ProductGallery = () => {
                 All
               </TabsTrigger>
               <TabsTrigger value="course" className="rounded-full">
-                Courses
+                AI Courses
               </TabsTrigger>
               <TabsTrigger value="quiz" className="rounded-full">
-                Quizzes
+                AI Quizzes
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -368,7 +368,7 @@ const LoadingState = () => (
   <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
       <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-      <p className="text-muted-foreground">Loading products...</p>
+      <p className="text-muted-foreground">Loading AI courses...</p>
     </motion.div>
   </div>
 )
@@ -389,9 +389,9 @@ const EmptyState = ({ onReset }: { onReset: () => void }) => (
   <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-6">
       <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-      <p className="text-muted-foreground mb-4">No products found matching your filter.</p>
+      <p className="text-muted-foreground mb-4">No AI content found matching your filter.</p>
       <Button variant="outline" onClick={onReset} className="rounded-full">
-        Show All Products
+        Show All Content
       </Button>
     </motion.div>
   </div>
@@ -486,7 +486,7 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
     if (product.type === "course") {
       router.push(`/dashboard/course/${product.slug}`)
     } else if (product.type === "quiz" && product.quizType) {
-      router.push(buildQuizUrl(product.slug, product.quizType))
+      router.push(`/dashboard/${product.quizType=="fill-blanks"?"blanks":product.quizType}/${product.slug}`)
     }
   }
 
@@ -500,18 +500,18 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
         >
           <div className="flex items-center mb-4">
             <Badge variant={product.type === "course" ? "default" : "secondary"} className="rounded-full mr-2">
-              {product.type === "course" ? "Course" : "Quiz"}
+              {product.type === "course" ? "AI Course" : "AI Quiz"}
             </Badge>
 
             {product.quizType && (
               <Badge variant="outline" className="rounded-full">
                 {product.quizType === "mcq"
-                  ? "Multiple Choice"
+                  ? "Adaptive MCQ"
                   : product.quizType === "openended"
-                    ? "Open Ended"
+                    ? "AI Graded"
                     : product.quizType === "fill-blanks"
-                      ? "Fill in the Blanks"
-                      : "Coding Challenge"}
+                      ? "Smart Fill-in"
+                      : "AI Code Review"}
               </Badge>
             )}
           </div>
@@ -527,12 +527,12 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
             whileTap={{ scale: 0.98, y: 0 }}
             transition={{ duration: 0.3, ease: APPLE_EASING }}
           >
-            <Button 
+            <Button
               className="rounded-full px-6 py-2"
               onClick={handleNavigation}
-              aria-label={`${product.type === "course" ? "Start Learning" : "Take Quiz"} ${product.name}`}
+              aria-label={`${product.type === "course" ? "Start AI Learning" : "Try AI Quiz"} ${product.name}`}
             >
-              {product.type === "course" ? "Start Learning" : "Take Quiz"}
+              {product.type === "course" ? "Start AI Learning" : "Try AI Quiz"}
               <motion.span
                 className="inline-block ml-2"
                 initial={{ x: 0 }}
@@ -544,11 +544,11 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
             </Button>
           </motion.div>
 
-          <motion.p 
+          <motion.p
             className="text-xs text-muted-foreground mt-2 text-center opacity-0 hover:opacity-100 transition-opacity"
             whileHover={{ opacity: 1 }}
           >
-            Click to {product.type === "course" ? "start learning" : "begin quiz"}
+            {product.type === "course" ? "AI-powered adaptive course" : "Smart quiz with AI feedback"}
           </motion.p>
         </motion.div>
       </div>
@@ -630,57 +630,57 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
 const mockProducts: CourseQuizCard[] = [
   {
     id: "1",
-    name: "JavaScript Fundamentals",
-    slug: "javascript-fundamentals",
+    name: "AI-Powered JavaScript",
+    slug: "ai-javascript",
     description:
-      "Learn the core concepts of JavaScript programming with practical exercises and real-world applications.",
-    tagline: "Master modern JavaScript from the ground up",
+      "Learn JavaScript with AI-generated exercises that adapt to your skill level and learning patterns.",
+    tagline: "Master JS with personalized AI guidance",
     type: "course",
   },
   {
     id: "2",
-    name: "React Component Architecture",
-    slug: "react-component-architecture",
+    name: "React with AI Assistant",
+    slug: "react-ai-assistant",
     description:
-      "Discover best practices for structuring React applications with reusable components and efficient state management.",
-    tagline: "Build scalable React applications like a pro",
+      "Build React apps with real-time AI code suggestions and intelligent debugging assistance.",
+    tagline: "Code smarter with AI pair programming",
     type: "course",
   },
   {
     id: "3",
-    name: "CSS Grid & Flexbox Mastery",
-    slug: "css-grid-flexbox",
-    description: "Comprehensive guide to modern CSS layout techniques with Grid and Flexbox for responsive web design.",
-    tagline: "Create beautiful layouts with confidence",
+    name: "AI-Driven CSS Mastery",
+    slug: "ai-css-mastery",
+    description: "Learn CSS with AI that generates visual examples based on your progress and weaknesses.",
+    tagline: "Visual learning powered by AI",
     type: "course",
   },
   {
     id: "4",
-    name: "JavaScript Array Methods",
-    slug: "javascript-array-methods",
+    name: "AI JavaScript Challenge",
+    slug: "ai-js-challenge",
     description:
-      "Test your knowledge of JavaScript array methods with this comprehensive quiz covering map, filter, reduce and more.",
-    tagline: "Challenge your array manipulation skills",
+      "Adaptive quiz that gets harder as you improve, with AI-generated questions tailored to your level.",
+    tagline: "Test your skills against our AI",
     type: "quiz",
     quizType: "mcq",
   },
   {
     id: "5",
-    name: "React Hooks Challenge",
-    slug: "react-hooks-challenge",
+    name: "AI Code Review",
+    slug: "ai-code-review",
     description:
-      "Put your React Hooks knowledge to the test with practical coding challenges and real-world scenarios.",
-    tagline: "Prove your React Hooks expertise",
+      "Submit your React code and get instant AI feedback with suggestions for improvement.",
+    tagline: "Get AI-powered code reviews",
     type: "quiz",
     quizType: "code",
   },
   {
     id: "6",
-    name: "CSS Selectors Mastery",
-    slug: "css-selectors",
+    name: "AI CSS Puzzle",
+    slug: "ai-css-puzzle",
     description:
-      "Fill in the blanks to complete CSS selector challenges ranging from basic to advanced targeting techniques.",
-    tagline: "Perfect your CSS targeting skills",
+      "AI-generated CSS challenges that adapt to fill gaps in your knowledge as you progress.",
+    tagline: "Solve AI-curated CSS puzzles",
     type: "quiz",
     quizType: "fill-blanks",
   },

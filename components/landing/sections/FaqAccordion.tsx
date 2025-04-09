@@ -5,19 +5,19 @@ import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Plus, Minus, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
-// Optimize the FAQ data structure with unique IDs
+// Update the FAQ questions to be more broadly appealing
 const faqs = [
   {
     id: "faq-1",
-    question: "How does CourseAI generate course content?",
+    question: "How does CourseAI generate content?",
     answer:
-      "CourseAI uses advanced natural language processing and machine learning algorithms to analyze your topic and generate comprehensive, structured course content. It draws from a vast knowledge base to create accurate and engaging materials tailored to your specific needs.",
+      "CourseAI uses advanced natural language processing and machine learning algorithms to analyze your topic and generate comprehensive, structured content. It draws from a vast knowledge base to create accurate and engaging materials tailored to your specific needs.",
   },
   {
     id: "faq-2",
     question: "Can I edit the AI-generated content?",
     answer:
-      "While CourseAI creates high-quality content, you have full control to edit, rearrange, or enhance any part of the generated materials. This allows you to add your personal touch and expertise to the courses.",
+      "While CourseAI creates high-quality content, you have full control to edit, rearrange, or enhance any part of the generated materials. This allows you to add your personal touch and expertise to the content.",
   },
   {
     id: "faq-3",
@@ -35,25 +35,25 @@ const faqs = [
     id: "faq-5",
     question: "How much does CourseAI cost?",
     answer:
-      "CourseAI offers flexible pricing plans to suit different needs. We have a free tier that allows you to create up to 3 courses per month, and premium plans starting at $29/month for educators who need to create more content. Enterprise plans are also available for institutions.",
+      "CourseAI offers flexible pricing plans to suit different needs. We have a free tier that allows you to create up to 3 pieces of content per month, and premium plans starting at $29/month for creators who need to produce more content. Enterprise plans are also available for organizations.",
   },
   {
     id: "faq-6",
     question: "Can I import existing content into CourseAI?",
     answer:
-      "Yes, CourseAI allows you to import existing content in various formats including text documents, PDFs, and presentations. The AI can then enhance, reorganize, or expand upon this content to create a more comprehensive course.",
+      "Yes, CourseAI allows you to import existing content in various formats including text documents, PDFs, and presentations. The AI can then enhance, reorganize, or expand upon this content to create more comprehensive materials.",
   },
   {
     id: "faq-7",
-    question: "How does CourseAI handle updates to course content?",
+    question: "How does CourseAI handle updates to content?",
     answer:
-      "CourseAI can automatically suggest updates to your courses when new information becomes available in your field. You can review these suggestions and implement them with a single click, ensuring your courses always contain the most current information.",
+      "CourseAI can automatically suggest updates to your content when new information becomes available in your field. You can review these suggestions and implement them with a single click, ensuring your materials always contain the most current information.",
   },
   {
     id: "faq-8",
-    question: "Is my course content private and secure?",
+    question: "Is my content private and secure?",
     answer:
-      "Yes, we take privacy and security very seriously. All your course content is encrypted and stored securely. We do not share your content with third parties, and you retain full ownership and control over all materials you create with CourseAI.",
+      "Yes, we take privacy and security very seriously. All your content is encrypted and stored securely. We do not share your content with third parties, and you retain full ownership and control over all materials you create with CourseAI.",
   },
 ]
 

@@ -402,9 +402,9 @@ const AppleLandingPage = () => {
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.1}>
-                  <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-                    Join thousands of educators using CourseAI to create engaging, personalized learning experiences.
-                  </p>
+                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+                    Discover how thousands of users are enhancing their skills with CourseAI's personalized tools.
+                    </p>
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.2}>

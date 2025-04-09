@@ -11,7 +11,7 @@ const steps = [
     id: "choose",
     icon: FileText,
     title: "Choose your topic",
-    description: "Select any subject you want to learn or teach about, from programming to history to cooking.",
+    description: "Select any subject you want to create content about, from programming to history to cooking.",
     color: "from-blue-500 to-cyan-500",
     animation: "typing",
   },
@@ -19,14 +19,14 @@ const steps = [
     id: "generate",
     icon: Sparkles,
     title: "AI generates content",
-    description: "Our advanced AI analyzes the topic and creates comprehensive, structured course materials.",
+    description: "Our advanced AI analyzes the topic and creates comprehensive, structured materials.",
     color: "from-purple-500 to-pink-500",
     animation: "processing",
   },
   {
     id: "customize",
     icon: Layers,
-    title: "Customize your course",
+    title: "Customize your content",
     description: "Edit, rearrange, and enhance the AI-generated content to match your specific needs.",
     color: "from-amber-500 to-orange-500",
     animation: "arranging",
@@ -35,7 +35,7 @@ const steps = [
     id: "publish",
     icon: CheckCircle,
     title: "Publish and share",
-    description: "Make your course available to students or keep it private for personal learning.",
+    description: "Make your content available to others or keep it private for personal use.",
     color: "from-green-500 to-emerald-500",
     animation: "publishing",
   },
@@ -145,16 +145,24 @@ const HowItWorksSection = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Create courses in minutes, not months
+          Create a course or quiz in minutes
         </motion.h2>
-
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto"
+        >
+          Whether you're an educator, a professional, or a hobbyist, our platform empowers you to create engaging and interactive content effortlessly.
+        </motion.p>
+      
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto"
         >
-          Our simple four-step process makes course creation effortless and efficient
+          Why spend on expensive courses? Create your own interactive quizzes and content to learn effectively and affordably.
         </motion.p>
       </div>
 

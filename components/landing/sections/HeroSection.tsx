@@ -32,8 +32,6 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
     restDelta: 0.001,
   })
 
-
-
   // Update the hero section animations for a more Apple-like feel
 
   // Replace the existing parallax effects with these enhanced ones
@@ -159,7 +157,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
                 }),
               }}
             >
-              Learn anything with{" "}
+              Create and learn with{" "}
             </motion.span>
             <motion.span
               className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60"
@@ -200,7 +198,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
                 }),
               }}
             >
-              course creation
+              content creation
             </motion.span>
           </motion.h1>
         </div>
@@ -212,8 +210,8 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
           className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10"
           style={{ y: subtitleY }}
         >
-          Transform your knowledge into engaging courses with AI-generated content, interactive quizzes, and
-          personalized learning paths.
+          Transform your ideas into engaging content with AI-generated materials, interactive quizzes, and personalized
+          learning paths.
         </motion.p>
 
         <motion.div

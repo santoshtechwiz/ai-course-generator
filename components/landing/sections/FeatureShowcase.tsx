@@ -4,18 +4,19 @@ import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
 import { Zap, CreditCard, FileText, HelpCircle, Layers, Users, Youtube } from "lucide-react"
 
+// Update the features array to be more broadly appealing
 const features = [
   {
     icon: Youtube,
-    title: "YouTube Integration",
-    description: "Effortlessly create comprehensive courses by leveraging existing YouTube videos on any topic.",
+    title: "Video Integration",
+    description: "Effortlessly create comprehensive content by leveraging existing YouTube videos on any topic.",
     gradient: "from-red-500 to-pink-500",
     color: "from-red-500 to-pink-500",
   },
   {
     icon: FileText,
     title: "Automated Transcripts",
-    description: "Generate accurate transcripts automatically from video content to enhance learning materials.",
+    description: "Generate accurate transcripts automatically from video content to enhance your materials.",
     gradient: "from-blue-500 to-cyan-500",
     color: "from-blue-500 to-cyan-500",
   },
@@ -26,20 +27,18 @@ const features = [
       "Create engaging quizzes with multiple question types including MCQs, open-ended, and fill-in-the-blanks.",
     gradient: "from-green-500 to-emerald-500",
     color: "from-green-500 to-emerald-500",
-
-
   },
   {
     icon: Layers,
     title: "Customizable Content",
-    description: "Tailor course content and structure to meet specific learning objectives and student needs.",
+    description: "Tailor content and structure to meet your specific goals and audience needs.",
     gradient: "from-purple-500 to-violet-500",
     color: "from-purple-500 to-violet-500",
   },
   {
     icon: Zap,
-    title: "Quick Course Creation",
-    description: "Build full-fledged courses in minutes, making course creation accessible for everyone.",
+    title: "Quick Creation",
+    description: "Build full-fledged content in minutes, making creation accessible for everyone.",
     gradient: "from-yellow-500 to-orange-500",
     color: "from-yellow-500 to-orange-500",
   },
@@ -53,7 +52,7 @@ const features = [
   {
     icon: CreditCard,
     title: "Flexible Pricing Plans",
-    description: "Choose from Free, Basic, and Pro plans to suit your course creation needs and budget.",
+    description: "Choose from Free, Basic, and Pro plans to suit your creation needs and budget.",
     gradient: "from-pink-500 to-rose-500",
     color: "from-pink-500 to-rose-500",
   },
@@ -102,6 +101,7 @@ const FeatureShowcase = () => {
   return (
     <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
       <div className="text-center mb-16">
+        {/* Update the feature showcase section to appeal to a broader audience */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
@@ -109,7 +109,7 @@ const FeatureShowcase = () => {
           custom={0}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
-          Smarter Learning Experiences
+          Smarter Content Creation
         </motion.div>
 
         <motion.h2
@@ -119,7 +119,7 @@ const FeatureShowcase = () => {
           custom={0.1}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Build Interactive Courses in Minutes with AI
+          Build Interactive Content in Minutes with AI
         </motion.h2>
 
         <motion.p
@@ -129,7 +129,8 @@ const FeatureShowcase = () => {
           custom={0.2}
           className="text-xl text-muted-foreground max-w-2xl mx-auto"
         >
-          CourseAI lets anyone create dynamic, personalized learning content—automatically. From tutorials and quizzes to full learning paths, build and launch faster than ever.
+          CourseAI lets anyone create dynamic, personalized content—automatically. From tutorials and quizzes to
+          complete learning experiences, build and share faster than ever.
         </motion.p>
       </div>
 
