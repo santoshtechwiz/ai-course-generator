@@ -19,9 +19,10 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { buildQuizUrl, cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
 
 // Types based on the API response
-interface Product {
+interface CourseQuizCard {
   id: string
   name: string
   slug: string
@@ -31,17 +32,14 @@ interface Product {
   quizType?: "mcq" | "openended" | "fill-blanks" | "code"
 }
 
-interface ProductCardProps {
-  product: Product
+interface CourseQuizCardProps {
+  product: CourseQuizCard
   isActive: boolean
   theme: string | undefined
 }
 
-// Enhance the product gallery with improved performance and accessibility
-
-// Optimize the useProducts hook with better error handling and loading states
-const useProducts = () => {
-  const [products, setProducts] = useState<Product[]>([])
+const useCourseQuiz = () => {
+  const [products, setProducts] = useState<CourseQuizCard[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -51,7 +49,7 @@ const useProducts = () => {
       try {
         setIsLoading(true)
         setError(null)
-        const response= await fetch("/api/carousel-items") // Replace with your API endpoint
+        const response = await fetch("/api/carousel-items")
         if (!response.ok) {
           throw new Error("Network response was not ok")
         }
@@ -63,7 +61,6 @@ const useProducts = () => {
         setError("Failed to load products. Please try again.")
         setIsLoading(false)
 
-        // For demo purposes, load mock data if API fails after 2 retries
         if (retryCount >= 2) {
           setProducts(mockProducts)
           setIsLoading(false)
@@ -81,7 +78,6 @@ const useProducts = () => {
   return { products, isLoading, error, retryFetch }
 }
 
-// Optimize the autoplay hook with better performance
 const useAutoplay = (itemCount: number, initialDelay = 5000) => {
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -111,12 +107,10 @@ const useAutoplay = (itemCount: number, initialDelay = 5000) => {
     [itemCount],
   )
 
-  // Reset autoplay when item count changes
   useEffect(() => {
     setCurrentIndex(0)
   }, [itemCount])
 
-  // Handle autoplay timer with cleanup
   useEffect(() => {
     if (!isAutoplayEnabled || itemCount <= 1) {
       if (timerRef.current) {
@@ -150,9 +144,9 @@ const useAutoplay = (itemCount: number, initialDelay = 5000) => {
 }
 
 const ProductGallery = () => {
-  const { products, isLoading, error, retryFetch } = useProducts()
+  const { products, isLoading, error, retryFetch } = useCourseQuiz()
   const [filter, setFilter] = useState<"all" | "course" | "quiz">("all")
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<CourseQuizCard[]>([])
   const { theme } = useTheme()
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -160,7 +154,6 @@ const ProductGallery = () => {
   const isInView = useInView(containerRef, { once: false, amount: 0.3, margin: "100px" })
   const controls = useAnimation()
 
-  // Initialize autoplay
   const {
     currentIndex: activeIndex,
     isAutoplayEnabled,
@@ -170,7 +163,6 @@ const ProductGallery = () => {
     goToIndex: setActiveIndex,
   } = useAutoplay(filteredProducts.length)
 
-  // Filter products based on selected filter
   useEffect(() => {
     if (filter === "all") {
       setFilteredProducts(products)
@@ -179,7 +171,6 @@ const ProductGallery = () => {
     }
   }, [filter, products])
 
-  // Start animations when section comes into view
   useEffect(() => {
     if (isInView) {
       controls.start("visible")
@@ -188,7 +179,6 @@ const ProductGallery = () => {
     }
   }, [isInView, controls])
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") {
@@ -196,7 +186,6 @@ const ProductGallery = () => {
       } else if (e.key === "ArrowLeft") {
         prevProduct()
       } else if (e.key === " ") {
-        // Space bar toggles autoplay
         toggleAutoplay()
         e.preventDefault()
       }
@@ -206,7 +195,6 @@ const ProductGallery = () => {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [nextProduct, prevProduct, toggleAutoplay])
 
-  // Pause autoplay when user interacts with the component
   const handleMouseEnter = useCallback(() => {
     if (isAutoplayEnabled) {
       toggleAutoplay()
@@ -289,10 +277,8 @@ const ProductGallery = () => {
         <EmptyState onReset={() => setFilter("all")} />
       ) : (
         <div className="relative">
-          {/* Navigation buttons */}
           <NavigationButtons onPrev={prevProduct} onNext={nextProduct} disabled={filteredProducts.length <= 1} />
 
-          {/* Autoplay toggle button */}
           <motion.div
             className="absolute top-0 right-0 z-10 m-4"
             initial={{ opacity: 0 }}
@@ -310,7 +296,6 @@ const ProductGallery = () => {
             </Button>
           </motion.div>
 
-          {/* Product carousel */}
           <div
             className="overflow-hidden rounded-2xl bg-card/30 backdrop-blur-sm border border-border/10 shadow-lg"
             style={{ perspective: "1500px" }}
@@ -320,7 +305,7 @@ const ProductGallery = () => {
               <AnimatePresence mode="wait">
                 {filteredProducts.map((product, index) => (
                   <motion.div
-                    key={product.id}
+                    key={`${product.id}-${index}-${product.slug}`}
                     initial={{ opacity: 0, rotateY: index > activeIndex ? 60 : -60, scale: 0.8 }}
                     animate={{
                       opacity: index === activeIndex ? 1 : 0,
@@ -344,7 +329,7 @@ const ProductGallery = () => {
                       index === activeIndex ? "pointer-events-auto" : "pointer-events-none",
                     )}
                     style={{
-                      display: Math.abs(index - activeIndex) <= 1 ? "block" : "none", // Only render nearby slides
+                      display: Math.abs(index - activeIndex) <= 1 ? "block" : "none",
                       transformStyle: "preserve-3d",
                     }}
                   >
@@ -355,14 +340,12 @@ const ProductGallery = () => {
             </div>
           </div>
 
-          {/* Progress bar */}
           <ProgressBar
             totalItems={filteredProducts.length}
             currentIndex={activeIndex}
             isAutoplayEnabled={isAutoplayEnabled}
           />
 
-          {/* Dots indicator */}
           <div className="flex justify-center mt-8 space-x-2">
             {filteredProducts.map((_, index) => (
               <button
@@ -381,7 +364,6 @@ const ProductGallery = () => {
   )
 }
 
-// Loading state component
 const LoadingState = () => (
   <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
@@ -391,7 +373,6 @@ const LoadingState = () => (
   </div>
 )
 
-// Error state component
 const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) => (
   <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-6">
@@ -404,7 +385,6 @@ const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) 
   </div>
 )
 
-// Empty state component
 const EmptyState = ({ onReset }: { onReset: () => void }) => (
   <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-6">
@@ -417,7 +397,6 @@ const EmptyState = ({ onReset }: { onReset: () => void }) => (
   </div>
 )
 
-// Improve the navigation buttons with better accessibility
 const NavigationButtons = ({
   onPrev,
   onNext,
@@ -464,7 +443,6 @@ const NavigationButtons = ({
   </>
 )
 
-// Improve the progress bar component with better animations and accessibility
 const ProgressBar = ({
   totalItems,
   currentIndex,
@@ -499,10 +477,19 @@ const ProgressBar = ({
   )
 }
 
-// Improve the product card component with better accessibility and animations
 const APPLE_EASING = [0.17, 0.67, 0.83, 0.67]
 
-const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
+const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
+  const router = useRouter()
+
+  const handleNavigation = () => {
+    if (product.type === "course") {
+      router.push(`/dashboard/course/${product.slug}`)
+    } else if (product.type === "quiz" && product.quizType) {
+      router.push(buildQuizUrl(product.slug, product.quizType))
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center p-6 md:p-8 h-full">
       <div className="order-2 md:order-1">
@@ -540,15 +527,10 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
             whileTap={{ scale: 0.98, y: 0 }}
             transition={{ duration: 0.3, ease: APPLE_EASING }}
           >
-            <Button className="rounded-full px-6 py-2"
-            
-            onClick={() => {  
-              console.log(`Navigating to ${product.name}...`)
-             
-                product.quizType ? buildQuizUrl(product.slug, product.quizType) : console.error("Quiz type is undefined")
-             
-            }}
-
+            <Button 
+              className="rounded-full px-6 py-2"
+              onClick={handleNavigation}
+              aria-label={`${product.type === "course" ? "Start Learning" : "Take Quiz"} ${product.name}`}
             >
               {product.type === "course" ? "Start Learning" : "Take Quiz"}
               <motion.span
@@ -561,6 +543,13 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
               </motion.span>
             </Button>
           </motion.div>
+
+          <motion.p 
+            className="text-xs text-muted-foreground mt-2 text-center opacity-0 hover:opacity-100 transition-opacity"
+            whileHover={{ opacity: 1 }}
+          >
+            Click to {product.type === "course" ? "start learning" : "begin quiz"}
+          </motion.p>
         </motion.div>
       </div>
 
@@ -597,7 +586,6 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
             )}
           </motion.div>
 
-          {/* Enhanced floating particles */}
           {isActive && (
             <>
               {[...Array(6)].map((_, i) => (
@@ -639,8 +627,7 @@ const ProductCard = ({ product, isActive, theme }: ProductCardProps) => {
   )
 }
 
-// Mock data for fallback/demo purposes
-const mockProducts: Product[] = [
+const mockProducts: CourseQuizCard[] = [
   {
     id: "1",
     name: "JavaScript Fundamentals",
