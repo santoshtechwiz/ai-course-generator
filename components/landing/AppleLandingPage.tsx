@@ -12,7 +12,7 @@ import AboutSection from "./sections/AboutSection"
 import FaqAccordion from "./sections/FaqAccordion"
 import FeatureShowcase from "./sections/FeatureShowcase"
 import HowItWorksSection from "./sections/HowItWorksSection"
-import ProductGallery from "./sections/ProductGallery"
+import ProductGallery from "./sections/ShowCase"
 import TestimonialsSlider from "./sections/TestimonialsSlider"
 import HeroSection from "./sections/HeroSection"
 
@@ -46,7 +46,7 @@ const AppleLandingPage = () => {
   // Refs for sections
   const heroRef = useRef<HTMLDivElement>(null)
   const featuresRef = useRef<HTMLDivElement>(null)
-  const productRef = useRef<HTMLDivElement>(null)
+  const showCaseRef = useRef<HTMLDivElement>(null)
   const aboutRef = useRef<HTMLDivElement>(null)
   const howItWorksRef = useRef<HTMLDivElement>(null)
   const testimonialsRef = useRef<HTMLDivElement>(null)
@@ -57,7 +57,7 @@ const AppleLandingPage = () => {
   const navItems = [
     { id: "hero", label: "Home", ref: heroRef },
     { id: "features", label: "Features", ref: featuresRef },
-    { id: "product", label: "Product", ref: productRef },
+    { id: "showcase", label: "ShowCase", ref: showCaseRef },
     { id: "about", label: "About Us", ref: aboutRef },
     { id: "how-it-works", label: "How It Works", ref: howItWorksRef },
     { id: "testimonials", label: "Testimonials", ref: testimonialsRef },
@@ -92,7 +92,7 @@ const AppleLandingPage = () => {
         const sections = [
           { id: "hero", ref: heroRef },
           { id: "features", ref: featuresRef },
-          { id: "product", ref: productRef },
+          { id: "showcase", ref: showCaseRef },
           { id: "about", ref: aboutRef },
           { id: "how-it-works", ref: howItWorksRef },
           { id: "testimonials", ref: testimonialsRef },
@@ -364,7 +364,7 @@ const AppleLandingPage = () => {
         </section>
 
         {/* Product Gallery Section */}
-        <section id="product" ref={productRef} className="py-20 md:py-32 relative bg-muted/10">
+        <section id="showcase" ref={showCaseRef} className="py-20 md:py-32 relative bg-muted/10">
           <ProductGallery />
         </section>
 
