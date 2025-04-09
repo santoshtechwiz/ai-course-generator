@@ -41,6 +41,8 @@ const steps = [
   },
 ]
 
+const APPLE_EASING = [0.25, 0.1, 0.25, 1]
+
 const HowItWorksSection = () => {
   const [activeStep, setActiveStep] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
@@ -279,41 +281,49 @@ const HowItWorksSection = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={`step-${activeStep}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 30, rotateX: 5 }}
+              animate={{ opacity: 1, y: 0, rotateX: 0 }}
+              exit={{ opacity: 0, y: -30, rotateX: -5 }}
+              transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
               className="relative z-10"
+              style={{ transformPerspective: "1200px" }}
             >
               <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-center">
                 <div className="md:w-1/2">
                   <motion.div
-                    className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br ${steps[activeStep].color} text-white text-2xl font-bold mb-6 relative z-10 shadow-lg`}
+                    className={`inline-flex items-center justify-center w-18 h-18 rounded-full bg-gradient-to-br ${steps[activeStep].color} text-white text-2xl font-bold mb-6 relative z-10 shadow-lg`}
                     animate={{
                       scale: [1, 1.05, 1],
                       rotate: [0, 5, -5, 0],
                     }}
                     transition={{
-                      duration: 3,
+                      duration: 4,
                       repeat: Number.POSITIVE_INFINITY,
                       repeatType: "reverse",
+                      ease: APPLE_EASING,
                     }}
                     aria-hidden="true"
                   >
-                    {/* @ts-expect-error steps[activeStep].icon is a valid JSX element */}\
-                    {React.createElement(steps[activeStep].icon, { className: "h-8 w-8" })}
+                    {React.createElement(steps[activeStep].icon, { className: "h-9 w-9" })}
                   </motion.div>
                   <h3 className="text-2xl md:text-3xl font-bold mb-4">{steps[activeStep].title}</h3>
-                  <p className="text-muted-foreground text-lg mb-6">{steps[activeStep].description}</p>
+                  <p className="text-muted-foreground text-lg mb-6 leading-relaxed">{steps[activeStep].description}</p>
 
                   <div className="flex space-x-4">
                     <Button
                       variant="default"
-                      className={`rounded-full bg-gradient-to-r ${steps[activeStep].color} text-white border-none`}
+                      className={`rounded-full bg-gradient-to-r ${steps[activeStep].color} text-white border-none px-6 py-2`}
                       onClick={nextStep}
                     >
                       {activeStep === steps.length - 1 ? "Get Started" : "Next Step"}
-                      <ChevronRight className="ml-2 h-4 w-4" />
+                      <motion.span
+                        className="inline-block ml-2"
+                        initial={{ x: 0 }}
+                        whileHover={{ x: 3 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </motion.span>
                     </Button>
 
                     <Button
@@ -330,7 +340,7 @@ const HowItWorksSection = () => {
                 </div>
 
                 <div className="md:w-1/2">
-                  {/* Step-specific animations */}
+                  {/* Step-specific animations with enhanced effects */}
                   <AnimationRenderer step={steps[activeStep]} isActive={isInView && isAutoPlaying} />
                 </div>
               </div>

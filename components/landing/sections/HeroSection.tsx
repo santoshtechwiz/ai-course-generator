@@ -12,7 +12,7 @@ interface HeroSectionProps {
   scrollToFeatures: () => void
   scrollToHowItWorks: () => void
 }
-
+const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const isMobile = useMobile()
@@ -32,20 +32,24 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
     restDelta: 0.001,
   })
 
-  // Advanced parallax effects with different speeds for different elements
-  const y = useTransform(smoothProgress, [0, 1], [0, 200])
-  const scale = useTransform(smoothProgress, [0, 1], [1, 1.1])
+
+
+  // Update the hero section animations for a more Apple-like feel
+
+  // Replace the existing parallax effects with these enhanced ones
+  const y = useTransform(smoothProgress, [0, 1], [0, 180])
+  const scale = useTransform(smoothProgress, [0, 1], [1, 1.08])
   const opacity = useTransform(smoothProgress, [0, 0.8], [1, 0])
-  const rotate = useTransform(smoothProgress, [0, 1], [0, -5])
+  const rotate = useTransform(smoothProgress, [0, 1], [0, -3])
 
-  // Text parallax (moves slower than the video)
-  const titleY = useTransform(smoothProgress, [0, 1], [0, 100])
-  const subtitleY = useTransform(smoothProgress, [0, 1], [0, 150])
-  const buttonsY = useTransform(smoothProgress, [0, 1], [0, 180])
+  // Update the text parallax for smoother movement
+  const titleY = useTransform(smoothProgress, [0, 1], [0, 80])
+  const subtitleY = useTransform(smoothProgress, [0, 1], [0, 120])
+  const buttonsY = useTransform(smoothProgress, [0, 1], [0, 160])
 
-  // Background parallax
-  const bgY = useTransform(smoothProgress, [0, 1], [0, 50])
-  const bgScale = useTransform(smoothProgress, [0, 1], [1, 1.05])
+  // Enhance the background parallax
+  const bgY = useTransform(smoothProgress, [0, 1], [0, 40])
+  const bgScale = useTransform(smoothProgress, [0, 1], [1, 1.04])
 
   // Check if user has scrolled
   useEffect(() => {
@@ -132,6 +136,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
 
         {/* Heading with character-by-character animation */}
         <div className="overflow-hidden">
+          {/* Update the title animation for a more dramatic reveal */}
           <motion.h1
             className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto"
             style={{ y: titleY }}
@@ -141,7 +146,18 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
               custom={1}
               initial="hidden"
               animate="visible"
-              variants={titleVariants}
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: (i) => ({
+                  opacity: 1,
+                  y: 0,
+                  transition: {
+                    delay: 0.1 * i,
+                    duration: 0.9,
+                    ease: APPLE_EASING,
+                  },
+                }),
+              }}
             >
               Learn anything with{" "}
             </motion.span>
@@ -150,7 +166,18 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
               custom={2}
               initial="hidden"
               animate="visible"
-              variants={titleVariants}
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: (i) => ({
+                  opacity: 1,
+                  y: 0,
+                  transition: {
+                    delay: 0.1 * i,
+                    duration: 0.9,
+                    ease: APPLE_EASING,
+                  },
+                }),
+              }}
             >
               AI-powered
             </motion.span>
@@ -160,7 +187,18 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
               custom={3}
               initial="hidden"
               animate="visible"
-              variants={titleVariants}
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: (i) => ({
+                  opacity: 1,
+                  y: 0,
+                  transition: {
+                    delay: 0.1 * i,
+                    duration: 0.9,
+                    ease: APPLE_EASING,
+                  },
+                }),
+              }}
             >
               course creation
             </motion.span>
@@ -220,7 +258,6 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
         className="w-full max-w-5xl mx-auto mt-16 px-4 relative z-0"
       >
         <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-         
           {/* Enhanced reflection effect */}
           <div className="absolute bottom-0 left-0 right-0 h-[20%] bg-gradient-to-t from-white/10 to-transparent transform scale-y-[-1] blur-sm opacity-30"></div>
 
@@ -292,7 +329,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
   )
 }
 
-// Apple-style button component with sophisticated hover effects
+// Enhance the AppleButton component with more refined hover effects
 const AppleButton = ({
   children,
   onClick,
@@ -317,12 +354,15 @@ const AppleButton = ({
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{
         scale: 1.05,
-        boxShadow: isPrimary ? "0 10px 25px -5px rgba(var(--primary-rgb), 0.3)" : "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+        boxShadow: isPrimary
+          ? "0 10px 25px -5px rgba(var(--primary-rgb), 0.35)"
+          : "0 10px 25px -5px rgba(0, 0, 0, 0.12)",
+        y: -2,
       }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.98, y: 0 }}
       transition={{
         duration: 0.3,
-        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
+        ease: APPLE_EASING,
       }}
     >
       {children}
@@ -330,16 +370,16 @@ const AppleButton = ({
   )
 }
 
-// Enhanced Apple-style floating particles with 3D effect
+// Enhance the particles animation for a more premium feel
 const AppleStyleParticles = () => {
   const isMobile = useMobile()
-  const particleCount = isMobile ? 8 : 15
+  const particleCount = isMobile ? 10 : 20
 
   return (
     <>
       {Array.from({ length: particleCount }).map((_, i) => {
-        const size = Math.random() * 20 + 5
-        const depth = Math.random() * 0.5 + 0.5 // For 3D effect
+        const size = Math.random() * 25 + 5
+        const depth = Math.random() * 0.6 + 0.4 // For 3D effect
 
         return (
           <motion.div
@@ -349,8 +389,8 @@ const AppleStyleParticles = () => {
               x: `${Math.random() * 100}%`,
               y: `${Math.random() * 100}%`,
               scale: depth,
-              opacity: Math.random() * 0.3 + 0.1,
-              filter: `blur(${(1 - depth) * 3}px)`, // Blurrier if further away
+              opacity: Math.random() * 0.4 + 0.1,
+              filter: `blur(${(1 - depth) * 4}px)`, // Blurrier if further away
             }}
             animate={{
               y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
@@ -358,7 +398,7 @@ const AppleStyleParticles = () => {
               rotate: [0, Math.random() * 360], // Subtle rotation
             }}
             transition={{
-              duration: Math.random() * 20 + 10,
+              duration: Math.random() * 25 + 15,
               repeat: Number.POSITIVE_INFINITY,
               repeatType: "reverse",
               ease: "linear",
