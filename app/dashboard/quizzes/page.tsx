@@ -9,7 +9,7 @@ import { JsonLd } from "@/app/schema/components/json-ld"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
 export const metadata: Metadata = generatePageMetadata({
-  title: "Explore Quizzes | Course AI",
+  title: "Free Quizzes – MCQs,Open-ended and Code Challenges",
   description: "Discover a variety of interactive quizzes to test and enhance your programming knowledge and skills.",
   path: "/dashboard/quizzes",
   keywords: [

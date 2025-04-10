@@ -4,7 +4,7 @@ import SubscriptionPageClient from "./components/SubscriptionPageClient"
 
 
 export const metadata: Metadata = generatePageMetadata({
-  title: "Subscription Plans | Course AI",
+  title: "Subscription Plans ",
   description:
     "Explore our subscription plans and choose the perfect option to enhance your learning experience with Course AI.",
   path: "/dashboard/subscription",
