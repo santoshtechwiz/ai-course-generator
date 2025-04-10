@@ -2,7 +2,7 @@ import QuizCreationPage from "@/components/QuizCreationPage"
 
 
 export const metadata = {
-  title: "Flashcards | Course AI",
+  title: "Create Free Flashcards Quiz ",
   description:
     "Create and study with interactive flashcards to reinforce your programming knowledge and improve retention of key concepts.",
   keywords: [
@@ -14,7 +14,7 @@ export const metadata = {
     "learning tools",
   ],
   openGraph: {
-    title: "Flashcards | Course AI",
+    title: "Flashcards ",
     description:
       "Create and study with interactive flashcards to reinforce your programming knowledge and improve retention of key concepts.",
     url: "https://courseai.io/dashboard/flashcard",
@@ -23,7 +23,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Flashcards | Course AI",
+    title: "Flashcards ",
     description:
       "Create and study with interactive flashcards to reinforce your programming knowledge and improve retention of key concepts.",
     images: ["/twitter-image-flashcards.jpg"],
