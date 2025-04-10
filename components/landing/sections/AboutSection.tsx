@@ -16,23 +16,23 @@ const AboutSection = () => {
 
   const sections = [
     {
-      title: "Empowering Content Creators",
+      title: "Built for Instant Course Creation",
       description:
-        "At CourseAI, we are dedicated to empowering educators, professionals, and learners by simplifying content creation. Our mission is to provide intuitive AI tools that enable anyone to share knowledge effectively and efficiently.",
+        "CourseAI empowers anyone to generate complete courses from just a topic. No YouTube videos, no editable content—just pure AI magic creating structured lessons and quizzes in seconds.",
       icon: MissionIcon,
       color: "from-rose-500 to-rose-600",
     },
     {
-      title: "A Vision for Smarter Learning",
+      title: "Smarter, Faster Learning",
       description:
-        "Our vision is to revolutionize the way people learn and share knowledge. By combining AI with user-friendly tools, we aim to make education more accessible, engaging, and impactful for everyone.",
+        "We believe learning should be efficient and accessible. CourseAI combines advanced AI with simplicity so users can create, customize, and deliver powerful courses effortlessly.",
       icon: VisionIcon,
       color: "from-cyan-500 to-cyan-600",
     },
     {
-      title: "Driven by Passion and Expertise",
+      title: "Solo-Founded, Passion-Fueled",
       description:
-        "CourseAI is a solo-founder initiative, built with a passion for AI and education. With a strong background in technology and content creation, we are committed to delivering innovative solutions that make learning and teaching more effective.",
+        "CourseAI is built by one founder who loves AI and education. Every feature is designed to solve real problems in course creation with speed, focus, and quality.",
       icon: TeamIcon,
       color: "from-amber-500 to-amber-600",
     },
@@ -42,21 +42,21 @@ const AboutSection = () => {
     {
       title: "Innovation at the Core",
       description:
-        "We continuously explore new possibilities to enhance content creation with cutting-edge AI technology.",
+        "We continuously explore new ways to improve course creation and quiz automation using the latest in AI.",
       color: "from-purple-500 to-indigo-500",
       icon: "sparkles",
     },
     {
       title: "Accessible for Everyone",
       description:
-        "We believe that high-quality creative tools should be available to everyone, regardless of technical expertise.",
+        "You don’t need to be technical to create a great course. CourseAI is made for creators, educators, and teams of all skill levels.",
       color: "from-blue-500 to-sky-500",
       icon: "users",
     },
     {
-      title: "Commitment to Excellence",
+      title: "Private & Secure Courses",
       description:
-        "We strive to deliver exceptional tools and experiences that exceed expectations and drive meaningful results.",
+        "Create and control your private courses. You choose who can access and track progress—fully under your control.",
       color: "from-orange-500 to-amber-500",
       icon: "star",
     },
@@ -80,7 +80,7 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Redefining Content Creation with AI
+          Redefining Course Creation with AI
         </motion.h2>
 
         <motion.p
@@ -89,9 +89,9 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
         >
-          CourseAI is built to simplify and accelerate the way people create, learn, and share knowledge. Using AI, we
-          empower anyone—from individuals to teams—to create engaging, interactive content without the complexity. Our
-          goal is simple: make knowledge sharing more accessible, customizable, and intelligent for everyone.
+          CourseAI helps you create full online courses just by entering a topic. It generates lessons and quizzes
+          automatically, lets you build your own (MCQs, coding, fill-in-the-blanks, open-ended), monitor progress, and
+          even keep your courses private. No YouTube, no fluff—just fast, smart course creation.
         </motion.p>
       </div>
 
@@ -142,7 +142,6 @@ const AboutSection = () => {
                 <h4 className="text-xl font-semibold mb-2">{value.title}</h4>
                 <p className="text-muted-foreground">{value.description}</p>
 
-                {/* Add subtle hover effect */}
                 <motion.div
                   className="w-12 h-1 bg-gradient-to-r from-primary/50 to-primary/0 rounded-full mt-4"
                   whileHover={{ width: 80 }}

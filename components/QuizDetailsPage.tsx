@@ -210,7 +210,7 @@ export default function QuizDetailsPage({
                         </motion.div>
                       </AnimatePresence>
                     </Button>
-                    <ShareButton slug={slug} title={title} />
+                    <ShareButton slug={slug} title={title} type={quizType} />
                     {quizId && userId && (
                       <QuizActions
                         quizId={quizId}

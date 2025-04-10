@@ -246,7 +246,7 @@ const ProductGallery = () => {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
-          AI-Powered Learning
+          AI-Powered Learning Solutions
         </motion.div>
 
         <motion.h2
@@ -255,7 +255,7 @@ const ProductGallery = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Smart Learning with CourseAI
+          Explore Our Course & Quiz Creator
         </motion.h2>
 
         <motion.p
@@ -264,7 +264,8 @@ const ProductGallery = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8"
         >
-          Discover AI-curated courses and adaptive quizzes tailored to your learning style and pace
+          Discover how our AI transforms videos into interactive courses and adaptive quizzes tailored to your specific
+          learning objectives
         </motion.p>
 
         <motion.div
@@ -284,10 +285,10 @@ const ProductGallery = () => {
                 All
               </TabsTrigger>
               <TabsTrigger value="course" className="rounded-full">
-                AI Courses
+                Course Creator
               </TabsTrigger>
               <TabsTrigger value="quiz" className="rounded-full">
-                AI Quizzes
+                Quiz Generator
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -398,7 +399,7 @@ const LoadingState = () => (
   <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
       <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-      <p className="text-muted-foreground">Loading AI courses...</p>
+      <p className="text-muted-foreground">Loading AI learning tools...</p>
     </motion.div>
   </div>
 )
@@ -614,18 +615,18 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
         >
           <div className="flex items-center mb-4">
             <Badge variant={product.type === "course" ? "default" : "secondary"} className="rounded-full mr-2">
-              {product.type === "course" ? "AI Course" : "AI Quiz"}
+              {product.type === "course" ? "Course Creator" : "Quiz Generator"}
             </Badge>
 
             {product.quizType && (
               <Badge variant="outline" className="rounded-full">
                 {product.quizType === "mcq"
-                  ? "Adaptive MCQ"
+                  ? "Multiple Choice"
                   : product.quizType === "openended"
-                    ? "AI Graded"
+                    ? "Open-Ended"
                     : product.quizType === "fill-blanks"
-                      ? "Smart Fill-in"
-                      : "AI Code Review"}
+                      ? "Fill-in-Blanks"
+                      : "Coding Challenges"}
               </Badge>
             )}
           </div>
@@ -639,11 +640,11 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
           <FeedbackButton
             className="rounded-full px-6 py-2"
             onClickAsync={handleNavigation}
-            loadingText={product.type === "course" ? "Loading course..." : "Loading quiz..."}
-            successText={product.type === "course" ? "Starting course" : "Starting quiz"}
-            aria-label={`${product.type === "course" ? "Start AI Learning" : "Try AI Quiz"} ${product.name}`}
+            loadingText={product.type === "course" ? "Creating course..." : "Generating quiz..."}
+            successText={product.type === "course" ? "Course ready" : "Quiz ready"}
+            aria-label={`${product.type === "course" ? "Create Course" : "Generate Quiz"} ${product.name}`}
           >
-            {product.type === "course" ? "Start AI Learning" : "Try AI Quiz"}
+            {product.type === "course" ? "Create Course" : "Generate Quiz"}
             <motion.span
               className="inline-block ml-2"
               initial={{ x: 0 }}
@@ -658,7 +659,7 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
             className="text-xs text-muted-foreground mt-2 text-center opacity-0 hover:opacity-100 transition-opacity"
             whileHover={{ opacity: 1 }}
           >
-            {product.type === "course" ? "AI-powered adaptive course" : "Smart quiz with AI feedback"}
+            {product.type === "course" ? "AI-powered course creation" : "Intelligent quiz generation"}
           </motion.p>
         </motion.div>
       </div>
@@ -741,54 +742,60 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
 const mockProducts: CourseQuizCard[] = [
   {
     id: "1",
-    name: "AI-Powered JavaScript",
-    slug: "ai-javascript",
-    description: "Learn JavaScript with AI-generated exercises that adapt to your skill level and learning patterns.",
-    tagline: "Master JS with personalized AI guidance",
+    name: "Video-to-Course Converter",
+    slug: "video-to-course",
+    description:
+      "Upload any video and automatically generate a complete course with chapters, sections, and learning objectives based on the content.",
+    tagline: "Transform videos into structured courses",
     type: "course",
   },
   {
     id: "2",
-    name: "React with AI Assistant",
-    slug: "react-ai-assistant",
-    description: "Build React apps with real-time AI code suggestions and intelligent debugging assistance.",
-    tagline: "Code smarter with AI pair programming",
+    name: "Transcript Generator",
+    slug: "transcript-generator",
+    description:
+      "Automatically transcribe video content with high accuracy, creating the foundation for your courses and quizzes.",
+    tagline: "Accurate video transcription in minutes",
     type: "course",
   },
   {
     id: "3",
-    name: "AI-Driven CSS Mastery",
-    slug: "ai-css-mastery",
-    description: "Learn CSS with AI that generates visual examples based on your progress and weaknesses.",
-    tagline: "Visual learning powered by AI",
+    name: "Course Structure Optimizer",
+    slug: "course-optimizer",
+    description:
+      "AI analyzes your content and organizes it into the most effective learning structure with proper pacing and sequencing.",
+    tagline: "Optimized learning pathways",
     type: "course",
   },
   {
     id: "4",
-    name: "AI JavaScript Challenge",
-    slug: "ai-js-challenge",
-    description: "Adaptive quiz that gets harder as you improve, with AI-generated questions tailored to your level.",
-    tagline: "Test your skills against our AI",
+    name: "Multiple Choice Quiz Creator",
+    slug: "mcq-creator",
+    description:
+      "Generate adaptive multiple-choice questions that automatically adjust difficulty based on student performance.",
+    tagline: "Smart MCQs that adapt to learners",
     type: "quiz",
     quizType: "mcq",
   },
   {
     id: "5",
-    name: "AI Code Review",
-    slug: "ai-code-review",
-    description: "Submit your React code and get instant AI feedback with suggestions for improvement.",
-    tagline: "Get AI-powered code reviews",
+    name: "Coding Challenge Generator",
+    slug: "coding-challenges",
+    description:
+      "Submit code and receive instant AI feedback with detailed explanations and suggestions for improvement. Perfect for programming courses.",
+    tagline: "Interactive coding assessments",
     type: "quiz",
     quizType: "code",
   },
   {
     id: "6",
-    name: "AI CSS Puzzle",
-    slug: "ai-css-puzzle",
-    description: "AI-generated CSS challenges that adapt to fill gaps in your knowledge as you progress.",
-    tagline: "Solve AI-curated CSS puzzles",
+    name: "Open-Ended Question Generator",
+    slug: "open-ended-generator",
+    description:
+      "Create thought-provoking open-ended questions with AI-powered grading that provides personalized feedback on student responses.",
+    tagline: "AI-graded essay questions",
     type: "quiz",
-    quizType: "fill-blanks",
+    quizType: "openended",
   },
 ]
 
