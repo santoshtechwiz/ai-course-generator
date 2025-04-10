@@ -1,10 +1,10 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { motion, useInView } from "framer-motion"
 import { ArrowRight, Check } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+
 import MaskReveal from "@/components/animations/MaskReveal"
 import ProgressiveText from "@/components/animations/ProgressiveText"
 import CountUp from "@/components/animations/CountUp"
@@ -21,12 +21,9 @@ const CTASection = () => {
     setIsMounted(true)
   }, [])
 
-  if (!isInView) {
-    return null // Render nothing if the section is not in view
-  }
+  if (!isInView) return null
 
   const startTrial = async () => {
-    // Simulate API call or processing time
     await new Promise((resolve) => setTimeout(resolve, 1000))
     router.push("/dashboard/subscription")
     return true
@@ -36,13 +33,12 @@ const CTASection = () => {
     <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
       <div className="relative rounded-3xl overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />
-
         <div className="relative p-8 md:p-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               <MaskReveal direction="left">
                 <ProgressiveText
-                  text="Ready to transform your content creation?"
+                  text="Turn any topic into an interactive course — instantly."
                   tag="h2"
                   className="text-3xl md:text-5xl font-bold mb-6 tracking-tight"
                   delay={0.2}
@@ -51,7 +47,9 @@ const CTASection = () => {
 
               <MaskReveal direction="left" delay={0.3}>
                 <p className="text-xl text-muted-foreground mb-8">
-                  Join thousands of creators using CourseAI to build engaging, personalized content experiences.
+                  CourseAI helps you create structured courses from any topic in seconds. Generate quizzes
+                  automatically or build your own using MCQs, coding questions, fill-in-the-blanks, and open-ended
+                  types. Track progress, and even create private courses for your audience.
                 </p>
               </MaskReveal>
 
@@ -59,15 +57,15 @@ const CTASection = () => {
                 <div className="grid grid-cols-2 gap-6 mb-8">
                   <div className="bg-card/30 backdrop-blur-sm rounded-xl p-6 border border-border/10">
                     <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                      <CountUp end={10000} separator="," prefix="+" />
+                      <CountUp end={100000} separator="," prefix="+" />
                     </div>
-                    <p className="text-muted-foreground">Active users</p>
+                    <p className="text-muted-foreground">Courses generated</p>
                   </div>
                   <div className="bg-card/30 backdrop-blur-sm rounded-xl p-6 border border-border/10">
                     <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                      <CountUp end={50000} separator="," prefix="+" />
+                      <CountUp end={75000} separator="," prefix="+" />
                     </div>
-                    <p className="text-muted-foreground">Courses created</p>
+                    <p className="text-muted-foreground">Quizzes created</p>
                   </div>
                 </div>
               </MaskReveal>
@@ -98,18 +96,26 @@ const CTASection = () => {
                   <motion.div
                     className="flex items-center"
                     whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                    transition={{ duration: 0.3 }}
                   >
                     <Check className="h-5 w-5 text-primary mr-2" />
-                    <span className="text-sm">No credit card required</span>
+                    <span className="text-sm">Create from any topic</span>
                   </motion.div>
                   <motion.div
                     className="flex items-center"
                     whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                    transition={{ duration: 0.3 }}
                   >
                     <Check className="h-5 w-5 text-primary mr-2" />
-                    <span className="text-sm">1-month free trial</span>
+                    <span className="text-sm">Private course support</span>
+                  </motion.div>
+                  <motion.div
+                    className="flex items-center"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Check className="h-5 w-5 text-primary mr-2" />
+                    <span className="text-sm">Track learner progress</span>
                   </motion.div>
                 </div>
               </MaskReveal>

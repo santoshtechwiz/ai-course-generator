@@ -153,18 +153,16 @@ const HowItWorksSection = () => {
           transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto"
         >
-          Whether you're an educator, a professional, or a hobbyist, our platform empowers you to create engaging and
-          interactive content effortlessly.
+          Whether you're an educator, a professional, or a hobbyist, our platform empowers you to create engaging and interactive content effortlessly.
         </motion.p>
-
+      
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto"
         >
-          Why spend on expensive courses? Create your own interactive quizzes and content to learn effectively and
-          affordably.
+          Why spend on expensive courses? Create your own interactive quizzes and content to learn effectively and affordably.
         </motion.p>
       </div>
 
@@ -374,18 +372,17 @@ const HowItWorksSection = () => {
   )
 }
 
-// Enhance the animation renderers for a more premium look
 // Component to render different animations based on the current step
 const AnimationRenderer = ({ step, isActive }: { step: (typeof steps)[0]; isActive: boolean }) => {
   // Use React.memo to prevent unnecessary re-renders
   return React.useMemo(() => {
     switch (step.id) {
       case "choose":
-        return <ConceptSelectionAnimation isActive={isActive} />
+        return <TypingAnimation isActive={isActive} />
       case "generate":
         return <ProcessingAnimation isActive={isActive} color={step.color} />
       case "customize":
-        return <CustomizationAnimation isActive={isActive} color={step.color} />
+        return <ArrangingAnimation isActive={isActive} color={step.color} />
       case "publish":
         return <PublishingAnimation isActive={isActive} color={step.color} />
       default:
@@ -394,10 +391,10 @@ const AnimationRenderer = ({ step, isActive }: { step: (typeof steps)[0]; isActi
   }, [step.id, step.color, isActive])
 }
 
-// Animation for the "Choose your concept" step
-const ConceptSelectionAnimation = ({ isActive }: { isActive: boolean }) => {
+// Animation for the "Choose your topic" step
+const TypingAnimation = ({ isActive }: { isActive: boolean }) => {
   const [text, setText] = useState("")
-  const fullText = "Create an interactive product showcase with 3D elements and user feedback"
+  const fullText = "Master Web Development with JavaScript, React, and Node.js"
 
   useEffect(() => {
     if (!isActive) {
@@ -419,7 +416,7 @@ const ConceptSelectionAnimation = ({ isActive }: { isActive: boolean }) => {
           currentIndex = 0
         }, 2000)
       }
-    }, 80) // Slightly faster typing
+    }, 100)
 
     return () => clearInterval(typingInterval)
   }, [isActive])
@@ -432,30 +429,20 @@ const ConceptSelectionAnimation = ({ isActive }: { isActive: boolean }) => {
           <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
         </div>
-        <div className="ml-4 text-sm font-medium">New Project</div>
+        <div className="ml-4 text-sm font-medium">Course Topic</div>
       </div>
 
-      <div className="font-mono text-lg mb-6 min-h-[100px] relative">
+      <div className="font-mono text-lg mb-4 min-h-[100px]">
         {text}
         <motion.span
           animate={{ opacity: [0, 1, 0] }}
           transition={{ repeat: Number.POSITIVE_INFINITY, duration: 0.8 }}
           className="inline-block w-2 h-5 bg-primary ml-1"
         ></motion.span>
-
-        {/* Add a subtle highlight effect */}
-        {text.length > 0 && (
-          <motion.div
-            className="absolute inset-0 bg-primary/5 rounded-md"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.3, 0] }}
-            transition={{ duration: 2, delay: 1 }}
-          />
-        )}
       </div>
 
       <div className="flex flex-wrap gap-2 mt-6">
-        {["Interactive", "3D", "Product", "Showcase", "Feedback"].map((tag, index) => (
+        {["JavaScript", "React", "Node.js", "HTML", "CSS"].map((tag, index) => (
           <motion.div
             key={tag}
             initial={{ opacity: 0, scale: 0.8 }}
@@ -467,30 +454,6 @@ const ConceptSelectionAnimation = ({ isActive }: { isActive: boolean }) => {
           </motion.div>
         ))}
       </div>
-
-      {/* Add suggested templates */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.5, duration: 0.5 }}
-        className="mt-6 pt-4 border-t border-border/10"
-      >
-        <div className="text-sm text-muted-foreground mb-3">Suggested Templates</div>
-        <div className="grid grid-cols-2 gap-2">
-          <motion.div
-            className="p-2 rounded-md bg-primary/5 text-xs border border-primary/10 cursor-pointer"
-            whileHover={{ scale: 1.03, backgroundColor: "rgba(var(--primary-rgb), 0.1)" }}
-          >
-            Product Showcase
-          </motion.div>
-          <motion.div
-            className="p-2 rounded-md bg-primary/5 text-xs border border-primary/10 cursor-pointer"
-            whileHover={{ scale: 1.03, backgroundColor: "rgba(var(--primary-rgb), 0.1)" }}
-          >
-            Interactive Portfolio
-          </motion.div>
-        </div>
-      </motion.div>
     </div>
   )
 }
@@ -523,11 +486,11 @@ const ProcessingAnimation = ({ isActive, color }: { isActive: boolean; color: st
 
       <div className="space-y-4">
         {[
-          "Analyzing concept requirements...",
-          "Gathering design elements...",
-          "Structuring content layout...",
-          "Generating interactive components...",
-          "Creating engagement hooks...",
+          "Analyzing topic requirements...",
+          "Gathering relevant information...",
+          "Structuring course outline...",
+          "Generating learning objectives...",
+          "Creating assessment questions...",
         ].map((step, index) => (
           <motion.div
             key={index}
@@ -572,34 +535,19 @@ const ProcessingAnimation = ({ isActive, color }: { isActive: boolean; color: st
         }}
         className={`h-2 mt-6 rounded-full bg-gradient-to-r ${color}`}
       ></motion.div>
-
-      {/* Add AI insights panel */}
-      <motion.div
-        initial={{ opacity: 0, height: 0 }}
-        animate={isActive ? { opacity: 1, height: "auto" } : { opacity: 0, height: 0 }}
-        transition={{ duration: 0.5, delay: 3 }}
-        className="mt-6 overflow-hidden"
-      >
-        <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
-          <div className="text-sm font-medium mb-2">AI Insights</div>
-          <p className="text-xs text-muted-foreground">
-            Optimizing for engagement with interactive elements and visual hierarchy based on audience analytics.
-          </p>
-        </div>
-      </motion.div>
     </div>
   )
 }
 
-// Animation for the "Customize your content" step
-const CustomizationAnimation = ({ isActive, color }: { isActive: boolean; color: string }) => {
+// Animation for the "Customize your course" step
+const ArrangingAnimation = ({ isActive, color }: { isActive: boolean; color: string }) => {
   const items = [
-    "Hero Section",
-    "Product Features",
-    "Interactive Demo",
-    "Customer Testimonials",
-    "Call to Action",
-    "Contact Form",
+    "Introduction to Web Development",
+    "HTML Fundamentals",
+    "CSS Styling",
+    "JavaScript Basics",
+    "DOM Manipulation",
+    "Responsive Design",
   ]
 
   const [arrangedItems, setArrangedItems] = useState([...items])
@@ -628,7 +576,7 @@ const CustomizationAnimation = ({ isActive, color }: { isActive: boolean; color:
 
   return (
     <div className="bg-background/80 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/20">
-      <h4 className="text-xl font-semibold mb-4">Content Structure</h4>
+      <h4 className="text-xl font-semibold mb-4">Course Structure</h4>
 
       <div className="space-y-2">
         {arrangedItems.map((item, index) => (
@@ -673,7 +621,7 @@ const CustomizationAnimation = ({ isActive, color }: { isActive: boolean; color:
             whileTap={{ scale: 0.95 }}
             className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm font-medium"
           >
-            Customize
+            Edit
           </motion.div>
         </div>
 
@@ -685,43 +633,6 @@ const CustomizationAnimation = ({ isActive, color }: { isActive: boolean; color:
           Preview
         </motion.div>
       </div>
-
-      {/* Add style controls */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ delay: 1, duration: 0.5 }}
-        className="mt-6 pt-4 border-t border-border/10"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-medium">Style Controls</div>
-          <div className="flex space-x-2">
-            {["#FF5A5F", "#00A699", "#484848"].map((color) => (
-              <motion.div
-                key={color}
-                className="w-5 h-5 rounded-full cursor-pointer"
-                style={{ backgroundColor: color }}
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.9 }}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="text-xs text-muted-foreground">Typography</div>
-          <div className="text-xs text-muted-foreground">Layout</div>
-          <motion.div
-            className="h-2 bg-primary/30 rounded-full"
-            animate={{ width: ["60%", "80%", "60%"] }}
-            transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" }}
-          />
-          <motion.div
-            className="h-2 bg-primary/30 rounded-full"
-            animate={{ width: ["70%", "50%", "70%"] }}
-            transition={{ duration: 5, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" }}
-          />
-        </div>
-      </motion.div>
     </div>
   )
 }
@@ -779,7 +690,7 @@ const PublishingAnimation = ({ isActive, color }: { isActive: boolean; color: st
           </motion.div>
         </motion.div>
 
-        <h4 className="text-xl font-semibold">{published ? "Content Published!" : "Publishing Content..."}</h4>
+        <h4 className="text-xl font-semibold">{published ? "Course Published!" : "Publishing Course..."}</h4>
 
         <motion.div
           initial={{ width: "0%" }}
@@ -797,10 +708,10 @@ const PublishingAnimation = ({ isActive, color }: { isActive: boolean; color: st
             transition={{ delay: 0.3 }}
             className="mt-6 space-y-4"
           >
-            <div className="text-center text-muted-foreground mb-4">Share your content with the world:</div>
+            <div className="text-center text-muted-foreground mb-4">Share your course with others:</div>
 
             <div className="flex justify-center space-x-3">
-              {["Copy Link", "Email", "Twitter", "LinkedIn"].map((platform, index) => (
+              {["Copy Link", "Email", "Twitter", "Facebook"].map((platform, index) => (
                 <motion.div
                   key={platform}
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -821,42 +732,7 @@ const PublishingAnimation = ({ isActive, color }: { isActive: boolean; color: st
               transition={{ delay: 0.8 }}
               className="mt-6 p-4 rounded-lg bg-primary/10 text-primary text-center"
             >
-              <span className="font-medium">Pro Tip:</span> Monitor engagement analytics to optimize your content for
-              maximum impact!
-            </motion.div>
-
-            {/* Add analytics preview */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2 }}
-              className="mt-4"
-            >
-              <div className="bg-card/50 backdrop-blur-sm rounded-lg p-3 border border-border/10">
-                <div className="text-sm font-medium mb-2">Analytics Preview</div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <div>Views</div>
-                  <div>Engagement</div>
-                  <div>Conversion</div>
-                </div>
-                <div className="flex space-x-1 mt-2">
-                  <motion.div
-                    className="h-8 bg-primary/20 rounded-md flex-1"
-                    animate={{ height: [20, 32, 20] }}
-                    transition={{ duration: 5, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" }}
-                  />
-                  <motion.div
-                    className="h-8 bg-primary/30 rounded-md flex-1"
-                    animate={{ height: [32, 20, 32] }}
-                    transition={{ duration: 6, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" }}
-                  />
-                  <motion.div
-                    className="h-8 bg-primary/40 rounded-md flex-1"
-                    animate={{ height: [15, 25, 15] }}
-                    transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" }}
-                  />
-                </div>
-              </div>
+              <span className="font-medium">Pro Tip:</span> Track engagement and gather feedback to improve your course!
             </motion.div>
           </motion.div>
         )}
