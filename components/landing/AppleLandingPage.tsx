@@ -216,20 +216,15 @@ const AppleLandingPage = () => {
         <div className="hidden md:block">
           <FeedbackButton
             className="rounded-full px-6 py-2 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
-            loadingText="Loading..."
-            successText="Starting trial"
-            onClickAsync={() => {
-              scrollToSection("cta")
-              return Promise.resolve(true)
+            loadingText="Redirecting..."
+            successText="Redirecting..."
+            onClickAsync={async () => {
+              router.push("/dashboard/explore");
+              return true;
             }}
           >
-            Start free trial
-            <motion.span
-              className="inline-block ml-2"
-              initial={{ x: 0 }}
-              whileHover={{ x: 5 }}
-              transition={{ type: "spring", stiffness: 500, damping: 15 }}
-            >
+            Get Started
+            <motion.span className="inline-block ml-2">
               <ArrowUpRight className="h-4 w-4" />
             </motion.span>
           </FeedbackButton>
@@ -477,7 +472,7 @@ const AppleLandingPage = () => {
             className="fixed bottom-6 right-6 z-50"
           >
             <FeedbackButton
-              variant="default"
+              variant="ghost"
               size="icon"
               className="rounded-full shadow-lg bg-primary hover:bg-primary/90"
               loadingText=""
