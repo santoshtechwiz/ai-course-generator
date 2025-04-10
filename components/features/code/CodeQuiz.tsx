@@ -353,7 +353,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({
       }
 
       return (
-        <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.6}>
+        <MotionWrapper animate={true} variant="fade" duration={0.6}>
           <Card className="w-full max-w-2xl mx-auto">
             <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
               <Trophy className="w-16 h-16 text-primary" />

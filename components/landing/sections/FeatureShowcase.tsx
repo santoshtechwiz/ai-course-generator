@@ -2,59 +2,54 @@
 
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
-import { Zap, CreditCard, FileText, HelpCircle, Layers, Users, Youtube } from "lucide-react"
+import { Zap, FileText, HelpCircle, Layers, Users, Youtube, ArrowRight } from "lucide-react"
 
-// Update the features array to be more broadly appealing
+// Update the features array to be more engaging and clear
 const features = [
   {
     icon: Youtube,
-    title: "Video Integration",
-    description: "Effortlessly create comprehensive content by leveraging existing YouTube videos on any topic.",
+    title: "Smart Video Integration",
+    description:
+      "Seamlessly incorporate existing videos into your content with AI-powered analysis that extracts key points and creates interactive elements.",
     gradient: "from-red-500 to-pink-500",
     color: "from-red-500 to-pink-500",
   },
   {
     icon: FileText,
-    title: "Automated Transcripts",
-    description: "Generate accurate transcripts automatically from video content to enhance your materials.",
+    title: "Intelligent Content Analysis",
+    description:
+      "Our AI automatically analyzes and organizes content, creating structured materials that engage your audience.",
     gradient: "from-blue-500 to-cyan-500",
     color: "from-blue-500 to-cyan-500",
   },
   {
     icon: HelpCircle,
-    title: "Smart Quiz Generation",
+    title: "Interactive Elements",
     description:
-      "Create engaging quizzes with multiple question types including MCQs, open-ended, and fill-in-the-blanks.",
+      "Create engaging interactive components including quizzes, polls, and dynamic content that adapts to user behavior.",
     gradient: "from-green-500 to-emerald-500",
     color: "from-green-500 to-emerald-500",
   },
   {
     icon: Layers,
-    title: "Customizable Content",
-    description: "Tailor content and structure to meet your specific goals and audience needs.",
+    title: "Customizable Experiences",
+    description: "Tailor every aspect of your content to match your brand and audience needs with intuitive controls.",
     gradient: "from-purple-500 to-violet-500",
     color: "from-purple-500 to-violet-500",
   },
   {
     icon: Zap,
-    title: "Quick Creation",
-    description: "Build full-fledged content in minutes, making creation accessible for everyone.",
+    title: "Rapid Creation",
+    description: "Build professional-quality content in minutes instead of hours, with AI handling the complex work.",
     gradient: "from-yellow-500 to-orange-500",
     color: "from-yellow-500 to-orange-500",
   },
   {
     icon: Users,
-    title: "Inclusive Learning",
-    description: "Cater to diverse learning styles with a mix of video, text, and interactive elements.",
+    title: "Audience Insights",
+    description: "Gain valuable data on how users interact with your content to continuously improve engagement.",
     gradient: "from-indigo-500 to-blue-500",
     color: "from-indigo-500 to-blue-500",
-  },
-  {
-    icon: CreditCard,
-    title: "Flexible Pricing Plans",
-    description: "Choose from Free, Basic, and Pro plans to suit your creation needs and budget.",
-    gradient: "from-pink-500 to-rose-500",
-    color: "from-pink-500 to-rose-500",
   },
 ]
 
@@ -76,24 +71,26 @@ const FeatureShowcase = () => {
     }),
   }
 
-  // Card animation variants
+  // Card animation variants with enhanced Apple-style effects
   const cardVariants = {
-    hidden: { opacity: 0, y: 30 },
+    hidden: { opacity: 0, y: 40, scale: 0.95 },
     visible: (delay: number) => ({
       opacity: 1,
       y: 0,
+      scale: 1,
       transition: {
-        duration: 0.9,
+        duration: 1.2,
         delay,
-        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
+        ease: [0.22, 0.61, 0.36, 1], // Enhanced Apple-style easing
       },
     }),
     hover: {
-      y: -12,
-      boxShadow: "0 22px 40px -12px rgba(0, 0, 0, 0.1), 0 10px 20px -5px rgba(0, 0, 0, 0.04)",
+      y: -16,
+      scale: 1.03,
+      boxShadow: "0 30px 60px -15px rgba(0, 0, 0, 0.15)",
       transition: {
-        duration: 0.4,
-        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
+        duration: 0.5,
+        ease: [0.22, 0.61, 0.36, 1], // Enhanced Apple-style easing
       },
     },
   }
@@ -101,7 +98,6 @@ const FeatureShowcase = () => {
   return (
     <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
       <div className="text-center mb-16">
-        {/* Update the feature showcase section to appeal to a broader audience */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
@@ -109,7 +105,7 @@ const FeatureShowcase = () => {
           custom={0}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
-          Smarter Content Creation
+          Powerful Features
         </motion.div>
 
         <motion.h2
@@ -119,7 +115,7 @@ const FeatureShowcase = () => {
           custom={0.1}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Build Interactive Content in Minutes with AI
+          Create Engaging Content with AI
         </motion.h2>
 
         <motion.p
@@ -129,8 +125,8 @@ const FeatureShowcase = () => {
           custom={0.2}
           className="text-xl text-muted-foreground max-w-2xl mx-auto"
         >
-          CourseAI lets anyone create dynamic, personalized content—automatically. From tutorials and quizzes to
-          complete learning experiences, build and share faster than ever.
+          CourseAI empowers you to create dynamic, personalized content—automatically. From interactive experiences to
+          complete learning journeys, build and share faster than ever.
         </motion.p>
       </div>
 
@@ -154,28 +150,37 @@ const FeatureShowcase = () => {
                 className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0 }}
-                whileHover={{ opacity: 0.08 }}
-                transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                whileHover={{ opacity: 0.1 }}
+                transition={{ duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }}
               />
 
               {/* Enhanced icon animation */}
               <motion.div
-                className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-lg`}
+                className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-lg`}
                 whileHover={{
-                  scale: 1.1,
+                  scale: 1.15,
                   rotate: [0, 5, -5, 0],
                   transition: {
-                    duration: 0.6,
-                    ease: [0.25, 0.1, 0.25, 1],
+                    duration: 0.8,
+                    ease: [0.22, 0.61, 0.36, 1],
                   },
                 }}
               >
-                <feature.icon className="h-7 w-7 text-white" />
+                <feature.icon className="h-8 w-8 text-white" />
               </motion.div>
 
               {/* Content with enhanced typography */}
-              <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+              <h3 className="text-xl font-semibold mb-3 tracking-tight">{feature.title}</h3>
               <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+
+              {/* Subtle arrow indicator that appears on hover */}
+              <motion.div
+                className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                initial={{ x: -5, opacity: 0 }}
+                whileHover={{ x: 0, opacity: 1 }}
+              >
+                <ArrowRight className="h-5 w-5 text-primary/70" />
+              </motion.div>
             </div>
           </motion.div>
         ))}

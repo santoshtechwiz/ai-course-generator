@@ -10,43 +10,46 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 const testimonials = [
   {
     quote:
-      "CourseAI has completely transformed how I create content. What used to take weeks now takes minutes, and the quality is even better.",
+      "CourseAI has completely transformed how I create content. What used to take days now takes minutes, and the quality is even better. The AI understands exactly what I'm trying to achieve.",
     author: "Sarah Johnson",
-    role: "Content Creator",
+    role: "Digital Creator",
     avatar: "/placeholder.svg?height=100&width=100&text=SJ",
     id: "testimonial-1",
   },
   {
     quote:
-      "As a professional, I need to create content quickly without sacrificing quality. CourseAI delivers exactly that, saving me countless hours of work.",
+      "As a professional, I need to create engaging content quickly without sacrificing quality. CourseAI delivers exactly that, saving me countless hours while helping me produce more impactful material.",
     author: "Michael Chen",
-    role: "Professional Trainer",
+    role: "Content Strategist",
     avatar: "/placeholder.svg?height=100&width=100&text=MC",
     id: "testimonial-2",
   },
   {
     quote:
-      "The AI-generated quizzes are incredibly effective at testing comprehension. My audience's engagement has improved significantly since I started using CourseAI.",
+      "The AI-generated interactive elements are incredibly effective at boosting engagement. My audience's response has improved significantly since I started using CourseAI for my digital content.",
     author: "Emily Rodriguez",
-    role: "Online Educator",
+    role: "Brand Consultant",
     avatar: "/placeholder.svg?height=100&width=100&text=ER",
     id: "testimonial-3",
   },
   {
     quote:
-      "I was skeptical about AI-generated content, but CourseAI has exceeded all my expectations. The materials are engaging, accurate, and save me so much time.",
+      "I was skeptical about AI-generated content, but CourseAI has exceeded all my expectations. The materials are engaging, visually appealing, and save me so much time in my creative process.",
     author: "David Kim",
-    role: "Digital Creator",
+    role: "Creative Director",
     avatar: "/placeholder.svg?height=100&width=100&text=DK",
     id: "testimonial-4",
   },
 ]
 
+// Optimize the testimonials component for better performance and accessibility
 const TestimonialsSlider = () => {
   const [activeIndex, setActiveIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.2 })
+  const APPLE_EASING = [0.22, 0.61, 0.36, 1]
 
+  // Use useCallback for navigation functions to prevent unnecessary re-renders
   const nextTestimonial = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % testimonials.length)
   }, [])
@@ -55,7 +58,7 @@ const TestimonialsSlider = () => {
     setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
   }, [])
 
-  // Add keyboard navigation
+  // Add keyboard navigation and accessibility
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") {
@@ -69,55 +72,54 @@ const TestimonialsSlider = () => {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [nextTestimonial, prevTestimonial])
 
-  // Apple-style animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.8,
-        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  }
+  // Auto-advance testimonials with pause on hover
+  const [isPaused, setIsPaused] = useState(false)
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-      },
-    },
-  }
+  useEffect(() => {
+    if (isPaused) return
+
+    const interval = setInterval(() => {
+      nextTestimonial()
+    }, 6000)
+
+    return () => clearInterval(interval)
+  }, [isPaused, nextTestimonial])
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
-      <motion.div
-        className="text-center mb-16"
-        variants={containerVariants}
-        initial="hidden"
-        animate={isInView ? "visible" : "hidden"}
-      >
+    <div
+      className="container max-w-6xl mx-auto px-4 md:px-6"
+      ref={containerRef}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <div className="text-center mb-16">
         <motion.div
-          variants={itemVariants}
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, ease: APPLE_EASING }}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
-          Testimonials
+          Success Stories
         </motion.div>
 
-        <motion.h2 variants={itemVariants} className="text-3xl md:text-5xl font-bold mb-6">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: APPLE_EASING }}
+          className="text-3xl md:text-5xl font-bold mb-6"
+        >
           What our users are saying
         </motion.h2>
 
-        <motion.p variants={itemVariants} className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: APPLE_EASING }}
+          className="text-xl text-muted-foreground max-w-2xl mx-auto"
+        >
           Join thousands of creators who are building smarter content experiences with CourseAI
         </motion.p>
-      </motion.div>
+      </div>
 
       <div className="relative max-w-4xl mx-auto">
         {/* Navigation buttons with Apple-style animations */}
@@ -125,7 +127,7 @@ const TestimonialsSlider = () => {
           <motion.div
             whileHover={{ scale: 1.1, x: -3 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{ duration: 0.2, ease: APPLE_EASING }}
           >
             <Button
               variant="outline"
@@ -143,7 +145,7 @@ const TestimonialsSlider = () => {
           <motion.div
             whileHover={{ scale: 1.1, x: 3 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{ duration: 0.2, ease: APPLE_EASING }}
           >
             <Button
               variant="outline"
@@ -173,7 +175,7 @@ const TestimonialsSlider = () => {
                 type: "spring",
                 stiffness: 300,
                 damping: 30,
-                ease: [0.25, 0.1, 0.25, 1],
+                ease: APPLE_EASING,
               },
             }}
             style={{ willChange: "transform" }}
@@ -193,7 +195,7 @@ const TestimonialsSlider = () => {
                       initial={{ opacity: 0, y: 30, rotateX: 10 }}
                       animate={{ opacity: 1, y: 0, rotateX: 0 }}
                       exit={{ opacity: 0, y: -30, rotateX: -10 }}
-                      transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+                      transition={{ duration: 0.7, ease: APPLE_EASING }}
                       className="bg-card/30 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-border/10 shadow-lg text-center"
                       style={{
                         transformPerspective: "1200px",
@@ -203,7 +205,7 @@ const TestimonialsSlider = () => {
                       <motion.div
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 0.3 }}
-                        transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                        transition={{ duration: 0.7, delay: 0.2, ease: APPLE_EASING }}
                       >
                         <Quote className="h-14 w-14 text-primary/30 mx-auto mb-6" aria-hidden="true" />
                       </motion.div>
@@ -212,7 +214,7 @@ const TestimonialsSlider = () => {
                         className="text-xl md:text-2xl italic mb-8 leading-relaxed"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                        transition={{ duration: 0.7, delay: 0.3, ease: APPLE_EASING }}
                       >
                         {testimonial.quote}
                       </motion.p>
@@ -221,13 +223,13 @@ const TestimonialsSlider = () => {
                         className="flex items-center justify-center"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                        transition={{ duration: 0.7, delay: 0.4, ease: APPLE_EASING }}
                       >
                         <motion.div
                           whileHover={{ scale: 1.1, y: -2 }}
-                          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                          transition={{ duration: 0.3, ease: APPLE_EASING }}
                         >
-                          <Avatar className="h-16 w-16 mr-4 border-2 border-primary/10">
+                          <Avatar className="h-16 w-16 mr-4 border-2 border-primary/10 shadow-lg">
                             <AvatarImage src={testimonial.avatar} alt={testimonial.author} />
                             <AvatarFallback>
                               {testimonial.author
@@ -262,7 +264,7 @@ const TestimonialsSlider = () => {
               role="tab"
               whileHover={{ scale: 1.6 }}
               whileTap={{ scale: 0.9 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+              transition={{ duration: 0.3, ease: APPLE_EASING }}
             />
           ))}
         </div>
