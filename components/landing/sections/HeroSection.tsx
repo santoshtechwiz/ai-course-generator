@@ -1,12 +1,11 @@
 "use client"
 
-import type React from "react"
-
 import { useRef, useState, useEffect } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "framer-motion"
 import { ChevronDown, ArrowRight, Play } from "lucide-react"
 
 import { useMobile } from "@/hooks/use-mobile"
+import { FeedbackButton } from "@/components/ui/feedback-button"
 
 interface HeroSectionProps {
   scrollToFeatures: () => void
@@ -92,6 +91,20 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
     }),
   }
 
+  // Simulate async actions for demo purposes
+  const handleExploreFeatures = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    scrollToFeatures()
+    return true
+  }
+
+  const handleWatchDemo = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    scrollToHowItWorks()
+    return true
+  }
+
+  // Update the hero section for better visual appeal and performance
   return (
     <div
       ref={containerRef}
@@ -157,7 +170,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
                 }),
               }}
             >
-              Create and learn with{" "}
+              Create and share with{" "}
             </motion.span>
             <motion.span
               className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60"
@@ -198,7 +211,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
                 }),
               }}
             >
-              content creation
+              interactive experiences
             </motion.span>
           </motion.h1>
         </div>
@@ -210,8 +223,8 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
           className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10"
           style={{ y: subtitleY }}
         >
-          Transform your ideas into engaging content with AI-generated materials, interactive quizzes, and personalized
-          learning paths.
+          Transform your ideas into engaging content with AI-generated materials, interactive elements, and personalized
+          experiences that captivate your audience.
         </motion.p>
 
         <motion.div
@@ -221,8 +234,14 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
           style={{ y: buttonsY }}
         >
-          <AppleButton onClick={scrollToFeatures} isPrimary={true}>
-            Get Started
+          <FeedbackButton
+            size="lg"
+            className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
+            loadingText="Loading features..."
+            successText="Exploring features"
+            onClickAsync={handleExploreFeatures}
+          >
+            Explore Features
             <motion.span
               className="inline-block ml-2"
               initial={{ x: 0 }}
@@ -231,16 +250,23 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
             >
               <ArrowRight className="h-5 w-5" />
             </motion.span>
-          </AppleButton>
+          </FeedbackButton>
 
-          <AppleButton onClick={scrollToHowItWorks} isPrimary={false}>
+          <FeedbackButton
+            size="lg"
+            variant="outline"
+            className="px-8 py-6 text-lg rounded-full flex items-center"
+            loadingText="Loading demo..."
+            successText="Opening demo"
+            onClickAsync={handleWatchDemo}
+          >
             <Play className="h-5 w-5 mr-2" />
             Watch Demo
-          </AppleButton>
+          </FeedbackButton>
         </motion.div>
       </div>
 
-      {/* Hero Video/Image with advanced 3D parallax */}
+      {/* Hero Image with advanced 3D parallax */}
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -256,21 +282,181 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
         className="w-full max-w-5xl mx-auto mt-16 px-4 relative z-0"
       >
         <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-          {/* Enhanced reflection effect */}
-          <div className="absolute bottom-0 left-0 right-0 h-[20%] bg-gradient-to-t from-white/10 to-transparent transform scale-y-[-1] blur-sm opacity-30"></div>
+          {/* Main content display */}
+          <div className="aspect-video bg-gradient-to-br from-background/80 to-muted/30 backdrop-blur-sm relative overflow-hidden">
+            {/* Content creation visualization */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                className="w-4/5 h-4/5 rounded-xl bg-background/40 backdrop-blur-md border border-primary/10 p-6 flex flex-col"
+                animate={{
+                  y: [0, -5, 0],
+                  boxShadow: [
+                    "0 0 0 0 rgba(var(--primary-rgb), 0)",
+                    "0 20px 50px -12px rgba(var(--primary-rgb), 0.15)",
+                    "0 0 0 0 rgba(var(--primary-rgb), 0)",
+                  ],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Number.POSITIVE_INFINITY,
+                  repeatType: "reverse",
+                  ease: [0.25, 0.1, 0.25, 1],
+                }}
+              >
+                {/* Simulated content creation interface */}
+                <div className="flex items-center mb-4">
+                  <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <div className="ml-auto flex space-x-2">
+                    {[...Array(3)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="w-6 h-2 rounded-full bg-primary/20"
+                        animate={{ opacity: [0.3, 0.7, 0.3] }}
+                        transition={{
+                          duration: 2,
+                          repeat: Number.POSITIVE_INFINITY,
+                          delay: i * 0.3,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
 
-          {/* Apple-style highlight effect */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.1, 0] }}
-            transition={{
-              duration: 3,
-              repeat: Number.POSITIVE_INFINITY,
-              repeatType: "reverse",
-              ease: "easeInOut",
-            }}
-          />
+                {/* Content blocks */}
+                <div className="flex-1 flex flex-col space-y-3">
+                  <motion.div
+                    className="h-6 w-3/4 bg-primary/10 rounded-md"
+                    animate={{ width: ["60%", "75%", "60%"] }}
+                    transition={{
+                      duration: 8,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "reverse",
+                      ease: "easeInOut",
+                    }}
+                  />
+
+                  <div className="flex space-x-3">
+                    <motion.div
+                      className="h-24 w-1/3 bg-primary/5 rounded-md"
+                      animate={{ height: ["6rem", "7rem", "6rem"] }}
+                      transition={{
+                        duration: 10,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                        ease: "easeInOut",
+                      }}
+                    />
+                    <motion.div
+                      className="h-24 w-1/3 bg-primary/10 rounded-md"
+                      animate={{ height: ["7rem", "5rem", "7rem"] }}
+                      transition={{
+                        duration: 9,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                        ease: "easeInOut",
+                        delay: 0.5,
+                      }}
+                    />
+                    <motion.div
+                      className="h-24 w-1/3 bg-primary/5 rounded-md"
+                      animate={{ height: ["5rem", "8rem", "5rem"] }}
+                      transition={{
+                        duration: 11,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                        ease: "easeInOut",
+                        delay: 1,
+                      }}
+                    />
+                  </div>
+
+                  <motion.div
+                    className="h-4 w-1/2 bg-primary/10 rounded-md"
+                    animate={{ width: ["40%", "55%", "40%"] }}
+                    transition={{
+                      duration: 7,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "reverse",
+                      ease: "easeInOut",
+                    }}
+                  />
+
+                  <motion.div
+                    className="h-20 w-full bg-primary/5 rounded-md"
+                    animate={{ height: ["5rem", "6rem", "5rem"] }}
+                    transition={{
+                      duration: 12,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "reverse",
+                      ease: "easeInOut",
+                    }}
+                  />
+                </div>
+
+                {/* Animated cursor */}
+                <motion.div
+                  className="absolute w-3 h-3 rounded-full bg-primary"
+                  animate={{
+                    x: [100, 300, 200, 400, 100],
+                    y: [100, 150, 250, 180, 100],
+                    scale: [1, 1.2, 1, 0.8, 1],
+                    opacity: [0.7, 1, 0.7],
+                  }}
+                  transition={{
+                    duration: 15,
+                    repeat: Number.POSITIVE_INFINITY,
+                    repeatType: "loop",
+                    ease: "linear",
+                  }}
+                />
+              </motion.div>
+            </div>
+
+            {/* Floating elements */}
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={`float-${i}`}
+                className="absolute rounded-lg bg-gradient-to-br from-primary/20 to-primary/5"
+                style={{
+                  width: 30 + Math.random() * 60,
+                  height: 30 + Math.random() * 60,
+                  left: `${Math.random() * 80 + 10}%`,
+                  top: `${Math.random() * 80 + 10}%`,
+                }}
+                animate={{
+                  y: [0, -20 - Math.random() * 30, 0],
+                  x: [0, Math.random() * 20 - 10, 0],
+                  rotate: [0, Math.random() * 30 - 15, 0],
+                  scale: [1, 1 + Math.random() * 0.2, 1],
+                }}
+                transition={{
+                  duration: 5 + Math.random() * 5,
+                  repeat: Number.POSITIVE_INFINITY,
+                  repeatType: "reverse",
+                  ease: "easeInOut",
+                  delay: i * 0.5,
+                }}
+              />
+            ))}
+
+            {/* Enhanced reflection effect */}
+            <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-white/20 to-transparent transform scale-y-[-1] blur-sm opacity-30"></div>
+
+            {/* Apple-style highlight effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.2, 0] }}
+              transition={{
+                duration: 5,
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "reverse",
+                ease: "easeInOut",
+              }}
+            />
+          </div>
         </div>
       </motion.div>
 
@@ -327,76 +513,36 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
   )
 }
 
-// Enhance the AppleButton component with more refined hover effects
-const AppleButton = ({
-  children,
-  onClick,
-  isPrimary = false,
-}: {
-  children: React.ReactNode
-  onClick: () => void
-  isPrimary?: boolean
-}) => {
-  return (
-    <motion.button
-      onClick={onClick}
-      className={`
-        px-8 py-6 text-lg rounded-full flex items-center justify-center
-        ${
-          isPrimary
-            ? "bg-primary text-primary-foreground shadow-lg"
-            : "bg-transparent border border-primary/20 text-foreground"
-        }
-      `}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{
-        scale: 1.05,
-        boxShadow: isPrimary
-          ? "0 10px 25px -5px rgba(var(--primary-rgb), 0.35)"
-          : "0 10px 25px -5px rgba(0, 0, 0, 0.12)",
-        y: -2,
-      }}
-      whileTap={{ scale: 0.98, y: 0 }}
-      transition={{
-        duration: 0.3,
-        ease: APPLE_EASING,
-      }}
-    >
-      {children}
-    </motion.button>
-  )
-}
-
-// Enhance the particles animation for a more premium feel
+// Optimize the particles animation for better performance
 const AppleStyleParticles = () => {
   const isMobile = useMobile()
-  const particleCount = isMobile ? 10 : 20
+  const particleCount = isMobile ? 10 : 20 // Reduce count on mobile for better performance
 
   return (
     <>
       {Array.from({ length: particleCount }).map((_, i) => {
-        const size = Math.random() * 25 + 5
-        const depth = Math.random() * 0.6 + 0.4 // For 3D effect
+        const size = Math.random() * 35 + 5
+        const depth = Math.random() * 0.7 + 0.3
 
         return (
           <motion.div
             key={`particle-${i}`}
-            className="absolute rounded-full bg-primary/10"
+            className="absolute rounded-full bg-gradient-to-br from-primary/10 to-primary/5"
             initial={{
               x: `${Math.random() * 100}%`,
               y: `${Math.random() * 100}%`,
               scale: depth,
-              opacity: Math.random() * 0.4 + 0.1,
-              filter: `blur(${(1 - depth) * 4}px)`, // Blurrier if further away
+              opacity: Math.random() * 0.5 + 0.1,
+              filter: `blur(${(1 - depth) * 5}px)`,
             }}
             animate={{
               y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
               x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
-              rotate: [0, Math.random() * 360], // Subtle rotation
+              rotate: [0, Math.random() * 360],
+              scale: [depth, depth * (1 + Math.random() * 0.2), depth],
             }}
             transition={{
-              duration: Math.random() * 25 + 15,
+              duration: Math.random() * 30 + 20,
               repeat: Number.POSITIVE_INFINITY,
               repeatType: "reverse",
               ease: "linear",
@@ -404,7 +550,7 @@ const AppleStyleParticles = () => {
             style={{
               width: `${size}px`,
               height: `${size}px`,
-              zIndex: Math.floor(depth * 10), // 3D layering effect
+              zIndex: Math.floor(depth * 10),
               willChange: "transform, opacity",
             }}
           />

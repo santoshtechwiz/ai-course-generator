@@ -2,13 +2,12 @@
 
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Sparkles, Users, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import MissionIcon from "../svg/MissionIcon"
 import VisionIcon from "../svg/VisionIcon"
 import TeamIcon from "../svg/TeamIcon"
-import ValueIcon from "../svg/ValueIcon"
 import RevealAnimation from "../RevealAnimation"
 
 const AboutSection = () => {
@@ -42,18 +41,24 @@ const AboutSection = () => {
   const values = [
     {
       title: "Innovation at the Core",
-      description: "We continuously explore new possibilities to enhance content creation with cutting-edge AI technology.",
+      description:
+        "We continuously explore new possibilities to enhance content creation with cutting-edge AI technology.",
       color: "from-purple-500 to-indigo-500",
+      icon: "sparkles",
     },
     {
       title: "Accessible for Everyone",
-      description: "We believe that high-quality educational tools should be available to everyone, regardless of location or background.",
+      description:
+        "We believe that high-quality creative tools should be available to everyone, regardless of technical expertise.",
       color: "from-blue-500 to-sky-500",
+      icon: "users",
     },
     {
       title: "Commitment to Excellence",
-      description: "We strive to deliver exceptional tools and experiences that exceed expectations and drive meaningful results.",
+      description:
+        "We strive to deliver exceptional tools and experiences that exceed expectations and drive meaningful results.",
       color: "from-orange-500 to-amber-500",
+      icon: "star",
     },
   ]
 
@@ -124,16 +129,25 @@ const AboutSection = () => {
         transition={{ duration: 0.7, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
         className="mt-24 text-center"
       >
-        <h3 className="text-2xl md:text-3xl font-bold mb-12">My Values</h3>
+        <h3 className="text-2xl md:text-3xl font-bold mb-12">Our Values</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {values.map((value, index) => (
             <RevealAnimation key={value.title} delay={0.9 + index * 0.1}>
               <div className="bg-card/30 backdrop-blur-sm rounded-xl p-6 border border-border/10 h-full flex flex-col items-center hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
                 <div className={`p-4 rounded-full bg-gradient-to-br ${value.color} text-white mb-4 shadow-lg`}>
-                  <ValueIcon index={index} className="w-8 h-8" />
+                  {value.icon === "sparkles" && <Sparkles className="w-8 h-8" />}
+                  {value.icon === "users" && <Users className="w-8 h-8" />}
+                  {value.icon === "star" && <Star className="w-8 h-8" />}
                 </div>
                 <h4 className="text-xl font-semibold mb-2">{value.title}</h4>
                 <p className="text-muted-foreground">{value.description}</p>
+
+                {/* Add subtle hover effect */}
+                <motion.div
+                  className="w-12 h-1 bg-gradient-to-r from-primary/50 to-primary/0 rounded-full mt-4"
+                  whileHover={{ width: 80 }}
+                  transition={{ duration: 0.5 }}
+                />
               </div>
             </RevealAnimation>
           ))}
