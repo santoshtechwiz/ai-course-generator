@@ -22,6 +22,19 @@ import { useRouter } from "next/navigation"
 // Update the APPLE_EASING constant for smoother animations
 const APPLE_EASING = [0.22, 0.61, 0.36, 1] // Enhanced cubic bezier curve for smoother animations
 
+// Add this utility function for debouncing
+const debounce = (func, wait) => {
+  let timeout
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout)
+      func(...args)
+    }
+    clearTimeout(timeout)
+    timeout = setTimeout(later, wait)
+  }
+}
+
 const AppleLandingPage = () => {
   const { theme } = useTheme()
   const isMobile = useMobile()
@@ -84,33 +97,31 @@ const AppleLandingPage = () => {
 
   // Handle scroll events
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = debounce(() => {
       const scrollPosition = window.scrollY
       setShowScrollTop(scrollPosition > 500)
 
-      requestAnimationFrame(() => {
-        const sections = [
-          { id: "hero", ref: heroRef },
-          { id: "features", ref: featuresRef },
-          { id: "showcase", ref: showCaseRef },
-          { id: "about", ref: aboutRef },
-          { id: "how-it-works", ref: howItWorksRef },
-          { id: "testimonials", ref: testimonialsRef },
-          { id: "faq", ref: faqRef },
-        ]
+      const sections = [
+        { id: "hero", ref: heroRef },
+        { id: "features", ref: featuresRef },
+        { id: "showcase", ref: showCaseRef },
+        { id: "about", ref: aboutRef },
+        { id: "how-it-works", ref: howItWorksRef },
+        { id: "testimonials", ref: testimonialsRef },
+        { id: "faq", ref: faqRef },
+      ]
 
-        for (let i = sections.length - 1; i >= 0; i--) {
-          const section = sections[i]
-          if (section.ref.current) {
-            const rect = section.ref.current.getBoundingClientRect()
-            if (rect.top <= window.innerHeight / 3) {
-              setActiveSection(section.id)
-              break
-            }
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i]
+        if (section.ref.current) {
+          const rect = section.ref.current.getBoundingClientRect()
+          if (rect.top <= window.innerHeight / 3) {
+            setActiveSection(section.id)
+            break
           }
         }
-      })
-    }
+      }
+    }, 50) // 50ms debounce time
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
@@ -219,8 +230,8 @@ const AppleLandingPage = () => {
             loadingText="Redirecting..."
             successText="Redirecting..."
             onClickAsync={async () => {
-              router.push("/dashboard/explore");
-              return true;
+              router.push("/dashboard/explore")
+              return true
             }}
           >
             Get Started
@@ -445,14 +456,6 @@ const AppleLandingPage = () => {
                       <Check className="h-5 w-5 text-primary mr-2" />
                       <span className="text-sm">1-month free trial</span>
                     </motion.div>
-                    <motion.div
-                      className="flex items-center"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.3, ease: APPLE_EASING }}
-                    >
-                      <Check className="h-5 w-5 text-primary mr-2" />
-                      <span className="text-sm">Cancel anytime</span>
-                    </motion.div>
                   </div>
                 </RevealAnimation>
               </div>
@@ -464,28 +467,17 @@ const AppleLandingPage = () => {
       {/* Scroll to top button */}
       <AnimatePresence>
         {showScrollTop && (
-          <motion.div
+          <motion.button
+            onClick={scrollToTop}
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.3, ease: APPLE_EASING }}
-            className="fixed bottom-6 right-6 z-50"
+            className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg bg-primary hover:bg-primary/90 p-3 text-primary-foreground"
+            aria-label="Scroll to top"
           >
-            <FeedbackButton
-              variant="ghost"
-              size="icon"
-              className="rounded-full shadow-lg bg-primary hover:bg-primary/90"
-              loadingText=""
-              onClickAsync={async () => {
-                scrollToTop()
-                return true
-              }}
-              aria-label="Scroll to top"
-              showIcon={false}
-            >
-              <ArrowUp className="h-5 w-5" />
-            </FeedbackButton>
-          </motion.div>
+            <ArrowUp className="h-5 w-5" />
+          </motion.button>
         )}
       </AnimatePresence>
     </div>
@@ -498,7 +490,7 @@ export default AppleLandingPage
 const RevealAnimation = ({
   children,
   delay = 0,
-  direction = "up",
+  direction = "up" | "down" | "left" | "right",
   distance = 30,
   duration = 1.0,
   className = "",
@@ -511,7 +503,12 @@ const RevealAnimation = ({
   className?: string
 }) => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.15, margin: "-50px 0px" })
+  const isInView = useInView(ref, {
+    once: true,
+    amount: 0.15,
+    margin: "-50px 0px",
+    rootMargin: "-50px 0px",
+  })
 
   const getInitialPosition = () => {
     switch (direction) {
@@ -528,24 +525,17 @@ const RevealAnimation = ({
     }
   }
 
-  const getAnimationTarget = () => {
-    switch (direction) {
-      case "up":
-      case "down":
-        return isInView ? { opacity: 1, y: 0 } : getInitialPosition()
-      case "left":
-      case "right":
-        return isInView ? { opacity: 1, x: 0 } : getInitialPosition()
-      default:
-        return isInView ? { opacity: 1, y: 0 } : getInitialPosition()
-    }
+  const variants = {
+    hidden: getInitialPosition(),
+    visible: direction === "up" || direction === "down" ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 },
   }
 
   return (
     <motion.div
       ref={ref}
-      initial={getInitialPosition()}
-      animate={getAnimationTarget()}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={variants}
       transition={{
         duration,
         delay,

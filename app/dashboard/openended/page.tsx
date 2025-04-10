@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 
 
 export const metadata: Metadata = {
-  title: "Open-Ended Quizzes | Course AI",
+  title: "Free Open-Ended Quizzes Generator",
   description:
     "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
   keywords: [
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "developer assessment",
   ],
   openGraph: {
-    title: "Open-Ended Quizzes | Course AI",
+    title: "Open-Ended Quizzes Generator",
     description:
       "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
     url: "https://courseai.io/dashboard/openended",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Open-Ended Quizzes | Course AI",
+    title: "Open-Ended Quizzes Generator",
     description:
       "Develop critical thinking skills with our thought-provoking open-ended quizzes. Perfect for in-depth learning and self-expression.",
     images: ["/twitter-image-openended.jpg"],

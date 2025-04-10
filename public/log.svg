@@ -1,9 +1,0 @@
-
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="200" height="50">
-  <!-- Outer Circle -->
-  <circle cx="25" cy="25" r="20" fill="none" stroke="#40BEBE" stroke-width="5" />
-  <!-- Inner Circle -->
-  <circle cx="25" cy="25" r="10" fill="none" stroke="#40BEBE" stroke-width="5" />
-  <!-- Text -->
-  <text x="50" y="32" font-family="Arial, sans-serif" font-size="20" fill="#1A202C" font-weight="bold">CourseAI</text>
-</svg>

@@ -7,51 +7,47 @@ import { Zap, FileText, HelpCircle, Layers, Users, Youtube, ArrowRight } from "l
 // Update the features array to be more engaging and clear
 const features = [
   {
-    icon: Youtube,
-    title: "Smart Video Integration",
+    icon: Zap,
+    title: "Create Courses Instantly",
     description:
-      "Seamlessly incorporate existing videos into your content with AI-powered analysis that extracts key points and creates interactive elements.",
-    gradient: "from-red-500 to-pink-500",
-    color: "from-red-500 to-pink-500",
+      "Enter a topic—CourseAI auto-generates a full course with structured lessons and quizzes using AI.",
+    gradient: "from-yellow-500 to-orange-500",
+    color: "from-yellow-500 to-orange-500",
   },
   {
     icon: FileText,
-    title: "Intelligent Content Analysis",
+    title: "AI Quiz Generation",
     description:
-      "Our AI automatically analyzes and organizes content, creating structured materials that engage your audience.",
+      "Automatically generate quizzes from your course content. No manual question writing needed.",
     gradient: "from-blue-500 to-cyan-500",
     color: "from-blue-500 to-cyan-500",
   },
   {
     icon: HelpCircle,
-    title: "Interactive Elements",
+    title: "Create Your Own Quizzes",
     description:
-      "Create engaging interactive components including quizzes, polls, and dynamic content that adapts to user behavior.",
+      "Build custom quizzes with MCQs, coding tasks, fill-in-the-blanks, and open-ended questions.",
     gradient: "from-green-500 to-emerald-500",
     color: "from-green-500 to-emerald-500",
   },
   {
-    icon: Layers,
-    title: "Customizable Experiences",
-    description: "Tailor every aspect of your content to match your brand and audience needs with intuitive controls.",
-    gradient: "from-purple-500 to-violet-500",
-    color: "from-purple-500 to-violet-500",
-  },
-  {
-    icon: Zap,
-    title: "Rapid Creation",
-    description: "Build professional-quality content in minutes instead of hours, with AI handling the complex work.",
-    gradient: "from-yellow-500 to-orange-500",
-    color: "from-yellow-500 to-orange-500",
-  },
-  {
     icon: Users,
-    title: "Audience Insights",
-    description: "Gain valuable data on how users interact with your content to continuously improve engagement.",
+    title: "Progress Tracking",
+    description:
+      "Monitor learner activity—track quiz scores, completion status, and engagement easily.",
     gradient: "from-indigo-500 to-blue-500",
     color: "from-indigo-500 to-blue-500",
   },
+  {
+    icon: Layers,
+    title: "Private Course Creation",
+    description:
+      "Keep your courses private and secure. Only you and the people you allow can access them.",
+    gradient: "from-purple-500 to-violet-500",
+    color: "from-purple-500 to-violet-500",
+  },
 ]
+
 
 const FeatureShowcase = () => {
   const containerRef = useRef<HTMLDivElement>(null)
