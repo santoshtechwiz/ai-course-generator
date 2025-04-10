@@ -29,25 +29,31 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const keyTerms = titleWords.filter((word) => word.length > 3)
 
   return generatePageMetadata({
-    title: `${quiz.title} | Interactive Programming Flashcards`,
-    description: `Master ${quiz.title?.toLowerCase()} concepts with our interactive flashcards. Perfect for all developers looking to strengthen their knowledge through active recall and spaced repetition. ${quiz.questions?.length || 0} practice questions included.`,
+    title: `Free ${quiz.title} Flashcard Generator | Practice Coding with Interactive Flashcards`,
+    description: `Boost your understanding of ${quiz.title?.toLowerCase()} with our free interactive flashcard generator. Ideal for developers and learners, this tool uses spaced repetition and active recall to help you master concepts faster. Includes ${quiz.questions?.length || 0} practice questions tailored to sharpen your coding skills.`,
     path: `/dashboard/flashcard/${slug}`,
     keywords: [
-      `${quiz.title?.toLowerCase()} flashcards`,
+      `free ${quiz.title?.toLowerCase()} flashcard generator`,
+      `create ${quiz.title?.toLowerCase()} flashcards online`,
       `${quiz.title?.toLowerCase()} practice questions`,
-      `learn ${quiz.title?.toLowerCase()}`,
-      "programming study aids",
-      "coding concepts",
+      `interactive ${quiz.title?.toLowerCase()} quiz`,
+      `learn ${quiz.title?.toLowerCase()} with flashcards`,
+      `online flashcard maker for ${quiz.title?.toLowerCase()}`,
+      "free flashcard generator",
+      "coding flashcards",
+      "programming flashcard maker",
       "developer learning tools",
-      "programming memorization",
-      "spaced repetition",
-      "active recall",
-      "tech learning",
-      ...keyTerms.map((term) => `${term} programming flashcards`),
+      "interactive coding quizzes",
+      "spaced repetition for programmers",
+      "active recall study method",
+      "tech flashcards",
+      "flashcards for coding interviews",
+      ...keyTerms.map((term) => `free ${term} flashcards`),
     ],
     ogType: "article",
     ogImage: `/api/og?title=${encodeURIComponent(quiz.title)}&description=${encodeURIComponent("Interactive Programming Flashcards")}`,
-  })
+  });
+  
 }
 
 interface FlashCardsPageProps {

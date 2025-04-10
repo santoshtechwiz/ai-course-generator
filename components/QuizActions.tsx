@@ -374,29 +374,19 @@ export function QuizActions({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div>
-                            <QuizPDFDownload
-                              quizData={data}
-                              config={{
-                                showOptions: true,
-                                showAnswerSpace: true,
-                                answerSpaceHeight: 40,
-                                showAnswers: true,
-                              }}
-                            >
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "h-12 w-12 rounded-full flex items-center justify-center",
-                                  "bg-blue-100 text-blue-600 hover:bg-blue-200",
-                                  "dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60",
-                                  !canDownloadPDF() && "opacity-60 cursor-not-allowed",
-                                )}
-                                disabled={!canDownloadPDF()}
-                                aria-label="Download as PDF"
-                              >
-                                <Download className="h-5 w-5" />
-                              </Button>
-                            </QuizPDFDownload>
+                            <div>
+                              <QuizPDFDownload
+                                quizData={data}
+                                config={{
+                                  showOptions: true,
+                                  showAnswerSpace: true,
+                                  answerSpaceHeight: 40,
+                                  showAnswers: true,
+                                }}
+                              />
+                             
+                          
+                            </div>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="text-xs py-1 px-2">

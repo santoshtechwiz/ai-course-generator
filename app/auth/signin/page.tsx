@@ -8,7 +8,7 @@ import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Sign In | Course AI",
+  title: "Sign In ",
   description: "Sign in to your Course AI account to access your courses, quizzes, and learning progress.",
   keywords: ["sign in", "login", "account access", "user authentication", "course platform login"],
   robots: {

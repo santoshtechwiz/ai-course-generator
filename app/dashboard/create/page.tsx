@@ -11,7 +11,7 @@ import PopularCourses from "@/components/features/create/PopularCourses"
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "Create Your Course | Course AI",
+  title: "Create Free Video  Course Using AI ",
   description:
     "Design and build your own interactive course with our intuitive course creation tools. Share your expertise and engage learners effectively.",
   keywords: [
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "AI course builder",
   ],
   openGraph: {
-    title: "Create Your Course | Course AI",
+    title: "Create Your Course ",
     description: "Design and build your own interactive course with our intuitive course creation tools.",
     url: "https://courseai.io/dashboard/explore",
     type: "website",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Create Your Course | Course AI",
+    title: "Create Your Course ",
     description: "Design and build your own interactive course with our intuitive course creation tools.",
     images: ["/twitter-image-create-course.jpg"],
   },

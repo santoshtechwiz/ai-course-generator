@@ -9,7 +9,7 @@ import ProfileStats from "@/components/features/profile/ProfileStats"
 import ProfileSubscription from "@/components/features/profile/ProfileSubscription"
 
 export const metadata: Metadata = {
-  title: "Your Profile | Course AI",
+  title: "Your Profile I",
   description:
     "Manage your Course AI profile, view your learning statistics, and track your progress across courses and quizzes.",
   keywords: [
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "learning dashboard",
   ],
   openGraph: {
-    title: "Your Profile | Course AI",
+    title: "Your Profile I",
     description:
       "Manage your Course AI profile, view your learning statistics, and track your progress across courses and quizzes.",
     url: "https://courseai.io/dashboard/profile",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Your Profile | Course AI",
+    title: "Your Profile I",
     description:
       "Manage your Course AI profile, view your learning statistics, and track your progress across courses and quizzes.",
     images: ["/twitter-image-profile.jpg"],

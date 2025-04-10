@@ -1,66 +1,111 @@
 "use client"
 
-/**
- * ReferralSystem Component
- *
- * This component displays the referral system UI and handles
- * referral code generation and sharing.
- */
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Share2, Copy, Check, Gift } from "lucide-react"
+import { Share2, Copy, Check, Gift, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface ReferralSystemProps {
   userId: string | null
 }
 
+interface ReferralData {
+  referralCode: string
+  totalReferrals: number
+  completedReferrals: number
+  pendingReferrals: number
+  tokensEarned: number
+}
+
 export function ReferralSystem({ userId }: ReferralSystemProps) {
-  const [referralCode, setReferralCode] = useState<string>("")
-  const [referrals, setReferrals] = useState<number>(0)
-  const [rewards, setRewards] = useState<number>(0)
+  const [referralData, setReferralData] = useState<ReferralData>({
+    referralCode: "",
+    totalReferrals: 0,
+    completedReferrals: 0,
+    pendingReferrals: 0,
+    tokensEarned: 0
+  })
+  const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
-    // Simulate fetching referral data
-    if (userId) {
-      //get the referral code from the server
-      fetch(`/api/referral/${userId}`)
-        .then((response) => response.json())
-        .then((data) => {
-          setReferralCode(data.referralCode)
-          setReferrals(data.referrals)
-          setRewards(data.rewards)
+    const fetchReferralData = async () => {
+      if (!userId) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/referrals`)
+        const data = await response.json()
+        
+        if (response.ok) {
+          setReferralData({
+            referralCode: data.referralCode || "",
+            totalReferrals: data.totalReferrals || 0,
+            completedReferrals: data.completedReferrals || 0,
+            pendingReferrals: data.pendingReferrals || 0,
+            tokensEarned: data.tokensEarned || 0
+          })
+        } else {
+          toast({
+            title: "Error",
+            description: data.error || "Failed to load referral data",
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching referral data:", error)
+        toast({
+          title: "Error",
+          description: "Failed to connect to server",
+          variant: "destructive",
         })
-        .catch((error) => {
-          console.error("Error fetching referral data:", error)
-        })
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [userId])
+
+    fetchReferralData()
+  }, [userId, toast])
 
   const copyToClipboard = () => {
-    const referralUrl = `${window.location.origin}/dashboard/subscription?ref=${referralCode}`
+    if (!referralData.referralCode) return
+    
+    const referralUrl = `${window.location.origin}/dashboard/subscription?ref=${referralData.referralCode}`
     navigator.clipboard.writeText(referralUrl)
     setCopied(true)
     toast({
-      title: "Copied to clipboard!",
-      description: "Referral link has been copied to your clipboard.",
-      variant: "default",
+      title: "Copied!",
+      description: "Referral link copied to clipboard",
     })
     setTimeout(() => setCopied(false), 2000)
   }
 
   const shareReferral = () => {
-    const referralUrl = `${window.location.origin}/dashboard/subscription?ref=${referralCode}`
+    if (!referralData.referralCode) {
+      toast({
+        title: "No referral code",
+        description: "Please wait while we generate your referral code",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const referralUrl = `${window.location.origin}/dashboard/subscription?ref=${referralData.referralCode}`
+    
     if (navigator.share) {
       navigator.share({
-        title: "Join me on Course AI",
-        text: "Get started with Course AI and receive a special discount!",
+        title: "Join me on this awesome platform!",
+        text: `Use my referral code ${referralData.referralCode} to get started with a special bonus!`,
         url: referralUrl,
+      }).catch(() => {
+        // Fallback if share fails
+        copyToClipboard()
       })
     } else {
       copyToClipboard()
@@ -83,6 +128,15 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
     )
   }
 
+  if (loading) {
+    return (
+      <Card className="flex flex-col items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-sm text-muted-foreground">Loading your referral information...</p>
+      </Card>
+    )
+  }
+
   return (
     <Card className="border-slate-200 dark:border-slate-700 shadow-md">
       <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-t-xl">
@@ -97,14 +151,18 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
-            <p className="text-sm text-muted-foreground mb-1">Successful Referrals</p>
-            <p className="text-2xl font-bold">{referrals}</p>
+            <p className="text-sm text-muted-foreground mb-1">Total Referrals</p>
+            <p className="text-2xl font-bold">{referralData.totalReferrals}</p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
+            <p className="text-sm text-muted-foreground mb-1">Completed</p>
+            <p className="text-2xl font-bold">{referralData.completedReferrals}</p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
             <p className="text-sm text-muted-foreground mb-1">Tokens Earned</p>
-            <p className="text-2xl font-bold">{rewards}</p>
+            <p className="text-2xl font-bold">{referralData.tokensEarned}</p>
           </div>
         </div>
 
@@ -114,28 +172,46 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
               Your Referral Code
             </label>
             <div className="flex">
-              <Input id="referral-code" value={referralCode} readOnly className="rounded-r-none font-mono" />
-              <Button variant="outline" className="rounded-l-none border-l-0" onClick={copyToClipboard}>
+              <Input 
+                id="referral-code" 
+                value={referralData.referralCode || "Generating..."} 
+                readOnly 
+                className="rounded-r-none font-mono" 
+              />
+              <Button 
+                variant="outline" 
+                className="rounded-l-none border-l-0" 
+                onClick={copyToClipboard}
+                disabled={!referralData.referralCode}
+              >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
             <Button
               onClick={shareReferral}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+              disabled={!referralData.referralCode}
             >
               <Share2 className="h-4 w-4 mr-2" />
               Share with Friends
             </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Earn 10 tokens for each successful referral
+            </p>
           </div>
         </div>
       </CardContent>
       <CardFooter className="bg-slate-50 dark:bg-slate-800 rounded-b-xl flex flex-col text-center text-sm text-muted-foreground">
         <p>For each friend who subscribes, you'll both receive 10 free tokens!</p>
+        {referralData.pendingReferrals > 0 && (
+          <p className="mt-1 text-blue-500 dark:text-blue-400">
+            You have {referralData.pendingReferrals} pending referrals
+          </p>
+        )}
       </CardFooter>
     </Card>
   )
 }
-

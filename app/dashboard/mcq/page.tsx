@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 
 
 export const metadata: Metadata = {
-  title: "Multiple Choice Quiz | Course AI",
+  title: "Free Multiple Choice Quiz Generator",
   description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
   keywords: [
     "multiple choice quiz",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "interactive test",
   ],
   openGraph: {
-    title: "Multiple Choice Quiz | Course AI",
+    title: "Free Multiple Choice Quiz Generator",
     description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
     url: "https://courseai.io/dashboard/mcq",
     type: "website",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Multiple Choice Quiz | Course AI",
+    title: "Free Multiple Choice Quiz Generator",
     description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
     images: ["/twitter-image-mcq.jpg"],
   },

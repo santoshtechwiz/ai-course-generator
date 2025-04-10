@@ -69,7 +69,7 @@ const PopularCourses: React.FC<PopularCoursesProps> = ({ courseDetails }) => {
               <CardHeader className="space-y-1 relative z-10">
                 <CardTitle className="flex justify-between items-center text-2xl">
                   <span className="group-hover:text-primary/90 transition-colors duration-300">
-                    {course.courseName}
+                    {course.title}
                   </span>
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 15 }}
