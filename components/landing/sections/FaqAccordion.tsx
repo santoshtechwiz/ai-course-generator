@@ -1,9 +1,12 @@
 "use client"
 
-import { useRef, useState } from "react"
+import type React from "react"
+
+import { useRef, useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence, useInView } from "framer-motion"
-import { Plus, Minus, Search } from "lucide-react"
+import { Plus, Minus, Search, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { FeedbackButton } from "@/components/ui/feedback-button"
 
 // Update the FAQ questions to reflect the new questions and answers provided by the user
 const faqs = [
@@ -69,46 +72,60 @@ const faqs = [
   },
 ]
 
-// Improve the FAQ accordion with Apple-style animations
+// Optimize the FAQ component for better accessibility and performance
 const FaqAccordion = () => {
   const [openItem, setOpenItem] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [isSearching, setIsSearching] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.2 })
+  const APPLE_EASING = [0.22, 0.61, 0.36, 1]
 
-  const filteredFaqs = faqs.filter(
-    (faq) =>
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  // Debounce search input to improve performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
-  const toggleItem = (id: string) => {
-    setOpenItem(openItem === id ? null : id)
-  }
+  // Memoize filtered FAQs to prevent unnecessary re-renders
+  const filteredFaqs = useMemo(() => {
+    if (!debouncedSearchQuery) return faqs
 
-  // Apple-style animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-      },
-    },
-  }
+    return faqs.filter(
+      (faq) =>
+        faq.question.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        faq.answer.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
+    )
+  }, [debouncedSearchQuery])
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-      },
-    },
+  const toggleItem = useCallback(async (id: string) => {
+    // Simulate a slight delay for the toggle action
+    setIsSearching(true)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    setOpenItem((prevOpenItem) => (prevOpenItem === id ? null : id))
+    setIsSearching(false)
+    return true
+  }, [])
+
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsSearching(true)
+    setSearchQuery(e.target.value)
+    // The search will be debounced, but we want to show the loading state immediately
+    setTimeout(() => setIsSearching(false), 500)
+  }, [])
+
+  // Custom hook for debouncing
+  function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value)
+      }, delay)
+
+      return () => {
+        clearTimeout(handler)
+      }
+    }, [value, delay])
+
+    return debouncedValue
   }
 
   return (
@@ -117,7 +134,7 @@ const FaqAccordion = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.6, ease: APPLE_EASING }}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
           FAQ
@@ -126,7 +143,7 @@ const FaqAccordion = () => {
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.6, delay: 0.1, ease: APPLE_EASING }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
           Frequently asked questions
@@ -135,7 +152,7 @@ const FaqAccordion = () => {
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.6, delay: 0.2, ease: APPLE_EASING }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
         >
           Find answers to common questions about CourseAI
@@ -146,25 +163,32 @@ const FaqAccordion = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.6, delay: 0.3, ease: APPLE_EASING }}
         className="relative mb-10"
         style={{ willChange: "transform, opacity" }}
       >
         <label htmlFor="faq-search" className="sr-only">
           Search questions
         </label>
-        <Search
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5"
-          aria-hidden="true"
-        />
-        <Input
-          id="faq-search"
-          type="text"
-          placeholder="Search questions..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 py-6 rounded-full bg-card/30 backdrop-blur-sm border-border/10"
-        />
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5"
+            aria-hidden="true"
+          />
+          <Input
+            id="faq-search"
+            type="text"
+            placeholder="Search questions..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="pl-10 py-6 rounded-full bg-card/30 backdrop-blur-sm border-border/10"
+          />
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* FAQ items with Apple-style animations */}
@@ -172,14 +196,20 @@ const FaqAccordion = () => {
         className="space-y-4"
         role="region"
         aria-label="Frequently Asked Questions"
-        variants={containerVariants}
-        initial="hidden"
-        animate={isInView ? "visible" : "hidden"}
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 0.6, delay: 0.4, ease: APPLE_EASING }}
         style={{ willChange: "transform, opacity" }}
       >
         {filteredFaqs.length > 0 ? (
-          filteredFaqs.map((faq) => (
-            <motion.div key={faq.id} variants={itemVariants} style={{ willChange: "transform, opacity" }}>
+          filteredFaqs.map((faq, index) => (
+            <motion.div
+              key={faq.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: 0.5 + index * 0.1, ease: APPLE_EASING }}
+              style={{ willChange: "transform, opacity" }}
+            >
               <div
                 className="bg-card/30 backdrop-blur-sm rounded-xl border border-border/10 overflow-hidden"
                 onClick={() => toggleItem(faq.id)}
@@ -198,22 +228,24 @@ const FaqAccordion = () => {
                   }}
                 >
                   <h3 className="text-lg font-medium">{faq.question}</h3>
-                  <motion.button
+                  <FeedbackButton
                     className="flex items-center justify-center h-8 w-8 rounded-full bg-muted/50 text-foreground"
                     aria-label={openItem === faq.id ? "Collapse answer" : "Expand answer"}
                     onClick={(e) => {
                       e.stopPropagation()
                       toggleItem(faq.id)
                     }}
-                    whileHover={{
-                      scale: 1.1,
-                      backgroundColor: "rgba(var(--primary-rgb), 0.1)",
+                    onClickAsync={async (e) => {
+                      e.stopPropagation()
+                      return toggleItem(faq.id)
                     }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                    variant="ghost"
+                    size="icon"
+                    showIcon={false}
+                    feedbackDuration={300}
                   >
                     {openItem === faq.id ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                  </motion.button>
+                  </FeedbackButton>
                 </div>
 
                 <AnimatePresence>
@@ -223,7 +255,7 @@ const FaqAccordion = () => {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                      transition={{ duration: 0.3, ease: APPLE_EASING }}
                     >
                       <div className="px-6 pb-6 text-muted-foreground">{faq.answer}</div>
                     </motion.div>
@@ -243,23 +275,25 @@ const FaqAccordion = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ duration: 0.6, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.6, delay: 0.8, ease: APPLE_EASING }}
         className="mt-12 text-center"
       >
         <p className="text-muted-foreground">
           Still have questions?{" "}
-          <motion.a
-            href="/contactus"
-            className="text-primary font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 rounded-sm"
-            whileHover={{
-              scale: 1.05,
-              color: "hsl(var(--primary))",
+          <FeedbackButton
+            variant="link"
+            className="text-primary font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 rounded-sm p-0"
+            onClickAsync={async () => {
+              await new Promise((resolve) => setTimeout(resolve, 800))
+              window.location.href = "/contactus"
+              return true
             }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+            loadingText="Loading..."
+            successText="Opening contact page"
+            showIcon={false}
           >
             Contact our support team
-          </motion.a>
+          </FeedbackButton>
         </p>
       </motion.div>
     </div>

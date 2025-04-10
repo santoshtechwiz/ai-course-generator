@@ -1,14 +1,11 @@
 import type React from "react"
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
-
 import { getAuthSession } from "@/lib/authOptions"
-
 import { Chatbot } from "@/components/Chatbot"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import MainNavbar from "@/components/shared/MainNavbar"
 import { NavigationEvents } from "./NavigationEvents"
-
 
 export default async function DashboardLayout({
   children,
@@ -23,21 +20,9 @@ export default async function DashboardLayout({
         <MainNavbar />
         <NavigationEvents />
 
-        <main className="flex-grow flex flex-col transition-all duration-300 ease-in-out">
+        <main className="flex-grow flex flex-col">
           <div className="flex-grow section-spacing">
-            <Suspense
-              fallback={
-                <div className="content-container flex items-center justify-center min-h-[50vh]">
-                  <div className="flex flex-col items-center space-y-4 animate-pulse">
-                    <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-                      <div className="h-6 w-6 rounded-full bg-primary/40"></div>
-                    </div>
-                    <div className="h-4 w-48 bg-muted rounded-md"></div>
-                    <div className="h-3 w-32 bg-muted/70 rounded-md"></div>
-                  </div>
-                </div>
-              }
-            >
+            <Suspense fallback={<FullPageLoader />}>
               {children}
             </Suspense>
           </div>
@@ -49,3 +34,21 @@ export default async function DashboardLayout({
   )
 }
 
+function FullPageLoader() {
+  return (
+    <div className="content-container flex items-center justify-center min-h-[70vh]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary border-t-transparent"></div>
+          </div>
+          <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin-slow"></div>
+        </div>
+        <div className="text-center space-y-2">
+          <h3 className="text-lg font-medium text-foreground">Loading content</h3>
+          <p className="text-sm text-muted-foreground">Please wait while we prepare your dashboard</p>
+        </div>
+      </div>
+    </div>
+  )
+}

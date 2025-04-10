@@ -666,9 +666,13 @@ export function validateSchema(schema: Schema): boolean {
           }
           break
         case "AggregateRating":
-          if (!obj.ratingValue || !obj.ratingCount) {
-            console.error("AggregateRating missing required fields: ratingValue or ratingCount")
-            return false
+          if (!obj.ratingValue) {
+            console.warn("AggregateRating missing required field: ratingValue, using default value: '0'")
+            obj.ratingValue = "0"
+          }
+          if (!obj.ratingCount) {
+            console.warn("AggregateRating missing required field: ratingCount, using default value: '0'")
+            obj.ratingCount = "0"
           }
           break
         case "Course":

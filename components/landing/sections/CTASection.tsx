@@ -3,25 +3,33 @@
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
 import { ArrowRight, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import MaskReveal from "@/components/animations/MaskReveal"
 import ProgressiveText from "@/components/animations/ProgressiveText"
 import CountUp from "@/components/animations/CountUp"
 import CTASVG from "../svg/CTASVG"
-
+import { FeedbackButton } from "@/components/ui/feedback-button"
 
 const CTASection = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.3 })
-
-  if (!isInView) {
-    return null; // Render nothing if the section is not in view
-  }
+  const [isMounted, setIsMounted] = useState(false)
   const router = useRouter()
 
-  const startTrial = () => {
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isInView) {
+    return null // Render nothing if the section is not in view
+  }
+
+  const startTrial = async () => {
+    // Simulate API call or processing time
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     router.push("/dashboard/subscription")
+    return true
   }
 
   return (
@@ -65,29 +73,24 @@ const CTASection = () => {
               </MaskReveal>
 
               <MaskReveal direction="left" delay={0.5}>
-                <motion.div
-                  whileHover={{
-                    scale: 1.05,
-                    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
-                  }}
-                  whileTap={{ scale: 0.98 }}
+                <FeedbackButton
+                  size="lg"
+                  className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
+                  loadingText="Starting trial..."
+                  successText="Trial started!"
+                  errorText="Please try again"
+                  onClickAsync={startTrial}
                 >
-                  <Button
-                    size="lg"
-                    onClick={startTrial}
-                    className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
+                  Start 1-month free trial
+                  <motion.span
+                    className="inline-block ml-2"
+                    initial={{ x: 0 }}
+                    whileHover={{ x: 5 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 15 }}
                   >
-                    Start 1-month free trial
-                    <motion.span
-                      className="inline-block ml-2"
-                      initial={{ x: 0 }}
-                      whileHover={{ x: 5 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                    >
-                      <ArrowRight className="h-5 w-5" />
-                    </motion.span>
-                  </Button>
-                </motion.div>
+                    <ArrowRight className="h-5 w-5" />
+                  </motion.span>
+                </FeedbackButton>
               </MaskReveal>
 
               <MaskReveal direction="left" delay={0.6}>
