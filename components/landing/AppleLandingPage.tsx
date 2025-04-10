@@ -7,7 +7,7 @@ import { useTheme } from "next-themes"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { ArrowRight, Menu, X, ArrowUpRight, Check, ArrowUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { FeedbackButton } from "@/components/ui/feedback-button"
 import AboutSection from "./sections/AboutSection"
 import FaqAccordion from "./sections/FaqAccordion"
 import FeatureShowcase from "./sections/FeatureShowcase"
@@ -20,7 +20,7 @@ import { useMobile } from "@/hooks/use-mobile"
 import { useRouter } from "next/navigation"
 
 // Update the APPLE_EASING constant for smoother animations
-const APPLE_EASING = [0.25, 0.1, 0.25, 1]
+const APPLE_EASING = [0.22, 0.61, 0.36, 1] // Enhanced cubic bezier curve for smoother animations
 
 const AppleLandingPage = () => {
   const { theme } = useTheme()
@@ -116,9 +116,13 @@ const AppleLandingPage = () => {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const startTrial = () => {
+  const startTrial = async () => {
+    // Simulate API call or processing time
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     router.push("/dashboard/subscription")
+    return true
   }
+
   // Scroll to section function
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId)
@@ -162,8 +166,12 @@ const AppleLandingPage = () => {
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
         }}
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: APPLE_EASING, delay: 0.2 }}
         role="banner"
       >
+        {/* Logo with improved animation and accessibility */}
         <motion.div
           style={{ scale: logoScale, opacity: logoOpacity }}
           className="flex items-center"
@@ -175,7 +183,7 @@ const AppleLandingPage = () => {
           </Link>
         </motion.div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation with improved accessibility */}
         <nav className="hidden md:flex items-center space-x-8" aria-label="Main navigation">
           {navItems.map((item) => (
             <motion.button
@@ -204,33 +212,30 @@ const AppleLandingPage = () => {
           ))}
         </nav>
 
-        {/* CTA Button */}
+        {/* CTA Button with improved visibility and interaction */}
         <div className="hidden md:block">
-          <motion.div
-            whileHover={{
-              scale: 1.05,
-              transition: { duration: 0.3, ease: APPLE_EASING },
+          <FeedbackButton
+            className="rounded-full px-6 py-2 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+            loadingText="Loading..."
+            successText="Starting trial"
+            onClickAsync={() => {
+              scrollToSection("cta")
+              return Promise.resolve(true)
             }}
-            whileTap={{ scale: 0.97 }}
           >
-            <Button
-              className="rounded-full px-6 py-2 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => scrollToSection("cta")}
+            Start free trial
+            <motion.span
+              className="inline-block ml-2"
+              initial={{ x: 0 }}
+              whileHover={{ x: 5 }}
+              transition={{ type: "spring", stiffness: 500, damping: 15 }}
             >
-              Start free trial
-              <motion.span
-                className="inline-block ml-2"
-                initial={{ x: 0 }}
-                whileHover={{ x: 5 }}
-                transition={{ type: "spring", stiffness: 500, damping: 15 }}
-              >
-                <ArrowUpRight className="h-4 w-4" />
-              </motion.span>
-            </Button>
-          </motion.div>
+              <ArrowUpRight className="h-4 w-4" />
+            </motion.span>
+          </FeedbackButton>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu Button with improved accessibility */}
         <motion.button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="md:hidden text-foreground p-2 rounded-full hover:bg-muted/50 transition-colors"
@@ -320,17 +325,15 @@ const AppleLandingPage = () => {
                     ease: APPLE_EASING,
                   }}
                 >
-                  <Button
+                  <FeedbackButton
                     className="mt-4 w-full rounded-full"
-                    onClick={() => {
+                    loadingText="Loading..."
+                    successText="Starting trial"
+                    onClickAsync={async () => {
                       scrollToSection("cta")
                       setIsMenuOpen(false)
+                      return true
                     }}
-                    whileHover={{
-                      scale: 1.05,
-                      transition: { duration: 0.3, ease: APPLE_EASING },
-                    }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     Start free trial
                     <motion.span
@@ -341,7 +344,7 @@ const AppleLandingPage = () => {
                     >
                       <ArrowRight className="h-4 w-4" />
                     </motion.span>
-                  </Button>
+                  </FeedbackButton>
                 </motion.div>
               </nav>
             </motion.div>
@@ -397,43 +400,36 @@ const AppleLandingPage = () => {
               <div className="relative p-8 md:p-16 text-center">
                 <RevealAnimation>
                   <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
-                    Ready to create something amazing?
+                    Ready to create something extraordinary?
                   </h2>
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.1}>
                   <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-                    Whether you're passionate about cooking, coding, or cats—CourseAI helps you build interactive courses and quizzes on any topic you love. Fast, fun, and beginner-friendly.
+                    Whether you're passionate about design, technology, or storytelling—CourseAI helps you build
+                    engaging content on any topic imaginable. Intuitive, powerful, and designed for everyone.
                   </p>
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.2}>
-                  <motion.div
-                    className="flex justify-center"
-                    whileHover={{
-                      scale: 1.05,
-                      transition: { duration: 0.3, ease: APPLE_EASING },
-                    }}
-                    whileTap={{ scale: 0.98 }}
+                  <FeedbackButton
+                    size="lg"
+                    className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
+                    loadingText="Starting trial..."
+                    successText="Trial started!"
+                    errorText="Please try again"
+                    onClickAsync={startTrial}
                   >
-                    <Button
-                      size="lg"
-                      onClick={() => {
-                        startTrial()
-                      }}
-                      className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
+                    Start 1-month free trial
+                    <motion.span
+                      className="inline-block ml-2"
+                      initial={{ x: 0 }}
+                      whileHover={{ x: 5 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
                     >
-                      Start 1-month free trial
-                      <motion.span
-                        className="inline-block ml-2"
-                        initial={{ x: 0 }}
-                        whileHover={{ x: 5 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                      >
-                        <ArrowRight className="h-5 w-5" />
-                      </motion.span>
-                    </Button>
-                  </motion.div>
+                      <ArrowRight className="h-5 w-5" />
+                    </motion.span>
+                  </FeedbackButton>
                 </RevealAnimation>
 
                 <RevealAnimation delay={0.3}>
@@ -454,6 +450,14 @@ const AppleLandingPage = () => {
                       <Check className="h-5 w-5 text-primary mr-2" />
                       <span className="text-sm">1-month free trial</span>
                     </motion.div>
+                    <motion.div
+                      className="flex items-center"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.3, ease: APPLE_EASING }}
+                    >
+                      <Check className="h-5 w-5 text-primary mr-2" />
+                      <span className="text-sm">Cancel anytime</span>
+                    </motion.div>
                   </div>
                 </RevealAnimation>
               </div>
@@ -472,24 +476,20 @@ const AppleLandingPage = () => {
             transition={{ duration: 0.3, ease: APPLE_EASING }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <motion.div
-              whileHover={{
-                scale: 1.1,
-                y: -5,
-                transition: { duration: 0.3, ease: APPLE_EASING },
+            <FeedbackButton
+              variant="default"
+              size="icon"
+              className="rounded-full shadow-lg bg-primary hover:bg-primary/90"
+              loadingText=""
+              onClickAsync={async () => {
+                scrollToTop()
+                return true
               }}
-              whileTap={{ scale: 0.9 }}
+              aria-label="Scroll to top"
+              showIcon={false}
             >
-              <Button
-                variant="default"
-                size="icon"
-                className="rounded-full shadow-lg bg-primary hover:bg-primary/90"
-                onClick={scrollToTop}
-                aria-label="Scroll to top"
-              >
-                <ArrowUp className="h-5 w-5" />
-              </Button>
-            </motion.div>
+              <ArrowUp className="h-5 w-5" />
+            </FeedbackButton>
           </motion.div>
         )}
       </AnimatePresence>
@@ -499,13 +499,13 @@ const AppleLandingPage = () => {
 
 export default AppleLandingPage
 
-// Enhanced RevealAnimation component with Apple-style motion
+// Update the RevealAnimation component for better performance and smoother animations
 const RevealAnimation = ({
   children,
   delay = 0,
   direction = "up",
-  distance = 20,
-  duration = 0.8, // Slightly increased duration for smoother animations
+  distance = 30,
+  duration = 1.0,
   className = "",
 }: {
   children: React.ReactNode
@@ -516,7 +516,7 @@ const RevealAnimation = ({
   className?: string
 }) => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const isInView = useInView(ref, { once: true, amount: 0.15, margin: "-50px 0px" })
 
   const getInitialPosition = () => {
     switch (direction) {
@@ -554,9 +554,10 @@ const RevealAnimation = ({
       transition={{
         duration,
         delay,
-        ease: APPLE_EASING, // Updated easing curve
+        ease: APPLE_EASING,
       }}
       className={className}
+      style={{ willChange: "transform, opacity" }}
     >
       {children}
     </motion.div>

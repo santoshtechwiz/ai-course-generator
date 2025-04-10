@@ -14,12 +14,12 @@ import {
   Play,
   ArrowRight,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
+import { FeedbackButton } from "@/components/ui/feedback-button"
 
 // Types based on the API response
 interface CourseQuizCard {
@@ -207,6 +207,31 @@ const ProductGallery = () => {
     }
   }, [isAutoplayEnabled, toggleAutoplay])
 
+  // Simulate async navigation for feedback
+  const handlePrevProduct = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    prevProduct()
+    return true
+  }
+
+  const handleNextProduct = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    nextProduct()
+    return true
+  }
+
+  const handleToggleAutoplay = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    toggleAutoplay()
+    return true
+  }
+
+  const handleDotClick = async (index: number) => {
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    setActiveIndex(index)
+    return true
+  }
+
   return (
     <div
       className="container max-w-6xl mx-auto px-4 md:px-6"
@@ -277,7 +302,11 @@ const ProductGallery = () => {
         <EmptyState onReset={() => setFilter("all")} />
       ) : (
         <div className="relative">
-          <NavigationButtons onPrev={prevProduct} onNext={nextProduct} disabled={filteredProducts.length <= 1} />
+          <NavigationButtons
+            onPrev={handlePrevProduct}
+            onNext={handleNextProduct}
+            disabled={filteredProducts.length <= 1}
+          />
 
           <motion.div
             className="absolute top-0 right-0 z-10 m-4"
@@ -285,15 +314,18 @@ const ProductGallery = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <Button
+            <FeedbackButton
               variant="outline"
               size="icon"
               onClick={toggleAutoplay}
+              onClickAsync={handleToggleAutoplay}
               className="rounded-full bg-background/80 backdrop-blur-sm"
               aria-label={isAutoplayEnabled ? "Pause autoplay" : "Start autoplay"}
+              showIcon={false}
+              feedbackDuration={500}
             >
               {isAutoplayEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            </Button>
+            </FeedbackButton>
           </motion.div>
 
           <div
@@ -305,7 +337,7 @@ const ProductGallery = () => {
               <AnimatePresence mode="wait">
                 {filteredProducts.map((product, index) => (
                   <motion.div
-                    key={`${product.id}-${index}-${product.slug}`}
+                    key={`${product.id}-${index}`}
                     initial={{ opacity: 0, rotateY: index > activeIndex ? 60 : -60, scale: 0.8 }}
                     animate={{
                       opacity: index === activeIndex ? 1 : 0,
@@ -348,13 +380,11 @@ const ProductGallery = () => {
 
           <div className="flex justify-center mt-8 space-x-2">
             {filteredProducts.map((_, index) => (
-              <button
-                key={index}
-                className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  index === activeIndex ? "bg-primary" : "bg-muted"
-                }`}
-                onClick={() => setActiveIndex(index)}
-                aria-label={`Go to product ${index + 1}`}
+              <DotIndicator
+                key={`dot-${index}`}
+                isActive={index === activeIndex}
+                onClick={() => handleDotClick(index)}
+                index={index}
               />
             ))}
           </div>
@@ -378,9 +408,20 @@ const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) 
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-6">
       <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
       <p className="text-muted-foreground mb-4">{error}</p>
-      <Button variant="default" onClick={onRetry} className="rounded-full">
+      <FeedbackButton
+        variant="default"
+        onClick={onRetry}
+        onClickAsync={async () => {
+          await new Promise((resolve) => setTimeout(resolve, 800))
+          onRetry()
+          return true
+        }}
+        loadingText="Retrying..."
+        successText="Loading content"
+        className="rounded-full"
+      >
         Try Again
-      </Button>
+      </FeedbackButton>
     </motion.div>
   </div>
 )
@@ -390,9 +431,20 @@ const EmptyState = ({ onReset }: { onReset: () => void }) => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-6">
       <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
       <p className="text-muted-foreground mb-4">No AI content found matching your filter.</p>
-      <Button variant="outline" onClick={onReset} className="rounded-full">
+      <FeedbackButton
+        variant="outline"
+        onClick={onReset}
+        onClickAsync={async () => {
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          onReset()
+          return true
+        }}
+        loadingText="Loading all"
+        successText="Showing all"
+        className="rounded-full"
+      >
         Show All Content
-      </Button>
+      </FeedbackButton>
     </motion.div>
   </div>
 )
@@ -402,8 +454,8 @@ const NavigationButtons = ({
   onNext,
   disabled,
 }: {
-  onPrev: () => void
-  onNext: () => void
+  onPrev: () => Promise<boolean>
+  onNext: () => Promise<boolean>
   disabled: boolean
 }) => (
   <>
@@ -413,31 +465,35 @@ const NavigationButtons = ({
         whileTap={{ scale: 0.95 }}
         className={disabled ? "opacity-50" : ""}
       >
-        <Button
+        <FeedbackButton
           variant="outline"
           size="icon"
           className="rounded-full bg-background/80 backdrop-blur-sm shadow-lg"
-          onClick={onPrev}
+          onClickAsync={onPrev}
           disabled={disabled}
           aria-label="Previous product"
+          showIcon={false}
+          feedbackDuration={500}
         >
           <ChevronLeft className="h-5 w-5" />
-        </Button>
+        </FeedbackButton>
       </motion.div>
     </div>
 
     <div className="absolute top-1/2 -right-4 md:-right-12 transform -translate-y-1/2 z-10">
       <motion.div whileHover={{ scale: 1.1, x: 3 }} whileTap={{ scale: 0.95 }} className={disabled ? "opacity-50" : ""}>
-        <Button
+        <FeedbackButton
           variant="outline"
           size="icon"
           className="rounded-full bg-background/80 backdrop-blur-sm shadow-lg"
-          onClick={onNext}
+          onClickAsync={onNext}
           disabled={disabled}
           aria-label="Next product"
+          showIcon={false}
+          feedbackDuration={500}
         >
           <ChevronRight className="h-5 w-5" />
-        </Button>
+        </FeedbackButton>
       </motion.div>
     </div>
   </>
@@ -477,16 +533,74 @@ const ProgressBar = ({
   )
 }
 
+const DotIndicator = ({
+  isActive,
+  onClick,
+  index,
+}: {
+  isActive: boolean
+  onClick: () => Promise<boolean>
+  index: number
+}) => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleClick = async () => {
+    setIsLoading(true)
+    try {
+      await onClick()
+      setIsLoading(false)
+      return true
+    } catch (error) {
+      setIsLoading(false)
+      return false
+    }
+  }
+
+  return (
+    <motion.button
+      className={`w-2.5 h-2.5 rounded-full transition-colors relative ${isActive ? "bg-primary" : "bg-muted"}`}
+      onClick={() => handleClick()}
+      aria-label={`Go to product ${index + 1}`}
+      whileHover={{ scale: 1.6 }}
+      whileTap={{ scale: 0.9 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      disabled={isLoading}
+    >
+      {isLoading && (
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        </motion.div>
+      )}
+    </motion.button>
+  )
+}
+
 const APPLE_EASING = [0.17, 0.67, 0.83, 0.67]
 
 const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
   const router = useRouter()
+  const [isNavigating, setIsNavigating] = useState(false)
 
-  const handleNavigation = () => {
-    if (product.type === "course") {
-      router.push(`/dashboard/course/${product.slug}`)
-    } else if (product.type === "quiz" && product.quizType) {
-      router.push(`/dashboard/${product.quizType=="fill-blanks"?"blanks":product.quizType}/${product.slug}`)
+  const handleNavigation = async () => {
+    setIsNavigating(true)
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      if (product.type === "course") {
+        router.push(`/dashboard/course/${product.slug}`)
+      } else if (product.type === "quiz" && product.quizType) {
+        router.push(`/dashboard/${product.quizType == "fill-blanks" ? "blanks" : product.quizType}/${product.slug}`)
+      }
+
+      return true
+    } catch (error) {
+      console.error("Navigation error:", error)
+      return false
     }
   }
 
@@ -522,27 +636,23 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
 
           <p className="text-muted-foreground mb-6 line-clamp-3">{product.description}</p>
 
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.98, y: 0 }}
-            transition={{ duration: 0.3, ease: APPLE_EASING }}
+          <FeedbackButton
+            className="rounded-full px-6 py-2"
+            onClickAsync={handleNavigation}
+            loadingText={product.type === "course" ? "Loading course..." : "Loading quiz..."}
+            successText={product.type === "course" ? "Starting course" : "Starting quiz"}
+            aria-label={`${product.type === "course" ? "Start AI Learning" : "Try AI Quiz"} ${product.name}`}
           >
-            <Button
-              className="rounded-full px-6 py-2"
-              onClick={handleNavigation}
-              aria-label={`${product.type === "course" ? "Start AI Learning" : "Try AI Quiz"} ${product.name}`}
+            {product.type === "course" ? "Start AI Learning" : "Try AI Quiz"}
+            <motion.span
+              className="inline-block ml-2"
+              initial={{ x: 0 }}
+              whileHover={{ x: 3 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
-              {product.type === "course" ? "Start AI Learning" : "Try AI Quiz"}
-              <motion.span
-                className="inline-block ml-2"
-                initial={{ x: 0 }}
-                whileHover={{ x: 3 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <ArrowRight className="h-4 w-4" />
-              </motion.span>
-            </Button>
-          </motion.div>
+              <ArrowRight className="h-4 w-4" />
+            </motion.span>
+          </FeedbackButton>
 
           <motion.p
             className="text-xs text-muted-foreground mt-2 text-center opacity-0 hover:opacity-100 transition-opacity"
@@ -588,9 +698,10 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
 
           {isActive && (
             <>
+              {/* Fixed: Using unique keys for each particle */}
               {[...Array(6)].map((_, i) => (
                 <motion.div
-                  key={`particle-${product.id}`}
+                  key={`particle-${product.id}-${i}`}
                   className="absolute w-2 h-2 rounded-full bg-primary/30"
                   initial={{
                     x: `${Math.random() * 100}%`,
@@ -632,8 +743,7 @@ const mockProducts: CourseQuizCard[] = [
     id: "1",
     name: "AI-Powered JavaScript",
     slug: "ai-javascript",
-    description:
-      "Learn JavaScript with AI-generated exercises that adapt to your skill level and learning patterns.",
+    description: "Learn JavaScript with AI-generated exercises that adapt to your skill level and learning patterns.",
     tagline: "Master JS with personalized AI guidance",
     type: "course",
   },
@@ -641,8 +751,7 @@ const mockProducts: CourseQuizCard[] = [
     id: "2",
     name: "React with AI Assistant",
     slug: "react-ai-assistant",
-    description:
-      "Build React apps with real-time AI code suggestions and intelligent debugging assistance.",
+    description: "Build React apps with real-time AI code suggestions and intelligent debugging assistance.",
     tagline: "Code smarter with AI pair programming",
     type: "course",
   },
@@ -658,8 +767,7 @@ const mockProducts: CourseQuizCard[] = [
     id: "4",
     name: "AI JavaScript Challenge",
     slug: "ai-js-challenge",
-    description:
-      "Adaptive quiz that gets harder as you improve, with AI-generated questions tailored to your level.",
+    description: "Adaptive quiz that gets harder as you improve, with AI-generated questions tailored to your level.",
     tagline: "Test your skills against our AI",
     type: "quiz",
     quizType: "mcq",
@@ -668,8 +776,7 @@ const mockProducts: CourseQuizCard[] = [
     id: "5",
     name: "AI Code Review",
     slug: "ai-code-review",
-    description:
-      "Submit your React code and get instant AI feedback with suggestions for improvement.",
+    description: "Submit your React code and get instant AI feedback with suggestions for improvement.",
     tagline: "Get AI-powered code reviews",
     type: "quiz",
     quizType: "code",
@@ -678,8 +785,7 @@ const mockProducts: CourseQuizCard[] = [
     id: "6",
     name: "AI CSS Puzzle",
     slug: "ai-css-puzzle",
-    description:
-      "AI-generated CSS challenges that adapt to fill gaps in your knowledge as you progress.",
+    description: "AI-generated CSS challenges that adapt to fill gaps in your knowledge as you progress.",
     tagline: "Solve AI-curated CSS puzzles",
     type: "quiz",
     quizType: "fill-blanks",
