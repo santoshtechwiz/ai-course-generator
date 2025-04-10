@@ -374,15 +374,16 @@ export function QuizActions({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div>
-                            <QuizPDFDownload
-                              quizData={data}
-                              config={{
-                                showOptions: true,
-                                showAnswerSpace: true,
-                                answerSpaceHeight: 40,
-                                showAnswers: true,
-                              }}
-                            >
+                            <div>
+                              <QuizPDFDownload
+                                quizData={data}
+                                config={{
+                                  showOptions: true,
+                                  showAnswerSpace: true,
+                                  answerSpaceHeight: 40,
+                                  showAnswers: true,
+                                }}
+                              />
                               <Button
                                 variant="outline"
                                 className={cn(
@@ -396,7 +397,7 @@ export function QuizActions({
                               >
                                 <Download className="h-5 w-5" />
                               </Button>
-                            </QuizPDFDownload>
+                            </div>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="text-xs py-1 px-2">

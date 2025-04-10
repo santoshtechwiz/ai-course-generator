@@ -1,19 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2 } from "lucide-react"
+import { X, Loader2, Gift, Zap, Rocket, BadgePercent } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog"
-import type { SubscriptionPlanType } from "@/app/types/subscription"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useSubscription } from "@/hooks/use-subscription"
+import { cn } from "@/lib/utils"
 
 export default function TrialModal({
   isSubscribed,
@@ -25,13 +28,15 @@ export default function TrialModal({
   user?: { id: string } | null
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showDiscount, setShowDiscount] = useState(false)
   const { handleSubscribe, isLoading } = useSubscription()
   const router = useRouter()
 
   useEffect(() => {
     const hasSeenTrialModal = localStorage.getItem("hasSeenTrialModal") === "true"
     if (!hasSeenTrialModal && (!isSubscribed || currentPlan === "FREE")) {
-      setIsOpen(true)
+      const timer = setTimeout(() => setIsOpen(true), 3000)
+      return () => clearTimeout(timer)
     }
   }, [isSubscribed, currentPlan])
 
@@ -50,57 +55,156 @@ export default function TrialModal({
     if (success) handleClose()
   }
 
+  const features = [
+    {
+      icon: <Zap className="w-4 h-4 text-primary" />,
+      title: "5 Credits Included",
+      description: "Generate quizzes and courses with your free credits."
+    },
+    {
+      icon: <Rocket className="w-4 h-4 text-primary" />,
+      title: "Advanced Features",
+      description: "Access premium tools like Video Quiz and PDF Downloads."
+    },
+    {
+      icon: <Gift className="w-4 h-4 text-primary" />,
+      title: "No Credit Card Required",
+      description: "Start your trial without payment information."
+    }
+  ]
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Try PRO Plan with 5 Free Credits</DialogTitle>
-          <DialogDescription>Experience all the premium features with no commitment.</DialogDescription>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4 rounded-full opacity-70 hover:opacity-100 transition-opacity"
-            onClick={handleClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[425px] gap-0 p-0 overflow-hidden">
+        <div className="relative">
+          <DialogHeader className="border-b px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-lg",
+                "bg-primary/10 text-primary"
+              )}>
+                <Gift className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold">
+                  Unlock Premium Features
+                </DialogTitle>
+                <DialogDescription className="text-sm">
+                  Try PRO plan with 5 free credits
+                </DialogDescription>
+              </div>
+            </div>
+            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none">
+              <X className="h-4 w-4" />
+            </DialogClose>
+          </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-1 gap-3">
-            {["5 Credits Included", "Advanced Features", "No Credit Card Required"].map((title, index) => (
-              <div key={index} className="flex items-start">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+          <div className="px-6 py-4 space-y-4">
+            <div className="space-y-3">
+              {features.map((feature, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary/10">
+                    {feature.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium leading-none">
+                      {feature.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full h-8 text-sm justify-start pl-1.5"
+                onClick={() => setShowDiscount(!showDiscount)}
+              >
+                <BadgePercent className="h-3.5 w-3.5 mr-2" />
+                Have a discount code?
+                <span className={cn(
+                  "ml-auto transition-transform",
+                  showDiscount ? "rotate-180" : ""
+                )}>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
-                    strokeWidth={1.5}
+                    fill="none"
                     stroke="currentColor"
-                    className="w-5 h-5 text-primary"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path d="m6 9 6 6 6-6" />
                   </svg>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-sm font-medium">{title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {title === "5 Credits Included" && "Generate quizzes and courses with your free credits."}
-                    {title === "Advanced Features" && "Access to Video Quiz, PDF Downloads, and AI Accuracy features."}
-                    {title === "No Credit Card Required" && "Start your trial without payment information."}
+                </span>
+              </Button>
+
+              {showDiscount && (
+                <div className="mt-2 space-y-2 animate-in fade-in">
+                  <Label htmlFor="discount-code" className="text-xs">
+                    Enter discount code
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="discount-code"
+                      placeholder="AILAUNCH20"
+                      className="h-8"
+                      readOnly
+                      value="AILAUNCH20"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText("AILAUNCH20")
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    20% off your first payment
                   </p>
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
+          </div>
+
+          <div className="border-t px-6 py-3 bg-muted/50">
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClose}
+              >
+                Maybe Later
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleStartTrial}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Get Free Credits
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-
-        <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-3">
-          <Button variant="outline" onClick={handleClose}>Maybe Later</Button>
-          <Button onClick={handleStartTrial} disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? <Loader2 className="animate-spin h-5 w-5" /> : "Get 5 Free Credits"}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
