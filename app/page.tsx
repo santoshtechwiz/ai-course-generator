@@ -1,4 +1,4 @@
-import AppleLandingPage from "@/components/landing/AppleLandingPage"
+import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
 import type { Metadata } from "next"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import { generatePageMetadata } from "@/lib/seo-utils"
@@ -60,7 +60,7 @@ const HomePage = () => {
       <JsonLd type="softwareApplication" data={softwareAppData} />
 
       <div className="flex-grow">
-        <AppleLandingPage />
+        <CourseAILandingPage />
       </div>
     </div>
   )

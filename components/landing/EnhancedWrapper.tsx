@@ -12,19 +12,21 @@ interface EnhancedWrapperProps {
 /**
  * A wrapper component that adds Apple-style animations to any component
  * This can be used to enhance existing components without modifying them
+ * Optimized for better performance
  */
 export default function EnhancedWrapper({ children, delay = 0, className = "" }: EnhancedWrapperProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }} // Reduced y-offset for better performance
       whileInView={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.8,
+        duration: 0.6, // Reduced from 0.8 for better performance
         delay,
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       }}
       viewport={{ once: true, amount: 0.2 }}
       className={className}
+      style={{ willChange: "transform, opacity" }} // Add willChange for better performance
     >
       {children}
     </motion.div>

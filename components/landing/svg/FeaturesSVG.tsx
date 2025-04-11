@@ -1,7 +1,8 @@
 "use client"
 
+import AnimatedSVGPath from "@/components/animations/AnimatedSVGPath"
 import { motion } from "framer-motion"
-import AnimatedSVGPath from "../animations/AnimatedSVGPath"
+
 
 const FeaturesSVG = () => {
   return (

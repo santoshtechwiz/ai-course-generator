@@ -16,9 +16,9 @@ export default function RevealAnimation({
   direction = "up",
   className = "",
 }: RevealAnimationProps) {
-  // Define animation variants based on direction
+  // Define animation variants based on direction with optimized values
   const getVariants = () => {
-    const distance = 50
+    const distance = 30 // Reduced from 50 for better performance
 
     const variants = {
       hidden: {
@@ -31,7 +31,7 @@ export default function RevealAnimation({
         y: 0,
         x: 0,
         transition: {
-          duration: 0.8,
+          duration: 0.6, // Reduced from 0.8 for better performance
           delay,
           ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
         },
@@ -48,6 +48,7 @@ export default function RevealAnimation({
       viewport={{ once: true, margin: "-50px" }}
       variants={getVariants()}
       className={className}
+      style={{ willChange: "transform, opacity" }} // Add willChange for better performance
     >
       {children}
     </motion.div>

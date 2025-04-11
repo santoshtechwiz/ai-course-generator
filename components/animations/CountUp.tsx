@@ -1,17 +1,16 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useInView } from "react-intersection-observer"
 
 interface CountUpProps {
   end: number
   start?: number
   duration?: number
   delay?: number
+  separator?: string
   prefix?: string
   suffix?: string
   decimals?: number
-  separator?: string
   className?: string
 }
 
@@ -20,58 +19,61 @@ const CountUp = ({
   start = 0,
   duration = 2,
   delay = 0,
+  separator = "",
   prefix = "",
   suffix = "",
   decimals = 0,
-  separator = ",",
   className = "",
 }: CountUpProps) => {
   const [count, setCount] = useState(start)
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 })
-  const countRef = useRef<number>(start)
+  const countRef = useRef(start)
   const startTimeRef = useRef<number | null>(null)
-  const rafRef = useRef<number | null>(null)
+  const requestIdRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!inView) return
-
+    // Delay start if needed
     const delayTimeout = setTimeout(() => {
+      startTimeRef.current = null
+
       const animate = (timestamp: number) => {
-        if (startTimeRef.current === null) {
-          startTimeRef.current = timestamp
-        }
-
+        if (!startTimeRef.current) startTimeRef.current = timestamp
         const progress = Math.min((timestamp - startTimeRef.current) / (duration * 1000), 1)
-        const currentCount = progress * (end - start) + start
 
-        countRef.current = currentCount
-        setCount(currentCount)
+        // Use easeOutExpo for smooth counting
+        const easedProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
+        const nextCount = start + easedProgress * (end - start)
+
+        countRef.current = nextCount
+        setCount(nextCount)
 
         if (progress < 1) {
-          rafRef.current = requestAnimationFrame(animate)
+          requestIdRef.current = requestAnimationFrame(animate)
         }
       }
 
-      rafRef.current = requestAnimationFrame(animate)
+      requestIdRef.current = requestAnimationFrame(animate)
     }, delay * 1000)
 
     return () => {
       clearTimeout(delayTimeout)
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
+      if (requestIdRef.current) {
+        cancelAnimationFrame(requestIdRef.current)
       }
     }
-  }, [inView, start, end, duration, delay])
+  }, [start, end, duration, delay])
 
   const formatNumber = (num: number) => {
-    return prefix + num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, separator) + suffix
+    const fixed = num.toFixed(decimals)
+    const parts = fixed.toString().split(".")
+
+    if (separator) {
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, separator)
+    }
+
+    return `${prefix}${parts.join(".")}${suffix}`
   }
 
-  return (
-    <span ref={ref} className={className}>
-      {formatNumber(count)}
-    </span>
-  )
+  return <span className={className}>{formatNumber(count)}</span>
 }
 
 export default CountUp

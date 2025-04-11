@@ -3,7 +3,7 @@
 import AnimatedSVGPath from "@/components/animations/AnimatedSVGPath"
 import { motion } from "framer-motion"
 
-
+// Optimize the CTASVG component for better performance
 const CTASVG = () => {
   return (
     <svg
@@ -14,7 +14,7 @@ const CTASVG = () => {
       xmlns="http://www.w3.org/2000/svg"
       className="max-w-full max-h-full"
     >
-      {/* Background elements */}
+      {/* Background elements - optimize animations */}
       <motion.rect
         x="100"
         y="50"
@@ -23,9 +23,9 @@ const CTASVG = () => {
         rx="20"
         fill="url(#ctaBgGradient)"
         opacity="0.1"
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.95 }} // Adjusted for better performance
         animate={{ opacity: 0.1, scale: 1 }}
-        transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }} // Reduced duration for better performance
       />
 
       <AnimatedSVGPath
@@ -33,26 +33,26 @@ const CTASVG = () => {
         stroke="url(#ctaStrokeGradient)"
         strokeWidth={2}
         delay={0.3}
-        duration={1.5}
+        duration={1.2} // Reduced from 1.5 for better performance
       />
 
-      {/* Central icon */}
+      {/* Central icon - optimize animations */}
       <motion.g
-        initial={{ opacity: 0, scale: 0.8 }}
+        initial={{ opacity: 0, scale: 0.9 }} // Adjusted for better performance
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }} // Reduced duration and delay for better performance
       >
         <circle cx="400" cy="200" r="60" fill="url(#ctaIconGradient)" />
         <motion.path
           d="M380,180 L430,200 L380,220 Z"
           fill="white"
-          initial={{ scale: 0.8, opacity: 0 }}
+          initial={{ scale: 0.9, opacity: 0 }} // Adjusted for better performance
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 1.2 }}
+          transition={{ duration: 0.4, delay: 0.9 }} // Reduced duration and delay for better performance
         />
       </motion.g>
 
-      {/* Pulsing effect */}
+      {/* Pulsing effect - optimize animation */}
       <motion.circle
         cx="400"
         cy="200"
@@ -61,20 +61,20 @@ const CTASVG = () => {
         strokeWidth="2"
         fill="none"
         initial={{ scale: 1, opacity: 0 }}
-        animate={{ scale: 1.5, opacity: [0, 0.3, 0] }}
+        animate={{ scale: 1.3, opacity: [0, 0.2, 0] }} // Reduced scale and opacity for better performance
         transition={{
-          duration: 2,
+          duration: 2.5, // Increased duration for smoother animation
           repeat: Number.POSITIVE_INFINITY,
           ease: "easeInOut",
         }}
       />
 
-      {/* Animated checkmarks */}
+      {/* Reduce the number of animated checkmarks for better performance */}
       <motion.g>
         <motion.g
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -15 }} // Reduced x-offset for better performance
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 1.5 }}
+          transition={{ duration: 0.4, delay: 1.2 }} // Reduced duration and delay for better performance
         >
           <circle cx="250" cy="150" r="15" fill="url(#checkGradient)" />
           <motion.path
@@ -84,31 +84,14 @@ const CTASVG = () => {
             fill="none"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 0.5, delay: 1.7 }}
+            transition={{ duration: 0.4, delay: 1.3 }} // Reduced duration and delay for better performance
           />
         </motion.g>
 
         <motion.g
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -15 }} // Reduced x-offset for better performance
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 1.8 }}
-        >
-          <circle cx="250" cy="200" r="15" fill="url(#checkGradient)" />
-          <motion.path
-            d="M245,200 L250,205 L260,195"
-            stroke="white"
-            strokeWidth="3"
-            fill="none"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 0.5, delay: 2 }}
-          />
-        </motion.g>
-
-        <motion.g
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 2.1 }}
+          transition={{ duration: 0.4, delay: 1.4 }} // Reduced duration and delay for better performance
         >
           <circle cx="250" cy="250" r="15" fill="url(#checkGradient)" />
           <motion.path
@@ -118,16 +101,16 @@ const CTASVG = () => {
             fill="none"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 0.5, delay: 2.3 }}
+            transition={{ duration: 0.4, delay: 1.5 }} // Reduced duration and delay for better performance
           />
         </motion.g>
       </motion.g>
 
-      {/* Button animation */}
+      {/* Button animation - optimize for better performance */}
       <motion.g
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }} // Reduced y-offset for better performance
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 2.5, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.6, delay: 1.8, ease: [0.25, 0.1, 0.25, 1] }} // Reduced duration and delay for better performance
       >
         <motion.rect
           x="500"
@@ -136,7 +119,7 @@ const CTASVG = () => {
           height="40"
           rx="20"
           fill="url(#buttonGradient)"
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.03 }} // Reduced scale for better performance
           whileTap={{ scale: 0.98 }}
           transition={{ duration: 0.2 }}
         />
@@ -145,30 +128,35 @@ const CTASVG = () => {
         </motion.text>
       </motion.g>
 
-      {/* Floating particles */}
-      {[...Array(10)].map((_, i) => (
-        <motion.circle
-          key={`cta-particle-${i}`}
-          cx={300 + Math.random() * 200}
-          cy={100 + Math.random() * 200}
-          r={2 + Math.random() * 3}
-          fill="url(#ctaParticleGradient)"
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, 0.7, 0],
-            y: [0, -20 - Math.random() * 30, 0],
-            x: [0, Math.random() * 20 - 10, 0],
-          }}
-          transition={{
-            duration: 3 + Math.random() * 2,
-            repeat: Number.POSITIVE_INFINITY,
-            delay: i * 0.2,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
+      {/* Reduce the number of floating particles for better performance */}
+      {[...Array(5)].map(
+        (
+          _,
+          i, // Reduced from 10 to 5 for better performance
+        ) => (
+          <motion.circle
+            key={`cta-particle-${i}`}
+            cx={300 + Math.random() * 200}
+            cy={100 + Math.random() * 200}
+            r={2 + Math.random() * 2} // Reduced size for better performance
+            fill="url(#ctaParticleGradient)"
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: [0, 0.5, 0], // Reduced opacity for better performance
+              y: [0, -15 - Math.random() * 20, 0], // Reduced movement for better performance
+              x: [0, Math.random() * 15 - 7, 0], // Reduced movement for better performance
+            }}
+            transition={{
+              duration: 3 + Math.random() * 2,
+              repeat: Number.POSITIVE_INFINITY,
+              delay: i * 0.4, // Increased delay between animations for better performance
+              ease: "easeInOut",
+            }}
+          />
+        ),
+      )}
 
-      {/* Gradients */}
+      {/* Gradients remain the same */}
       <defs>
         <linearGradient id="ctaBgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.8" />
