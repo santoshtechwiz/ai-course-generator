@@ -17,27 +17,33 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 
-// Animation variants updated to match CourseCard animations
 const cardVariants = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
-  hover: { 
+  hover: {
     scale: 1.03,
     y: -5,
-    transition: { type: "spring", stiffness: 400, damping: 25 }
-  }
+    transition: { type: "spring", stiffness: 400, damping: 25 },
+  },
 }
 
 const iconVariants = {
   initial: { scale: 1 },
-  hover: { 
-    scale: 1.15, 
-    transition: { type: "spring", stiffness: 500, damping: 15 }
-  }
+  hover: {
+    scale: 1.15,
+    rotate: [0, -10, 10, 0],
+    transition: { duration: 0.6 },
+  },
 }
 
 interface QuizCardProps {
@@ -61,81 +67,39 @@ const quizTypeIcons = {
   flashcard: BookOpen,
 }
 
-const quizTypeLabels = {
-  mcq: "Multiple Choice",
-  openended: "Open-Ended",
-  "fill-blanks": "Fill in the Blanks",
-  code: "Code Challenge",
-  flashcard: "Flashcards",
-}
-
 const quizTypeConfig = {
   mcq: {
-    gradient: "from-emerald-500/20 to-emerald-500/50 dark:from-emerald-500/30 dark:to-emerald-500/60",
-    icon: "bg-emerald-500 dark:bg-emerald-600",
-    badge:
-      "border-emerald-500/40 bg-emerald-500/20 text-emerald-700 dark:border-emerald-500/50 dark:bg-emerald-500/30 dark:text-emerald-300",
+    gradient: "from-emerald-600/80 to-emerald-500/60",
+    icon: "bg-emerald-500",
+    text: "text-emerald-500",
   },
   openended: {
-    gradient: "from-blue-500/20 to-blue-500/50 dark:from-blue-500/30 dark:to-blue-500/60",
-    icon: "bg-blue-500 dark:bg-blue-600",
-    badge:
-      "border-blue-500/40 bg-blue-500/20 text-blue-700 dark:border-blue-500/50 dark:bg-blue-500/30 dark:text-blue-300",
+    gradient: "from-blue-600/80 to-blue-500/60",
+    icon: "bg-blue-500",
+    text: "text-blue-500",
   },
   "fill-blanks": {
-    gradient: "from-amber-500/20 to-amber-500/50 dark:from-amber-500/30 dark:to-amber-500/60",
-    icon: "bg-amber-500 dark:bg-amber-600",
-    badge:
-      "border-amber-500/40 bg-amber-500/20 text-amber-700 dark:border-amber-500/50 dark:bg-amber-500/30 dark:text-amber-300",
+    gradient: "from-amber-600/80 to-amber-500/60",
+    icon: "bg-amber-500",
+    text: "text-amber-500",
   },
   code: {
-    gradient: "from-violet-500/20 to-violet-500/50 dark:from-violet-500/30 dark:to-violet-500/60",
-    icon: "bg-violet-500 dark:bg-violet-600",
-    badge:
-      "border-violet-500/40 bg-violet-500/20 text-violet-700 dark:border-violet-500/50 dark:bg-violet-500/30 dark:text-violet-300",
+    gradient: "from-violet-600/80 to-violet-500/60",
+    icon: "bg-violet-500",
+    text: "text-violet-500",
   },
   flashcard: {
-    gradient: "from-pink-500/20 to-pink-500/50 dark:from-pink-500/30 dark:to-pink-500/60",
-    icon: "bg-pink-500 dark:bg-pink-600",
-    badge:
-      "border-pink-500/40 bg-pink-500/20 text-pink-700 dark:border-pink-500/50 dark:bg-pink-500/30 dark:text-pink-300",
+    gradient: "from-pink-600/80 to-pink-500/60",
+    icon: "bg-pink-500",
+    text: "text-pink-500",
   },
 }
 
 const difficultyConfig = {
-  easy: {
-    stars: 1,
-    color: "text-emerald-500 dark:text-emerald-400",
-  },
-  medium: {
-    stars: 2,
-    color: "text-amber-500 dark:text-amber-400",
-  },
-  hard: {
-    stars: 3,
-    color: "text-red-500 dark:text-red-400",
-  },
+  easy: { stars: 1, color: "text-emerald-500" },
+  medium: { stars: 2, color: "text-amber-500" },
+  hard: { stars: 3, color: "text-red-500" },
 }
-
-// Keyframes for the progress pulse animation (same as in CourseCard)
-const progressPulseKeyframes = `
-@keyframes progressPulse {
-  0% { opacity: 0.5; }
-  50% { opacity: 1; }
-  100% { opacity: 0.5; }
-}
-
-.progress-pulse::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(var(--primary), 0.4), transparent);
-  animation: progressPulse 2s infinite;
-}
-`
 
 export const QuizCard: React.FC<QuizCardProps> = ({
   title,
@@ -144,24 +108,13 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   quizType,
   estimatedTime = "5 min",
   description,
-  isPublic = false,
   completionRate,
   bestScore,
-  difficulty = quizType === "mcq" ? "easy" : quizType === "fill-blanks" ? "medium" : "hard",
+  difficulty = "medium",
 }) => {
   const QuizTypeIcon = quizTypeIcons[quizType]
   const config = quizTypeConfig[quizType]
   const [isHovered, setIsHovered] = React.useState(false)
-
-  // Inject progress pulse keyframes into the document head on component mount
-  React.useEffect(() => {
-    const style = document.createElement("style")
-    style.innerHTML = progressPulseKeyframes
-    document.head.appendChild(style)
-    return () => {
-      document.head.removeChild(style)
-    }
-  }, [])
 
   return (
     <motion.div
@@ -169,99 +122,110 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       initial="initial"
       animate="animate"
       whileHover="hover"
-      className="h-full flex pt-6"
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
+      className="h-full flex"
     >
       <Link
         href={`/dashboard/${quizType === "fill-blanks" ? "blanks" : quizType}/${slug}`}
-        className="block w-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+        className="w-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl h-full"
       >
-        <Card className="relative flex flex-col h-[450px] overflow-hidden group border-2 border-gray-200 bg-white shadow-sm transition-all duration-500 hover:border-primary/50 hover:shadow-lg">
-          {/* Gradient overlay matching the quiz type */}
+        <Card className="relative h-full flex flex-col overflow-hidden group border-0 bg-gradient-to-br via-card/50 to-card/70 shadow-lg hover:shadow-xl transition-shadow">
           <div
             className={cn(
-              "absolute inset-0 opacity-100 transition-opacity duration-300",
+              "absolute inset-0 bg-gradient-to-br opacity-20 transition-opacity",
               config.gradient,
+              isHovered && "opacity-30"
             )}
           />
-          <CardHeader className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <motion.div 
-                  className={cn("p-2 rounded-md", config.icon)}
-                  variants={iconVariants}
-                >
-                  <QuizTypeIcon className="w-5 h-5 text-white" />
-                </motion.div>
-                <Badge variant="outline" className={cn(config.badge)}>
-                  {quizTypeLabels[quizType]}
-                </Badge>
-              </div>
-              {bestScore !== undefined && (
-                <div className="flex items-center gap-1 bg-background/80 px-2 py-1 rounded-full">
-                  <Trophy className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-medium">{bestScore}%</span>
+
+          <CardHeader className="relative z-10 pb-3">
+            <div className="flex items-center justify-between mb-4">
+              <motion.div
+                variants={iconVariants}
+                className={cn(
+                  "p-3 rounded-xl shadow-sm backdrop-blur-sm",
+                  config.icon,
+                  "bg-opacity-90 text-white"
+                )}
+              >
+                <QuizTypeIcon className="w-6 h-6" />
+              </motion.div>
+              <div className="flex items-center gap-2">
+                {bestScore !== undefined && (
+                  <div className="flex items-center gap-1.5 bg-background/80 px-3 py-1 rounded-full shadow-sm">
+                    <Trophy className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm font-semibold">{bestScore}%</span>
+                  </div>
+                )}
+                <div className="h-8 w-8 rounded-full bg-background/80 flex items-center justify-center shadow-sm">
+                  <span className={`text-sm font-bold ${config.text}`}>
+                    {completionRate}%
+                  </span>
                 </div>
-              )}
-            </div>
-            <CardTitle className="mt-3 text-xl group-hover:text-primary transition-colors">
-              {title}
-            </CardTitle>
-            <CardDescription className="line-clamp-2 mt-1">{description}</CardDescription>
-          </CardHeader>
-          <CardContent className="relative z-10 flex-grow space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{estimatedTime}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>{questionCount} questions</span>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Difficulty:</span>
+            <CardTitle className="text-2xl font-bold tracking-tight mb-2">
+              {title}
+            </CardTitle>
+            <CardDescription className="line-clamp-2 text-muted-foreground/90">
+              {description}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="relative z-10 flex-grow">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-medium">{estimatedTime}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <HelpCircle className="w-4 h-4" />
+                  <span className="font-medium">{questionCount} Questions</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Difficulty:</span>
                   <div className="flex">
                     {Array.from({ length: 3 }).map((_, i) => (
                       <Star
                         key={i}
                         className={cn(
-                          "w-3.5 h-3.5",
+                          "w-4 h-4",
                           i < difficultyConfig[difficulty].stars
                             ? `${difficultyConfig[difficulty].color} fill-current`
-                            : "text-muted-foreground/30",
+                            : "text-muted-foreground/30"
                         )}
                       />
                     ))}
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">{completionRate}% complete</div>
+                <div className="h-2 bg-primary/10 rounded-full overflow-hidden">
+                  <div
+                    className={cn("h-full transition-all duration-500", config.icon)}
+                    style={{ width: `${completionRate}%` }}
+                  />
+                </div>
               </div>
-              <Progress
-                value={completionRate}
-                className={cn(
-                  "h-2 bg-primary/10 overflow-hidden relative",
-                  isHovered && "progress-pulse"
-                )}
-                indicatorClassName={cn(
-                  completionRate === 100 ? "bg-emerald-500" : completionRate > 50 ? "bg-amber-500" : "bg-primary"
-                )}
-              />
             </div>
           </CardContent>
+
           <CardFooter className="relative z-10 pt-0">
-            <motion.div 
-              className="flex items-center gap-2 text-primary font-medium ml-auto text-sm group-hover:text-primary/80 transition-colors"
-              animate={{ x: isHovered ? 5 : 0 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            <motion.div
+              className={cn(
+                "w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all",
+                "bg-background/80 hover:bg-background",
+                "text-primary hover:text-primary/90",
+                "border-border/50 hover:border-primary/30"
+              )}
+              whileTap={{ scale: 0.98 }}
             >
-              Start Quiz
-              <ChevronRight className="w-4 h-4" />
+              <span className="font-semibold">Start Quiz</span>
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </motion.div>
           </CardFooter>
         </Card>

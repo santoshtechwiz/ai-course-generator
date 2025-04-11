@@ -16,20 +16,19 @@ export interface DashboardUser extends User {
 
 
 
-export interface CourseCardProps {
-  id: string
-  title: string // Renamed from name to title
+export type CourseCardProps = {
+  title: string
   description: string
-  image: string
   rating: number
   slug: string
   unitCount: number
   lessonCount: number
   quizCount: number
-  userId: string
   viewCount: number
   category?: string
+  duration?: string
 }
+
 
 // Define or import CourseMetadata
 export interface CourseMetadata {
