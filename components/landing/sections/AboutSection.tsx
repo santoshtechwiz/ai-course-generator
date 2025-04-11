@@ -2,7 +2,7 @@
 
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
-import { ArrowRight, Sparkles, Users, Star } from "lucide-react"
+import { ArrowRight, Sparkles, Star, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import MissionIcon from "../svg/MissionIcon"
@@ -16,23 +16,23 @@ const AboutSection = () => {
 
   const sections = [
     {
-      title: "Built for Instant Course Creation",
+      title: "Effortless Course Creation",
       description:
-        "CourseAI empowers anyone to generate complete courses from just a topic. No YouTube videos, no editable content—just pure AI magic creating structured lessons and quizzes in seconds.",
+        "CourseAI empowers educators and creators to generate complete courses from a single topic. Our advanced AI organizes content into structured lessons and interactive quizzes in seconds.",
       icon: MissionIcon,
       color: "from-rose-500 to-rose-600",
     },
     {
-      title: "Smarter, Faster Learning",
+      title: "Efficient, Impactful Learning",
       description:
-        "We believe learning should be efficient and accessible. CourseAI combines advanced AI with simplicity so users can create, customize, and deliver powerful courses effortlessly.",
+        "We believe that learning should be both effective and accessible. CourseAI combines sophisticated AI with an intuitive design to help you build, customize, and deliver engaging courses.",
       icon: VisionIcon,
       color: "from-cyan-500 to-cyan-600",
     },
     {
-      title: "Solo-Founded, Passion-Fueled",
+      title: "Passion-Driven Innovation",
       description:
-        "CourseAI is built by one founder who loves AI and education. Every feature is designed to solve real problems in course creation with speed, focus, and quality.",
+        "Built with a deep passion for education and AI, CourseAI is designed to address real challenges in course creation with speed, focus, and quality.",
       icon: TeamIcon,
       color: "from-amber-500 to-amber-600",
     },
@@ -42,21 +42,21 @@ const AboutSection = () => {
     {
       title: "Innovation at the Core",
       description:
-        "We continuously explore new ways to improve course creation and quiz automation using the latest in AI.",
+        "We continually explore new methods to enhance course creation and quiz automation using the latest in AI technology.",
       color: "from-purple-500 to-indigo-500",
       icon: "sparkles",
     },
     {
       title: "Accessible for Everyone",
       description:
-        "You don’t need to be technical to create a great course. CourseAI is made for creators, educators, and teams of all skill levels.",
+        "CourseAI is designed with creators, educators, and teams of all technical levels in mind, making course creation simple and effective.",
       color: "from-blue-500 to-sky-500",
       icon: "users",
     },
     {
       title: "Private & Secure Courses",
       description:
-        "Create and control your private courses. You choose who can access and track progress—fully under your control.",
+        "Manage your courses with complete control over access and progress tracking, ensuring that your content remains private and secure.",
       color: "from-orange-500 to-amber-500",
       icon: "star",
     },
@@ -89,9 +89,7 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
         >
-          CourseAI helps you create full online courses just by entering a topic. It generates lessons and quizzes
-          automatically, lets you build your own (MCQs, coding, fill-in-the-blanks, open-ended), monitor progress, and
-          even keep your courses private. No YouTube, no fluff—just fast, smart course creation.
+          CourseAI simplifies the process of designing comprehensive online courses by automatically generating lessons and quizzes from a simple topic input. Focus on delivering quality education while our platform handles the content structure.
         </motion.p>
       </div>
 
@@ -135,9 +133,9 @@ const AboutSection = () => {
             <RevealAnimation key={value.title} delay={0.9 + index * 0.1}>
               <div className="bg-card/30 backdrop-blur-sm rounded-xl p-6 border border-border/10 h-full flex flex-col items-center hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
                 <div className={`p-4 rounded-full bg-gradient-to-br ${value.color} text-white mb-4 shadow-lg`}>
-                  {value.icon === "sparkles" && <Sparkles className="w-8 h-8" />}
-                  {value.icon === "users" && <Users className="w-8 h-8" />}
-                  {value.icon === "star" && <Star className="w-8 h-8" />}
+                  {value.icon === "sparkles" && <motion.div><svg className="w-8 h-8"><Sparkles className="w-8 h-8" /></svg></motion.div>}
+                  {value.icon === "users" && <motion.div><svg className="w-8 h-8"><Users className="w-8 h-8" /></svg></motion.div>}
+                  {value.icon === "star" && <motion.div><svg className="w-8 h-8"><Star className="w-8 h-8" /></svg></motion.div>}
                 </div>
                 <h4 className="text-xl font-semibold mb-2">{value.title}</h4>
                 <p className="text-muted-foreground">{value.description}</p>

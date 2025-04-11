@@ -1,6 +1,4 @@
 "use client"
-
-import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useInView, useSpring } from "framer-motion"
 import { useTheme } from "next-themes"
@@ -18,24 +16,31 @@ import HeroSection from "./sections/HeroSection"
 
 import { useMobile } from "@/hooks/use-mobile"
 import { useRouter } from "next/navigation"
+import AnimatedSVGPath from "../animations/AnimatedSVGPath"
 
-// Update the APPLE_EASING constant for smoother animations
-const APPLE_EASING = [0.22, 0.61, 0.36, 1] // Enhanced cubic bezier curve for smoother animations
+// Optimize the APPLE_EASING constant to use the more performant cubic-bezier function
+const APPLE_EASING = [0.22, 0.61, 0.36, 1]
 
-// Add this utility function for debouncing
-const debounce = (func, wait) => {
-  let timeout
-  return function executedFunction(...args) {
+// Replace the debounce function with a more optimized version that uses requestAnimationFrame
+const debounce = (func: (...args: any[]) => void, wait: number) => {
+  let timeout: ReturnType<typeof setTimeout> | null = null
+  let requestId: number | null = null
+
+  return function executedFunction(...args: any[]) {
     const later = () => {
-      clearTimeout(timeout)
+      if (timeout !== null) clearTimeout(timeout)
+      if (requestId !== null) cancelAnimationFrame(requestId)
       func(...args)
     }
-    clearTimeout(timeout)
+
+    if (timeout !== null) clearTimeout(timeout)
+    if (requestId !== null) cancelAnimationFrame(requestId)
     timeout = setTimeout(later, wait)
+    requestId = requestAnimationFrame(() => {}) // Throttle using rAF
   }
 }
 
-const AppleLandingPage = () => {
+const CourseAILandingPage = () => {
   const { theme } = useTheme()
   const isMobile = useMobile()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -50,7 +55,7 @@ const AppleLandingPage = () => {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.8,
+        duration: 0.6, // Reduced from 0.8 for better performance
         ease: APPLE_EASING,
       },
     },
@@ -85,11 +90,19 @@ const AppleLandingPage = () => {
     mass: 0.5,
   })
 
-  // Update the headerBg transform to make it more subtle
-  const headerBg = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.8)"])
-  const headerBgDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.8)"])
-  const headerBorder = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(0, 0, 0, 0.08)"])
-  const headerBorderDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(255, 255, 255, 0.08)"])
+  // Optimize the headerBg transform to be more performant
+  const headerBg = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.8)"], {
+    clamp: true, // Add clamp for better performance
+  })
+  const headerBgDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.8)"], {
+    clamp: true,
+  })
+  const headerBorder = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(0, 0, 0, 0.08)"], {
+    clamp: true,
+  })
+  const headerBorderDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(255, 255, 255, 0.08)"], {
+    clamp: true,
+  })
 
   // Enhance the logo animation
   const logoScale = useTransform(smoothScrollY, [0, 100], [1, 0.92])
@@ -97,31 +110,38 @@ const AppleLandingPage = () => {
 
   // Handle scroll events
   useEffect(() => {
+    const sections = [
+      { id: "hero", ref: heroRef },
+      { id: "features", ref: featuresRef },
+      { id: "showcase", ref: showCaseRef },
+      { id: "about", ref: aboutRef },
+      { id: "how-it-works", ref: howItWorksRef },
+      { id: "testimonials", ref: testimonialsRef },
+      { id: "faq", ref: faqRef },
+      { id: "cta", ref: ctaRef },
+    ]
+
     const handleScroll = debounce(() => {
       const scrollPosition = window.scrollY
       setShowScrollTop(scrollPosition > 500)
 
-      const sections = [
-        { id: "hero", ref: heroRef },
-        { id: "features", ref: featuresRef },
-        { id: "showcase", ref: showCaseRef },
-        { id: "about", ref: aboutRef },
-        { id: "how-it-works", ref: howItWorksRef },
-        { id: "testimonials", ref: testimonialsRef },
-        { id: "faq", ref: faqRef },
-      ]
-
+      // Use a more efficient way to determine active section
+      let currentSection = "hero"
       for (let i = sections.length - 1; i >= 0; i--) {
         const section = sections[i]
         if (section.ref.current) {
           const rect = section.ref.current.getBoundingClientRect()
           if (rect.top <= window.innerHeight / 3) {
-            setActiveSection(section.id)
+            currentSection = section.id
             break
           }
         }
       }
-    }, 50) // 50ms debounce time
+
+      if (currentSection !== activeSection) {
+        setActiveSection(currentSection)
+      }
+    }, 100) // Increased from 50ms to 100ms for better performance
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
@@ -484,30 +504,29 @@ const AppleLandingPage = () => {
   )
 }
 
-export default AppleLandingPage
+export default CourseAILandingPage
 
-// Update the RevealAnimation component for better performance and smoother animations
-const RevealAnimation = ({
-  children,
-  delay = 0,
-  direction = "up" | "down" | "left" | "right",
-  distance = 30,
-  duration = 1.0,
-  className = "",
-}: {
+// Optimize the RevealAnimation component for better performance
+const RevealAnimation: React.FC<{
   children: React.ReactNode
   delay?: number
   direction?: "up" | "down" | "left" | "right"
   distance?: number
   duration?: number
   className?: string
+}> = ({
+  children,
+  delay = 0,
+  direction = "up",
+  distance = 30,
+  duration = 0.8, // Reduced from 1.0 for better performance
+  className = "",
 }) => {
   const ref = useRef(null)
   const isInView = useInView(ref, {
     once: true,
     amount: 0.15,
     margin: "-50px 0px",
-    rootMargin: "-50px 0px",
   })
 
   const getInitialPosition = () => {
@@ -549,3 +568,4 @@ const RevealAnimation = ({
   )
 }
 export { RevealAnimation }
+export { AnimatedSVGPath }

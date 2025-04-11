@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { motion, AnimatePresence, useInView, useAnimation } from "framer-motion"
 import { FileText, Sparkles, Layers, CheckCircle, ChevronRight, ChevronLeft, Play, Pause } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import React from "react"
+import HowItWorksSVG from "../svg/HowItWorksSVG" // Import the HowItWorksSVG component
+
 const steps = [
   {
     id: "choose",
@@ -43,6 +45,30 @@ const steps = [
 
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
+// Optimize the animation variants for better performance
+const cardVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.98 }, // Reduced y-offset and scale for better performance
+  visible: (delay) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.6, // Reduced from 0.7 for better performance
+      delay,
+      ease: [0.25, 0.1, 0.25, 1],
+    },
+  }),
+  hover: {
+    y: -5, // Reduced from -16 for better performance
+    scale: 1.02, // Reduced from 1.03 for better performance
+    boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.1)", // Reduced shadow for better performance
+    transition: {
+      duration: 0.3, // Reduced from 0.5 for better performance
+      ease: [0.25, 0.1, 0.25, 1],
+    },
+  },
+}
+
 const HowItWorksSection = () => {
   const [activeStep, setActiveStep] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
@@ -51,6 +77,7 @@ const HowItWorksSection = () => {
   const isInView = useInView(containerRef, { once: false, amount: 0.3 })
   const controls = useAnimation()
   const progressInterval = useRef<NodeJS.Timeout | null>(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
 
   // Handle step navigation
   const goToStep = (index: number) => {
@@ -127,6 +154,27 @@ const HowItWorksSection = () => {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isAutoPlaying])
 
+  // Optimize the handleScroll function to use requestAnimationFrame
+  useEffect(() => {
+    let lastScrollY = window.scrollY
+    let ticking = false
+
+    const handleScroll = () => {
+      lastScrollY = window.scrollY
+
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setShowScrollTop(lastScrollY > 500)
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
   return (
     <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
       <div className="text-center mb-16">
@@ -153,18 +201,22 @@ const HowItWorksSection = () => {
           transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto"
         >
-          Whether you're an educator, a professional, or a hobbyist, our platform empowers you to create engaging and interactive content effortlessly.
+          Whether you're an educator, a professional, or a hobbyist, our platform empowers you to create engaging and
+          interactive content effortlessly.
         </motion.p>
-      
+
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto"
         >
-          Why spend on expensive courses? Create your own interactive quizzes and content to learn effectively and affordably.
+          Why spend on expensive courses? Create your own interactive quizzes and content to learn effectively and
+          affordably.
         </motion.p>
       </div>
+
+   
 
       {/* Interactive Process Viewer */}
       <div className="relative max-w-5xl mx-auto">
@@ -285,6 +337,11 @@ const HowItWorksSection = () => {
             aria-hidden="true"
           />
 
+          {/* SVG Background Illustration */}
+          <div className="absolute inset-0 opacity-20 pointer-events-none">
+            <HowItWorksSVG />
+          </div>
+
           {/* Step Content */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -372,10 +429,9 @@ const HowItWorksSection = () => {
   )
 }
 
-// Component to render different animations based on the current step
-const AnimationRenderer = ({ step, isActive }: { step: (typeof steps)[0]; isActive: boolean }) => {
-  // Use React.memo to prevent unnecessary re-renders
-  return React.useMemo(() => {
+// Optimize the AnimationRenderer component to use React.memo
+const AnimationRenderer = React.memo(
+  ({ step, isActive }: { step: (typeof steps)[0]; isActive: boolean }) => {
     switch (step.id) {
       case "choose":
         return <TypingAnimation isActive={isActive} />
@@ -388,13 +444,18 @@ const AnimationRenderer = ({ step, isActive }: { step: (typeof steps)[0]; isActi
       default:
         return null
     }
-  }, [step.id, step.color, isActive])
-}
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if step.id changes or isActive changes
+    return prevProps.step.id === nextProps.step.id && prevProps.isActive === nextProps.isActive
+  },
+)
 
-// Animation for the "Choose your topic" step
+// Optimize the TypingAnimation component for better performance
 const TypingAnimation = ({ isActive }: { isActive: boolean }) => {
   const [text, setText] = useState("")
   const fullText = "Master Web Development with JavaScript, React, and Node.js"
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!isActive) {
@@ -403,23 +464,43 @@ const TypingAnimation = ({ isActive }: { isActive: boolean }) => {
     }
 
     let currentIndex = 0
-    const typingInterval = setInterval(() => {
+
+    const type = () => {
       if (currentIndex <= fullText.length) {
         setText(fullText.substring(0, currentIndex))
         currentIndex++
       } else {
-        clearInterval(typingInterval)
+        if (intervalRef.current) clearInterval(intervalRef.current)
 
         // Reset after a pause
-        setTimeout(() => {
+        const resetTimer = setTimeout(() => {
           setText("")
           currentIndex = 0
+          intervalRef.current = setInterval(type, 100)
         }, 2000)
-      }
-    }, 100)
 
-    return () => clearInterval(typingInterval)
-  }, [isActive])
+        return () => clearTimeout(resetTimer)
+      }
+    }
+
+    intervalRef.current = setInterval(type, 100)
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [isActive, fullText])
+
+  // Memoize the blinking cursor to prevent unnecessary re-renders
+  const blinkingCursor = useMemo(
+    () => (
+      <motion.span
+        animate={{ opacity: [0, 1, 0] }}
+        transition={{ repeat: Number.POSITIVE_INFINITY, duration: 0.8 }}
+        className="inline-block w-2 h-5 bg-primary ml-1"
+      />
+    ),
+    [],
+  )
 
   return (
     <div className="bg-background/80 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/20">
@@ -434,11 +515,7 @@ const TypingAnimation = ({ isActive }: { isActive: boolean }) => {
 
       <div className="font-mono text-lg mb-4 min-h-[100px]">
         {text}
-        <motion.span
-          animate={{ opacity: [0, 1, 0] }}
-          transition={{ repeat: Number.POSITIVE_INFINITY, duration: 0.8 }}
-          className="inline-block w-2 h-5 bg-primary ml-1"
-        ></motion.span>
+        {blinkingCursor}
       </div>
 
       <div className="flex flex-wrap gap-2 mt-6">

@@ -17,7 +17,6 @@ import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/
 import Link from "next/link"
 import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
-import { AnimationToggle } from "@/components/ui/animations/animation-toggle"
 
 // Enhanced NavItems component with improved animations
 const NavItems = () => {
@@ -239,8 +238,7 @@ export default function MainNavbar() {
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <AnimationToggle className="mr-2" />
-              <UserMenu>
+                <UserMenu>
                 <DropdownMenuContent
                   className="w-56 rounded-xl p-2 shadow-lg border border-border/50 backdrop-blur-sm bg-background/95"
                   align="end"

@@ -33,114 +33,109 @@ interface CreateTileGridProps {
 const tiles = [
   {
     icon: FileQuestion,
-    title: "AI-Powered MCQ Generator",
-    description: "Create intelligent multiple-choice questions with AI assistance for adaptive learning experiences.",
+    title: "AI-Enhanced MCQs",
+    description: "Transform your quizzes with AI-generated multiple-choice questions that adapt to each learner's performance.",
     url: "/dashboard/mcq",
     color: "blue",
     quotes: [
-      "Craft AI-generated MCQs that adapt to student performance!",
-      "Design quizzes that evolve with each learner's progress.",
-      "Leverage AI to create challenging yet fair multiple-choice questions.",
-      "Automate your quiz creation process with intelligent algorithms.",
-      "Enhance learning outcomes with AI-optimized MCQs.",
+      "Harness AI for adaptive MCQs that challenge and engage!",
+      "Elevate your assessments with smart, dynamic question generation.",
+      "Let AI craft balanced questions tailored to your students.",
+      "Experience quizzes that evolve with every answer.",
+      "Boost learning outcomes with AI-powered MCQs.",
     ],
     isPremium: false,
   },
   {
     icon: FileText,
-    title: "Document-Based Quiz Generator",
-    description: "Upload a document and let AI create a comprehensive quiz based on its content.",
+    title: "Document Quiz Generator",
+    description: "Upload documents and let our AI convert key insights into engaging, comprehensive quizzes.",
     url: "/dashboard/document",
     color: "amber",
     quotes: [
-      "Transform any document into an engaging quiz with AI!",
-      "Quickly create assessments from textbooks, articles, or research papers.",
-      "Let AI extract key concepts and generate relevant questions.",
-      "Save time on quiz creation while ensuring comprehensive coverage.",
-      "Adapt any written material into an interactive learning experience.",
+      "Turn any document into an interactive quiz in seconds!",
+      "Extract the essence of texts and test comprehension effortlessly.",
+      "Transform articles and research into dynamic assessments.",
+      "Streamline quiz creation with smart document parsing.",
+      "Experience effortless quiz generation from your study materials.",
     ],
     isPremium: false,
   },
   {
     icon: PenTool,
-    title: "AI Essay Question Creator",
-    description:
-      "Generate thought-provoking open-ended questions using AI to stimulate critical thinking and creativity.",
+    title: "Essay Question Creator",
+    description: "Spark critical thinking with AI-generated open-ended questions designed to inspire in-depth analysis.",
     url: "/dashboard/openended",
     color: "green",
     quotes: [
-      "Inspire deep analysis with AI-crafted open-ended questions!",
-      "Let AI help you create questions that spark innovative thinking.",
-      "Generate essay prompts that challenge and engage learners.",
-      "Harness AI to design questions that encourage unique perspectives.",
-      "Create AI-powered prompts that adapt to various subject matters.",
+      "Ignite creativity with thought-provoking essay prompts!",
+      "Let AI design questions that encourage unique insights.",
+      "Challenge students with innovative, open-ended queries.",
+      "Stimulate deeper understanding with AI-crafted essay topics.",
+      "Foster critical thinking with creative, adaptive prompts.",
     ],
     isPremium: true,
   },
   {
     icon: AlignLeft,
     title: "Smart Fill-in-the-Blanks",
-    description:
-      "Use AI to generate contextually relevant fill-in-the-blank exercises for enhanced vocabulary and comprehension.",
+    description: "Generate intelligent fill-in-the-blank exercises that boost vocabulary and reinforce key concepts.",
     url: "/dashboard/blanks",
     color: "pink",
     quotes: [
-      "Let AI craft clever fill-in-the-blanks to boost engagement!",
-      "Create adaptive exercises that grow with your students' skills.",
-      "Generate context-aware blanks that challenge and educate.",
-      "Use AI to identify key concepts for impactful learning.",
-      "Design intelligent gap-filling activities with AI assistance.",
+      "Craft engaging fill-in-the-blank challenges with AI!",
+      "Enhance learning with context-aware gap fillers.",
+      "Create exercises that adapt to learner proficiency.",
+      "Use AI to spotlight and reinforce key concepts.",
+      "Transform simple exercises into interactive learning tools.",
     ],
     isPremium: false,
   },
   {
     icon: BookOpen,
-    title: "AI Course Builder",
-    description:
-      "Leverage AI to structure and create comprehensive courses with dynamic content and personalized learning paths.",
+    title: "Dynamic Course Builder",
+    description: "Leverage AI to structure comprehensive courses with personalized content and adaptive learning paths.",
     url: "/dashboard/create",
     color: "purple",
     quotes: [
-      "Build AI-powered courses that adapt to each learner!",
-      "Create intelligent learning journeys with AI assistance.",
-      "Design courses that evolve based on student performance.",
-      "Let AI help you craft engaging and effective curriculum.",
-      "Develop smart, interactive courses for the future of education.",
+      "Build smart courses that evolve with every learner!",
+      "Design engaging curriculums powered by intelligent algorithms.",
+      "Transform course creation with dynamic, adaptive content.",
+      "Craft personalized learning journeys with AI guidance.",
+      "Experience the future of course creation with smart automation.",
     ],
     isPremium: false,
   },
   {
     icon: Code,
-    title: "AI Coding Challenge Creator",
-    description:
-      "Generate diverse coding challenges and quizzes using AI to test and improve programming skills across languages.",
+    title: "Coding Challenge Creator",
+    description: "Generate a variety of coding challenges and quizzes with AI to test and enhance programming skills.",
     url: "/dashboard/code",
     color: "red",
     quotes: [
-      "Create AI-generated coding challenges that adapt to skill levels!",
-      "Design intelligent programming quizzes with AI assistance.",
-      "Let AI craft coding problems that push logical boundaries.",
-      "Generate language-specific challenges with AI precision.",
-      "Develop adaptive coding tests that grow with your students.",
+      "Develop coding challenges that scale with your learners!",
+      "Test programming skills with intelligently generated tasks.",
+      "Create interactive coding tests with AI precision.",
+      "Push logical boundaries with adaptive coding challenges.",
+      "Empower your students with smart, language-specific quizzes.",
     ],
     isPremium: true,
   },
   {
     icon: Brain,
-    title: "AI-Powered Flashcard Learning System",
-    description:
-      "Create and study with intelligent flashcards using AI to enhance memory retention and adapt to your learning pace.",
+    title: "Adaptive Flashcards",
+    description: "Revolutionize study sessions with AI-powered flashcards that adjust to your learning pace.",
     url: "/dashboard/flashcard",
     color: "red",
     quotes: [
-      "Master any subject with AI-generated adaptive flashcards!",
-      "Boost your memory with intelligent spaced repetition learning.",
-      "Track your progress with detailed analytics and mastery levels.",
-      "Engage in gamified learning with streaks and confidence ratings.",
-      "Create personalized study decks that evolve as you learn.",
+      "Boost memory retention with adaptive flashcards!",
+      "Experience personalized revision with AI-powered decks.",
+      "Engage with flashcards that evolve as you learn.",
+      "Master subjects faster with smart spaced repetition.",
+      "Transform study routines with intelligent flashcard systems.",
     ],
     isPremium: false,
-},
+  },
 ]
 
 function Tile({ icon: Icon, title, description, url, index, quotes, color, isPremium }: CreateTileGridProps) {
@@ -174,6 +169,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
         transition={{ duration: 0.5, delay: index * 0.1 }}
         whileHover={isDisabled ? {} : { scale: 1.03, y: -5 }}
         whileTap={isDisabled ? {} : { scale: 0.98 }}
+        aria-label={`Open details for ${title}`}
       >
         <Card
           className={`cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:shadow-lg ${
@@ -216,7 +212,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
                 variant="secondary"
                 className={`text-sm sm:text-base py-1 px-2 sm:py-2 sm:px-4 bg-${color}-100 dark:bg-${color}-800 text-${color}-700 dark:text-${color}-200`}
               >
-                Explore AI Magic
+                Discover AI Magic
               </Badge>
             </motion.div>
           </CardFooter>
@@ -278,6 +274,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
             <Button
               asChild
               className={`w-full text-base sm:text-xl h-12 sm:h-14 bg-${color}-500 hover:bg-${color}-600 text-white`}
+              aria-label={`Get started with ${title}`}
             >
               <Link href={url}>
                 <motion.span
@@ -287,7 +284,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Start Creating with AI
+                  Get Started
                 </motion.span>
               </Link>
             </Button>
@@ -309,4 +306,3 @@ export function CreateTileGrid() {
     </div>
   )
 }
-

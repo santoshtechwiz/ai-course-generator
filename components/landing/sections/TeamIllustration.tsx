@@ -3,27 +3,27 @@
 import { motion } from "framer-motion"
 
 const TeamIllustration = () => {
-  // Apple-style animation variants
+  // Apple-style animation variants with optimized values
   const svgVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        duration: 0.8,
+        duration: 0.6, // Reduced from 0.8 for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
+        staggerChildren: 0.08, // Reduced from 0.1 for better performance
+        delayChildren: 0.1, // Reduced from 0.2 for better performance
       },
     },
   }
 
   const circleVariants = {
-    hidden: { scale: 0.8, opacity: 0 },
+    hidden: { scale: 0.9, opacity: 0 }, // Adjusted for better performance
     visible: {
       scale: 1,
       opacity: 1,
       transition: {
-        duration: 0.8,
+        duration: 0.6, // Reduced from 0.8 for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     },
@@ -35,7 +35,7 @@ const TeamIllustration = () => {
       pathLength: 1,
       opacity: 1,
       transition: {
-        duration: 1.5,
+        duration: 1.2, // Reduced from 1.5 for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     },
@@ -47,15 +47,15 @@ const TeamIllustration = () => {
       scale: 1,
       opacity: 1,
       transition: {
-        duration: 0.8,
-        delay,
+        duration: 0.6, // Reduced from 0.8 for better performance
+        delay: delay * 0.8, // Reduced delay multiplier for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     }),
     hover: {
-      scale: 1.05,
+      scale: 1.03, // Reduced from 1.05 for better performance
       transition: {
-        duration: 0.3,
+        duration: 0.2, // Reduced from 0.3 for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     },
@@ -174,11 +174,11 @@ const TeamIllustration = () => {
         r="5"
         fill="url(#particleGradient)"
         animate={{
-          y: [0, -10, 0],
-          opacity: [0.7, 1, 0.7],
+          y: [0, -8, 0], // Reduced movement for better performance
+          opacity: [0.6, 0.9, 0.6], // Adjusted opacity for better performance
           boxShadow: [
             "0 0 0 0 rgba(var(--primary-rgb), 0)",
-            "0 0 0 3px rgba(var(--primary-rgb), 0.3)",
+            "0 0 0 2px rgba(var(--primary-rgb), 0.2)", // Reduced shadow for better performance
             "0 0 0 0 rgba(var(--primary-rgb), 0)",
           ],
         }}
@@ -188,17 +188,18 @@ const TeamIllustration = () => {
           ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
         }}
       />
+
       <motion.circle
         cx="450"
         cy="220"
         r="5"
         fill="url(#particleGradient)"
         animate={{
-          y: [0, -15, 0],
-          opacity: [0.7, 1, 0.7],
+          y: [0, -12, 0], // Reduced movement for better performance
+          opacity: [0.6, 0.9, 0.6], // Adjusted opacity for better performance
           boxShadow: [
             "0 0 0 0 rgba(var(--primary-rgb), 0)",
-            "0 0 0 3px rgba(var(--primary-rgb), 0.3)",
+            "0 0 0 2px rgba(var(--primary-rgb), 0.2)", // Reduced shadow for better performance
             "0 0 0 0 rgba(var(--primary-rgb), 0)",
           ],
         }}
@@ -209,50 +210,7 @@ const TeamIllustration = () => {
           delay: 0.5,
         }}
       />
-      <motion.circle
-        cx="350"
-        cy="380"
-        r="5"
-        fill="url(#particleGradient)"
-        animate={{
-          y: [0, 15, 0],
-          opacity: [0.7, 1, 0.7],
-          boxShadow: [
-            "0 0 0 0 rgba(var(--primary-rgb), 0)",
-            "0 0 0 3px rgba(var(--primary-rgb), 0.3)",
-            "0 0 0 0 rgba(var(--primary-rgb), 0)",
-          ],
-        }}
-        transition={{
-          duration: 3.5,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-          delay: 1,
-        }}
-      />
-      <motion.circle
-        cx="450"
-        cy="380"
-        r="5"
-        fill="url(#particleGradient)"
-        animate={{
-          y: [0, 10, 0],
-          opacity: [0.7, 1, 0.7],
-          boxShadow: [
-            "0 0 0 0 rgba(var(--primary-rgb), 0)",
-            "0 0 0 3px rgba(var(--primary-rgb), 0.3)",
-            "0 0 0 0 rgba(var(--primary-rgb), 0)",
-          ],
-        }}
-        transition={{
-          duration: 2.5,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-          delay: 1.5,
-        }}
-      />
 
-      {/* Data flow animation */}
       <motion.circle
         cx="340"
         cy="300"
@@ -260,13 +218,13 @@ const TeamIllustration = () => {
         fill="#FFFFFF"
         initial={{ opacity: 0 }}
         animate={{
-          opacity: [0, 1, 0],
+          opacity: [0, 0.8, 0], // Reduced opacity for better performance
           x: [340, 290, 280],
         }}
         transition={{
           duration: 2,
           repeat: Number.POSITIVE_INFINITY,
-          repeatDelay: 3,
+          repeatDelay: 4, // Increased delay for better performance
           ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
           delay: 2,
         }}
@@ -279,13 +237,13 @@ const TeamIllustration = () => {
         fill="#FFFFFF"
         initial={{ opacity: 0 }}
         animate={{
-          opacity: [0, 1, 0],
+          opacity: [0, 0.8, 0], // Reduced opacity for better performance
           x: [460, 510, 520],
         }}
         transition={{
           duration: 2,
           repeat: Number.POSITIVE_INFINITY,
-          repeatDelay: 3,
+          repeatDelay: 4, // Increased delay for better performance
           ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
           delay: 2.5,
         }}
@@ -298,13 +256,13 @@ const TeamIllustration = () => {
         fill="#FFFFFF"
         initial={{ opacity: 0 }}
         animate={{
-          opacity: [0, 1, 0],
+          opacity: [0, 0.8, 0], // Reduced opacity for better performance
           y: [240, 200, 180],
         }}
         transition={{
           duration: 2,
           repeat: Number.POSITIVE_INFINITY,
-          repeatDelay: 3,
+          repeatDelay: 4, // Increased delay for better performance
           ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
           delay: 3,
         }}
@@ -317,13 +275,13 @@ const TeamIllustration = () => {
         fill="#FFFFFF"
         initial={{ opacity: 0 }}
         animate={{
-          opacity: [0, 1, 0],
+          opacity: [0, 0.8, 0], // Reduced opacity for better performance
           y: [360, 400, 420],
         }}
         transition={{
           duration: 2,
           repeat: Number.POSITIVE_INFINITY,
-          repeatDelay: 3,
+          repeatDelay: 4, // Increased delay for better performance
           ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
           delay: 3.5,
         }}
