@@ -177,7 +177,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
 
           <JsonLd type="default" />
-          <JsonLd type="faq" data={faqItems} />
+          {/* <JsonLd type="faq" data={faqItems} /> */}
 
           <main className="flex-1 flex flex-col">{children}</main>
           <Analytics />
