@@ -37,19 +37,42 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
         setLoading(false)
         return
       }
-
+  
       try {
         setLoading(true)
         const response = await fetch(`/api/referrals`)
         const data = await response.json()
-        
+  
         if (response.ok) {
+          let referralCode = data.referralCode || ""
+  
+          // If referralCode is missing, generate a new one
+          if (!referralCode) {
+            const generateRes = await fetch(`/api/referrals/generate`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId }),
+            })
+  
+            const generateData = await generateRes.json()
+  
+            if (generateRes.ok && generateData.referralCode) {
+              referralCode = generateData.referralCode
+            } else {
+              toast({
+                title: "Error",
+                description: generateData.error || "Failed to generate referral code",
+                variant: "destructive",
+              })
+            }
+          }
+  
           setReferralData({
-            referralCode: data.referralCode || "",
+            referralCode,
             totalReferrals: data.totalReferrals || 0,
             completedReferrals: data.completedReferrals || 0,
             pendingReferrals: data.pendingReferrals || 0,
-            tokensEarned: data.tokensEarned || 0
+            tokensEarned: data.tokensEarned || 0,
           })
         } else {
           toast({
@@ -69,9 +92,10 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
         setLoading(false)
       }
     }
-
+  
     fetchReferralData()
   }, [userId, toast])
+  
 
   const copyToClipboard = () => {
     if (!referralData.referralCode) return

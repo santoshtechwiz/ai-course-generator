@@ -48,6 +48,7 @@ export function PricingPage({
   tokensUsed = 0,
   credits = 0,
   expirationDate = null,
+  referralCode = null,
 }: {
   userId: string | null
   currentPlan: SubscriptionPlanType | null
@@ -56,6 +57,8 @@ export function PricingPage({
   tokensUsed?: number
   credits?: number
   expirationDate?: string | null
+
+  referralCode?: string | null
 }) {
   const [loading, setLoading] = useState<SubscriptionPlanType | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<1 | 6>(1)
@@ -69,7 +72,7 @@ export function PricingPage({
   const [isPromoValid, setIsPromoValid] = useState<boolean>(false)
   const [promoDiscount, setPromoDiscount] = useState<number>(0)
   const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false)
-
+  const [isReferralCodeValid, setIsReferralCodeValid] = useState<boolean>(false)
   // Normalize subscription status for case-insensitive comparison
   const normalizedStatus = subscriptionStatus?.toUpperCase() as "ACTIVE" | "CANCELED" | null;
   const isSubscribed = currentPlan && normalizedStatus === "ACTIVE"
@@ -196,6 +199,8 @@ export function PricingPage({
               planName,
               duration,
               promoCode: isPromoValid ? promoCode : undefined,
+              promoDiscount:promoDiscount,
+              referralCode: referralCode||null
             }),
           )
         }
@@ -229,10 +234,11 @@ export function PricingPage({
 
       // For paid plans, use the subscription hook
       const result = await hookHandleSubscribe(
-        planName,
-        duration,
-        isPromoValid ? promoCode : undefined,
-        isPromoValid ? promoDiscount : undefined,
+      planName,
+      duration,
+      promoCode,
+      promoDiscount,
+      referralCode ?? undefined, // Pass referral code if available
       )
 
       if (!result.success) {
@@ -543,6 +549,7 @@ export function PricingPage({
         }}
         expirationDate={formattedExpirationDate}
         isAuthenticated={isAuthenticated}
+      
       />
 
       {/* Why Upgrade Section - Always show immediately */}

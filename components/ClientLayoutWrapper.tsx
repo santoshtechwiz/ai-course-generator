@@ -6,12 +6,9 @@ import { Suspense } from "react"
 import { SubscriptionProvider } from "@/providers/SubscriptionProvider"
 import { UserProvider } from "@/providers/userContext"
 import { ThemeProvider } from "next-themes"
-import { AnimationProvider } from "@/providers/animation-provider"
-import { LoadingProvider } from "./ui/loading/loading-provider"
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={true} disableTransitionOnChange>
-
       <UserProvider>
         <SubscriptionProvider>
           <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -31,11 +28,7 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
               showAtBottom={false}
             />
             <Suspense>
-              <AnimationProvider>
-                <LoadingProvider>
-                  <main className="flex-1 overflow-auto">{children}</main>
-                </LoadingProvider>
-              </AnimationProvider>
+              <main className="flex-1 overflow-auto">{children}</main>
             </Suspense>
           </div>
         </SubscriptionProvider>

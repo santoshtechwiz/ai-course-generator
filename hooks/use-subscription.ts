@@ -34,65 +34,23 @@ export class SubscriptionError extends Error {
 }
 
 export interface UseSubscriptionOptions {
-  /**
-   * Whether to allow plan changes during an active subscription
-   * @default false
-   */
   allowPlanChanges?: boolean
-
-  /**
-   * Whether to allow downgrades during an active subscription
-   * @default false
-   */
   allowDowngrades?: boolean
-
-  /**
-   * Callback to run after a successful subscription
-   */
   onSubscriptionSuccess?: (result: SubscriptionActionResult) => void
-
-  /**
-   * Callback to run after a failed subscription
-   */
   onSubscriptionError?: (error: SubscriptionError) => void
 }
 
 export interface UseSubscriptionReturn {
-  /**
-   * Whether a subscription action is currently loading
-   */
   isLoading: boolean
-
-  /**
-   * Subscribe to a plan
-   * @param planName The plan to subscribe to
-   * @param duration The duration of the subscription in months
-   * @param promoCode Optional promo code
-   * @param promoDiscount Optional promo discount percentage
-   */
   handleSubscribe: (
     planName: SubscriptionPlanType,
     duration: number,
     promoCode?: string,
     promoDiscount?: number,
+    referralCode?: string,
   ) => Promise<SubscriptionActionResult>
-
-  /**
-   * Cancel the current subscription
-   */
   cancelSubscription: () => Promise<SubscriptionActionResult>
-
-  /**
-   * Resume a canceled subscription
-   */
   resumeSubscription: () => Promise<SubscriptionActionResult>
-
-  /**
-   * Check if a user can subscribe to a specific plan
-   * @param currentPlan The user's current plan
-   * @param targetPlan The plan the user wants to subscribe to
-   * @param subscriptionStatus The current subscription status
-   */
   canSubscribeToPlan: (
     currentPlan: SubscriptionPlanType | null,
     targetPlan: SubscriptionPlanType,
@@ -103,9 +61,6 @@ export interface UseSubscriptionReturn {
   }
 }
 
-/**
- * Hook for managing subscription actions
- */
 export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscriptionReturn => {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -113,33 +68,14 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
 
   const { allowPlanChanges = false, allowDowngrades = false, onSubscriptionSuccess, onSubscriptionError } = options
 
-  /**
-   * Check if a user can subscribe to a specific plan
-   */
   const canSubscribeToPlan = (
     currentPlan: SubscriptionPlanType | null,
     targetPlan: SubscriptionPlanType,
     subscriptionStatus: string | null,
-  ): { canSubscribe: boolean; reason?: string } => {
-    // If no current plan or inactive, they can subscribe to any plan
-    if (!currentPlan || subscriptionStatus !== "ACTIVE") {
-      return { canSubscribe: true }
-    }
-
-    // If they're trying to subscribe to the same plan they already have
-    if (currentPlan === targetPlan) {
-      return {
-        canSubscribe: false,
-        reason: "You are already subscribed to this plan",
-      }
-    }
-
-    // If they're on the free plan, they can upgrade to any paid plan
-    if (currentPlan === "FREE") {
-      return { canSubscribe: true }
-    }
-
-    // If they're trying to downgrade to the free plan
+  ) => {
+    if (!currentPlan || subscriptionStatus !== "ACTIVE") return { canSubscribe: true }
+    if (currentPlan === targetPlan) return { canSubscribe: false, reason: "You are already subscribed to this plan" }
+    if (currentPlan === "FREE") return { canSubscribe: true }
     if (targetPlan === "FREE") {
       return {
         canSubscribe: false,
@@ -147,7 +83,6 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
       }
     }
 
-    // Plan hierarchy for determining upgrades/downgrades
     const planHierarchy: Record<SubscriptionPlanType, number> = {
       FREE: 0,
       BASIC: 1,
@@ -155,10 +90,8 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
       ULTIMATE: 3,
     }
 
-    // Check if this is a downgrade
     const isDowngrade = planHierarchy[targetPlan] < planHierarchy[currentPlan]
 
-    // If downgrades are not allowed
     if (isDowngrade && !allowDowngrades) {
       return {
         canSubscribe: false,
@@ -166,7 +99,6 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
       }
     }
 
-    // If plan changes are not allowed at all
     if (!allowPlanChanges) {
       return {
         canSubscribe: false,
@@ -177,27 +109,22 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
     return { canSubscribe: true }
   }
 
-  /**
-   * Subscribe to a plan
-   */
   const handleSubscribe = async (
     planName: SubscriptionPlanType,
     duration: number,
     promoCode?: string,
     promoDiscount?: number,
+    referralCode?: string,
   ): Promise<SubscriptionActionResult> => {
     setIsLoading(true)
 
     try {
-      // Get the current user ID
       const userId = session?.data?.user?.id
 
       if (!userId) {
         const error = new SubscriptionError("You must be logged in to subscribe", "AUTHENTICATION_REQUIRED")
 
-        if (onSubscriptionError) {
-          onSubscriptionError(error)
-        }
+        if (onSubscriptionError) onSubscriptionError(error)
 
         toast({
           title: "Authentication Required",
@@ -205,7 +132,6 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
           variant: "destructive",
         })
 
-        // Store pending subscription in localStorage to resume after login
         if (typeof window !== "undefined") {
           localStorage.setItem(
             "pendingSubscription",
@@ -214,6 +140,7 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
               duration,
               promoCode,
               promoDiscount,
+              referralCode,
             }),
           )
         }
@@ -224,14 +151,11 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
         }
       }
 
-      // For free plan, handle activation directly
       if (planName === "FREE") {
         try {
           const response = await fetch("/api/subscriptions/activate-free", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ confirmed: true }),
           })
 
@@ -249,7 +173,6 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
               variant: "default",
             })
 
-            // Trigger subscription changed event
             window.dispatchEvent(new Event("subscription-changed"))
 
             const actionResult = {
@@ -257,17 +180,13 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
               message: "Free plan activated successfully",
             }
 
-            if (onSubscriptionSuccess) {
-              onSubscriptionSuccess(actionResult)
-            }
+            if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
 
             return actionResult
           } else {
             throw new SubscriptionError(result.message || "Failed to activate free plan", "SERVER_ERROR")
           }
         } catch (error) {
-          console.error("Error activating free plan:", error)
-
           const subscriptionError =
             error instanceof SubscriptionError
               ? error
@@ -276,9 +195,7 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
                   "SERVER_ERROR",
                 )
 
-          if (onSubscriptionError) {
-            onSubscriptionError(subscriptionError)
-          }
+          if (onSubscriptionError) onSubscriptionError(subscriptionError)
 
           toast({
             title: "Activation Failed",
@@ -293,18 +210,16 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
         }
       }
 
-      // For paid plans, create a checkout session
       const response = await fetch("/api/subscriptions/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
           planName,
           duration,
           promoCode,
           promoDiscount,
+          referralCode, 
         }),
       })
 
@@ -317,7 +232,6 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
         )
       }
 
-      // Check if we have a checkout URL
       if (result.url) {
         toast({
           title: "Redirecting to Checkout",
@@ -331,16 +245,11 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
           redirectUrl: result.url,
         }
 
-        if (onSubscriptionSuccess) {
-          onSubscriptionSuccess(actionResult)
-        }
+        if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
 
-        // Redirect to the checkout URL
         window.location.href = result.url
         return actionResult
       } else if (result.sessionId) {
-        // Fallback if only sessionId is returned
-        console.warn("No checkout URL returned, but session ID is available:", result.sessionId)
         toast({
           title: "Checkout Ready",
           description: "Your checkout session has been created. Please wait...",
@@ -352,17 +261,13 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
           message: "Checkout session created",
         }
 
-        if (onSubscriptionSuccess) {
-          onSubscriptionSuccess(actionResult)
-        }
+        if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
 
         return actionResult
       }
 
       throw new SubscriptionError("No checkout URL or session ID returned", "SERVER_ERROR")
     } catch (error) {
-      console.error("Error subscribing:", error)
-
       const subscriptionError =
         error instanceof SubscriptionError
           ? error
@@ -371,9 +276,7 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
               "SERVER_ERROR",
             )
 
-      if (onSubscriptionError) {
-        onSubscriptionError(subscriptionError)
-      }
+      if (onSubscriptionError) onSubscriptionError(subscriptionError)
 
       toast({
         title: "Subscription Failed",
@@ -390,17 +293,12 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
     }
   }
 
-  /**
-   * Cancel the current subscription
-   */
   const cancelSubscription = async (): Promise<SubscriptionActionResult> => {
     setIsLoading(true)
     try {
       const response = await fetch("/api/subscriptions/cancel", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       })
 
       const result = await response.json()
@@ -415,19 +313,12 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
         variant: "default",
       })
 
-      const actionResult = {
-        success: true,
-        message: "Subscription cancelled successfully",
-      }
+      const actionResult = { success: true, message: "Subscription cancelled successfully" }
 
-      if (onSubscriptionSuccess) {
-        onSubscriptionSuccess(actionResult)
-      }
+      if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
 
       return actionResult
     } catch (error) {
-      console.error("Error cancelling subscription:", error)
-
       const subscriptionError =
         error instanceof SubscriptionError
           ? error
@@ -436,9 +327,7 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
               "SERVER_ERROR",
             )
 
-      if (onSubscriptionError) {
-        onSubscriptionError(subscriptionError)
-      }
+      if (onSubscriptionError) onSubscriptionError(subscriptionError)
 
       toast({
         title: "Cancellation Failed",
@@ -446,26 +335,18 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
         variant: "destructive",
       })
 
-      return {
-        success: false,
-        message: subscriptionError.message,
-      }
+      return { success: false, message: subscriptionError.message }
     } finally {
       setIsLoading(false)
     }
   }
 
-  /**
-   * Resume a canceled subscription
-   */
   const resumeSubscription = async (): Promise<SubscriptionActionResult> => {
     setIsLoading(true)
     try {
       const response = await fetch("/api/subscriptions/resume", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       })
 
       const result = await response.json()
@@ -480,19 +361,12 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
         variant: "default",
       })
 
-      const actionResult = {
-        success: true,
-        message: "Subscription resumed successfully",
-      }
+      const actionResult = { success: true, message: "Subscription resumed successfully" }
 
-      if (onSubscriptionSuccess) {
-        onSubscriptionSuccess(actionResult)
-      }
+      if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
 
       return actionResult
     } catch (error) {
-      console.error("Error resuming subscription:", error)
-
       const subscriptionError =
         error instanceof SubscriptionError
           ? error
@@ -501,9 +375,7 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
               "SERVER_ERROR",
             )
 
-      if (onSubscriptionError) {
-        onSubscriptionError(subscriptionError)
-      }
+      if (onSubscriptionError) onSubscriptionError(subscriptionError)
 
       toast({
         title: "Resume Failed",
@@ -511,10 +383,7 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
         variant: "destructive",
       })
 
-      return {
-        success: false,
-        message: subscriptionError.message,
-      }
+      return { success: false, message: subscriptionError.message }
     } finally {
       setIsLoading(false)
     }
@@ -528,4 +397,3 @@ export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscr
     isLoading,
   }
 }
-

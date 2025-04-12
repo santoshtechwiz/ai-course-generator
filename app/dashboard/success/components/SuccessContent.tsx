@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Zap, CheckCircle, FileText, ArrowRight } from "lucide-react"
+import { Zap, CheckCircle, FileText, ArrowRight, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -17,6 +17,7 @@ export function SuccessContent({ sessionId }: SuccessContentProps) {
   const [error, setError] = useState<string | null>(null)
   const [planName, setPlanName] = useState<string | null>(null)
   const [tokensAdded, setTokensAdded] = useState<number | null>(null)
+  const [data, setData] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -58,6 +59,7 @@ export function SuccessContent({ sessionId }: SuccessContentProps) {
         } else {
           throw new Error(`Payment ${data.status}`)
         }
+        setData(data)
       } catch (err) {
         console.error("Error verifying payment:", err)
         setError(err instanceof Error ? err.message : "An unexpected error occurred")
@@ -129,6 +131,16 @@ export function SuccessContent({ sessionId }: SuccessContentProps) {
             </div>
           )}
 
+          {data?.subscription?.metadata?.referralCode && (
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 mb-4">
+              <div className="flex items-center mb-2">
+                <Gift className="h-5 w-5 text-green-500 mr-2" />
+                <h4 className="font-semibold">Referral Applied</h4>
+              </div>
+              <p>Referral benefits have been added to your account</p>
+            </div>
+          )}
+
           <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
             <div className="flex items-center mb-2">
               <FileText className="h-5 w-5 text-blue-500 mr-2" />
@@ -169,4 +181,3 @@ function LoadingSkeleton() {
     </div>
   )
 }
-

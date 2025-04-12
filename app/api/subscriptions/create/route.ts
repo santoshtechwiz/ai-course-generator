@@ -2,14 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { z } from "zod"
 
-
 import { SubscriptionService } from "@/services/subscription-service"
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/authOptions"
 
 // Define validation schema for request body
 const subscriptionSchema = z.object({
-  userId: z.string(),
   planName: z.string(),
   duration: z.number().int().positive(),
   referralCode: z.string().optional(),
@@ -49,21 +47,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify the user is authorized to create a subscription for this userId
-    if (session.user.id !== validatedData.userId) {
-      return NextResponse.json(
-        {
-          error: "Unauthorized",
-          message: "You are not authorized to create a subscription for this user",
-          errorType: "AUTHENTICATION_REQUIRED",
-        },
-        { status: 403 },
-      )
-    }
+    const userId = session.user.id
 
     // Check if user already has an active subscription
     const existingSubscription = await prisma.userSubscription.findUnique({
-      where: { userId: validatedData.userId },
+      where: { userId },
     })
 
     // If user has an active subscription, they can't change plans until it expires
@@ -115,7 +103,7 @@ export async function POST(req: NextRequest) {
     try {
       await prisma.pendingSubscription.create({
         data: {
-          userId: validatedData.userId,
+          userId,
           planId: validatedData.planName,
           duration: validatedData.duration,
           referralCode: validatedData.referralCode,
@@ -132,7 +120,7 @@ export async function POST(req: NextRequest) {
 
     // Create checkout session
     const result = await SubscriptionService.createCheckoutSession(
-      validatedData.userId,
+      userId,
       validatedData.planName,
       validatedData.duration,
       validatedData.referralCode,
@@ -171,4 +159,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-
