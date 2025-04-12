@@ -21,9 +21,10 @@ import AIEmoji from "../AIEmoji"
 import { useChapterSummary } from "@/hooks/useChapterSummary"
 import { processMarkdown } from "@/lib/markdownProcessor"
 import { MarkdownRenderer } from "./markdownUtils"
-import PageLoader from "@/components/ui/loader"
+
 import { useToast } from "@/hooks/use-toast"
 import PDFGenerator from "@/components/shared/PDFGenerator"
+import { Loader } from "@/components/ui/loader"
 
 interface CourseAISummaryProps {
   chapterId: number
@@ -116,7 +117,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
     }
 
     if (isLoading || isFetching) {
-      return <PageLoader />
+      return <Loader text="Loading" />
     }
 
     if (isError && !existingSummary) {

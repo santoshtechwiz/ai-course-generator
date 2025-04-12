@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Clock, FileText, Star, BookOpen, Sparkles, Bookmark, BookmarkCheck } from "lucide-react"
+import { ArrowLeft, Clock, FileText, Star, BookOpen, Sparkles, Bookmark, BookmarkCheck, ChevronRight } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 import { Button } from "@/components/ui/button"
@@ -34,7 +34,7 @@ interface QuizDetailsPageProps {
   isFavorite?: boolean
   isPublic?: boolean
   children: React.ReactNode
-  breadcrumbItems?: { name: string; url: string }[]
+  breadcrumbItems?: { name: string; href: string }[]
   category?: string
   tags?: string[]
   completionRate?: number
@@ -149,27 +149,18 @@ export default function QuizDetailsPage({
           ))}
         </div>
       )}
-
+ <div className="space-y-8">
       {/* Breadcrumbs */}
       {breadcrumbItems.length > 0 && (
-        <Breadcrumb className="mb-4">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/">Home</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            {breadcrumbItems.map((item, index) => (
-              <React.Fragment key={index}>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href={item.url}>{item.name}</BreadcrumbLink>
-                </BreadcrumbItem>
-                {index < breadcrumbItems.length - 1 && <BreadcrumbSeparator />}
-              </React.Fragment>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
+        <div className="space-y-14">
+        <Breadcrumb
+          paths={breadcrumbItems}
+          showIcons={true}
+          separator={true ? <ChevronRight className="rotate-45" /> : undefined}
+        />
+        </div>
       )}
-
+</div>
       <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
         <div className="lg:w-2/3">
           <motion.div

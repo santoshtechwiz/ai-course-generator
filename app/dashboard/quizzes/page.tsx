@@ -43,9 +43,9 @@ const QuizPage = async () => {
 
   // Prepare data for breadcrumb schema
   const breadcrumbData = [
-    { name: "Home", url: "/" },
-    { name: "Dashboard", url: "/dashboard" },
-    { name: "Quizzes", url: "/dashboard/quizzes" },
+    { name: "Home", href: "/" },
+    { name: "Dashboard", href: "/dashboard" },
+    { name: "Quizzes", href: "/dashboard/quizzes" },
   ]
 
   return (

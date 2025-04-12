@@ -6,7 +6,7 @@ import { signIn, signOut, useSession } from "next-auth/react"
 import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown, X } from "lucide-react"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/ThemeToggle"
+
 import { navItems } from "@/constants/navItems"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
@@ -17,6 +17,7 @@ import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/
 import Link from "next/link"
 import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
+import { ThemeToggle } from "../ThemeToggle"
 
 const NavItems = () => {
   const router = useRouter()
@@ -44,7 +45,7 @@ const NavItems = () => {
               <item.icon className="h-4 w-4" />
               <span>{item.name}</span>
               {item.subItems.length > 0 && <ChevronDown className="h-3 w-3 ml-1.5" />}
-              
+
               {pathname === item.href && (
                 <motion.div
                   layoutId="nav-underline"
@@ -105,18 +106,18 @@ export default function MainNavbar() {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { type: "spring", stiffness: 300, damping: 30 }
-    }
+      transition: { type: "spring", stiffness: 300, damping: 30 },
+    },
   }
 
   const itemVariants = {
     hidden: { opacity: 0, y: -10 },
-    visible: { opacity: 1, y: 0 }
+    visible: { opacity: 1, y: 0 },
   }
 
   return (
     <motion.header
-      className={`sticky top-0 z-[1000] w-full border-b bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 transition-all duration-300 ${
+      className={`fixed top-0 z-[1000] w-full border-b bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 transition-all duration-300 ${
         scrolled ? "shadow-sm border-border/80" : "border-transparent"
       }`}
       variants={headerVariants}
@@ -126,7 +127,7 @@ export default function MainNavbar() {
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       <motion.div
-        className="container mx-auto max-w-screen-xl flex h-16 items-center justify-between px-4 sm:px-6"
+        className="w-full px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between"
         layout
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
@@ -149,19 +150,20 @@ export default function MainNavbar() {
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSearchModalOpen(true)}
-              className="rounded-full"
-            >
+            <Button variant="ghost" size="icon" onClick={() => setIsSearchModalOpen(true)} className="rounded-full">
               <Search className="h-4 w-4" />
             </Button>
           </motion.div>
 
           <NotificationsMenu initialCount={creditScore} />
 
-          <ThemeToggle />
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <ThemeToggle />
+          </motion.div>
 
           {status === "authenticated" ? (
             <UserMenu>
@@ -169,11 +171,7 @@ export default function MainNavbar() {
                 <div className="p-2 space-y-1">
                   <p className="font-medium truncate">{session.user?.name}</p>
                   <p className="text-sm text-muted-foreground truncate">{session.user?.email}</p>
-                  {subscriptionStatus && (
-                    <Badge className="mt-1">
-                      {subscriptionStatus.subscriptionPlan}
-                    </Badge>
-                  )}
+                  {subscriptionStatus && <Badge className="mt-1">{subscriptionStatus.subscriptionPlan}</Badge>}
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -190,7 +188,7 @@ export default function MainNavbar() {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                 {session.user && (
+                {session.user && (
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/account" className="cursor-pointer">
                       <Crown className="mr-2 h-4 w-4" />
@@ -205,11 +203,7 @@ export default function MainNavbar() {
               </DropdownMenuContent>
             </UserMenu>
           ) : (
-            <Button
-              variant="default"
-              onClick={() => signIn()}
-              className="hidden md:flex rounded-full"
-            >
+            <Button variant="default" onClick={() => signIn()} className="hidden md:flex rounded-full">
               <LogIn className="mr-2 h-4 w-4" />
               Sign In
             </Button>
@@ -248,12 +242,7 @@ export default function MainNavbar() {
           <SheetHeader className="p-4 border-b">
             <SheetTitle className="flex justify-between items-center">
               <Logo size="small" />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="h-8 w-8"
-              >
+              <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)} className="h-8 w-8">
                 <X className="h-4 w-4" />
               </Button>
             </SheetTitle>
@@ -263,11 +252,7 @@ export default function MainNavbar() {
             <nav className="space-y-2">
               {navItems.map((item) => (
                 <SheetClose asChild key={item.name}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => router.push(item.href)}
-                  >
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => router.push(item.href)}>
                     <item.icon className="mr-2 h-4 w-4" />
                     {item.name}
                   </Button>
@@ -280,15 +265,9 @@ export default function MainNavbar() {
                 <div className="space-y-4">
                   <div className="p-2 rounded-lg bg-accent">
                     <p className="font-medium truncate">{session.user?.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {session.user?.email}
-                    </p>
+                    <p className="text-sm text-muted-foreground truncate">{session.user?.email}</p>
                   </div>
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    onClick={() => signOut()}
-                  >
+                  <Button variant="destructive" className="w-full" onClick={() => signOut()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </Button>

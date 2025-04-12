@@ -1,131 +1,156 @@
 "use client"
 
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import type { UserQuiz } from "@/app/types/types"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2, Clock, BookOpen } from "lucide-react"
+import { motion } from "framer-motion"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, Clock, ExternalLink, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-function getQuizTypeRoute(quizType: string): string {
-  switch (quizType) {
-    case "mcq":
-      return "mcq"
-    case "openended":
-      return "openended"
-    case "fill-blanks":
-      return "blanks"
-    case "code":
-      return "code"
-    case "flashcard":
-      return "flashcard"
-    default:
-      return "quiz"
-  }
+interface Quiz {
+  id: string
+  title: string
+  slug: string
+  score?: number
+  completedAt?: string
+  status: "completed" | "failed" | "in-progress"
+  type?: string
 }
 
-export default function QuizHistory({ quizzes }: { quizzes: UserQuiz[] }) {
-  const [showAll, setShowAll] = useState(false)
-  const displayQuizzes = showAll ? quizzes : quizzes.slice(0, 5)
+interface QuizHistoryProps {
+  quizzes: Quiz[]
+}
 
-  const getScoreColor = (score: number | undefined) => {
-    if (!score) return "text-muted-foreground"
-    if (score >= 80) return "text-green-500"
-    if (score >= 60) return "text-amber-500"
-    return "text-red-500"
+export default function QuizHistory({ quizzes }: QuizHistoryProps) {
+  const [expanded, setExpanded] = useState(false)
+
+  // Sort quizzes by completion date (most recent first)
+  const sortedQuizzes = [...(quizzes || [])].sort((a, b) => {
+    if (!a.completedAt) return 1
+    if (!b.completedAt) return -1
+    return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  })
+
+  // Limit to 5 quizzes unless expanded
+  const displayQuizzes = expanded ? sortedQuizzes : sortedQuizzes.slice(0, 3)
+
+  if (!quizzes || quizzes.length === 0) {
+    return (
+      <Card className="hover-card-effect">
+        <CardHeader>
+          <CardTitle>Quiz History</CardTitle>
+          <CardDescription>You haven't taken any quizzes yet.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center p-6">
+            <Link href="/dashboard/quizzes">
+              <Button className="button-hover-effect">Explore Quizzes</Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A"
+    const date = new Date(dateString)
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(date)
+  }
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
+  const item = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } },
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="w-full"
-    >
-      <Card className="overflow-hidden border-border">
-        <CardHeader className="border-b bg-card px-4 py-3">
-          <CardTitle className="text-base font-medium">Recent Quizzes</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {displayQuizzes.length > 0 ? (
-            <div className="divide-y divide-border">
-              <AnimatePresence mode="popLayout">
-                {displayQuizzes.map((quiz, index) => (
-                  <motion.div
-                    key={quiz.slug}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="border-b last:border-0 border-border"
-                  >
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center p-3 gap-3">
-                      <div className="flex-shrink-0">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <CheckCircle2 className="h-4 w-4 text-primary" />
-                        </div>
-                      </div>
-
-                      <div className="flex-grow min-w-0">
-                        <h3 className="font-medium text-sm text-foreground break-words">{quiz.title}</h3>
-                        <Badge variant="secondary" className="mt-1 text-xs font-normal">
-                          {quiz.quizType.charAt(0).toUpperCase() + quiz.quizType.slice(1)}
-                        </Badge>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 ml-auto">
-                        <div className="text-right">
-                          <span className={cn("text-base font-semibold", getScoreColor(quiz.bestScore))}>
-                            {quiz.bestScore !== undefined ? `${quiz.bestScore}%` : "0%"}
-                          </span>
-                          <p className="text-xs text-muted-foreground">Best Score</p>
-                        </div>
-
-                        <Button asChild size="sm" variant="secondary" className="rounded-full px-2 py-1 h-7">
-                          <Link href={`/dashboard/${getQuizTypeRoute(quiz.quizType)}/${quiz.slug}`}>
-                            <span>View</span>
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                          </Link>
-                        </Button>
+    <Card className="hover-card-effect">
+      <CardHeader>
+        <CardTitle>Quiz History</CardTitle>
+        <CardDescription>Your recent quiz performance</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <motion.div variants={container} initial="hidden" animate="show" className="space-y-3">
+          {displayQuizzes.map((quiz) => (
+            <motion.div key={quiz.id} variants={item}>
+              <Link href={`/dashboard/quiz/${quiz.slug}`}>
+                <div className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 transition-all duration-200">
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={cn(
+                        "flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center",
+                        quiz.status === "completed"
+                          ? "bg-success/10"
+                          : quiz.status === "failed"
+                            ? "bg-destructive/10"
+                            : "bg-muted",
+                      )}
+                    >
+                      {quiz.status === "completed" ? (
+                        <CheckCircle className="h-5 w-5 text-success" />
+                      ) : quiz.status === "failed" ? (
+                        <XCircle className="h-5 w-5 text-destructive" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-medium line-clamp-1">{quiz.title}</h4>
+                      <div className="flex items-center space-x-2 mt-1">
+                        {quiz.type && (
+                          <Badge variant="outline" className="text-xs">
+                            {quiz.type}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">{formatDate(quiz.completedAt)}</span>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center py-8 px-4"
-            >
-              <div className="rounded-full bg-primary/10 p-3 mb-3">
-                <Clock className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-base font-semibold text-center mb-1">No quizzes taken yet</h3>
-              <p className="text-xs text-muted-foreground text-center max-w-sm mb-4">
-                Start your learning journey by taking your first quiz.
-              </p>
-              <Button asChild size="sm">
-                <Link href="/dashboard/quizzes">
-                  <BookOpen className="mr-2 h-3 w-3" />
-                  Browse Quizzes
-                </Link>
-              </Button>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {quiz.score !== undefined && (
+                      <div
+                        className={cn("text-sm font-medium", quiz.score >= 70 ? "text-success" : "text-destructive")}
+                      >
+                        {quiz.score}%
+                      </div>
+                    )}
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+              </Link>
             </motion.div>
-          )}
-        </CardContent>
-        {quizzes.length > 5 && (
-          <div className="p-3 bg-muted/50 border-t border-border">
-            <Button variant="outline" size="sm" className="w-full" onClick={() => setShowAll(!showAll)}>
-              {showAll ? "Show Less" : `Show All (${quizzes.length})`}
+          ))}
+        </motion.div>
+
+        {sortedQuizzes.length > 3 && (
+          <div className="mt-4 text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpanded(!expanded)}
+              className="text-primary hover:text-primary/80 transition-colors"
+            >
+              {expanded ? "Show Less" : `Show ${sortedQuizzes.length - 3} More`}
             </Button>
           </div>
         )}
-      </Card>
-    </motion.div>
+      </CardContent>
+    </Card>
   )
 }
