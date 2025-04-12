@@ -16,7 +16,8 @@ import QuizBackground from "./QuizBackground"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { CourseQuiz } from "@prisma/client"
-import PageLoader from "@/components/ui/loader"
+import { Loader } from "@/components/ui/loader"
+
 
 type Props = {
   course: FullCourseType
@@ -132,7 +133,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
   }
 
   if (isQuizLoading) {
-    return <PageLoader />
+    return <Loader fullPage text="Please wait..." />
   }
 
   if (!questions || questions.length === 0) {

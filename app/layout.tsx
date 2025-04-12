@@ -164,8 +164,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       answer:
         "Yes, learners can view the correct answers and detailed explanations for questions, helping them understand concepts better and improve their skills.",
     },
-  ];
-  
+  ]
 
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
@@ -174,7 +173,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
-           <MainNavbar />
+          <MainNavbar />
           {/* Place the TrialModal here, inside the Providers */}
           <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
 
@@ -189,4 +188,3 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     </html>
   )
 }
-

@@ -1,24 +1,110 @@
-'use client';
+import { cn } from "@/lib/utils"
 
-import React from "react";
-import { ThreeCircles } from "react-loader-spinner";
-import { cn } from "@/lib/utils";
+type LoaderSize = "sm" | "md" | "lg" | "xl"
+type LoaderVariant = "spinner" | "dots" | "pulse" | "skeleton"
 
-const PageLoader = () => {
+interface LoaderProps {
+  size?: LoaderSize
+  variant?: LoaderVariant
+  className?: string
+  text?: string
+  fullPage?: boolean
+}
+
+const sizeClasses = {
+  sm: "h-4 w-4",
+  md: "h-8 w-8",
+  lg: "h-12 w-12",
+  xl: "h-16 w-16",
+}
+
+export function Loader({ size = "md", variant = "spinner", className, text, fullPage = false }: LoaderProps) {
+  const containerClasses = cn(
+    "flex items-center justify-center",
+    fullPage && "fixed inset-0 bg-background/80 backdrop-blur-sm z-50",
+    className,
+  )
+
+  const loaderClasses = cn("text-primary", sizeClasses[size])
+
+  const renderLoader = () => {
+    switch (variant) {
+      case "dots":
+        return (
+          <div className={cn("flex gap-1", loaderClasses)}>
+            <div className="animate-bounce delay-0 h-2 w-2 rounded-full bg-primary"></div>
+            <div className="animate-bounce delay-150 h-2 w-2 rounded-full bg-primary"></div>
+            <div className="animate-bounce delay-300 h-2 w-2 rounded-full bg-primary"></div>
+          </div>
+        )
+      case "pulse":
+        return <div className={cn("animate-pulse rounded-full bg-primary/70", loaderClasses)}></div>
+      case "skeleton":
+        return <div className={cn("animate-pulse rounded-md bg-muted", loaderClasses)}></div>
+      case "spinner":
+      default:
+        return (
+          <div className={cn("relative", loaderClasses)}>
+            <div className="absolute inset-0 rounded-full border-2 border-primary/30"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-l-primary/70 animate-spin-slow"></div>
+          </div>
+        )
+    }
+  }
+
   return (
-    <div className={cn(
-      "flex justify-center items-center h-screen w-full bg-background",
-      "animate-fadeIn"
-    )}>
-      <ThreeCircles
-        visible={true}
-        height={64} // Reduced size for better UX
-        width={64}
-        color="hsl(var(--primary))" // Aligning with ShadCN primary color
-        ariaLabel="loading"
-      />
+    <div className={containerClasses}>
+      <div className="flex flex-col items-center gap-3">
+        {renderLoader()}
+        {text && <p className="text-sm text-muted-foreground animate-fade-in">{text}</p>}
+      </div>
     </div>
-  );
-};
+  )
+}
 
-export default PageLoader;
+export function FullPageLoader({ text = "Loading content..." }: { text?: string }) {
+  return (
+    <div className="content-container flex items-center justify-center min-h-[70vh]">
+      <div className="flex flex-col items-center gap-4 animate-fade-in">
+        <Loader size="lg" variant="spinner" />
+        <div className="text-center space-y-2">
+          <h3 className="text-lg font-medium text-foreground">{text}</h3>
+          <p className="text-sm text-muted-foreground">Please wait while we prepare your dashboard</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function LoadingSkeleton() {
+  return (
+    <div className="space-y-4 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div className="space-x-2 flex">
+          <div className="h-10 w-[100px] bg-muted rounded-md animate-pulse"></div>
+          <div className="h-10 w-[100px] bg-muted rounded-md animate-pulse"></div>
+          <div className="h-10 w-[100px] bg-muted rounded-md animate-pulse"></div>
+        </div>
+        <div className="hidden md:flex gap-4">
+          <div className="h-[74px] w-[120px] bg-muted rounded-md animate-pulse"></div>
+          <div className="h-[74px] w-[120px] bg-muted rounded-md animate-pulse"></div>
+          <div className="h-[74px] w-[120px] bg-muted rounded-md animate-pulse"></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
+        <div className="space-y-4">
+          <div className="h-10 w-full bg-muted rounded-md animate-pulse"></div>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-[72px] w-full bg-muted rounded-md animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="h-[500px] w-full bg-muted rounded-md animate-pulse"></div>
+      </div>
+    </div>
+  )
+}

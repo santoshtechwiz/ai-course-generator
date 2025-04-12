@@ -10,12 +10,13 @@ import { useRouter } from "next/navigation"
 
 import BlankQuizResults from "./BlankQuizResults"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
-import PageLoader from "@/components/ui/loader"
+
 import { GuidedHelp } from "@/components/HelpModal"
 import { SignInPrompt } from "@/components/SignInPrompt"
 import { QuizActions } from "@/components/QuizActions"
 import { useQuizResult } from "@/hooks/use-quiz-result"
 import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
+import { Loader } from "@/components/ui/loader"
 
 interface Question {
   id: number
@@ -259,9 +260,9 @@ const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ slug }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[300px]">
-        <PageLoader />
-      </div>
+      
+        <Loader fullPage text="Please wait..." />
+     
     )
   }
 
