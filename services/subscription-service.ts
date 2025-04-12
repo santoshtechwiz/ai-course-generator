@@ -493,8 +493,13 @@ export class SubscriptionService {
     status: "succeeded" | "pending" | "failed" | "canceled"
     subscription?: any
   }> {
-    const paymentGateway = getPaymentGateway()
-    return paymentGateway.verifyPaymentStatus(sessionId)
+    try {
+      const paymentGateway = getPaymentGateway()
+      return await paymentGateway.verifyPaymentStatus(sessionId)
+    } catch (error) {
+      console.error(`Error verifying payment status: ${error instanceof Error ? error.message : String(error)}`)
+      return { status: "failed" }
+    }
   }
 
   /**
@@ -574,4 +579,3 @@ export class SubscriptionService {
     }
   }
 }
-

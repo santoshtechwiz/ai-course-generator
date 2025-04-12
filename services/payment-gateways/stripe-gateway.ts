@@ -86,8 +86,12 @@ export class StripeGateway implements PaymentGateway {
     let referrerUserId: string | undefined
     let referralRecordId: string | undefined
     let referralUseId: string | undefined
+    let referralCodeToUse: string | undefined
 
     if (options?.referralCode) {
+      // Store the original referral code even if processing fails
+      referralCodeToUse = options.referralCode
+
       try {
         const referral = await prisma.userReferral.findUnique({
           where: { referralCode: options.referralCode },
@@ -129,21 +133,53 @@ export class StripeGateway implements PaymentGateway {
             await prisma.userReferralUse.delete({
               where: { id: referralUseId },
             })
+            referralUseId = undefined
           } catch (cleanupError) {
             console.error("Failed to clean up referral use record:", cleanupError)
           }
         }
+        // We keep referralCodeToUse even if there's an error
       }
     }
 
     // Calculate price with discount if promo code is provided
     let unitAmount = Math.round(priceOption.price * 100)
     let promoCodeApplied = false
+    let promoCodeToUse: string | undefined
+    let promoDiscountToUse: number | undefined
 
     if (options?.promoCode && options?.promoDiscount && options.promoDiscount > 0) {
+      promoCodeToUse = options.promoCode
+      promoDiscountToUse = options.promoDiscount
       unitAmount = Math.round(unitAmount * (1 - options.promoDiscount / 100))
       promoCodeApplied = true
     }
+
+    // Create metadata object with only defined values
+    const metadata: Record<string, string> = {
+      userId,
+      planName: plan.id,
+      tokens: plan.tokens.toString(),
+    }
+
+    // Only add non-empty values to metadata
+    if (referrerUserId) metadata.referrerId = referrerUserId
+    if (referralUseId) metadata.referralUseId = referralUseId
+    if (referralCodeToUse) metadata.referralCode = referralCodeToUse
+    if (promoCodeToUse) metadata.promoCode = promoCodeToUse
+    if (promoDiscountToUse !== undefined) metadata.promoDiscount = promoDiscountToUse.toString()
+
+    // Add custom metadata from options
+    if (options?.metadata) {
+      Object.entries(options.metadata).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          metadata[key] = value
+        }
+      })
+    }
+
+    // Log metadata for debugging
+    console.log("Session metadata:", metadata)
 
     // Create the Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -156,7 +192,7 @@ export class StripeGateway implements PaymentGateway {
             product_data: {
               name: `${plan.name} Plan - ${duration} month${duration > 1 ? "s" : ""}`,
               description: promoCodeApplied
-                ? `Applied discount: ${options?.promoDiscount}% off with code ${options?.promoCode}`
+                ? `Applied discount: ${promoDiscountToUse}% off with code ${promoCodeToUse}`
                 : undefined,
             },
             unit_amount: unitAmount,
@@ -171,16 +207,7 @@ export class StripeGateway implements PaymentGateway {
       mode: "subscription",
       success_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/cancelled?session_id={CHECKOUT_SESSION_ID}`,
-      metadata: {
-        userId,
-        planName: plan.id,
-        tokens: plan.tokens.toString(),
-        referrerId: referrerUserId || "",
-        referralUseId: referralUseId || "",
-        promoCode: options?.promoCode || "",
-        promoDiscount: options?.promoDiscount ? options.promoDiscount.toString() : "",
-        ...options?.metadata,
-      },
+      metadata,
     })
 
     // Log the session for debugging
@@ -279,63 +306,228 @@ export class StripeGateway implements PaymentGateway {
     }
 
     try {
-      // Retrieve the checkout session with expanded subscription
-      const session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ["subscription"],
-      })
+      // Implement retry logic with exponential backoff
+      const maxRetries = 3
+      let retryCount = 0
+      let lastError: any = null
 
-      // Check payment status
-      if (session.status === "complete" && session.payment_status === "paid") {
-        // Process successful payment
-        if (session.metadata?.userId && session.metadata?.tokens) {
-          const userId = session.metadata.userId
-          const planId = session.metadata.planName
-
-          // Find the plan to get the correct token amount
-          const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId)
-          const tokensToAdd = plan ? plan.tokens : Number.parseInt(session.metadata.tokens, 10)
-
-          // Update user tokens
-          const user = await prisma.user.findUnique({
-            where: { id: userId },
+      while (retryCount < maxRetries) {
+        try {
+          // Retrieve the checkout session with expanded subscription
+          const session = await stripe.checkout.sessions.retrieve(sessionId, {
+            expand: ["subscription"],
           })
 
-          if (user) {
-            // Update user credits
-            await prisma.user.update({
-              where: { id: userId },
-              data: {
-                credits: user.credits + tokensToAdd,
-              },
-            })
+          // Check payment status
+          if (session.status === "complete" && session.payment_status === "paid") {
+            // Process successful payment
+            if (session.metadata?.userId && session.metadata?.tokens) {
+              const userId = session.metadata.userId
+              const planId = session.metadata.planName
 
-            // Log the token transaction
-            await prisma.tokenTransaction.create({
-              data: {
-                userId,
-                amount: tokensToAdd,
-                type: session.mode === "subscription" ? "SUBSCRIPTION" : "PURCHASE",
-                description: `Added ${tokensToAdd} tokens from ${planId || "subscription"} plan`,
-              },
-            })
+              // Find the plan to get the correct token amount
+              const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId)
+              const tokensToAdd = plan ? plan.tokens : Number.parseInt(session.metadata.tokens, 10)
+
+              // Update user tokens
+              const user = await prisma.user.findUnique({
+                where: { id: userId },
+              })
+
+              if (user) {
+                // Update user credits
+                await prisma.user.update({
+                  where: { id: userId },
+                  data: {
+                    credits: user.credits + tokensToAdd,
+                  },
+                })
+
+                // Log the token transaction
+                await prisma.tokenTransaction.create({
+                  data: {
+                    userId,
+                    amount: tokensToAdd,
+                    type: session.mode === "subscription" ? "SUBSCRIPTION" : "PURCHASE",
+                    description: `Added ${tokensToAdd} tokens from ${planId || "subscription"} plan`,
+                  },
+                })
+              }
+
+              // Process referral benefits if applicable
+              if (session.metadata.referralCode || session.metadata.referralUseId) {
+                await this.processReferralBenefits(session)
+              }
+            }
+
+            return {
+              status: "succeeded",
+              subscription: session.subscription || session,
+            }
+          } else if (session.status === "open") {
+            return { status: "pending" }
+          } else if (session.payment_status === "unpaid") {
+            return { status: "failed" }
+          } else {
+            return { status: "canceled" }
+          }
+        } catch (error: any) {
+          lastError = error
+
+          // Only retry on network errors or Stripe API errors that might be temporary
+          if (
+            error.type === "StripeConnectionError" ||
+            error.type === "StripeAPIError" ||
+            error.code === "ETIMEDOUT" ||
+            error.code === "ECONNRESET"
+          ) {
+            retryCount++
+            const delay = Math.pow(2, retryCount) * 1000 // Exponential backoff: 2s, 4s, 8s
+            console.log(`Retry ${retryCount}/${maxRetries} after ${delay}ms for session ${sessionId}`)
+            await new Promise((resolve) => setTimeout(resolve, delay))
+          } else {
+            // Don't retry on other errors
+            throw error
           }
         }
-
-        return {
-          status: "succeeded",
-          subscription: session.subscription,
-        }
-      } else if (session.status === "open") {
-        return { status: "pending" }
-      } else if (session.payment_status === "unpaid") {
-        return { status: "failed" }
-      } else {
-        return { status: "canceled" }
       }
+
+      // If we've exhausted retries
+      console.error(`Failed to verify payment after ${maxRetries} retries:`, lastError)
+      throw lastError
     } catch (error) {
       console.error("Error verifying payment status:", error)
       return { status: "failed" }
     }
   }
-}
 
+  /**
+   * Process referral benefits for a successful checkout
+   * @private
+   */
+  private async processReferralBenefits(session: any): Promise<void> {
+    try {
+      const userId = session.metadata.userId
+      const referralCode = session.metadata.referralCode
+      const referralUseId = session.metadata.referralUseId
+
+      // Skip if no referral information
+      if (!userId || (!referralCode && !referralUseId)) {
+        return
+      }
+
+      // Check if this referral has already been processed
+      const existingReferralUse = await prisma.userReferralUse.findFirst({
+        where: {
+          referredId: userId,
+          status: "COMPLETED",
+        },
+      })
+
+      if (existingReferralUse) {
+        console.log(`Referral for user ${userId} already processed`)
+        return
+      }
+
+      // Find referral record either by ID or code
+      let referral
+      let referrerId
+
+      if (referralUseId) {
+        const referralUse = await prisma.userReferralUse.findUnique({
+          where: { id: referralUseId },
+          include: { referral: true },
+        })
+
+        if (referralUse) {
+          referral = referralUse.referral
+          referrerId = referralUse.referrerId
+
+          // Update the referral use status
+          await prisma.userReferralUse.update({
+            where: { id: referralUseId },
+            data: { status: "COMPLETED" },
+          })
+        }
+      } else if (referralCode) {
+        referral = await prisma.userReferral.findUnique({
+          where: { referralCode },
+        })
+
+        if (referral) {
+          referrerId = referral.userId
+
+          // Create a new referral use record
+          await prisma.userReferralUse.create({
+            data: {
+              referrerId: referrerId,
+              referredId: userId,
+              referralId: referral.id,
+              status: "COMPLETED",
+              planId: session.metadata.planName || "UNKNOWN",
+            },
+          })
+        }
+      }
+
+      if (!referral || !referrerId || referrerId === userId) {
+        console.log(`No valid referral found or self-referral for user ${userId}`)
+        return
+      }
+
+      const REFERRER_BONUS = 10
+      const REFERRED_USER_BONUS = 5
+
+      // Add bonus to referred user (current user)
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      })
+
+      if (user) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            credits: user.credits + REFERRED_USER_BONUS,
+          },
+        })
+
+        await prisma.tokenTransaction.create({
+          data: {
+            userId,
+            amount: REFERRED_USER_BONUS,
+            type: "REFERRAL",
+            description: `Referral bonus for subscribing using referral code`,
+          },
+        })
+      }
+
+      // Add bonus to referrer
+      const referrer = await prisma.user.findUnique({
+        where: { id: referrerId },
+      })
+
+      if (referrer) {
+        await prisma.user.update({
+          where: { id: referrerId },
+          data: {
+            credits: referrer.credits + REFERRER_BONUS,
+          },
+        })
+
+        await prisma.tokenTransaction.create({
+          data: {
+            userId: referrerId,
+            amount: REFERRER_BONUS,
+            type: "REFERRAL",
+            description: `Referral bonus for user ${userId} subscribing`,
+          },
+        })
+      }
+
+      console.log(`Successfully applied referral benefits for user ${userId}`)
+    } catch (error) {
+      console.error("Error processing referral benefits:", error)
+      // Don't throw error to avoid disrupting the payment verification
+    }
+  }
+}

@@ -9,21 +9,23 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
 import TrialModal from "@/components/TrialModal"
 import { PricingPage } from "./PricingPage"
 import { StripeSecureCheckout } from "./StripeSecureCheckout"
+
 
 import { Loader2, AlertTriangle, Info, ArrowRight } from "lucide-react"
 import type { SubscriptionPlanType } from "@/app/types/subscription"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { ReferralBanner } from "@/components/ReferralBanner"
 
 /**
  * Client component for the subscription page with enhanced error handling and performance
  */
-export default function SubscriptionPageClient() {
+export default function SubscriptionPageClient(refCode: { refCode: string | null }) {
   const [userId, setUserId] = useState<string | null>(null)
   const [subscriptionData, setSubscriptionData] = useState<{
     currentPlan: SubscriptionPlanType | null
@@ -32,20 +34,45 @@ export default function SubscriptionPageClient() {
     credits: number
     expirationDate?: string
     error?: string
+  
   }>({
     currentPlan: null,
     subscriptionStatus: null,
     tokensUsed: 0,
     credits: 0,
+    
   })
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [referralCode, setReferralCode] = useState<string | null>(refCode.refCode)
+  const [showReferralBanner, setShowReferralBanner] = useState(true)
+
   const isProd = process.env.NODE_ENV === "production"
   const { data: session, status: sessionStatus } = useSession()
   const id = session?.user?.id ?? null
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Extract referral code from URL parameters
+  useEffect(() => {
+    const refCode = searchParams?.get("ref")
+    if (refCode) {
+      setReferralCode(refCode)
+
+      // Store referral code in localStorage for persistence across page refreshes
+      if (typeof window !== "undefined") {
+        localStorage.setItem("referralCode", refCode)
+      }
+    } else if (typeof window !== "undefined") {
+      // Check if we have a stored referral code
+      const storedRefCode = localStorage.getItem("referralCode")
+      if (storedRefCode) {
+        setReferralCode(storedRefCode)
+      }
+    }
+  }, [searchParams])
 
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchSubscriptionData = useCallback(async () => {
@@ -177,6 +204,11 @@ export default function SubscriptionPageClient() {
         </Alert>
       )}
 
+      {/* Show referral banner if a referral code is present */}
+      {referralCode && showReferralBanner && (
+        <ReferralBanner referralCode={referralCode} onDismiss={() => setShowReferralBanner(false)} />
+      )}
+
       {/* Show pending subscription notification if applicable */}
       {pendingSubscription && id && (
         <Alert className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
@@ -196,7 +228,12 @@ export default function SubscriptionPageClient() {
           <AlertTitle>Manage Your Subscription</AlertTitle>
           <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
             <p>You can view and manage your current subscription details in your account page.</p>
-            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/account")} className="sm:ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/dashboard/account")}
+              className="sm:ml-auto"
+            >
               Go to Account <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </AlertDescription>
@@ -213,6 +250,7 @@ export default function SubscriptionPageClient() {
           credits={subscriptionData.credits}
           isProd={isProd}
           expirationDate={subscriptionData.expirationDate}
+          referralCode={referralCode}
         />
 
         {/* Add the Stripe secure checkout component */}
@@ -231,48 +269,3 @@ export default function SubscriptionPageClient() {
     </div>
   )
 }
-
-/**
- * Enhanced skeleton loader for the pricing page with better visual feedback
- */
-function PricingPageSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-center mb-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-        <span className="text-lg">Loading subscription plans...</span>
-      </div>
-
-      {/* Current subscription skeleton */}
-      <Skeleton className="h-[150px] w-full rounded-xl mb-8" />
-
-      {/* Promo code skeleton */}
-      <Skeleton className="h-[100px] w-full rounded-xl mb-8" />
-
-      {/* Section header skeleton */}
-      <div className="flex flex-col items-center space-y-2 py-8">
-        <Skeleton className="h-10 w-64 rounded-lg" />
-        <Skeleton className="h-6 w-96 rounded-lg" />
-      </div>
-
-      {/* Billing toggle skeleton */}
-      <div className="flex justify-center py-4">
-        <Skeleton className="h-8 w-64 rounded-lg" />
-      </div>
-
-      {/* Plan cards skeleton with animation */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className={`${i === 2 ? "lg:scale-105" : ""} transition-all duration-300`}>
-            <Skeleton className={`h-[450px] w-full rounded-xl ${i === 2 ? "animate-pulse" : ""}`} />
-          </div>
-        ))}
-      </div>
-
-      {/* Additional sections skeleton */}
-      <Skeleton className="h-[200px] w-full rounded-xl" />
-      <Skeleton className="h-[300px] w-full rounded-xl" />
-    </div>
-  )
-}
-
