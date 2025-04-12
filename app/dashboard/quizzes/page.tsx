@@ -61,4 +61,3 @@ const QuizPage = async () => {
 }
 
 export default QuizPage
-

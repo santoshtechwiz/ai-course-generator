@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Clock, HelpCircle, RotateCcw, Filter, Brain, Trophy, ChevronRight } from "lucide-react"
+import { Clock, HelpCircle, RotateCcw, Filter, Trophy, ChevronRight } from "lucide-react"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,11 +13,94 @@ import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { motion } from "framer-motion"
 
+// SVG Background Pattern Component
+const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => {
+  // Different patterns based on quiz type
+  const patterns = {
+    "fill-blanks": (
+      <path
+        d="M10 10L50 50M30 10L70 50M50 10L90 50M70 10L110 50M90 10L130 50M10 30L50 70M30 30L70 70M50 30L90 70M70 30L110 70M90 30L130 70"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+    ),
+    flashcard: (
+      <g>
+        <rect x="10" y="10" width="20" height="20" rx="2" fill="currentColor" fillOpacity="0.1" />
+        <rect x="40" y="10" width="20" height="20" rx="2" fill="currentColor" fillOpacity="0.1" />
+        <rect x="70" y="10" width="20" height="20" rx="2" fill="currentColor" fillOpacity="0.1" />
+        <rect x="10" y="40" width="20" height="20" rx="2" fill="currentColor" fillOpacity="0.1" />
+        <rect x="40" y="40" width="20" height="20" rx="2" fill="currentColor" fillOpacity="0.1" />
+        <rect x="70" y="40" width="20" height="20" rx="2" fill="currentColor" fillOpacity="0.1" />
+      </g>
+    ),
+    openended: (
+      <g>
+        <path d="M10,25 Q50,5 90,25 T170,25" stroke="currentColor" strokeWidth="1" fill="none" />
+        <path d="M10,45 Q50,25 90,45 T170,45" stroke="currentColor" strokeWidth="1" fill="none" />
+        <path d="M10,65 Q50,45 90,65 T170,65" stroke="currentColor" strokeWidth="1" fill="none" />
+      </g>
+    ),
+    code: (
+      <g>
+        <path d="M20,20 L40,20 L40,25 L20,25 Z" fill="currentColor" fillOpacity="0.2" />
+        <path d="M45,20 L100,20 L100,25 L45,25 Z" fill="currentColor" fillOpacity="0.1" />
+        <path d="M20,30 L30,30 L30,35 L20,35 Z" fill="currentColor" fillOpacity="0.2" />
+        <path d="M35,30 L90,30 L90,35 L35,35 Z" fill="currentColor" fillOpacity="0.1" />
+        <path d="M20,40 L50,40 L50,45 L20,45 Z" fill="currentColor" fillOpacity="0.2" />
+        <path d="M55,40 L110,40 L110,45 L55,45 Z" fill="currentColor" fillOpacity="0.1" />
+        <path d="M20,50 L40,50 L40,55 L20,55 Z" fill="currentColor" fillOpacity="0.2" />
+      </g>
+    ),
+  }
+
+  // Default pattern if quiz type doesn't match
+  const defaultPattern = (
+    <g>
+      <circle cx="20" cy="20" r="5" fill="currentColor" fillOpacity="0.1" />
+      <circle cx="50" cy="20" r="5" fill="currentColor" fillOpacity="0.1" />
+      <circle cx="80" cy="20" r="5" fill="currentColor" fillOpacity="0.1" />
+      <circle cx="20" cy="50" r="5" fill="currentColor" fillOpacity="0.1" />
+      <circle cx="50" cy="50" r="5" fill="currentColor" fillOpacity="0.1" />
+      <circle cx="80" cy="50" r="5" fill="currentColor" fillOpacity="0.1" />
+    </g>
+  )
+
+  // Get the appropriate pattern or use default
+  const patternElement = patterns[quizType as keyof typeof patterns] || defaultPattern
+
+  // Get color based on quiz type
+  const getColorClass = () => {
+    switch (quizType) {
+      case "fill-blanks":
+        return "text-blue-500"
+      case "flashcard":
+        return "text-orange-500"
+      case "openended":
+        return "text-purple-500"
+      case "code":
+        return "text-green-500"
+      default:
+        return "text-primary"
+    }
+  }
+
+  return (
+    <svg
+      className={`absolute right-0 bottom-0 w-32 h-32 opacity-5 group-hover:opacity-10 transition-opacity duration-300 ${getColorClass()}`}
+      viewBox="0 0 100 100"
+      preserveAspectRatio="xMinYMin slice"
+    >
+      {patternElement}
+    </svg>
+  )
+}
+
 const difficultyColors = {
   Easy: "bg-emerald-50 text-emerald-600",
   Medium: "bg-orange-50 text-orange-600",
   Hard: "bg-rose-50 text-rose-600",
-
 }
 
 const quizTypeRoutes = {
@@ -28,7 +111,6 @@ const quizTypeRoutes = {
   code: "dashboard/code",
 }
 
-
 const quizTypeBgColors = {
   "fill-blanks": "bg-blue-50 text-blue-600",
   flashcard: "bg-orange-50 text-orange-600",
@@ -37,11 +119,11 @@ const quizTypeBgColors = {
 }
 
 export const RandomQuiz: React.FC = () => {
-  const { quizzes, isLoading, error, refresh, setLimit } = useRandomQuizzes(3)
+  const { quizzes, isLoading, error, refresh } = useRandomQuizzes(3)
   const [filter, setFilter] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const quizTypes = ["openended", "fill-blanks", "flashcard","code"]
+  const quizTypes = ["openended", "fill-blanks", "flashcard", "code"]
 
   const handleRefresh = () => {
     setRefreshKey((prevKey) => prevKey + 1)
@@ -99,9 +181,27 @@ export const RandomQuiz: React.FC = () => {
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, index) => (
-              <div key={index} className="rounded-lg border p-1">
-                <Skeleton className="h-32 w-full rounded-lg" />
-              </div>
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="rounded-lg border p-4"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <Skeleton className="h-6 w-3/4 rounded" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+                <div className="flex gap-2 mb-4">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-24 rounded-full" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-full rounded" />
+                </div>
+                <Skeleton className="h-8 w-full rounded mt-4" />
+              </motion.div>
             ))}
           </div>
         ) : error ? (
@@ -110,7 +210,9 @@ export const RandomQuiz: React.FC = () => {
           <>
             {filteredQuizzes.map((quiz, index) => {
               const Icon = HelpCircle // Replace with actual icon component if available
-              const bgColor = difficultyColors.Medium // Replace with actual difficulty color logic
+              const bgColor = quiz.difficulty
+                ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
+                : difficultyColors.Medium
               const color = "text-muted-foreground"
 
               return (
@@ -129,6 +231,9 @@ export const RandomQuiz: React.FC = () => {
                     {/* Subtle gradient overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
+                    {/* SVG Background Pattern */}
+                    <QuizBackgroundPattern quizType={quiz.quizType || ""} />
+
                     <CardHeader className="space-y-2 p-4 pb-2 relative z-10">
                       <CardTitle className="flex justify-between items-center text-base sm:text-lg">
                         <span className="group-hover:text-primary/90 transition-colors duration-300 line-clamp-1 mr-2">
@@ -136,8 +241,9 @@ export const RandomQuiz: React.FC = () => {
                         </span>
                         <motion.div
                           whileHover={{ scale: 1.1, rotate: 15 }}
+                          whileTap={{ scale: 0.95 }}
                           className={cn(
-                            "h-8 w-8 shrink-0 rounded-full flex items-center justify-center transition-colors duration-300",
+                            "h-8 w-8 shrink-0 rounded-full flex items-center justify-center transition-colors duration-300 shadow-sm",
                             bgColor,
                           )}
                         >
@@ -145,8 +251,15 @@ export const RandomQuiz: React.FC = () => {
                         </motion.div>
                       </CardTitle>
                       <CardDescription className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary" className={cn(difficultyColors.Medium)}>
-                          Medium
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            quiz.difficulty
+                              ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
+                              : difficultyColors.Medium,
+                          )}
+                        >
+                          {quiz.difficulty || "Medium"}
                         </Badge>
                         <span className="text-sm text-muted-foreground">{quiz.quizType}</span>
                       </CardDescription>
@@ -188,15 +301,28 @@ export const RandomQuiz: React.FC = () => {
                             "bg-primary hover:bg-primary/90",
                             "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent",
                             "after:translate-x-[-100%] after:group-hover:translate-x-[100%] after:transition-transform after:duration-500",
+                            "shadow-md hover:shadow-lg",
                           )}
                           size="sm"
                         >
-                          <span>Start Quiz</span>
+                          <span className="relative z-10 mr-1">Start Quiz</span>
                           <motion.div
-                            className="ml-2"
+                            className="relative z-10 ml-1"
                             initial={{ x: 0 }}
                             whileHover={{ x: 5 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                            animate={{ x: [0, 2, 0] }}
+                            transition={{
+                              x: {
+                                duration: 1.5,
+                                repeat: Number.POSITIVE_INFINITY,
+                                repeatType: "reverse",
+                              },
+                              whileHover: {
+                                type: "spring",
+                                stiffness: 400,
+                                damping: 10,
+                              },
+                            }}
                           >
                             <ChevronRight className="h-4 w-4" />
                           </motion.div>
@@ -210,12 +336,24 @@ export const RandomQuiz: React.FC = () => {
           </>
         )}
         {filteredQuizzes.length === 0 && !isLoading && !error && (
-          <div className="text-center p-6 border border-dashed rounded-lg">
-            <p className="text-muted-foreground mb-4">No quizzes found</p>
-            <Button variant="outline" onClick={() => setFilter(null)}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center p-8 border border-dashed rounded-lg bg-muted/30"
+          >
+            <div className="flex justify-center mb-4">
+              <HelpCircle className="h-12 w-12 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">No quizzes found</h3>
+            <p className="text-muted-foreground mb-4">Try changing your filter or refresh to see more quizzes</p>
+            <Button variant="outline" onClick={() => setFilter(null)} className="mr-2">
               Show All Quizzes
             </Button>
-          </div>
+            <Button variant="ghost" onClick={handleRefresh} size="sm">
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </motion.div>
         )}
       </div>
 
@@ -239,4 +377,3 @@ export const RandomQuiz: React.FC = () => {
 }
 
 export default RandomQuiz
-

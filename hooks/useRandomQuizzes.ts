@@ -14,7 +14,7 @@ export interface Quiz {
   completionRate?: number // percentage, optional
 }
 
-export const useRandomQuizzes = (count: number = 3) => {
+export const useRandomQuizzes = (count = 3) => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

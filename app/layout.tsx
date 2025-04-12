@@ -12,6 +12,7 @@ import { getAuthSession } from "@/lib/authOptions"
 
 import TrialModal from "@/components/TrialModal"
 import { SubscriptionService } from "@/services/subscription-service"
+import MainNavbar from "@/components/shared/MainNavbar"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -173,6 +174,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
+           <MainNavbar />
           {/* Place the TrialModal here, inside the Providers */}
           <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
 

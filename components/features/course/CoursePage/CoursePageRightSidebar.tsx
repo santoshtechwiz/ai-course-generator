@@ -47,14 +47,14 @@ function CoursePageRightSidebar({
     <div className="flex h-full flex-col bg-background">
       <div className="flex flex-col space-y-4 p-6">
         <div className="space-y-1">
-          <h2 className="text-xl font-semibold tracking-tight">{course.name}</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{course.title}</h2>
           {currentChapter && <p className="text-sm text-muted-foreground">Currently watching: {currentChapter.name}</p>}
         </div>
         <Separator />
       </div>
 
       {showFullContent ? (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 z-0">
           {progress && (
             <div className="px-6 pb-4">
               <div className="flex items-center justify-between mb-2">
@@ -144,7 +144,7 @@ function VideoPlaylist(props: VideoPlaylistProps) {
             >
               <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-accent/50 transition-colors [&[data-state=open]>svg]:rotate-180">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium">{unit.name}</h3>
+                  <h3 className="text-sm font-medium">{unit.title}</h3>
                   <Badge variant={isCurrentUnit ? "default" : "secondary"} className="ml-auto">
                     {unitProgress}/{unit.chapters.length}
                   </Badge>
