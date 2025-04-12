@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { FeedbackButton } from "@/components/ui/feedback-button"
+import { useMobile } from "@/hooks/use-mobile"
 
 // Types based on the API response
 interface CourseQuizCard {
@@ -586,16 +587,18 @@ const APPLE_EASING = [0.17, 0.67, 0.83, 0.67]
 const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
+  const isMobile = useMobile()
 
   const handleNavigation = async () => {
     setIsNavigating(true)
     try {
       await new Promise((resolve) => setTimeout(resolve, 800))
 
+      // Fix navigation to go to create pages instead
       if (product.type === "course") {
-        router.push(`/dashboard/course/${product.slug}`)
+        router.push(`/dashboard/create/course`)
       } else if (product.type === "quiz" && product.quizType) {
-        router.push(`/dashboard/${product.quizType == "fill-blanks" ? "blanks" : product.quizType}/${product.slug}`)
+        router.push(`/dashboard/create/${product.quizType == "fill-blanks" ? "blanks" : product.quizType}`)
       }
 
       return true
@@ -611,9 +614,9 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6, ease: APPLE_EASING }}
+          transition={{ delay: 0.2, duration: 0.5, ease: APPLE_EASING }} // Reduced from 0.6
         >
-          <div className="flex items-center mb-4">
+          <div className="flex items-center mb-4 flex-wrap gap-2">
             <Badge variant={product.type === "course" ? "default" : "secondary"} className="rounded-full mr-2">
               {product.type === "course" ? "Course Creator" : "Quiz Generator"}
             </Badge>
@@ -637,23 +640,26 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
 
           <p className="text-muted-foreground mb-6 line-clamp-3">{product.description}</p>
 
-          <FeedbackButton
-            className="rounded-full px-6 py-2"
-            onClickAsync={handleNavigation}
-            loadingText={product.type === "course" ? "Creating course..." : "Generating quiz..."}
-            successText={product.type === "course" ? "Course ready" : "Quiz ready"}
-            aria-label={`${product.type === "course" ? "Create Course" : "Generate Quiz"} ${product.name}`}
-          >
-            {product.type === "course" ? "Create Course" : "Generate Quiz"}
-            <motion.span
-              className="inline-block ml-2"
-              initial={{ x: 0 }}
-              whileHover={{ x: 3 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          {/* Fix button display on mobile */}
+          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+            <FeedbackButton
+              className="rounded-full px-6 py-2 w-full sm:w-auto"
+              onClickAsync={handleNavigation}
+              loadingText={product.type === "course" ? "Creating course..." : "Generating quiz..."}
+              successText={product.type === "course" ? "Course ready" : "Quiz ready"}
+              aria-label={`${product.type === "course" ? "Create Course" : "Generate Quiz"} ${product.name}`}
             >
-              <ArrowRight className="h-4 w-4" />
-            </motion.span>
-          </FeedbackButton>
+              {product.type === "course" ? "Create Course" : "Generate Quiz"}
+              <motion.span
+                className="inline-block ml-2"
+                initial={{ x: 0 }}
+                whileHover={{ x: 3 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <ArrowRight className="h-4 w-4" />
+              </motion.span>
+            </FeedbackButton>
+          </div>
 
           <motion.p
             className="text-xs text-muted-foreground mt-2 text-center opacity-0 hover:opacity-100 transition-opacity"
@@ -666,9 +672,9 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
 
       <motion.div
         className="order-1 md:order-2 flex justify-center items-center"
-        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+        initial={{ opacity: 0, scale: 0.9, y: 15 }} // Increased from 0.8, reduced from 20
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.6, ease: APPLE_EASING }}
+        transition={{ delay: 0.3, duration: 0.5, ease: APPLE_EASING }} // Reduced from 0.6
       >
         <div className="relative w-full max-w-md aspect-video rounded-xl overflow-hidden shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5"></div>
@@ -678,13 +684,13 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
             animate={
               isActive
                 ? {
-                    scale: [1, 1.05, 1],
-                    rotate: [0, 1, -1, 0],
+                    scale: [1, 1.03, 1], // Reduced from [1, 1.05, 1]
+                    rotate: [0, 0.5, -0.5, 0], // Reduced from [0, 1, -1, 0]
                   }
                 : {}
             }
             transition={{
-              duration: 6,
+              duration: 5, // Reduced from 6
               repeat: Number.POSITIVE_INFINITY,
               repeatType: "reverse",
               ease: APPLE_EASING,
@@ -697,33 +703,38 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
             )}
           </motion.div>
 
+          {/* Optimize particles by reducing count and animation complexity */}
           {isActive && (
             <>
-              {/* Fixed: Using unique keys for each particle */}
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={`particle-${product.id}-${i}`}
-                  className="absolute w-2 h-2 rounded-full bg-primary/30"
-                  initial={{
-                    x: `${Math.random() * 100}%`,
-                    y: `${Math.random() * 100}%`,
-                    opacity: 0,
-                  }}
-                  animate={{
-                    x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                    y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                    opacity: [0, 0.8, 0],
-                    scale: [0.8, 1.2, 0.8],
-                  }}
-                  transition={{
-                    duration: 6 + Math.random() * 6,
-                    repeat: Number.POSITIVE_INFINITY,
-                    repeatType: "loop",
-                    ease: "linear",
-                    delay: i * 0.7,
-                  }}
-                />
-              ))}
+              {[...Array(4)].map(
+                (
+                  _,
+                  i, // Reduced from 6
+                ) => (
+                  <motion.div
+                    key={`particle-${product.id}-${i}`}
+                    className="absolute w-2 h-2 rounded-full bg-primary/30"
+                    initial={{
+                      x: `${Math.random() * 100}%`,
+                      y: `${Math.random() * 100}%`,
+                      opacity: 0,
+                    }}
+                    animate={{
+                      x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
+                      y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
+                      opacity: [0, 0.7, 0],
+                      scale: [0.9, 1.1, 0.9], // Reduced from [0.8, 1.2, 0.8]
+                    }}
+                    transition={{
+                      duration: 5 + Math.random() * 4, // Reduced from 6 + Math.random() * 6
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "loop",
+                      ease: "linear",
+                      delay: i * 0.7,
+                    }}
+                  />
+                ),
+              )}
             </>
           )}
 

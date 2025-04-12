@@ -43,43 +43,44 @@ const features = [
   },
 ]
 
+// Optimize feature showcase animations
 const FeatureShowcase = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.2 })
 
-  // Text animation variants with Apple-style easing
+  // Optimize text animation variants
   const textVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 15 }, // Reduced from 20
     visible: (delay: number) => ({
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.8,
+        duration: 0.7, // Reduced from 0.8
         delay,
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     }),
   }
 
-  // Card animation variants with enhanced Apple-style effects
+  // Optimize card animation variants
   const cardVariants = {
-    hidden: { opacity: 0, y: 30, scale: 0.98 }, // Reduced y-offset and scale for better performance
+    hidden: { opacity: 0, y: 20, scale: 0.98 }, // Reduced from 30
     visible: (delay) => ({
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.8, // Reduced from 1.2 for better performance
+        duration: 0.7, // Reduced from 0.8
         delay,
         ease: [0.22, 0.61, 0.36, 1],
       },
     }),
     hover: {
-      y: -10, // Reduced from -16 for better performance
-      scale: 1.02, // Reduced from 1.03 for better performance
-      boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.1)", // Reduced shadow for better performance
+      y: -8, // Reduced from -10
+      scale: 1.01, // Reduced from 1.02
+      boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.1)", // Reduced shadow
       transition: {
-        duration: 0.4, // Reduced from 0.5 for better performance
+        duration: 0.3, // Reduced from 0.4
         ease: [0.22, 0.61, 0.36, 1],
       },
     },
@@ -120,7 +121,6 @@ const FeatureShowcase = () => {
         </motion.p>
       </div>
 
-    
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {features.map((feature, index) => (
           <motion.div
@@ -132,27 +132,27 @@ const FeatureShowcase = () => {
             custom={0.3 + index * 0.1}
             style={{
               willChange: "transform, opacity",
-              perspective: "1200px",
+              perspective: "1000px", // Reduced from 1200px
             }}
           >
             <div className="h-full bg-card/30 backdrop-blur-sm rounded-2xl p-8 border border-border/10 transition-all duration-300 relative overflow-hidden group">
-              {/* Enhanced background gradient */}
+              {/* Optimize background gradient animation */}
               <motion.div
                 className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0 }}
-                whileHover={{ opacity: 0.08 }} // Reduced from 0.1 for better performance
-                transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }} // Reduced from 0.6 for better performance
+                whileHover={{ opacity: 0.06 }} // Reduced from 0.08
+                transition={{ duration: 0.3, ease: [0.22, 0.61, 0.36, 1] }} // Reduced from 0.4
               />
 
-              {/* Enhanced icon animation */}
+              {/* Optimize icon animation */}
               <motion.div
                 className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-lg`}
                 whileHover={{
-                  scale: 1.1, // Reduced from 1.15 for better performance
-                  rotate: [0, 3, -3, 0], // Reduced rotation for better performance
+                  scale: 1.05, // Reduced from 1.1
+                  rotate: [0, 2, -2, 0], // Reduced from [0, 3, -3, 0]
                   transition: {
-                    duration: 0.6, // Reduced from 0.8 for better performance
+                    duration: 0.5, // Reduced from 0.6
                     ease: [0.22, 0.61, 0.36, 1],
                   },
                 }}
@@ -160,14 +160,14 @@ const FeatureShowcase = () => {
                 <feature.icon className="h-8 w-8 text-white" />
               </motion.div>
 
-              {/* Content with enhanced typography */}
+              {/* Content */}
               <h3 className="text-xl font-semibold mb-3 tracking-tight">{feature.title}</h3>
               <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
 
-              {/* Subtle arrow indicator that appears on hover */}
+              {/* Optimize arrow indicator animation */}
               <motion.div
                 className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                initial={{ x: -5, opacity: 0 }}
+                initial={{ x: -3, opacity: 0 }} // Reduced from -5
                 whileHover={{ x: 0, opacity: 1 }}
               >
                 <ArrowRight className="h-5 w-5 text-primary/70" />
@@ -176,9 +176,6 @@ const FeatureShowcase = () => {
           </motion.div>
         ))}
       </div>
-
-      {/* Feature SVG Illustration */}
-    
     </div>
   )
 }
