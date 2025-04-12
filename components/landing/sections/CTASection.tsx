@@ -23,12 +23,6 @@ const CTASection = () => {
 
   if (!isInView) return null
 
-  const startTrial = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    router.push("/dashboard/subscription")
-    return true
-  }
-
   return (
     <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
       <div className="relative rounded-3xl overflow-hidden">
@@ -47,9 +41,9 @@ const CTASection = () => {
 
               <MaskReveal direction="left" delay={0.3}>
                 <p className="text-xl text-muted-foreground mb-8">
-                  CourseAI helps you create structured courses from any topic in seconds. Generate quizzes
-                  automatically or build your own using MCQs, coding questions, fill-in-the-blanks, and open-ended
-                  types. Track progress, and even create private courses for your audience.
+                  CourseAI helps you create structured courses from any topic in seconds. Generate quizzes automatically
+                  or build your own using MCQs, coding questions, fill-in-the-blanks, and open-ended types. Track
+                  progress, and even create private courses for your audience.
                 </p>
               </MaskReveal>
 
@@ -74,17 +68,21 @@ const CTASection = () => {
                 <FeedbackButton
                   size="lg"
                   className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
-                  loadingText="Starting trial..."
-                  successText="Trial started!"
+                  loadingText="Redirecting..."
+                  successText="Redirected!"
                   errorText="Please try again"
-                  onClickAsync={startTrial}
+                  onClickAsync={async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 800))
+                    router.push("/dashboard/create")
+                    return true
+                  }}
                 >
-                  Start 1-month free trial
+                  Start creating now
                   <motion.span
                     className="inline-block ml-2"
                     initial={{ x: 0 }}
                     whileHover={{ x: 5 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 15 }} // Reduced from 500
                   >
                     <ArrowRight className="h-5 w-5" />
                   </motion.span>
@@ -93,27 +91,21 @@ const CTASection = () => {
 
               <MaskReveal direction="left" delay={0.6}>
                 <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-4 md:gap-8">
-                  <motion.div
-                    className="flex items-center"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.3 }}
-                  >
+                  <motion.div className="flex items-center" whileHover={{ scale: 1.03 }} transition={{ duration: 0.3 }}>
+                    {" "}
+                    {/* Reduced from 1.05 */}
                     <Check className="h-5 w-5 text-primary mr-2" />
                     <span className="text-sm">Create from any topic</span>
                   </motion.div>
-                  <motion.div
-                    className="flex items-center"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.3 }}
-                  >
+                  <motion.div className="flex items-center" whileHover={{ scale: 1.03 }} transition={{ duration: 0.3 }}>
+                    {" "}
+                    {/* Reduced from 1.05 */}
                     <Check className="h-5 w-5 text-primary mr-2" />
                     <span className="text-sm">Private course support</span>
                   </motion.div>
-                  <motion.div
-                    className="flex items-center"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.3 }}
-                  >
+                  <motion.div className="flex items-center" whileHover={{ scale: 1.03 }} transition={{ duration: 0.3 }}>
+                    {" "}
+                    {/* Reduced from 1.05 */}
                     <Check className="h-5 w-5 text-primary mr-2" />
                     <span className="text-sm">Track learner progress</span>
                   </motion.div>

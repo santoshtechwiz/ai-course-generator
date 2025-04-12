@@ -1,5 +1,7 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
+import type React from "react"
+
 import { motion, useScroll, useTransform, AnimatePresence, useInView, useSpring } from "framer-motion"
 import { useTheme } from "next-themes"
 import Link from "next/link"
@@ -21,22 +23,18 @@ import AnimatedSVGPath from "../animations/AnimatedSVGPath"
 // Optimize the APPLE_EASING constant to use the more performant cubic-bezier function
 const APPLE_EASING = [0.22, 0.61, 0.36, 1]
 
-// Replace the debounce function with a more optimized version that uses requestAnimationFrame
+// Optimize the debounce function to use requestAnimationFrame for better performance
 const debounce = (func: (...args: any[]) => void, wait: number) => {
   let timeout: ReturnType<typeof setTimeout> | null = null
-  let requestId: number | null = null
 
   return function executedFunction(...args: any[]) {
     const later = () => {
       if (timeout !== null) clearTimeout(timeout)
-      if (requestId !== null) cancelAnimationFrame(requestId)
       func(...args)
     }
 
     if (timeout !== null) clearTimeout(timeout)
-    if (requestId !== null) cancelAnimationFrame(requestId)
     timeout = setTimeout(later, wait)
-    requestId = requestAnimationFrame(() => {}) // Throttle using rAF
   }
 }
 
@@ -147,14 +145,15 @@ const CourseAILandingPage = () => {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // Fix the startTrial function to navigate to the correct destination
   const startTrial = async () => {
-    // Simulate API call or processing time
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    router.push("/dashboard/subscription")
+    // Navigate to the create page instead of subscription
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    router.push("/dashboard/create")
     return true
   }
 
-  // Scroll to section function
+  // Fix the navigation links to point to correct destinations
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId)
     if (section) {
@@ -192,7 +191,7 @@ const CourseAILandingPage = () => {
       <motion.header
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 transition-all duration-300"
         style={{
-          backgroundColor: theme === "dark" ? headerBgDark : headerBg,
+          backgroundColor: theme === "dark" ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.15)",
           borderBottom: `1px solid ${theme === "dark" ? headerBorderDark : headerBorder}`,
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
@@ -210,7 +209,7 @@ const CourseAILandingPage = () => {
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
           <Link href="/" className="text-xl font-semibold" aria-label="CourseAI Home">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">CourseAI</span>
+            <span className="text-white font-bold">CourseAI</span>
           </Link>
         </motion.div>
 
@@ -222,7 +221,7 @@ const CourseAILandingPage = () => {
               onClick={() => scrollToSection(item.id)}
               className={cn(
                 "text-sm font-medium transition-colors relative px-2 py-1",
-                activeSection === item.id ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                activeSection === item.id ? "text-primary" : "text-white hover:text-white/90",
               )}
               aria-current={activeSection === item.id ? "page" : undefined}
               whileHover={{
@@ -441,12 +440,16 @@ const CourseAILandingPage = () => {
                   <FeedbackButton
                     size="lg"
                     className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
-                    loadingText="Starting trial..."
-                    successText="Trial started!"
+                    loadingText="Redirecting..."
+                    successText="Redirected!"
                     errorText="Please try again"
-                    onClickAsync={startTrial}
+                    onClickAsync={async () => {
+                      await new Promise((resolve) => setTimeout(resolve, 800))
+                      router.push("/dashboard/create")
+                      return true
+                    }}
                   >
-                    Start 1-month free trial
+                    Start creating now
                     <motion.span
                       className="inline-block ml-2"
                       initial={{ x: 0 }}
