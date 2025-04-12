@@ -17,7 +17,7 @@ export default async function DashboardLayout({
   return (
     <ClientLayoutWrapper>
       <div className="flex min-h-screen flex-col container mx-auto">
-        <MainNavbar />
+       
         <NavigationEvents />
 
         <main className="flex-grow flex flex-col">

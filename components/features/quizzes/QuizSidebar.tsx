@@ -1,8 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
-import { FileQuestion, AlignJustify, PenTool, Code, Flashlight, Filter, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { FileQuestion, AlignJustify, PenTool, Code, Flashlight, Filter, X, ChevronDown } from "lucide-react"
 import { SearchBar } from "./SearchBar"
 import type { QuizType } from "@/app/types/types"
 import type React from "react"
@@ -39,6 +39,29 @@ export function QuizSidebar({
     setShowMobileFilters(!showMobileFilters)
   }
 
+  // Get color classes based on quiz type
+  const getTypeColorClasses = (type: QuizType, isSelected: boolean) => {
+    const colorMap = {
+      mcq: isSelected
+        ? "bg-blue-500 text-white hover:bg-blue-600"
+        : "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200",
+      openended: isSelected
+        ? "bg-green-500 text-white hover:bg-green-600"
+        : "bg-green-50 text-green-700 hover:bg-green-100 border-green-200",
+      "fill-blanks": isSelected
+        ? "bg-yellow-500 text-white hover:bg-yellow-600"
+        : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200",
+      code: isSelected
+        ? "bg-purple-500 text-white hover:bg-purple-600"
+        : "bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200",
+      flashcard: isSelected
+        ? "bg-pink-500 text-white hover:bg-pink-600"
+        : "bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-200",
+    }
+
+    return colorMap[type] || (isSelected ? "bg-primary text-white" : "bg-muted text-foreground")
+  }
+
   return (
     <div className="space-y-6 lg:w-1/4">
       {/* Desktop Search */}
@@ -61,9 +84,17 @@ export function QuizSidebar({
         />
 
         <div className="flex justify-between items-center">
-          <Button variant="outline" size="sm" onClick={toggleMobileFilters} className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleMobileFilters}
+            className="flex items-center gap-2 border-dashed"
+          >
             <Filter className="h-4 w-4" />
             {showMobileFilters ? "Hide Filters" : "Show Filters"}
+            <ChevronDown
+              className={`h-4 w-4 transition-transform duration-200 ${showMobileFilters ? "rotate-180" : ""}`}
+            />
             {selectedTypes.length > 0 && (
               <span className="ml-1 bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
                 {selectedTypes.length}
@@ -78,6 +109,7 @@ export function QuizSidebar({
               onClick={onClearSearch}
               className="text-muted-foreground hover:text-foreground"
             >
+              <X className="h-3.5 w-3.5 mr-1" />
               Clear All
             </Button>
           )}
@@ -85,52 +117,64 @@ export function QuizSidebar({
       </div>
 
       {/* Filter Section - Desktop always visible, Mobile conditionally visible */}
-      <motion.div
-        className={`space-y-4 ${!showMobileFilters ? "hidden lg:block" : "block"}`}
-        initial={{ height: 0, opacity: 0 }}
-        animate={{
-          height: showMobileFilters ? "auto" : 0,
-          opacity: showMobileFilters ? 1 : 0,
-          display: showMobileFilters ? "block" : "none",
-        }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="flex justify-between items-center">
-          <h3 className="font-medium">Filter by Type</h3>
-          {selectedTypes.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearSearch}
-              className="hidden lg:flex text-muted-foreground hover:text-foreground text-xs"
-            >
-              <X className="h-3 w-3 mr-1" /> Clear
-            </Button>
-          )}
-        </div>
+      <AnimatePresence initial={false}>
+        {(showMobileFilters || window.innerWidth >= 1024) && (
+          <motion.div
+            className="space-y-4 bg-card p-4 rounded-lg border shadow-sm lg:shadow-none lg:p-0"
+            initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+            animate={{ height: "auto", opacity: 1, overflow: "visible" }}
+            exit={{ height: 0, opacity: 0, overflow: "hidden" }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium text-foreground flex items-center gap-2">
+                <Filter className="h-4 w-4 text-primary" />
+                Filter by Type
+              </h3>
+              {selectedTypes.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClearSearch}
+                  className="hidden lg:flex text-muted-foreground hover:text-foreground text-xs"
+                >
+                  <X className="h-3 w-3 mr-1" /> Clear
+                </Button>
+              )}
+            </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2">
-          {quizTypes.map((type) => (
-            <Button
-              key={type.id}
-              variant={selectedTypes.includes(type.id) ? "default" : "outline"}
-              size="sm"
-              className={`justify-start transition-all duration-200 ${
-                selectedTypes.includes(type.id)
-                  ? `bg-primary hover:bg-primary/90 text-primary-foreground`
-                  : `hover:bg-muted`
-              }`}
-              onClick={() => toggleQuizType(type.id)}
-            >
-              <type.icon
-                className={`mr-2 h-4 w-4 ${selectedTypes.includes(type.id) ? "text-primary-foreground" : "text-primary"}`}
-              />
-              {type.label}
-            </Button>
-          ))}
-        </div>
-      </motion.div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+              {quizTypes.map((type) => {
+                const isSelected = selectedTypes.includes(type.id)
+                return (
+                  <motion.button
+                    key={type.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => toggleQuizType(type.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border transition-all duration-200 ${getTypeColorClasses(
+                      type.id,
+                      isSelected,
+                    )}`}
+                  >
+                    <type.icon className={`h-4 w-4 ${isSelected ? "text-white" : `text-${type.color}-600`}`} />
+                    {type.label}
+                    {isSelected && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="ml-auto bg-white bg-opacity-20 rounded-full w-5 h-5 flex items-center justify-center"
+                      >
+                        <X className="h-3 w-3" />
+                      </motion.span>
+                    )}
+                  </motion.button>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
-
