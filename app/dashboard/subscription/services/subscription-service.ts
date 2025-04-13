@@ -11,9 +11,8 @@ import type { SubscriptionPlanType, PromoValidationResult } from "@/app/types/su
 import { prisma } from "@/lib/db"
 import type { SubscriptionStatus } from "@/store/useSubscriptionStore"
 import type { TokenUsage } from "@langchain/core/language_models/base"
-import { getPaymentGateway } from "./payment-gateways/payment-gateway-factory"
-import type { PaymentOptions } from "./payment-gateways/payment-gateway-interface"
-
+import { getPaymentGateway } from "./payment-gateway-factory"
+import { PaymentOptions } from "./payment-gateway-factory"
 /**
  * Service for managing user subscriptions
  */

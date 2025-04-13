@@ -11,9 +11,10 @@ import { Providers } from "@/providers/provider"
 import { getAuthSession } from "@/lib/authOptions"
 
 import TrialModal from "@/components/TrialModal"
-import { SubscriptionService } from "@/services/subscription-service"
+
 import MainNavbar from "@/components/shared/MainNavbar"
 import { ThemeProvider } from "next-themes"
+import { SubscriptionService } from "./dashboard/subscription/services/subscription-service"
 
 const inter = Inter({
   subsets: ["latin"],

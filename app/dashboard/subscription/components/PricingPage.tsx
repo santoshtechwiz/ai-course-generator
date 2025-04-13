@@ -30,7 +30,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 
-import { calculateSavings } from "@/lib/subscription-utils"
+
 import PlanCards from "./subscription-status/PlanCard"
 import ComparisonTable from "./subscription-status/ComparisonTable"
 import DevModeBanner from "./subscription-status/DevModeBanner"
@@ -39,7 +39,10 @@ import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
 
 import { SUBSCRIPTION_PLANS } from "./subscription-plans"
-import { useSubscription } from "@/hooks/use-subscription"
+
+import { calculateSavings } from "../utils/subscription-utils"
+import { useSubscription } from "../hooks/use-subscription"
+
 
 interface PricingPageProps {
   userId: string | null

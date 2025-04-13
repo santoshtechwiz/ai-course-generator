@@ -12,12 +12,13 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
+
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useSubscription } from "@/hooks/use-subscription"
+
 import { cn } from "@/lib/utils"
 import { SubscriptionPlanType } from "@/app/types/subscription"
+import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
 
 export default function TrialModal({
   isSubscribed,
