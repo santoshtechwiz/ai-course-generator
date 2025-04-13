@@ -13,8 +13,8 @@ import FillInTheBlankQuizForm from "./features/blanks/BlankQuizForm"
 
 import { Loader2 } from "lucide-react"
 import ConsistentCard from "./ConsistentCard"
-import FlashCardCreate from "@/app/dashboard/flashcard/components/FlashCardCreate"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCardCreate"
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code"| "flashcard"
 
