@@ -3,7 +3,17 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Clock, FileText, Star, BookOpen, Sparkles, Bookmark, BookmarkCheck, ChevronRight } from "lucide-react"
+import {
+  ArrowLeft,
+  Clock,
+  FileText,
+  Star,
+  BookOpen,
+  Sparkles,
+  Bookmark,
+  BookmarkCheck,
+  ChevronRight,
+} from "lucide-react"
 import { useSession } from "next-auth/react"
 
 import { Button } from "@/components/ui/button"
@@ -18,7 +28,7 @@ import { ShareButton } from "@/components/ShareButton"
 import { QuizActions } from "@/components/QuizActions"
 import { cn } from "@/lib/utils"
 import { RandomQuiz } from "@/components/RandomQuiz"
-import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "./breadcrumb"
+import { Breadcrumb } from "./breadcrumb"
 import { RandomQuote } from "@/components/RandomQuote"
 
 interface QuizDetailsPageProps {
@@ -149,18 +159,16 @@ export default function QuizDetailsPage({
           ))}
         </div>
       )}
- <div className="space-y-8">
-      {/* Breadcrumbs */}
-      {breadcrumbItems.length > 0 && (
-        <div className="space-y-14">
-        <Breadcrumb
-          paths={breadcrumbItems}
-          showIcons={true}
-          separator={true ? <ChevronRight className="rotate-45" /> : undefined}
-        />
-        </div>
-      )}
-</div>
+      {/* Fixed: Added proper spacing for breadcrumbs to clear the navbar */}
+      <div className="pt-16 mb-6">
+        {/* Breadcrumbs */}
+        {breadcrumbItems.length > 0 && (
+          <div>
+            <Breadcrumb paths={breadcrumbItems} showIcons={true} separator={<ChevronRight className="h-4 w-4" />} />
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
         <div className="lg:w-2/3">
           <motion.div
@@ -397,4 +405,3 @@ function QuizDetailsSkeleton() {
     </div>
   )
 }
-
