@@ -34,7 +34,7 @@ export function ResetSubscriptionDialog({ userId, open, onOpenChange, onSuccess 
     setIsResetting(true)
 
     try {
-      const response = await fetch(`/api/admin/subscriptions/reset`, {
+      const response = await fetch(`/api/admin/reset`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
