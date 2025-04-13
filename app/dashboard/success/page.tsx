@@ -5,8 +5,8 @@ import { CheckCircle2, ArrowRight, Zap, FileText, ArrowLeft } from "lucide-react
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SubscriptionService } from "@/services/subscription-service"
 import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
+import { SubscriptionService } from "../subscription/services/subscription-service"
 
 
 export default async function PaymentSuccessPage({
