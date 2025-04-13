@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
-import { SignInBanner } from "../quiz/SignInBanner"
+import { SignInBanner } from "../../../app/auth/signin/components/SignInBanner"
 import { ConfirmDialog } from "../quiz/ConfirmDialog"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"

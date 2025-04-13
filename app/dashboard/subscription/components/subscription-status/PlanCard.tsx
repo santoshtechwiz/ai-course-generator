@@ -60,9 +60,6 @@ export default function PlanCards({
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
 
-  // Check if the user is already on the free plan
-  const isOnFreePlan = currentPlan === "FREE" && normalizedStatus === "ACTIVE"
-
   // Animation variants for cards
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },

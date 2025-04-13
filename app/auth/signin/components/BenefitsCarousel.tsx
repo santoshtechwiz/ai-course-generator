@@ -6,36 +6,38 @@ import { useInterval } from "@/hooks/useInterval";
 
 const benefits = [
   {
-    title: "Video Transcript to Course",
-    description: "Transform any video transcript into a comprehensive course with ease.",
-    icon: "🎥",
+    title: "Create Complete Courses Instantly",
+    description: "Generate full-featured courses from any topic or video transcript with built-in MCQs, open-ended questions, fill-in-the-blanks, document uploads, PDF downloads, and AI-powered quizzes.",
+    icon: "📚",
   },
+ 
   {
     title: "Custom Quiz Creation",
-    description: "Design personalized quizzes to reinforce learning from video content.",
+    description: "Easily design quizzes tailored to your content to reinforce learning effectively.",
     icon: "📝",
   },
   {
     title: "Multiple Question Types",
-    description: "Create diverse assessments with MCQs, open-ended questions, and fill-in-the-blanks.",
+    description: "Support diverse learning with MCQs, open-ended, and fill-in-the-blank questions.",
     icon: "❓",
   },
   {
     title: "Progress Tracking",
-    description: "Monitor learner engagement and performance with detailed progress analytics.",
+    description: "Track learner performance and engagement through detailed progress analytics.",
     icon: "📊",
   },
   {
     title: "AI-Powered Content Generation",
-    description: "Leverage AI to automatically generate course content and quizzes from transcripts.",
+    description: "Automatically generate course content and quizzes from transcripts using AI.",
     icon: "🤖",
   },
   {
     title: "Flexible Learning Paths",
-    description: "Customize learning experiences based on individual user progress and preferences.",
+    description: "Deliver personalized learning journeys based on user progress and preferences.",
     icon: "🛤️",
   },
 ]
+
 
 
 export const BenefitsCarousel: React.FC = () => {

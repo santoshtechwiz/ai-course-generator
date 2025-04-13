@@ -59,7 +59,7 @@ export default function EmailCampaignManager() {
   const [sendProgress, setSendProgress] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
   const [activeTab, setActiveTab] = useState("recipients")
-  const TEST_EMAIL = process.env.NEXT_PUBLIC_TEST_EMAIL || "admin@example.com"
+  const TEST_EMAIL = process.env.NEXT_PUBLIC_TEST_EMAIL || "admin@courseai.io"
 
   // Use a ref to track intervals for proper cleanup
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
