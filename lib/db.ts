@@ -415,7 +415,7 @@ export async function syncUserCredits(userId: string): Promise<void> {
 
     for (const tx of tokenTransactions) {
       if (tx.type === "SUBSCRIPTION" || tx.type === "PURCHASE") {
-        calculatedBalance += tx.amount
+        calculatedBalance += tx.credits ?? 0
       } else if (tx.type === "USAGE") {
         calculatedBalance -= Math.abs(tx.amount)
       }

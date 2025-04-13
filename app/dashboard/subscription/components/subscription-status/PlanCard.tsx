@@ -17,9 +17,9 @@ import { Badge } from "@/components/ui/badge"
 import { planIcons } from "@/config/plan-icons"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
 import type { SUBSCRIPTION_PLANS } from "../subscription-plans"
+import { motion } from "framer-motion"
 
 // Redesigned PlanCards component with reduced animations
-// Add isAuthenticated to the props interface
 export default function PlanCards({
   plans,
   currentPlan,
@@ -35,7 +35,9 @@ export default function PlanCards({
   isPlanAvailable,
   getPlanUnavailableReason,
   expirationDate,
-  isAuthenticated = true, // Add this prop with default value
+  isAuthenticated = true,
+  hasAnyPaidPlan = false,
+  hasAllPlans = false,
 }: {
   plans: typeof SUBSCRIPTION_PLANS
   currentPlan: SubscriptionPlanType | null
@@ -51,7 +53,9 @@ export default function PlanCards({
   isPlanAvailable: (planName: SubscriptionPlanType) => boolean
   getPlanUnavailableReason?: (planName: SubscriptionPlanType) => string | undefined
   expirationDate?: string | null
-  isAuthenticated?: boolean // Add this prop
+  isAuthenticated?: boolean
+  hasAnyPaidPlan?: boolean
+  hasAllPlans?: boolean
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
@@ -59,12 +63,23 @@ export default function PlanCards({
   // Check if the user is already on the free plan
   const isOnFreePlan = currentPlan === "FREE" && normalizedStatus === "ACTIVE"
 
-  // Check if user has a paid subscription
-  const hasPaidSubscription = isSubscribed && currentPlan !== "FREE"
+  // Animation variants for cards
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: 0.1 * i,
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    }),
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-      {plans.map((plan) => {
+      {plans.map((plan, index) => {
         const priceOption = plan.options.find((o: { duration: number }) => o.duration === duration) || plan.options[0]
         const isPlanActive = currentPlan === plan.id
         const isBestValue = plan.name === bestPlan?.name
@@ -86,6 +101,8 @@ export default function PlanCards({
           if (loading === plan.id) return "Processing..."
           if (isAuthenticated) {
             if (isCurrentActivePlan) return "Current Plan"
+            if (hasAllPlans) return "All Plans Active"
+            if (plan.id === "FREE" && hasAnyPaidPlan) return "Paid Plan Active"
             if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return "Unavailable"
           }
           if (plan.id === "FREE") return "Start for Free"
@@ -103,7 +120,14 @@ export default function PlanCards({
         })()
 
         return (
-          <div key={plan.id} className={`${isBestValue ? "order-first lg:order-none" : ""}`}>
+          <motion.div
+            key={plan.id}
+            className={`${isBestValue ? "order-first lg:order-none" : ""}`}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            custom={index}
+          >
             <Card
               className={`flex flex-col h-full transition-all duration-300 hover:shadow-md ${
                 cardHighlightClass
@@ -164,7 +188,7 @@ export default function PlanCards({
                 <div className="mb-4">
                   <p className="text-lg font-semibold text-center sm:text-left">{plan.tokens} tokens</p>
                   <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-2">
-                    <div
+                    <motion.div
                       className={`absolute top-0 left-0 h-full rounded-full ${
                         plan.id === "FREE"
                           ? "bg-slate-400"
@@ -174,7 +198,9 @@ export default function PlanCards({
                               ? "bg-purple-500"
                               : "bg-gradient-to-r from-amber-500 to-orange-500"
                       }`}
-                      style={{ width: `${(plan.tokens / 600) * 100}%` }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(plan.tokens / 600) * 100}%` }}
+                      transition={{ duration: 1, delay: 0.2 * index }}
                     />
                   </div>
                 </div>
@@ -187,10 +213,16 @@ export default function PlanCards({
                       {plan.features
                         .filter((feature) => feature.available)
                         .map((feature, index) => (
-                          <li key={index} className="flex items-start">
+                          <motion.li
+                            key={index}
+                            className="flex items-start"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: 0.1 * index }}
+                          >
                             <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                             <span className="text-sm">{feature.name}</span>
-                          </li>
+                          </motion.li>
                         ))}
                     </ul>
                   </div>
@@ -202,7 +234,13 @@ export default function PlanCards({
                       {plan.features
                         .filter((feature) => !feature.available)
                         .map((feature, index) => (
-                          <li key={index} className="flex items-start">
+                          <motion.li
+                            key={index}
+                            className="flex items-start"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: 0.1 * index }}
+                          >
                             <Lock className="h-5 w-5 text-muted-foreground mr-2 flex-shrink-0 mt-0.5" />
                             <span className="text-sm text-muted-foreground">{feature.name}</span>
                             {feature.comingSoon && (
@@ -210,7 +248,7 @@ export default function PlanCards({
                                 Coming Soon
                               </Badge>
                             )}
-                          </li>
+                          </motion.li>
                         ))}
                     </ul>
                   </div>
@@ -255,7 +293,7 @@ export default function PlanCards({
                             <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                             <div>
                               <p className="font-medium text-sm">{unavailableReason}</p>
-                              {expirationDate && (
+                              {expirationDate && normalizedStatus !== "ACTIVE" && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Your current plan{" "}
                                   {normalizedStatus === ("CANCELED" as SubscriptionStatusType) ? "expires" : "renews"}{" "}
@@ -285,11 +323,25 @@ export default function PlanCards({
               {isAuthenticated && !isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
                   <div className="flex items-center justify-center gap-2 text-sm text-amber-600 dark:text-amber-400 mt-2">
-                    <Calendar className="h-4 w-4" />
-                    <p>
-                      Available after current plan{" "}
-                      {normalizedStatus === ("CANCELED" as SubscriptionStatusType) ? "expires" : "ends"}
-                    </p>
+                    {hasAllPlans ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        <p>All features already available</p>
+                      </>
+                    ) : plan.id === "FREE" && hasAnyPaidPlan ? (
+                      <>
+                        <Info className="h-4 w-4" />
+                        <p>You have a paid subscription</p>
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="h-4 w-4" />
+                        <p>
+                          Available after current plan{" "}
+                          {normalizedStatus === ("CANCELED" as SubscriptionStatusType) ? "expires" : "ends"}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -304,10 +356,9 @@ export default function PlanCards({
                 </div>
               )}
             </Card>
-          </div>
+          </motion.div>
         )
       })}
     </div>
   )
 }
-

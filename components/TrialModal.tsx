@@ -33,6 +33,9 @@ export default function TrialModal({
   const { handleSubscribe, isLoading } = useSubscription()
   const router = useRouter()
 
+  // Determine the current month and format it (e.g., "April")
+  const currentMonth = new Date().toLocaleString("default", { month: "long" })
+
   useEffect(() => {
     const hasSeenTrialModal = localStorage.getItem("hasSeenTrialModal") === "true"
     if (!hasSeenTrialModal && (!isSubscribed || currentPlan === "FREE")) {
@@ -78,11 +81,12 @@ export default function TrialModal({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px] gap-0 p-0 overflow-hidden">
         <div className="relative">
-          <DialogHeader className="border-b px-6 py-4">
+          {/* Header with dynamic discount banner */}
+          <DialogHeader className="border-b px-6 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
             <div className="flex items-center gap-3">
               <div className={cn(
                 "p-2 rounded-lg",
-                "bg-primary/10 text-primary"
+                "bg-white text-purple-500"
               )}>
                 <Gift className="h-5 w-5" />
               </div>
@@ -91,16 +95,20 @@ export default function TrialModal({
                   Unlock Premium Features
                 </DialogTitle>
                 <DialogDescription className="text-sm">
-                  Try PRO plan with 5 free credits
+                  Try our PRO plan with 5 free credits
                 </DialogDescription>
               </div>
             </div>
             <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none">
               <X className="h-4 w-4" />
             </DialogClose>
+            {/* Dynamic limited time offer banner */}
+            <div className="mt-2 rounded bg-red-600 p-2 text-center text-xs font-bold">
+              Limited Time Offer! Get 20% off any plan with code <span className="underline">AILAUNCH20</span> - Only in {currentMonth}!
+            </div>
           </DialogHeader>
 
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-6 py-4 space-y-4 bg-white">
             <div className="space-y-3">
               {features.map((feature, index) => (
                 <div key={index} className="flex items-start gap-3">
@@ -180,7 +188,7 @@ export default function TrialModal({
             </div>
           </div>
 
-          <div className="border-t px-6 py-3 bg-muted/50">
+          <div className="border-t px-6 py-3 bg-gray-100">
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"

@@ -531,6 +531,7 @@ export class SubscriptionService {
       return transactions.map((transaction) => ({
         id: transaction.id,
         amount: transaction.amount,
+        credits: transaction.credits,
         type: transaction.type,
         description: transaction.description,
         date: transaction.createdAt.toISOString(),

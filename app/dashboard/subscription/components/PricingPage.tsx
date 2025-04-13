@@ -7,7 +7,7 @@
 
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
   Check,
   X,
@@ -37,8 +37,26 @@ import DevModeBanner from "./subscription-status/DevModeBanner"
 import FAQSection from "./subscription-status/FaqSection"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
-import { useSubscription } from "@/hooks/use-subscription"
+
 import { SUBSCRIPTION_PLANS } from "./subscription-plans"
+import { useSubscription } from "@/hooks/use-subscription"
+
+interface PricingPageProps {
+  userId: string | null
+  currentPlan?: SubscriptionPlanType | null
+  subscriptionStatus?: SubscriptionStatusType | null
+  isProd?: boolean
+  tokensUsed?: number
+  credits?: number
+  expirationDate?: string | null
+  referralCode?: string | null
+  onUnauthenticatedSubscribe?: (
+    planName: SubscriptionPlanType,
+    duration: number,
+    promoCode?: string,
+    promoDiscount?: number,
+  ) => void
+}
 
 export function PricingPage({
   userId,
@@ -49,17 +67,8 @@ export function PricingPage({
   credits = 0,
   expirationDate = null,
   referralCode = null,
-}: {
-  userId: string | null
-  currentPlan: SubscriptionPlanType | null
-  subscriptionStatus: SubscriptionStatusType | null
-  isProd: boolean
-  tokensUsed?: number
-  credits?: number
-  expirationDate?: string | null
-
-  referralCode?: string | null
-}) {
+  onUnauthenticatedSubscribe,
+}: PricingPageProps) {
   const [loading, setLoading] = useState<SubscriptionPlanType | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<1 | 6>(1)
   const [showPromotion, setShowPromotion] = useState(true)
@@ -73,8 +82,9 @@ export function PricingPage({
   const [promoDiscount, setPromoDiscount] = useState<number>(0)
   const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false)
   const [isReferralCodeValid, setIsReferralCodeValid] = useState<boolean>(false)
+
   // Normalize subscription status for case-insensitive comparison
-  const normalizedStatus = subscriptionStatus?.toUpperCase() as "ACTIVE" | "CANCELED" | null;
+  const normalizedStatus = subscriptionStatus?.toUpperCase() as "ACTIVE" | "CANCELED" | null
   const isSubscribed = currentPlan && normalizedStatus === "ACTIVE"
 
   // Format expiration date for display
@@ -150,6 +160,8 @@ export function PricingPage({
     cancelSubscription,
     resumeSubscription,
     canSubscribeToPlan,
+    isSubscribedToAnyPaidPlan,
+    isSubscribedToAllPlans,
     isLoading: subscriptionLoading,
   } = useSubscription({
     allowPlanChanges: false,
@@ -177,6 +189,16 @@ export function PricingPage({
     },
   })
 
+  // Check if user is subscribed to any paid plan
+  const hasAnyPaidPlan = useMemo(() => {
+    return isSubscribedToAnyPaidPlan(currentPlan, normalizedStatus)
+  }, [currentPlan, normalizedStatus, isSubscribedToAnyPaidPlan])
+
+  // Check if user is subscribed to all plans
+  const hasAllPlans = useMemo(() => {
+    return isSubscribedToAllPlans(currentPlan, normalizedStatus)
+  }, [currentPlan, normalizedStatus, isSubscribedToAllPlans])
+
   // Enhanced subscription handler with authentication check
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
     // Set loading state for the specific plan
@@ -185,28 +207,40 @@ export function PricingPage({
     try {
       // Check if user is authenticated
       if (!isAuthenticated) {
-        toast({
-          title: "Authentication Required",
-          description: "Please sign in to subscribe to this plan",
-          variant: "destructive",
-        })
-
-        // Store pending subscription in localStorage to resume after login
-        if (typeof window !== "undefined") {
-          localStorage.setItem(
-            "pendingSubscription",
-            JSON.stringify({
-              planName,
-              duration,
-              promoCode: isPromoValid ? promoCode : undefined,
-              promoDiscount:promoDiscount,
-              referralCode: referralCode||null
-            }),
+        // If we have an onUnauthenticatedSubscribe handler, use it
+        if (onUnauthenticatedSubscribe) {
+          onUnauthenticatedSubscribe(
+            planName,
+            duration,
+            isPromoValid ? promoCode : undefined,
+            isPromoValid ? promoDiscount : undefined,
           )
-        }
+        } else {
+          // Otherwise, show a toast and redirect
+          toast({
+            title: "Authentication Required",
+            description: "Please sign in to subscribe to this plan",
+            variant: "destructive",
+          })
 
-        // Redirect to login page
-        window.location.href = "/api/auth/signin"
+          // Store pending subscription in localStorage to resume after login
+          if (typeof window !== "undefined") {
+            localStorage.setItem(
+              "pendingSubscription",
+              JSON.stringify({
+                planName,
+                duration,
+                promoCode: isPromoValid ? promoCode : undefined,
+                promoDiscount: promoDiscount,
+                referralCode: referralCode || null,
+              }),
+            )
+          }
+
+          // Redirect to login page
+          window.location.href = "/api/auth/signin"
+        }
+        setLoading(null)
         return
       }
 
@@ -219,6 +253,7 @@ export function PricingPage({
           description: reason || "You cannot change your subscription at this time.",
           variant: "destructive",
         })
+        setLoading(null)
         return
       }
 
@@ -234,11 +269,11 @@ export function PricingPage({
 
       // For paid plans, use the subscription hook
       const result = await hookHandleSubscribe(
-      planName,
-      duration,
-      promoCode,
-      promoDiscount,
-      referralCode ?? undefined, // Pass referral code if available
+        planName,
+        duration,
+        isPromoValid ? promoCode : undefined,
+        isPromoValid ? promoDiscount : undefined,
+        referralCode ?? undefined, // Pass referral code if available
       )
 
       if (!result.success) {
@@ -310,14 +345,12 @@ export function PricingPage({
   // Update useEffect to handle pending subscriptions with promo code
   useEffect(() => {
     // Check if there's a pending subscription after login
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && isAuthenticated) {
       const pendingSubscriptionData = localStorage.getItem("pendingSubscription")
 
-      if (pendingSubscriptionData && userId) {
+      if (pendingSubscriptionData) {
         try {
           const { planName, duration, promoCode } = JSON.parse(pendingSubscriptionData)
-          // Clear the pending subscription
-          localStorage.removeItem("pendingSubscription")
 
           // Apply promo code if it was saved
           if (promoCode) {
@@ -325,36 +358,23 @@ export function PricingPage({
             validatePromoCode(promoCode)
           }
 
-          // Proceed with subscription after a short delay to ensure everything is loaded
+          // Don't automatically proceed with subscription after login
+          // This prevents immediate resumption of subscriptions after redirection
+          // Instead, we'll just show a notification that there's a pending subscription
+
+          // Clear the pending subscription after a delay
           setTimeout(() => {
-            handleSubscribe(planName, duration)
-          }, 500)
+            localStorage.removeItem("pendingSubscription")
+          }, 5000)
         } catch (error) {
           console.error("Error processing pending subscription:", error)
         }
       }
     }
-  }, [userId, validatePromoCode])
-
-  // Use a ref to track if tokens have already been counted
-  const tokensCountedRef = useRef(false)
-
-  // Prevent token accumulation on refresh
-  useEffect(() => {
-    // Only process tokens once per session
-    if (tokensCountedRef.current) {
-      return
-    }
-
-    // Mark tokens as counted
-    tokensCountedRef.current = true
-
-    // Any token processing logic should go here
-    // This ensures it only runs once, not on every refresh
-  }, [])
+  }, [isAuthenticated, validatePromoCode])
 
   return (
-    <div className="container max-w-6xl space-y-8 px-4 sm:px-6">
+    <div className="container max-w-6xl space-y-8 px-4 sm:px-6 animate-in fade-in duration-500">
       {!isProd && <DevModeBanner />}
 
       {/* Display subscription error if any */}
@@ -379,8 +399,8 @@ export function PricingPage({
           <AlertDescription className="text-blue-600 dark:text-blue-400">
             <p>
               You currently have an active {currentPlan} plan that will{" "}
-              {normalizedStatus === "CANCELED" ? "expire" : normalizedStatus === "ACTIVE" ? "renew" : "update"} on {formattedExpirationDate}. You can manage your
-              subscription details in your account page.
+              {normalizedStatus === "CANCELED" ? "expire" : normalizedStatus === "ACTIVE" ? "renew" : "update"} on{" "}
+              {formattedExpirationDate}. You can manage your subscription details in your account page.
             </p>
 
             <div className="mt-2 flex items-center gap-2">
@@ -399,7 +419,7 @@ export function PricingPage({
 
       {/* Promotional Banner - Redesigned */}
       {showPromotion && (
-        <div className="relative overflow-hidden rounded-xl border bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+        <div className="relative overflow-hidden rounded-xl border bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-6 shadow-sm transition-all duration-300 hover:shadow-md animate-in fade-in slide-in-from-top-5 duration-500 delay-300">
           <div className="absolute top-3 right-3">
             <Button
               variant="ghost"
@@ -463,7 +483,7 @@ export function PricingPage({
       )}
 
       {/* Section Header - Always show immediately */}
-      <div className="text-center py-8">
+      <div className="text-center py-8 animate-in fade-in slide-in-from-bottom-5 duration-500 delay-200">
         <h2 className="text-4xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
           Choose Your Plan
         </h2>
@@ -473,7 +493,7 @@ export function PricingPage({
       </div>
 
       {/* Billing Toggle - Always show immediately */}
-      <div className="flex items-center justify-center space-x-4 pt-4 mb-8">
+      <div className="flex items-center justify-center space-x-4 pt-4 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500 delay-300">
         <Label
           htmlFor="billing-toggle"
           className={`text-lg transition-colors duration-300 ${selectedDuration === 1 ? "font-semibold text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`}
@@ -504,7 +524,7 @@ export function PricingPage({
       </div>
 
       {/* Compare Plans Button - Always show immediately */}
-      <div className="text-center mb-8 mt-4">
+      <div className="text-center mb-8 mt-4 animate-in fade-in slide-in-from-bottom-5 duration-500 delay-400">
         <Button
           variant="outline"
           onClick={() => {
@@ -537,6 +557,16 @@ export function PricingPage({
           // If not authenticated, all plans should be available
           if (!isAuthenticated) return true
 
+          // If this is the FREE plan and user has a paid plan, disable it
+          if (planName === "FREE" && hasAnyPaidPlan) {
+            return false
+          }
+
+          // If user has all plans, disable all subscription buttons
+          if (hasAllPlans) {
+            return false
+          }
+
           const { canSubscribe } = canSubscribeToPlan(currentPlan, planName, normalizedStatus)
           return canSubscribe
         }}
@@ -544,23 +574,34 @@ export function PricingPage({
           // If not authenticated, no reason to show
           if (!isAuthenticated) return undefined
 
+          // If this is the FREE plan and user has a paid plan
+          if (planName === "FREE" && hasAnyPaidPlan) {
+            return "You already have a paid subscription"
+          }
+
+          // If user has all plans
+          if (hasAllPlans) {
+            return "You already have access to all features"
+          }
+
           const { canSubscribe, reason } = canSubscribeToPlan(currentPlan, planName, normalizedStatus)
           return canSubscribe ? undefined : reason
         }}
         expirationDate={formattedExpirationDate}
         isAuthenticated={isAuthenticated}
-      
+        hasAnyPaidPlan={hasAnyPaidPlan}
+        hasAllPlans={hasAllPlans}
       />
 
       {/* Why Upgrade Section - Always show immediately */}
-      <div className="text-center mt-12 mb-8 bg-muted/30 p-8 rounded-xl border">
+      <div className="text-center mt-12 mb-8 bg-muted/30 p-8 rounded-xl border animate-in fade-in slide-in-from-bottom-5 duration-500 delay-500">
         <h3 className="text-2xl font-bold mb-4">Why Upgrade?</h3>
         <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
           Upgrade to a higher-tier plan to unlock more tokens, advanced features, and priority support. Take your
           learning experience to the next level.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-8">
-          <div className="bg-card p-6 rounded-lg border shadow-sm transition-all duration-300 hover:shadow-md">
+          <div className="bg-card p-6 rounded-lg border shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105">
             <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
               <Sparkles className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
@@ -569,7 +610,7 @@ export function PricingPage({
               Get access to more tokens for generating content and completing tasks.
             </p>
           </div>
-          <div className="bg-card p-6 rounded-lg border shadow-sm transition-all duration-300 hover:shadow-md">
+          <div className="bg-card p-6 rounded-lg border shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105">
             <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-4">
               <CreditCard className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
@@ -578,7 +619,7 @@ export function PricingPage({
               Unlock premium features like priority processing and advanced customization.
             </p>
           </div>
-          <div className="bg-card p-6 rounded-lg border shadow-sm transition-all duration-300 hover:shadow-md">
+          <div className="bg-card p-6 rounded-lg border shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105">
             <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
               <ArrowRight className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
@@ -615,11 +656,11 @@ export function PricingPage({
           <TabsTrigger value="faq">FAQ</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="comparison">
+        <TabsContent value="comparison" className="animate-in fade-in-50 duration-300">
           <ComparisonTable plans={SUBSCRIPTION_PLANS} />
         </TabsContent>
 
-        <TabsContent value="faq">
+        <TabsContent value="faq" className="animate-in fade-in-50 duration-300">
           <FAQSection />
         </TabsContent>
       </Tabs>
@@ -627,3 +668,4 @@ export function PricingPage({
   )
 }
 
+export default PricingPage
