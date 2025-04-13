@@ -8,11 +8,12 @@ import { UserProvider } from "@/providers/userContext"
 import { ThemeProvider } from "next-themes"
 import { SessionProvider } from "next-auth/react"
 import { AnimationProvider } from "@/providers/animation-provider"
+import MainNavbar from "./shared/MainNavbar"
 
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
-      
+        <MainNavbar />
         <UserProvider>
           <AnimationProvider initialState={true}>
           <SubscriptionProvider>

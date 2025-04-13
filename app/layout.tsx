@@ -176,7 +176,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
-          <MainNavbar />
+        
           {/* Place the TrialModal here, inside the Providers */}
           <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
 
