@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils"
 
 import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
-import { SignInBanner } from "@/components/features/quiz/SignInBanner"
+import { SignInBanner } from "@/app/auth/signin/components/SignInBanner"
 import { ConfirmDialog } from "@/components/features/quiz/ConfirmDialog"
 const flashcardSchema = z.object({
   title: z.string().nonempty("Topic is required"),

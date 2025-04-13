@@ -123,6 +123,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
         if (planName === "FREE") {
           const response = await fetch("/api/subscriptions/activate-free", {
             method: "POST",
+            body: JSON.stringify({ confirmed: true }),
             headers: {
               "Content-Type": "application/json",
             },

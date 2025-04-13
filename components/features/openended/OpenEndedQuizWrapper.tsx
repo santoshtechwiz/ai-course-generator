@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { SignInPrompt } from "@/components/SignInPrompt"
+import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { QuizActions } from "@/components/QuizActions"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"

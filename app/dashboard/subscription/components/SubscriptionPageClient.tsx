@@ -17,9 +17,10 @@ import { useRouter } from "next/navigation"
 import { ReferralBanner } from "@/components/ReferralBanner"
 
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
-import { LoginModal } from "@/components/auth/LoginModal"
+
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 import TrialModal from "@/components/TrialModal"
+import { LoginModal } from "@/app/auth/signin/components/LoginModal"
 
 // Lazy load the PricingPage component
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))

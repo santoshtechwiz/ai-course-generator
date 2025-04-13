@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { LightbulbIcon, BrainIcon, TrophyIcon } from "lucide-react"
+import { LightbulbIcon, BrainIcon, TrophyIcon, Loader2 } from "lucide-react"
+import { signIn } from "next-auth/react"
 
 interface SignInPromptProps {
   title?: string
@@ -25,6 +25,7 @@ export const SignInPrompt: React.FC<SignInPromptProps> = ({
   callbackUrl = "/dashboard",
 }) => {
   const [currentQuote, setCurrentQuote] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -32,6 +33,18 @@ export const SignInPrompt: React.FC<SignInPromptProps> = ({
     }, 5000)
     return () => clearInterval(timer)
   }, [])
+
+  const handleSignIn = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      await signIn(undefined, { callbackUrl })
+    } catch (error) {
+      console.error("Sign in error:", error)
+      setIsLoading(false)
+    }
+    // No need to set isLoading to false as we're redirecting
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto mt-8 overflow-hidden">
@@ -104,14 +117,17 @@ export const SignInPrompt: React.FC<SignInPromptProps> = ({
         </ul>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" onClick={() => signIn(undefined, { callbackUrl })}>
-          Sign In to Continue
+        <Button className="w-full" onClick={handleSignIn} disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing In...
+            </>
+          ) : (
+            "Sign In to Continue"
+          )}
         </Button>
       </CardFooter>
     </Card>
   )
 }
-
-
-
-

@@ -12,7 +12,7 @@ import BlankQuizResults from "./BlankQuizResults"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
 
 import { GuidedHelp } from "@/components/HelpModal"
-import { SignInPrompt } from "@/components/SignInPrompt"
+import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { QuizActions } from "@/components/QuizActions"
 import { useQuizResult } from "@/hooks/use-quiz-result"
 import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"

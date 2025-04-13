@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { ConfirmDialog } from "./ConfirmDialog"
-import { SignInBanner } from "./SignInBanner"
+import { SignInBanner } from "../../../app/auth/signin/components/SignInBanner"
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 

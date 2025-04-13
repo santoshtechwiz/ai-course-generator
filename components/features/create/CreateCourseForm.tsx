@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import { SignInBanner } from "@/components/features/quiz/SignInBanner"
+import { SignInBanner } from "@/app/auth/signin/components/SignInBanner"
 
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"

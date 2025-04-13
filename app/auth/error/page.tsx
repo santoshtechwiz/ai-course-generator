@@ -1,20 +1,27 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { AlertTriangle, ArrowLeft } from "lucide-react"
+import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function AuthError() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState("An unexpected authentication error occurred")
   const [errorDescription, setErrorDescription] = useState(
     "Please try signing in again or contact support if the problem persists.",
   )
 
   useEffect(() => {
+    // Add a small delay to prevent flash of loading state
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 500)
+
     const error = searchParams.get("error")
 
     if (error) {
@@ -74,7 +81,23 @@ export default function AuthError() {
           setErrorDescription("An error occurred during authentication. Please try again.")
       }
     }
+
+    return () => clearTimeout(timer)
   }, [searchParams])
+
+  const handleRetry = () => {
+    router.push("/auth/signin")
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+        <div className="flex justify-center items-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
@@ -105,12 +128,11 @@ export default function AuthError() {
               Back to Sign In
             </Link>
           </Button>
-          <Button asChild className="w-full sm:w-auto">
-            <Link href="/">Go to Homepage</Link>
+          <Button onClick={handleRetry} className="w-full sm:w-auto">
+            Try Again
           </Button>
         </CardFooter>
       </Card>
     </div>
   )
 }
-
