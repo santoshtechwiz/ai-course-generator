@@ -7,8 +7,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 
-import { SubscriptionService } from "@/services/subscription-service"
+
 import { authOptions } from "@/lib/authOptions"
+import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 export async function POST(req: NextRequest) {
   try {

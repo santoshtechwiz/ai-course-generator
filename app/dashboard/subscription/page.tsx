@@ -20,9 +20,11 @@ export const metadata: Metadata = generatePageMetadata({
   ogImage: "/og-image-subscription.jpg",
 })
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
+const Page = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) => {
   const referralCode = (await searchParams).ref ?? null;
 
   return <SubscriptionPageClient refCode={referralCode} />;
-}
+};
+
+export default Page;
 
