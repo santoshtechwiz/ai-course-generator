@@ -115,6 +115,7 @@ export const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [activeTab, setActiveTab] = useState("all")
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
 
   // Fetch users
   const { data, isLoading, isError, refetch } = useQuery<{ users: UserInterface[]; totalCount: number }>({
@@ -160,7 +161,7 @@ export const UserManagement = () => {
     return filteredUsers.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredUsers, currentPage, itemsPerPage])
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
+  const totalPages = useMemo(() => Math.ceil(filteredUsers.length / itemsPerPage), [filteredUsers.length, itemsPerPage])
 
   // Handlers
   const handleEdit = useCallback((userId: string) => {
@@ -192,16 +193,80 @@ export const UserManagement = () => {
     }
   }, [paginatedUsers, selectedUsers.length])
 
-
-
-  const handleSendEmail = () => {
-    const router = useRouter();
-    router.push('/admin/email');
-  };
+  const router = useRouter()
+  const handleSendEmail = useCallback(() => {
+    router.push("/admin/email")
+  }, [router])
 
   const getSelectedUsers = useCallback(() => {
     return users.filter((user) => selectedUsers.includes(user.id))
   }, [users, selectedUsers])
+
+  const handleDeleteUser = useCallback(
+    async (userId: string) => {
+      try {
+        const response = await fetch(`/api/admin/delete`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId }),
+        })
+
+        if (!response.ok) throw new Error("Failed to delete user")
+
+        toast({
+          title: "User deleted",
+          description: "The user has been successfully deleted.",
+        })
+
+        refetch()
+        setDeletingUserId(null)
+      } catch (error) {
+        console.error("Error deleting user:", error)
+        toast({
+          title: "Error",
+          description: "Failed to delete user. Please try again.",
+          variant: "destructive",
+        })
+      }
+    },
+    [refetch, toast],
+  )
+
+  // Add a function to handle bulk deletion
+  const handleBulkDelete = useCallback(async () => {
+    if (!selectedUsers.length) return
+
+    try {
+      const promises = selectedUsers.map((userId) =>
+        fetch(`/api/admin/deleteAttachment`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId }),
+        }),
+      )
+
+      await Promise.all(promises)
+
+      toast({
+        title: "Users deleted",
+        description: `${selectedUsers.length} users have been successfully deleted.`,
+      })
+
+      refetch()
+      setSelectedUsers([])
+    } catch (error) {
+      console.error("Error deleting users:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete some users. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }, [selectedUsers, refetch, toast])
 
   // Render user list
   const renderUserList = () => {
@@ -294,7 +359,7 @@ export const UserManagement = () => {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
-                        onClick={() => handleEdit(user.id)}
+                        onClick={() => setDeletingUserId(user.id)}
                       >
                         <Trash className="mr-2 h-4 w-4" />
                         Delete user
@@ -465,10 +530,13 @@ export const UserManagement = () => {
             <div className="text-sm">
               <span className="font-medium">{selectedUsers.length}</span> users selected
             </div>
-            <Button onClick={handleSendEmail}>
-              <Mail className="h-4 w-4 mr-2" />
-              Send Email
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="destructive" onClick={handleBulkDelete}>
+                <Trash className="h-4 w-4 mr-2" />
+                Delete Selected
+              </Button>
+             
+            </div>
           </CardFooter>
         )}
       </Card>
@@ -490,7 +558,23 @@ export const UserManagement = () => {
         onSuccess={refetch}
       />
 
-      
+      {/* Delete Confirmation Dialog */}
+      {deletingUserId && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-background border rounded-lg shadow-lg p-6 max-w-md w-full">
+            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
+            <p className="mb-6">Are you sure you want to delete this user? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeletingUserId(null)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={() => handleDeleteUser(deletingUserId)}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

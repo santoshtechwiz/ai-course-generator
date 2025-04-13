@@ -38,6 +38,7 @@ export async function POST(req: Request) {
         where: { userId },
         data: {
           status: "CANCELLED",
+          
         },
       });
 
@@ -45,6 +46,7 @@ export async function POST(req: Request) {
         where: { id: userId },
         data: {
           userType: "FREE",
+          credits: 0,
         },
       });
     } else if (resetType === "inactive") {
