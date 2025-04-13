@@ -290,7 +290,7 @@ export default function CoursePromoEmail({ name, course, recommendedCourses }: C
               <span style={styles.courseTag}>New</span>
             </div>
 
-            <a href={`https://courseai.io/course/${course.slug}`} style={styles.courseLink}>
+            <a href={`https://courseai.io/dashboard/course/${course.slug}`} style={styles.courseLink}>
               View Course
             </a>
           </div>
