@@ -25,7 +25,7 @@ const TEMPLATE_TYPES = [
   { id: "reengagement", name: "Re-engagement", description: "Brings back inactive users" },
 ]
 
-export  default function EmailTemplateSystem() {
+export default function EmailTemplateSystem() {
   const { toast } = useToast()
   const [activeTemplate, setActiveTemplate] = useState("welcome")
   const [subject, setSubject] = useState("")
@@ -39,7 +39,7 @@ export  default function EmailTemplateSystem() {
   const { data: sampleData, isLoading } = useQuery({
     queryKey: ["emailSampleData"],
     queryFn: async () => {
-      const response = await fetch("/api/admin/subscriptions/data")
+      const response = await fetch("/api/admin/data")
       if (!response.ok) throw new Error("Failed to fetch sample data")
       return response.json()
     },
@@ -75,24 +75,34 @@ export  default function EmailTemplateSystem() {
       )
     }
 
-    switch (activeTemplate) {
-      case "welcome":
-        return <WelcomeEmail name={previewData.name} />
-      case "coursePromo":
-        return <CoursePromoEmail name={previewData.name} recommendedCourses={sampleData.courses} />
-      case "quizPromo":
-        return <QuizPromoEmail name={previewData.name} />
-      case "reengagement":
-        return <ReengagementEmail name={previewData.name} />
-      default:
-        return <div>No template selected</div>
+    try {
+      switch (activeTemplate) {
+        case "welcome":
+          return <WelcomeEmail name={previewData.name} />
+        case "coursePromo":
+          return <CoursePromoEmail name={previewData.name} recommendedCourses={sampleData.courses} />
+        case "quizPromo":
+          return <QuizPromoEmail name={previewData.name} quizzes={sampleData.quizzes} />
+        case "reengagement":
+          return <ReengagementEmail name={previewData.name} />
+        default:
+          return <div>No template selected</div>
+      }
+    } catch (error) {
+      console.error("Error rendering template:", error)
+      return <div className="p-4 text-red-500">Error rendering template. Please check console for details.</div>
     }
   }
 
   // Get HTML string from template component
   const getTemplateHtml = () => {
-    const templateComponent = renderTemplate()
-    return renderToString(templateComponent)
+    try {
+      const templateComponent = renderTemplate()
+      return renderToString(templateComponent)
+    } catch (error) {
+      console.error("Error rendering template to string:", error)
+      return `<p>Error rendering email template: ${error instanceof Error ? error.message : "Unknown error"}</p>`
+    }
   }
 
   // Handle send test email
@@ -124,6 +134,7 @@ export  default function EmailTemplateSystem() {
         description: "Check your inbox for the test email",
       })
     } catch (error) {
+      console.error("Error sending test email:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to send test email",
