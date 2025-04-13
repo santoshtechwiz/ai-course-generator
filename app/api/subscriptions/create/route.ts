@@ -2,9 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { z } from "zod"
 
-import { SubscriptionService } from "@/services/subscription-service"
+
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/authOptions"
+import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 // Define validation schema for request body
 const subscriptionSchema = z.object({

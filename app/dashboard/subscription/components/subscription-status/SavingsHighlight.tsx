@@ -1,7 +1,8 @@
 
-import { calculateSavings } from "@/lib/subscription-formatter";
+
 import { Sparkles } from "lucide-react";
 import { SUBSCRIPTION_PLANS } from "../subscription-plans";
+import { calculateSavings } from "../../utils/subscription-formatter";
 
 
 // Redesigned SavingsHighlight component
