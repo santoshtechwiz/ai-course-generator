@@ -36,7 +36,7 @@ import ComparisonTable from "./subscription-status/ComparisonTable"
 import DevModeBanner from "./subscription-status/DevModeBanner"
 import FAQSection from "./subscription-status/FaqSection"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
 
 import { SUBSCRIPTION_PLANS } from "./subscription-plans"
 

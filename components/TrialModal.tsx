@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 import { cn } from "@/lib/utils"
-import { SubscriptionPlanType } from "@/app/types/subscription"
+import { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
 
 export default function TrialModal({

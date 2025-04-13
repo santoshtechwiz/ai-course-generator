@@ -7,7 +7,7 @@
  */
 
 import { SUBSCRIPTION_PLANS, VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
-import type { SubscriptionPlanType, PromoValidationResult } from "@/app/types/subscription"
+import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
 import { prisma } from "@/lib/db"
 import type { SubscriptionStatus } from "@/store/useSubscriptionStore"
 import type { TokenUsage } from "@langchain/core/language_models/base"

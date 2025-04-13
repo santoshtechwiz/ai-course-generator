@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
 
 interface UseSubscriptionOptions {
   allowPlanChanges?: boolean
