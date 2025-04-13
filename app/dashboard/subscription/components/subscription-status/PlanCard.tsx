@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
 import { planIcons } from "@/config/plan-icons"
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
 import type { SUBSCRIPTION_PLANS } from "../subscription-plans"
 import { motion } from "framer-motion"
 

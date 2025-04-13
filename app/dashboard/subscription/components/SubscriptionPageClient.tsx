@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { ReferralBanner } from "@/components/ReferralBanner"
 
-import type { SubscriptionPlanType } from "@/app/types/subscription"
+import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { LoginModal } from "@/components/auth/LoginModal"
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 import TrialModal from "@/components/TrialModal"
