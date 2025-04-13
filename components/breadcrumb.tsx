@@ -17,12 +17,7 @@ import {
   Bookmark,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 export type BreadcrumbIconType =
   | "home"
@@ -78,25 +73,23 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
         const overflowCount = paths.length - maxItems
         const firstItems = paths.slice(0, 1)
         const lastItems = paths.slice(paths.length - (maxItems - 1))
-        
+
         return (
           <>
             {firstItems.map((path, index) => (
               <FragmentWithSeparator key={index} path={path} index={index} />
             ))}
-            
+
             <BreadcrumbItem>
               <BreadcrumbEllipsis
-                items={paths
-                  .slice(1, paths.length - (maxItems - 1))
-                  .map((path, index) => (
-                    <DropdownMenuItem key={index} asChild>
-                      <BreadcrumbLink href={path.href}>
-                        {showIcons && path.icon && getIconComponent(path.icon)}
-                        {path.name}
-                      </BreadcrumbLink>
-                    </DropdownMenuItem>
-                  ))}
+                items={paths.slice(1, paths.length - (maxItems - 1)).map((path, index) => (
+                  <DropdownMenuItem key={index} asChild>
+                    <BreadcrumbLink href={path.href}>
+                      {showIcons && path.icon && getIconComponent(path.icon)}
+                      {path.name}
+                    </BreadcrumbLink>
+                  </DropdownMenuItem>
+                ))}
               />
             </BreadcrumbItem>
             <BreadcrumbSeparator>{separator}</BreadcrumbSeparator>
@@ -114,12 +107,7 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
       }
 
       return paths.map((path, index) => (
-        <FragmentWithSeparator
-          key={index}
-          path={path}
-          index={index}
-          isLast={index === paths.length - 1}
-        />
+        <FragmentWithSeparator key={index} path={path} index={index} isLast={index === paths.length - 1} />
       ))
     }
 
@@ -144,19 +132,16 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
     )
 
     return (
-      
       <nav
         ref={ref}
         aria-label="breadcrumb"
-        className={cn("flex items-center mt-510  overflow-x-auto scrollbar-hide", className)}
+        className={cn("flex items-center overflow-x-auto scrollbar-hide", className)}
         {...props}
       >
-        <ol className="flex items-center gap-2 text-sm whitespace-nowrap">
-          {renderItems()}
-        </ol>
+        <ol className="flex items-center gap-2 text-sm whitespace-nowrap">{renderItems()}</ol>
       </nav>
     )
-  }
+  },
 )
 Breadcrumb.displayName = "Breadcrumb"
 
@@ -164,16 +149,12 @@ const BreadcrumbItem = React.forwardRef<HTMLLIElement, BreadcrumbItemProps>(
   ({ className, isActive, children, ...props }, ref) => (
     <li
       ref={ref}
-      className={cn(
-        "inline-flex items-center gap-1.5 transition-colors",
-        isActive && "text-foreground",
-        className
-      )}
+      className={cn("inline-flex items-center gap-1.5 transition-colors", isActive && "text-foreground", className)}
       {...props}
     >
       {children}
     </li>
-  )
+  ),
 )
 BreadcrumbItem.displayName = "BreadcrumbItem"
 
@@ -188,12 +169,12 @@ const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
           "hover:bg-accent hover:text-accent-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isActive ? "bg-accent/50 font-medium" : "text-muted-foreground",
-          className
+          className,
         )}
         {...props}
       />
     )
-  }
+  },
 )
 BreadcrumbLink.displayName = "BreadcrumbLink"
 
@@ -216,7 +197,7 @@ const BreadcrumbEllipsis = ({ className, items = [], ...props }: BreadcrumbEllip
           "flex h-8 w-8 items-center justify-center rounded-md",
           "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          className
+          className,
         )}
         {...props}
       >
@@ -248,12 +229,4 @@ interface BreadcrumbEllipsisProps extends React.ComponentProps<"button"> {
   items?: React.ReactNode[]
 }
 
-
-
-export {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  BreadcrumbEllipsis,
-}
+export { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbEllipsis }

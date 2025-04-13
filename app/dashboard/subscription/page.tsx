@@ -1,6 +1,7 @@
-import type { Metadata } from "next"
+
 import { generatePageMetadata } from "@/lib/seo-utils"
 import SubscriptionPageClient from "./components/SubscriptionPageClient"
+import { Metadata } from "next";
 
 
 export const metadata: Metadata = generatePageMetadata({
