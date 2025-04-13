@@ -5,7 +5,7 @@ import axios from "axios"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import PageLoader from "@/components/ui/loader"
+import  {Loader}  from "@/components/ui/loader"
 
 interface Subscription {
   plan: string
@@ -27,7 +27,7 @@ export default function ProfileSubscription() {
     },
   })
 
-  if (isLoading) return <div><PageLoader></PageLoader></div>
+  if (isLoading) return <div><Loader></Loader></div>
   if (error) return <div>Error loading subscription info</div>
 
   return (
