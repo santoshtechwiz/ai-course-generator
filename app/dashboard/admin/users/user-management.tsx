@@ -1,28 +1,35 @@
 "use client"
 
-import React, { useState, useCallback, useMemo, useRef } from "react"
-import { AgGridReact } from "ag-grid-react"
-import "ag-grid-community/styles/ag-grid.css"
-import "ag-grid-community/styles/ag-theme-alpine.css"
-import { Search, Plus, User, RefreshCw, Shield, MoreHorizontal, Edit, Trash, RotateCcw } from "lucide-react"
+import { useState, useCallback, useMemo, useEffect } from "react"
+import { Search, Plus, User, RefreshCw, Shield, MoreHorizontal, Edit, Trash, RotateCcw, Mail } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ColDef } from "ag-grid-community"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CreateUserDialog } from "../components/user-dialog/create-user-dialog"
 import { UserEditDialog } from "../components/user-dialog/user-edit-dialog"
 import { ResetSubscriptionDialog } from "../components/subscription-management/reset-subscription-dialog"
-import { UserType } from "@/app/types/types"
 
+import type { UserType } from "@/app/types/types"
+import { useRouter } from "next/navigation"
 
-interface User {
+interface UserInterface {
   id: string
   name: string
   email: string
@@ -40,96 +47,37 @@ const USER_TYPES = [
   { value: "ULTIMATE", label: "Ultimate" },
 ] as const
 
-// Cell Renderers
-const UserCellRenderer = ({ value, data }: { value: string, data: User }) => (
-  <div className="flex items-center gap-3">
-    <Avatar className="h-8 w-8 border">
-      <AvatarImage src={data.avatarUrl || ""} alt={value} />
-      <AvatarFallback>{value?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
-    </Avatar>
-    <div className="flex flex-col">
-      <span className="font-medium text-sm">{value}</span>
-      <span className="text-xs text-muted-foreground">{data.email}</span>
-    </div>
-  </div>
-)
-
-const TypeCellRenderer = ({ value }: { value: UserType }) => {
-  const userType = USER_TYPES.find((type) => type.value === value) || USER_TYPES[0]
-  return (
-    <Badge variant="outline" className="font-normal">
-      {userType.label}
-    </Badge>
-  )
-}
-
-const CreditsCellRenderer = ({ value }: { value: number }) => (
-  <div className="text-center font-medium">{value?.toLocaleString() || "0"}</div>
-)
-
-const DateCellRenderer = ({ value }: { value: string }) => {
-  if (!value) return <div className="text-sm text-muted-foreground">-</div>
-  
-  const date = new Date(value)
-  const formattedDate = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date)
-
-  return <div className="text-sm text-muted-foreground">{formattedDate}</div>
-}
-
-const ActionsCellRenderer = ({ data, onEdit, onReset }: { 
-  data: User, 
-  onEdit: (id: string) => void,
-  onReset: (id: string) => void 
-}) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="ghost" className="h-8 w-8 p-0">
-        <span className="sr-only">Open menu</span>
-        <MoreHorizontal className="h-4 w-4" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
-      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-      <DropdownMenuItem onClick={() => onEdit(data.id)}>
-        <Edit className="mr-2 h-4 w-4" />
-        Edit user
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => onReset(data.id)}>
-        <RotateCcw className="mr-2 h-4 w-4" />
-        Reset subscription
-      </DropdownMenuItem>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem className="text-destructive focus:text-destructive">
-        <Trash className="mr-2 h-4 w-4" />
-        Delete user
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-)
-
 // Loading and Error States
 const LoadingSkeleton = () => (
   <div className="space-y-3 p-4">
-    {Array(5).fill(0).map((_, i) => (
-      <div key={i} className="flex items-center space-x-4">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[250px]" />
-          <Skeleton className="h-4 w-[200px]" />
+    {Array(5)
+      .fill(0)
+      .map((_, i) => (
+        <div key={i} className="flex items-center space-x-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
         </div>
-      </div>
-    ))}
+      ))}
   </div>
 )
 
 const ErrorMessage = ({ onRetry }: { onRetry: () => void }) => (
   <div className="flex flex-col items-center justify-center py-12 px-4">
     <div className="text-destructive rounded-full bg-destructive/10 p-3 mb-4">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <circle cx="12" cy="12" r="10" />
         <line x1="12" y1="8" x2="12" y2="12" />
         <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -155,41 +103,64 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
 
 export const UserManagement = () => {
   const { toast } = useToast()
-  const gridRef = useRef<AgGridReact<User>>(null)
-  
+
   // State
   const [searchQuery, setSearchQuery] = useState("")
   const [userTypeFilter, setUserTypeFilter] = useState<UserType[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [resettingUserId, setResettingUserId] = useState<string | null>(null)
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [activeTab, setActiveTab] = useState("all")
 
   // Fetch users
-  const { data, isLoading, isError, refetch } = useQuery<{ users: User[], totalCount: number }>({
+  const { data, isLoading, isError, refetch } = useQuery<{ users: UserInterface[]; totalCount: number }>({
     queryKey: ["users"],
     queryFn: async () => {
       const response = await fetch("/api/users")
       if (!response.ok) throw new Error("Failed to fetch users")
       return response.json()
-    }
+    },
   })
 
   const users = data?.users || []
   const totalCount = data?.totalCount || 0
 
-  // Filter users based on search and type filters
+  // Reset selected users when users change
+  useEffect(() => {
+    setSelectedUsers([])
+  }, [userTypeFilter, activeTab])
+
+  // Filter users based on search, type filters, and active tab
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
-      const matchesSearch = searchQuery === "" || 
-        user.name?.toLowerCase().includes(searchQuery?.toLowerCase()) || 
+    return users.filter((user) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        user.name?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchQuery?.toLowerCase())
-      
-      const matchesType = userTypeFilter.length === 0 || 
-        userTypeFilter.includes(user.userType)
-      
-      return matchesSearch && matchesType
+
+      const matchesType = userTypeFilter.length === 0 || userTypeFilter.includes(user.userType)
+
+      // Filter by tab
+      const matchesTab =
+        activeTab === "all" ||
+        (activeTab === "free" && user.userType === "FREE") ||
+        (activeTab === "paid" && user.userType !== "FREE")
+
+      return matchesSearch && matchesType && matchesTab
     })
-  }, [users, searchQuery, userTypeFilter])
+  }, [users, searchQuery, userTypeFilter, activeTab])
+
+  // Pagination
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredUsers.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredUsers, currentPage, itemsPerPage])
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
 
   // Handlers
   const handleEdit = useCallback((userId: string) => {
@@ -201,9 +172,7 @@ export const UserManagement = () => {
   }, [])
 
   const toggleUserTypeFilter = useCallback((type: UserType) => {
-    setUserTypeFilter(prev => 
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    )
+    setUserTypeFilter((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
   }, [])
 
   const resetFilters = useCallback(() => {
@@ -211,89 +180,189 @@ export const UserManagement = () => {
     setSearchQuery("")
   }, [])
 
-  // AG Grid configuration
-  const columnDefs = useMemo<ColDef<User>[]>(() => [
-    {
-      field: "name",
-      headerName: "User",
-      cellRenderer: UserCellRenderer,
-      sortable: true,
-      filter: true,
-      minWidth: 200,
-      flex: 2,
-    },
-    {
-      field: "userType",
-      headerName: "Type",
-      cellRenderer: TypeCellRenderer,
-      sortable: true,
-      filter: true,
-      minWidth: 120,
-      flex: 1,
-    },
-    {
-      field: "credits",
-      headerName: "Credits",
-      cellRenderer: CreditsCellRenderer,
-      sortable: true,
-      filter: "agNumberColumnFilter",
-      minWidth: 100,
-      flex: 1,
-    },
-    {
-      field: "lastActive",
-      headerName: "Last Active",
-      cellRenderer: DateCellRenderer,
-      sortable: true,
-      filter: "agDateColumnFilter",
-      minWidth: 150,
-      flex: 1.5,
-    },
-    {
-      headerName: "Actions",
-      cellRenderer: (params: any) => (
-        <ActionsCellRenderer 
-          data={params.data} 
-          onEdit={handleEdit}
-          onReset={handleReset}
-        />
-      ),
-      sortable: false,
-      filter: false,
-      width: 100,
-      pinned: "right",
-    },
-  ], [handleEdit, handleReset])
+  const toggleSelectUser = useCallback((userId: string) => {
+    setSelectedUsers((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]))
+  }, [])
 
-  const defaultColDef = useMemo(() => ({
-    sortable: true,
-    filter: true,
-    resizable: true,
-    suppressMovable: true,
-  }), [])
+  const toggleSelectAll = useCallback(() => {
+    if (selectedUsers.length === paginatedUsers.length) {
+      setSelectedUsers([])
+    } else {
+      setSelectedUsers(paginatedUsers.map((user) => user.id))
+    }
+  }, [paginatedUsers, selectedUsers.length])
 
-  // Render content based on state
-  const renderContent = () => {
+
+
+  const handleSendEmail = () => {
+    const router = useRouter();
+    router.push('/admin/email');
+  };
+
+  const getSelectedUsers = useCallback(() => {
+    return users.filter((user) => selectedUsers.includes(user.id))
+  }, [users, selectedUsers])
+
+  // Render user list
+  const renderUserList = () => {
     if (isLoading) return <LoadingSkeleton />
     if (isError) return <ErrorMessage onRetry={refetch} />
     if (!filteredUsers.length) return <EmptyState onCreate={() => setIsCreateDialogOpen(true)} />
-    
+
     return (
-      <div className="ag-theme-alpine" style={{ height: '500px', width: '100%' }}>
-        <AgGridReact
-          ref={gridRef}
-          rowData={filteredUsers}
-          columnDefs={columnDefs}
-          defaultColDef={defaultColDef}
-          pagination={true}
-          paginationPageSize={10}
-          domLayout='autoHeight'
-          suppressCellFocus={true}
-          suppressMenuHide={true}
-          rowHeight={60}
-          headerHeight={48}
-          onGridReady={() => gridRef.current?.api?.sizeColumnsToFit()}
-        />
+      <div className="space-y-4">
+        <div className="border rounded-md overflow-hidden">
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-2 p-3 bg-muted/30 border-b text-sm font-medium">
+            <div className="col-span-1 flex items-center justify-center">
+              <Checkbox
+                checked={selectedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
+                onCheckedChange={toggleSelectAll}
+                aria-label="Select all users"
+              />
+            </div>
+            <div className="col-span-5 sm:col-span-4">User</div>
+            <div className="col-span-3 sm:col-span-2 hidden sm:block">Type</div>
+            <div className="col-span-2 hidden md:block">Credits</div>
+            <div className="col-span-2 hidden lg:block">Last Active</div>
+            <div className="col-span-3 sm:col-span-1 text-right">Actions</div>
+          </div>
+
+          {/* Table Rows */}
+          <div className="divide-y">
+            {paginatedUsers.map((user) => (
+              <div
+                key={user.id}
+                className="grid grid-cols-12 gap-2 p-3 items-center hover:bg-muted/20 transition-colors"
+              >
+                <div className="col-span-1 flex items-center justify-center">
+                  <Checkbox
+                    checked={selectedUsers.includes(user.id)}
+                    onCheckedChange={() => toggleSelectUser(user.id)}
+                    aria-label={`Select ${user.name}`}
+                  />
+                </div>
+                <div className="col-span-5 sm:col-span-4 flex items-center gap-2">
+                  <Avatar className="h-8 w-8 border">
+                    <AvatarImage src={user.avatarUrl || ""} alt={user.name} />
+                    <AvatarFallback>{user.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col truncate">
+                    <span className="font-medium text-sm truncate">{user.name}</span>
+                    <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                  </div>
+                </div>
+                <div className="col-span-3 sm:col-span-2 hidden sm:block">
+                  <Badge variant="outline" className="font-normal">
+                    {USER_TYPES.find((type) => type.value === user.userType)?.label || "Free"}
+                  </Badge>
+                </div>
+                <div className="col-span-2 hidden md:block text-center font-medium">
+                  {user.credits?.toLocaleString() || "0"}
+                </div>
+                <div className="col-span-2 hidden lg:block text-sm text-muted-foreground">
+                  {user.lastActive ? new Date(user.lastActive).toLocaleDateString() : "-"}
+                </div>
+                <div className="col-span-3 sm:col-span-1 flex justify-end">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => handleEdit(user.id)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit user
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleReset(user.id)}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset subscription
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedUsers([user.id])
+                          setIsEmailDialogOpen(true)
+                        }}
+                      >
+                        <Mail className="mr-2 h-4 w-4" />
+                        Send email
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => handleEdit(user.id)}
+                      >
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete user
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between p-3 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing {Math.min(filteredUsers.length, (currentPage - 1) * itemsPerPage + 1)} to{" "}
+              {Math.min(filteredUsers.length, currentPage * itemsPerPage)} of {filteredUsers.length} users
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <span className="sr-only">Previous page</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </Button>
+              <span className="text-sm mx-2">
+                Page {currentPage} of {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="h-8 w-8 p-0"
+              >
+                <span className="sr-only">Next page</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -305,23 +374,14 @@ export const UserManagement = () => {
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div>
               <CardTitle className="text-2xl">User Management</CardTitle>
-              <CardDescription>
-                Manage user accounts and subscriptions
-              </CardDescription>
+              <CardDescription>Manage user accounts and subscriptions</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-              >
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
-              <Button
-                size="sm"
-                onClick={() => setIsCreateDialogOpen(true)}
-              >
+              <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 New User
               </Button>
@@ -329,6 +389,14 @@ export const UserManagement = () => {
           </div>
         </CardHeader>
         <CardContent>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-4">
+            <TabsList>
+              <TabsTrigger value="all">All Users</TabsTrigger>
+              <TabsTrigger value="free">Free Users</TabsTrigger>
+              <TabsTrigger value="paid">Paid Users</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           <div className="mb-4 flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -366,26 +434,48 @@ export const UserManagement = () => {
                 {userTypeFilter.length > 0 && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={resetFilters}>
-                      Clear filters
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={resetFilters}>Clear filters</DropdownMenuItem>
                   </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(Number.parseInt(value))
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="10 per page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 per page</SelectItem>
+                <SelectItem value="10">10 per page</SelectItem>
+                <SelectItem value="20">20 per page</SelectItem>
+                <SelectItem value="50">50 per page</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {renderContent()}
+          {renderUserList()}
         </CardContent>
+        {selectedUsers.length > 0 && (
+          <CardFooter className="border-t pt-4 flex justify-between">
+            <div className="text-sm">
+              <span className="font-medium">{selectedUsers.length}</span> users selected
+            </div>
+            <Button onClick={handleSendEmail}>
+              <Mail className="h-4 w-4 mr-2" />
+              Send Email
+            </Button>
+          </CardFooter>
+        )}
       </Card>
 
       {/* Dialogs */}
-      <CreateUserDialog 
-        open={isCreateDialogOpen} 
-        onOpenChange={setIsCreateDialogOpen}
-        onSuccess={refetch}
-      />
-      
+      <CreateUserDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={refetch} />
+
       <UserEditDialog
         open={!!editingUserId}
         onOpenChange={(open) => !open && setEditingUserId(null)}
@@ -399,6 +489,8 @@ export const UserManagement = () => {
         userId={resettingUserId || ""}
         onSuccess={refetch}
       />
+
+      
     </div>
   )
 }
