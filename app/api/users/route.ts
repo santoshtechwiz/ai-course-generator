@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
           },
           select: {
             id: true,
+            credits: true,
             amount: true,
             type: true,
             description: true,

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         await tx.tokenTransaction.create({
           data: {
             userId,
-            amount: 0,
+            credits: 0,
             type: resetType === "free" ? "SUBSCRIPTION_RESET" : "SUBSCRIPTION_DEACTIVATED",
             description:
               reason || `Subscription reset to ${resetType === "free" ? "FREE tier" : "inactive state"} by admin`,

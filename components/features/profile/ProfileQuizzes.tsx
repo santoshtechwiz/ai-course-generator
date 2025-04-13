@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import PageLoader from "@/components/ui/loader"
+import  {Loader}  from "@/components/ui/loader"
 
 interface Quiz {
   id: string
@@ -27,7 +27,7 @@ export default function ProfileQuizzes() {
     },
   })
 
-  if (isLoading) return <div><PageLoader></PageLoader></div>
+  if (isLoading) return <div><Loader></Loader></div>
   if (error) return <div>Error loading quizzes</div>
 
   return (

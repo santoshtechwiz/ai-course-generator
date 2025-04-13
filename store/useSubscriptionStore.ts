@@ -1,6 +1,6 @@
 "use client"
 
-import type { SubscriptionPlanType } from "@/app/types/subscription"
+import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { create } from "zustand"
 
 export interface SubscriptionStatus {

@@ -1,4 +1,4 @@
-import { SubscriptionPlanType } from "@/app/types/subscription"
+import { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { Badge } from "@/components/ui/badge"
 
 

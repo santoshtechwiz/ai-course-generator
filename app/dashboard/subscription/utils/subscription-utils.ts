@@ -1,4 +1,4 @@
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
 
 /**
  * Calculate the savings percentage between monthly and longer-term pricing

@@ -11,8 +11,10 @@ import { Providers } from "@/providers/provider"
 import { getAuthSession } from "@/lib/authOptions"
 
 import TrialModal from "@/components/TrialModal"
-import { SubscriptionService } from "@/services/subscription-service"
+
 import MainNavbar from "@/components/shared/MainNavbar"
+import { ThemeProvider } from "next-themes"
+import { SubscriptionService } from "./dashboard/subscription/services/subscription-service"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -173,16 +175,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
-          <MainNavbar />
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
+        
           {/* Place the TrialModal here, inside the Providers */}
           <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
 
           <JsonLd type="default" />
           {/* <JsonLd type="faq" data={faqItems} /> */}
 
-          <main className="flex-1 flex flex-col">{children}</main>
+          <main className="flex-1 flex flex-col pt-16">{children}</main>
           <Analytics />
           <Footer />
+          </ThemeProvider>
         </Providers>
       </body>
     </html>

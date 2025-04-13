@@ -61,10 +61,12 @@ export async function updateUser(userId: string, data: any) {
     // If credits were changed, create a transaction record
     if (previousUser && previousUser.credits !== data.credits) {
       const amount = data.credits - previousUser.credits
+      const credits = data.credits; // Ensure 'credits' is defined
       await prisma.tokenTransaction.create({
         data: {
           userId,
-          amount,
+          amount, // Include the required 'amount' property
+          credits,
           type: amount > 0 ? "ADMIN_CREDIT" : "ADMIN_DEBIT",
           description: data.creditNote || `Admin adjusted credits by ${amount}`,
         },

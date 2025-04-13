@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { signIn, signOut, useSession } from "next-auth/react"
 import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown, X } from "lucide-react"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
@@ -14,13 +15,11 @@ import SearchModal from "./SearchModal"
 import { Badge } from "@/components/ui/badge"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import Link from "next/link"
 import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { ThemeToggle } from "../ThemeToggle"
 
 const NavItems = () => {
-  const router = useRouter()
   const pathname = usePathname()
 
   return (
@@ -32,31 +31,32 @@ const NavItems = () => {
           whileTap={{ scale: 0.95 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          <Button
-            variant={pathname === item.href ? "default" : "ghost"}
-            className={`relative flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium ${
-              pathname === item.href
-                ? "bg-primary text-primary-foreground"
-                : "text-foreground hover:bg-accent hover:text-accent-foreground"
-            }`}
-            onClick={() => router.push(item.href)}
-          >
-            <LayoutGroup>
-              <item.icon className="h-4 w-4" />
-              <span>{item.name}</span>
-              {item.subItems.length > 0 && <ChevronDown className="h-3 w-3 ml-1.5" />}
+          <Link href={item.href} passHref>
+            <Button
+              variant={pathname === item.href ? "default" : "ghost"}
+              className={`relative flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium ${
+                pathname === item.href
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
+              }`}
+            >
+              <LayoutGroup>
+                <item.icon className="h-4 w-4" />
+                <span>{item.name}</span>
+                {item.subItems.length > 0 && <ChevronDown className="h-3 w-3 ml-1.5" />}
 
-              {pathname === item.href && (
-                <motion.div
-                  layoutId="nav-underline"
-                  className="absolute bottom-0 left-0 h-0.5 w-full bg-primary"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
-            </LayoutGroup>
-          </Button>
+                {pathname === item.href && (
+                  <motion.div
+                    layoutId="nav-underline"
+                    className="absolute bottom-0 left-0 h-0.5 w-full bg-primary"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
+              </LayoutGroup>
+            </Button>
+          </Link>
         </motion.div>
       ))}
     </nav>
@@ -67,7 +67,6 @@ export default function MainNavbar() {
   const { data: session, status } = useSession()
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription } = useSubscriptionStore()
   const pathname = usePathname()
@@ -132,15 +131,16 @@ export default function MainNavbar() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         <motion.div className="flex items-center" variants={itemVariants}>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            onClick={() => router.push("/")}
-            className="cursor-pointer"
-          >
-            <Logo />
-          </motion.div>
+          <Link href="/" passHref>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              className="cursor-pointer"
+            >
+              <Logo />
+            </motion.div>
+          </Link>
           <NavItems />
         </motion.div>
 
@@ -226,7 +226,6 @@ export default function MainNavbar() {
             isOpen={isSearchModalOpen}
             setIsOpen={setIsSearchModalOpen}
             onResultClick={(url) => {
-              router.push(url)
               setIsSearchModalOpen(false)
             }}
           />
@@ -252,10 +251,12 @@ export default function MainNavbar() {
             <nav className="space-y-2">
               {navItems.map((item) => (
                 <SheetClose asChild key={item.name}>
-                  <Button variant="ghost" className="w-full justify-start" onClick={() => router.push(item.href)}>
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {item.name}
-                  </Button>
+                  <Link href={item.href} passHref>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.name}
+                    </Button>
+                  </Link>
                 </SheetClose>
               ))}
             </nav>

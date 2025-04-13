@@ -53,7 +53,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { USER_TYPES } from "../../users/user-management"
 
 // Define form schema
 const userFormSchema = z.object({
@@ -118,7 +117,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
-      if (!open) return
+      if (!open || !userId) return
 
       setIsLoading(true)
       try {
@@ -155,37 +154,10 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
       }
     }
 
-    fetchUser()
-  }, [userId, form, toast, onOpenChange, open])
-
-  // Fetch audit logs when tab changes to "activity"
-  useEffect(() => {
-    const fetchAuditLogs = async () => {
-      if (activeTab !== "activity" || !userId) return
-
-      setIsLoadingAuditLogs(true)
-      try {
-        const response = await fetch(`/api/users/${userId}/audit-logs`)
-        if (!response.ok) {
-          throw new Error("Failed to fetch audit logs")
-        }
-
-        const data = await response.json()
-        setAuditLogs(data.logs || [])
-      } catch (error) {
-        console.error("Error fetching audit logs:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load user activity logs.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoadingAuditLogs(false)
-      }
+    if (open) {
+      fetchUser()
     }
-
-    fetchAuditLogs()
-  }, [activeTab, userId, toast])
+  }, [userId, form, toast, onOpenChange, open])
 
   // Update notification message when credits change
   useEffect(() => {
@@ -219,15 +191,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
           userType: data.userType,
           isAdmin: data.isAdmin,
           credits: data.credits,
-          creditNote: data.creditNote,
-          sendNotification: data.sendNotification,
-          notificationMessage: data.notificationMessage,
-          auditInfo: {
-            creditsDifference,
-            planChange,
-            previousType: user?.userType,
-            newType: data.userType,
-          },
+          updatedAt: new Date().toISOString(), // Ensure updatedAt is explicitly set
         }),
       })
 
@@ -1046,4 +1010,3 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
     </>
   )
 }
-

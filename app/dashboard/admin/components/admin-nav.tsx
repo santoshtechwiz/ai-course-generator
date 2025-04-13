@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, Settings, CreditCard, BarChart, BookOpen, Inbox } from "lucide-react"
+import { BarChart, Mail, Settings, Home } from "lucide-react"
 
 interface AdminNavProps {
   user: {
@@ -20,28 +20,15 @@ export default function AdminNav({ user }: AdminNavProps) {
       icon: <BarChart className="h-4 w-4 mr-2" />,
     },
     {
-      href: "/dashboard/admin/users",
-      label: "Users",
-      icon: <Users className="h-4 w-4 mr-2" />,
-    },
-  
-    {
-      href: "/dashboard/admin/contact",
-      label: "Contact Inquiries",
-      icon: <Inbox className="h-4 w-4 mr-2" />,
-    },
-    {
-      href: "/dashboard/admin/email/campaigns",
+      href: "/dashboard/admin/email",
       label: "Email",
-      icon: <CreditCard className="h-4 w-4 mr-2" />,
+      icon: <Mail className="h-4 w-4 mr-2" />,
     },
     {
-      href: "/dashboard/admin/email/templates",
-      label: "Email Templates",
-      icon: <BookOpen className="h-4 w-4 mr-2" />,
+      href: "/dashboard/admin/settings",
+      label: "Settings",
+      icon: <Settings className="h-4 w-4 mr-2" />,
     },
-  
-   
   ]
 
   if (!user?.isAdmin) {
@@ -49,20 +36,28 @@ export default function AdminNav({ user }: AdminNavProps) {
   }
 
   return (
-    <nav className="grid items-start gap-2">
-      {adminLinks.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className={`group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground ${
-            pathname === link.href ? "bg-accent text-accent-foreground" : "transparent"
-          }`}
-        >
-          {link.icon}
-          <span>{link.label}</span>
+    <div className="space-y-6">
+      <div className="flex h-12 items-center border-b px-2">
+        <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Home className="h-5 w-5" />
+          <span className="">Admin Portal</span>
         </Link>
-      ))}
-    </nav>
+      </div>
+
+      <nav className="grid items-start gap-2">
+        {adminLinks.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors ${
+              pathname === link.href ? "bg-accent text-accent-foreground" : "transparent"
+            }`}
+          >
+            {link.icon}
+            <span>{link.label}</span>
+          </Link>
+        ))}
+      </nav>
+    </div>
   )
 }
-

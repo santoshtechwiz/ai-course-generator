@@ -21,9 +21,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 
 
-import { calculateSavings } from "@/lib/subscription-formatter"
-import { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+
+import { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
 import { ReferralSystem } from "../../account/component/ReferralSystem"
+import { calculateSavings } from "../utils/subscription-formatter"
 
 interface PricingPageProps {
   userId: string | null
