@@ -22,3 +22,21 @@ export const getCourses = async (slug: string) => {
   }
   return null;
 };
+
+export const getAllCourses = async () => {
+  try {
+    const courses = await prisma.course.findMany({
+      include: {
+        courseUnits: {
+          include: {
+            chapters: true,
+          },
+        },
+      },
+    });
+    return courses;
+  } catch (error) {
+    console.error("Error fetching all courses:", error);
+  }
+  return null;
+}

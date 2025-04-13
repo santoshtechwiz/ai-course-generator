@@ -25,9 +25,12 @@ export function UserManagementProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(
     async (userId: string): Promise<UserWithTransactions | null> => {
+      if (!userId) return null
+
       setIsLoading(true)
+      const controller = new AbortController()
+
       try {
-        const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 10000)
 
         const response = await fetch(`/api/users/${userId}`, {
@@ -44,18 +47,21 @@ export function UserManagementProvider({ children }: { children: ReactNode }) {
         const userData = await response.json()
         return userData
       } catch (error) {
-        console.error("Error fetching user:", error)
-        toast({
-          title: "Error",
-          description: error instanceof Error ? error.message : "Failed to load user details",
-          variant: "destructive",
-        })
+        // Don't show error toast if it was just aborted
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("Error fetching user:", error)
+          toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : "Failed to load user details",
+            variant: "destructive",
+          })
+        }
         return null
       } finally {
         setIsLoading(false)
       }
     },
-    [toast],
+    [toast, setIsLoading],
   )
 
   const refreshUsers = useCallback(() => {
@@ -89,4 +95,3 @@ export function useUserManagement() {
   }
   return context
 }
-

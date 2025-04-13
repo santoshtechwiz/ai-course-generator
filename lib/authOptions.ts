@@ -122,12 +122,18 @@ export const authOptions: NextAuthOptions = {
 
         // Record the sign-in provider for analytics
         if (account) {
-          await prisma.userEngagementMetrics.create({
-            data: {
-              userId: user.id,
-              createdAt: new Date(),
-            },
+          const existingMetric = await prisma.userEngagementMetrics.findUnique({
+            where: { userId: user.id },
           })
+
+          if (!existingMetric) {
+            await prisma.userEngagementMetrics.create({
+              data: {
+                userId: user.id,
+                createdAt: new Date(),
+              },
+            })
+          }
         }
       } catch (error) {
         console.error("Error in signIn event:", error)
