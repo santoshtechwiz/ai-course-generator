@@ -183,7 +183,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <JsonLd type="default" />
           {/* <JsonLd type="faq" data={faqItems} /> */}
 
-          <main className="flex-1 flex flex-col">{children}</main>
+          <main className="flex-1 flex flex-col pt-16">{children}</main>
           <Analytics />
           <Footer />
           </ThemeProvider>
