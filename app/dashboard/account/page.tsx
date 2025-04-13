@@ -9,8 +9,8 @@ import { syncUserCredits } from "@/lib/db"
 
 import { AlertTriangle } from "lucide-react"
 import SubscriptionDetails from "./component/SubscriptionDetails"
-import { SubscriptionService } from "@/services/subscription-service"
 import { AccountOverview } from "./component/AccountOverview"
+import { SubscriptionService } from "../subscription/services/subscription-service"
 
 export default async function SubscriptionAccountPage() {
   const session = await getAuthSession()

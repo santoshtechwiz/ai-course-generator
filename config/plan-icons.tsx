@@ -6,7 +6,7 @@ import type React from "react"
  */
 
 import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
-import { SubscriptionPlanType } from "@/app/types/subscription"
+import { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
 
 // Map of plan IDs to their icon components

@@ -29,11 +29,12 @@ export function ResetSubscriptionDialog({ userId, open, onOpenChange, onSuccess 
   const [resetType, setResetType] = useState<"free" | "inactive">("free")
   const [isComplete, setIsComplete] = useState(false)
 
+  // Improve the handleReset function to prevent memory leaks and handle errors better
   const handleReset = async () => {
     setIsResetting(true)
 
     try {
-      const response = await fetch(`/api/admin/subscriptions/reset`, {
+      const response = await fetch(`/api/admin/reset`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,16 +63,18 @@ export function ResetSubscriptionDialog({ userId, open, onOpenChange, onSuccess 
       })
 
       // Dispatch event to refresh user list
-      const event = new CustomEvent("user-changed")
-      window.dispatchEvent(event)
+      window.dispatchEvent(new CustomEvent("user-changed"))
 
       // Call success callback after a delay
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         if (onSuccess) onSuccess()
         onOpenChange(false)
         setIsComplete(false)
         setResetType("free")
       }, 1500)
+
+      // Clean up timeout if dialog is closed early
+      return () => clearTimeout(timeoutId)
     } catch (error) {
       console.error("Error resetting subscription:", error)
       toast({
@@ -192,4 +195,3 @@ export function ResetSubscriptionDialog({ userId, open, onOpenChange, onSuccess 
     </Dialog>
   )
 }
-

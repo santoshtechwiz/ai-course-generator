@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import PageLoader from "@/components/ui/loader"
+import  {Loader}  from "@/components/ui/loader"
 
 interface UserStats {
   totalCourses: number
@@ -25,7 +25,7 @@ export default function ProfileStats() {
     },
   })
 
-  if (isLoading) return <div><PageLoader></PageLoader></div>
+  if (isLoading) return <div><Loader></Loader></div>
   if (error) return <div>Error loading stats</div>
 
   return (

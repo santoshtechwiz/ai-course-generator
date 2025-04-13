@@ -1,6 +1,7 @@
-import type { Metadata } from "next"
+
 import { generatePageMetadata } from "@/lib/seo-utils"
 import SubscriptionPageClient from "./components/SubscriptionPageClient"
+import { Metadata } from "next";
 
 
 export const metadata: Metadata = generatePageMetadata({
@@ -19,7 +20,11 @@ export const metadata: Metadata = generatePageMetadata({
   ogImage: "/og-image-subscription.jpg",
 })
 
-export default async function Page() {
-  return <SubscriptionPageClient />
-}
+const Page = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) => {
+  const referralCode = (await searchParams).ref ?? null;
+
+  return <SubscriptionPageClient refCode={referralCode} />;
+};
+
+export default Page;
 

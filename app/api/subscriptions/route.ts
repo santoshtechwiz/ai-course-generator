@@ -1,9 +1,10 @@
 import { getServerSession } from "next-auth"
 import { type NextRequest, NextResponse } from "next/server"
 
-import { SubscriptionService } from "@/services/subscription-service"
+
 import { z } from "zod"
 import { authOptions } from "@/lib/authOptions"
+import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 export async function GET(req: NextRequest) {
   try {

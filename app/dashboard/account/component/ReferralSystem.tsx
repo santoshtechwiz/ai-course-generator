@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Share2, Copy, Check, Gift, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface ReferralSystemProps {
   userId: string | null
@@ -20,61 +21,49 @@ interface ReferralData {
 }
 
 export function ReferralSystem({ userId }: ReferralSystemProps) {
-  const [referralData, setReferralData] = useState<ReferralData>({
-    referralCode: "",
-    totalReferrals: 0,
-    completedReferrals: 0,
-    pendingReferrals: 0,
-    tokensEarned: 0
-  })
+  const [referralData, setReferralData] = useState<ReferralData | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    const fetchReferralData = async () => {
-      if (!userId) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        setLoading(true)
-        const response = await fetch(`/api/referrals`)
-        const data = await response.json()
-        
-        if (response.ok) {
-          setReferralData({
-            referralCode: data.referralCode || "",
-            totalReferrals: data.totalReferrals || 0,
-            completedReferrals: data.completedReferrals || 0,
-            pendingReferrals: data.pendingReferrals || 0,
-            tokensEarned: data.tokensEarned || 0
-          })
-        } else {
-          toast({
-            title: "Error",
-            description: data.error || "Failed to load referral data",
-            variant: "destructive",
-          })
-        }
-      } catch (error) {
-        console.error("Error fetching referral data:", error)
-        toast({
-          title: "Error",
-          description: "Failed to connect to server",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
+  const fetchReferralData = useCallback(async () => {
+    if (!userId) {
+      setLoading(false)
+      return
     }
 
-    fetchReferralData()
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/referrals?userId=${userId}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setReferralData(data)
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to load referral data",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching referral data:", error)
+      toast({
+        title: "Error",
+        description: "Failed to connect to server",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }, [userId, toast])
 
-  const copyToClipboard = () => {
-    if (!referralData.referralCode) return
+  useEffect(() => {
+    fetchReferralData()
+  }, [fetchReferralData])
+
+  const copyToClipboard = useCallback(() => {
+    if (!referralData?.referralCode) return
     
     const referralUrl = `${window.location.origin}/dashboard/subscription?ref=${referralData.referralCode}`
     navigator.clipboard.writeText(referralUrl)
@@ -84,10 +73,10 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
       description: "Referral link copied to clipboard",
     })
     setTimeout(() => setCopied(false), 2000)
-  }
+  }, [referralData?.referralCode, toast])
 
-  const shareReferral = () => {
-    if (!referralData.referralCode) {
+  const shareReferral = useCallback(() => {
+    if (!referralData?.referralCode) {
       toast({
         title: "No referral code",
         description: "Please wait while we generate your referral code",
@@ -103,14 +92,11 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
         title: "Join me on this awesome platform!",
         text: `Use my referral code ${referralData.referralCode} to get started with a special bonus!`,
         url: referralUrl,
-      }).catch(() => {
-        // Fallback if share fails
-        copyToClipboard()
-      })
+      }).catch(() => copyToClipboard())
     } else {
       copyToClipboard()
     }
-  }
+  }, [referralData?.referralCode, toast, copyToClipboard])
 
   if (!userId) {
     return (
@@ -130,9 +116,21 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
 
   if (loading) {
     return (
-      <Card className="flex flex-col items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground">Loading your referral information...</p>
+      <Card className="border-slate-200 dark:border-slate-700 shadow-md">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-t-xl space-y-4">
+          <Skeleton className="h-8 w-8 mx-auto rounded-full" />
+          <Skeleton className="h-6 w-3/4 mx-auto" />
+          <Skeleton className="h-4 w-2/3 mx-auto" />
+        </CardHeader>
+        <CardContent className="pt-6 space-y-4">
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-lg" />
+            ))}
+          </div>
+          <Skeleton className="h-10 rounded-lg" />
+          <Skeleton className="h-10 rounded-lg" />
+        </CardContent>
       </Card>
     )
   }
@@ -152,29 +150,26 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
       </CardHeader>
       <CardContent className="pt-6">
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
-            <p className="text-sm text-muted-foreground mb-1">Total Referrals</p>
-            <p className="text-2xl font-bold">{referralData.totalReferrals}</p>
-          </div>
-          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
-            <p className="text-sm text-muted-foreground mb-1">Completed</p>
-            <p className="text-2xl font-bold">{referralData.completedReferrals}</p>
-          </div>
-          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
-            <p className="text-sm text-muted-foreground mb-1">Tokens Earned</p>
-            <p className="text-2xl font-bold">{referralData.tokensEarned}</p>
-          </div>
+          <StatCard label="Total Referrals" value={referralData?.totalReferrals ?? 0} />
+          <StatCard label="Completed" value={referralData?.completedReferrals ?? 0} />
+          <StatCard label="Tokens Earned" value={referralData?.tokensEarned ?? 0} />
         </div>
 
         <div className="space-y-4">
           <div>
             <label htmlFor="referral-code" className="text-sm font-medium mb-2 block">
               Your Referral Code
+              {!referralData?.referralCode && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 inline animate-spin" />
+                  Generating...
+                </span>
+              )}
             </label>
             <div className="flex">
               <Input 
                 id="referral-code" 
-                value={referralData.referralCode || "Generating..."} 
+                value={referralData?.referralCode || "Generating..."} 
                 readOnly 
                 className="rounded-r-none font-mono" 
               />
@@ -182,7 +177,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
                 variant="outline" 
                 className="rounded-l-none border-l-0" 
                 onClick={copyToClipboard}
-                disabled={!referralData.referralCode}
+                disabled={!referralData?.referralCode}
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -193,9 +188,13 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
             <Button
               onClick={shareReferral}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-              disabled={!referralData.referralCode}
+              disabled={!referralData?.referralCode}
             >
-              <Share2 className="h-4 w-4 mr-2" />
+              {!referralData?.referralCode ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Share2 className="h-4 w-4 mr-2" />
+              )}
               Share with Friends
             </Button>
             <p className="text-xs text-muted-foreground text-center">
@@ -206,12 +205,21 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
       </CardContent>
       <CardFooter className="bg-slate-50 dark:bg-slate-800 rounded-b-xl flex flex-col text-center text-sm text-muted-foreground">
         <p>For each friend who subscribes, you'll both receive 10 free tokens!</p>
-        {referralData.pendingReferrals > 0 && (
+        {referralData?.pendingReferrals && referralData.pendingReferrals > 0 && (
           <p className="mt-1 text-blue-500 dark:text-blue-400">
             You have {referralData.pendingReferrals} pending referrals
           </p>
         )}
       </CardFooter>
     </Card>
+  )
+}
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
+      <p className="text-sm text-muted-foreground mb-1">{label}</p>
+      <p className="text-2xl font-bold">{value}</p>
+    </div>
   )
 }

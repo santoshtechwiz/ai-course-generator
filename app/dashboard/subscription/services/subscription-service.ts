@@ -7,13 +7,12 @@
  */
 
 import { SUBSCRIPTION_PLANS, VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
-import type { SubscriptionPlanType, PromoValidationResult } from "@/app/types/subscription"
+import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
 import { prisma } from "@/lib/db"
 import type { SubscriptionStatus } from "@/store/useSubscriptionStore"
 import type { TokenUsage } from "@langchain/core/language_models/base"
-import { getPaymentGateway } from "./payment-gateways/payment-gateway-factory"
-import type { PaymentOptions } from "./payment-gateways/payment-gateway-interface"
-
+import { getPaymentGateway } from "./payment-gateway-factory"
+import { PaymentOptions } from "./payment-gateway-factory"
 /**
  * Service for managing user subscriptions
  */
@@ -493,8 +492,13 @@ export class SubscriptionService {
     status: "succeeded" | "pending" | "failed" | "canceled"
     subscription?: any
   }> {
-    const paymentGateway = getPaymentGateway()
-    return paymentGateway.verifyPaymentStatus(sessionId)
+    try {
+      const paymentGateway = getPaymentGateway()
+      return await paymentGateway.verifyPaymentStatus(sessionId)
+    } catch (error) {
+      console.error(`Error verifying payment status: ${error instanceof Error ? error.message : String(error)}`)
+      return { status: "failed" }
+    }
   }
 
   /**
@@ -526,6 +530,7 @@ export class SubscriptionService {
       return transactions.map((transaction) => ({
         id: transaction.id,
         amount: transaction.amount,
+        credits: transaction.credits,
         type: transaction.type,
         description: transaction.description,
         date: transaction.createdAt.toISOString(),
@@ -574,4 +579,3 @@ export class SubscriptionService {
     }
   }
 }
-

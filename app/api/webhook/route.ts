@@ -24,29 +24,35 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle the event
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session
-        await handleCheckoutSessionCompleted(session)
-        break
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object as Stripe.Checkout.Session
+          await handleCheckoutSessionCompleted(session)
+          break
+        }
+        case "invoice.paid": {
+          const invoice = event.data.object as Stripe.Invoice
+          await handleInvoicePaid(invoice)
+          break
+        }
+        case "customer.subscription.updated": {
+          const subscription = event.data.object as Stripe.Subscription
+          await handleSubscriptionUpdated(subscription)
+          break
+        }
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object as Stripe.Subscription
+          await handleSubscriptionDeleted(subscription)
+          break
+        }
+        default:
+          console.log(`Unhandled event type: ${event.type}`)
       }
-      case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice
-        await handleInvoicePaid(invoice)
-        break
-      }
-      case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription
-        await handleSubscriptionUpdated(subscription)
-        break
-      }
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription
-        await handleSubscriptionDeleted(subscription)
-        break
-      }
-      default:
-        console.log(`Unhandled event type: ${event.type}`)
+    } catch (error) {
+      console.error(`Error processing webhook event ${event.type}:`, error)
+      // Don't return an error response, as Stripe will retry the webhook
+      // Instead, log the error and return a 200 response to acknowledge receipt
     }
 
     return NextResponse.json({ received: true })
@@ -73,7 +79,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   try {
     // If this is a subscription checkout
     if (session.mode === "subscription" && session.subscription) {
-      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+      let subscription
+
+      try {
+        subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+      } catch (stripeError) {
+        console.error("Error retrieving subscription from Stripe:", stripeError)
+        // Continue with the session data we have
+        subscription = {
+          id: session.subscription,
+          customer: session.customer,
+          current_period_start: Math.floor(Date.now() / 1000),
+          current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days from now
+        }
+      }
 
       // Update the user's subscription in the database
       await prisma.userSubscription.upsert({
@@ -81,7 +100,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         update: {
           planId: planId || "FREE",
           status: "ACTIVE",
-          stripeSubscriptionId: subscription.id,
+          stripeSubscriptionId: typeof subscription.id === "string" ? subscription.id : null,
           currentPeriodStart: new Date(subscription.current_period_start * 1000),
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
         },
@@ -89,7 +108,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           userId,
           planId: planId || "FREE",
           status: "ACTIVE",
-          stripeSubscriptionId: subscription.id,
+          stripeSubscriptionId: typeof subscription.id === "string" ? subscription.id : null,
           stripeCustomerId: subscription.customer as string,
           currentPeriodStart: new Date(subscription.current_period_start * 1000),
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
@@ -123,43 +142,141 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       }
 
       // Process referral if applicable
-      if (session.metadata.referralUseId) {
-        await prisma.userReferralUse.update({
-          where: { id: session.metadata.referralUseId },
-          data: { status: "COMPLETED" },
-        })
-
-        // Add bonus tokens to the referrer
-        if (session.metadata.referrerId) {
-          const referrerUser = await prisma.user.findUnique({
-            where: { id: session.metadata.referrerId },
-          })
-
-          if (referrerUser) {
-            const REFERRAL_BONUS_TOKENS = 50 // Define your referral bonus amount
-
-            await prisma.user.update({
-              where: { id: session.metadata.referrerId },
-              data: {
-                credits: referrerUser.credits + REFERRAL_BONUS_TOKENS,
-              },
-            })
-
-            // Log the referral bonus
-            await prisma.tokenTransaction.create({
-              data: {
-                userId: session.metadata.referrerId,
-                amount: REFERRAL_BONUS_TOKENS,
-                type: "REFERRAL",
-                description: `Referral bonus for user ${userId} subscribing to ${planId || "subscription"} plan`,
-              },
-            })
-          }
-        }
+      if (session.metadata.referralUseId || session.metadata.referralCode) {
+        await processReferralBenefits(session)
       }
     }
   } catch (error) {
     console.error("Error processing checkout session:", error)
+  }
+}
+
+async function processReferralBenefits(session: any) {
+  try {
+    const userId = session.metadata.userId
+    const referralUseId = session.metadata.referralUseId
+    const referralCode = session.metadata.referralCode
+
+    // Skip if no referral information
+    if (!userId || (!referralCode && !referralUseId)) {
+      return
+    }
+
+    // Check if this referral has already been processed
+    const existingReferralUse = await prisma.userReferralUse.findFirst({
+      where: {
+        referredId: userId,
+        status: "COMPLETED",
+      },
+    })
+
+    if (existingReferralUse) {
+      console.log(`Referral for user ${userId} already processed`)
+      return
+    }
+
+    // Find referral record either by ID or code
+    let referral
+    let referrerId
+
+    if (referralUseId) {
+      const referralUse = await prisma.userReferralUse.findUnique({
+        where: { id: referralUseId },
+        include: { referral: true },
+      })
+
+      if (referralUse) {
+        referral = referralUse.referral
+        referrerId = referralUse.referrerId
+
+        // Update the referral use status
+        await prisma.userReferralUse.update({
+          where: { id: referralUseId },
+          data: { status: "COMPLETED" },
+        })
+      }
+    } else if (referralCode) {
+      referral = await prisma.userReferral.findUnique({
+        where: { referralCode },
+      })
+
+      if (referral) {
+        referrerId = referral.userId
+
+        // Create a new referral use record
+        await prisma.userReferralUse.create({
+          data: {
+            referrerId: referrerId,
+            referredId: userId,
+            referralId: referral.id,
+            status: "COMPLETED",
+            planId: session.metadata.planName || "UNKNOWN",
+          },
+        })
+      }
+    }
+
+    if (!referral || !referrerId || referrerId === userId) {
+      console.log(`No valid referral found or self-referral for user ${userId}`)
+      return
+    }
+
+    const REFERRER_BONUS = 10
+    const REFERRED_USER_BONUS = 5
+
+    // Add bonus to referred user (current user)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (user) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          credits: user.credits + REFERRED_USER_BONUS,
+        },
+      })
+
+      await prisma.tokenTransaction.create({
+        data: {
+          userId,
+          credits: REFERRED_USER_BONUS,
+          amount: 0, // Assuming amount is 0 for this transaction
+          type: "REFERRAL",
+          description: `Referral bonus for subscribing using referral code`,
+          user: { connect: { id: userId } }, // Assuming user relation needs to be connected
+        },
+      })
+    }
+
+    // Add bonus to referrer
+    const referrer = await prisma.user.findUnique({
+      where: { id: referrerId },
+    })
+
+    if (referrer) {
+      await prisma.user.update({
+        where: { id: referrerId },
+        data: {
+          credits: referrer.credits + REFERRER_BONUS,
+        },
+      })
+
+      await prisma.tokenTransaction.create({
+        data: {
+          userId: referrerId,
+          credits: REFERRER_BONUS,
+          amount:0,
+          type: "REFERRAL",
+          description: `Referral bonus for user ${userId} subscribing to ${session.metadata.planName || "subscription"} plan`,
+        },
+      })
+    }
+
+    console.log(`Successfully applied referral benefits for user ${userId}`)
+  } catch (error) {
+    console.error("Error processing referral benefits:", error)
+    // Don't throw error to avoid disrupting the webhook processing
   }
 }
 
@@ -186,7 +303,14 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     })
 
     // Get subscription details to check if this is a renewal
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+    let subscription
+
+    try {
+      subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+    } catch (stripeError) {
+      console.error("Error retrieving subscription from Stripe:", stripeError)
+      return
+    }
 
     // If this is a renewal (not the first invoice), add tokens again
     if (subscription.metadata.planName) {
@@ -209,14 +333,15 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
           })
 
           // Log the token addition for renewal
-          await prisma.tokenTransaction.create({
+            await prisma.tokenTransaction.create({
             data: {
               userId: userSubscription.userId,
-              amount: plan.tokens,
+              credits: plan.tokens,
+              amount: invoice.amount_paid / 100, // Convert cents to dollars
               type: "RENEWAL",
               description: `Added ${plan.tokens} tokens from ${planId} plan renewal`,
             },
-          })
+            })
         }
       }
     }
@@ -290,4 +415,3 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     console.error("Error processing subscription deleted:", error)
   }
 }
-

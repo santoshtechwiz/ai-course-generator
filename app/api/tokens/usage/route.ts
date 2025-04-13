@@ -29,12 +29,12 @@ export async function GET() {
     // Calculate total tokens received (from subscriptions and purchases)
     const tokensReceived = tokenTransactions
       .filter((tx) => tx.type === "SUBSCRIPTION" || tx.type === "PURCHASE")
-      .reduce((sum, tx) => sum + tx.amount, 0)
+      .reduce((sum, tx) => sum + (tx.credits ?? 0), 0)
 
     // Calculate total tokens used
     const tokensUsed = tokenTransactions
       .filter((tx) => tx.type === "USAGE")
-      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0)
+      .reduce((sum, tx) => sum + Math.abs(tx.credits ?? 0), 0)
 
     // Calculate remaining tokens (should match user.credits)
     const remainingTokens = user?.credits || 0

@@ -5,7 +5,6 @@ import { authOptions } from "@/lib/authOptions"
 import AdminNav from "./components/admin-nav"
 
 
-
 export default async function AdminLayout({
   children,
 }: {
@@ -20,8 +19,6 @@ export default async function AdminLayout({
 
   return (
     <div className="container mx-auto px-4 py-6">
-    
-
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8">
         <aside className="hidden md:block">
           <AdminNav user={{ isAdmin: true }} />
@@ -32,4 +29,3 @@ export default async function AdminLayout({
     </div>
   )
 }
-

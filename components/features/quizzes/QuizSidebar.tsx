@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { FileQuestion, AlignJustify, PenTool, Code, Flashlight, Filter, X, ChevronDown } from "lucide-react"
 import { SearchBar } from "./SearchBar"
-import type { QuizType } from "@/app/types/types"
+type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 const quizTypes = [
   { id: "mcq" as const, label: "Multiple Choice", icon: FileQuestion, color: "blue" },
@@ -34,6 +34,22 @@ export function QuizSidebar({
   toggleQuizType,
 }: QuizSidebarProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024)
+    }
+
+    // Run on mount and add event listener
+    handleResize()
+    window.addEventListener("resize", handleResize)
+
+    // Cleanup event listener on unmount
+    return () => {
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [])
 
   const toggleMobileFilters = () => {
     setShowMobileFilters(!showMobileFilters)
@@ -59,7 +75,7 @@ export function QuizSidebar({
         : "bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-200",
     }
 
-    return colorMap[type] || (isSelected ? "bg-primary text-white" : "bg-muted text-foreground")
+    return colorMap[type as keyof typeof colorMap] || (isSelected ? "bg-primary text-white" : "bg-muted text-foreground")
   }
 
   return (
@@ -118,7 +134,7 @@ export function QuizSidebar({
 
       {/* Filter Section - Desktop always visible, Mobile conditionally visible */}
       <AnimatePresence initial={false}>
-        {(showMobileFilters || window.innerWidth >= 1024) && (
+        {(showMobileFilters || isDesktop) && (
           <motion.div
             className="space-y-4 bg-card p-4 rounded-lg border shadow-sm lg:shadow-none lg:p-0"
             initial={{ height: 0, opacity: 0, overflow: "hidden" }}

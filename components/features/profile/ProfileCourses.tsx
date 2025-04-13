@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import PageLoader from "@/components/ui/loader"
+import  {Loader}  from "@/components/ui/loader"
 
 interface Course {
   id: string
@@ -25,7 +25,7 @@ export default function ProfileCourses() {
     },
   })
 
-  if (isLoading) return <div><PageLoader></PageLoader></div>
+  if (isLoading) return <div><Loader></Loader></div>
   if (error) return <div>Error loading courses</div>
 
   return (

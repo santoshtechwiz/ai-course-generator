@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
-import PageLoader from "@/components/ui/loader"
+import  {Loader}  from "@/components/ui/loader"
 
 
 interface UserProfile {
@@ -54,7 +54,7 @@ export default function ProfileHeader() {
     }
   }
 
-  if (isLoading) return <div><PageLoader></PageLoader></div>
+  if (isLoading) return <div><Loader></Loader></div>
   if (error) return <div>Error loading profile</div>
 
   return (
