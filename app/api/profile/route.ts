@@ -1,64 +1,93 @@
-import { getAuthSession } from '@/lib/authOptions';
-import { prisma } from '@/lib/db';
-import { getToken } from 'next-auth/jwt';
-import NodeCache from 'node-cache';
+import { type NextRequest, NextResponse } from "next/server"
+import { getAuthSession } from "@/lib/authOptions"
+import { prisma } from "@/lib/db"
 
-// Initialize a simple in-memory cache using NodeCache
-const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // 5 minutes TTL with periodic check
-
-export async function GET(request: Request) {
-
-  const userId = (await getAuthSession())?.user.id;
-  if(!userId) {
-    return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
-  }
-
-  // Check if data is cached
-  const cacheKey = `user:${userId}`;
-  const cachedData = cache.get(cacheKey);
-
-  if (cachedData) {
-    return new Response(JSON.stringify(cachedData), { status: 200 });
-  }
-
+export async function GET(req: NextRequest) {
   try {
-    // Fetch required user details
+    const session = await getAuthSession()
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: session.user.id },
       select: {
-        credits: true,
-        isAdmin: true,
-        email: true,
+        id: true,
         name: true,
+        email: true,
+        image: true,
+        credits: true,
+        userType: true,
+        isAdmin: true,
+        lastLogin: true,
+        createdAt: true,
         subscription: {
           select: {
-            status: true,
             planId: true,
+            status: true,
             currentPeriodEnd: true,
           },
         },
       },
-    });
+    })
 
     if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Format data
-    const userData = {
-      credits: user.credits,
-      isAdmin: user.isAdmin,
-      subscriptiontatus: user.subscription?.status || 'none',
-      subscriptionEnd: user.subscription?.currentPeriodEnd || null,
-      planId: user.subscription?.planId || null,
-    };
-
-    // Store in cache
-    cache.set(cacheKey, userData);
-
-    return new Response(JSON.stringify(userData), { status: 200 });
+    return NextResponse.json({
+      user: {
+        ...user,
+        subscriptionPlan: user.subscription?.planId || null,
+        subscriptionStatus: user.subscription?.status || null,
+        subscriptionExpirationDate: user.subscription?.currentPeriodEnd || null,
+      },
+    })
   } catch (error) {
-    console.error('Error fetching user details:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+    console.error("Profile API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getAuthSession()
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const data = await req.json()
+
+    // Only allow updating certain fields
+    const allowedFields = ["name", "image"]
+    const updateData: Record<string, any> = {}
+
+    Object.keys(data).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        updateData[key] = data[key]
+      }
+    })
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: session.user.id },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+      },
+    })
+
+    return NextResponse.json({ user: updatedUser })
+  } catch (error) {
+    console.error("Profile update API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

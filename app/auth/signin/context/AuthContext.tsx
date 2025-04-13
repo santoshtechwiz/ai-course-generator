@@ -27,30 +27,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(status === "loading")
   }, [status])
 
+  // Debug session status
+  useEffect(() => {
+    console.log("Session status:", status)
+    console.log("Session data:", session)
+  }, [session, status])
+
   const signInWithProvider = async (provider: string, callbackUrl = "/") => {
     setIsLoading(true)
     try {
-      await signIn(provider.toLowerCase(), { callbackUrl })
+      // We need to handle the case where provider might be undefined
+      const providerToUse = provider?.toLowerCase() || "credentials"
+      console.log(`Signing in with provider: ${providerToUse}`)
+
+      // For OAuth providers, we need to redirect
+      await signIn(providerToUse, { callbackUrl })
+
+      // Note: For OAuth providers, the code below won't execute because of the redirect
+      toast({
+        title: "Success!",
+        description: "You've been successfully logged in.",
+      })
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error)
       toast({
         title: "Authentication failed",
-        description: `Failed to sign in with ${provider}. Please try again.`,
+        description: `Failed to sign in with ${provider || "provider"}. Please try again.`,
         variant: "destructive",
       })
-    } finally {
       setIsLoading(false)
     }
+    // We don't set isLoading to false here for OAuth providers because we're redirecting
   }
 
   const signInWithCredentials = async (email: string, password: string, callbackUrl = "/") => {
     setIsLoading(true)
     try {
+      console.log(`Signing in with credentials, redirecting to: ${callbackUrl}`)
       const result = await signIn("credentials", {
         redirect: false,
         email,
         password,
       })
+
+      console.log("Credentials sign-in result:", result)
 
       if (result?.error) {
         toast({
@@ -85,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOutUser = async (callbackUrl = "/") => {
     setIsLoading(true)
     try {
+      console.log("Signing out")
       await signOut({ callbackUrl })
     } catch (error) {
       console.error("Sign out error:", error)
