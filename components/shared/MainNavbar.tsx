@@ -18,6 +18,8 @@ import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/
 import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { ThemeToggle } from "../ThemeToggle"
+import { useAuth } from "@/app/auth/signin/context/AuthContext"
+
 
 const NavItems = () => {
   const pathname = usePathname()
@@ -43,7 +45,7 @@ const NavItems = () => {
               <LayoutGroup>
                 <item.icon className="h-4 w-4" />
                 <span>{item.name}</span>
-                {item.subItems.length > 0 && <ChevronDown className="h-3 w-3 ml-1.5" />}
+                {item.subItems && item.subItems.length > 0 && <ChevronDown className="h-3 w-3 ml-1.5" />}
 
                 {pathname === item.href && (
                   <motion.div
@@ -65,12 +67,19 @@ const NavItems = () => {
 
 export default function MainNavbar() {
   const { data: session, status } = useSession()
+  const { isAuthenticated, user } = useAuth() // Use our custom auth context
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription } = useSubscriptionStore()
   const pathname = usePathname()
   const [creditScore, setCreditScore] = useState(0)
+
+  // Sync user data from both sources
+  const isAdmin = session?.user?.isAdmin || user?.isAdmin || false
+  const userName = session?.user?.name || user?.name || ""
+  const userEmail = session?.user?.email || user?.email || ""
+  const userAuthenticated = status === "authenticated" || isAuthenticated
 
   // Scroll handler with debounce
   const handleScroll = useCallback(() => {
@@ -83,22 +92,30 @@ export default function MainNavbar() {
     }
   }, [])
 
+  // Refresh subscription data and sync with user credits
   useEffect(() => {
-    refreshSubscription()
-    const intervalId = setInterval(refreshSubscription, 60000)
-    return () => clearInterval(intervalId)
-  }, [refreshSubscription])
+    if (userAuthenticated) {
+      refreshSubscription()
+      const intervalId = setInterval(refreshSubscription, 60000)
+      return () => clearInterval(intervalId)
+    }
+  }, [refreshSubscription, userAuthenticated])
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll())
     return () => window.removeEventListener("scroll", handleScroll())
   }, [handleScroll])
 
+  // Sync credits from subscription status
   useEffect(() => {
     if (subscriptionStatus?.credits !== undefined) {
       setCreditScore(subscriptionStatus.credits)
+    } else if (session?.user?.credits !== undefined) {
+      setCreditScore(session.user.credits)
+    } else if (user?.credits !== undefined) {
+      setCreditScore(user.credits)
     }
-  }, [subscriptionStatus])
+  }, [subscriptionStatus, session?.user?.credits, user?.credits])
 
   const headerVariants = {
     hidden: { opacity: 0, y: -20 },
@@ -113,6 +130,9 @@ export default function MainNavbar() {
     hidden: { opacity: 0, y: -10 },
     visible: { opacity: 1, y: 0 },
   }
+
+  // Get subscription plan from subscription status
+  const subscriptionPlan = subscriptionStatus?.subscriptionPlan || "FREE"
 
   return (
     <motion.header
@@ -155,7 +175,7 @@ export default function MainNavbar() {
             </Button>
           </motion.div>
 
-          <NotificationsMenu initialCount={creditScore} />
+          {userAuthenticated && <NotificationsMenu initialCount={creditScore} />}
 
           <motion.div
             whileHover={{ scale: 1.1 }}
@@ -165,13 +185,13 @@ export default function MainNavbar() {
             <ThemeToggle />
           </motion.div>
 
-          {status === "authenticated" ? (
+          {userAuthenticated ? (
             <UserMenu>
               <DropdownMenuContent className="w-56 rounded-xl p-2 shadow-lg">
                 <div className="p-2 space-y-1">
-                  <p className="font-medium truncate">{session.user?.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{session.user?.email}</p>
-                  {subscriptionStatus && <Badge className="mt-1">{subscriptionStatus.subscriptionPlan}</Badge>}
+                  <p className="font-medium truncate">{userName}</p>
+                  <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
+                  {subscriptionPlan && <Badge className="mt-1">{subscriptionPlan}</Badge>}
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -180,7 +200,7 @@ export default function MainNavbar() {
                     Dashboard
                   </Link>
                 </DropdownMenuItem>
-                {session.user?.isAdmin && (
+                {isAdmin && (
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/admin" className="cursor-pointer">
                       <Crown className="mr-2 h-4 w-4" />
@@ -188,15 +208,16 @@ export default function MainNavbar() {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {session.user && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/account" className="cursor-pointer">
-                      <Crown className="mr-2 h-4 w-4" />
-                      Account Settings
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/account" className="cursor-pointer">
+                    <Crown className="mr-2 h-4 w-4" />
+                    Account Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="cursor-pointer text-destructive"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
@@ -262,13 +283,13 @@ export default function MainNavbar() {
             </nav>
 
             <div className="pt-4 border-t">
-              {status === "authenticated" ? (
+              {userAuthenticated ? (
                 <div className="space-y-4">
                   <div className="p-2 rounded-lg bg-accent">
-                    <p className="font-medium truncate">{session.user?.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{session.user?.email}</p>
+                    <p className="font-medium truncate">{userName}</p>
+                    <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
                   </div>
-                  <Button variant="destructive" className="w-full" onClick={() => signOut()}>
+                  <Button variant="destructive" className="w-full" onClick={() => signOut({ callbackUrl: "/" })}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </Button>

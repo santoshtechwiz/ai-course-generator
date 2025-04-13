@@ -23,25 +23,21 @@ export async function GET(req: NextRequest) {
 
     const subscription = user.subscription
 
-    if (!subscription) {
-      return NextResponse.json({
-        active: false,
-        plan: null,
-        status: null,
-        expiresAt: null,
-      })
+    // Format response to match the expected SubscriptionStatus interface
+    const response = {
+      credits: user.credits || 0,
+      isSubscribed: !!subscription,
+      subscriptionPlan: subscription?.planId || "FREE",
+      expirationDate: subscription?.currentPeriodEnd?.toISOString() || undefined,
+      isActive: subscription?.status === "active" || false,
+      // Include original fields for backward compatibility
+      active: subscription?.status === "active" || false,
+      plan: subscription?.planId || "FREE",
+      status: subscription?.status || null,
+      expiresAt: subscription?.currentPeriodEnd || null,
     }
 
-    const isActive =
-      subscription.status === "active" ||
-      (subscription.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > new Date())
-
-    return NextResponse.json({
-      active: isActive,
-      plan: subscription.planId,
-      status: subscription.status,
-      expiresAt: subscription.currentPeriodEnd,
-    })
+    return NextResponse.json(response)
   } catch (error) {
     console.error("Subscription status API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

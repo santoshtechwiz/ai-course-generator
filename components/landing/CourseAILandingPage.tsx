@@ -78,6 +78,7 @@ const CourseAILandingPage = () => {
     { id: "how-it-works", label: "How It Works", ref: howItWorksRef },
     { id: "testimonials", label: "Testimonials", ref: testimonialsRef },
     { id: "faq", label: "FAQ", ref: faqRef },
+    { id: "explore", label: "Explore", ref: null }, // Added link to /dashboard/explore
   ]
 
   // Apple-style scroll animations
@@ -218,7 +219,7 @@ const CourseAILandingPage = () => {
           {navItems.map((item) => (
             <motion.button
               key={item.id}
-              onClick={() => scrollToSection(item.id)}
+              onClick={() => item.ref ? scrollToSection(item.id) : router.push("/dashboard/explore")} // Handle "Explore" link
               className={cn(
                 "text-sm font-medium transition-colors relative px-2 py-1",
                 activeSection === item.id ? "text-primary" : "text-white hover:text-white/90",
