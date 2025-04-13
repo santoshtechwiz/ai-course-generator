@@ -1,399 +1,343 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { useSession } from "next-auth/react"
-import type { SubscriptionPlanType } from "@/app/types/subscription"
+import { useRouter } from "next/navigation"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
 
-// Define return types for better type safety
-export interface SubscriptionActionResult {
+interface UseSubscriptionOptions {
+  allowPlanChanges?: boolean
+  allowDowngrades?: boolean
+  onSubscriptionSuccess?: (result: { success: boolean; message?: string; redirectUrl?: string }) => void
+  onSubscriptionError?: (error: { message: string; details?: string }) => void
+}
+
+interface SubscriptionResult {
   success: boolean
   message?: string
   redirectUrl?: string
+  sessionId?: string
+  error?: string
+  details?: string
 }
 
-// Define subscription error types
-export type SubscriptionErrorType =
-  | "AUTHENTICATION_REQUIRED"
-  | "PLAN_CHANGE_RESTRICTED"
-  | "DOWNGRADE_RESTRICTED"
-  | "ALREADY_SUBSCRIBED"
-  | "SERVER_ERROR"
-  | "PAYMENT_FAILED"
-  | "NETWORK_ERROR"
-
-// Define subscription error class
-export class SubscriptionError extends Error {
-  type: SubscriptionErrorType
-
-  constructor(message: string, type: SubscriptionErrorType) {
-    super(message)
-    this.type = type
-    this.name = "SubscriptionError"
-  }
-}
-
-export interface UseSubscriptionOptions {
-  allowPlanChanges?: boolean
-  allowDowngrades?: boolean
-  onSubscriptionSuccess?: (result: SubscriptionActionResult) => void
-  onSubscriptionError?: (error: SubscriptionError) => void
-}
-
-export interface UseSubscriptionReturn {
-  isLoading: boolean
-  handleSubscribe: (
-    planName: SubscriptionPlanType,
-    duration: number,
-    promoCode?: string,
-    promoDiscount?: number,
-    referralCode?: string,
-  ) => Promise<SubscriptionActionResult>
-  cancelSubscription: () => Promise<SubscriptionActionResult>
-  resumeSubscription: () => Promise<SubscriptionActionResult>
-  canSubscribeToPlan: (
-    currentPlan: SubscriptionPlanType | null,
-    targetPlan: SubscriptionPlanType,
-    subscriptionStatus: string | null,
-  ) => {
-    canSubscribe: boolean
-    reason?: string
-  }
-}
-
-export const useSubscription = (options: UseSubscriptionOptions = {}): UseSubscriptionReturn => {
+export function useSubscription(options: UseSubscriptionOptions = {}) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const session = useSession()
+  const router = useRouter()
 
   const { allowPlanChanges = false, allowDowngrades = false, onSubscriptionSuccess, onSubscriptionError } = options
 
-  const canSubscribeToPlan = (
-    currentPlan: SubscriptionPlanType | null,
-    targetPlan: SubscriptionPlanType,
-    subscriptionStatus: string | null,
-  ) => {
-    if (!currentPlan || subscriptionStatus !== "ACTIVE") return { canSubscribe: true }
-    if (currentPlan === targetPlan) return { canSubscribe: false, reason: "You are already subscribed to this plan" }
-    if (currentPlan === "FREE") return { canSubscribe: true }
-    if (targetPlan === "FREE") {
-      return {
-        canSubscribe: false,
-        reason: "You need to cancel your current subscription before switching to the free plan",
+  // Function to check if a user can subscribe to a specific plan
+  const canSubscribeToPlan = useCallback(
+    (
+      currentPlan: SubscriptionPlanType | null,
+      targetPlan: SubscriptionPlanType,
+      currentStatus: SubscriptionStatusType | null,
+    ): { canSubscribe: boolean; reason?: string } => {
+      // Always allow subscribing to FREE plan if not already on it
+      if (targetPlan === "FREE") {
+        // If already on FREE plan and it's active, can't subscribe again
+        if (currentPlan === "FREE" && currentStatus === "ACTIVE") {
+          return {
+            canSubscribe: false,
+            reason: "You are already on the free plan",
+          }
+        }
+        return { canSubscribe: true }
       }
-    }
 
-    const planHierarchy: Record<SubscriptionPlanType, number> = {
-      FREE: 0,
-      BASIC: 1,
-      PRO: 2,
-      ULTIMATE: 3,
-    }
-
-    const isDowngrade = planHierarchy[targetPlan] < planHierarchy[currentPlan]
-
-    if (isDowngrade && !allowDowngrades) {
-      return {
-        canSubscribe: false,
-        reason: "You cannot downgrade your subscription until your current plan expires",
+      // If no current plan, can subscribe to any plan
+      if (!currentPlan) {
+        return { canSubscribe: true }
       }
-    }
 
-    if (!allowPlanChanges) {
-      return {
-        canSubscribe: false,
-        reason: "You cannot change your subscription until your current plan expires",
+      // If current plan is the same as target plan and active, can't subscribe again
+      if (currentPlan === targetPlan && currentStatus === "ACTIVE") {
+        return {
+          canSubscribe: false,
+          reason: "You are already subscribed to this plan",
+        }
       }
-    }
 
-    return { canSubscribe: true }
-  }
+      // If current plan is not FREE and active, and plan changes are not allowed
+      if (currentPlan !== "FREE" && currentStatus === "ACTIVE" && !allowPlanChanges) {
+        return {
+          canSubscribe: false,
+          reason:
+            "You need to wait until your current subscription expires or cancel it before subscribing to a new plan",
+        }
+      }
 
-  const handleSubscribe = async (
-    planName: SubscriptionPlanType,
-    duration: number,
-    promoCode?: string,
-    promoDiscount?: number,
-    referralCode?: string,
-  ): Promise<SubscriptionActionResult> => {
-    setIsLoading(true)
+      // If downgrading and downgrades are not allowed
+      const planRank = {
+        FREE: 0,
+        BASIC: 1,
+        PRO: 2,
+        ULTIMATE: 3,
+      }
 
-    try {
-      const userId = session?.data?.user?.id
+      if (planRank[targetPlan] < planRank[currentPlan] && !allowDowngrades && currentStatus === "ACTIVE") {
+        return {
+          canSubscribe: false,
+          reason: "Downgrading to a lower tier plan is not allowed while your current plan is active",
+        }
+      }
 
-      if (!userId) {
-        const error = new SubscriptionError("You must be logged in to subscribe", "AUTHENTICATION_REQUIRED")
+      // Otherwise, can subscribe
+      return { canSubscribe: true }
+    },
+    [allowPlanChanges, allowDowngrades],
+  )
 
-        if (onSubscriptionError) onSubscriptionError(error)
+  // Check if user is subscribed to any paid plan
+  const isSubscribedToAnyPaidPlan = useCallback(
+    (currentPlan: SubscriptionPlanType | null, currentStatus: SubscriptionStatusType | null): boolean => {
+      return !!currentPlan && currentPlan !== "FREE" && (currentStatus === "ACTIVE" || currentStatus === "CANCELED")
+    },
+    [],
+  )
+
+  // Check if user is subscribed to all available plans
+  const isSubscribedToAllPlans = useCallback(
+    (currentPlan: SubscriptionPlanType | null, currentStatus: SubscriptionStatusType | null): boolean => {
+      // If the user has the ULTIMATE plan (highest tier) and it's active, they effectively have all plans
+      return currentPlan === "ULTIMATE" && currentStatus === "ACTIVE"
+    },
+    [],
+  )
+
+  // Handle subscription creation
+  const handleSubscribe = useCallback(
+    async (
+      planName: SubscriptionPlanType,
+      duration: number,
+      promoCode?: string,
+      promoDiscount?: number,
+      referralCode?: string,
+    ): Promise<SubscriptionResult> => {
+      setIsLoading(true)
+
+      try {
+        // For free plan, use the activate-free endpoint
+        if (planName === "FREE") {
+          const response = await fetch("/api/subscriptions/activate-free", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+
+          const data = await response.json()
+
+          if (!response.ok) {
+            throw new Error(data.details || "Failed to activate free plan")
+          }
+
+          // Dispatch an event to notify other components about the subscription change
+          window.dispatchEvent(new Event("subscription-changed"))
+
+          const result = {
+            success: true,
+            message: data.message || "Free plan activated successfully",
+          }
+
+          if (onSubscriptionSuccess) {
+            onSubscriptionSuccess(result)
+          }
+
+          return result
+        }
+
+        // For paid plans, create a checkout session
+        const response = await fetch("/api/subscriptions/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            planName,
+            duration,
+            referralCode,
+            promoCode,
+            promoDiscount,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.details || "There was an error processing your subscription. Please try again.")
+        }
+
+        if (data.error) {
+          throw new Error(data.details || "An unexpected error occurred")
+        }
+
+        // For successful checkout session creation
+        const result = {
+          success: true,
+          redirectUrl: data.url,
+          sessionId: data.sessionId,
+          message: "Redirecting to checkout...",
+        }
+
+        if (onSubscriptionSuccess) {
+          onSubscriptionSuccess(result)
+        }
+
+        // Redirect to the checkout URL
+        if (data.url) {
+          window.location.href = data.url
+        }
+
+        return result
+      } catch (error) {
+        console.error("Subscription error:", error)
+
+        const errorMessage = error instanceof Error ? error.message : "Failed to process subscription"
+
+        const errorResult = {
+          success: false,
+          error: "Subscription failed",
+          message: errorMessage,
+          details: error instanceof Error ? error.message : undefined,
+        }
+
+        if (onSubscriptionError) {
+          onSubscriptionError({
+            message: errorMessage,
+            details: error instanceof Error ? error.message : undefined,
+          })
+        }
 
         toast({
-          title: "Authentication Required",
-          description: "Please sign in to subscribe to this plan",
+          title: "Subscription Error",
+          description: errorMessage,
           variant: "destructive",
         })
 
-        if (typeof window !== "undefined") {
-          localStorage.setItem(
-            "pendingSubscription",
-            JSON.stringify({
-              planName,
-              duration,
-              promoCode,
-              promoDiscount,
-              referralCode,
-            }),
-          )
-        }
-
-        return {
-          success: false,
-          message: "Authentication required",
-        }
+        return errorResult
+      } finally {
+        setIsLoading(false)
       }
+    },
+    [toast, onSubscriptionSuccess, onSubscriptionError],
+  )
 
-      if (planName === "FREE") {
-        try {
-          const response = await fetch("/api/subscriptions/activate-free", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ confirmed: true }),
-          })
+  // Handle subscription cancellation
+  const cancelSubscription = useCallback(async (): Promise<SubscriptionResult> => {
+    setIsLoading(true)
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: "Failed to activate free plan" }))
-            throw new SubscriptionError(errorData.message || "Failed to activate free plan", "SERVER_ERROR")
-          }
-
-          const result = await response.json()
-
-          if (result.success) {
-            toast({
-              title: "Free Plan Activated",
-              description: "You now have access to the free plan features and 5 tokens",
-              variant: "default",
-            })
-
-            window.dispatchEvent(new Event("subscription-changed"))
-
-            const actionResult = {
-              success: true,
-              message: "Free plan activated successfully",
-            }
-
-            if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
-
-            return actionResult
-          } else {
-            throw new SubscriptionError(result.message || "Failed to activate free plan", "SERVER_ERROR")
-          }
-        } catch (error) {
-          const subscriptionError =
-            error instanceof SubscriptionError
-              ? error
-              : new SubscriptionError(
-                  error instanceof Error ? error.message : "Failed to activate free plan",
-                  "SERVER_ERROR",
-                )
-
-          if (onSubscriptionError) onSubscriptionError(subscriptionError)
-
-          toast({
-            title: "Activation Failed",
-            description: subscriptionError.message,
-            variant: "destructive",
-          })
-
-          return {
-            success: false,
-            message: subscriptionError.message,
-          }
-        }
-      }
-
-      const response = await fetch("/api/subscriptions/create", {
+    try {
+      const response = await fetch("/api/subscriptions/cancel", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          planName,
-          duration,
-          promoCode,
-          promoDiscount,
-          referralCode, 
-        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
 
-      const result = await response.json()
+      const data = await response.json()
 
       if (!response.ok) {
-        throw new SubscriptionError(
-          result.message || "Failed to create subscription",
-          result.errorType || "SERVER_ERROR",
-        )
+        throw new Error(data.details || "Failed to cancel subscription")
       }
 
-      if (result.url) {
-        toast({
-          title: "Redirecting to Checkout",
-          description: "You'll be redirected to complete your subscription payment.",
-          variant: "default",
-        })
-
-        const actionResult = {
-          success: true,
-          message: "Redirecting to checkout",
-          redirectUrl: result.url,
-        }
-
-        if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
-
-        window.location.href = result.url
-        return actionResult
-      } else if (result.sessionId) {
-        toast({
-          title: "Checkout Ready",
-          description: "Your checkout session has been created. Please wait...",
-          variant: "default",
-        })
-
-        const actionResult = {
-          success: true,
-          message: "Checkout session created",
-        }
-
-        if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
-
-        return actionResult
-      }
-
-      throw new SubscriptionError("No checkout URL or session ID returned", "SERVER_ERROR")
-    } catch (error) {
-      const subscriptionError =
-        error instanceof SubscriptionError
-          ? error
-          : new SubscriptionError(
-              error instanceof Error ? error.message : "Failed to create subscription",
-              "SERVER_ERROR",
-            )
-
-      if (onSubscriptionError) onSubscriptionError(subscriptionError)
+      // Dispatch an event to notify other components about the subscription change
+      window.dispatchEvent(new Event("subscription-changed"))
 
       toast({
-        title: "Subscription Failed",
-        description: subscriptionError.message,
+        title: "Subscription Cancelled",
+        description: "Your subscription has been cancelled and will end at the current billing period.",
+      })
+
+      router.refresh()
+
+      return {
+        success: true,
+        message: "Subscription cancelled successfully",
+      }
+    } catch (error) {
+      console.error("Cancellation error:", error)
+
+      const errorMessage = error instanceof Error ? error.message : "Failed to cancel subscription"
+
+      toast({
+        title: "Cancellation Error",
+        description: errorMessage,
         variant: "destructive",
       })
 
       return {
         success: false,
-        message: subscriptionError.message,
+        error: "Cancellation failed",
+        message: errorMessage,
       }
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast, router])
 
-  const cancelSubscription = async (): Promise<SubscriptionActionResult> => {
+  // Handle subscription resumption
+  const resumeSubscription = useCallback(async (): Promise<SubscriptionResult> => {
     setIsLoading(true)
-    try {
-      const response = await fetch("/api/subscriptions/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      })
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new SubscriptionError(result.message || "Failed to cancel subscription", "SERVER_ERROR")
-      }
-
-      toast({
-        title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled successfully",
-        variant: "default",
-      })
-
-      const actionResult = { success: true, message: "Subscription cancelled successfully" }
-
-      if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
-
-      return actionResult
-    } catch (error) {
-      const subscriptionError =
-        error instanceof SubscriptionError
-          ? error
-          : new SubscriptionError(
-              error instanceof Error ? error.message : "Failed to cancel subscription",
-              "SERVER_ERROR",
-            )
-
-      if (onSubscriptionError) onSubscriptionError(subscriptionError)
-
-      toast({
-        title: "Cancellation Failed",
-        description: subscriptionError.message,
-        variant: "destructive",
-      })
-
-      return { success: false, message: subscriptionError.message }
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const resumeSubscription = async (): Promise<SubscriptionActionResult> => {
-    setIsLoading(true)
     try {
       const response = await fetch("/api/subscriptions/resume", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
 
-      const result = await response.json()
+      const data = await response.json()
 
       if (!response.ok) {
-        throw new SubscriptionError(result.message || "Failed to resume subscription", "SERVER_ERROR")
+        throw new Error(data.details || "Failed to resume subscription")
       }
+
+      // Dispatch an event to notify other components about the subscription change
+      window.dispatchEvent(new Event("subscription-changed"))
 
       toast({
         title: "Subscription Resumed",
-        description: "Your subscription has been resumed successfully",
-        variant: "default",
+        description: "Your subscription has been resumed successfully.",
       })
 
-      const actionResult = { success: true, message: "Subscription resumed successfully" }
+      router.refresh()
 
-      if (onSubscriptionSuccess) onSubscriptionSuccess(actionResult)
-
-      return actionResult
+      return {
+        success: true,
+        message: "Subscription resumed successfully",
+      }
     } catch (error) {
-      const subscriptionError =
-        error instanceof SubscriptionError
-          ? error
-          : new SubscriptionError(
-              error instanceof Error ? error.message : "Failed to resume subscription",
-              "SERVER_ERROR",
-            )
+      console.error("Resume error:", error)
 
-      if (onSubscriptionError) onSubscriptionError(subscriptionError)
+      const errorMessage = error instanceof Error ? error.message : "Failed to resume subscription"
 
       toast({
-        title: "Resume Failed",
-        description: subscriptionError.message,
+        title: "Resume Error",
+        description: errorMessage,
         variant: "destructive",
       })
 
-      return { success: false, message: subscriptionError.message }
+      return {
+        success: false,
+        error: "Resume failed",
+        message: errorMessage,
+      }
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast, router])
 
   return {
+    isLoading,
     handleSubscribe,
     cancelSubscription,
     resumeSubscription,
     canSubscribeToPlan,
-    isLoading,
+    isSubscribedToAnyPaidPlan,
+    isSubscribedToAllPlans,
   }
 }

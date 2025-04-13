@@ -546,6 +546,7 @@ model TokenTransaction {
   id          String   @id @default(cuid())
   userId      String
   amount      Int
+  credits     Int?         @default(0)
   type        String   
   description String?
   createdAt   DateTime @default(now())

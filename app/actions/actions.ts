@@ -64,7 +64,7 @@ export async function updateUser(userId: string, data: any) {
       await prisma.tokenTransaction.create({
         data: {
           userId,
-          amount,
+          credits,,
           type: amount > 0 ? "ADMIN_CREDIT" : "ADMIN_DEBIT",
           description: data.creditNote || `Admin adjusted credits by ${amount}`,
         },

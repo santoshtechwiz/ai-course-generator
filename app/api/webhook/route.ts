@@ -240,9 +240,11 @@ async function processReferralBenefits(session: any) {
       await prisma.tokenTransaction.create({
         data: {
           userId,
-          amount: REFERRED_USER_BONUS,
+          credits: REFERRED_USER_BONUS,
+          amount: 0, // Assuming amount is 0 for this transaction
           type: "REFERRAL",
           description: `Referral bonus for subscribing using referral code`,
+          user: { connect: { id: userId } }, // Assuming user relation needs to be connected
         },
       })
     }
@@ -263,7 +265,8 @@ async function processReferralBenefits(session: any) {
       await prisma.tokenTransaction.create({
         data: {
           userId: referrerId,
-          amount: REFERRER_BONUS,
+          credits: REFERRER_BONUS,
+          amount:0,
           type: "REFERRAL",
           description: `Referral bonus for user ${userId} subscribing to ${session.metadata.planName || "subscription"} plan`,
         },
@@ -330,14 +333,15 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
           })
 
           // Log the token addition for renewal
-          await prisma.tokenTransaction.create({
+            await prisma.tokenTransaction.create({
             data: {
               userId: userSubscription.userId,
-              amount: plan.tokens,
+              credits: plan.tokens,
+              amount: invoice.amount_paid / 100, // Convert cents to dollars
               type: "RENEWAL",
               description: `Added ${plan.tokens} tokens from ${planId} plan renewal`,
             },
-          })
+            })
         }
       }
     }
