@@ -39,6 +39,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     try {
       set({ isLoading: true, error: null })
 
+      // Primary attempt: Fetch from subscription status API
       const response = await fetch("/api/subscriptions/status", {
         method: "GET",
         headers: {
@@ -46,20 +47,94 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         },
         cache: "no-store",
         next: { revalidate: 0 }, // Ensure fresh data
+        credentials: "include", // Important for auth cookies
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to fetch subscription status")
+      if (response.ok) {
+        const data = await response.json()
+
+        // Transform the data to match our SubscriptionStatus interface if needed
+        const subscriptionStatus: SubscriptionStatus = {
+          credits: data.credits || 0,
+          isSubscribed: data.active || false,
+          subscriptionPlan: (data.plan as SubscriptionPlanType) || "FREE",
+          expirationDate: data.expiresAt || undefined,
+          isActive: data.active || false,
+        }
+
+        set({
+          subscriptionStatus,
+          isLoading: false,
+        })
+
+        return
       }
 
-      const data = await response.json()
-      set({
-        subscriptionStatus: data,
-        isLoading: false,
-      })
+      // Fallback 1: Try to get data from user profile
+      try {
+        const profileResponse = await fetch("/api/profile", {
+          credentials: "include",
+          cache: "no-store",
+        })
 
-      return data
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json()
+
+          if (profileData.user) {
+            const subscriptionStatus: SubscriptionStatus = {
+              credits: profileData.user.credits || 0,
+              isSubscribed: !!profileData.user.subscriptionPlan && profileData.user.subscriptionPlan !== "FREE",
+              subscriptionPlan: (profileData.user.subscriptionPlan as SubscriptionPlanType) || "FREE",
+              expirationDate: profileData.user.subscriptionExpirationDate,
+              isActive: profileData.user.subscriptionStatus === "active",
+            }
+
+            set({
+              subscriptionStatus,
+              isLoading: false,
+            })
+
+            return
+          }
+        }
+      } catch (profileError) {
+        console.warn("Error fetching profile:", profileError)
+        // Continue to next fallback
+      }
+
+      // Fallback 2: Try to get data from session
+      try {
+        const sessionResponse = await fetch("/api/auth/session", {
+          credentials: "include",
+          cache: "no-store",
+        })
+
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json()
+
+          if (sessionData.user) {
+            const subscriptionStatus: SubscriptionStatus = {
+              credits: sessionData.user.credits || 0,
+              isSubscribed: !!sessionData.user.subscriptionPlan && sessionData.user.subscriptionPlan !== "FREE",
+              subscriptionPlan: (sessionData.user.subscriptionPlan as SubscriptionPlanType) || "FREE",
+              expirationDate: sessionData.user.subscriptionExpirationDate,
+              isActive: sessionData.user.subscriptionStatus === "active",
+            }
+
+            set({
+              subscriptionStatus,
+              isLoading: false,
+            })
+
+            return
+          }
+        }
+      } catch (sessionError) {
+        console.warn("Error fetching session:", sessionError)
+      }
+
+      // If we get here, all attempts failed
+      throw new Error("Failed to fetch subscription status from any source")
     } catch (error) {
       console.warn("Error refreshing subscription:", error)
       set({
@@ -71,4 +146,3 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 }))
 
 export default useSubscriptionStore
-
