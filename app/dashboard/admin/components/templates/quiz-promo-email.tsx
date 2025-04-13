@@ -1,6 +1,6 @@
-import { QuizType } from "@/app/types/types"
+import type { QuizType } from "@/app/types/types"
 import { buildQuizUrl } from "@/lib/utils"
-import * as React from "react"
+import type * as React from "react"
 
 const styles = {
   container: {
@@ -82,7 +82,7 @@ const styles = {
     marginTop: "12px",
   },
   exploreLinkContainer: {
-    textAlign: "center" as "center",
+    textAlign: "center" as const,
     marginTop: "30px",
     marginBottom: "25px",
   },
@@ -114,53 +114,62 @@ const styles = {
 }
 
 interface Quiz {
+  id?: string
   slug: string
   title: string
-  difficulty: string
-  questionCount: number
-  quizType: QuizType
+  difficulty?: string
+  questionCount?: number
+  quizType?: QuizType
 }
 
 interface QuizPromoEmailProps {
   name: string
-  quizzes: Quiz[]
+  quizzes?: Quiz[]
 }
 
-export default function QuizPromoEmail({ name, quizzes }: QuizPromoEmailProps) {
+export default function QuizPromoEmail({ name, quizzes = [] }: QuizPromoEmailProps) {
+  // Ensure we have valid quizzes with required properties
+  const safeQuizzes = quizzes.map((quiz) => ({
+    ...quiz,
+    difficulty: quiz.difficulty || "Beginner",
+    questionCount: quiz.questionCount || 10,
+    quizType: quiz.quizType || "MULTIPLE_CHOICE",
+  }))
+
   return (
     <div style={styles.container}>
-      <div style={styles.header}>
+      <div style={styles.header as React.CSSProperties}>
         <h1 style={styles.headerTitle}>Test Your Knowledge, {name}!</h1>
         <div style={styles.headerDivider} />
       </div>
 
-      <p style={styles.introText}>
-        We've curated some exciting quizzes based on your interests. Challenge
-        yourself and see how much you know!
+      <p style={styles.introText as React.CSSProperties}>
+        We've curated some exciting quizzes based on your interests. Challenge yourself and see how much you know!
       </p>
 
-      {quizzes.map((quiz) => (
-        <div key={quiz.slug} style={styles.quizCard}>
-          <div style={{ marginBottom: "15px" }}>
-            <h2 style={styles.quizTitle}>{quiz.title}</h2>
-            <p style={styles.quizDescription}>
-              Test your knowledge of {quiz.title.toLowerCase()}
-            </p>
-          </div>
+      {safeQuizzes.length > 0 ? (
+        safeQuizzes.map((quiz) => (
+          <div key={quiz.slug} style={styles.quizCard as React.CSSProperties}>
+            <div style={{ marginBottom: "15px" }}>
+              <h2 style={styles.quizTitle}>{quiz.title}</h2>
+              <p style={styles.quizDescription}>Test your knowledge of {quiz.title.toLowerCase()}</p>
+            </div>
 
-          <div style={styles.quizTags}>
-            <span style={styles.quizTag}>{quiz.difficulty}</span>
-            <span style={styles.quizMeta}>{quiz.questionCount} questions</span>
-          </div>
+            <div style={styles.quizTags}>
+              <span style={styles.quizTag}>{quiz.difficulty}</span>
+              <span style={styles.quizMeta}>{quiz.questionCount} questions</span>
+            </div>
 
-          <a
-            href={`https://courseai.io${buildQuizUrl(quiz.slug, quiz.quizType)}`}
-            style={styles.quizLink}
-          >
-            Take Quiz
-          </a>
+            <a href={`https://courseai.io${buildQuizUrl(quiz.slug, quiz.quizType)}`} style={styles.quizLink}>
+              Take Quiz
+            </a>
+          </div>
+        ))
+      ) : (
+        <div style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+          <p>No quizzes available at the moment. Check back soon!</p>
         </div>
-      ))}
+      )}
 
       <div style={styles.exploreLinkContainer}>
         <a href="https://courseai.io/quizzes" style={styles.exploreLink}>

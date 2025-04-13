@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -27,7 +27,6 @@ import WelcomeEmail from "../templates/welcome-email"
 import CoursePromoEmail from "../templates/course-promo-email"
 import QuizPromoEmail from "../templates/quiz-promo-email"
 import ReengagementEmail from "../templates/reengagement-email"
-import { renderToHTML } from "next/dist/server/render"
 
 interface User {
   id: string
@@ -94,7 +93,7 @@ export default function EmailCampaignManager() {
     queryKey: ["emailSampleData"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/admin/subscriptions/data")
+        const response = await fetch("/api/admin/data")
         if (!response.ok) throw new Error("Failed to fetch sample data")
         return response.json()
       } catch (error) {
@@ -160,56 +159,6 @@ export default function EmailCampaignManager() {
     }
   }, [watchTemplateType, setValue])
 
-  // Filter users based on selected filters
-  const filteredUsers = userData.users.filter((user) => {
-    // Filter by user type
-    if (watchUserTypeFilters && watchUserTypeFilters.length > 0) {
-      if (!watchUserTypeFilters.includes(user.userType)) {
-        return false
-      }
-    }
-
-    // Filter by last active
-    if (watchLastActiveFilter && watchLastActiveFilter !== "all") {
-      const now = new Date()
-      const lastActive = new Date(user.lastActive)
-      const daysDifference = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 3600 * 24))
-
-      if (watchLastActiveFilter === "7days" && daysDifference > 7) {
-        return false
-      } else if (watchLastActiveFilter === "30days" && daysDifference > 30) {
-        return false
-      } else if (watchLastActiveFilter === "90days" && daysDifference > 90) {
-        return false
-      }
-    }
-
-    return true
-  })
-
-  // User selection handlers
-  const toggleUserSelection = (userId: string) => {
-    setSelectedUserIds((prev) => {
-      // If the ID is already in the array, remove it
-      if (prev.includes(userId)) {
-        return prev.filter((id) => id !== userId)
-      }
-      // Otherwise, add it
-      return [...prev, userId]
-    })
-  }
-
-  const toggleSelectAll = () => {
-    setSelectedUserIds((prev) => {
-      // If all filtered users are already selected, clear the selection
-      if (prev.length === filteredUsers.length && filteredUsers.length > 0) {
-        return []
-      }
-      // Otherwise, select all filtered users
-      return filteredUsers.map((user) => user.id)
-    })
-  }
-
   // Render the selected template component with data
   const renderTemplate = (name = "John Doe") => {
     if (isLoadingSampleData || !sampleData) {
@@ -220,30 +169,67 @@ export default function EmailCampaignManager() {
       )
     }
 
-    switch (selectedTemplateType) {
-      case "welcome":
-        return  <WelcomeEmail name={name} />
-      case "coursePromo":
-        return <CoursePromoEmail name={name} course={sampleData.courses} />
-      case "quizPromo":
-        return <QuizPromoEmail name={name} quizzes={sampleData.quizzes} />
-      case "reengagement":
-        return <ReengagementEmail name={name} />
-      default:
-        return <div>No template selected</div>
+    try {
+      switch (selectedTemplateType) {
+        case "welcome":
+          return <WelcomeEmail name={name} />
+        case "coursePromo":
+          return <CoursePromoEmail name={name} recommendedCourses={sampleData.courses} />
+        case "quizPromo":
+          return <QuizPromoEmail name={name} quizzes={sampleData.quizzes} />
+        case "reengagement":
+          return <ReengagementEmail name={name} />
+        default:
+          return <div>No template selected</div>
+      }
+    } catch (error) {
+      console.error("Error rendering template:", error)
+      return <div className="p-4 text-red-500">Error rendering template. Please check console for details.</div>
     }
   }
 
-  // Get HTML string from template component
-  const getTemplateHtml = (name: string) => {
-    try {
-      const templateComponent = renderTemplate(name)
-      return renderToString(templateComponent)
-    } catch (error) {
-      console.error("Error rendering template:", error)
-      return "<p>Error rendering email template</p>"
-    }
-  }
+  // Memoize the filtered users calculation for better performance
+  const filteredUsers = useMemo(() => {
+    return userData.users.filter((user) => {
+      // Filter by user type
+      if (watchUserTypeFilters && watchUserTypeFilters.length > 0) {
+        if (!watchUserTypeFilters.includes(user.userType)) {
+          return false
+        }
+      }
+
+      // Filter by last active
+      if (watchLastActiveFilter && watchLastActiveFilter !== "all") {
+        const now = new Date()
+        const lastActive = new Date(user.lastActive)
+        const daysDifference = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 3600 * 24))
+
+        if (watchLastActiveFilter === "7days" && daysDifference > 7) {
+          return false
+        } else if (watchLastActiveFilter === "30days" && daysDifference > 30) {
+          return false
+        } else if (watchLastActiveFilter === "90days" && daysDifference > 90) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }, [userData.users, watchUserTypeFilters, watchLastActiveFilter])
+
+  // Improve getTemplateHtml with error handling and memoization
+  const getTemplateHtml = useCallback(
+    (name: string) => {
+      try {
+        const templateComponent = renderTemplate(name)
+        return renderToString(templateComponent)
+      } catch (error) {
+        console.error("Error rendering template:", error)
+        return `<p>Error rendering email template: ${error instanceof Error ? error.message : "Unknown error"}</p>`
+      }
+    },
+    [selectedTemplateType, sampleData, isLoadingSampleData],
+  )
 
   // Form submission handler
   const onSubmit = async (data: CampaignFormValues) => {
@@ -262,13 +248,11 @@ export default function EmailCampaignManager() {
     // Clear any existing interval
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current)
+      progressIntervalRef.current = null
     }
 
     // Store interval reference for cleanup
-    let progressInterval: NodeJS.Timeout
-
-    // Simulate progress updates
-    progressInterval = setInterval(() => {
+    progressIntervalRef.current = setInterval(() => {
       setSendProgress((prev) => {
         const newProgress = prev + Math.random() * 10
         return newProgress > 95 ? 95 : newProgress
@@ -290,14 +274,14 @@ export default function EmailCampaignManager() {
         recipientName: recipient.name,
       }))
 
-      const response = await fetch("/api/admin/subscriptions/email", {
+      const response = await fetch("/api/admin/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: data.name,
           emails: emailsToSend,
           scheduledDate: data.scheduleForLater ? data.scheduledDate : null,
-          type:'coursePromo', // Example type, adjust as needed
+          type: data.templateType, // Use the actual template type instead of hardcoded value
         }),
       })
 
@@ -307,12 +291,19 @@ export default function EmailCampaignManager() {
       }
 
       // Clear the progress interval
-      clearInterval(progressInterval)
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
 
       setSendProgress(100)
       setShowSuccess(true)
 
       // Reset after 3 seconds
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current)
+      }
+
       successTimeoutRef.current = setTimeout(() => {
         setShowSuccess(false)
         setIsSending(false)
@@ -322,7 +313,10 @@ export default function EmailCampaignManager() {
         successTimeoutRef.current = null
       }, 3000)
     } catch (error) {
-      clearInterval(progressInterval)
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
 
       setIsSending(false)
       setSendProgress(0)
