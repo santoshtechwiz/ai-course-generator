@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { motion } from "framer-motion"
-import { QuizWrapper } from "@/components/QuizWrapper"
+import { QuizCourseWrapper } from "@/components/QuizCourseWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import RandomQuiz from "@/components/RandomQuiz"
 import { BookOpen, Lightbulb, Brain } from "lucide-react"
@@ -116,7 +116,7 @@ export default function QuizCreationPage({
                 </p>
               </div>
               <div className="p-4 md:p-6">
-                <QuizWrapper type={type} />
+                <QuizCourseWrapper type={type} />
               </div>
             </div>
           </motion.div>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown, X } from "lucide-react"
+import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown, X, Loader2 } from "lucide-react"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Button } from "@/components/ui/button"
 
@@ -19,6 +19,7 @@ import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { ThemeToggle } from "../ThemeToggle"
 import { useAuth } from "@/app/auth/signin/context/AuthContext"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const NavItems = () => {
   const pathname = usePathname()
@@ -70,9 +71,10 @@ export default function MainNavbar() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription } = useSubscriptionStore()
+  const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription, isError } = useSubscriptionStore()
   const pathname = usePathname()
   const [creditScore, setCreditScore] = useState(0)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   // Sync user data from both sources
   const isAdmin = session?.user?.isAdmin || user?.isAdmin || false
@@ -91,51 +93,84 @@ export default function MainNavbar() {
     }
   }, [])
 
+  // Set up scroll listener
+  useEffect(() => {
+    const scrollListener = handleScroll()
+    window.addEventListener("scroll", scrollListener)
+    return () => window.removeEventListener("scroll", scrollListener)
+  }, [handleScroll])
+
   // Refresh subscription data and sync with user credits
   useEffect(() => {
     if (userAuthenticated) {
+      // Track initial load state
+      const initialLoadTimer = setTimeout(() => {
+        setIsInitialLoad(false)
+      }, 3000)
+
       // Immediately refresh subscription data on auth
-      refreshSubscription()
+      refreshSubscription(true)
 
       // Set up polling with a shorter initial interval for faster initial load
       const quickInitialRefresh = setTimeout(() => {
-        refreshSubscription()
-      }, 2000) // Quick first refresh
+        refreshSubscription(true)
+      }, 1000) // Quick first refresh
 
-      // Then set up regular interval
-      const intervalId = setInterval(refreshSubscription, 30000) // Reduced from 60000 for more frequent updates
+      // Then set up regular interval with exponential backoff
+      let interval = 30000 // Start with 30s
+      const intervalId = setInterval(() => {
+        // If there was an error, increase the interval (up to 2 minutes)
+        if (isError) {
+          interval = Math.min(interval * 1.5, 120000)
+        } else {
+          // If successful, gradually decrease interval (down to 30s)
+          interval = Math.max(interval * 0.9, 30000)
+        }
+        refreshSubscription()
+      }, interval)
 
       return () => {
+        clearTimeout(initialLoadTimer)
         clearTimeout(quickInitialRefresh)
         clearInterval(intervalId)
       }
     }
-  }, [refreshSubscription, userAuthenticated])
+  }, [refreshSubscription, userAuthenticated, isError])
 
-  // Improve credit score synchronization
-  // Update the useEffect for credit score
+  // Improve credit score synchronization with debouncing
   useEffect(() => {
-    // Prioritize subscription status credits first
-    if (subscriptionStatus?.credits !== undefined) {
-      setCreditScore(subscriptionStatus.credits)
-    } else if (session?.user?.credits !== undefined) {
-      setCreditScore(session.user.credits)
-    } else if (user?.credits !== undefined) {
-      setCreditScore(user.credits)
+    // Use a short timeout to debounce multiple rapid updates
+    const debounceTimer = setTimeout(() => {
+      // Prioritize subscription status credits first
+      if (subscriptionStatus?.credits !== undefined) {
+        setCreditScore(subscriptionStatus.credits)
+      } else if (session?.user?.credits !== undefined) {
+        setCreditScore(session.user.credits)
+      } else if (user?.credits !== undefined) {
+        setCreditScore(user.credits)
+      }
+    }, 100)
+
+    return () => clearTimeout(debounceTimer)
+  }, [subscriptionStatus, session?.user?.credits, user?.credits])
+
+  // Force refresh when user interacts with the page
+  useEffect(() => {
+    const handleUserActivity = () => {
+      if (userAuthenticated && !isLoadingSubscription) {
+        refreshSubscription()
+      }
     }
 
-    // Force refresh subscription data when component mounts
-    if (userAuthenticated && !isLoadingSubscription) {
-      refreshSubscription()
+    // Add event listeners for user activity
+    window.addEventListener("mousemove", handleUserActivity, { passive: true, once: true })
+    window.addEventListener("touchstart", handleUserActivity, { passive: true, once: true })
+
+    return () => {
+      window.removeEventListener("mousemove", handleUserActivity)
+      window.removeEventListener("touchstart", handleUserActivity)
     }
-  }, [
-    subscriptionStatus,
-    session?.user?.credits,
-    user?.credits,
-    userAuthenticated,
-    isLoadingSubscription,
-    refreshSubscription,
-  ])
+  }, [userAuthenticated, isLoadingSubscription, refreshSubscription])
 
   const headerVariants = {
     hidden: { opacity: 0, y: -20 },
@@ -153,6 +188,9 @@ export default function MainNavbar() {
 
   // Get subscription plan from subscription status
   const subscriptionPlan = subscriptionStatus?.subscriptionPlan || "FREE"
+
+  // Determine if we should show loading states
+  const showLoading = isInitialLoad && isLoadingSubscription && userAuthenticated
 
   return (
     <motion.header
@@ -195,7 +233,12 @@ export default function MainNavbar() {
             </Button>
           </motion.div>
 
-          {userAuthenticated && <NotificationsMenu initialCount={creditScore} />}
+          {userAuthenticated &&
+            (showLoading ? (
+              <Skeleton className="h-8 w-8 rounded-full" />
+            ) : (
+              <NotificationsMenu initialCount={creditScore} />
+            ))}
 
           <motion.div
             whileHover={{ scale: 1.1 }}
@@ -206,43 +249,62 @@ export default function MainNavbar() {
           </motion.div>
 
           {userAuthenticated ? (
-            <UserMenu>
-              <DropdownMenuContent className="w-56 rounded-xl p-2 shadow-lg">
-                <div className="p-2 space-y-1">
-                  <p className="font-medium truncate">{userName}</p>
-                  <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
-                  {subscriptionPlan && <Badge className="mt-1">{subscriptionPlan}</Badge>}
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                {isAdmin && (
+            showLoading ? (
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </Button>
+            ) : (
+              <UserMenu>
+                <DropdownMenuContent className="w-56 rounded-xl p-2 shadow-lg">
+                  <div className="p-2 space-y-1">
+                    {isLoadingSubscription ? (
+                      <>
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-4 w-32" />
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium truncate">{userName}</p>
+                        <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
+                      </>
+                    )}
+                    {isLoadingSubscription ? (
+                      <Skeleton className="h-5 w-16 mt-1" />
+                    ) : (
+                      subscriptionPlan && <Badge className="mt-1">{subscriptionPlan}</Badge>
+                    )}
+                  </div>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/admin" className="cursor-pointer">
-                      <Crown className="mr-2 h-4 w-4" />
-                      Admin Panel
+                    <Link href="/dashboard" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Dashboard
                     </Link>
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/account" className="cursor-pointer">
-                    <Crown className="mr-2 h-4 w-4" />
-                    Account Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="cursor-pointer text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </UserMenu>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/admin" className="cursor-pointer">
+                        <Crown className="mr-2 h-4 w-4" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/account" className="cursor-pointer">
+                      <Crown className="mr-2 h-4 w-4" />
+                      Account Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => signOut({ callbackUrl: "/dashboard/explore" })}
+                    className="cursor-pointer text-destructive"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </UserMenu>
+            )
           ) : (
             <Button variant="default" onClick={() => signIn()} className="hidden md:flex rounded-full">
               <LogIn className="mr-2 h-4 w-4" />
@@ -305,8 +367,17 @@ export default function MainNavbar() {
               {userAuthenticated ? (
                 <div className="space-y-4">
                   <div className="p-2 rounded-lg bg-accent">
-                    <p className="font-medium truncate">{userName}</p>
-                    <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
+                    {isLoadingSubscription ? (
+                      <>
+                        <Skeleton className="h-5 w-24 mb-1" />
+                        <Skeleton className="h-4 w-32" />
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium truncate">{userName}</p>
+                        <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
+                      </>
+                    )}
                   </div>
                   <Button
                     variant="destructive"

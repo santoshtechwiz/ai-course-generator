@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import { SignInBanner } from "@/app/auth/signin/components/SignInBanner"
+
 
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
@@ -156,8 +156,7 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
 
   return (
     <div className="min-h-screen bg-background">
-      <SignInBanner isAuthenticated={authStatus === "authenticated"} />
-      <div className="container mx-auto px-4 py-6 md:py-8 lg:py-10 max-w-3xl">
+         <div className="container mx-auto px-4 py-6 md:py-8 lg:py-10 max-w-3xl">
         <div className="bg-card rounded-lg shadow-sm overflow-hidden">
           <div className="bg-muted/40 px-4 py-6 sm:px-6">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-foreground">

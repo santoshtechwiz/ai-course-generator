@@ -1,7 +1,7 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
-import { LogOut, User, Crown, CreditCard } from "lucide-react"
+import { LogOut, User, Crown, CreditCard, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -17,39 +17,49 @@ import {
 import { Badge } from "@/components/ui/badge"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import type { ReactNode } from "react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface UserMenuProps {
   children?: ReactNode
 }
 
 export function UserMenu({ children }: UserMenuProps) {
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const {
     subscriptionStatus,
     isLoading: isLoadingSubscription,
     refreshSubscription,
     shouldRefresh,
   } = useSubscriptionStore()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-  // Only refresh when needed based on cache status
-  useEffect(() => {
-    if (session?.user && shouldRefresh()) {
-      refreshSubscription()
+  // Refresh subscription data when menu is opened
+  const handleMenuOpen = (open: boolean) => {
+    setIsMenuOpen(open)
+    if (open && session?.user) {
+      refreshSubscription(true) // Force refresh when menu opens
     }
-  }, [session?.user, shouldRefresh, refreshSubscription])
+  }
+
+  // Refresh subscription data on mount and when session changes
+  useEffect(() => {
+    if (session?.user) {
+      refreshSubscription(true) // Force refresh on mount
+    }
+  }, [session?.user, refreshSubscription])
 
   const handleSignOut = async () => {
     const currentUrl = window.location.pathname
     await signOut({ callbackUrl: currentUrl })
   }
 
-  // Improved subscription badge display
+  // Improved subscription badge display with loading state
   const getSubscriptionBadge = () => {
     if (isLoadingSubscription) {
       return (
-        <Badge variant="outline" className="ml-auto animate-pulse">
-          Loading...
+        <Badge variant="outline" className="ml-auto">
+          <Skeleton className="h-4 w-16" />
         </Badge>
       )
     }
@@ -74,21 +84,36 @@ export function UserMenu({ children }: UserMenuProps) {
     )
   }
 
-  // Display credits badge
+  // Display credits badge with loading state
   const getCreditsDisplay = () => {
-    const credits = subscriptionStatus?.credits || 0
+    if (isLoadingSubscription) {
+      return <Skeleton className="h-4 w-12 ml-1" />
+    }
+
+    const credits = subscriptionStatus?.credits ?? 0
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
+  }
+
+  // Show loading state when session is loading
+  if (sessionStatus === "loading") {
+    return (
+      <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </Button>
+    )
   }
 
   if (!session) return null
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
             <AvatarImage src={session.user?.image ?? undefined} alt={session.user?.name ?? "User"} />
-            <AvatarFallback>{session.user?.name?.[0] ?? "U"}</AvatarFallback>
+            <AvatarFallback>
+              {isLoadingSubscription ? <Loader2 className="h-4 w-4 animate-spin" /> : (session.user?.name?.[0] ?? "U")}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -99,9 +124,16 @@ export function UserMenu({ children }: UserMenuProps) {
           <>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                {session.user?.name && <p className="font-medium text-sm">{session.user.name}</p>}
-                {session.user?.email && (
+                {session.user?.name ? (
+                  <p className="font-medium text-sm">{session.user.name}</p>
+                ) : (
+                  <Skeleton className="h-4 w-24" />
+                )}
+
+                {session.user?.email ? (
                   <p className="w-full truncate text-xs text-muted-foreground">{session.user.email}</p>
+                ) : (
+                  <Skeleton className="h-3 w-32" />
                 )}
               </div>
             </DropdownMenuLabel>

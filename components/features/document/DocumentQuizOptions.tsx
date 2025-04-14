@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { SubscriptionSlider } from "@/components/SubscriptionSlider"
+import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
 interface DocumentQuizOptionsProps {
   onOptionsChange: (options: DocumentQuizOptions) => void

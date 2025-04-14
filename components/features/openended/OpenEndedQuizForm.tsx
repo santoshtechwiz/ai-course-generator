@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import PlanAwareButton from "@/components/PlanAwareButton"
-import { SubscriptionSlider } from "@/components/SubscriptionSlider"
+import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
 import type { QueryParams } from "@/app/types/types"
 

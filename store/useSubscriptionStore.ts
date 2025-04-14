@@ -3,6 +3,7 @@
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 export interface SubscriptionStatus {
   credits: number
@@ -21,13 +22,72 @@ interface SubscriptionState {
   setSubscriptionStatus: (status: SubscriptionStatus | null) => void
   setIsLoading: (loading: boolean) => void
   canDownloadPDF: () => boolean
-  refreshSubscription: () => Promise<void>
+  refreshSubscription: (force?: boolean) => Promise<void>
   shouldRefresh: () => boolean
   clearCache: () => void
 }
 
-// Define a cache TTL (time to live) in milliseconds
-const CACHE_TTL = 30000 // 30 seconds - reduced to ensure credits update more frequently
+// React Query configuration
+const SUBSCRIPTION_QUERY_KEY = ["subscription-status"]
+
+// Replace the entire fetchSubscriptionStatus function with this improved version
+// that includes better error handling and data normalization
+const fetchSubscriptionStatus = async (): Promise<SubscriptionStatus> => {
+  try {
+    const response = await fetch("/api/subscriptions/status", {
+      credentials: "include",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Unauthorized")
+      }
+      throw new Error(`Failed to fetch subscription status: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    const isActive = data.status === "active" || data.isActive === true || data.active === true
+    const isSubscribed = isActive && data.subscriptionPlan !== "FREE" && data.plan !== "FREE"
+    const credits = typeof data.credits === "number" ? data.credits : 0
+
+    return {
+      credits: credits,
+      tokensUsed: data.tokensUsed || 0,
+      isSubscribed: isSubscribed,
+      subscriptionPlan: ((data.subscriptionPlan || data.plan) as SubscriptionPlanType) || "FREE",
+      expirationDate: data.expirationDate || data.expiresAt,
+      isActive: isActive,
+      lastFetched: Date.now(),
+    }
+  } catch (error) {
+    console.warn("Error fetching subscription:", error)
+    throw error
+  }
+}
+
+// Replace the useSubscriptionQuery function with this optimized version
+export const useSubscriptionQuery = () => {
+  return useQuery<SubscriptionStatus, Error>({
+    queryKey: SUBSCRIPTION_QUERY_KEY,
+    queryFn: fetchSubscriptionStatus,
+    staleTime: 15000, // Reduced to 15 seconds for more real-time credit data
+    refetchInterval: 30000, // Reduced to 30 seconds for credit-sensitive data
+    refetchOnWindowFocus: true,
+    refetchOnMount: true, // Always fetch on mount to get fresh credit data
+    refetchOnReconnect: true,
+    retry: (failureCount, error) => {
+      // Don't retry on 401 unauthorized errors
+      if (error.message.includes("Unauthorized")) return false
+      return failureCount < 2
+    },
+    retryDelay: (attempt) => Math.min(attempt * 1000, 5000),
+  })
+}
 
 const useSubscriptionStore = create<SubscriptionState>()(
   persist(
@@ -45,7 +105,6 @@ const useSubscriptionStore = create<SubscriptionState>()(
         return subscriptionStatus !== null && subscriptionStatus.subscriptionPlan !== "FREE"
       },
 
-      // Clear the cache to force a refresh
       clearCache: () => {
         set({
           subscriptionStatus: null,
@@ -54,81 +113,33 @@ const useSubscriptionStore = create<SubscriptionState>()(
         })
       },
 
-      // Check if we should refresh the data based on cache time
       shouldRefresh: () => {
         const { subscriptionStatus, isLoading } = get()
-
-        // If already loading, don't trigger another refresh
         if (isLoading) return false
-
-        // If no data or no lastFetched timestamp, we should refresh
         if (!subscriptionStatus || !subscriptionStatus.lastFetched) return true
-
-        // Check if the cache has expired
-        const now = Date.now()
-        return now - subscriptionStatus.lastFetched > CACHE_TTL
+        return Date.now() - subscriptionStatus.lastFetched > 30000
       },
 
-      refreshSubscription: async () => {
-        // Check if we should actually refresh
-        if (!get().shouldRefresh()) {
-          return
-        }
+      // Replace the refreshSubscription method in the Zustand store with this optimized version
+      refreshSubscription: async (force = false) => {
+        const { shouldRefresh, isLoading } = get()
+        if (!force && !shouldRefresh()) return
+        if (isLoading) return
+
+        set({ isLoading: true, error: null })
 
         try {
-          set({ isLoading: true, error: null })
-
-          // Add a cache-busting parameter to prevent browser caching
-          const cacheBuster = `nocache=${Date.now()}`
-          const response = await fetch(`/api/subscriptions/status?${cacheBuster}`, {
-            credentials: "include",
-            headers: {
-              "Cache-Control": "no-cache, no-store, must-revalidate",
-              Pragma: "no-cache",
-              "x-force-refresh": "true",
-            },
-            next: { revalidate: 0 }, // Ensure Next.js doesn't cache this request
-          })
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch subscription status: ${response.statusText}`)
-          }
-
-          const data = await response.json()
-
-          // Debug the API response
-            if (process.env.NODE_ENV === "development") {
-            console.log("API Response:", JSON.stringify(data, null, 2))
-            }
-
-          // Determine subscription status correctly
-          const isActive = data.status === "active" || data.isActive === true || data.active === true
-          const isSubscribed = isActive && data.subscriptionPlan !== "FREE" && data.plan !== "FREE"
-
-          // Ensure credits is properly extracted and defaulted
-          const credits = typeof data.credits === "number" ? data.credits : 0
-
-          // Add lastFetched timestamp to the data
-          const subscriptionStatus: SubscriptionStatus = {
-            credits: credits,
-            tokensUsed: data.tokensUsed || 0,
-            isSubscribed: isSubscribed,
-            subscriptionPlan: ((data.subscriptionPlan || data.plan) as SubscriptionPlanType) || "FREE",
-            expirationDate: data.expirationDate || data.expiresAt,
-            isActive: isActive,
-            lastFetched: Date.now(),
-          }
-
-          // Debug the transformed data
-          console.log("Transformed subscription data:", JSON.stringify(subscriptionStatus, null, 2))
+          // Use the same fetchSubscriptionStatus function that React Query uses
+          const subscriptionStatus = await fetchSubscriptionStatus()
 
           set({
             subscriptionStatus,
             isLoading: false,
             error: null,
           })
+
+          return subscriptionStatus
         } catch (error) {
-          console.warn("Error refreshing subscription:", error)
           set({
             error: error instanceof Error ? error.message : "An unknown error occurred",
             isLoading: false,
@@ -138,24 +149,73 @@ const useSubscriptionStore = create<SubscriptionState>()(
     }),
     {
       name: "subscription-storage",
-      storage: createJSONStorage(() => sessionStorage), // Use sessionStorage instead of localStorage
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
-        subscriptionStatus: state.subscriptionStatus,
+        // Don't store credit-sensitive information in persistent storage
+        subscriptionStatus: state.subscriptionStatus
+          ? {
+              ...state.subscriptionStatus,
+              credits: 0, // Don't persist credits in storage
+              tokensUsed: 0, // Don't persist tokens in storage
+              lastFetched: 0, // Force refresh on load
+            }
+          : null,
       }),
-      // Add version control to handle schema changes
-      version: 1,
-      onRehydrateStorage: () => {
-        return (state) => {
-          if (state) {
-            // Force refresh on page load to ensure data is fresh
-            setTimeout(() => {
-              state.refreshSubscription()
-            }, 100)
-          }
-        }
-      },
+      version: 2, // Increment version to clear old format
     },
   ),
 )
+
+// Replace the useSubscription hook with this optimized version
+export const useSubscription = () => {
+  const queryClient = useQueryClient()
+  const store = useSubscriptionStore()
+  const query = useSubscriptionQuery()
+
+  // Always use the query data for credits when available
+  const combinedStatus = query.data || store.subscriptionStatus
+
+  // Sync other non-credit data when we have fresh data
+  if (query.data && !query.isStale && !store.isLoading) {
+    // Only update the store if we're not just updating credits
+    if (
+      !store.subscriptionStatus ||
+      query.data.subscriptionPlan !== store.subscriptionStatus.subscriptionPlan ||
+      query.data.isSubscribed !== store.subscriptionStatus.isSubscribed ||
+      query.data.isActive !== store.subscriptionStatus.isActive
+    ) {
+      store.setSubscriptionStatus(query.data)
+    }
+  }
+
+  const refreshSubscription = async (force = false) => {
+    if (force || !query.data) {
+      // Force immediate refetch for credit-sensitive operations
+      await queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
+      return query.refetch()
+    } else if (queryClient.getQueryState(SUBSCRIPTION_QUERY_KEY)?.isStale) {
+      return query.refetch()
+    }
+  }
+
+  const clearCache = () => {
+    store.clearCache()
+    queryClient.removeQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
+  }
+
+  return {
+    ...store,
+    ...query,
+    // Always prioritize fresh data from the query
+    isLoading: query.isLoading || store.isLoading,
+    isError: query.isError || !!store.error,
+    error: query.error || store.error,
+    subscriptionStatus: combinedStatus,
+    // Maintain all original methods
+    refreshSubscription,
+    clearCache,
+    canDownloadPDF: store.canDownloadPDF,
+  }
+}
 
 export default useSubscriptionStore

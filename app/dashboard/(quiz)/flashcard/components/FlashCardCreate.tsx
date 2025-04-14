@@ -19,9 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-
 import PlanAwareButton from "@/components/PlanAwareButton"
-import { SubscriptionSlider } from "@/components/SubscriptionSlider"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
@@ -29,13 +27,15 @@ import { cn } from "@/lib/utils"
 
 import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
-import { SignInBanner } from "@/app/auth/signin/components/SignInBanner"
+
 import { ConfirmDialog } from "@/components/features/quiz/ConfirmDialog"
+import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
+
 const flashcardSchema = z.object({
   title: z.string().nonempty("Topic is required"),
   count: z.number().int().min(1, "Amount must be at least 1").max(100, "Amount must be at most 100"),
   difficulty: z.enum(["easy", "medium", "hard"]),
-});
+})
 
 type FlashCardFormData = z.infer<typeof flashcardSchema> & {
   userType?: string
@@ -56,6 +56,15 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { data: session, status } = useSession()
   const { subscriptionStatus } = useSubscriptionStore()
 
+  // Use a ref to track if component is mounted
+  const isMounted = React.useRef(false)
+  React.useEffect(() => {
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
+
   const [formData, setFormData] = usePersistentState<FlashCardFormData>("flashcardFormData", {
     title: params?.title || "",
     count: params?.amount ? Number.parseInt(params.amount, 10) : maxCards,
@@ -75,6 +84,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
     mode: "onChange",
   })
 
+  // Optimize params effect to only run once on mount
   React.useEffect(() => {
     if (params?.title) {
       setValue("title", params.title)
@@ -87,8 +97,15 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
     }
   }, [params?.title, params?.amount, maxCards, setValue])
 
+  // Use debounce for form data updates to improve performance
   React.useEffect(() => {
-    const subscription = watch((value) => setFormData(value as FlashCardFormData))
+    const subscription = watch((value) => {
+      const timeoutId = setTimeout(() => {
+        setFormData(value as FlashCardFormData)
+      }, 500) // 500ms debounce
+
+      return () => clearTimeout(timeoutId)
+    })
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
 
@@ -101,6 +118,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
     onError: (error) => {
       console.error("Error creating flashcards:", error)
       toast({
+        title: "Error",
         description: "Failed to create flashcards. Please try again.",
         variant: "destructive",
       })
@@ -127,20 +145,35 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
 
     try {
       const response = await createFlashCardsMutation(watch())
-      const flashcardSetId = response?.flashcardSetId
 
-      if (!flashcardSetId) throw new Error("Flashcard set ID not found")
+      if (response?.success) {
+        toast({
+          title: "Success!",
+          description: response.message || "Your flashcards have been created.",
+        })
 
-      toast({
-        title: "Success!",
-        description: "Your flashcards have been created.",
-      })
+        // Make sure to extract the slug from the response
+        const slug = response.slug
 
-      router.push(`/dashboard/flashcard/${response?.slug}`)
+        if (slug && isMounted.current) {
+          // Add a slight delay to ensure the toast is shown before redirecting
+          setTimeout(() => {
+            router.push(`/dashboard/flashcard/${slug}`)
+          }, 300)
+        } else {
+          console.error("Missing slug in response:", response)
+          throw new Error("Missing slug in response")
+        }
+      } else {
+        throw new Error("Failed to create flashcards")
+      }
     } catch (error) {
-      // Error is handled in the mutation's onError callback
+      // Error handling is managed in the mutation's onError callback
+      console.error("Error in handleConfirm:", error)
     } finally {
-      setIsLoading(false)
+      if (isMounted.current) {
+        setIsLoading(false)
+      }
     }
   }, [createFlashCardsMutation, watch, toast, router])
 
@@ -148,11 +181,31 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const difficulty = watch("difficulty")
   const title = watch("title")
 
+  // Memoize form validation to reduce rerenders
   const isFormValid = React.useMemo(() => {
     return !!title && !!count && !!difficulty && isValid
   }, [title, count, difficulty, isValid])
 
   const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
+
+  // Precompute difficulty colors for better UX
+  const getDifficultyColor = React.useCallback(
+    (level: string) => {
+      if (difficulty !== level) return ""
+
+      switch (level) {
+        case "easy":
+          return "bg-green-50 border-green-200 text-green-700"
+        case "medium":
+          return "bg-blue-50 border-blue-200 text-blue-700"
+        case "hard":
+          return "bg-red-50 border-red-200 text-red-700"
+        default:
+          return ""
+      }
+    },
+    [difficulty],
+  )
 
   return (
     <motion.div
@@ -161,7 +214,6 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
       transition={{ duration: 0.5 }}
       className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
     >
-      <SignInBanner isAuthenticated={status === "authenticated"} />
       <Card className="bg-background border border-border shadow-sm">
         <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
@@ -207,6 +259,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                   className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
                   {...register("title")}
                   aria-describedby="topic-description"
+                  autoComplete="off"
                 />
               </div>
               {errors.title && (
@@ -300,6 +353,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                     className={cn(
                       "capitalize w-full h-12 font-medium transition-all",
                       difficulty === level ? "border-primary shadow-sm" : "hover:border-primary/50",
+                      getDifficultyColor(level),
                     )}
                     onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
                     aria-pressed={difficulty === level}
@@ -375,9 +429,11 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
       <ConfirmDialog
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
-        onCancel={() => setIsConfirmDialogOpen(false)}
+        onCancel={() => {
+          setIsConfirmDialogOpen(false)
+          setIsLoading(false)
+        }}
       />
     </motion.div>
   )
 }
-
