@@ -17,7 +17,10 @@ export const PublicQuizCardListing: React.FC<PublicQuizCardListingProps> = ({ qu
     threshold: 0.1,
     rootMargin: "0px 0px -100px 0px",
   })
-
+  function getEstimatedTime(questionCount: number): string {
+    const minutes = Math.max(Math.ceil(questionCount * 0.5), 1); // At least 1 minute
+    return `${minutes} min`;
+  }
   // Enhanced animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -31,6 +34,17 @@ export const PublicQuizCardListing: React.FC<PublicQuizCardListingProps> = ({ qu
       },
     },
   }
+  const getQuestionCount = (quiz: { quizType: string; questionCount: number; openEndedCount?: number; flashCardCount?: number }): number => {
+     
+      if (quiz.quizType === "openended") {
+        return quiz.openEndedCount || 0
+      }
+      if (quiz.quizType === "flashcard") {
+        return quiz.flashCardCount || 0
+      }
+    
+      return quiz.questionCount
+    }
 
   return (
     <motion.div
@@ -43,12 +57,12 @@ export const PublicQuizCardListing: React.FC<PublicQuizCardListingProps> = ({ qu
       <QuizCard
         title={quiz.title}
         description={quiz.title}
-        questionCount={quiz.questionCount}
+        questionCount={getQuestionCount(quiz)}
         isPublic={quiz.isPublic}
         slug={quiz.slug}
         quizType={quiz.quizType as "mcq" | "openended" | "fill-blanks" | "code"}
-        estimatedTime={`${Math.ceil(quiz.questionCount * 0.5)} min`}
-        completionRate={quiz.bestScore || 0}
+        estimatedTime={getEstimatedTime(quiz.questionCount)}
+        completionRate={Math.min(Math.max(quiz.bestScore || 0, 0), 100)}
       />
     </motion.div>
   )

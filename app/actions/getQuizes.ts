@@ -64,10 +64,14 @@ export async function getQuizzes({
               options: true,
             },
           },
-          _count: {
+          flashCards: {
             select: {
-              flashCards: true,
-              openEndedQuestions: true,
+              id: true,
+            },
+          },
+          openEndedQuestions: {
+            select: {
+              id: true,
             },
           },
         },
@@ -82,6 +86,8 @@ export async function getQuizzes({
 
     const quizListItems: QuizListItem[] = quizzes.map((quiz) => {
       const questionCount = quiz.questions.length
+      const flashCardCount = quiz.flashCards.length
+      const openEndedCount = quiz.openEndedQuestions.length
 
       return {
         id: quiz.id,
@@ -91,17 +97,19 @@ export async function getQuizzes({
         quizType: quiz.quizType as QuizType,
         bestScore: quiz.bestScore || 0,
         questionCount,
-        tags: [], // You can add tags later if needed
+        flashCardCount,
+        openEndedCount,
+        tags: [],
         questions: quiz.questions.map((q) => ({
           id: q.id,
           question: q.question,
-          createdAt: new Date(), // Replace with actual createdAt if available
-          updatedAt: new Date(), // Replace with actual updatedAt if available
+          createdAt: new Date(),
+          updatedAt: new Date(),
           options: q.options || null,
-          answer: "", // Replace with actual answer if available
-          userQuizId: quiz.id, // Replace with actual userQuizId if available
-          questionType: "default", // Replace with actual questionType if available
-          codeSnippet: null, // Replace with actual codeSnippet if available
+          answer: "",
+          userQuizId: quiz.id,
+          questionType: "default",
+          codeSnippet: null,
         })),
       }
     })
