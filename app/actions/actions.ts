@@ -33,7 +33,7 @@ export async function createUser(formData: FormData) {
     throw new Error(
       `Failed to create user. ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
@@ -61,7 +61,7 @@ export async function updateUser(userId: string, data: any) {
     // If credits were changed, create a transaction record
     if (previousUser && previousUser.credits !== data.credits) {
       const amount = data.credits - previousUser.credits
-      const credits = data.credits; // Ensure 'credits' is defined
+      const credits = data.credits // Ensure 'credits' is defined
       await prisma.tokenTransaction.create({
         data: {
           userId,
@@ -80,7 +80,7 @@ export async function updateUser(userId: string, data: any) {
     throw new Error(
       `Failed to update user with ID "${userId}". ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
@@ -160,7 +160,7 @@ export async function deleteUser(userId: string) {
     throw new Error(
       `Failed to delete user with ID "${userId}". ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
@@ -201,7 +201,7 @@ export async function getUserStats() {
     throw new Error(
       `Failed to fetch user stats. ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
@@ -220,7 +220,7 @@ export async function getCreditHistory(userId: string) {
     throw new Error(
       `Failed to fetch credit history for user with ID "${userId}". ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
@@ -247,7 +247,7 @@ export async function createContactSubmission(data: {
     throw new Error(
       `Failed to save contact submission. ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
@@ -282,7 +282,7 @@ export async function getContactSubmissions(page = 1, limit = 10, status?: strin
     throw new Error(
       `Failed to fetch contact submissions. ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
@@ -307,7 +307,7 @@ export async function updateContactSubmission(
     throw new Error(
       `Failed to update contact submission with ID "${id}". ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
@@ -324,8 +324,7 @@ export async function deleteContactSubmission(id: number) {
     throw new Error(
       `Failed to delete contact submission with ID "${id}". ${
         error instanceof Error ? `Original error: ${error.message}` : "Unknown error occurred."
-      }`
+      }`,
     )
   }
 }
-

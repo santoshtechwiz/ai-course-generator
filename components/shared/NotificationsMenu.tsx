@@ -23,7 +23,7 @@ interface NotificationsMenuProps {
 export default function NotificationsMenu({ initialCount = 0, refreshCredits }: NotificationsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [creditCount, setCreditCount] = useState(initialCount)
-  const { subscriptionStatus } = useSubscriptionStore()
+  const { subscriptionStatus, refreshSubscription } = useSubscriptionStore()
   const [isClient, setIsClient] = useState(false)
 
   // Set isClient to true when component mounts (client-side only)
@@ -33,21 +33,21 @@ export default function NotificationsMenu({ initialCount = 0, refreshCredits }: 
 
   // Update credit count when subscription status changes
   useEffect(() => {
-    if (subscriptionStatus && subscriptionStatus.credits !== undefined) {
-      setCreditCount(subscriptionStatus.credits)
+    if (subscriptionStatus && typeof subscriptionStatus.credits === "number") {
+      setCreditCount(subscriptionStatus.credits - (subscriptionStatus.tokensUsed ?? 0))
+    } else if (initialCount > 0) {
+      setCreditCount(initialCount)
     }
-  }, [subscriptionStatus])
-
-  // Update credit count when initialCount changes
-  useEffect(() => {
-    setCreditCount(initialCount)
-  }, [initialCount])
+  }, [subscriptionStatus, initialCount])
 
   // Refresh credits when the dropdown is opened
   const handleOpen = (open: boolean) => {
     setIsOpen(open)
-    if (open && refreshCredits) {
-      refreshCredits()
+    if (open) {
+      refreshSubscription()
+      if (refreshCredits) {
+        refreshCredits()
+      }
     }
   }
 
@@ -73,7 +73,7 @@ export default function NotificationsMenu({ initialCount = 0, refreshCredits }: 
                   variant="default"
                   className="h-5 min-w-5 flex bg-red-500 items-center justify-center rounded-full px-1 text-[10px] font-medium"
                 >
-                  {creditCount> 0 ? creditCount : 0}
+                  {creditCount}
                 </Badge>
               </motion.div>
             )}
@@ -109,4 +109,3 @@ export default function NotificationsMenu({ initialCount = 0, refreshCredits }: 
     </DropdownMenu>
   )
 }
-

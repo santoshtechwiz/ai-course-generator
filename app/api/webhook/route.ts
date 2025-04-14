@@ -123,22 +123,24 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       if (user) {
         console.log(`Adding ${tokensToAdd} tokens to user ${userId} from plan ${planId}`)
 
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            credits: user.credits + tokensToAdd,
-          },
-        })
-
-        // Log the token addition
-        await prisma.tokenTransaction.create({
-          data: {
-            userId,
-            amount: tokensToAdd,
-            type: "SUBSCRIPTION",
-            description: `Added ${tokensToAdd} tokens from ${planId || "subscription"} plan`,
-          },
-        })
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: userId },
+            data: {
+              credits: user.credits + tokensToAdd,
+            },
+          }),
+          prisma.tokenTransaction.create({
+            data: {
+              userId,
+              amount: (session.amount_total ?? 0) / 100,
+              credits: tokensToAdd,
+              type: "SUBSCRIPTION",
+              description: `Added ${tokensToAdd} tokens from ${planId || "subscription"} plan`,
+            },
+          }),
+        ])
+        
       }
 
       // Process referral if applicable

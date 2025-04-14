@@ -1,4 +1,4 @@
-'use server'
+"use server"
 import { prisma } from "@/lib/db"
 import type {
   DashboardUser,
@@ -9,7 +9,7 @@ import type {
   UserSubscription,
   Favorite,
   UserQuizAttempt,
-  TopicPerformance // Import from types instead of redefining
+  TopicPerformance,
 } from "../types/types"
 
 export async function getUserData(userId: string): Promise<DashboardUser | null> {
@@ -19,10 +19,9 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       where: { id: userId },
       include: {
         courses: {
-          
           select: {
             id: true,
-            title: true, // Using title consistently as per updated types
+            title: true,
             description: true,
             image: true,
             slug: true,
@@ -50,7 +49,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             course: {
               select: {
                 id: true,
-                title: true, // Using title consistently
+                title: true,
                 description: true,
                 image: true,
                 slug: true,
@@ -59,11 +58,11 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
                 courseUnits: {
                   select: {
                     id: true,
-                    name: true, // Using title consistently
+                    name: true,
                     chapters: {
                       select: {
                         id: true,
-                        title: true, // Using title consistently
+                        title: true,
                       },
                     },
                   },
@@ -85,7 +84,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
           take: 5,
           select: {
             id: true,
-            title: true, // Using title consistently
+            title: true,
             slug: true,
             timeStarted: true,
             timeEnded: true,
@@ -107,6 +106,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             planId: true,
             cancelAtPeriodEnd: true,
             stripeSubscriptionId: true,
+            stripeCustomerId: true,
           },
         },
         favorites: {
@@ -115,7 +115,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             course: {
               select: {
                 id: true,
-                title: true, // Using title consistently
+                title: true,
                 description: true,
                 image: true,
                 slug: true,
@@ -137,6 +137,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             score: true,
             timeSpent: true,
             createdAt: true,
+            updatedAt: true,
             improvement: true,
             accuracy: true,
             attemptQuestions: {
@@ -151,7 +152,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             userQuiz: {
               select: {
                 id: true,
-                title: true, // Using title consistently
+                title: true,
                 questions: {
                   select: {
                     id: true,
@@ -174,20 +175,45 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
     const dashboardUser: DashboardUser = {
       ...user,
       courses: user.courses as Course[],
-      subscriptions: user.subscription as unknown as UserSubscription,
+      subscriptions: user.subscription as UserSubscription | null,
       userQuizzes: user.userQuizzes.map((quiz) => ({
         ...quiz,
         percentageCorrect: quiz.bestScore ?? 0,
         totalAttempts: quiz.attempts.length,
-      })) as unknown as UserQuiz[],
-      courseProgress: user.courseProgress as unknown as CourseProgress[],
+      })) as UserQuiz[],
+      courseProgress: user.courseProgress.map((progress) => ({
+        ...progress,
+        course: progress.course
+          ? {
+              ...progress.course,
+              courseUnits: progress.course.courseUnits?.map((unit) => ({
+                ...unit,
+                title: unit.name, // Map name to title for consistency
+              })),
+            }
+          : undefined,
+      })) as CourseProgress[],
       favorites: user.favorites as Favorite[],
-      quizAttempts: user.userQuizAttempts as UserQuizAttempt[],
+      quizAttempts: user.userQuizAttempts.map((attempt) => ({
+        ...attempt,
+        userId: user.id, // Add the userId from the parent user object
+      })) as UserQuizAttempt[],
       engagementScore: calculateEngagementScore(user),
-      streakDays: calculateStreakDays(user.userQuizAttempts),
-      lastStreakDate: getLastStreakDate(user.userQuizAttempts),
+      streakDays: calculateStreakDays(
+        user.userQuizAttempts.map((attempt) => ({
+          ...attempt,
+          userId: user.id,
+        })),
+      ),
+      lastStreakDate: getLastStreakDate(
+        user.userQuizAttempts.map((attempt) => ({
+          ...attempt,
+          userId: user.id,
+        })),
+      ),
+      credits: user.credits || 0,
     }
-
+    console.log("Dashboard User Data:", dashboardUser) // Debugging line
     return dashboardUser
   } catch (error) {
     console.error("Error fetching user data:", error)
@@ -207,7 +233,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
             userQuiz: {
               select: {
                 id: true,
-                title: true, // Using title consistently
+                title: true,
                 questions: { select: { id: true, question: true, answer: true } },
               },
             },
@@ -233,10 +259,10 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 
       // Optimize data processing with memoization
       const userQuizIds = new Set<number>()
-      quizAttempts.forEach(a => userQuizIds.add(a.userQuizId))
+      quizAttempts.forEach((a) => userQuizIds.add(a.userQuizId))
       const totalQuizzes = userQuizIds.size
       const totalAttempts = quizAttempts.length
-      
+
       // Use reduce once instead of multiple iterations
       let totalTimeSpent = 0
       const scores = quizAttempts.map((attempt) => {
@@ -246,20 +272,17 @@ export async function getUserStats(userId: string): Promise<UserStats> {
           score: attempt.score ?? 0,
           totalQuestions: attempt.userQuiz.questions.length,
           percentageCorrect: attempt.score ?? 0,
-          title: attempt.userQuiz.title, // Using title consistently
+          title: attempt.userQuiz.title,
           timeSpent,
         }
       })
 
       // Optimize calculations
       const scoresLength = scores.length
-      const averageScore = scoresLength > 0 
-        ? scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scoresLength 
-        : 0
-        
-      const highestScore = scoresLength > 0 
-        ? Math.max(...scores.map(quiz => quiz.percentageCorrect)) 
-        : 0
+      const averageScore =
+        scoresLength > 0 ? scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scoresLength : 0
+
+      const highestScore = scoresLength > 0 ? Math.max(...scores.map((quiz) => quiz.percentageCorrect)) : 0
 
       const topicPerformance = calculateTopicPerformance(scores)
       const topPerformingTopics = getTopPerformingTopics(topicPerformance)
@@ -268,10 +291,11 @@ export async function getUserStats(userId: string): Promise<UserStats> {
       const recentAttempts = quizAttempts.slice(-10)
       const recentImprovement = calculateRecentImprovement(recentAttempts)
 
-      const monthsSinceFirstQuiz = quizAttempts.length > 0
-        ? (Date.now() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)
-        : 1
-        
+      const monthsSinceFirstQuiz =
+        quizAttempts.length > 0
+          ? (Date.now() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)
+          : 1
+
       const quizzesPerMonth = totalQuizzes / Math.max(monthsSinceFirstQuiz, 0.1) // Avoid division by very small numbers
 
       return {
@@ -282,7 +306,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         completedCourses,
         totalTimeSpent,
         averageTimePerQuiz: totalAttempts > 0 ? totalTimeSpent / totalAttempts : 0,
-        topPerformingTopics, // Fixed property name
+        topPerformingTopics,
         recentImprovement,
         quizzesPerMonth,
         courseCompletionRate: totalCourses > 0 ? (completedCourses / totalCourses) * 100 : 0,
@@ -302,7 +326,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 export async function getRecommendedCourses(userId: string): Promise<Course[]> {
   try {
     const userStats = await getUserStats(userId)
-    const userTopics = userStats.topPerformingTopics.map((topic) => topic.title)
+    const userTopics = userStats.topPerformingTopics.map((topic) => topic.topic)
 
     // Performance optimization: Get completed course IDs first to avoid nested query
     const completedCourseIds = await prisma.courseProgress
@@ -310,7 +334,7 @@ export async function getRecommendedCourses(userId: string): Promise<Course[]> {
         where: { userId, isCompleted: true },
         select: { courseId: true },
       })
-      .then(courses => courses.map(cp => cp.courseId))
+      .then((courses) => courses.map((cp) => cp.courseId))
 
     // Now use the IDs in the main query
     const recommendedCourses = await prisma.course.findMany({
@@ -323,14 +347,11 @@ export async function getRecommendedCourses(userId: string): Promise<Course[]> {
           id: { in: completedCourseIds },
         },
       },
-      orderBy: [
-        { viewCount: "desc" },
-        { createdAt: "desc" },
-      ],
+      orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
       take: 5,
       select: {
         id: true,
-        title: true, // Using title consistently
+        title: true,
         description: true,
         image: true,
         slug: true,
@@ -354,26 +375,24 @@ export async function getRecommendedCourses(userId: string): Promise<Course[]> {
 
 function calculateEngagementScore(user: any): number {
   const quizAttempts = user.userQuizAttempts.length
-  
+
   // Optimize reduce operation
   let totalProgress = 0
   for (const course of user.courseProgress) {
     totalProgress += course.progress ?? 0
   }
-  
+
   const favorites = user.favorites.length
 
   return Math.min((quizAttempts * 2 + totalProgress + favorites) / 10, 100)
 }
 
-function calculateStreakDays(attempts: UserQuizAttempt[]): number {
+function calculateStreakDays(attempts: Array<Partial<UserQuizAttempt> & { createdAt: Date }>): number {
   if (attempts.length === 0) return 0
 
   // Sort attempts by date for accurate streak calculation
-  const sortedAttempts = [...attempts].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
-  
+  const sortedAttempts = [...attempts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
   let streakDays = 1
   let currentDate = new Date(sortedAttempts[0].createdAt)
   const oneDayMs = 24 * 60 * 60 * 1000
@@ -393,9 +412,9 @@ function calculateStreakDays(attempts: UserQuizAttempt[]): number {
   return streakDays
 }
 
-function getLastStreakDate(attempts: UserQuizAttempt[]): Date | null {
+function getLastStreakDate(attempts: Array<Partial<UserQuizAttempt> & { createdAt: Date }>): Date | null {
   if (attempts.length === 0) return null
-  
+
   // Find the most recent attempt
   return attempts.reduce((latest, attempt) => {
     const attemptDate = new Date(attempt.createdAt)
@@ -408,7 +427,7 @@ function calculateTopicPerformance(
 ): Record<string, { totalScore: number; attempts: number; totalTimeSpent: number }> {
   // Use a Map for better performance with large datasets
   const performanceMap = new Map<string, { totalScore: number; attempts: number; totalTimeSpent: number }>()
-  
+
   for (const score of scores) {
     const existing = performanceMap.get(score.title)
     if (existing) {
@@ -416,14 +435,14 @@ function calculateTopicPerformance(
       existing.attempts += 1
       existing.totalTimeSpent += score.timeSpent
     } else {
-      performanceMap.set(score.title, { 
-        totalScore: score.percentageCorrect, 
-        attempts: 1, 
-        totalTimeSpent: score.timeSpent 
+      performanceMap.set(score.title, {
+        totalScore: score.percentageCorrect,
+        attempts: 1,
+        totalTimeSpent: score.timeSpent,
       })
     }
   }
-  
+
   // Convert Map back to object
   return Object.fromEntries(performanceMap.entries())
 }
@@ -434,7 +453,7 @@ function getTopPerformingTopics(
   // Optimize by pre-allocating array size and using direct indexing
   const entries = Object.entries(topicPerformance)
   const result = new Array(entries.length)
-  
+
   for (let i = 0; i < entries.length; i++) {
     const [topic, data] = entries[i]
     result[i] = {
@@ -444,47 +463,43 @@ function getTopPerformingTopics(
       averageTimeSpent: data.attempts > 0 ? data.totalTimeSpent / data.attempts : 0,
     }
   }
-  
+
   // Sort and slice in one operation
-  return result
-    .sort((a, b) => b.averageScore - a.averageScore)
-    .slice(0, 5)
+  return result.sort((a, b) => b.averageScore - a.averageScore).slice(0, 5)
 }
 
 function calculateRecentImprovement(recentAttempts: UserQuizAttempt[]): number {
   if (recentAttempts.length < 10) return 0
-  
+
   // Optimize by calculating sums in a single pass
   let firstHalfSum = 0
   let secondHalfSum = 0
-  
+
   for (let i = 0; i < 5; i++) {
     firstHalfSum += recentAttempts[i].score ?? 0
     secondHalfSum += recentAttempts[i + 5].score ?? 0
   }
-  
+
   return secondHalfSum / 5 - firstHalfSum / 5
 }
 
-function calculateConsistencyScore(attempts: UserQuizAttempt[]): number {
+function calculateConsistencyScore(attempts: Array<Partial<UserQuizAttempt> & { createdAt: Date }>): number {
   if (!attempts.length) return 0
-  
+
   if (attempts.length === 1) return 50 // Default value for single attempt
-  
+
   let totalDaysDiff = 0
   const oneDayMs = 24 * 60 * 60 * 1000
-  
+
   // Sort attempts by date for accurate calculations
-  const sortedAttempts = [...attempts].sort((a, b) => 
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  )
-  
+  const sortedAttempts = [...attempts].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+
   for (let i = 1; i < sortedAttempts.length; i++) {
     const currentDate = new Date(sortedAttempts[i].createdAt)
-    const previousDate = new Date(sortedAttempts[i-1].createdAt)
+    const previousDate = new Date(sortedAttempts[i - 1].createdAt)
     const daysDiff = Math.min(
       Math.abs(Math.round((currentDate.getTime() - previousDate.getTime()) / oneDayMs)),
-      7 // Cap at 7 days
+      7, // Cap at 7 days
     )
     totalDaysDiff += daysDiff
   }
@@ -499,14 +514,14 @@ function calculateLearningEfficiency(scores: { score: number; timeSpent: number 
   // Optimize by calculating in a single pass
   let totalScore = 0
   let totalTime = 0
-  
+
   for (const score of scores) {
     totalScore += score.score
     totalTime += score.timeSpent
   }
-  
+
   if (totalTime === 0) return 0
-  
+
   const averageScorePerMinute = totalScore / scores.length / (totalTime / 60)
   return Math.min(averageScorePerMinute * 100, 100)
 }
@@ -515,23 +530,23 @@ function calculateDifficultyProgression(scores: { score: number }[]): number {
   if (scores.length < 2) return 0
 
   const halfIndex = Math.floor(scores.length / 2)
-  
+
   // Calculate sums in a single pass
   let firstHalfSum = 0
   let secondHalfSum = 0
-  
+
   for (let i = 0; i < halfIndex; i++) {
     firstHalfSum += scores[i].score
   }
-  
+
   for (let i = halfIndex; i < scores.length; i++) {
     secondHalfSum += scores[i].score
   }
-  
+
   const firstHalfAvg = firstHalfSum / halfIndex
   const secondHalfAvg = secondHalfSum / (scores.length - halfIndex)
-  
+
   if (firstHalfAvg === 0) return 0
-  
+
   return Math.max(-100, Math.min(((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100, 100))
 }

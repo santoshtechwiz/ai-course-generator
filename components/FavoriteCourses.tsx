@@ -52,14 +52,14 @@ export default function FavoriteCourses({ favorites }: FavoriteCoursesProps) {
                   <div className="relative h-16 w-16 overflow-hidden rounded-md">
                     <Image
                       src={course.image || "/placeholder.svg"}
-                      alt={course.name}
+                      alt={course.title}
                       fill
                       className="object-cover transition-transform group-hover:scale-105"
                     />
                   </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{course.name}</h3>
+                      <h3 className="font-semibold">{course.title}</h3>
                       <ArrowRight className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100" />
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground">

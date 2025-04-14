@@ -5,7 +5,6 @@ import { useSession, signIn, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
-
 interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
@@ -29,18 +28,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(status === "loading")
   }, [status])
 
-  // Debug session status
+  // Remove debug logging in production
   useEffect(() => {
-    console.log("Session status:", status)
-    console.log("Session data:", session)
+    // Debug session status
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Session status:", status)
+      console.log("Session data:", session)
+    }
   }, [session, status])
 
+  // Optimize the provider authentication function
   const signInWithProvider = async (provider: string, callbackUrl = "/") => {
     setIsLoading(true)
     try {
       // We need to handle the case where provider might be undefined
       const providerToUse = provider?.toLowerCase() || "credentials"
-      console.log(`Signing in with provider: ${providerToUse}`)
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`Signing in with provider: ${providerToUse}`)
+      }
 
       // For OAuth providers, we need to redirect
       await signIn(providerToUse, { callbackUrl })

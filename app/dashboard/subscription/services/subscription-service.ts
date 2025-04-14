@@ -4,6 +4,11 @@
  * This service handles all subscription-related operations, including
  * creating subscriptions, managing subscription status, and handling
  * token usage.
+ *
+ * The service ensures synchronization between:
+ * - UserSubscription records (subscription status and details)
+ * - TokenTransaction records (history of token/credit changes)
+ * - User credits (current balance of available tokens)
  */
 
 import { SUBSCRIPTION_PLANS, VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
@@ -12,9 +17,10 @@ import { prisma } from "@/lib/db"
 import type { SubscriptionStatus } from "@/store/useSubscriptionStore"
 import type { TokenUsage } from "@langchain/core/language_models/base"
 import { getPaymentGateway } from "./payment-gateway-factory"
-import { PaymentOptions } from "./payment-gateway-factory"
+import type { PaymentOptions } from "./payment-gateway-factory"
+
 /**
- * Service for managing user subscriptions
+ * Service for managing user subscriptions and token transactions
  */
 export class SubscriptionService {
   /**
@@ -29,95 +35,118 @@ export class SubscriptionService {
     try {
       console.log(`Activating free plan for user ${userId}`)
 
-      // Check if user already has a subscription
-      const existingSubscription = await prisma.userSubscription.findUnique({
-        where: { userId },
-      })
-
-      // Get the user to check their current credits
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { credits: true },
-      })
-
-      // Check if there's a token transaction record for free plan tokens
-      const existingFreeTokens = await prisma.tokenTransaction.findFirst({
-        where: {
-          userId,
-          type: "SUBSCRIPTION",
-          description: "Added 5 tokens for free plan",
-        },
-      })
-
-      // If user already has an active free plan, just return success without adding tokens again
-      if (existingSubscription && existingSubscription.planId === "FREE" && existingSubscription.status === "ACTIVE") {
-        console.log(`User ${userId} is already on the free plan. Not adding tokens again.`)
-        return {
-          success: true,
-          message: "You are already on the free plan",
-          alreadySubscribed: true,
-        }
-      }
-
-      // If user already has an active paid subscription, they cannot activate the free plan
-      if (existingSubscription && existingSubscription.planId !== "FREE" && existingSubscription.status === "ACTIVE") {
-        throw new Error(
-          "User already has an active paid subscription. Please cancel it before activating the free plan.",
-        )
-      }
-
-      // If user already has a free plan, just ensure it's active
-      if (existingSubscription && existingSubscription.planId === "FREE") {
-        // Update the subscription to ensure it's active
-        await prisma.userSubscription.update({
+      // Use a transaction to ensure all database operations succeed or fail together
+      return await prisma.$transaction(async (tx) => {
+        // Check if user already has a subscription
+        const existingSubscription = await tx.userSubscription.findUnique({
           where: { userId },
-          data: {
-            status: "ACTIVE",
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // 1 year from now
-          },
         })
-      } else {
-        // Create new free subscription
-        await prisma.userSubscription.create({
-          data: {
-            userId,
-            planId: "FREE",
-            status: "ACTIVE",
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // 1 year from now
-          },
-        })
-      }
 
-      // Only add tokens if the user hasn't received free tokens before
-      if (!existingFreeTokens) {
-        // Add 5 tokens for new free plan users
-        await prisma.user.update({
+        // Get the user to check their current credits
+        const user = await tx.user.findUnique({
           where: { id: userId },
-          data: {
-            credits: {
-              increment: 5,
-            },
-          },
+          select: { credits: true },
         })
 
-        await prisma.tokenTransaction.create({
-          data: {
+        if (!user) {
+          throw new Error(`User with ID ${userId} not found`)
+        }
+
+        // Check if there's a token transaction record for free plan tokens
+        const existingFreeTokens = await tx.tokenTransaction.findFirst({
+          where: {
             userId,
-            amount: 5,
             type: "SUBSCRIPTION",
             description: "Added 5 tokens for free plan",
           },
         })
-      }
 
-      console.log(`Free plan activated successfully for user ${userId}`)
+        // If user already has an active free plan, just return success without adding tokens again
+        if (
+          existingSubscription &&
+          existingSubscription.planId === "FREE" &&
+          existingSubscription.status === "ACTIVE"
+        ) {
+          console.log(`User ${userId} is already on the free plan. Not adding tokens again.`)
+          return {
+            success: true,
+            message: "You are already on the free plan",
+            alreadySubscribed: true,
+          }
+        }
 
-      return {
-        success: true,
-        message: "Free plan activated successfully",
-      }
+        // If user already has an active paid subscription, they cannot activate the free plan
+        if (
+          existingSubscription &&
+          existingSubscription.planId !== "FREE" &&
+          existingSubscription.status === "ACTIVE"
+        ) {
+          throw new Error(
+            "User already has an active paid subscription. Please cancel it before activating the free plan.",
+          )
+        }
+
+        // Set subscription end date to 1 year from now
+        const currentPeriodEnd = new Date()
+        currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1)
+
+        // If user already has a free plan, just ensure it's active
+        if (existingSubscription && existingSubscription.planId === "FREE") {
+          // Update the subscription to ensure it's active
+          await tx.userSubscription.update({
+            where: { userId },
+            data: {
+              status: "ACTIVE",
+              currentPeriodStart: new Date(),
+              currentPeriodEnd,
+            },
+          })
+        } else {
+          // Create new free subscription
+          await tx.userSubscription.create({
+            data: {
+              userId,
+              planId: "FREE",
+              status: "ACTIVE",
+              currentPeriodStart: new Date(),
+              currentPeriodEnd,
+            },
+          })
+        }
+
+        // Only add tokens if the user hasn't received free tokens before
+        if (!existingFreeTokens) {
+          // Add 5 tokens for new free plan users
+          const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: {
+              credits: {
+                increment: 5,
+              },
+            },
+          })
+
+          // Create a token transaction record to track the addition of tokens
+          await tx.tokenTransaction.create({
+            data: {
+              userId,
+              credits: 5,
+              amount: 0,
+              type: "SUBSCRIPTION",
+              description: "Added 5 tokens for free plan",
+            },
+          })
+
+          console.log(`Added 5 tokens to user ${userId}, new balance: ${updatedUser.credits}`)
+        }
+
+        console.log(`Free plan activated successfully for user ${userId}`)
+
+        return {
+          success: true,
+          message: "Free plan activated successfully",
+        }
+      })
     } catch (error) {
       console.error(`Error activating free plan for user ${userId}:`, error)
       throw new Error(`Failed to activate free plan: ${error instanceof Error ? error.message : String(error)}`)
@@ -144,21 +173,47 @@ export class SubscriptionService {
     promoDiscount?: number,
   ): Promise<{ sessionId: string; url: string }> {
     try {
+      // Validate inputs
+      if (!userId) throw new Error("User ID is required")
+      if (!planName) throw new Error("Plan name is required")
+      if (!duration || duration <= 0) throw new Error("Valid duration is required")
+
       console.log(`Creating checkout session for user ${userId}, plan ${planName}, duration ${duration}`)
 
-      const paymentGateway = getPaymentGateway()
+      // Verify user exists before proceeding
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      })
 
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`)
+      }
+
+      const paymentGateway = getPaymentGateway()
       const options: PaymentOptions = {}
 
       if (referralCode) {
-        options.referralCode = referralCode
-        console.log(`Applied referral code: ${referralCode}`)
+        // Validate referral code before applying
+        const isValidReferral = await this.validateReferralCode(referralCode)
+        if (isValidReferral) {
+          options.referralCode = referralCode
+          console.log(`Applied referral code: ${referralCode}`)
+        } else {
+          console.warn(`Invalid referral code attempted: ${referralCode}`)
+        }
       }
 
       if (promoCode && promoDiscount) {
-        options.promoCode = promoCode
-        options.promoDiscount = promoDiscount
-        console.log(`Applied promo code: ${promoCode} with discount: ${promoDiscount}%`)
+        // Validate promo code before applying
+        const promoValidation = await this.validatePromoCode(promoCode)
+        if (promoValidation.valid) {
+          options.promoCode = promoCode
+          options.promoDiscount = promoDiscount
+          console.log(`Applied promo code: ${promoCode} with discount: ${promoDiscount}%`)
+        } else {
+          console.warn(`Invalid promo code attempted: ${promoCode}`)
+        }
       }
 
       const result = await paymentGateway.createCheckoutSession(userId, planName, duration, options)
@@ -308,20 +363,55 @@ export class SubscriptionService {
    */
   static async cancelSubscription(userId: string): Promise<boolean> {
     try {
-      const userSubscription = await prisma.userSubscription.findUnique({
-        where: { userId },
-      })
-
-      if (!userSubscription) {
-        console.warn(`No subscription found for user ${userId}`)
-        return false
+      if (!userId) {
+        throw new Error("User ID is required")
       }
 
-      if (!userSubscription.stripeSubscriptionId) {
-        console.warn(`No Stripe subscription ID found for user ${userId}`)
+      // Use a transaction to ensure database consistency
+      return await prisma.$transaction(async (tx) => {
+        const userSubscription = await tx.userSubscription.findUnique({
+          where: { userId },
+        })
 
-        // Update our database to mark as canceled even if no Stripe subscription exists
-        await prisma.userSubscription.update({
+        if (!userSubscription) {
+          console.warn(`No subscription found for user ${userId}`)
+          return false
+        }
+
+        if (!userSubscription.stripeSubscriptionId) {
+          console.warn(`No Stripe subscription ID found for user ${userId}`)
+
+          // Update our database to mark as canceled even if no Stripe subscription exists
+          await tx.userSubscription.update({
+            where: { userId },
+            data: {
+              status: "CANCELED",
+              cancelAtPeriodEnd: true,
+            },
+          })
+
+          return true
+        }
+
+        try {
+          const paymentGateway = getPaymentGateway()
+          // Cancel with the payment gateway
+          await paymentGateway.cancelSubscription(userId)
+        } catch (stripeError: any) {
+          console.error("Stripe error when canceling subscription:", stripeError)
+
+          // If the subscription doesn't exist in Stripe, we should still update our database
+          if (stripeError.type === "StripeInvalidRequestError" && stripeError.code === "resource_missing") {
+            console.warn(
+              `Stripe subscription ${userSubscription.stripeSubscriptionId} not found, updating local database only`,
+            )
+          } else {
+            throw stripeError
+          }
+        }
+
+        // Update our database regardless of Stripe status
+        await tx.userSubscription.update({
           where: { userId },
           data: {
             status: "CANCELED",
@@ -329,36 +419,19 @@ export class SubscriptionService {
           },
         })
 
+        // Log the cancellation as a token transaction for record-keeping
+        await tx.tokenTransaction.create({
+          data: {
+            userId,
+            credits: 0,
+            amount: 0,
+            type: "SUBSCRIPTION",
+            description: "Subscription canceled",
+          },
+        })
+
         return true
-      }
-
-      try {
-        const paymentGateway = getPaymentGateway()
-        // Cancel with the payment gateway
-        await paymentGateway.cancelSubscription(userId)
-      } catch (stripeError: any) {
-        console.error("Stripe error when canceling subscription:", stripeError)
-
-        // If the subscription doesn't exist in Stripe, we should still update our database
-        if (stripeError.type === "StripeInvalidRequestError" && stripeError.code === "resource_missing") {
-          console.warn(
-            `Stripe subscription ${userSubscription.stripeSubscriptionId} not found, updating local database only`,
-          )
-        } else {
-          throw stripeError
-        }
-      }
-
-      // Update our database regardless of Stripe status
-      await prisma.userSubscription.update({
-        where: { userId },
-        data: {
-          status: "CANCELED",
-          cancelAtPeriodEnd: true,
-        },
       })
-
-      return true
     } catch (error) {
       console.error("Error canceling subscription:", error)
       throw new Error(`Failed to cancel subscription: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -373,20 +446,55 @@ export class SubscriptionService {
    */
   static async resumeSubscription(userId: string): Promise<boolean> {
     try {
-      const userSubscription = await prisma.userSubscription.findUnique({
-        where: { userId },
-      })
-
-      if (!userSubscription) {
-        console.warn(`No subscription found for user ${userId}`)
-        return false
+      if (!userId) {
+        throw new Error("User ID is required")
       }
 
-      if (!userSubscription.stripeSubscriptionId) {
-        console.warn(`No Stripe subscription ID found for user ${userId}`)
+      // Use a transaction to ensure database consistency
+      return await prisma.$transaction(async (tx) => {
+        const userSubscription = await tx.userSubscription.findUnique({
+          where: { userId },
+        })
 
-        // Update our database to mark as active even if no Stripe subscription exists
-        await prisma.userSubscription.update({
+        if (!userSubscription) {
+          console.warn(`No subscription found for user ${userId}`)
+          return false
+        }
+
+        if (!userSubscription.stripeSubscriptionId) {
+          console.warn(`No Stripe subscription ID found for user ${userId}`)
+
+          // Update our database to mark as active even if no Stripe subscription exists
+          await tx.userSubscription.update({
+            where: { userId },
+            data: {
+              status: "ACTIVE",
+              cancelAtPeriodEnd: false,
+            },
+          })
+
+          return true
+        }
+
+        try {
+          const paymentGateway = getPaymentGateway()
+          // Resume with the payment gateway
+          await paymentGateway.resumeSubscription(userId)
+        } catch (stripeError: any) {
+          console.error("Stripe error when resuming subscription:", stripeError)
+
+          // If the subscription doesn't exist in Stripe, we should still update our database
+          if (stripeError.type === "StripeInvalidRequestError" && stripeError.code === "resource_missing") {
+            console.warn(
+              `Stripe subscription ${userSubscription.stripeSubscriptionId} not found, updating local database only`,
+            )
+          } else {
+            throw stripeError
+          }
+        }
+
+        // Update our database regardless of Stripe status
+        await tx.userSubscription.update({
           where: { userId },
           data: {
             status: "ACTIVE",
@@ -394,36 +502,19 @@ export class SubscriptionService {
           },
         })
 
+        // Log the resumption as a token transaction for record-keeping
+        await tx.tokenTransaction.create({
+          data: {
+            userId,
+            credits: 0,
+            amount: 0,
+            type: "SUBSCRIPTION",
+            description: "Subscription resumed",
+          },
+        })
+
         return true
-      }
-
-      try {
-        const paymentGateway = getPaymentGateway()
-        // Resume with the payment gateway
-        await paymentGateway.resumeSubscription(userId)
-      } catch (stripeError: any) {
-        console.error("Stripe error when resuming subscription:", stripeError)
-
-        // If the subscription doesn't exist in Stripe, we should still update our database
-        if (stripeError.type === "StripeInvalidRequestError" && stripeError.code === "resource_missing") {
-          console.warn(
-            `Stripe subscription ${userSubscription.stripeSubscriptionId} not found, updating local database only`,
-          )
-        } else {
-          throw stripeError
-        }
-      }
-
-      // Update our database regardless of Stripe status
-      await prisma.userSubscription.update({
-        where: { userId },
-        data: {
-          status: "ACTIVE",
-          cancelAtPeriodEnd: false,
-        },
       })
-
-      return true
     } catch (error) {
       console.error("Error resuming subscription:", error)
       throw new Error(`Failed to resume subscription: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -438,8 +529,18 @@ export class SubscriptionService {
    */
   static async validateReferralCode(referralCode: string): Promise<boolean> {
     try {
+      if (!referralCode || typeof referralCode !== "string") {
+        return false
+      }
+
+      const normalizedCode = referralCode.trim()
+
+      if (normalizedCode.length === 0) {
+        return false
+      }
+
       const referral = await prisma.userReferral.findUnique({
-        where: { referralCode },
+        where: { referralCode: normalizedCode },
       })
 
       return !!referral
@@ -462,6 +563,10 @@ export class SubscriptionService {
       }
 
       const normalizedCode = promoCode.trim().toUpperCase()
+
+      if (normalizedCode.length === 0) {
+        return { valid: false, discountPercentage: 0 }
+      }
 
       // Check if the provided code exists in our valid codes
       if (normalizedCode in VALID_PROMO_CODES) {
@@ -493,6 +598,10 @@ export class SubscriptionService {
     subscription?: any
   }> {
     try {
+      if (!sessionId) {
+        throw new Error("Session ID is required")
+      }
+
       const paymentGateway = getPaymentGateway()
       return await paymentGateway.verifyPaymentStatus(sessionId)
     } catch (error) {
@@ -576,6 +685,70 @@ export class SubscriptionService {
     } catch (error) {
       console.error("Error fetching payment methods:", error)
       return []
+    }
+  }
+
+  /**
+   * Update user credits and create a token transaction record
+   * This method ensures that user credits and token transactions stay in sync
+   *
+   * @param userId - The ID of the user
+   * @param credits - Number of credits to add (positive) or subtract (negative)
+   * @param type - Type of transaction (e.g., "SUBSCRIPTION", "USAGE", "REFUND")
+   * @param description - Description of the transaction
+   * @param amount - Optional monetary amount associated with the transaction
+   * @returns Updated user with new credit balance
+   */
+  static async updateUserCredits(
+    userId: string,
+    credits: number,
+    type: string,
+    description: string,
+    amount = 0,
+  ): Promise<any> {
+    try {
+      if (!userId) {
+        throw new Error("User ID is required")
+      }
+
+      // Use a transaction to ensure user credits and token transaction stay in sync
+      return await prisma.$transaction(async (tx) => {
+        // Update user credits
+        const updatedUser = await tx.user.update({
+          where: { id: userId },
+          data: {
+            credits: {
+              increment: credits,
+            },
+            // If credits are negative, they're being used, so update creditsUsed
+            ...(credits < 0 ? { creditsUsed: { increment: Math.abs(credits) } } : {}),
+          },
+          select: {
+            id: true,
+            credits: true,
+            creditsUsed: true,
+          },
+        })
+
+        // Create token transaction record
+        await tx.tokenTransaction.create({
+          data: {
+            userId,
+            credits,
+            amount,
+            type,
+            description,
+          },
+        })
+
+        console.log(
+          `Updated credits for user ${userId}: ${credits > 0 ? "+" : ""}${credits}, new balance: ${updatedUser.credits}`,
+        )
+        return updatedUser
+      })
+    } catch (error) {
+      console.error(`Error updating user credits: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`Failed to update user credits: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   }
 }
