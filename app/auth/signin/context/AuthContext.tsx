@@ -10,6 +10,8 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   user: any
+  credits: number
+  subscriptionPlan: string
   signInWithProvider: (provider: string, callbackUrl?: string) => Promise<void>
   signInWithCredentials: (email: string, password: string, callbackUrl?: string) => Promise<boolean>
   signOutUser: (callbackUrl?: string) => Promise<void>
@@ -125,6 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!session?.user,
         user: session?.user,
+        credits: session?.user?.credits || 0,
+        subscriptionPlan: session?.user?.subscriptionPlan || "FREE",
         signInWithProvider,
         signInWithCredentials,
         signOutUser,

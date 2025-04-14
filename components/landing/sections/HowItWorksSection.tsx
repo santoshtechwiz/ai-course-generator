@@ -46,24 +46,25 @@ const steps = [
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
 // Optimize the animation variants for better performance
+// Update the cardVariants object
 const cardVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.98 }, // Reduced y-offset and scale for better performance
+  hidden: { opacity: 0, y: 15, scale: 0.98 }, // Further reduced y-offset and scale for better performance
   visible: (delay) => ({
     opacity: 1,
     y: 0,
     scale: 1,
     transition: {
-      duration: 0.6, // Reduced from 0.7 for better performance
+      duration: 0.5, // Reduced from 0.6 for better performance
       delay,
       ease: [0.25, 0.1, 0.25, 1],
     },
   }),
   hover: {
-    y: -5, // Reduced from -16 for better performance
-    scale: 1.02, // Reduced from 1.03 for better performance
-    boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.1)", // Reduced shadow for better performance
+    y: -3, // Reduced from -5 for better performance
+    scale: 1.01, // Reduced from 1.02 for better performance
+    boxShadow: "0 10px 20px -8px rgba(0, 0, 0, 0.1)", // Reduced shadow for better performance
     transition: {
-      duration: 0.3, // Reduced from 0.5 for better performance
+      duration: 0.2, // Reduced from 0.3 for better performance
       ease: [0.25, 0.1, 0.25, 1],
     },
   },
@@ -157,22 +158,26 @@ const HowItWorksSection = () => {
   // Optimize the handleScroll function to use requestAnimationFrame
   useEffect(() => {
     let lastScrollY = window.scrollY
-    let ticking = false
+    let rafId: number | null = null
 
     const handleScroll = () => {
       lastScrollY = window.scrollY
 
-      if (!ticking) {
-        requestAnimationFrame(() => {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
           setShowScrollTop(lastScrollY > 500)
-          ticking = false
+          rafId = null
         })
-        ticking = true
       }
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
+    }
   }, [])
 
   return (
@@ -215,8 +220,6 @@ const HowItWorksSection = () => {
           affordably.
         </motion.p>
       </div>
-
-   
 
       {/* Interactive Process Viewer */}
       <div className="relative max-w-5xl mx-auto">

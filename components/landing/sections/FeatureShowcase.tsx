@@ -62,26 +62,27 @@ const FeatureShowcase = () => {
     }),
   }
 
-  // Optimize card animation variants
+  // Optimize the feature card animations to reduce rendering load
+  // Update the cardVariants object
   const cardVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.98 }, // Reduced from 30
+    hidden: { opacity: 0, y: 15, scale: 0.98 }, // Further reduced y-offset for better performance
     visible: (delay) => ({
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.7, // Reduced from 0.8
+        duration: 0.5, // Reduced from 0.6 for better performance
         delay,
-        ease: [0.22, 0.61, 0.36, 1],
+        ease: [0.25, 0.1, 0.25, 1],
       },
     }),
     hover: {
-      y: -8, // Reduced from -10
-      scale: 1.01, // Reduced from 1.02
-      boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.1)", // Reduced shadow
+      y: -4, // Reduced from -5 for better performance
+      scale: 1.01, // Reduced from 1.02 for better performance
+      boxShadow: "0 10px 20px -8px rgba(0, 0, 0, 0.1)", // Reduced shadow for better performance
       transition: {
-        duration: 0.3, // Reduced from 0.4
-        ease: [0.22, 0.61, 0.36, 1],
+        duration: 0.2, // Reduced from 0.3 for better performance
+        ease: [0.25, 0.1, 0.25, 1],
       },
     },
   }
@@ -129,10 +130,10 @@ const FeatureShowcase = () => {
             animate={isInView ? "visible" : "hidden"}
             whileHover="hover"
             variants={cardVariants}
-            custom={0.3 + index * 0.1}
+            custom={0.3 + index * 0.05} // Reduced delay increment from 0.1 to 0.05
             style={{
               willChange: "transform, opacity",
-              perspective: "1000px", // Reduced from 1200px
+              perspective: "800px", // Reduced from 1000px
             }}
           >
             <div className="h-full bg-card/30 backdrop-blur-sm rounded-2xl p-8 border border-border/10 transition-all duration-300 relative overflow-hidden group">

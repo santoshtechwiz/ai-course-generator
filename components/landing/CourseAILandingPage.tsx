@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import type React from "react"
 
 import { motion, useScroll, useTransform, AnimatePresence, useInView, useSpring } from "framer-motion"
@@ -108,21 +108,23 @@ const CourseAILandingPage = () => {
   const logoOpacity = useTransform(smoothScrollY, [0, 100], [1, 0.95])
 
   // Handle scroll events
-  useEffect(() => {
-    const sections = [
-      { id: "hero", ref: heroRef },
-      { id: "features", ref: featuresRef },
-      { id: "showcase", ref: showCaseRef },
-      { id: "about", ref: aboutRef },
-      { id: "how-it-works", ref: howItWorksRef },
-      { id: "testimonials", ref: testimonialsRef },
-      { id: "faq", ref: faqRef },
-      { id: "cta", ref: ctaRef },
-    ]
+  const sections = [
+    { id: "hero", ref: heroRef },
+    { id: "features", ref: featuresRef },
+    { id: "showcase", ref: showCaseRef },
+    { id: "about", ref: aboutRef },
+    { id: "how-it-works", ref: howItWorksRef },
+    { id: "testimonials", ref: testimonialsRef },
+    { id: "faq", ref: faqRef },
+    { id: "cta", ref: ctaRef },
+  ]
 
-    const handleScroll = debounce(() => {
-      const scrollPosition = window.scrollY
-      setShowScrollTop(scrollPosition > 500)
+  // Optimize scroll handling to prevent freezing
+  // Replace the existing handleScroll function in useEffect with this optimized version
+  const handleScroll = useCallback(() => {
+    // Use requestAnimationFrame to optimize scroll performance
+    if (!window.requestAnimationFrame) {
+      setShowScrollTop(window.scrollY > 500)
 
       // Use a more efficient way to determine active section
       let currentSection = "hero"
@@ -140,11 +142,40 @@ const CourseAILandingPage = () => {
       if (currentSection !== activeSection) {
         setActiveSection(currentSection)
       }
-    }, 100) // Increased from 50ms to 100ms for better performance
+      return
+    }
 
+    let ticking = false
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        setShowScrollTop(window.scrollY > 500)
+
+        // Use a more efficient way to determine active section
+        let currentSection = "hero"
+        for (let i = sections.length - 1; i >= 0; i--) {
+          const section = sections[i]
+          if (section.ref.current) {
+            const rect = section.ref.current.getBoundingClientRect()
+            if (rect.top <= window.innerHeight / 3) {
+              currentSection = section.id
+              break
+            }
+          }
+        }
+
+        if (currentSection !== activeSection) {
+          setActiveSection(currentSection)
+        }
+        ticking = false
+      })
+      ticking = true
+    }
+  }, [activeSection, sections])
+
+  useEffect(() => {
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  }, [handleScroll])
 
   // Fix the startTrial function to navigate to the correct destination
   const startTrial = async () => {
@@ -192,7 +223,7 @@ const CourseAILandingPage = () => {
       <motion.header
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 transition-all duration-300"
         style={{
-          backgroundColor: theme === "dark" ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.15)",
+          backgroundColor: theme === "dark" ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.8)",
           borderBottom: `1px solid ${theme === "dark" ? headerBorderDark : headerBorder}`,
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
@@ -219,10 +250,14 @@ const CourseAILandingPage = () => {
           {navItems.map((item) => (
             <motion.button
               key={item.id}
-              onClick={() => item.ref ? scrollToSection(item.id) : router.push("/dashboard/explore")} // Handle "Explore" link
+              onClick={() => (item.ref ? scrollToSection(item.id) : router.push("/dashboard/explore"))}
               className={cn(
                 "text-sm font-medium transition-colors relative px-2 py-1",
-                activeSection === item.id ? "text-primary" : "text-white hover:text-white/90",
+                activeSection === item.id
+                  ? "text-primary"
+                  : theme === "dark"
+                    ? "text-white hover:text-white/90"
+                    : "text-gray-800 hover:text-gray-900",
               )}
               aria-current={activeSection === item.id ? "page" : undefined}
               whileHover={{
