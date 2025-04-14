@@ -78,7 +78,7 @@ const CourseAILandingPage = () => {
     { id: "how-it-works", label: "How It Works", ref: howItWorksRef },
     { id: "testimonials", label: "Testimonials", ref: testimonialsRef },
     { id: "faq", label: "FAQ", ref: faqRef },
-    { id: "explore", label: "Explore", ref: null }, // Added link to /dashboard/explore
+   
   ]
 
   // Apple-style scroll animations
@@ -177,25 +177,20 @@ const CourseAILandingPage = () => {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [handleScroll])
 
-  // Fix the startTrial function to navigate to the correct destination
-  const startTrial = async () => {
-    // Navigate to the create page instead of subscription
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    router.push("/dashboard/create")
-    return true
-  }
+
 
   // Fix the navigation links to point to correct destinations
-  const scrollToSection = (sectionId: string) => {
-    const section = document.getElementById(sectionId)
-    if (section) {
-      window.scrollTo({
-        top: section.offsetTop - 80,
-        behavior: "smooth",
-      })
-    }
-    setIsMenuOpen(false)
+ // Fix the navigation links to point to correct destinations
+ const scrollToSection = (sectionId: string) => {
+  const section = document.getElementById(sectionId)
+  if (section) {
+    window.scrollTo({
+      top: section.offsetTop - 80,
+      behavior: "smooth",
+    })
   }
+  setIsMenuOpen(false)
+}
 
   // Scroll to top function
   const scrollToTop = () => {
@@ -388,15 +383,15 @@ const CourseAILandingPage = () => {
                 >
                   <FeedbackButton
                     className="mt-4 w-full rounded-full"
-                    loadingText="Loading..."
-                    successText="Starting trial"
+                  
+                    loadingText="Redirecting..."
+                    successText="Redirecting..."
                     onClickAsync={async () => {
-                      scrollToSection("cta")
-                      setIsMenuOpen(false)
+                      router.push("/dashboard/explore")
                       return true
                     }}
                   >
-                    Start free trial
+                    Get Started
                     <motion.span
                       className="inline-block ml-2"
                       initial={{ x: 0 }}
