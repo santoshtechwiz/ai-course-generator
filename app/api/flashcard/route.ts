@@ -128,15 +128,15 @@ export async function POST(req: Request) {
     // Generate flashcards first, before starting the transaction
     // This ensures we don't start a transaction that might timeout during AI generation
     //Simulate dummy flashcard data for testing
+    // Use environment variable to determine whether to use dummy flashcards or AI service
+    const useDummyData = process.env.NODE_ENV === "development"
 
-    const dummyFlashcards = [
-      { question: "What is AI?", answer: "Artificial Intelligence" },
-      { question: "What is ML?", answer: "Machine Learning" },
-    ]
-    const flashcards = dummyFlashcards as FlashCardData[]
-   
-    // Uncomment the line below to use the actual AI service
- //   const flashcards = (await generateFlashCards(title, count)) as FlashCardData[]
+    const flashcards = useDummyData
+      ? ([
+        { question: "What is AI?", answer: "Artificial Intelligence" },
+        { question: "What is ML?", answer: "Machine Learning" },
+      ] as FlashCardData[])
+      : ((await generateFlashCards(title, count)) as FlashCardData[])
 
     if (!flashcards || flashcards.length === 0) {
       throw new Error("Failed to generate flashcards")
