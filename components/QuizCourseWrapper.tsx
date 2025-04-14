@@ -18,12 +18,12 @@ import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCa
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code"| "flashcard"
 
-interface QuizWrapperProps {
+interface QuizCourseWrapperProps {
   type: QuizType
   queryParams?: QueryParams
 }
 
-export function QuizWrapper({ type, queryParams }: QuizWrapperProps) {
+export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
   const { subscriptionStatus } = useSubscriptionStore()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()

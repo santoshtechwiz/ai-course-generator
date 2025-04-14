@@ -7,7 +7,7 @@ import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import { NavigationEvents } from "./NavigationEvents"
 import { FullPageLoader } from "@/components/ui/loader"
 import { redirect } from "next/navigation"
-import { SubscriptionRefresher } from "@/components/SubscriptionRefresher"
+import { SubscriptionRefresher } from "@/app/dashboard/subscription/components/SubscriptionRefresher"
 
 export default async function DashboardLayout({
   children,

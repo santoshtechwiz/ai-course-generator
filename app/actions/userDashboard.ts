@@ -213,7 +213,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       ),
       credits: user.credits || 0,
     }
-    console.log("Dashboard User Data:", dashboardUser) // Debugging line
+    
     return dashboardUser
   } catch (error) {
     console.error("Error fetching user data:", error)

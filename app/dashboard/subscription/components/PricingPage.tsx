@@ -84,7 +84,6 @@ export function PricingPage({
   const [isPromoValid, setIsPromoValid] = useState<boolean>(false)
   const [promoDiscount, setPromoDiscount] = useState<number>(0)
   const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false)
-  const [isReferralCodeValid, setIsReferralCodeValid] = useState<boolean>(false)
 
   // Normalize subscription status for case-insensitive comparison
   const normalizedStatus = subscriptionStatus?.toUpperCase() as "ACTIVE" | "CANCELED" | null
@@ -160,8 +159,7 @@ export function PricingPage({
   // Use the subscription hook with options
   const {
     handleSubscribe: hookHandleSubscribe,
-    cancelSubscription,
-    resumeSubscription,
+    
     canSubscribeToPlan,
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,

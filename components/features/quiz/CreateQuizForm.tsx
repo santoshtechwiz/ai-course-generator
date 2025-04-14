@@ -20,9 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { ConfirmDialog } from "./ConfirmDialog"
-import { SignInBanner } from "../../../app/auth/signin/components/SignInBanner"
 import PlanAwareButton from "@/components/PlanAwareButton"
-import { SubscriptionSlider } from "@/components/SubscriptionSlider"
+import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
 import { quizSchema } from "@/schema/schema"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
@@ -156,8 +155,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
       transition={{ duration: 0.5 }}
       className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
     >
-      <SignInBanner isAuthenticated={status === "authenticated"} />
-      <Card className="bg-background border border-border shadow-sm">
+        <Card className="bg-background border border-border shadow-sm">
         <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
             <motion.div

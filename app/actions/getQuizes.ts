@@ -57,9 +57,18 @@ export async function getQuizzes({
           isPublic: true,
           quizType: true,
           bestScore: true,
-          questions: true,
+          questions: {
+            select: {
+              id: true,
+              question: true,
+              options: true,
+            },
+          },
           _count: {
-            select: { questions: true },
+            select: {
+              flashCards: true,
+              openEndedQuestions: true,
+            },
           },
         },
         orderBy: {
@@ -71,22 +80,31 @@ export async function getQuizzes({
       prisma.userQuiz.count({ where: whereCondition }),
     ])
 
-    const quizListItems = quizzes.map(
-      (quiz): QuizListItem => ({
+    const quizListItems: QuizListItem[] = quizzes.map((quiz) => {
+      const questionCount = quiz.questions.length
+
+      return {
         id: quiz.id,
         title: quiz.title,
         slug: quiz.slug,
-        questionCount: quiz._count.questions,
         isPublic: quiz.isPublic ?? true,
         quizType: quiz.quizType as QuizType,
         bestScore: quiz.bestScore || 0,
-        tags: [],
-        questions: quiz.questions.map(q => ({
-          ...q,
-          options: q.options ? q.options : null,
+        questionCount,
+        tags: [], // You can add tags later if needed
+        questions: quiz.questions.map((q) => ({
+          id: q.id,
+          question: q.question,
+          createdAt: new Date(), // Replace with actual createdAt if available
+          updatedAt: new Date(), // Replace with actual updatedAt if available
+          options: q.options || null,
+          answer: "", // Replace with actual answer if available
+          userQuizId: quiz.id, // Replace with actual userQuizId if available
+          questionType: "default", // Replace with actual questionType if available
+          codeSnippet: null, // Replace with actual codeSnippet if available
         })),
-      }),
-    )
+      }
+    })
 
     const nextCursor = totalCount > skip + limit ? page + 1 : null
 
@@ -96,4 +114,3 @@ export async function getQuizzes({
     return { quizzes: [], nextCursor: null }
   }
 }
-

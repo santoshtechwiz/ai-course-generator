@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { Lock, Unlock } from "lucide-react"
-import { SUBSCRIPTION_PLANS, SubscriptionPlanType } from "@/app/dashboard/subscription/components/subscription-plans"
+import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
 interface SubscriptionSliderProps {
   value: number

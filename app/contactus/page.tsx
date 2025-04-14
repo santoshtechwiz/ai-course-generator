@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
-import { ImprovedContactForm } from "./ContactForm"
+
 import { generatePageMetadata } from "@/lib/seo-utils"
+import ImprovedContactForm from "./ContactForm"
 
 export const metadata: Metadata = generatePageMetadata({
   title: "Contact CourseAI | Get Support for AI Coding Education Platform",

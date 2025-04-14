@@ -21,8 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import PlanAwareButton from "@/components/PlanAwareButton"
-import { SubscriptionSlider } from "@/components/SubscriptionSlider"
-import { SignInBanner } from "../../../app/auth/signin/components/SignInBanner"
+import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../quiz/ConfirmDialog"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
@@ -198,7 +197,6 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
       transition={{ duration: 0.5 }}
       className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
     >
-      <SignInBanner isAuthenticated={status === "authenticated"} />
       <Card className="bg-background border border-border shadow-sm">
         <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
