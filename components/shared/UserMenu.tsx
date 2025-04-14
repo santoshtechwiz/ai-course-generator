@@ -25,20 +25,26 @@ interface UserMenuProps {
 
 export function UserMenu({ children }: UserMenuProps) {
   const { data: session } = useSession()
-  const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription } = useSubscriptionStore()
+  const {
+    subscriptionStatus,
+    isLoading: isLoadingSubscription,
+    refreshSubscription,
+    shouldRefresh,
+  } = useSubscriptionStore()
 
-  // Add immediate refresh on component mount
+  // Only refresh when needed based on cache status
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user && shouldRefresh()) {
       refreshSubscription()
     }
-  }, [session?.user, refreshSubscription])
+  }, [session?.user, shouldRefresh, refreshSubscription])
 
   const handleSignOut = async () => {
     const currentUrl = window.location.pathname
     await signOut({ callbackUrl: currentUrl })
   }
 
+  // Improved subscription badge display
   const getSubscriptionBadge = () => {
     if (isLoadingSubscription) {
       return (
@@ -48,15 +54,8 @@ export function UserMenu({ children }: UserMenuProps) {
       )
     }
 
-    if (!subscriptionStatus) {
-      return (
-        <Badge variant="outline" className="ml-auto">
-          FREE
-        </Badge>
-      )
-    }
-
-    const plan = subscriptionStatus.subscriptionPlan as "PRO" | "BASIC" | "FREE" | "ULTIMATE"
+    // Default to FREE if no subscription data
+    const plan = subscriptionStatus?.subscriptionPlan || "FREE"
 
     const variants = {
       PRO: "default",
@@ -65,11 +64,20 @@ export function UserMenu({ children }: UserMenuProps) {
       FREE: "outline",
     } as const
 
+    // Handle potential state where plan is not in our variants
+    const variant = plan in variants ? variants[plan as keyof typeof variants] : "outline"
+
     return (
-      <Badge variant={variants[plan]} className="ml-auto">
+      <Badge variant={variant} className="ml-auto">
         {plan}
       </Badge>
     )
+  }
+
+  // Display credits badge
+  const getCreditsDisplay = () => {
+    const credits = subscriptionStatus?.credits || 0
+    return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 
   if (!session) return null
@@ -107,10 +115,11 @@ export function UserMenu({ children }: UserMenuProps) {
               </DropdownMenuItem>
 
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/account" className="cursor-pointer">
+                <Link href="/dashboard/account" className="cursor-pointer flex items-center">
                   <CreditCard className="mr-2 h-4 w-4" />
                   <span>Account</span>
                   {getSubscriptionBadge()}
+                  {getCreditsDisplay()}
                 </Link>
               </DropdownMenuItem>
               {session.user?.isAdmin && (

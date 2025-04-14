@@ -127,7 +127,7 @@ export function AccountOverview({ userId }: { userId: string }) {
               <h3 className="text-lg font-semibold">Token Usage</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium">Available Tokens</span>
+                  <span className="font-medium">Available Credits</span>
                   <span className="font-medium">
                     {subscriptionData?.tokensUsed || 0} / {subscriptionData?.credits || 0}
                   </span>
@@ -135,7 +135,7 @@ export function AccountOverview({ userId }: { userId: string }) {
                 <Progress value={tokenUsagePercentage} className="h-2" />
                 {tokenUsagePercentage > 80 && (
                   <p className="text-xs text-amber-600 dark:text-amber-400">
-                    You're running low on tokens. Consider upgrading your plan.
+                    You're running low on credits. Consider upgrading your plan.
                   </p>
                 )}
               </div>
@@ -169,4 +169,3 @@ function AccountOverviewSkeleton() {
     </div>
   )
 }
-

@@ -66,7 +66,7 @@ const NavItems = () => {
 
 export default function MainNavbar() {
   const { data: session, status } = useSession()
-  const { isAuthenticated, user,credits } = useAuth() // Use our custom auth context
+  const { isAuthenticated, user, credits } = useAuth() // Use our custom auth context
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -79,7 +79,6 @@ export default function MainNavbar() {
   const userName = session?.user?.name || user?.name || ""
   const userEmail = session?.user?.email || user?.email || ""
   const userAuthenticated = status === "authenticated" || isAuthenticated
-
 
   // Scroll handler with debounce
   const handleScroll = useCallback(() => {
@@ -118,7 +117,7 @@ export default function MainNavbar() {
   useEffect(() => {
     // Prioritize subscription status credits first
     if (subscriptionStatus?.credits !== undefined) {
-      setCreditScore(credits)
+      setCreditScore(subscriptionStatus.credits)
     } else if (session?.user?.credits !== undefined) {
       setCreditScore(session.user.credits)
     } else if (user?.credits !== undefined) {

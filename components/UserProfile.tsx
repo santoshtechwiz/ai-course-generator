@@ -17,7 +17,7 @@ export default function UserProfile({ user }: { user: User }) {
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300, damping: 10 }}>
-              <Avatar className="h-24 w-24 ring-2 ring-primary/10">
+              <Avatar className="h-24 w-24 ring-2 ring-primary/10" >
                 <AvatarImage src={user.image || ""} alt={user.name || ""} />
                 <AvatarFallback className="text-lg bg-primary/5">{user.name?.charAt(0) || "U"}</AvatarFallback>
               </Avatar>

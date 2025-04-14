@@ -1,14 +1,15 @@
 import { getServerSession } from "next-auth"
 import { type NextRequest, NextResponse } from "next/server"
 
-
 import { z } from "zod"
 import { authOptions } from "@/lib/authOptions"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
+// Adding consistent error handling and better typed responses
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+
     if (!session?.user?.id) {
       return NextResponse.json(
         {
@@ -22,20 +23,23 @@ export async function GET(req: NextRequest) {
 
     const userId = session.user.id
 
-    // Add improved caching headers for better performance
+    // Define cache control for better performance
+    const cacheControl =
+      process.env.NODE_ENV === "production"
+        ? "max-age=60, s-maxage=120, stale-while-revalidate=300"
+        : "no-cache, no-store"
+
     const headers = new Headers({
-      "Cache-Control": "max-age=60, s-maxage=120, stale-while-revalidate=300",
+      "Cache-Control": cacheControl,
       "Content-Type": "application/json",
     })
 
     try {
-      // Get subscription data with improved error handling
+      // Get subscription data
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
-
-      // Get token usage data
       const tokenData = await SubscriptionService.getTokensUsed(userId)
 
-      // Return combined data with better structure
+      // Return structured response with consistent fields
       return NextResponse.json(
         {
           success: true,
@@ -50,7 +54,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         {
           error: "Service Error",
-          message: "Failed to fetch subscription data from service",
+          message: "Failed to fetch subscription data",
           details: serviceError.message,
           code: "SERVICE_ERROR",
         },
@@ -62,7 +66,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         error: "Server Error",
-        message: "An unexpected error occurred while fetching subscription data",
+        message: "An unexpected error occurred",
         details: error.message,
         code: "SERVER_ERROR",
       },
@@ -154,4 +158,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

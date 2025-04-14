@@ -1,4 +1,5 @@
-import type { CourseRating, CourseUnit, Prisma, User, UserQuizAttempt, UserQuizQuestion } from "@prisma/client"
+import type { CourseRating, CourseUnit, Prisma, User } from "@prisma/client"
+
 // Type definitions
 export type UserType = "FREE" | "BASIC" | "PRO" | "PREMIUM" | "ULTIMATE"
 
@@ -6,15 +7,43 @@ export interface DashboardUser extends User {
   courses: Course[]
   courseProgress: CourseProgress[]
   userQuizzes: UserQuiz[]
-  subscriptions: UserSubscription
+  subscriptions: UserSubscription | null
   favorites: Favorite[]
   quizAttempts: UserQuizAttempt[]
   engagementScore: number
   streakDays: number
   lastStreakDate: Date | null
+  credits: number
 }
 
-
+// Update the UserQuizAttempt interface to make userId optional
+export interface UserQuizAttempt {
+  id: number
+  userId?: string // Make userId optional to match the actual data structure
+  userQuizId: number
+  score: number | null
+  timeSpent: number | null
+  improvement: number | null
+  accuracy: number | null
+  createdAt: Date
+  updatedAt: Date
+  attemptQuestions: {
+    id: number
+    questionId: number
+    userAnswer: string | null
+    isCorrect: boolean | null
+    timeSpent: number
+  }[]
+  userQuiz: {
+    id: number
+    title: string
+    questions: {
+      id: number
+      question: string
+      answer: string
+    }[]
+  }
+}
 
 export type CourseCardProps = {
   title: string
@@ -29,22 +58,23 @@ export type CourseCardProps = {
   duration?: string
 }
 
-
-// Define or import CourseMetadata
+// Define CourseMetadata
 export interface CourseMetadata {
   duration?: number
   difficulty?: string
+  estimatedHours?: number | null
 }
 
 export interface Course extends CourseMetadata {
   id: number
-  title: string // Renamed from name to title
+  title: string
   description: string | null
   image: string
   slug: string | null
   courseUnits?: CourseUnit[]
   createdAt: Date
-  updatedAt?: Date // Added missing field
+  updatedAt?: Date
+  viewCount?: number
   category?: {
     id: number
     name: string
@@ -56,34 +86,33 @@ export interface UserQuiz {
   title: string
   slug: string
   timeStarted: Date
-  createdAt: Date
   timeEnded: Date | null
   quizType: string
-  questions: { id: number; question?: string; answer?: string }[] // Enhanced type
+  questions: { id: number; question: string; answer: string }[]
   bestScore: number | null
   attempts: { score: number | null }[]
   percentageCorrect: number
-  isPublic?: boolean // Added missing field
+  totalAttempts: number
+  isPublic?: boolean
 }
 
 export interface UserSubscription {
-  id: string // Changed to string to match schema
+  id: string
   status: string
   currentPeriodStart: Date
   currentPeriodEnd: Date
   planId: string
   cancelAtPeriodEnd: boolean
   stripeSubscriptionId: string | null
-  stripeCustomerId?: string | null // Added missing field
+  stripeCustomerId?: string | null
 }
 
 export interface Favorite {
   id: number
   course: Course
-  userId?: string // Added missing field
-  courseId?: number // Added missing field
+  userId?: string
+  courseId?: number
 }
-
 
 export interface UserStats {
   totalQuizzes: number
@@ -93,7 +122,7 @@ export interface UserStats {
   completedCourses: number
   totalTimeSpent: number
   averageTimePerQuiz: number
-  topPerformingTopics: TopicPerformance[] // Renamed from topPerformingtitles to topPerformingTopics
+  topPerformingTopics: TopicPerformance[]
   recentImprovement: number
   quizzesPerMonth: number
   courseCompletionRate: number
@@ -103,8 +132,7 @@ export interface UserStats {
 }
 
 export interface TopicPerformance {
-  // Renamed from titlePerformance to TopicPerformance
-  title: string // Renamed from title to topic
+  topic: string
   averageScore: number
   attempts: number
   averageTimeSpent: number
@@ -112,7 +140,7 @@ export interface TopicPerformance {
 
 export interface CourseDetails {
   id: number
-  title: string // Renamed from courseName to title
+  title: string
   category: string
   totalChapters: number
   totalUnits: number
@@ -125,22 +153,22 @@ export class CourseAIErrors {
 
 export interface FullChapterType {
   id: number
-  videoId: string
-  chapterId?: number // Made optional
-  description: string
-  title: string // Renamed from name to title
-  order: number
-  courseId?: number // Made optional
+  videoId: string | null
+  chapterId?: number
+  description: string | null
+  title: string
+  order: number | null
+  courseId?: number
   isCompleted: boolean
   questions: CourseQuestion[]
-  summary: string
-  chapter?: FullChapterType // Made optional, recursive reference
+  summary: string | null
+  chapter?: FullChapterType
 }
 
 export type CourseQuestion = {
   id: number
   question: string
-  options: string[] | string // Fixed to allow string or string[]
+  options: string[] | string
   answer: string
 }
 
@@ -174,7 +202,7 @@ export interface QuizListItem {
   title: string
   slug: string
   questionCount: number
-  questions: UserQuizQuestion[]
+  questions: Prisma.UserQuizQuestionGetPayload<{}>[]
   isPublic: boolean
   quizType: string
   tags: string[]
@@ -182,8 +210,6 @@ export interface QuizListItem {
   bestScore?: number | null
   lastAttempted?: Date | null
 }
-
-
 
 export interface MultipleChoiceQuestion {
   question: string
@@ -198,7 +224,7 @@ export interface OpenEndedQuestion {
   answer: string
 }
 
-export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard" |"undefined"
+export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard" | "undefined"
 
 export interface CodeChallenge {
   question: string
@@ -207,8 +233,6 @@ export interface CodeChallenge {
   options: string | string[]
   correctAnswer: string
 }
-
-
 
 export interface CodingQuizProps {
   isFavorite: boolean
@@ -223,7 +247,6 @@ export interface CodingQuizProps {
   }
 }
 
-
 export interface OpenAIMessage {
   role: "system" | "user" | "assistant"
   content: string
@@ -231,7 +254,7 @@ export interface OpenAIMessage {
 
 export interface FullCourseType {
   id: number
-  title: string // Renamed from name to title
+  title: string
   description: string | null
   image: string
   viewCount: number
@@ -253,30 +276,28 @@ export interface FullCourseType {
   updatedAt: Date
 }
 
-
-
 export interface FullCourseUnit {
   id: number
   courseId: number
-  title: string // Renamed from name to title
+  title: string
   isCompleted: boolean | null
   chapters: FullChapter[]
-  duration?: number | null // Added missing field
-  order?: number | null // Added missing field
+  duration?: number | null
+  order?: number | null
 }
 
 export interface FullChapter {
   id: number
-  title: string // Renamed from name to title
+  title: string
   videoId: string | null
   order: number | null
   isCompleted: boolean | null
   summary: string | null
   description: string | null
   questions: CourseQuestion[]
-  unitId?: number // Added missing field
-  summaryStatus?: string // Added missing field
-  videoStatus?: string // Added missing field
+  unitId?: number
+  summaryStatus?: string
+  videoStatus?: string
 }
 
 export interface CourseProgress {
@@ -291,16 +312,36 @@ export interface CourseProgress {
   timeSpent: number
   isCompleted: boolean
   completionDate: Date | null
-  quizProgress: any | null // Changed from string to any for JSON compatibility
+  quizProgress: any | null
   notes: string | null
   bookmarks: string | null
   lastInteractionType: string | null
   interactionCount: number
   engagementScore: number
-  createdAt?: Date // Added missing field
-  updatedAt?: Date // Added missing field
+  createdAt?: Date
+  updatedAt?: Date
+  course?: {
+    id: number
+    title: string
+    description: string | null
+    image: string
+    slug: string | null
+    createdAt: Date
+    updatedAt: Date
+    courseUnits?: {
+      id: number
+      name: string
+      chapters: {
+        id: number
+        title: string
+      }[]
+    }[]
+    category?: {
+      id: number
+      name: string
+    }
+  }
 }
-
 
 export interface QuestionOpenEnded {
   id: number
@@ -331,23 +372,19 @@ export interface QuizWrapperProps {
 }
 
 export interface FlashCard {
-  id?: string | number // Changed to allow both string and number
+  id?: string | number
   question: string
   answer: string
   userId?: string
-  quizId?: string | number // Changed to allow both string and number
-  userQuizId?: number // Added to match schema
+  quizId?: string | number
+  userQuizId?: number
   createdAt?: Date
-  updatedAt?: Date // Added missing field
+  updatedAt?: Date
   isSaved?: boolean
-  saved?: boolean // Added to match schema
-  difficulty?: string | null // Added missing field
-  slug?: string | null // Added missing field
+  saved?: boolean
+  difficulty?: string | null
+  slug?: string | null
 }
-
-
-
-
 
 export interface ContactSubmission {
   id: string
@@ -362,7 +399,6 @@ export interface ContactSubmission {
   updatedAt: Date
 }
 
-
 export interface UserWithTransactions extends User {
   transactions: {
     id: string
@@ -371,6 +407,3 @@ export interface UserWithTransactions extends User {
     createdAt: Date
   }[]
 }
-
-//subscription
-

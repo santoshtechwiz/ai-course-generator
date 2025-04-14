@@ -48,14 +48,14 @@ export function MyCourses({ courses }: MyCoursesProps) {
                           <div className="relative h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-md">
                             <Image
                               src={course.image || "/placeholder.svg"}
-                              alt={course.name}
+                              alt={course.title}
                               fill
                               className="object-cover transition-transform group-hover:scale-105"
                             />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <h3 className="text-sm sm:text-base font-medium truncate">{course.name}</h3>
+                              <h3 className="text-sm sm:text-base font-medium truncate">{course.title}</h3>
                               <motion.div
                                 initial={{ x: -10, opacity: 0 }}
                                 animate={{ x: 0, opacity: 1 }}
