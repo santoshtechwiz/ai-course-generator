@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import type { ReactNode } from "react"
+import { useEffect } from "react"
 
 interface UserMenuProps {
   children?: ReactNode
@@ -24,7 +25,14 @@ interface UserMenuProps {
 
 export function UserMenu({ children }: UserMenuProps) {
   const { data: session } = useSession()
-  const { subscriptionStatus, isLoading: isLoadingSubscription } = useSubscriptionStore()
+  const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription } = useSubscriptionStore()
+
+  // Add immediate refresh on component mount
+  useEffect(() => {
+    if (session?.user) {
+      refreshSubscription()
+    }
+  }, [session?.user, refreshSubscription])
 
   const handleSignOut = async () => {
     const currentUrl = window.location.pathname
@@ -32,7 +40,21 @@ export function UserMenu({ children }: UserMenuProps) {
   }
 
   const getSubscriptionBadge = () => {
-    if (isLoadingSubscription || !subscriptionStatus) return null
+    if (isLoadingSubscription) {
+      return (
+        <Badge variant="outline" className="ml-auto animate-pulse">
+          Loading...
+        </Badge>
+      )
+    }
+
+    if (!subscriptionStatus) {
+      return (
+        <Badge variant="outline" className="ml-auto">
+          FREE
+        </Badge>
+      )
+    }
 
     const plan = subscriptionStatus.subscriptionPlan as "PRO" | "BASIC" | "FREE" | "ULTIMATE"
 
@@ -83,7 +105,7 @@ export function UserMenu({ children }: UserMenuProps) {
                   <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
-              
+
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/account" className="cursor-pointer">
                   <CreditCard className="mr-2 h-4 w-4" />
@@ -111,4 +133,3 @@ export function UserMenu({ children }: UserMenuProps) {
     </DropdownMenu>
   )
 }
-

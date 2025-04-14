@@ -20,7 +20,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/comp
 import { ThemeToggle } from "../ThemeToggle"
 import { useAuth } from "@/app/auth/signin/context/AuthContext"
 
-
 const NavItems = () => {
   const pathname = usePathname()
 
@@ -67,7 +66,7 @@ const NavItems = () => {
 
 export default function MainNavbar() {
   const { data: session, status } = useSession()
-  const { isAuthenticated, user } = useAuth() // Use our custom auth context
+  const { isAuthenticated, user,credits } = useAuth() // Use our custom auth context
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -80,6 +79,7 @@ export default function MainNavbar() {
   const userName = session?.user?.name || user?.name || ""
   const userEmail = session?.user?.email || user?.email || ""
   const userAuthenticated = status === "authenticated" || isAuthenticated
+
 
   // Scroll handler with debounce
   const handleScroll = useCallback(() => {
@@ -95,27 +95,48 @@ export default function MainNavbar() {
   // Refresh subscription data and sync with user credits
   useEffect(() => {
     if (userAuthenticated) {
+      // Immediately refresh subscription data on auth
       refreshSubscription()
-      const intervalId = setInterval(refreshSubscription, 60000)
-      return () => clearInterval(intervalId)
+
+      // Set up polling with a shorter initial interval for faster initial load
+      const quickInitialRefresh = setTimeout(() => {
+        refreshSubscription()
+      }, 2000) // Quick first refresh
+
+      // Then set up regular interval
+      const intervalId = setInterval(refreshSubscription, 30000) // Reduced from 60000 for more frequent updates
+
+      return () => {
+        clearTimeout(quickInitialRefresh)
+        clearInterval(intervalId)
+      }
     }
   }, [refreshSubscription, userAuthenticated])
 
+  // Improve credit score synchronization
+  // Update the useEffect for credit score
   useEffect(() => {
-    window.addEventListener("scroll", handleScroll())
-    return () => window.removeEventListener("scroll", handleScroll())
-  }, [handleScroll])
-
-  // Sync credits from subscription status
-  useEffect(() => {
+    // Prioritize subscription status credits first
     if (subscriptionStatus?.credits !== undefined) {
-      setCreditScore(subscriptionStatus.credits)
+      setCreditScore(credits)
     } else if (session?.user?.credits !== undefined) {
       setCreditScore(session.user.credits)
     } else if (user?.credits !== undefined) {
       setCreditScore(user.credits)
     }
-  }, [subscriptionStatus, session?.user?.credits, user?.credits])
+
+    // Force refresh subscription data when component mounts
+    if (userAuthenticated && !isLoadingSubscription) {
+      refreshSubscription()
+    }
+  }, [
+    subscriptionStatus,
+    session?.user?.credits,
+    user?.credits,
+    userAuthenticated,
+    isLoadingSubscription,
+    refreshSubscription,
+  ])
 
   const headerVariants = {
     hidden: { opacity: 0, y: -20 },
@@ -256,8 +277,7 @@ export default function MainNavbar() {
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetContent
           side="left"
-          className="w-[280px] sm:w-[300px] p-0 border-r backdrop-blur-lg"
-          onInteractOutside={(e) => e.preventDefault()}
+          className="w-[280px] sm:w-[300px] p-0 border-r backdrop-blur-lg transition-all duration-300"
         >
           <SheetHeader className="p-4 border-b">
             <SheetTitle className="flex justify-between items-center">
@@ -273,7 +293,7 @@ export default function MainNavbar() {
               {navItems.map((item) => (
                 <SheetClose asChild key={item.name}>
                   <Link href={item.href} passHref>
-                    <Button variant="ghost" className="w-full justify-start">
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => setIsMobileMenuOpen(false)}>
                       <item.icon className="mr-2 h-4 w-4" />
                       {item.name}
                     </Button>
@@ -289,7 +309,14 @@ export default function MainNavbar() {
                     <p className="font-medium truncate">{userName}</p>
                     <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
                   </div>
-                  <Button variant="destructive" className="w-full" onClick={() => signOut({ callbackUrl: "/" })}>
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => {
+                      signOut({ callbackUrl: "/" })
+                      setIsMobileMenuOpen(false)
+                    }}
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </Button>

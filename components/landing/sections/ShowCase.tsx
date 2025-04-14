@@ -79,41 +79,49 @@ const useCourseQuiz = () => {
   return { products, isLoading, error, retryFetch }
 }
 
+// Optimize the useAutoplay hook to reduce unnecessary renders
 const useAutoplay = (itemCount: number, initialDelay = 5000) => {
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [delay, setDelay] = useState(initialDelay)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const itemCountRef = useRef(itemCount)
+
+  // Update the ref when itemCount changes
+  useEffect(() => {
+    itemCountRef.current = itemCount
+  }, [itemCount])
 
   const toggleAutoplay = useCallback(() => {
     setIsAutoplayEnabled((prev) => !prev)
   }, [])
 
   const goToNext = useCallback(() => {
-    if (itemCount <= 1) return
-    setCurrentIndex((prev) => (prev + 1) % itemCount)
-  }, [itemCount])
+    if (itemCountRef.current <= 1) return
+    setCurrentIndex((prev) => (prev + 1) % itemCountRef.current)
+  }, [])
 
   const goToPrev = useCallback(() => {
-    if (itemCount <= 1) return
-    setCurrentIndex((prev) => (prev - 1 + itemCount) % itemCount)
-  }, [itemCount])
+    if (itemCountRef.current <= 1) return
+    setCurrentIndex((prev) => (prev - 1 + itemCountRef.current) % itemCountRef.current)
+  }, [])
 
-  const goToIndex = useCallback(
-    (index: number) => {
-      if (index >= 0 && index < itemCount) {
-        setCurrentIndex(index)
-      }
-    },
-    [itemCount],
-  )
+  const goToIndex = useCallback((index: number) => {
+    if (index >= 0 && index < itemCountRef.current) {
+      setCurrentIndex(index)
+    }
+  }, [])
 
+  // Reset index when itemCount changes
   useEffect(() => {
-    setCurrentIndex(0)
-  }, [itemCount])
+    if (currentIndex >= itemCount) {
+      setCurrentIndex(0)
+    }
+  }, [itemCount, currentIndex])
 
+  // Handle autoplay timer
   useEffect(() => {
-    if (!isAutoplayEnabled || itemCount <= 1) {
+    if (!isAutoplayEnabled || itemCountRef.current <= 1) {
       if (timerRef.current) {
         clearTimeout(timerRef.current)
         timerRef.current = null
@@ -121,9 +129,7 @@ const useAutoplay = (itemCount: number, initialDelay = 5000) => {
       return
     }
 
-    timerRef.current = setTimeout(() => {
-      goToNext()
-    }, delay)
+    timerRef.current = setTimeout(goToNext, delay)
 
     return () => {
       if (timerRef.current) {
@@ -131,7 +137,7 @@ const useAutoplay = (itemCount: number, initialDelay = 5000) => {
         timerRef.current = null
       }
     }
-  }, [isAutoplayEnabled, currentIndex, itemCount, delay, goToNext])
+  }, [isAutoplayEnabled, currentIndex, delay, goToNext])
 
   return {
     currentIndex,
