@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 import type { QueryParams } from "@/app/types/types"
-import CreateQuizForm from "./features/quiz/CreateQuizForm"
+import CreateQuizForm from "../app/dashboard/(quiz)/(components)/CreateQuizForm"
 
 
 import { Loader2 } from "lucide-react"
