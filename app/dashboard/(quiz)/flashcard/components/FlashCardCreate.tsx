@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils"
 import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 
-import { ConfirmDialog } from "@/components/features/quiz/ConfirmDialog"
+import { ConfirmDialog } from "@/app/dashboard/(quiz)/(components)/ConfirmDialog"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
 const flashcardSchema = z.object({

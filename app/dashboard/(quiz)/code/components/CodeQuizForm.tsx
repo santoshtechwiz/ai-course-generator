@@ -31,7 +31,7 @@ import { codeQuizSchema } from "@/schema/schema"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
-import { ConfirmDialog } from "@/components/features/quiz/ConfirmDialog"
+import { ConfirmDialog } from "@/app/dashboard/(quiz)/(components)/ConfirmDialog"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string
