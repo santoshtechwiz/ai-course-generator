@@ -5,11 +5,11 @@ import { useSearchParams } from "next/navigation"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 import type { QueryParams } from "@/app/types/types"
-import CreateQuizForm from "../app/dashboard/(quiz)/(components)/CreateQuizForm"
+import CreateQuizForm from "./CreateQuizForm"
 
 
 import { Loader2 } from "lucide-react"
-import ConsistentCard from "./ConsistentCard"
+import ConsistentCard from "../../../../components/ConsistentCard"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCardCreate"
 import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/BlankQuizForm"

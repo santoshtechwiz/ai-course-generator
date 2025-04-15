@@ -5,10 +5,10 @@ import { authOptions } from "@/lib/authOptions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
 import { getQuiz } from "@/app/actions/getQuiz"
-import QuizDetailPage from "@/components/QuizDetailsPage"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
+import QuizDetailsPage from "../../components/QuizDetailsPage"
 
-//import QuizDetailPage from "@/components/QuizDetailsPage"
+
 
 type Params = Promise<{ slug: string }>
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -55,13 +55,13 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
 
   // Create breadcrumb items
   const breadcrumbItems = [
-    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: quizData.title, url: `${baseUrl}/dashboard/openended/${slug}` },
+    { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
+    { name: quizData.title, href: `${baseUrl}/dashboard/openended/${slug}` },
   ]
 
 
   return (
-    <QuizDetailPage
+    <QuizDetailsPage
       title={quizData.title}
       description={`Test your problem-solving skills with open-ended questions about ${quizData.title}`}
       slug={slug}
@@ -71,7 +71,7 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
       breadcrumbItems={breadcrumbItems}
     >
       <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
-    </QuizDetailPage>
+    </QuizDetailsPage>
   )
 }
 

@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { AlertCircle, HelpCircle, Timer, RotateCcw, Info } from "lucide-react"
+import { AlertCircle, HelpCircle, Timer, RotateCcw, Info, Loader } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useRouter } from "next/navigation"
@@ -13,10 +13,10 @@ import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
 
 import { GuidedHelp } from "@/components/HelpModal"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
-import { QuizActions } from "@/components/QuizActions"
 import { useQuizResult } from "@/hooks/use-quiz-result"
-import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
-import { Loader } from "@/components/ui/loader"
+import QuizActions from "../../components/QuizActions"
+import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
+
 
 interface Question {
   id: number

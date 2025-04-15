@@ -7,9 +7,9 @@ import { notFound } from "next/navigation"
 import type { CodingQuizProps } from "@/app/types/types"
 
 
-import { QuizActions } from "@/components/QuizActions"
 import CodeQuiz from "./CodeQuiz"
 import { Loader } from "@/components/ui/loader"
+import QuizActions from "../../components/QuizActions"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {

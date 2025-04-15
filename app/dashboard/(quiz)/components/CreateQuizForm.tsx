@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { ConfirmDialog } from "./ConfirmDialog"
-import PlanAwareButton from "@/components/PlanAwareButton"
+import PlanAwareButton from "@/app/dashboard/(quiz)/(components)/PlanAwareButton"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
 import { quizSchema } from "@/schema/schema"

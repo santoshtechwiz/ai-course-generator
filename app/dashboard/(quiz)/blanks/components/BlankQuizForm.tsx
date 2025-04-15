@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import PlanAwareButton from "@/components/PlanAwareButton"
+import PlanAwareButton from "@/app/dashboard/(quiz)/(components)/PlanAwareButton"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
 import type { QueryParams } from "@/app/types/types"

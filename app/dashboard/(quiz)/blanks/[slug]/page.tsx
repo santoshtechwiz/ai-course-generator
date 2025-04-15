@@ -5,8 +5,7 @@ import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
-
-import QuizDetailPage from "@/components/QuizDetailsPage"
+import QuizDetailsPage from "../../components/QuizDetailsPage"
 import BlankQuizWrapper from "../components/BlankQuizWrapper"
 
 
@@ -56,14 +55,14 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
   const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 2))}M`
 
   const breadcrumbItems = [
-    { name: "Home", url: baseUrl },
-    { name: "Dashboard", url: `${baseUrl}/dashboard` },
-    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: result.title, url: `${baseUrl}/dashboard/blanks/${slug}` },
+    { name: "Home", href: baseUrl },
+    { name: "Dashboard", href: `${baseUrl}/dashboard` },
+    { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
+    { name: result.title, href: `${baseUrl}/dashboard/blanks/${slug}` },
   ]
 
   return (
-    <QuizDetailPage
+    <QuizDetailsPage
       title={result.title}
       description={`Test your coding knowledge on ${result.title} with fill in the blanks questions`}
       slug={slug}
@@ -73,7 +72,7 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
       breadcrumbItems={breadcrumbItems}
     >
       <BlankQuizWrapper slug={slug} />
-    </QuizDetailPage>
+    </QuizDetailsPage>
   )
 }
 

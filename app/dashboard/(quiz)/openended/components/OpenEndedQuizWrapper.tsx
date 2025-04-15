@@ -4,13 +4,13 @@ import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
-import { QuizActions } from "@/components/QuizActions"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
 import type { QuestionOpenEnded } from "@/app/types/types"
 import { useQuizResult } from "@/hooks/use-quiz-result"
-import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
 import { useRouter } from "next/navigation"
+import QuizActions from "../../components/QuizActions"
+import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
 
 interface QuizData {
   id: number
@@ -239,10 +239,14 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
         )
       ) : (
         <OpenEndedQuizQuestion
-          question={quizData.questions[activeQuestion]}
-          onAnswer={handleAnswerSubmit}
-          questionNumber={activeQuestion + 1}
-          totalQuestions={quizData.questions.length}
+          questions={[quizData.questions[activeQuestion]]}
+          quizId={quizData.id}
+          slug={slug}
+          title="Open Ended Quiz"
+          onComplete={() => handleComplete(0)}
+          onSubmitAnswer={handleAnswerSubmit}
+         
+         
         />
       )}
     </div>

@@ -25,11 +25,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress"
 
 import { ShareButton } from "@/components/ShareButton"
-import { QuizActions } from "@/components/QuizActions"
+
+import { Breadcrumb } from "../../../../components/breadcrumb"
+import RandomQuiz from "./RandomQuiz"
+import RandomQuote from "@/components/RandomQuote"
 import { cn } from "@/lib/utils"
-import { RandomQuiz } from "@/components/RandomQuiz"
-import { Breadcrumb } from "./breadcrumb"
-import { RandomQuote } from "@/components/RandomQuote"
+import QuizActions from "./QuizActions"
+
 
 interface QuizDetailsPageProps {
   title: string

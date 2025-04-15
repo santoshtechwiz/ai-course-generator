@@ -6,13 +6,13 @@ import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/authOptions"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import QuizDetailsPage from "@/components/QuizDetailsPage"
-import { QuizActions } from "@/components/QuizActions"
 
 
 
 import { Skeleton } from "@/components/ui/skeleton"
 import McqQuiz from "../components/McqQuiz"
+import QuizActions from "../../components/QuizActions"
+import QuizDetailsPage from "../../components/QuizDetailsPage"
 
 export const QuizSkeleton = () => (
   <div className="space-y-4">
