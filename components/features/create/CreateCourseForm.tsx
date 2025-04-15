@@ -81,7 +81,7 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
         description: "Course created successfully",
       })
       setAvailableCredits((prev) => (prev ?? 0) - 1)
-      router.push(`/dashboard/explore/${data.slug}`)
+      router.push(`/dashboard/create/${data.slug}`)
     },
     onError: () => {
       toast({
