@@ -2,9 +2,9 @@
 
 import type React from "react"
 import { motion } from "framer-motion"
-import { QuizCourseWrapper } from "@/components/QuizCourseWrapper"
+import { QuizCourseWrapper } from "@/app/dashboard/(quiz)/(components)/QuizCourseWrapper"
 import RandomQuote from "@/components/RandomQuote"
-import RandomQuiz from "@/components/RandomQuiz"
+import RandomQuiz from "@/app/dashboard/(quiz)/(components)/RandomQuiz"
 import { BookOpen, Lightbulb, Brain } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 

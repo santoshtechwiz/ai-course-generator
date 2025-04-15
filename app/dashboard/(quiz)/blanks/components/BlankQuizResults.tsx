@@ -38,7 +38,7 @@ export default function BlankQuizResults({ answers, questions, onRestart, onComp
   useEffect(() => {
     if (!hasCalledComplete.current) {
       hasCalledComplete.current = true
-      onComplete(score)
+      onComplete(Math.round(score)) // Ensure score is rounded to an integer
     }
   }, [score, onComplete])
 

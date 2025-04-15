@@ -3,10 +3,10 @@ import FlashCardsPageClient from "../components/FlashCardsPageClient"
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getQuiz } from "@/app/actions/getQuiz"
-import QuizDetailPage from "@/components/QuizDetailsPage"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { notFound } from "next/navigation"
+import QuizDetailsPage from "../../components/QuizDetailsPage"
 
 type Params = Promise<{ slug: string }>
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -72,14 +72,14 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
 
   // Create breadcrumb items
   const breadcrumbItems = [
-    { name: "Dashboard", url: `${baseUrl}/dashboard` },
-    { name: "Flashcards", url: `${baseUrl}/dashboard/quizzes?type=flashcard` },
-    { name: quiz.title, url: `${baseUrl}/dashboard/flashcard/${slug}` },
+    { name: "Dashboard", href: `${baseUrl}/dashboard` },
+    { name: "Flashcards", href: `${baseUrl}/dashboard/quizzes?type=flashcard` },
+    { name: quiz.title, href: `${baseUrl}/dashboard/flashcard/${slug}` },
   ]
 
   return (
     <>
-      <QuizDetailPage
+      <QuizDetailsPage
         title={quiz.title}
         description={`Study and memorize key ${quiz.title} concepts with these interactive flashcards. Perfect for all level developers looking to strengthen their knowledge through active recall.`}
         slug={slug}
@@ -91,7 +91,7 @@ export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
         <Suspense fallback={<FlashcardSkeleton />}>
           <FlashCardsPageClient slug={slug} userId={userId} />
         </Suspense>
-      </QuizDetailPage>
+      </QuizDetailsPage>
     </>
   )
 }

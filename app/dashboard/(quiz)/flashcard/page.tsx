@@ -1,4 +1,4 @@
-import QuizCreationPage from "@/components/QuizCreationPage"
+import QuizCreationPage from "@/app/dashboard/(quiz)/(components)/QuizCreationPage"
 
 
 export const metadata = {

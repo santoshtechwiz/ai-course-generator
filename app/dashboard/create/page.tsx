@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { QuizCourseWrapper } from "@/components/QuizCourseWrapper"
+import { QuizCourseWrapper } from "@/app/dashboard/(quiz)/(components)/QuizCourseWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { BookOpen, Lightbulb } from "lucide-react"
 import { getCourseDetails } from "@/app/actions/getCourseDetails"

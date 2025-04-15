@@ -38,11 +38,11 @@ export async function GET(req: NextRequest) {
     const subscription = user.subscription
     const isActive = subscription?.status.toLowerCase() === "active"
 
-    console.log("Database user:", {
-      id: user.id,
-      credits: user.credits,
-      subscription,
-    })
+    // console.log("Database user:", {
+    //   id: user.id,
+    //   credits: user.credits,
+    //   subscription,
+    // })
 
     const credits = typeof user.credits === "number" ? user.credits : 0
     const tokensUsed = typeof user.creditsUsed === "number" ? user.creditsUsed : 0
@@ -60,8 +60,7 @@ export async function GET(req: NextRequest) {
       expiresAt: subscription?.currentPeriodEnd || null,
     }
 
-    console.log("API response:", response)
-
+    
     const headers = new Headers()
     if (!skipCache) {
       headers.set("Cache-Control", "max-age=30, s-maxage=30, stale-while-revalidate=60")

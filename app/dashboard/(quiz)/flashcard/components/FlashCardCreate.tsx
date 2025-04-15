@@ -19,7 +19,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-import PlanAwareButton from "@/components/PlanAwareButton"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
@@ -27,9 +26,8 @@ import { cn } from "@/lib/utils"
 
 import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
-
-import { ConfirmDialog } from "@/app/dashboard/(quiz)/(components)/ConfirmDialog"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
+import { ConfirmDialog } from "../../components/ConfirmDialog"
 
 const flashcardSchema = z.object({
   title: z.string().nonempty("Topic is required"),

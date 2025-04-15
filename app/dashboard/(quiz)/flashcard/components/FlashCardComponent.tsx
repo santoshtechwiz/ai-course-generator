@@ -1,41 +1,85 @@
 "use client"
 
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  ChevronLeft,
-  ChevronRight,
-  Bookmark,
-  BookmarkCheck,
-  RotateCcw,
-  Check,
-  ThumbsUp,
-  ThumbsDown,
-} from "lucide-react"
+import { ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
-import { quizStyles } from "@/components/QuizDesignSystem"
+import { useQuizState } from "@/hooks/use-quiz-state"
+
+import { Card, CardContent } from "@/components/ui/card"
+import { QuizResultDisplay } from "../../components/QuizResultDisplay"
+import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
+import { useAnimation } from "@/providers/animation-provider"
+import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
+import { QuizProgress } from "../../components/QuizProgress"
+import { QuizFeedback } from "../../components/QuizFeedback"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
+  quizId: string | number
+  slug: string
+  title: string
   onSaveCard?: (card: FlashCard) => void
   savedCardIds?: string[]
   onComplete?: () => void
 }
 
-export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onComplete }: FlashCardComponentProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
+export function FlashCardComponent({
+  cards,
+  quizId,
+  slug,
+  title,
+  onSaveCard,
+  savedCardIds = [],
+  onComplete,
+}: FlashCardComponentProps) {
   const [flipped, setFlipped] = useState(false)
   const [direction, setDirection] = useState(0)
   const [selfRating, setSelfRating] = useState<Record<string, "correct" | "incorrect" | null>>({})
   const [showConfetti, setShowConfetti] = useState(false)
-  const [isCompleted, setIsCompleted] = useState(false)
   const [exitComplete, setExitComplete] = useState(true)
   const [ratingAnimation, setRatingAnimation] = useState<"correct" | "incorrect" | null>(null)
   const [reviewMode, setReviewMode] = useState(false)
   const [reviewCards, setReviewCards] = useState<number[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isCompleted, setIsCompleted] = useState(false)
 
   const cardRef = useRef<HTMLDivElement>(null)
+  const { animationsEnabled } = useAnimation()
+
+  const calculateScore = useCallback(
+    (selectedOptions: (string | null)[], questions: FlashCard[]) => {
+      return Object.values(selfRating).filter((rating) => rating === "correct").length
+    },
+    [selfRating],
+  )
+
+  const {
+    currentQuestionIndex,
+    selectedOptions,
+    timeSpent,
+    quizCompleted,
+    quizResults,
+    showFeedbackModal,
+    isSubmitting,
+    isSuccess,
+    isError,
+    errorMessage,
+    isAuthenticated,
+    session,
+    handleSelectOption,
+    handleNextQuestion,
+    handleFeedbackContinue,
+    restartQuiz,
+  } = useQuizState({
+    quizId,
+    slug,
+    questions: cards,
+    quizType: "flashcard",
+    calculateScore,
+    onComplete,
+  })
 
   // Get indices of cards marked as "incorrect"
   const cardsToReview = useMemo(() => {
@@ -70,9 +114,9 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
   // Get the current card based on mode
   const getCurrentCard = () => {
     if (reviewMode && reviewCards.length > 0) {
-      return cards[reviewCards[currentIndex]]
+      return cards[reviewCards[currentQuestionIndex]]
     }
-    return cards[currentIndex]
+    return cards[currentQuestionIndex]
   }
 
   const currentCard = getCurrentCard()
@@ -82,59 +126,8 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
 
   // Calculate progress
   const progress = reviewMode
-    ? ((currentIndex + 1) / reviewCards.length) * 100
-    : ((currentIndex + 1) / cards.length) * 100
-
-  // Handle card navigation
-  const handleNext = () => {
-    if (!exitComplete) return
-
-    if (reviewMode) {
-      if (currentIndex < reviewCards.length - 1) {
-        setDirection(1)
-        setFlipped(false)
-        setExitComplete(false)
-        setTimeout(() => {
-          setCurrentIndex(currentIndex + 1)
-        }, 300)
-      } else {
-        // End of review cards
-        setIsCompleted(true)
-        setShowConfetti(true)
-        if (onComplete) onComplete()
-        setTimeout(() => {
-          setShowConfetti(false)
-        }, 3000)
-      }
-    } else {
-      if (currentIndex < cards.length - 1) {
-        setDirection(1)
-        setFlipped(false)
-        setExitComplete(false)
-        setTimeout(() => {
-          setCurrentIndex(currentIndex + 1)
-        }, 300)
-      } else if (!isCompleted) {
-        setIsCompleted(true)
-        setShowConfetti(true)
-        if (onComplete) onComplete()
-        setTimeout(() => {
-          setShowConfetti(false)
-        }, 3000)
-      }
-    }
-  }
-
-  const handlePrevious = () => {
-    if (!exitComplete || currentIndex === 0) return
-
-    setDirection(-1)
-    setFlipped(false)
-    setExitComplete(false)
-    setTimeout(() => {
-      setCurrentIndex(currentIndex - 1)
-    }, 300)
-  }
+    ? ((currentQuestionIndex + 1) / reviewCards.length) * 100
+    : ((currentQuestionIndex + 1) / cards.length) * 100
 
   const toggleFlip = () => {
     setFlipped(!flipped)
@@ -157,13 +150,6 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
     setTimeout(() => {
       setRatingAnimation(null)
     }, 1000)
-  }
-
-  const handleRestart = () => {
-    setCurrentIndex(0)
-    setFlipped(false)
-    setIsCompleted(false)
-    setReviewMode(false)
   }
 
   // Enhanced card variants with more dynamic 3D effects and smoother transitions
@@ -240,12 +226,6 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
     },
   }
 
-  // Button animation variants with enhanced feedback
-  const buttonVariants = {
-    tap: { scale: 0.95 },
-    hover: { scale: 1.05, transition: { type: "spring", stiffness: 400 } },
-  }
-
   // Rating feedback animation variants with more dynamic motion
   const ratingFeedbackVariants = {
     hidden: { opacity: 0, scale: 0.8 },
@@ -320,38 +300,63 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
     createConfetti()
   }, [showConfetti])
 
-  return (
-    // Enhanced container with better responsive behavior
-    <div className={`${quizStyles.container} w-full max-w-4xl mx-auto`}>
-      {/* Quiz Header with subtle animation and improved responsive layout */}
-      <motion.div
-        className="flex flex-col sm:flex-row sm:items-center justify-between w-full border-b border-border/50 px-4 sm:px-6 py-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-          <h2 className="text-xl font-semibold tracking-tight mb-1 sm:mb-0">Flashcards</h2>
-          {reviewMode && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
-              Review Mode
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Card {currentIndex + 1} of {reviewMode ? reviewCards.length : cards.length}
-        </p>
-      </motion.div>
+  const renderQuizContent = () => {
+    if (quizCompleted) {
+      const correctCount = calculateScore(selectedOptions, cards)
+      const totalQuestions = cards.length
+      const percentage = (correctCount / totalQuestions) * 100
+      const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0)
 
-      {/* Flashcard Content with improved responsive padding */}
-      <div className="p-4 sm:p-6 md:p-8 border-b border-border/50">
-        {!isCompleted ? (
-          <>
+      if (isAuthenticated) {
+        return (
+          <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.6}>
+            <QuizResultDisplay
+              quizId={quizId.toString()}
+              title={title}
+              score={percentage}
+              totalQuestions={totalQuestions}
+              totalTime={totalTime}
+              correctAnswers={correctCount}
+              type="flashcard"
+              slug={slug}
+            />
+          </MotionWrapper>
+        )
+      }
+
+      return (
+        <MotionWrapper animate={true} variant="fade" duration={0.6}>
+          <Card className="w-full max-w-2xl mx-auto">
+            <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
+              {!session ? <SignInPrompt callbackUrl={`/dashboard/flashcard/${slug}`} /> : null}
+            </CardContent>
+          </Card>
+        </MotionWrapper>
+      )
+    }
+
+    return (
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="rounded-lg shadow-md border bg-background">
+          {/* Header Section */}
+          <div className="px-6 py-4 space-y-4">
+            <QuizProgress
+              currentQuestionIndex={currentQuestionIndex}
+              totalQuestions={cards.length}
+              timeSpent={timeSpent}
+              title={title}
+              quizType="Flashcard"
+              animate={animationsEnabled}
+            />
+          </div>
+
+          {/* Flashcard Content */}
+          <div className="p-4 sm:p-6 md:p-8 border-b border-border/50">
             {/* Flashcard with improved flip and hover animations and responsive height */}
             <div className="relative min-h-[250px] sm:min-h-[300px] md:min-h-[350px] w-full perspective-1000">
               <AnimatePresence initial={false} custom={direction} onExitComplete={() => setExitComplete(true)}>
                 <motion.div
-                  key={reviewMode ? `review-${currentIndex}` : `card-${currentIndex}`}
+                  key={reviewMode ? `review-${currentQuestionIndex}` : `card-${currentQuestionIndex}`}
                   custom={direction}
                   variants={cardVariants}
                   initial="enter"
@@ -465,7 +470,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                           How well did you know this?
                         </p>
                         <div className="flex justify-center gap-2 sm:gap-4">
-                          <motion.div whileHover="hover" whileTap="tap" variants={buttonVariants}>
+                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Button
                               variant={selfRating[currentCard?.id || ""] === "correct" ? "default" : "outline"}
                               size="sm"
@@ -473,6 +478,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                                 e.stopPropagation()
                                 if (currentCard?.id) {
                                   handleSelfRating(currentCard.id.toString(), "correct")
+                                  handleSelectOption("correct")
                                 }
                               }}
                               className="flex items-center gap-1 sm:gap-2 relative overflow-hidden h-8 sm:h-10 px-2 sm:px-4 text-xs sm:text-sm"
@@ -482,7 +488,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                             </Button>
                           </motion.div>
 
-                          <motion.div whileHover="hover" whileTap="tap" variants={buttonVariants}>
+                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Button
                               variant={selfRating[currentCard?.id || ""] === "incorrect" ? "destructive" : "outline"}
                               size="sm"
@@ -490,6 +496,7 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                                 e.stopPropagation()
                                 if (currentCard?.id) {
                                   handleSelfRating(currentCard.id.toString(), "incorrect")
+                                  handleSelectOption("incorrect")
                                 }
                               }}
                               className="flex items-center gap-1 sm:gap-2 relative overflow-hidden h-8 sm:h-10 px-2 sm:px-4 text-xs sm:text-sm"
@@ -577,194 +584,114 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
                 {flipped ? "Tap to see question" : "Tap to see answer"}
               </motion.div>
             </div>
-          </>
-        ) : (
-          // Completion screen with improved responsive layout
-          <motion.div
-            className="min-h-[250px] sm:min-h-[300px] md:min-h-[350px] flex flex-col items-center justify-center p-4 sm:p-6"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, type: "spring" }}
-          >
-            <motion.div
-              className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-foreground"
-              initial={{ y: -20 }}
-              animate={{ y: 0 }}
-              transition={{ delay: 0.2, type: "spring" }}
-            >
-              {reviewMode ? "Review Complete!" : "Congratulations!"}
-            </motion.div>
+          </div>
 
-            <motion.div
-              className="text-base sm:text-xl text-center mb-6 sm:mb-8 text-muted-foreground max-w-xs sm:max-w-md px-2"
-              initial={{ y: -20 }}
-              animate={{ y: 0 }}
-              transition={{ delay: 0.3, type: "spring" }}
-            >
-              {reviewMode
-                ? `You've reviewed all ${reviewCards.length} cards marked for review.`
-                : `You've completed all ${cards.length} flashcards.`}
-            </motion.div>
-
-            {!reviewMode && (
-              <motion.div
-                className="grid grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-10 w-full max-w-xs sm:max-w-md px-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-              >
-                <motion.div
-                  className="bg-card p-3 sm:p-6 rounded-lg text-center border border-border"
-                  whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          {/* Navigation with improved responsive layout */}
+          <div className="p-4 sm:p-6 md:p-8">
+            <div className="flex justify-between items-center">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (currentQuestionIndex > 0) {
+                      setDirection(-1)
+                      setFlipped(false)
+                      setExitComplete(false)
+                      setTimeout(() => {
+                        handleNextQuestion(null, currentQuestionIndex - 1)
+                      }, 300)
+                    }
+                  }}
+                  disabled={currentQuestionIndex === 0 || !exitComplete}
+                  className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
                 >
-                  <motion.div
-                    className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 10,
-                      delay: 0.7,
-                    }}
-                  >
-                    {Object.values(selfRating).filter((r) => r === "correct").length}
-                  </motion.div>
-                  <div className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">Cards you knew</div>
-                </motion.div>
-
-                <motion.div
-                  className="bg-card p-3 sm:p-6 rounded-lg text-center border border-border"
-                  whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  <motion.div
-                    className="text-2xl sm:text-3xl md:text-4xl font-bold text-destructive"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 10,
-                      delay: 0.9,
-                    }}
-                  >
-                    {Object.values(selfRating).filter((r) => r === "incorrect").length}
-                  </motion.div>
-                  <div className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">Cards to review</div>
-                </motion.div>
+                  <ChevronLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="whitespace-nowrap">Previous</span>
+                </Button>
               </motion.div>
-            )}
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              {!reviewMode && cardsToReview.length > 0 && (
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 1.1, type: "spring" }}
+              {reviewMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleExitReviewMode}
+                  className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
                 >
-                  <Button
-                    onClick={handleEnterReviewMode}
-                    variant="default"
-                    className="flex items-center gap-2 h-9 sm:h-11 px-4 sm:px-6 text-sm sm:text-base font-medium"
-                  >
-                    <ThumbsDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                    Review Marked Cards
-                  </Button>
-                </motion.div>
+                  Exit Review Mode
+                </Button>
               )}
 
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: reviewMode ? 0.7 : 1.3, type: "spring" }}
-              >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
-                  onClick={reviewMode ? handleExitReviewMode : handleRestart}
-                  variant={reviewMode ? "outline" : "default"}
-                  className="flex items-center gap-2 h-9 sm:h-11 px-4 sm:px-6 text-sm sm:text-base font-medium"
+                  onClick={() => {
+                    if (currentQuestionIndex < cards.length - 1) {
+                      setDirection(1)
+                      setFlipped(false)
+                      setExitComplete(false)
+                      setTimeout(() => {
+                        handleNextQuestion()
+                      }, 300)
+                    } else {
+                      handleNextQuestion(cards.length)
+                    }
+                  }}
+                  disabled={!exitComplete}
+                  className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
                 >
-                  <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {reviewMode ? "Exit Review Mode" : "Study Again"}
+                  {currentQuestionIndex < cards.length - 1 ? (
+                    <>
+                      <span className="whitespace-nowrap">Next</span>
+                      <ChevronRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="whitespace-nowrap">Complete</span>
+                      <Check className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    </>
+                  )}
                 </Button>
               </motion.div>
             </div>
-          </motion.div>
-        )}
-      </div>
 
-      {/* Navigation with improved responsive layout */}
-      {!isCompleted && (
-        <div className="p-4 sm:p-6 md:p-8">
-          <div className="flex justify-between items-center">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                disabled={currentIndex === 0 || !exitComplete}
-                className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
-              >
-                <ChevronLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="whitespace-nowrap">Previous</span>
-              </Button>
-            </motion.div>
-
-            {reviewMode && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExitReviewMode}
-                className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
-              >
-                Exit Review Mode
-              </Button>
-            )}
-
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={handleNext}
-                disabled={!exitComplete}
-                className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
-              >
-                {(reviewMode ? currentIndex < reviewCards.length - 1 : currentIndex < cards.length - 1) ? (
-                  <>
-                    <span className="whitespace-nowrap">Next</span>
-                    <ChevronRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  </>
-                ) : (
-                  <>
-                    <span className="whitespace-nowrap">Complete</span>
-                    <Check className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          </div>
-
-          {/* Enhanced progress indicator with animation */}
-          <div className="mt-4 sm:mt-6 md:mt-8 px-1">
-            <div className="h-1.5 sm:h-2 w-full bg-muted rounded-full overflow-hidden">
-              <motion.div
-                className={`h-full rounded-full ${reviewMode ? "bg-destructive" : "bg-primary"}`}
-                style={{
-                  width: `${progress}%`,
-                }}
-                initial={{ width: `${(currentIndex / (reviewMode ? reviewCards.length : cards.length)) * 100}%` }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-              ></motion.div>
-            </div>
-            <div className="flex justify-between mt-1 sm:mt-2 text-xs text-muted-foreground">
-              <span>Card {currentIndex + 1}</span>
-              <span>{reviewMode ? reviewCards.length : cards.length} Cards</span>
+            {/* Enhanced progress indicator with animation */}
+            <div className="mt-4 sm:mt-6 md:mt-8 px-1">
+              <div className="h-1.5 sm:h-2 w-full bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full rounded-full ${reviewMode ? "bg-destructive" : "bg-primary"}`}
+                  style={{
+                    width: `${progress}%`,
+                  }}
+                  initial={{ width: `${(currentQuestionIndex / cards.length) * 100}%` }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                ></motion.div>
+              </div>
+              <div className="flex justify-between mt-1 sm:mt-2 text-xs text-muted-foreground">
+                <span>Card {currentQuestionIndex + 1}</span>
+                <span>{cards.length} Cards</span>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {renderQuizContent()}
+
+      {showFeedbackModal && (
+        <QuizFeedback
+          isSubmitting={isSubmitting}
+          isSuccess={isSuccess}
+          isError={isError}
+          score={calculateScore(selectedOptions, cards)}
+          totalQuestions={cards.length}
+          onContinue={handleFeedbackContinue}
+          errorMessage={errorMessage}
+          quizType="flashcard"
+        />
       )}
 
       {/* Add custom scrollbar styles */}
@@ -792,7 +719,6 @@ export function FlashCardComponent({ cards, onSaveCard, savedCardIds = [], onCom
           perspective: 1000px;
         }
       `}</style>
-    </div>
+    </>
   )
 }
-

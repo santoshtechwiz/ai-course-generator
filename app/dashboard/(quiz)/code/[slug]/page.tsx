@@ -6,8 +6,8 @@ import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
-import QuizDetailPage from "@/components/QuizDetailsPage"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
+import QuizDetailsPage from "../../components/QuizDetailsPage"
 
 
 type Params = Promise<{ slug: string }>
@@ -65,7 +65,7 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
   ]
 
   return (
-    <QuizDetailPage
+    <QuizDetailsPage
       title={result.title}
       description={`Test your coding skills on ${result.title} with interactive programming challenges`}
       slug={slug}
@@ -76,7 +76,7 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
    
     >
       <CodeQuizWrapper slug={slug} userId={currentUserId || ""} />
-    </QuizDetailPage>
+    </QuizDetailsPage>
   )
 }
 

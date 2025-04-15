@@ -9,8 +9,9 @@ import type { FlashCard } from "@/app/types/types"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Sparkles } from "lucide-react"
 import axios from "axios"
+
+import QuizActions from "../../components/QuizActions"
 import { FlashCardComponent } from "./FlashCardComponent"
-import { QuizActions } from "@/components/QuizActions"
 
 
 interface FlashCardsPageClientProps {
@@ -142,7 +143,14 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
       ) : flashCards.length > 0 ? (
 
 
-        <FlashCardComponent cards={flashCards} onSaveCard={handleSaveCard} savedCardIds={savedCardIds} />
+        <FlashCardComponent 
+          cards={flashCards} 
+          onSaveCard={handleSaveCard} 
+          savedCardIds={savedCardIds} 
+          quizId={quizId} 
+          slug={slug} 
+          title="Flash Cards" 
+        />
 
       ) : (
         <Card className="w-full mx-auto">
