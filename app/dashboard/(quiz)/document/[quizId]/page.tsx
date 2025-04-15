@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Home, ArrowLeft } from "lucide-react"
 import { quizStore } from "@/lib/quiz-store"
-import { QuizPlayer } from "@/components/features/document/QuizPlay"
+import { QuizPlayer } from "../components/QuizPlay"
+
 
 export default function PlayQuizPage() {
   const params = useParams()

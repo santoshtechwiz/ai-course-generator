@@ -8,16 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Save } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { DocumentQuizOptions } from "@/components/features/document/DocumentQuizOptions"
-import { FileUpload } from "@/components/features/document/FileUpload"
 
 // Import the quiz store
 import { quizStore, type Quiz, type Question } from "@/lib/quiz-store"
-import { SavedQuizList } from "@/components/features/document/SavedQuizList"
+
 import { PlanAwareButton } from "@/components/PlanAwareButton"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { useSession } from "next-auth/react"
-import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
+import { SUBSCRIPTION_PLANS } from "../../subscription/components/subscription-plans"
+import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
+import { FileUpload } from "./components/FileUpload"
+import { SavedQuizList } from "./components/SavedQuizList"
 
 interface QuizOptionsType {
   numberOfQuestions: number

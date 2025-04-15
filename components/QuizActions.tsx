@@ -24,7 +24,8 @@ import { toast } from "@/hooks/use-toast"
 import { Rating } from "@/components/ui/rating"
 import { motion, AnimatePresence } from "framer-motion"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import QuizPDFDownload from "./features/course/QuizPDFDownload"
+import QuizPDFDownload from "@/app/dashboard/create/components/QuizPDFDownload"
+
 
 interface QuizActionsProps {
   quizId: string

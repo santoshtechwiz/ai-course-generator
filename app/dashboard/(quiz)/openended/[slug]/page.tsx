@@ -3,10 +3,10 @@ import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import OpenEndedQuizWrapper from "@/components/features/openended/OpenEndedQuizWrapper"
 
 import { getQuiz } from "@/app/actions/getQuiz"
 import QuizDetailPage from "@/components/QuizDetailsPage"
+import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 
 //import QuizDetailPage from "@/components/QuizDetailsPage"
 

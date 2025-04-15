@@ -1,6 +1,20 @@
 {
   "compilerOptions": {
     "target": "ES2017",
+     "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@components/*": ["components/global/*"],
+      "@page-components/*": ["app/(home)/components/*"],
+      "@ui/*": ["components/ui/*"],
+      "@lib/*": ["lib/*"],
+      "@utils/*": ["lib/utils/*"],
+      "@hooks/*": ["hooks/*"],
+      "@types/*": ["types/*"],
+      "@features/*": ["features/*"],
+      "@config/*": ["config/*"],
+      "@services/*": ["services/*"]
+    },
     "lib": [
       "dom",
       "dom.iterable",
@@ -21,12 +35,7 @@
       {
         "name": "next"
       }
-    ],
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    }
+    ]
   },
   "include": [
     "**/*.ts",

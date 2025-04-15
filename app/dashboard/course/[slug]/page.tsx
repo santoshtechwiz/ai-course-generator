@@ -1,12 +1,13 @@
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getCourseData } from "@/app/actions/getCourseData"
-import CoursePage from "@/components/features/course/CoursePage/CoursePage"
+
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import { extractKeywords, generateMetaDescription } from "@/lib/seo-utils"
+import CoursePage from "./components/CoursePage"
 
 function LoadingSkeleton() {
   return (

@@ -3,10 +3,10 @@ import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/authOptions"
 
 import { getQuizzes } from "@/app/actions/getQuizes"
-import { QuizzesClient } from "@/components/features/quizzes/QuizzesClient"
-import { QuizzesSkeleton } from "@/components/features/quizzes/QuizzesSkeleton"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import { generatePageMetadata } from "@/lib/seo-utils"
+import { QuizzesClient } from "./components/QuizzesClient"
+import { QuizzesSkeleton } from "./components/QuizzesSkeleton"
 
 export const metadata: Metadata = generatePageMetadata({
   title: "Free Quizzes – MCQs,Open-ended and Code Challenges",

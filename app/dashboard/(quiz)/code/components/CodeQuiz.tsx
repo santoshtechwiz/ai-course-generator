@@ -12,13 +12,14 @@ import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
-import { QuizResultDisplay } from "../quiz-results/QuizResultDisplay"
-import { QuizBase } from "../quiz-results/QuizBase"
+
 import { useQuizResult } from "@/hooks/use-quiz-result"
 import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
 import { formatQuizTime } from "@/lib/quiz-result-service"
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
+import { QuizBase } from "@/components/features/quiz-results/QuizBase"
+import { QuizResultDisplay } from "@/components/features/quiz-results/QuizResultDisplay"
 
 const formatQuizTimeLocal = (seconds: number): string => {
   if (typeof formatQuizTime === "function") {
