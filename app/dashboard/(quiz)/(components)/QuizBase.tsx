@@ -107,7 +107,7 @@ export function QuizBase({
   if (quizState === "completed") {
     return (
       <QuizResultDisplay
-        quizId={quizId}
+        quizId={String(quizId)}
         title={title}
         score={score}
         totalQuestions={totalQuestions}

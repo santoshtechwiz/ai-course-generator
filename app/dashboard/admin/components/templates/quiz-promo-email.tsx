@@ -316,7 +316,7 @@ export default function QuizPromoEmail({ name, quizzes = [] }: QuizPromoEmailPro
         </p>
         <p style={styles.footerText}>
           You're receiving this email because you signed up for CourseAI.
-          <a href="https://courseai.io/unsubscribe" style={styles.unsubscribeLink}>
+          <a href="https://courseai.io/unsubscribed" style={styles.unsubscribeLink}>
             Unsubscribe
           </a>
         </p>

@@ -12,7 +12,7 @@ import { QuizActions } from "@/components/QuizActions"
 
 
 import { Skeleton } from "@/components/ui/skeleton"
-import McqQuiz from "../McqQuiz"
+import McqQuiz from "../components/McqQuiz"
 
 export const QuizSkeleton = () => (
   <div className="space-y-4">
