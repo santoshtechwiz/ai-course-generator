@@ -43,7 +43,7 @@ async function summarizeWithGemini(text: string): Promise<string> {
   return pRetry(
     async () => {
       const prompt = `Summarize the following text concisely, focusing on the main points. Format the summary in Markdown with a title and bullet points:\n\n${text}`;
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const result = await model.generateContent(prompt);
       const markdown = ensureMarkdownFormat(result.response.text());
       if (!markdown) throw new Error("Empty or invalid Gemini summary");
