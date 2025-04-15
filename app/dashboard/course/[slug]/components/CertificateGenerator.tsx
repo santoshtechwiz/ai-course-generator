@@ -2,7 +2,6 @@ import type React from "react"
 import { Document, Page, Text, StyleSheet, PDFDownloadLink, Image } from "@react-pdf/renderer"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { Share2 } from "lucide-react"
 
 // Define styles for the PDF
 const styles = StyleSheet.create({

@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import PlanAwareButton from "@/components/PlanAwareButton"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
-import { ConfirmDialog } from "../quiz/ConfirmDialog"
+
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
@@ -31,6 +31,7 @@ import { codeQuizSchema } from "@/schema/schema"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
+import { ConfirmDialog } from "@/components/features/quiz/ConfirmDialog"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string

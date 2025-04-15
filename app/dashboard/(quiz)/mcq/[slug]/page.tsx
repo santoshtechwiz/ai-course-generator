@@ -9,9 +9,10 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import QuizDetailsPage from "@/components/QuizDetailsPage"
 import { QuizActions } from "@/components/QuizActions"
 
-import McqQuiz from "@/components/features/mcq/McqQuiz"
+
 
 import { Skeleton } from "@/components/ui/skeleton"
+import McqQuiz from "../McqQuiz"
 
 export const QuizSkeleton = () => (
   <div className="space-y-4">

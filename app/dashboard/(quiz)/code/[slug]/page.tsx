@@ -5,8 +5,9 @@ import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import CodeQuizWrapper from "@/components/features/code/CodeQuizWrapper"
+
 import QuizDetailPage from "@/components/QuizDetailsPage"
+import CodeQuizWrapper from "../components/CodeQuizWrapper"
 
 
 type Params = Promise<{ slug: string }>

@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-import AIEmoji from "../AIEmoji"
+
 import { useChapterSummary } from "@/hooks/useChapterSummary"
 import { processMarkdown } from "@/lib/markdownProcessor"
 import { MarkdownRenderer } from "./markdownUtils"
@@ -25,6 +25,7 @@ import { MarkdownRenderer } from "./markdownUtils"
 import { useToast } from "@/hooks/use-toast"
 import PDFGenerator from "@/components/shared/PDFGenerator"
 import { Loader } from "@/components/ui/loader"
+import AIEmoji from "@/app/dashboard/create/components/AIEmoji"
 
 interface CourseAISummaryProps {
   chapterId: number

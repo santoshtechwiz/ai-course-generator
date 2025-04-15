@@ -6,15 +6,16 @@ import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 import type { QueryParams } from "@/app/types/types"
 import CreateQuizForm from "./features/quiz/CreateQuizForm"
-import CodeQuizForm from "./features/code/CodeQuizForm"
-import OpenEndedQuizForm from "./features/openended/OpenEndedQuizForm"
-import CreateCourseForm from "./features/create/CreateCourseForm"
-import FillInTheBlankQuizForm from "./features/blanks/BlankQuizForm"
+
 
 import { Loader2 } from "lucide-react"
 import ConsistentCard from "./ConsistentCard"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCardCreate"
+import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/BlankQuizForm"
+import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
+import OpenEndedQuizForm from "@/app/dashboard/(quiz)/openended/components/OpenEndedQuizForm"
+import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm"
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code"| "flashcard"
 

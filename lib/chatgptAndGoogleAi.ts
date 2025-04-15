@@ -20,15 +20,12 @@ const summaryCache = new LRUCache<string, string>({
 
 function sampleTranscript(transcript: string): string {
   const sentences = transcript.match(/[^.!?]+[.!?]/g) || [transcript];
-  const sampleSize = Math.ceil(sentences.length * SAMPLE_RATIO);
-  const sampledSentences = new Set<string>();
+  const sampleSize = Math.min(Math.ceil(sentences.length * SAMPLE_RATIO), 50); // Limit to 50 sentences for efficiency
+  const sampledSentences = sentences
+    .sort(() => 0.5 - Math.random()) // Shuffle sentences
+    .slice(0, sampleSize); // Take the first `sampleSize` sentences
 
-  while (sampledSentences.size < sampleSize) {
-    const randomSentence = sentences[Math.floor(Math.random() * sentences.length)];
-    sampledSentences.add(randomSentence.trim());
-  }
-
-  return [...sampledSentences].join(" ");
+  return sampledSentences.join(" ");
 }
 
 function ensureMarkdownFormat(text: string): string {
