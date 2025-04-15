@@ -61,3 +61,9 @@ export async function sendContactResponse(email: string, name: string, subject: 
 }
 
 
+export async function sendAdminNotification(subject: string, name: string, email: string, originalMessage: string) {
+
+  
+
+}
+  

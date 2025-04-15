@@ -30,8 +30,7 @@ interface SubscriptionState {
 // React Query configuration
 const SUBSCRIPTION_QUERY_KEY = ["subscription-status"]
 
-// Replace the entire fetchSubscriptionStatus function with this improved version
-// that includes better error handling and data normalization
+// Adjust fetchSubscriptionStatus to include critical and non-critical data separation
 const fetchSubscriptionStatus = async (): Promise<SubscriptionStatus> => {
   try {
     const response = await fetch("/api/subscriptions/status", {
@@ -70,18 +69,17 @@ const fetchSubscriptionStatus = async (): Promise<SubscriptionStatus> => {
   }
 }
 
-// Replace the useSubscriptionQuery function with this optimized version
-export const useSubscriptionQuery = () => {
+// Modify useSubscriptionQuery to include conditional polling
+export const useSubscriptionQuery = (isCritical: boolean) => {
   return useQuery<SubscriptionStatus, Error>({
     queryKey: SUBSCRIPTION_QUERY_KEY,
     queryFn: fetchSubscriptionStatus,
-    staleTime: 15000, // Reduced to 15 seconds for more real-time credit data
-    refetchInterval: 30000, // Reduced to 30 seconds for credit-sensitive data
-    refetchOnWindowFocus: true,
-    refetchOnMount: true, // Always fetch on mount to get fresh credit data
+    staleTime: isCritical ? 15000 : 60000, // 15 seconds for critical, 60 seconds for non-critical
+    refetchInterval: isCritical ? 30000 : 120000, // 30 seconds for critical, 2 minutes for non-critical
+    refetchOnWindowFocus: isCritical,
+    refetchOnMount: true,
     refetchOnReconnect: true,
     retry: (failureCount, error) => {
-      // Don't retry on 401 unauthorized errors
       if (error.message.includes("Unauthorized")) return false
       return failureCount < 2
     },
@@ -166,35 +164,32 @@ const useSubscriptionStore = create<SubscriptionState>()(
   ),
 )
 
-// Replace the useSubscription hook with this optimized version
+// Optimize Zustand store synchronization
 export const useSubscription = () => {
   const queryClient = useQueryClient()
   const store = useSubscriptionStore()
-  const query = useSubscriptionQuery()
+  const criticalQuery = useSubscriptionQuery(true) // Critical data
+  const nonCriticalQuery = useSubscriptionQuery(false) // Non-critical data
 
-  // Always use the query data for credits when available
-  const combinedStatus = query.data || store.subscriptionStatus
+  const combinedStatus = criticalQuery.data || store.subscriptionStatus
 
-  // Sync other non-credit data when we have fresh data
-  if (query.data && !query.isStale && !store.isLoading) {
-    // Only update the store if we're not just updating credits
+  if (criticalQuery.data && !criticalQuery.isStale && !store.isLoading) {
     if (
       !store.subscriptionStatus ||
-      query.data.subscriptionPlan !== store.subscriptionStatus.subscriptionPlan ||
-      query.data.isSubscribed !== store.subscriptionStatus.isSubscribed ||
-      query.data.isActive !== store.subscriptionStatus.isActive
+      criticalQuery.data.subscriptionPlan !== store.subscriptionStatus.subscriptionPlan ||
+      criticalQuery.data.isSubscribed !== store.subscriptionStatus.isSubscribed ||
+      criticalQuery.data.isActive !== store.subscriptionStatus.isActive
     ) {
-      store.setSubscriptionStatus(query.data)
+      store.setSubscriptionStatus(criticalQuery.data)
     }
   }
 
   const refreshSubscription = async (force = false) => {
-    if (force || !query.data) {
-      // Force immediate refetch for credit-sensitive operations
+    if (force || !criticalQuery.data) {
       await queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
-      return query.refetch()
+      return criticalQuery.refetch()
     } else if (queryClient.getQueryState(SUBSCRIPTION_QUERY_KEY)?.isStale) {
-      return query.refetch()
+      return criticalQuery.refetch()
     }
   }
 
@@ -205,13 +200,12 @@ export const useSubscription = () => {
 
   return {
     ...store,
-    ...query,
-    // Always prioritize fresh data from the query
-    isLoading: query.isLoading || store.isLoading,
-    isError: query.isError || !!store.error,
-    error: query.error || store.error,
+    ...criticalQuery,
+    ...nonCriticalQuery,
+    isLoading: criticalQuery.isLoading || store.isLoading,
+    isError: criticalQuery.isError || !!store.error,
+    error: criticalQuery.error || store.error,
     subscriptionStatus: combinedStatus,
-    // Maintain all original methods
     refreshSubscription,
     clearCache,
     canDownloadPDF: store.canDownloadPDF,
