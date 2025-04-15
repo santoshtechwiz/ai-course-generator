@@ -1,21 +1,20 @@
 "use client"
 
-import React, { useState, useCallback, useEffect } from "react"
+import type React from "react"
+
+import { useState, useCallback, useEffect } from "react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
 
 import type { QuizListItem, QuizType } from "@/app/types/types"
-import { ErrorBoundary } from "./ErrorBoundary"
+import { ErrorBoundary } from "../../shared/ErrorBoundary"
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { CreateCard } from "@/components/CreateCard"
 import { QuizSidebar } from "./QuizSidebar"
 
-import { useAnimation } from "@/providers/animation-provider"
-import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
 import { QuizzesListSkeleton } from "@/components/ui/loading/loading-skeleton"
-
-const LazyQuizList = React.lazy(() => import("./QuizList"))
+import { QuizList } from "./QuizList"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -27,7 +26,6 @@ interface QuizzesClientProps {
 
 function extractQuizzes(data: any): QuizListItem[] {
   if (!data?.pages) return []
-
   return data.pages.reduce((acc: QuizListItem[], page: { quizzes: any }) => {
     if (page?.quizzes) {
       return [...acc, ...page.quizzes]
@@ -39,18 +37,18 @@ function extractQuizzes(data: any): QuizListItem[] {
 export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps) {
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
-  const debouncedSearch = useDebounce(search, 500) // Increased debounce time
+  const debouncedSearch = useDebounce(search, 500)
   const { ref, inView } = useInView({
     threshold: 0.1,
     triggerOnce: false,
   })
 
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["quizzes", debouncedSearch, selectedTypes.join(",")], // Added userId only if it exists
+    queryKey: ["quizzes", debouncedSearch, selectedTypes.join(","), userId],
     queryFn: async ({ pageParam = 1 }) => {
       const result = await getQuizzes({
         page: pageParam,
-        limit: 10, // Increased limit for better initial load
+        limit: 10,
         searchTerm: debouncedSearch,
         userId,
         quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
@@ -63,7 +61,6 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: 1,
     initialData: () => {
-      // Only use initial data if we're not searching or filtering
       if (search === "" && selectedTypes.length === 0) {
         return {
           pages: [initialQuizzesData],
@@ -72,15 +69,17 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
       }
       return undefined
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes stale time to prevent immediate refetch
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
   })
 
+  // Load more quizzes when scrolling to the bottom
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
 
+  // Handlers for search and filters
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }, [])
@@ -96,17 +95,45 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
 
   const quizzes = extractQuizzes(data)
   const isSearching = debouncedSearch.trim() !== "" || selectedTypes.length > 0
-  const hasNoQuizzes = !isLoading && quizzes.length === 0
 
-  const { animationsEnabled } = useAnimation()
+  // Empty state content
+  const renderEmptyState = () => {
+    if (isSearching) {
+      return (
+        <div className="text-center space-y-4 p-8 bg-muted/30 rounded-lg">
+          <h3 className="text-xl font-semibold">No quizzes found</h3>
+          <p className="text-muted-foreground">
+            We couldn't find any quizzes matching your search criteria. Try adjusting your filters.
+          </p>
+          <button
+            onClick={handleClearSearch}
+            className="px-4 py-2 mt-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Clear filters
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold mb-2">Get Started with Your First Quiz</h3>
+          <p className="text-muted-foreground">
+            You don't have any quizzes yet. Create your first quiz to start engaging your audience!
+          </p>
+        </div>
+        <CreateCard
+          title="Create Your First Quiz"
+          description="Transform your knowledge into an engaging quiz in minutes! Start your journey now."
+          createUrl="/dashboard/mcq"
+        />
+      </div>
+    )
+  }
 
   return (
-    <MotionWrapper
-      animate={animationsEnabled}
-      variant="fade"
-      duration={0.5}
-      className="flex flex-col lg:flex-row gap-6 min-h-[50vh]"
-    >
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[50vh]">
       <QuizSidebar
         search={search}
         onSearchChange={handleSearchChange}
@@ -124,43 +151,25 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
             </div>
           }
         >
-          {hasNoQuizzes ? (
-            <MotionWrapper animate={animationsEnabled} variant="slide" direction="up" duration={0.5} className="py-8">
-              {isSearching ? (
-                <div className="text-center space-y-4 p-8 bg-muted/30 rounded-lg">
-                  <h3 className="text-xl font-semibold">No quizzes found</h3>
-                  <p className="text-muted-foreground">
-                    We couldn't find any quizzes matching your search criteria. Try adjusting your filters.
-                  </p>
-                  <button
-                    onClick={handleClearSearch}
-                    className="px-4 py-2 mt-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
-                  >
-                    Clear filters
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold mb-2">Get Started with Your First Quiz</h3>
-                    <p className="text-muted-foreground">
-                      You don't have any quizzes yet. Create your first quiz to start engaging your audience!
-                    </p>
-                  </div>
-                  <CreateCard
-                    title="Create Your First Quiz"
-                    description="Transform your knowledge into an engaging quiz in minutes! Start your journey now."
-                    createUrl="/dashboard/mcq"
-                  />
-                </div>
-              )}
-            </MotionWrapper>
+          {isLoading ? (
+            <QuizzesListSkeleton />
+          ) : isError ? (
+            <QuizList
+              quizzes={[]}
+              isLoading={false}
+              isError={true}
+              isFetchingNextPage={false}
+              hasNextPage={false}
+              isSearching={isSearching}
+            />
+          ) : quizzes.length === 0 ? (
+            renderEmptyState()
           ) : (
-            <React.Suspense fallback={<QuizzesListSkeleton />}>
-              <LazyQuizList
+            <>
+              <QuizList
                 quizzes={quizzes}
-                isLoading={isLoading}
-                isError={isError}
+                isLoading={false}
+                isError={false}
                 isFetchingNextPage={isFetchingNextPage}
                 hasNextPage={!!hasNextPage}
                 isSearching={isSearching}
@@ -170,10 +179,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
                   <div className="animate-pulse text-muted-foreground text-sm">Loading more quizzes...</div>
                 )}
               </div>
-            </React.Suspense>
+            </>
           )}
         </ErrorBoundary>
       </div>
-    </MotionWrapper>
+    </div>
   )
 }

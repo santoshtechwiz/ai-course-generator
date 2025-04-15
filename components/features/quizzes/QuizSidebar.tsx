@@ -1,12 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { motion, AnimatePresence } from "framer-motion"
 import { FileQuestion, AlignJustify, PenTool, Code, Flashlight, Filter, X, ChevronDown } from "lucide-react"
 import { SearchBar } from "./SearchBar"
-type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, memo } from "react"
+
+type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"
 
 const quizTypes = [
   { id: "mcq" as const, label: "Multiple Choice", icon: FileQuestion, color: "blue" },
@@ -25,7 +25,7 @@ interface QuizSidebarProps {
   toggleQuizType: (type: QuizType) => void
 }
 
-export function QuizSidebar({
+function QuizSidebarComponent({
   search,
   onSearchChange,
   onClearSearch,
@@ -40,20 +40,12 @@ export function QuizSidebar({
     const handleResize = () => {
       setIsDesktop(window.innerWidth >= 1024)
     }
-
-    // Run on mount and add event listener
     handleResize()
     window.addEventListener("resize", handleResize)
-
-    // Cleanup event listener on unmount
     return () => {
       window.removeEventListener("resize", handleResize)
     }
   }, [])
-
-  const toggleMobileFilters = () => {
-    setShowMobileFilters(!showMobileFilters)
-  }
 
   // Get color classes based on quiz type
   const getTypeColorClasses = (type: QuizType, isSelected: boolean) => {
@@ -75,7 +67,9 @@ export function QuizSidebar({
         : "bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-200",
     }
 
-    return colorMap[type as keyof typeof colorMap] || (isSelected ? "bg-primary text-white" : "bg-muted text-foreground")
+    return (
+      colorMap[type as keyof typeof colorMap] || (isSelected ? "bg-primary text-white" : "bg-muted text-foreground")
+    )
   }
 
   return (
@@ -103,7 +97,7 @@ export function QuizSidebar({
           <Button
             variant="outline"
             size="sm"
-            onClick={toggleMobileFilters}
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
             className="flex items-center gap-2 border-dashed"
           >
             <Filter className="h-4 w-4" />
@@ -133,64 +127,53 @@ export function QuizSidebar({
       </div>
 
       {/* Filter Section - Desktop always visible, Mobile conditionally visible */}
-      <AnimatePresence initial={false}>
-        {(showMobileFilters || isDesktop) && (
-          <motion.div
-            className="space-y-4 bg-card p-4 rounded-lg border shadow-sm lg:shadow-none lg:p-0"
-            initial={{ height: 0, opacity: 0, overflow: "hidden" }}
-            animate={{ height: "auto", opacity: 1, overflow: "visible" }}
-            exit={{ height: 0, opacity: 0, overflow: "hidden" }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-          >
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium text-foreground flex items-center gap-2">
-                <Filter className="h-4 w-4 text-primary" />
-                Filter by Type
-              </h3>
-              {selectedTypes.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClearSearch}
-                  className="hidden lg:flex text-muted-foreground hover:text-foreground text-xs"
-                >
-                  <X className="h-3 w-3 mr-1" /> Clear
-                </Button>
-              )}
-            </div>
+      {(showMobileFilters || isDesktop) && (
+        <div className="space-y-4 bg-card p-4 rounded-lg border shadow-sm lg:shadow-none lg:p-0">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium text-foreground flex items-center gap-2">
+              <Filter className="h-4 w-4 text-primary" />
+              Filter by Type
+            </h3>
+            {selectedTypes.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClearSearch}
+                className="hidden lg:flex text-muted-foreground hover:text-foreground text-xs"
+              >
+                <X className="h-3 w-3 mr-1" /> Clear
+              </Button>
+            )}
+          </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2">
-              {quizTypes.map((type) => {
-                const isSelected = selectedTypes.includes(type.id)
-                return (
-                  <motion.button
-                    key={type.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => toggleQuizType(type.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border transition-all duration-200 ${getTypeColorClasses(
-                      type.id,
-                      isSelected,
-                    )}`}
-                  >
-                    <type.icon className={`h-4 w-4 ${isSelected ? "text-white" : `text-${type.color}-600`}`} />
-                    {type.label}
-                    {isSelected && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="ml-auto bg-white bg-opacity-20 rounded-full w-5 h-5 flex items-center justify-center"
-                      >
-                        <X className="h-3 w-3" />
-                      </motion.span>
-                    )}
-                  </motion.button>
-                )
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+            {quizTypes.map((type) => {
+              const isSelected = selectedTypes.includes(type.id)
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => toggleQuizType(type.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border transition-all duration-200 ${getTypeColorClasses(
+                    type.id,
+                    isSelected,
+                  )}`}
+                >
+                  <type.icon className={`h-4 w-4 ${isSelected ? "text-white" : `text-${type.color}-600`}`} />
+                  {type.label}
+                  {isSelected && (
+                    <span className="ml-auto bg-white bg-opacity-20 rounded-full w-5 h-5 flex items-center justify-center">
+                      <X className="h-3 w-3" />
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const QuizSidebar = memo(QuizSidebarComponent)

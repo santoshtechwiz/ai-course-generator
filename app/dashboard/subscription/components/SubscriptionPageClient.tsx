@@ -28,9 +28,6 @@ const StripeSecureCheckout = lazy(() =>
   import("./StripeSecureCheckout").then((mod) => ({ default: mod.StripeSecureCheckout })),
 )
 
-/**
- * Client component for the subscription page with enhanced error handling and performance
- */
 export default function SubscriptionPageClient({ refCode }: { refCode: string | null }) {
   const [userId, setUserId] = useState<string | null>(null)
   const [subscriptionData, setSubscriptionData] = useState<{
@@ -67,13 +64,10 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     const refCode = searchParams?.get("ref")
     if (refCode) {
       setReferralCode(refCode)
-
-      // Store referral code in localStorage for persistence across page refreshes
       if (typeof window !== "undefined") {
         localStorage.setItem("referralCode", refCode)
       }
     } else if (typeof window !== "undefined") {
-      // Check if we have a stored referral code
       const storedRefCode = localStorage.getItem("referralCode")
       if (storedRefCode) {
         setReferralCode(storedRefCode)
@@ -89,9 +83,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         if (pendingData) {
           const parsedData = JSON.parse(pendingData)
           setPendingSubscriptionData(parsedData)
-
-          // Don't clear the data yet - we'll do that after successful authentication
-          // and subscription processing
         }
       } catch (error) {
         console.error("Error parsing pending subscription data:", error)
@@ -99,11 +90,13 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [])
 
-  // Memoize the fetch function to prevent unnecessary re-renders
   const fetchSubscriptionData = useCallback(async () => {
-    if (!id || sessionStatus !== "authenticated") {
-      setIsLoading(false)
-      setIsDataFetched(true)
+    if (!id) {
+      // Only set loading to false if we're definitely not authenticated
+      if (sessionStatus === "unauthenticated") {
+        setIsLoading(false)
+        setIsDataFetched(true)
+      }
       return
     }
 
@@ -112,8 +105,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
     try {
       setUserId(id)
-
-      // Fetch subscription status with improved error handling
       const response = await fetch("/api/subscriptions/status")
 
       if (!response.ok) {
@@ -127,10 +118,8 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         throw new Error(subscriptionResult.details || "Failed to fetch subscription data")
       }
 
-      // Update this part to correctly set the subscription status
       setSubscriptionData({
         currentPlan: subscriptionResult.subscriptionPlan as SubscriptionPlanType,
-        // Use the actual status from the API if available, otherwise derive from isSubscribed
         subscriptionStatus: subscriptionResult.status || (subscriptionResult.isSubscribed ? "ACTIVE" : "INACTIVE"),
         tokensUsed: subscriptionResult.tokensUsed || 0,
         credits: subscriptionResult.credits || 0,
@@ -152,63 +141,55 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [id, sessionStatus])
 
-  // Handle retry logic
   const handleRetry = useCallback(() => {
     setRetryCount((prev) => prev + 1)
     fetchSubscriptionData()
   }, [fetchSubscriptionData])
 
-  // Effect to fetch data when session changes
   useEffect(() => {
-    // Only fetch data if session is loaded
+    // Only fetch data when we have a confirmed session state
     if (sessionStatus !== "loading") {
       fetchSubscriptionData()
     }
   }, [id, sessionStatus, fetchSubscriptionData, retryCount])
 
-  // Add event listener for subscription changes
   useEffect(() => {
     const handleSubscriptionChange = () => {
-      // Refresh subscription data when subscription changes
       fetchSubscriptionData()
     }
 
     window.addEventListener("subscription-changed", handleSubscriptionChange)
-
     return () => {
       window.removeEventListener("subscription-changed", handleSubscriptionChange)
     }
   }, [fetchSubscriptionData])
 
-  // Handle subscription button click for unauthenticated users
   const handleUnauthenticatedSubscribe = useCallback(
     (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => {
-      // Store the subscription data
-      const subscriptionData = {
-        planName,
-        duration,
-        promoCode,
-        promoDiscount,
-        referralCode,
+      // Only show login modal if user is definitely not authenticated
+      if (sessionStatus === "unauthenticated") {
+        const subscriptionData = {
+          planName,
+          duration,
+          promoCode,
+          promoDiscount,
+          referralCode,
+        }
+        setPendingSubscriptionData(subscriptionData)
+        setShowLoginModal(true)
       }
-
-      // Show the login modal
-      setPendingSubscriptionData(subscriptionData)
-      setShowLoginModal(true)
     },
-    [referralCode],
+    [referralCode, sessionStatus],
   )
 
-  // Render the main content
   const renderContent = () => {
-    // If session is loading, show a minimal loading state
+    // Show skeleton only during initial session loading
     if (sessionStatus === "loading" && !isDataFetched) {
       return <SubscriptionSkeleton />
     }
 
     return (
       <div className="space-y-8">
-        {/* Show error state with retry button */}
         {fetchError && (
           <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
             <AlertTriangle className="h-5 w-5" />
@@ -222,12 +203,10 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           </Alert>
         )}
 
-        {/* Show referral banner if a referral code is present */}
         {referralCode && showReferralBanner && (
           <ReferralBanner referralCode={referralCode} onDismiss={() => setShowReferralBanner(false)} />
         )}
 
-        {/* Show pending subscription notification if applicable */}
         {pendingSubscriptionData && id && (
           <Alert className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 animate-in fade-in slide-in-from-top-5 duration-300">
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -239,7 +218,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           </Alert>
         )}
 
-        {/* Show account management link for authenticated users */}
         {id && (
           <Alert className="mb-6 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 animate-in fade-in slide-in-from-top-5 duration-300">
             <Info className="h-5 w-5 text-slate-600 dark:text-slate-400" />
@@ -258,7 +236,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           </Alert>
         )}
 
-        {/* Render the pricing page with Suspense for better loading experience */}
         <Suspense fallback={<SubscriptionSkeleton />}>
           <PricingPage
             userId={userId}
@@ -273,7 +250,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           />
         </Suspense>
 
-        {/* Add the Stripe secure checkout component */}
         <div className="max-w-md mx-auto">
           <Suspense fallback={<div className="h-20 w-full animate-pulse bg-muted rounded-md" />}>
             <StripeSecureCheckout />
@@ -285,25 +261,24 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Trial Modal - Client Component */}
       {!isLoading && isDataFetched && (
         <Suspense fallback={null}>
           <TrialModal isSubscribed={isSubscribed} currentPlan={subscriptionData.currentPlan} />
         </Suspense>
       )}
 
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        callbackUrl="/dashboard/subscription"
-        subscriptionData={pendingSubscriptionData}
-      />
+      {/* Only show login modal if user is definitely unauthenticated */}
+      {sessionStatus === "unauthenticated" && (
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          callbackUrl="/dashboard/subscription"
+          subscriptionData={pendingSubscriptionData}
+        />
+      )}
 
-      {/* Main content */}
       {renderContent()}
 
-      {/* Show loading indicator for user data only if needed */}
       {isLoading && sessionStatus === "authenticated" && id && (
         <div className="fixed bottom-4 right-4 bg-background border rounded-full shadow-lg p-2 flex items-center animate-in fade-in slide-in-from-bottom-5 duration-300">
           <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />

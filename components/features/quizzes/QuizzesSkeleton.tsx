@@ -2,29 +2,29 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { motion } from "framer-motion"
+import { memo } from "react"
 
 interface QuizzesSkeletonProps {
   itemCount?: number
 }
 
-export function QuizzesSkeleton({ itemCount = 6 }: QuizzesSkeletonProps) {
+function QuizzesSkeletonComponent({ itemCount = 6 }: QuizzesSkeletonProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {[...Array(itemCount)].map((_, index) => (
-        <motion.div
+        <div
           key={index}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.05 }}
           className="will-change-transform"
+          style={{
+            opacity: 0,
+            animation: `fadeIn 0.3s ease-out ${index * 0.05}s forwards`,
+          }}
         >
           <Card className="overflow-hidden w-full h-full border-0 shadow-md">
             <CardContent className="flex flex-col h-full p-6 relative">
               {/* Quiz Type Badge Skeleton */}
               <div className="mb-4 flex">
                 <Skeleton className="h-6 w-32 rounded-full bg-muted" />
-
                 {/* Public/Private Badge Skeleton */}
                 <Skeleton className="absolute top-4 right-4 h-6 w-20 rounded-full bg-muted" />
               </div>
@@ -67,8 +67,16 @@ export function QuizzesSkeleton({ itemCount = 6 }: QuizzesSkeletonProps) {
               <Skeleton className="h-10 w-full rounded-md bg-muted" />
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       ))}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   )
 }
+
+export const QuizzesSkeleton = memo(QuizzesSkeletonComponent)
