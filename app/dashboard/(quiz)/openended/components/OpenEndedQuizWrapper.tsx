@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
+
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
 import type { QuestionOpenEnded } from "@/app/types/types"
@@ -239,14 +240,10 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
         )
       ) : (
         <OpenEndedQuizQuestion
-          questions={[quizData.questions[activeQuestion]]}
-          quizId={quizData.id}
-          slug={slug}
-          title="Open Ended Quiz"
-          onComplete={() => handleComplete(0)}
-          onSubmitAnswer={handleAnswerSubmit}
-         
-         
+          question={quizData.questions[activeQuestion]}
+          onAnswer={handleAnswerSubmit}
+          questionNumber={activeQuestion + 1}
+          totalQuestions={quizData.questions.length}
         />
       )}
     </div>
