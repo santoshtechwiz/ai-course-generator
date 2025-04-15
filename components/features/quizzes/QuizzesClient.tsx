@@ -8,13 +8,14 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
 
 import type { QuizListItem, QuizType } from "@/app/types/types"
-import { ErrorBoundary } from "../../shared/ErrorBoundary"
+
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { CreateCard } from "@/components/CreateCard"
 import { QuizSidebar } from "./QuizSidebar"
 
 import { QuizzesListSkeleton } from "@/components/ui/loading/loading-skeleton"
 import { QuizList } from "./QuizList"
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
