@@ -17,6 +17,7 @@ import { QuizzesListSkeleton } from "@/components/ui/loading/loading-skeleton"
 import { QuizList } from "./QuizList"
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 
+
 interface QuizzesClientProps {
   initialQuizzesData: {
     quizzes: QuizListItem[]
