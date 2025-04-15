@@ -19,8 +19,8 @@ import { QuizSubmissionFeedback } from "@/components/QuizSubmissionFeedback"
 import { formatQuizTime } from "@/lib/quiz-result-service"
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionTransition, MotionWrapper } from "@/components/ui/animations/motion-wrapper"
-import { QuizBase } from "@/components/features/quiz-results/QuizBase"
-import { QuizResultDisplay } from "@/components/features/quiz-results/QuizResultDisplay"
+import { QuizBase } from "../../(components)/QuizBase"
+import { QuizResultDisplay } from "../../(components)/QuizResultDisplay"
 
 
 const formatQuizTimeLocal = (seconds: number): string => {
