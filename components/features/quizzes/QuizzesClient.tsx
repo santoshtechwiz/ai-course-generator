@@ -15,7 +15,7 @@ import { QuizSidebar } from "./QuizSidebar"
 
 import { QuizzesListSkeleton } from "@/components/ui/loading/loading-skeleton"
 import { QuizList } from "./QuizList"
-import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
+import { ErrorBoundary } from "react-error-boundary"
 
 
 interface QuizzesClientProps {
