@@ -1,40 +1,42 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
-import openai from "./chatgpt/openaiUtils"
-import pRetry from "p-retry"
-import { LRUCache } from "lru-cache"
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import openai from "./chatgpt/openaiUtils";
+import pRetry from "p-retry";
+import { LRUCache } from "lru-cache";
 
 // Initialize Google Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 // Constants
-const MAX_SUMMARY_TOKENS = 300
-const SAMPLE_RATIO = 0.3
-const MAX_RETRIES = 3
+const MAX_SUMMARY_TOKENS = 300;
+const SAMPLE_RATIO = 0.3;
+const MAX_RETRIES = 3;
+const DEFAULT_SUMMARY = "# Summary\n\n- No meaningful summary could be generated.";
 
-// Create LRU cache for summaries
+// LRU Cache
 const summaryCache = new LRUCache<string, string>({
   max: 100,
   ttl: 1000 * 60 * 60,
-})
+});
 
 function sampleTranscript(transcript: string): string {
-  const sentences = transcript.match(/[^.!?]+[.!?]/g) || [transcript]
-  const sampleSize = Math.ceil(sentences.length * SAMPLE_RATIO)
-  const sampledSentences = new Set<string>()
+  const sentences = transcript.match(/[^.!?]+[.!?]/g) || [transcript];
+  const sampleSize = Math.ceil(sentences.length * SAMPLE_RATIO);
+  const sampledSentences = new Set<string>();
 
   while (sampledSentences.size < sampleSize) {
-    const randomSentence = sentences[Math.floor(Math.random() * sentences.length)]
-    sampledSentences.add(randomSentence.trim())
+    const randomSentence = sentences[Math.floor(Math.random() * sentences.length)];
+    sampledSentences.add(randomSentence.trim());
   }
 
-  return [...sampledSentences].join(" ")
+  return [...sampledSentences].join(" ");
 }
 
 function ensureMarkdownFormat(text: string): string {
+  if (!text || text.trim().length < 20) return ""; // garbage guard
   if (!text.includes("#") && !text.includes("-")) {
-    return `# Summary\n\n- ${text.replace(/\n+/g, "\n- ")}`
+    return `# Summary\n\n- ${text.replace(/\n+/g, "\n- ")}`;
   }
-  return text
+  return text;
 }
 
 async function summarizeWithGemini(text: string): Promise<string> {
@@ -43,7 +45,9 @@ async function summarizeWithGemini(text: string): Promise<string> {
       const prompt = `Summarize the following text concisely, focusing on the main points. Format the summary in Markdown with a title and bullet points:\n\n${text}`;
       const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       const result = await model.generateContent(prompt);
-      return ensureMarkdownFormat(result.response.text());
+      const markdown = ensureMarkdownFormat(result.response.text());
+      if (!markdown) throw new Error("Empty or invalid Gemini summary");
+      return markdown;
     },
     {
       retries: MAX_RETRIES,
@@ -69,7 +73,10 @@ async function summarizeWithOpenAI(text: string): Promise<string> {
         max_tokens: MAX_SUMMARY_TOKENS,
         temperature: 0.5,
       });
-      return ensureMarkdownFormat(response.choices[0]?.message?.content?.trim() || "");
+
+      const markdown = ensureMarkdownFormat(response.choices[0]?.message?.content?.trim() || "");
+      if (!markdown) throw new Error("Empty or invalid OpenAI summary");
+      return markdown;
     },
     {
       retries: MAX_RETRIES,
@@ -81,44 +88,54 @@ async function summarizeWithOpenAI(text: string): Promise<string> {
 }
 
 function summarizeLocally(text: string): string {
-  const sentences = text.match(/[^.!?]+[.!?]/g) || []
+  const sentences = text.match(/[^.!?]+[.!?]/g) || [];
   const importantSentences = sentences
     .filter((sentence) => {
-      const words = sentence?.toLowerCase().split(/\s+/)
-      return words.some((word) => ["important", "significant", "key", "main", "crucial", "essential"].includes(word))
+      const words = sentence.toLowerCase().split(/\s+/);
+      return words.some((word) =>
+        ["important", "significant", "key", "main", "crucial", "essential"].includes(word)
+      );
     })
-    .slice(0, 5)
+    .slice(0, 5);
 
-  if (importantSentences.length === 0) {
-    importantSentences.push(...sentences.slice(0, 3))
-  }
+  const finalSentences = importantSentences.length ? importantSentences : sentences.slice(0, 3);
+  const summary = finalSentences.join(" ");
 
-  const summary = importantSentences.join(" ")
-  return `# Summary\n\n- ${summary.replace(/\.\s+/g, ".\n- ")}`
+  return ensureMarkdownFormat(summary) || DEFAULT_SUMMARY;
 }
 
 export async function generateVideoSummary(transcript: string): Promise<string> {
-  const sampledTranscript = sampleTranscript(transcript)
-  const cacheKey = sampledTranscript.slice(0, 100)
-  
-  const cachedSummary = summaryCache.get(cacheKey)
+  const sampledTranscript = sampleTranscript(transcript);
+  const cacheKey = sampledTranscript.slice(0, 100);
+
+  const cachedSummary = summaryCache.get(cacheKey);
   if (cachedSummary) {
-    return cachedSummary
+    return cachedSummary;
   }
 
-  // let summary: string;
-  // try {
-  //   summary = await summarizeWithGemini(sampledTranscript);
-  // } catch (geminiError) {
-  //   console.warn("Gemini summarization failed, trying OpenAI");
-  //   try {
-  //     summary = await summarizeWithOpenAI(sampledTranscript);
-  //   } catch (openaiError) {
-  //     console.warn("OpenAI summarization failed, using local summarization");
-  //      summary = "";
-  //   }
-  // }
+  let summary = "";
 
-  summaryCache.set(cacheKey, sampledTranscript)
-  return sampledTranscript
+  try {
+    summary = await summarizeWithGemini(sampledTranscript);
+    if (summary) {
+      summaryCache.set(cacheKey, summary);
+      return summary;
+    }
+  } catch {
+    console.warn("Gemini summarization failed, trying OpenAI");
+  }
+
+  try {
+    summary = await summarizeWithOpenAI(sampledTranscript);
+    if (summary) {
+      summaryCache.set(cacheKey, summary);
+      return summary;
+    }
+  } catch {
+    console.warn("OpenAI summarization failed, using local summarization");
+  }
+
+  summary = summarizeLocally(sampledTranscript) || DEFAULT_SUMMARY;
+  summaryCache.set(cacheKey, summary);
+  return summary;
 }
