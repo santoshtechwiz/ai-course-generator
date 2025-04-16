@@ -1,4 +1,5 @@
-import QuizCreationPage from "@/app/dashboard/(quiz)/(components)/QuizCreationPage"
+import QuizCreationPage from "../components/QuizCreationPage"
+
 import type { Metadata } from "next"
 
 

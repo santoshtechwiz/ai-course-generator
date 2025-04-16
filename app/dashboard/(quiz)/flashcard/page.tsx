@@ -1,5 +1,4 @@
-import QuizCreationPage from "@/app/dashboard/(quiz)/(components)/QuizCreationPage"
-
+import QuizCreationPage from "../components/QuizCreationPage"
 
 export const metadata = {
   title: "Create Free Flashcards Quiz ",

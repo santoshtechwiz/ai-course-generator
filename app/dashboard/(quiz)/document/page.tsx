@@ -12,13 +12,13 @@ import { Input } from "@/components/ui/input"
 // Import the quiz store
 import { quizStore, type Quiz, type Question } from "@/lib/quiz-store"
 
-import { PlanAwareButton } from "@/app/dashboard/(quiz)/(components)/PlanAwareButton"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { useSession } from "next-auth/react"
 import { SUBSCRIPTION_PLANS } from "../../subscription/components/subscription-plans"
 import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
+import PlanAwareButton from "../components/PlanAwareButton"
 
 interface QuizOptionsType {
   numberOfQuestions: number

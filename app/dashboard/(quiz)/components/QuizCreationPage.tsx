@@ -2,11 +2,12 @@
 
 import type React from "react"
 import { motion } from "framer-motion"
-import { QuizCourseWrapper } from "@/app/dashboard/(quiz)/(components)/QuizCourseWrapper"
-import RandomQuote from "@/components/RandomQuote"
-import RandomQuiz from "@/app/dashboard/(quiz)/(components)/RandomQuiz"
+
 import { BookOpen, Lightbulb, Brain } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import RandomQuote from "@/components/RandomQuote"
+import { QuizCourseWrapper } from "./QuizCourseWrapper"
+import RandomQuiz from "./RandomQuiz"
 
 export default function QuizCreationPage({
   type,
