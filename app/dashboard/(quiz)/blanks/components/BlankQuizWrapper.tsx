@@ -1,203 +1,150 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
-import { QuizLoader } from "@/components/ui/quiz-loader"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { AlertCircle } from "lucide-react"
-
-import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
+import { useRouter } from "next/navigation"
 import BlankQuizResults from "./BlankQuizResults"
-import { useQuizResult } from "@/hooks/use-quiz-result"
-import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
-
-interface Question {
-  id: number
-  question: string
-  answer: string
-  openEndedQuestion: {
-    hints: string[]
-    difficulty: string
-    tags: string[]
-    inputType: string
-  }
-}
+import { getSavedQuizState, clearSavedQuizState } from "@/hooks/quiz-session-storage"
+import QuizAuthWrapper from "../../components/QuizAuthWrapper"
+import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
 
 interface BlankQuizWrapperProps {
-  questions: Question[]
-  quizId: string
-  title: string
+  quizData: any
   slug: string
 }
 
-export default function BlankQuizWrapper({ questions, quizId, title, slug }: BlankQuizWrapperProps) {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperProps) {
+  const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<{ answer: string; timeSpent: number; hintsUsed: boolean }[]>([])
-  const [quizCompleted, setQuizCompleted] = useState(false)
-  const [score, setScore] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [startTime, setStartTime] = useState(Date.now())
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const { data: session, status } = useSession()
   const router = useRouter()
 
-  const { data: session } = useSession()
-  const isAuthenticated = !!session
-
-  const { submitQuizResult, isSubmitting, isSuccess, isError, errorMessage, resetSubmissionState } = useQuizResult({})
-
-  // Initialize with loading state
+  // Check for saved quiz state on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [])
+    if (typeof window !== "undefined" && status !== "loading") {
+      const { quizState, answers: savedAnswers } = getSavedQuizState()
 
-  // Initialize answers array when questions are available
-  useEffect(() => {
-    if (questions && questions.length > 0) {
-      setAnswers(
-        Array(questions.length)
-          .fill(null)
-          .map(() => ({
-            answer: "",
-            timeSpent: 0,
-            hintsUsed: false,
-          })),
-      )
-    }
-  }, [questions])
+      // If there's a saved state for this quiz, restore it
+      if (quizState && quizState.quizId === quizData.id && quizState.quizType === "blanks") {
+        setCurrentQuestion(quizState.currentQuestion)
+        setStartTime(quizState.startTime)
+        setIsCompleted(quizState.isCompleted)
 
-  const handleAnswer = useCallback(
-    (answer: string) => {
-      if (!questions || currentQuestionIndex >= questions.length) return
-
-      const now = Date.now()
-      const newAnswers = [...answers]
-      newAnswers[currentQuestionIndex] = {
-        answer,
-        timeSpent: Math.floor(now / 1000) - (answers[currentQuestionIndex]?.timeSpent || Math.floor(now / 1000)),
-        hintsUsed: false, // This would need to be passed from the quiz component
-      }
-      setAnswers(newAnswers)
-
-      // Move to next question or complete quiz
-      setTimeout(() => {
-        if (currentQuestionIndex < questions.length - 1) {
-          setCurrentQuestionIndex((prev) => prev + 1)
-        } else {
-          setQuizCompleted(true)
+        if (savedAnswers) {
+          setAnswers(savedAnswers)
         }
-      }, 1000)
-    },
-    [currentQuestionIndex, questions, answers],
-  )
 
-  const handleRestart = useCallback(() => {
-    if (!window.confirm("Are you sure you want to restart the quiz?")) return
+        // Clear saved state
+        clearSavedQuizState()
 
-    setCurrentQuestionIndex(0)
-    setAnswers(
-      Array(questions?.length || 0)
-        .fill(null)
-        .map(() => ({
-          answer: "",
-          timeSpent: 0,
-          hintsUsed: false,
-        })),
-    )
-    setQuizCompleted(false)
-    setScore(0)
-  }, [questions?.length])
-
-  const handleComplete = useCallback(
-    (finalScore: number) => {
-      setScore(finalScore)
-
-      // Save to database if authenticated
-      if (isAuthenticated && quizId) {
-        submitQuizResult(
-          quizId,
-          answers.map((a) => a.answer),
-          answers.reduce((total, a) => total + a.timeSpent, 0),
-          finalScore,
-          "fill-blanks",
-        )
+        // If quiz was completed, show results
+        if (quizState.isCompleted) {
+          setIsCompleted(true)
+        }
       }
-    },
-    [answers, quizId, isAuthenticated, submitQuizResult],
-  )
+    }
+  }, [quizData?.id, status])
 
-  const handleFeedbackContinue = useCallback(() => {
-    resetSubmissionState?.()
-  }, [resetSubmissionState])
+  const handleAnswer = (answer: string, timeSpent: number, hintsUsed: boolean) => {
+    const newAnswers = [...answers]
+    newAnswers[currentQuestion] = { answer, timeSpent, hintsUsed }
+    setAnswers(newAnswers)
 
-  if (isLoading) {
-    return <QuizLoader message="Loading quiz..." subMessage="Please wait while we prepare your questions" />
+    if (currentQuestion < quizData.questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1)
+    } else {
+      completeQuiz(newAnswers)
+    }
   }
 
-  if (!questions || questions.length === 0) {
-    return (
-      <Card className="w-full max-w-3xl mx-auto my-8">
-        <CardContent className="flex flex-col items-center justify-center py-8">
-          <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No questions available</h3>
-          <p className="text-muted-foreground text-center mb-4">
-            This quiz doesn't have any questions yet or there was an error loading them.
-          </p>
-          <Button onClick={() => router.push("/dashboard/blanks")}>Return to Fill-in-the-Blanks Quizzes</Button>
-        </CardContent>
-      </Card>
-    )
+  const completeQuiz = (finalAnswers: typeof answers) => {
+    // If user is not authenticated, show auth modal
+    if (!session) {
+      const quizState = {
+        quizId: quizData.id,
+        quizType: "blanks",
+        quizSlug: slug,
+        currentQuestion,
+        totalQuestions: quizData.questions.length,
+        startTime,
+        isCompleted: true,
+      }
+
+      const redirectPath = `/quiz/blanks/${slug}/results`
+
+      setShowAuthModal(true)
+      setAnswers(finalAnswers)
+      setIsCompleted(true)
+      return
+    }
+
+    // Otherwise, complete the quiz
+    setIsCompleted(true)
   }
 
-  if (quizCompleted) {
+  const handleRestart = () => {
+    setCurrentQuestion(0)
+    setAnswers([])
+    setIsCompleted(false)
+    setStartTime(Date.now())
+  }
+
+  const handleComplete = (score: number) => {
+    // This function is called when the quiz results are calculated
+    // You can use it to update UI or trigger other actions
+  }
+
+  if (!quizData || !quizData.questions) {
     return (
-      <div className="space-y-6">
-        {isAuthenticated ? (
-          <>
-            <BlankQuizResults
-              answers={answers}
-              questions={questions}
-              onRestart={handleRestart}
-              onComplete={handleComplete}
-              quizId={quizId}
-              title={title}
-              slug={slug}
-            />
-            {(isSubmitting || isSuccess || isError) && (
-              <QuizSubmissionFeedback
-                score={score || 0}
-                totalQuestions={questions.length}
-                isSubmitting={isSubmitting}
-                isSuccess={isSuccess}
-                isError={isError}
-                errorMessage={errorMessage}
-                onContinue={handleFeedbackContinue}
-                quizType="blanks"
-              />
-            )}
-          </>
-        ) : (
-          <Card className="w-full max-w-3xl mx-auto">
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <h2 className="text-2xl font-bold mb-4">Quiz Completed</h2>
-              <p className="text-muted-foreground mb-6">Sign in to view your results and save your progress.</p>
-              <SignInPrompt callbackUrl={`/dashboard/blanks/${slug}`} />
-            </CardContent>
-          </Card>
-        )}
+      <div className="text-center p-4">
+        <h2 className="text-xl font-bold">Quiz data is not available</h2>
+        <p>Please try reloading the page or contact support if the issue persists.</p>
       </div>
     )
   }
 
+  if (isCompleted) {
+    return (
+      <BlankQuizResults
+        answers={answers}
+        questions={quizData.questions}
+        onRestart={handleRestart}
+        onComplete={handleComplete}
+        quizId={quizData.id}
+        title={quizData.title}
+        slug={slug}
+        clearGuestData={clearSavedQuizState}
+      />
+    )
+  }
+
   return (
-    <FillInTheBlanksQuiz
-      question={questions[currentQuestionIndex]}
-      onAnswer={handleAnswer}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={questions.length}
-    />
+    <QuizAuthWrapper
+      quizState={{
+        quizId: quizData?.id,
+        quizType: "blanks",
+        quizSlug: slug,
+        currentQuestion,
+        totalQuestions: quizData?.questions?.length || 0, // Add fallback for undefined
+        startTime,
+        isCompleted,
+      }}
+      answers={answers}
+      redirectPath={`/quiz/blanks/${slug}`}
+      showAuthModal={showAuthModal}
+      onAuthModalClose={() => setShowAuthModal(false)}
+    >
+      {quizData.questions && ( // Ensure questions exist before rendering
+        <FillInTheBlanksQuiz
+          question={quizData.questions[currentQuestion]}
+          onAnswer={handleAnswer}
+          questionNumber={currentQuestion + 1}
+          totalQuestions={quizData.questions.length}
+        />
+      )}
+    </QuizAuthWrapper>
   )
 }

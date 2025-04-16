@@ -1,272 +1,140 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
-
+import { useRouter } from "next/navigation"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
-import type { QuestionOpenEnded } from "@/app/types/types"
-import { useQuizResult } from "@/hooks/use-quiz-result"
-import { useRouter } from "next/navigation"
-import QuizActions from "../../components/QuizActions"
-import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
-import { QuizLoader } from "@/components/ui/quiz-loader"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { AlertCircle } from "lucide-react"
-
-interface QuizData {
-  id: number
-  questions: QuestionOpenEnded[]
-  title: string
-  userId: string
-}
+import QuizAuthWrapper from "../../components/QuizAuthWrapper"
+import { getSavedQuizState, clearSavedQuizState } from "@/hooks/quiz-session-storage"
 
 interface OpenEndedQuizWrapperProps {
+  quizData: any
   slug: string
-  quizData: QuizData
 }
 
-interface Answer {
-  answer: string
-  timeSpent: number
-  hintsUsed: boolean
-}
-
-const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizData }) => {
-  const [activeQuestion, setActiveQuestion] = useState(0)
-  const [answers, setAnswers] = useState<Answer[]>([])
-  const [quizStartTime, setQuizStartTime] = useState<number>(Date.now())
-  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
-  const [quizCompleted, setQuizCompleted] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [score, setScore] = useState<number | null>(null)
-  const [hasSubmitted, setHasSubmitted] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWrapperProps) {
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [answers, setAnswers] = useState<{ answer: string; timeSpent: number; hintsUsed: boolean }[]>([])
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [startTime, setStartTime] = useState(Date.now())
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const { data: session, status } = useSession()
   const router = useRouter()
 
-  // Use refs to prevent multiple submissions and track callback state
-  const isSubmittingRef = useRef(false)
-  const hasCalledSuccessCallback = useRef(false)
-
-  const { data: session, status } = useSession()
-  const isAuthenticated = status === "authenticated"
-
-  const { submitQuizResult, isSuccess, isError, errorMessage, resetSubmissionState, result } = useQuizResult({})
-
-  // Handle success with useEffect
+  // Check for saved quiz state on mount
   useEffect(() => {
-    if (isSuccess && result && !hasCalledSuccessCallback.current) {
-      hasCalledSuccessCallback.current = true
-      console.log("Quiz submission successful:", result)
+    if (typeof window !== "undefined" && status !== "loading") {
+      const { quizState, answers: savedAnswers } = getSavedQuizState()
+
+      // If there's a saved state for this quiz, restore it
+      if (quizState && quizState.quizId === quizData.id && quizState.quizType === "openended") {
+        setCurrentQuestion(quizState.currentQuestion)
+        setStartTime(quizState.startTime)
+        setIsCompleted(quizState.isCompleted)
+
+        if (savedAnswers) {
+          setAnswers(savedAnswers)
+        }
+
+        // Clear saved state
+        clearSavedQuizState()
+
+        // If quiz was completed, show results
+        if (quizState.isCompleted) {
+          setIsCompleted(true)
+        }
+      }
     }
-  }, [isSuccess, result])
+  }, [quizData.id, status])
 
-  // Handle navigation after submission
-  const handleFeedbackContinue = useCallback(() => {
-    setQuizCompleted(true)
-    resetSubmissionState?.()
-  }, [resetSubmissionState])
+  const handleAnswer = (answer: string, timeSpent: number, hintsUsed: boolean) => {
+    const newAnswers = [...answers]
+    newAnswers[currentQuestion] = { answer, timeSpent, hintsUsed }
+    setAnswers(newAnswers)
 
-  // Reset submission state when success or error changes
-  useEffect(() => {
-    if (isSuccess || isError) {
-      setIsSubmitting(false)
-      isSubmittingRef.current = false
+    if (currentQuestion < quizData.questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1)
+    } else {
+      completeQuiz(newAnswers)
     }
-  }, [isSuccess, isError])
-
-  // Initialize answers when quiz data is available
-  useEffect(() => {
-    // Add a small delay to simulate loading and prevent immediate flashing
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 500)
-
-    if (quizData?.questions && quizData.questions.length > 0) {
-      const initialAnswers = Array(quizData.questions.length)
-        .fill(null)
-        .map(() => ({
-          answer: "",
-          timeSpent: 0,
-          hintsUsed: false,
-        }))
-      setAnswers(initialAnswers)
-      setQuizStartTime(Date.now())
-      setQuestionStartTime(Date.now())
-    }
-
-    return () => clearTimeout(timer)
-  }, [quizData?.questions])
-
-  const handleAnswerSubmit = useCallback(
-    (answer: string) => {
-      if (!quizData || !quizData.questions || activeQuestion >= quizData.questions.length) return
-
-      const currentIndex = activeQuestion
-      const timeSpent = (Date.now() - questionStartTime) / 1000
-
-      const newAnswer: Answer = {
-        answer,
-        timeSpent,
-        hintsUsed: false,
-      }
-
-      setAnswers((prevAnswers) => {
-        const updatedAnswers = [...prevAnswers]
-        updatedAnswers[currentIndex] = newAnswer
-        return updatedAnswers
-      })
-
-      const isLast = currentIndex === quizData.questions.length - 1
-
-      if (isLast) {
-        setQuizCompleted(true)
-      } else {
-        setActiveQuestion((prev) => prev + 1)
-        setQuestionStartTime(Date.now())
-      }
-    },
-    [activeQuestion, quizData, questionStartTime],
-  )
-
-  const handleRestart = useCallback(() => {
-    if (!window.confirm("Are you sure you want to restart the quiz?")) return
-
-    setActiveQuestion(0)
-    setAnswers(
-      Array(quizData?.questions?.length || 0)
-        .fill(null)
-        .map(() => ({
-          answer: "",
-          timeSpent: 0,
-          hintsUsed: false,
-        })),
-    )
-    setQuizCompleted(false)
-    setScore(null)
-    setQuizStartTime(Date.now())
-    setQuestionStartTime(Date.now())
-    setHasSubmitted(false)
-    isSubmittingRef.current = false
-    hasCalledSuccessCallback.current = false
-  }, [quizData?.questions?.length])
-
-  const handleComplete = useCallback(
-    (calculatedScore: number) => {
-      setScore(calculatedScore)
-
-      if (isSubmittingRef.current || hasSubmitted) {
-        console.log("Submission already in progress or completed, ignoring")
-        return
-      }
-
-      isSubmittingRef.current = true
-      setScore(calculatedScore)
-
-      if (isAuthenticated) {
-        setIsSubmitting(true)
-        setHasSubmitted(true)
-
-        submitQuizResult(
-          quizData.id.toString(),
-          answers,
-          (Date.now() - quizStartTime) / 1000,
-          calculatedScore,
-          "openended",
-        )
-      }
-    },
-    [isAuthenticated, answers, quizData?.id, quizStartTime, submitQuizResult, hasSubmitted],
-  )
-
-  if (isLoading) {
-    return <QuizLoader message="Loading quiz..." subMessage="Please wait while we prepare your questions" />
   }
 
-  if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+  const completeQuiz = (finalAnswers: typeof answers) => {
+    // If user is not authenticated, show auth modal
+    if (!session) {
+      const quizState = {
+        quizId: quizData.id,
+        quizType: "openended",
+        quizSlug: slug,
+        currentQuestion,
+        totalQuestions: quizData.questions.length,
+        startTime,
+        isCompleted: true,
+      }
+
+      const redirectPath = `/quiz/openended/${slug}/results`
+
+      setShowAuthModal(true)
+      setAnswers(finalAnswers)
+      setIsCompleted(true)
+      return
+    }
+
+    // Otherwise, complete the quiz
+    setIsCompleted(true)
+  }
+
+  const handleRestart = () => {
+    setCurrentQuestion(0)
+    setAnswers([])
+    setIsCompleted(false)
+    setStartTime(Date.now())
+  }
+
+  const handleComplete = (score: number) => {
+    // This function is called when the quiz results are calculated
+    // You can use it to update UI or trigger other actions
+  }
+
+  if (isCompleted) {
     return (
-      <Card className="w-full max-w-3xl mx-auto my-8">
-        <CardContent className="flex flex-col items-center justify-center py-8">
-          <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No questions available</h3>
-          <p className="text-muted-foreground text-center mb-4">
-            This quiz doesn't have any questions yet or there was an error loading them.
-          </p>
-          <Button onClick={() => router.push("/dashboard/openended")}>Return to Open-Ended Quizzes</Button>
-        </CardContent>
-      </Card>
+      <QuizResultsOpenEnded
+        answers={answers}
+        questions={quizData.questions}
+        onRestart={handleRestart}
+        onComplete={handleComplete}
+        quizId={quizData.id}
+        title={quizData.title}
+        slug={slug}
+        clearGuestData={clearSavedQuizState}
+      />
     )
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <QuizActions
-        quizId={quizData.id.toString()}
-        quizSlug={slug}
-        userId={quizData.userId}
-        ownerId={quizData.userId}
-        initialIsPublic={false}
-        initialIsFavorite={false}
-        quizType="openended"
-        position="left-center"
+    <QuizAuthWrapper
+      quizState={{
+        quizId: quizData.id,
+        quizType: "openended",
+        quizSlug: slug,
+        currentQuestion,
+        totalQuestions: quizData.questions.length,
+        startTime,
+        isCompleted,
+      }}
+      answers={answers}
+      redirectPath={`/quiz/openended/${slug}`}
+      showAuthModal={showAuthModal}
+      onAuthModalClose={() => setShowAuthModal(false)}
+    >
+      <OpenEndedQuizQuestion
+        question={quizData.questions[currentQuestion]}
+        onAnswer={handleAnswer}
+        currentQuestion={currentQuestion}
+        totalQuestions={quizData.questions.length}
+        startTime={startTime}
       />
-
-      {isSubmitting && (
-        <Card className="w-full max-w-3xl mx-auto">
-          <CardContent className="flex flex-col items-center justify-center py-6">
-            <div className="animate-spin inline-block w-6 h-6 border-2 border-current border-t-transparent text-primary rounded-full mb-2"></div>
-            <p className="text-muted-foreground">Saving your quiz results...</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {quizCompleted ? (
-        isAuthenticated ? (
-          <>
-            <QuizResultsOpenEnded
-              answers={answers}
-              questions={quizData.questions}
-              onRestart={handleRestart}
-              onComplete={handleComplete}
-              quizId={quizData.id.toString()}
-              title={quizData.title}
-              slug={slug}
-            />
-            {isSuccess && result && !isSubmitting && (
-              <QuizSubmissionFeedback
-                score={score || 0}
-                totalQuestions={quizData.questions.length}
-                isSubmitting={false}
-                isSuccess={isSuccess}
-                isError={isError}
-                errorMessage={errorMessage}
-                onContinue={handleFeedbackContinue}
-                quizType="openended"
-              />
-            )}
-          </>
-        ) : (
-          <Card className="w-full max-w-3xl mx-auto">
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <h2 className="text-2xl font-bold mb-4">Quiz Completed</h2>
-              <p className="text-muted-foreground mb-6">Sign in to view your results and save your progress.</p>
-              <SignInPrompt callbackUrl={`/dashboard/openended/${slug}`} />
-            </CardContent>
-          </Card>
-        )
-      ) : (
-        <OpenEndedQuizQuestion
-          question={quizData.questions[activeQuestion]}
-          onAnswer={handleAnswerSubmit}
-          questionNumber={activeQuestion + 1}
-          totalQuestions={quizData.questions.length}
-        />
-      )}
-    </div>
+    </QuizAuthWrapper>
   )
 }
-
-export default OpenEndedQuizWrapper

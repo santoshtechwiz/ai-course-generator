@@ -69,18 +69,15 @@ function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { is
       )
       break
     case "openended":
-  
+      invalidAnswers = answers.some((a: any) => typeof a.answer === "undefined" || typeof a.timeSpent === "undefined")
+      break
+
+    case "fill-blanks":
       invalidAnswers = answers.some(
-        (a: any) => typeof a.answer === "undefined" || typeof a.timeSpent === "undefined",
+        (a: any) => typeof a.userAnswer === "undefined" || typeof a.timeSpent === "undefined",
       )
       break
-     
-        case "fill-blanks":
-          invalidAnswers = answers.some(
-            (a: any) => typeof a.userAnswer === "undefined" || typeof a.timeSpent === "undefined",
-          )
-          break
-      
+
     default:
       return { isValid: false, error: `Unsupported quiz type: ${type}` }
   }
@@ -97,7 +94,7 @@ function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { is
 
 function calculatePercentageScore(score: number, totalQuestions: number, type: QuizType): number {
   if (type !== "openended" && type !== "fill-blanks" && type !== "code") {
-    return (score / totalQuestions) * 100
+    return (score / Math.max(1, totalQuestions)) * 100
   } else {
     return score
   }
@@ -105,72 +102,82 @@ function calculatePercentageScore(score: number, totalQuestions: number, type: Q
 
 // Database operations
 async function getQuizWithQuestions(quizId: string) {
-  return prisma.userQuiz.findUnique({
-    where: { id: Number(quizId) },
-    include: { questions: true },
-  })
+  try {
+    return await prisma.userQuiz.findUnique({
+      where: { id: Number(quizId) },
+      include: { questions: true },
+    })
+  } catch (error) {
+    console.error("Error fetching quiz with questions:", error)
+    throw new Error("Failed to fetch quiz data")
+  }
 }
 
 async function processQuizSubmission(userId: string, submission: QuizSubmission, quiz: any, percentageScore: number) {
-  // Move update outside transaction to avoid deadlocks
-  const updatedUserQuiz = await prisma.userQuiz.update({
-    where: { id: Number(submission.quizId) },
-    data: {
-      timeEnded: new Date(),
-      lastAttempted: new Date(),
-      bestScore: { set: Math.max(percentageScore, quiz.bestScore ?? 0) },
-    },
-  })
+  try {
+    // Move update outside transaction to avoid deadlocks
+    const updatedUserQuiz = await prisma.userQuiz.update({
+      where: { id: Number(submission.quizId) },
+      data: {
+        timeEnded: new Date(),
+        lastAttempted: new Date(),
+        bestScore: { set: Math.max(percentageScore, quiz.bestScore ?? 0) },
+      },
+    })
 
-  // Continue rest inside transaction
-  const result = await prisma.$transaction(
-    async (tx) => {
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          totalQuizzesAttempted: { increment: 1 },
-          totalTimeSpent: { increment: Math.round(submission.totalTime) },
-        },
-      })
+    // Continue rest inside transaction
+    const result = await prisma.$transaction(
+      async (tx) => {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            totalQuizzesAttempted: { increment: 1 },
+            totalTimeSpent: { increment: Math.round(submission.totalTime) },
+          },
+        })
 
-      const quizAttempt = await tx.userQuizAttempt.upsert({
-        where: {
-          userId_userQuizId: {
+        const quizAttempt = await tx.userQuizAttempt.upsert({
+          where: {
+            userId_userQuizId: {
+              userId,
+              userQuizId: Number(submission.quizId),
+            },
+          },
+          update: {
+            score: percentageScore,
+            timeSpent: Math.round(submission.totalTime),
+            accuracy: percentageScore,
+          },
+          create: {
             userId,
             userQuizId: Number(submission.quizId),
+            score: percentageScore,
+            timeSpent: Math.round(submission.totalTime),
+            accuracy: percentageScore,
           },
-        },
-        update: {
-          score: percentageScore,
-          timeSpent: Math.round(submission.totalTime),
-          accuracy: percentageScore,
-        },
-        create: {
-          userId,
-          userQuizId: Number(submission.quizId),
-          score: percentageScore,
-          timeSpent: Math.round(submission.totalTime),
-          accuracy: percentageScore,
-        },
-      })
+        })
 
-      await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
+        await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
 
-      return {
-        updatedUserQuiz,
-        quizAttempt,
-        percentageScore,
-        totalQuestions: quiz.questions ? quiz.questions.length : 0,
-      }
-    },
-    {
-      isolationLevel: "Serializable",
-      maxWait: 5000,
-      timeout: 10000,
-    },
-  )
+        return {
+          updatedUserQuiz,
+          quizAttempt,
+          percentageScore,
+          totalQuestions: quiz.questions ? quiz.questions.length : 0,
+        }
+      },
+      {
+        isolationLevel: "Serializable",
+        maxWait: 5000,
+        timeout: 10000,
+      },
+    )
 
-  return result
+    return result
+  } catch (error) {
+    console.error("Error processing quiz submission:", error)
+    throw error
+  }
 }
 
 async function processQuestionAnswers(
@@ -180,43 +187,53 @@ async function processQuestionAnswers(
   attemptId: number,
   quizType: QuizType,
 ) {
-  const questionPromises = questions.map((question, index) => {
-    const answer = answers[index]
-    const userAnswer = extractUserAnswer(answer)
-    let isCorrect = false
+  try {
+    const questionPromises = questions.map((question, index) => {
+      if (index >= answers.length) {
+        console.warn(`Answer missing for question at index ${index}`)
+        return Promise.resolve() // Skip this question if no answer
+      }
 
-    if (quizType === "mcq") {
-      isCorrect = (answer as QuizAnswer).isCorrect
-    }
+      const answer = answers[index]
+      const userAnswer = extractUserAnswer(answer)
+      let isCorrect = false
 
-    const txs = tx.userQuizAttemptQuestion.upsert({
-      where: {
-        attemptId_questionId: {
-          attemptId: attemptId,
-          questionId: question.id,
-        },
-      },
-      update: {
-        userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
-        isCorrect: isCorrect,
-        timeSpent: Math.round(answer.timeSpent),
-      },
-      create: {
-        attemptId,
-        questionId: question.id,
-        userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
-        isCorrect: isCorrect,
-        timeSpent: Math.round(answer.timeSpent),
-      },
+      if (quizType === "mcq" || quizType === "code") {
+        isCorrect = (answer as QuizAnswer).isCorrect
+      }
+
+      return tx.userQuizAttemptQuestion
+        .upsert({
+          where: {
+            attemptId_questionId: {
+              attemptId: attemptId,
+              questionId: question.id,
+            },
+          },
+          update: {
+            userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
+            isCorrect: isCorrect,
+            timeSpent: Math.round(answer.timeSpent),
+          },
+          create: {
+            attemptId,
+            questionId: question.id,
+            userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
+            isCorrect: isCorrect,
+            timeSpent: Math.round(answer.timeSpent),
+          },
+        })
+        .catch((error) => {
+          console.error("Error in upsert transaction:", error)
+          throw error
+        })
     })
 
-    return txs.catch((error) => {
-      console.error("Error in upsert transaction:", error)
-      throw error
-    })
-  })
-
-  return Promise.all(questionPromises)
+    return Promise.all(questionPromises)
+  } catch (error) {
+    console.error("Error processing question answers:", error)
+    throw error
+  }
 }
 
 // Optional retry wrapper
@@ -225,7 +242,7 @@ async function retryTransaction(fn: () => Promise<any>, retries = 3): Promise<an
     try {
       return await fn()
     } catch (err: any) {
-      if (i < retries - 1 && err.code === "P2034") {
+      if (i < retries - 1 && (err.code === "P2034" || err.name === "PrismaClientKnownRequestError")) {
         console.warn(`Retrying transaction... (${i + 1})`)
         await new Promise((res) => setTimeout(res, 100 * (i + 1)))
         continue
@@ -233,6 +250,7 @@ async function retryTransaction(fn: () => Promise<any>, retries = 3): Promise<an
       throw err
     }
   }
+  throw new Error("Maximum retries exceeded")
 }
 
 // Main handler
@@ -272,14 +290,8 @@ export async function POST(request: Request) {
     }
 
     if (quiz.questions && submission.answers.length !== quiz.questions.length) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Answer count mismatch",
-          details: `Expected ${quiz.questions.length} answers, got ${submission.answers.length}`,
-        },
-        { status: 400 },
-      )
+      console.warn(`Answer count mismatch: Expected ${quiz.questions.length}, got ${submission.answers.length}`)
+      // Continue with available answers instead of failing
     }
 
     const totalQuestions = quiz.questions ? quiz.questions.length : 0
@@ -308,4 +320,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

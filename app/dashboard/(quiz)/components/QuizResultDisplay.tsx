@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SimilarQuizzes } from "./similar-quizzes"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
+import { useQuizResult } from "@/hooks/use-quiz-result"
 
 interface QuestionTypeStats {
   multipleChoice: number
@@ -22,6 +24,7 @@ interface QuestionTypeStats {
   total: number
 }
 
+// Add the preventAutoSave prop to the interface
 interface QuizResultDisplayProps {
   quizId: string
   title: string
@@ -33,6 +36,15 @@ interface QuizResultDisplayProps {
   slug: string
   questionTypes?: QuestionTypeStats
   clearGuestData?: () => void
+  answers?: QuizAnswer[] // Add answers prop
+  preventAutoSave?: boolean // Add flag to prevent auto-saving
+}
+
+// Define the QuizAnswer type
+interface QuizAnswer {
+  questionId: string
+  answer: string
+  isCorrect: boolean
 }
 
 export function QuizResultDisplay({
@@ -46,9 +58,16 @@ export function QuizResultDisplay({
   slug,
   questionTypes,
   clearGuestData,
+  preventAutoSave,
 }: QuizResultDisplayProps) {
+  const [progressValue, setProgressValue] = useState(0)
+  const router = useRouter()
+  const { submitQuizResult, isSubmitting } = useQuizResult({})
   const { status } = useSession()
   const isAuthenticated = status === "authenticated"
+
+  // Add this at the top of the component
+  const savedResultRef = useRef(false)
 
   // Safely calculate percentage (0-100)
   const percentage = Math.min(100, Math.max(0, Math.round((correctAnswers / Math.max(1, totalQuestions)) * 100)))
@@ -67,12 +86,27 @@ export function QuizResultDisplay({
   // Fix time formatting - ensure totalTime is a reasonable number
   const formattedTime = formatTime(Math.min(totalTime, 86400)) // Cap at 24 hours
 
+  // Update the useEffect for saving results to respect the preventAutoSave flag
   // Save results to database for authenticated users
   useEffect(() => {
     const saveResultToDatabase = async () => {
-      if (isAuthenticated && quizId) {
+      // Skip saving if preventAutoSave is true
+      if (preventAutoSave) {
+        console.log("Auto-save prevented by preventAutoSave flag")
+        return
+      }
+
+      if (isAuthenticated && quizId && slug) {
         try {
-          const response = await fetch("/api/quiz/results", {
+          // Use a ref to track if we've already saved
+          if (savedResultRef.current) {
+            console.log("Result already saved, skipping duplicate save")
+            return
+          }
+
+          savedResultRef.current = true
+
+          const response = await fetch(`/api/quiz/${slug}/complete`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -98,7 +132,7 @@ export function QuizResultDisplay({
     }
 
     saveResultToDatabase()
-  }, [isAuthenticated, quizId, percentage, totalQuestions, correctAnswers, totalTime, type])
+  }, [isAuthenticated, quizId, slug, percentage, totalQuestions, correctAnswers, totalTime, type, preventAutoSave])
 
   // Clear guest data after showing results
   useEffect(() => {
@@ -111,6 +145,39 @@ export function QuizResultDisplay({
       return () => clearTimeout(timer)
     }
   }, [isAuthenticated, clearGuestData])
+
+  // Animate progress bar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setProgressValue(score)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [score])
+
+  const handleRetry = () => {
+    router.refresh()
+  }
+
+  const handleBackToDashboard = () => {
+    router.push(`/dashboard/${type}`)
+  }
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Quiz Result: ${title}`,
+          text: `I scored ${score.toFixed(0)}% on the ${title} quiz!`,
+          url: window.location.href,
+        })
+      } else {
+        await navigator.clipboard.writeText(window.location.href)
+        alert("Link copied to clipboard!")
+      }
+    } catch (error) {
+      console.error("Error sharing:", error)
+    }
+  }
 
   // If user is not authenticated, show sign-in prompt with results summary
   if (!isAuthenticated) {

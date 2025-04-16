@@ -1,9 +1,5 @@
 "use client"
-
-import type React from "react"
-import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import levenshtein from "js-levenshtein"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +19,8 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import levenshtein from "js-levenshtein"
+import { useState, useMemo, useEffect } from "react"
 
 interface Question {
   id: number
@@ -38,7 +36,7 @@ interface Question {
 
 interface FillInTheBlanksQuizProps {
   question: Question
-  onAnswer: (answer: string) => void
+  onAnswer: (answer: string, timeSpent: number, hintsUsed: boolean) => void
   questionNumber: number
   totalQuestions: number
 }
@@ -65,7 +63,7 @@ const Timer = ({ elapsedTime }: { elapsedTime: number }) => {
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  )
+  );
 }
 
 // Reusable BadgeGroup Component
@@ -248,7 +246,7 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
     const isAnswerCorrect = distance <= similarityThreshold
     setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
-    onAnswer(answer)
+    onAnswer(answer, Math.round(timeSpent), hintLevel > 0);
   }
 
   const handleProgressiveHint = () => {

@@ -8,6 +8,8 @@ import { diffChars } from "diff"
 import { CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, RotateCw } from "lucide-react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { getPerformanceLevel, QuizResultBase } from "../../components/QuizResultBase"
+import { QuizResultWrapper } from "../../components/QuizResultWrapper"
+import { useSession } from "next-auth/react"
 
 interface QuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
@@ -33,18 +35,35 @@ export default function QuizResultsOpenEnded({
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const hasCalledComplete = useRef(false)
+  const hasSavedToDatabase = useRef(false)
+  const { data: session } = useSession()
 
   // Calculate score only once
   const score = useRef(calculateScore(answers, questions)).current
-  const totalTime = useRef(answers.reduce((sum, answer) => sum + answer.timeSpent, 0)).current
+  const totalTime = useRef(answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0)).current
 
-  // Call onComplete only once
+  // Call onComplete only once and save to database if authenticated
   useEffect(() => {
     if (!hasCalledComplete.current) {
       hasCalledComplete.current = true
       onComplete(score)
     }
-  }, [score, onComplete])
+
+    // Save to database if authenticated and not already saved
+    if (session?.user && !hasSavedToDatabase.current && quizId) {
+      hasSavedToDatabase.current = true
+
+      // Format answers for submission
+      const formattedAnswers = answers.map((answer) => ({
+        userAnswer: answer.answer || "",
+        timeSpent: answer.timeSpent || 0,
+        hintsUsed: answer.hintsUsed || false,
+      }))
+
+      // Save to database
+      saveQuizResultToDatabase(quizId, formattedAnswers, totalTime, score, "openended")
+    }
+  }, [score, onComplete, session, quizId, answers, totalTime])
 
   const performance = getPerformanceLevel(score)
 
@@ -61,107 +80,146 @@ export default function QuizResultsOpenEnded({
   }
 
   return (
-    <QuizResultBase
-      quizId={quizId}
-      title={title}
-      score={score}
-      totalQuestions={questions.length}
-      totalTime={totalTime}
-      slug={slug}
-      quizType="openended"
-      clearGuestData={clearGuestData}
-    >
-      <div className="max-w-4xl mx-auto p-4">
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold flex items-center justify-between">
-              <span>Quiz Results</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRestart}
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                {isLoading ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-                ) : (
-                  <RotateCw className="h-4 w-4" />
-                )}
-                Restart Quiz
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center mb-6">
-              <p className="text-3xl font-bold mb-2">{score.toFixed(1)}%</p>
-              <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
-              <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
-            </div>
+    <QuizResultWrapper quizId={quizId} slug={slug} quizType="openended" onClearGuestData={clearGuestData}>
+      <QuizResultBase
+        quizId={quizId}
+        title={title}
+        score={score}
+        totalQuestions={questions.length}
+        totalTime={totalTime}
+        slug={slug}
+        quizType="openended"
+        clearGuestData={clearGuestData}
+      >
+        <div className="max-w-4xl mx-auto p-4">
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                <span>Quiz Results</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRestart}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  {isLoading ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                  ) : (
+                    <RotateCw className="h-4 w-4" />
+                  )}
+                  Restart Quiz
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center mb-6">
+                <p className="text-3xl font-bold mb-2">{score.toFixed(1)}%</p>
+                <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
+                <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
+              </div>
 
-            {questions.map((question, index) => {
-              if (!question || !answers[index]) return null
+              {questions.map((question, index) => {
+                if (!question || !answers[index]) return null
 
-              const similarity = calculateSimilarity(question.answer, answers[index].answer)
-              const diffSummary = summarizeDiff(question.answer, answers[index].answer)
-              const isExpanded = expandedQuestions.includes(index)
+                const similarity = calculateSimilarity(question.answer, answers[index].answer)
+                const isExpanded = expandedQuestions.includes(index)
 
-              return (
-                <Collapsible key={question.id} open={isExpanded} onOpenChange={() => toggleExpanded(index)}>
-                  <Card className="mb-4">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex justify-between items-center">
-                        <span>Question {index + 1}</span>
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                            {isExpanded ? "Hide Details" : "Show Details"}
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                        </CollapsibleTrigger>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="mb-2">{question.question}</p>
-                      <div className="flex items-center gap-2 mb-2">
-                        {similarity >= 90 ? (
-                          <CheckCircle className="text-green-500" />
-                        ) : similarity > 70 ? (
-                          <AlertTriangle className="text-yellow-500" />
-                        ) : (
-                          <XCircle className="text-red-500" />
-                        )}
-                        <span>Accuracy: {similarity.toFixed(1)}%</span>
-                      </div>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Time spent: {Math.floor(answers[index].timeSpent / 60)}m{" "}
-                        {Math.round(answers[index].timeSpent % 60)}s
-                      </p>
-                      <CollapsibleContent>
-                        <div className="mt-4">
-                          <h4 className="font-semibold mb-1">Your Answer:</h4>
-                          <p className="bg-gray-100 dark:bg-gray-800 p-2 rounded mb-2 whitespace-pre-wrap">
-                            {answers[index].answer || "(No answer provided)"}
-                          </p>
-                          <h4 className="font-semibold mb-1">Correct Answer:</h4>
-                          <p className="bg-gray-100 dark:bg-gray-800 p-2 rounded mb-2 whitespace-pre-wrap">
-                            {question.answer}
-                          </p>
-                          <h4 className="font-semibold mb-1">Difference:</h4>
-                          <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded whitespace-pre-wrap">
-                            {renderDiff(question.answer, answers[index].answer)}
-                          </div>
+                return (
+                  <Collapsible key={question.id} open={isExpanded} onOpenChange={() => toggleExpanded(index)}>
+                    <Card className="mb-4">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold flex justify-between items-center">
+                          <span>Question {index + 1}</span>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                              {isExpanded ? "Hide Details" : "Show Details"}
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                          </CollapsibleTrigger>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {/* Fix for hydration error - Use div instead of p for content that might contain divs */}
+                        <div className="mb-2">{question.question}</div>
+                        <div className="flex items-center gap-2 mb-2">
+                          {similarity >= 90 ? (
+                            <CheckCircle className="text-green-500" />
+                          ) : similarity > 70 ? (
+                            <AlertTriangle className="text-yellow-500" />
+                          ) : (
+                            <XCircle className="text-red-500" />
+                          )}
+                          <span>Accuracy: {similarity.toFixed(1)}%</span>
                         </div>
-                      </CollapsibleContent>
-                    </CardContent>
-                  </Card>
-                </Collapsible>
-              )
-            })}
-          </CardContent>
-        </Card>
-      </div>
-    </QuizResultBase>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Time spent: {Math.floor(answers[index].timeSpent / 60)}m{" "}
+                          {Math.round(answers[index].timeSpent % 60)}s
+                        </p>
+                        <CollapsibleContent>
+                          <div className="mt-4">
+                            <h4 className="font-semibold mb-1">Your Answer:</h4>
+                            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded mb-2 whitespace-pre-wrap">
+                              {answers[index].answer || "(No answer provided)"}
+                            </div>
+                            <h4 className="font-semibold mb-1">Model Answer:</h4>
+                            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded mb-2 whitespace-pre-wrap">
+                              {question.answer}
+                            </div>
+                            {/* Only show diff for expanded questions */}
+                            {isExpanded && (
+                              <>
+                                <h4 className="font-semibold mb-1">Comparison:</h4>
+                                <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded whitespace-pre-wrap">
+                                  {renderDiff(question.answer, answers[index].answer)}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </CardContent>
+                    </Card>
+                  </Collapsible>
+                )
+              })}
+            </CardContent>
+          </Card>
+        </div>
+      </QuizResultBase>
+    </QuizResultWrapper>
   )
+}
+
+// Add this function to save results to the database
+async function saveQuizResultToDatabase(
+  quizId: string,
+  answers: { userAnswer: string; timeSpent: number; hintsUsed: boolean }[],
+  totalTime: number,
+  score: number,
+  quizType: string,
+) {
+  try {
+    const response = await fetch(`/api/quiz/${quizId}/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        quizId,
+        answers,
+        totalTime,
+        score,
+        type: quizType,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error("Failed to save quiz results to database", errorData)
+    }
+  } catch (error) {
+    console.error("Error saving quiz results:", error)
+  }
 }
 
 function calculateScore(answers: { answer: string }[], questions: { answer: string }[]): number {
@@ -229,21 +287,4 @@ function renderDiff(correct: string, user: string) {
       {part.value}
     </span>
   ))
-}
-
-function summarizeDiff(correct: string, user: string): { added: number; removed: number; unchanged: number } {
-  if (!correct || !user) {
-    return { added: 0, removed: 0, unchanged: 0 }
-  }
-
-  const diff = diffChars(correct?.toLowerCase(), user?.toLowerCase())
-  return diff.reduce(
-    (acc, part) => {
-      if (part.added) acc.added += part.count || 0
-      else if (part.removed) acc.removed += part.count || 0
-      else acc.unchanged += part.count || 0
-      return acc
-    },
-    { added: 0, removed: 0, unchanged: 0 },
-  )
 }
