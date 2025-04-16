@@ -1,5 +1,7 @@
 "use client"
 import { useEffect, useMemo, useRef } from "react"
+import React from "react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -68,15 +70,14 @@ export default function BlankQuizResults({
       // Format answers for submission
       const formattedAnswers = answers.map((answer, index) => ({
         userAnswer: answer.answer || "",
-        isCorrect: calculateSimilarity(questions[index]?.answer || "", answer.answer || "") > 80,
         timeSpent: answer.timeSpent || 0,
         hintsUsed: answer.hintsUsed || false,
       }))
 
       // Save to database
-      saveQuizResultToDatabase(quizId,slug, formattedAnswers, totalTime, Math.round(score), "blanks")
+      saveQuizResultToDatabase(quizId, formattedAnswers, totalTime, Math.round(score), "fill-blanks")
     }
-  }, [score, onComplete, session, quizId, answers, questions, totalTime])
+  }, [score, onComplete, session, quizId, slug, answers, questions, totalTime])
 
   const performance = getPerformanceLevel(score)
 
@@ -108,7 +109,17 @@ export default function BlankQuizResults({
                   <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="mb-2">{result.question}</p>
+                  {/* Fix for hydration error - Use proper HTML structure */}
+                  <div className="mb-2">
+                    {result.question.split("_____").map((part, i, arr) => (
+                      <React.Fragment key={i}>
+                        {part}
+                        {i < arr.length - 1 && (
+                          <span className={getAnswerClassName(result.similarity)}>{result.userAnswer || "_____"}</span>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
                   <div className="flex flex-col gap-2 mb-4">
                     <div className="flex items-center gap-2">
                       <strong className="min-w-[120px]">Your Answer:</strong>
@@ -151,14 +162,13 @@ export default function BlankQuizResults({
 // Add this function to save results to the database
 async function saveQuizResultToDatabase(
   quizId: string,
-  slug: string,
-  answers: { userAnswer: string; isCorrect: boolean; timeSpent: number; hintsUsed: boolean }[],
+  answers: { userAnswer: string; timeSpent: number; hintsUsed: boolean }[],
   totalTime: number,
   score: number,
   quizType: string,
 ) {
   try {
-    const response = await fetch(`/api/quiz/${slug}/complete`, {
+    const response = await fetch(`/api/quiz/${quizId}/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -168,13 +178,13 @@ async function saveQuizResultToDatabase(
         answers,
         totalTime,
         score,
-        quizType,
-        completedAt: new Date().toISOString(),
+        type: quizType,
       }),
     })
 
     if (!response.ok) {
-      console.error("Failed to save quiz results to database")
+      const errorData = await response.json().catch(() => ({}))
+      console.error("Failed to save quiz results to database", errorData)
     }
   } catch (error) {
     console.error("Error saving quiz results:", error)
@@ -205,8 +215,8 @@ function levenshteinDistance(str1: string, str2: string): number {
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))
 
   for (let i = 0; i <= m; i++) dp[i][0] = i
- 
-  for (let j = 0; j<= n; j++) dp[0][j] = j
+
+  for (let j = 0; j <= n; j++) dp[0][j] = j
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {

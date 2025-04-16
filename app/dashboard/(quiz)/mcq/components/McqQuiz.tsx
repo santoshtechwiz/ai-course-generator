@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import { HelpCircle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 
+
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizBase } from "../../components/QuizBase"
@@ -17,7 +18,7 @@ import { QuizResultDisplay } from "../../components/QuizResultDisplay"
 import { useQuizState, formatQuizTime } from "@/hooks/use-quiz-state"
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { QuizProgress } from "../../components/QuizProgress"
-
+import { AuthModal } from "@/components/ui/auth-modal"
 
 type Question = {
   id: number
@@ -38,6 +39,8 @@ interface McqQuizProps {
 }
 
 export default function McqQuiz({ questions, quizId, slug, title, onComplete }: McqQuizProps) {
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
   const calculateScore = useCallback((selectedOptions: (string | null)[], questions: Question[]) => {
     return selectedOptions.reduce((score, selected, index) => {
       const correctAnswer = questions[index]?.answer
@@ -60,7 +63,7 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
     isAuthenticated,
     session,
     handleSelectOption,
-    handleNextQuestion,
+    handleNextQuestion: originalHandleNextQuestion,
     handleFeedbackContinue,
   } = useQuizState({
     quizId,
@@ -70,6 +73,24 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
     calculateScore,
     onComplete,
   })
+
+  // Wrap the original handler to add authentication check
+  const handleNextQuestion = useCallback(() => {
+    // If this is the last question and user is not authenticated, show auth modal
+    if (currentQuestionIndex === questions.length - 1 && !isAuthenticated && !session) {
+      setShowAuthModal(true)
+      return
+    }
+
+    // Otherwise, proceed with original handler
+    originalHandleNextQuestion()
+  }, [currentQuestionIndex, questions.length, isAuthenticated, session, originalHandleNextQuestion])
+
+  const handleAuthModalClose = useCallback(() => {
+    setShowAuthModal(false)
+    // Continue with quiz completion after modal is closed
+    originalHandleNextQuestion()
+  }, [originalHandleNextQuestion])
 
   const [uniqueOptions, hasError] = useMemo(() => {
     if (!currentQuestion) {
@@ -140,6 +161,7 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
               correctAnswers={correctCount}
               type="mcq"
               slug={slug}
+              preventAutoSave={true} // Prevent duplicate saving
             />
           </MotionWrapper>
         )
@@ -237,21 +259,32 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
   }
 
   return (
-    <QuizBase quizId={quizId.toString()} slug={slug} title={title} type="mcq" totalQuestions={questions.length}>
-      {renderQuizContent()}
+    <>
+      <QuizBase quizId={quizId.toString()} slug={slug} title={title} type="mcq" totalQuestions={questions.length}>
+        {renderQuizContent()}
 
-      {showFeedbackModal && (
-        <QuizFeedback
-          isSubmitting={isSubmitting}
-          isSuccess={isSuccess}
-          isError={isError}
-          score={calculateScore(selectedOptions, questions)}
-          totalQuestions={questions.length}
-          onContinue={handleFeedbackContinue}
-          errorMessage={errorMessage}
-          quizType="mcq"
-        />
-      )}
-    </QuizBase>
+        {showFeedbackModal && (
+          <QuizFeedback
+            isSubmitting={isSubmitting}
+            isSuccess={isSuccess}
+            isError={isError}
+            score={calculateScore(selectedOptions, questions)}
+            totalQuestions={questions.length}
+            onContinue={handleFeedbackContinue}
+            errorMessage={errorMessage ?? undefined}
+            quizType="mcq"
+          />
+        )}
+      </QuizBase>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={handleAuthModalClose}
+        title="Sign in to save your results"
+        description="Please sign in to save your quiz results and track your progress."
+        callbackUrl={`/dashboard/mcq/${slug}`}
+      />
+    </>
   )
 }

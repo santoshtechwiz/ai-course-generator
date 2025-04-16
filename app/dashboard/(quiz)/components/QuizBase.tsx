@@ -6,7 +6,6 @@ import type { QuizType } from "@/app/types/types"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { QuizResultDisplay } from "./QuizResultDisplay"
 
-
 // Define more specific types for quiz answers
 export interface QuizAnswer {
   answer: string | string[]
@@ -76,6 +75,7 @@ export function QuizBase({
     }
   }
 
+  // Update the completeQuiz function to properly handle state transitions
   const completeQuiz = () => {
     setQuizState("submitting")
     const finalTotalTime = (Date.now() - startTime) / 1000
@@ -89,21 +89,20 @@ export function QuizBase({
       type,
     }
 
-    // Simulate saving with a progress bar
-    // In a real app, you would call your save function here
-    setTimeout(() => {
-      setQuizState("completed")
+    // Don't use setTimeout here, instead directly transition to completed state
+    // This prevents the "saving" state from persisting after the API call completes
+    setQuizState("completed")
 
-      if (onQuizComplete) {
-        onQuizComplete(result)
-      }
-    }, 2000) // Simulate a 2-second save process
+    if (onQuizComplete) {
+      onQuizComplete(result)
+    }
   }
 
   if (quizState === "submitting") {
     return <QuizLoader message="Saving your quiz results..." />
   }
 
+  // Update the completed state rendering to prevent duplicate API calls
   if (quizState === "completed") {
     return (
       <QuizResultDisplay
@@ -115,6 +114,8 @@ export function QuizBase({
         correctAnswers={score}
         type={type}
         slug={slug}
+        answers={answers} // Pass answers to prevent needing to refetch
+        preventAutoSave={true} // Add flag to prevent auto-saving in the result display
       />
     )
   }
@@ -132,4 +133,3 @@ export function QuizBase({
 
   return <>{childrenWithProps}</>
 }
-

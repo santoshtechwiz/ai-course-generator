@@ -1,99 +1,169 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "./use-toast"
+import { useRouter } from "next/navigation"
 import type { QuizType } from "@/app/types/types"
 
 interface UseQuizResultOptions {
   onSuccess?: (result: any) => void
   onError?: (error: Error) => void
+  redirectOnSuccess?: boolean
+  redirectPath?: string
 }
 
-export function useQuizResult(options?: UseQuizResultOptions) {
+export function useQuizResult({
+  onSuccess,
+  onError,
+  redirectOnSuccess = false,
+  redirectPath = "/dashboard",
+}: UseQuizResultOptions = {}) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isError, setIsError] = useState(false)
-  const [errorMessage, setErrorMessage] = useState("")
-  const [result, setResult] = useState<any>(null)
-
-  /**
-   * Submit quiz results to the server
-   */
-  const submitQuizResult = async (quizId: string, answers: any[], totalTime: number, score: number, type: QuizType) => {
-    if (isSubmitting) return
-
-    setIsSubmitting(true)
-    setIsSuccess(false)
-    setIsError(false)
-    setErrorMessage("")
-
-    try {
-      const response = await fetch(`/api/quiz/${quizId}/complete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          quizId,
-          answers,
-          totalTime,
-          score,
-          type,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Failed to submit quiz results: ${response.status}`)
-      }
-
-      const data = await response.json()
-      setResult(data.result || data)
-
-      // Show success state
-      setIsSuccess(true)
-
-      // Show success message
-      toast({
-        title: "Quiz completed!",
-        description: `Your score: ${Math.round(data.result?.percentageScore || data.percentageScore || 0)}%`,
-      })
-
-      // Call the success callback if provided
-      if (options?.onSuccess) {
-        options.onSuccess(data.result || data)
-      }
-
-      return data.result || data
-    } catch (error) {
-      console.error("Error submitting quiz results:", error)
-
-      // Show error state
-      setIsError(true)
-      setErrorMessage(error instanceof Error ? error.message : "Failed to submit quiz results")
-
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit quiz results",
-        variant: "destructive",
-      })
-
-      // Call the error callback if provided
-      if (options?.onError) {
-        options.onError(error instanceof Error ? error : new Error("Unknown error"))
-      }
-
-      return null
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [result, setResult] = useState<any | null>(null)
+  const router = useRouter()
 
   const resetSubmissionState = () => {
     setIsSubmitting(false)
     setIsSuccess(false)
     setIsError(false)
-    setErrorMessage("")
+    setErrorMessage(null)
+    setResult(null)
+  }
+
+  // Completely rewritten to ensure proper parameter handling
+  const submitQuizResult = async (
+    quizId: string | number,
+    answers: any[],
+    totalTime: number,
+    score: number,
+    type: QuizType,
+    slug: string,
+  ) => {
+    if (isSubmitting) {
+      console.log("Preventing duplicate submission")
+      return null // Prevent multiple submissions
+    }
+
+    try {
+      setIsSubmitting(true)
+      setIsSuccess(false)
+      setIsError(false)
+      setErrorMessage(null)
+
+      // Ensure quizId is a string
+      const quizIdString = String(quizId)
+
+      // Format answers based on quiz type
+      const formattedAnswers = formatAnswers(answers, type)
+
+      // Prepare submission data
+      const submissionData = {
+        quizId: quizIdString,
+        answers: formattedAnswers,
+        totalTime,
+        score,
+        type,
+      }
+
+      console.log("Submitting quiz result:", {
+        endpoint: `/api/quiz/${quizIdString}/complete`,
+        data: submissionData,
+      })
+
+      // Submit to the correct endpoint
+      const response = await fetch(`/api/quiz/${quizIdString}/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submissionData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        throw new Error(errorData.error || `Failed to submit quiz results: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setResult(data)
+      setIsSuccess(true)
+      setIsSubmitting(false) // Important: Set isSubmitting to false after success
+
+      if (onSuccess) {
+        onSuccess(data)
+      }
+
+      toast({
+        title: "Quiz completed!",
+        description: "Your results have been saved successfully.",
+      })
+
+      if (redirectOnSuccess && redirectPath) {
+        router.push(redirectPath)
+      }
+
+      return data
+    } catch (error: any) {
+      console.error("Error submitting quiz results:", error)
+      setIsError(true)
+      setErrorMessage(error.message || "An error occurred while submitting your quiz results")
+      setIsSubmitting(false) // Important: Set isSubmitting to false after error
+
+      if (onError) {
+        onError(error)
+      }
+
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save quiz results. Please try again.",
+        variant: "destructive",
+      })
+
+      return null
+    }
+  }
+
+  // Helper function to format answers based on quiz type
+  function formatAnswers(answers: any[], type: QuizType) {
+    if (!Array.isArray(answers)) {
+      console.warn("Answers is not an array:", answers)
+      return []
+    }
+
+    return answers.map((answer) => {
+      // Handle different answer formats based on quiz type
+      if (type === "mcq") {
+        return {
+          answer: typeof answer === "string" ? answer : answer.answer || "",
+          userAnswer: typeof answer === "string" ? answer : answer.userAnswer || answer.answer || "",
+          isCorrect: typeof answer === "object" ? answer.isCorrect || false : false,
+          timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
+        }
+      } else if (type === "fill-blanks") {
+        return {
+          userAnswer: typeof answer === "string" ? answer : answer.answer || answer.userAnswer || "",
+          timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
+          hintsUsed: typeof answer === "object" ? answer.hintsUsed || false : false,
+        }
+      } else if (type === "openended") {
+        return {
+          answer: typeof answer === "string" ? answer : answer.answer || "",
+          timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
+          hintsUsed: typeof answer === "object" ? answer.hintsUsed || false : false,
+        }
+      } else if (type === "code") {
+        return {
+          answer: typeof answer === "string" ? answer : answer.answer || "",
+          userAnswer: typeof answer === "string" ? answer : answer.userAnswer || "",
+          isCorrect: typeof answer === "object" ? answer.isCorrect || false : false,
+          timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
+        }
+      }
+      return answer
+    })
   }
 
   return {
@@ -106,4 +176,3 @@ export function useQuizResult(options?: UseQuizResultOptions) {
     resetSubmissionState,
   }
 }
-
