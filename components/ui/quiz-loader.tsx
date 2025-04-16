@@ -1,49 +1,62 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Progress } from "@/components/ui/progress"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import React from "react"
+import { motion } from "framer-motion"
+import { Loader2 } from 'lucide-react'
+import { Card, CardContent } from "@/components/ui/card"
 
 interface QuizLoaderProps {
-  message: string
+  message?: string
+  subMessage?: string
+  size?: "sm" | "md" | "lg"
 }
 
-export function QuizLoader({ message }: QuizLoaderProps) {
-  const [progress, setProgress] = useState(0)
-
-  useEffect(() => {
-    // Simulate progress increasing over time
-    const timer = setInterval(() => {
-      setProgress((prevProgress) => {
-        // Slow down as we approach 100%
-        const increment = Math.max(1, 10 - Math.floor(prevProgress / 10))
-        const newProgress = prevProgress + increment
-
-        // Cap at 95% to give the impression we're waiting for server response
-        return newProgress >= 95 ? 95 : newProgress
-      })
-    }, 100)
-
-    return () => {
-      clearInterval(timer)
-    }
-  }, [])
+export const QuizLoader: React.FC<QuizLoaderProps> = ({
+  message = "Loading...",
+  subMessage,
+  size = "md",
+}) => {
+  const sizeClasses = {
+    sm: "w-6 h-6",
+    md: "w-8 h-8",
+    lg: "w-12 h-12",
+  }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-xl text-center">{message}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Progress value={progress} className="h-2 transition-all" />
-        <p className="text-center text-sm text-muted-foreground">
-          {progress < 30 && "Preparing your results..."}
-          {progress >= 30 && progress < 60 && "Calculating your score..."}
-          {progress >= 60 && progress < 90 && "Almost there..."}
-          {progress >= 90 && "Finalizing your results..."}
-        </p>
+    <Card className="w-full max-w-3xl mx-auto my-8 border border-border/50 shadow-sm">
+      <CardContent className="flex flex-col items-center justify-center py-12">
+        <motion.div
+          animate={{
+            rotate: 360,
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+          className="mb-4"
+        >
+          <Loader2 className={`text-primary ${sizeClasses[size]}`} />
+        </motion.div>
+        <motion.h3
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-lg font-medium text-foreground mb-2"
+        >
+          {message}
+        </motion.h3>
+        {subMessage && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-sm text-muted-foreground text-center max-w-md"
+          >
+            {subMessage}
+          </motion.p>
+        )}
       </CardContent>
     </Card>
   )
 }
-

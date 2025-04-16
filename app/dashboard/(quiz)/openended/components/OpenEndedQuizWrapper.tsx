@@ -12,6 +12,10 @@ import { useQuizResult } from "@/hooks/use-quiz-result"
 import { useRouter } from "next/navigation"
 import QuizActions from "../../components/QuizActions"
 import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
+import { QuizLoader } from "@/components/ui/quiz-loader"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { AlertCircle } from "lucide-react"
 
 interface QuizData {
   id: number
@@ -39,21 +43,20 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [score, setScore] = useState<number | null>(null)
-  const [hasSubmitted, setHasSubmitted] = useState(false) // Add this to track if already submitted
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  // Use a ref to prevent multiple submissions
+
+  // Use refs to prevent multiple submissions and track callback state
   const isSubmittingRef = useRef(false)
   const hasCalledSuccessCallback = useRef(false)
 
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
 
-  // IMPORTANT: Remove the onSuccess callback from useQuizResult
-  const { submitQuizResult, isSuccess, isError, errorMessage, resetSubmissionState, result } = useQuizResult({
-    // Remove the onSuccess callback that might be causing the loop
-  })
+  const { submitQuizResult, isSuccess, isError, errorMessage, resetSubmissionState, result } = useQuizResult({})
 
-  // Handle success manually with useEffect instead
+  // Handle success with useEffect
   useEffect(() => {
     if (isSuccess && result && !hasCalledSuccessCallback.current) {
       hasCalledSuccessCallback.current = true
@@ -61,12 +64,11 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
     }
   }, [isSuccess, result])
 
-  // Handle navigation after submission with proper dependencies
-   const handleFeedbackContinue = useCallback(() => {
-     setQuizCompleted(true)
-     resetSubmissionState?.()
-     // Don't return anything here
-   }, [resetSubmissionState])
+  // Handle navigation after submission
+  const handleFeedbackContinue = useCallback(() => {
+    setQuizCompleted(true)
+    resetSubmissionState?.()
+  }, [resetSubmissionState])
 
   // Reset submission state when success or error changes
   useEffect(() => {
@@ -76,7 +78,13 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
     }
   }, [isSuccess, isError])
 
+  // Initialize answers when quiz data is available
   useEffect(() => {
+    // Add a small delay to simulate loading and prevent immediate flashing
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 500)
+
     if (quizData?.questions && quizData.questions.length > 0) {
       const initialAnswers = Array(quizData.questions.length)
         .fill(null)
@@ -88,8 +96,9 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
       setAnswers(initialAnswers)
       setQuizStartTime(Date.now())
       setQuestionStartTime(Date.now())
-      console.log(`Quiz initialized with ${quizData.questions.length} questions`)
     }
+
+    return () => clearTimeout(timer)
   }, [quizData?.questions])
 
   const handleAnswerSubmit = useCallback(
@@ -108,7 +117,6 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
       setAnswers((prevAnswers) => {
         const updatedAnswers = [...prevAnswers]
         updatedAnswers[currentIndex] = newAnswer
-
         return updatedAnswers
       })
 
@@ -120,11 +128,6 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
         setActiveQuestion((prev) => prev + 1)
         setQuestionStartTime(Date.now())
       }
-
-      console.log(`Answered Q${currentIndex + 1}:`, {
-        answer,
-        timeSpent: Math.round(timeSpent),
-      })
     },
     [activeQuestion, quizData, questionStartTime],
   )
@@ -134,7 +137,7 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
 
     setActiveQuestion(0)
     setAnswers(
-      Array(quizData.questions.length)
+      Array(quizData?.questions?.length || 0)
         .fill(null)
         .map(() => ({
           answer: "",
@@ -146,26 +149,21 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
     setScore(null)
     setQuizStartTime(Date.now())
     setQuestionStartTime(Date.now())
-    setHasSubmitted(false) // Reset submission tracking
+    setHasSubmitted(false)
     isSubmittingRef.current = false
     hasCalledSuccessCallback.current = false
-    console.log("Quiz restarted")
-  }, [quizData.questions.length])
+  }, [quizData?.questions?.length])
 
-  // Fixed handleComplete function with proper dependencies and submission state management
   const handleComplete = useCallback(
     (calculatedScore: number) => {
       setScore(calculatedScore)
-      // Use ref to prevent multiple submissions
+
       if (isSubmittingRef.current || hasSubmitted) {
         console.log("Submission already in progress or completed, ignoring")
         return
       }
 
-      // Set the ref immediately to prevent race conditions
       isSubmittingRef.current = true
-
-      // Use setScore instead of the undefined setFinalScore
       setScore(calculatedScore)
 
       if (isAuthenticated) {
@@ -181,11 +179,26 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
         )
       }
     },
-    [isAuthenticated, answers, quizData.id, quizStartTime, submitQuizResult, hasSubmitted],
+    [isAuthenticated, answers, quizData?.id, quizStartTime, submitQuizResult, hasSubmitted],
   )
 
+  if (isLoading) {
+    return <QuizLoader message="Loading quiz..." subMessage="Please wait while we prepare your questions" />
+  }
+
   if (!quizData || !quizData.questions || quizData.questions.length === 0) {
-    return <p className="text-center text-gray-500 my-8">No questions available for this quiz.</p>
+    return (
+      <Card className="w-full max-w-3xl mx-auto my-8">
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">No questions available</h3>
+          <p className="text-muted-foreground text-center mb-4">
+            This quiz doesn't have any questions yet or there was an error loading them.
+          </p>
+          <Button onClick={() => router.push("/dashboard/openended")}>Return to Open-Ended Quizzes</Button>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -202,10 +215,12 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
       />
 
       {isSubmitting && (
-        <div className="bg-secondary/20 p-4 rounded-md text-center">
-          <div className="animate-spin inline-block w-6 h-6 border-2 border-current border-t-transparent text-primary rounded-full mb-2"></div>
-          <p>Saving your quiz results...</p>
-        </div>
+        <Card className="w-full max-w-3xl mx-auto">
+          <CardContent className="flex flex-col items-center justify-center py-6">
+            <div className="animate-spin inline-block w-6 h-6 border-2 border-current border-t-transparent text-primary rounded-full mb-2"></div>
+            <p className="text-muted-foreground">Saving your quiz results...</p>
+          </CardContent>
+        </Card>
       )}
 
       {quizCompleted ? (
@@ -216,11 +231,13 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
               questions={quizData.questions}
               onRestart={handleRestart}
               onComplete={handleComplete}
+              quizId={quizData.id.toString()}
+              title={quizData.title}
+              slug={slug}
             />
-            {/* Only show feedback when submission is successful and not submitting */}
             {isSuccess && result && !isSubmitting && (
               <QuizSubmissionFeedback
-                score={score || 0} // Ensure score is defined here
+                score={score || 0}
                 totalQuestions={quizData.questions.length}
                 isSubmitting={false}
                 isSuccess={isSuccess}
@@ -232,11 +249,13 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
             )}
           </>
         ) : (
-          <div className="max-w-4xl mx-auto p-4">
-            <h2 className="text-2xl font-bold mb-4">Quiz Completed</h2>
-            <p className="mb-4">Sign in to view your results and save your progress.</p>
-            <SignInPrompt callbackUrl={`/dashboard/openended/${slug}`} />
-          </div>
+          <Card className="w-full max-w-3xl mx-auto">
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <h2 className="text-2xl font-bold mb-4">Quiz Completed</h2>
+              <p className="text-muted-foreground mb-6">Sign in to view your results and save your progress.</p>
+              <SignInPrompt callbackUrl={`/dashboard/openended/${slug}`} />
+            </CardContent>
+          </Card>
         )
       ) : (
         <OpenEndedQuizQuestion
@@ -251,4 +270,3 @@ const OpenEndedQuizWrapper: React.FC<OpenEndedQuizWrapperProps> = ({ slug, quizD
 }
 
 export default OpenEndedQuizWrapper
-

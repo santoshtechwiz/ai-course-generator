@@ -6,7 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { LightbulbIcon, SendIcon, CheckCircleIcon, ChevronRightIcon } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  LightbulbIcon,
+  SendIcon,
+  CheckCircleIcon,
+  ChevronRightIcon,
+  AlertTriangle,
+  AlertCircle,
+  Clock,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface QuizQuestionProps {
@@ -36,18 +45,93 @@ export default function OpenEndedQuizQuestion({
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hintLevel, setHintLevel] = useState(0)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [startTime, setStartTime] = useState(Date.now())
+  const [showTooFastWarning, setShowTooFastWarning] = useState(false)
+  const [showGarbageWarning, setShowGarbageWarning] = useState(false)
 
-  const hints = Array.isArray(question.openEndedQuestion.hints)
+  const minimumTimeThreshold = 5 // seconds for open-ended questions (longer than fill-in-the-blanks)
+  const minimumAnswerLength = 10 // characters
+
+  const hints = Array.isArray(question.openEndedQuestion?.hints)
     ? question.openEndedQuestion.hints
-    : question.openEndedQuestion.hints.split("|")
+    : question.openEndedQuestion?.hints?.split("|") || []
 
   useEffect(() => {
     setShowHints(Array(hints.length).fill(false))
     setHintLevel(0)
     setAnswer("") // Reset answer when question changes
+    setElapsedTime(0)
+    setStartTime(Date.now())
+    setShowTooFastWarning(false)
+    setShowGarbageWarning(false)
   }, [question.id, hints.length])
 
+  useEffect(() => {
+    const timer = setInterval(() => setElapsedTime((prev) => prev + 1), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Check if answer might be garbage
+  // const checkForGarbage = (input: string): boolean => {
+  //   if (!input || input.length < minimumAnswerLength) return false
+
+  //   // Simple checks for garbage text
+  //   const repeatedCharPattern = /(.)\1{4,}/ // 5+ of the same character in a row
+  //   const keyboardSmashPattern = /[asdfghjkl]{5,}|[qwertyuiop]{5,}|[zxcvbnm]{5,}/i // Common keyboard smashes
+  //   const noSpacesPattern = /^[^\s]{20,}$/ // Long text with no spaces
+
+  //   if (repeatedCharPattern.test(input) || keyboardSmashPattern.test(input) || noSpacesPattern.test(input)) {
+  //     return true
+  //   }
+
+  //   // Check for relevance to the question
+  //   const questionWords = question.question
+  //     .toLowerCase()
+  //     .replace(/[^\w\s]/g, "")
+  //     .split(/\s+/)
+  //     .filter((word) => word.length > 3)
+
+  //   const answerWords = input
+  //     .toLowerCase()
+  //     .replace(/[^\w\s]/g, "")
+  //     .split(/\s+/)
+  //     .filter((word) => word.length > 3)
+
+  //   // If the answer has enough words but none match the question context
+  //   if (answerWords.length >= 3) {
+  //     const hasRelevantWord = answerWords.some((word) =>
+  //       questionWords.some((qWord) => qWord.includes(word.substring(0, 3)) || word.includes(qWord.substring(0, 3))),
+  //     )
+
+  //     if (!hasRelevantWord) {
+  //       return true
+  //     }
+  //   }
+
+  //   return false
+  // }
+
   const handleSubmit = async () => {
+    // Check if user is answering too quickly
+    // const timeSpent = (Date.now() - startTime) / 1000
+    // if (timeSpent < minimumTimeThreshold) {
+    //   setShowTooFastWarning(true)
+    //   return
+    // }
+
+    // Check for garbage input
+    // if (checkForGarbage(answer)) {
+    //   setShowGarbageWarning(true)
+    //   return
+    // }
+
+    // Check for minimum answer length
+    // if (answer.trim().length < minimumAnswerLength) {
+    //   setShowGarbageWarning(true)
+    //   return
+    // }
+
     setIsSubmitting(true)
     await new Promise((resolve) => setTimeout(resolve, 300)) // Animation delay
     onAnswer(answer)
@@ -78,6 +162,12 @@ export default function OpenEndedQuizQuestion({
     }
   }
 
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+  }
+
   return (
     <motion.div
       key={question.id} // Important: Add key to ensure proper animation when question changes
@@ -88,7 +178,7 @@ export default function OpenEndedQuizQuestion({
     >
       <Card className="w-full max-w-4xl mx-auto shadow-lg border-t-4 border-primary">
         <CardHeader className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <motion.div
                 className="flex items-center gap-1 text-sm text-muted-foreground"
@@ -101,12 +191,18 @@ export default function OpenEndedQuizQuestion({
                 <span>{totalQuestions}</span>
               </motion.div>
             </div>
-            <Badge
-              variant="secondary"
-              className={cn("text-white", getDifficultyColor(question.openEndedQuestion.difficulty))}
-            >
-              {question.openEndedQuestion.difficulty}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="font-mono">{formatTime(elapsedTime)}</span>
+              </div>
+              <Badge
+                variant="secondary"
+                className={cn("text-white", getDifficultyColor(question.openEndedQuestion?.difficulty || "medium"))}
+              >
+                {question.openEndedQuestion?.difficulty || "Medium"}
+              </Badge>
+            </div>
           </div>
           <motion.h2
             className="text-2xl font-bold leading-tight text-primary"
@@ -119,9 +215,57 @@ export default function OpenEndedQuizQuestion({
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* Warning Alerts */}
+          <AnimatePresence>
+            {showTooFastWarning && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Alert
+                  variant="warning"
+                  className="bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-900/30"
+                >
+                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertTitle className="text-amber-800 dark:text-amber-400">You're answering too quickly</AlertTitle>
+                  <AlertDescription className="text-amber-700 dark:text-amber-300">
+                    Please take your time to think about the answer before submitting. Open-ended questions require
+                    thoughtful responses.
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+
+            {showGarbageWarning && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Alert
+                  variant="destructive"
+                  className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-900/30"
+                >
+                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <AlertTitle className="text-red-800 dark:text-red-400">Invalid answer</AlertTitle>
+                  <AlertDescription className="text-red-700 dark:text-red-300">
+                    Your answer is either too short or doesn't seem related to the question. Please provide a thoughtful
+                    response.
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <Textarea
             value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
+            onChange={(e) => {
+              setAnswer(e.target.value)
+              setShowGarbageWarning(false)
+            }}
             placeholder="Type your answer here..."
             className="min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary"
           />
@@ -182,4 +326,3 @@ export default function OpenEndedQuizQuestion({
     </motion.div>
   )
 }
-

@@ -71,7 +71,19 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
       estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
     >
-      <BlankQuizWrapper slug={slug} />
+      <BlankQuizWrapper
+        slug={slug}
+        questions={result.questions.map(q => ({
+          ...q,
+          openEndedQuestion: {
+            ...q.openEndedQuestion,
+            hints: Array.isArray(q.openEndedQuestion.hints) ? q.openEndedQuestion.hints : [q.openEndedQuestion.hints],
+            tags: Array.isArray(q.openEndedQuestion.tags) ? q.openEndedQuestion.tags : [q.openEndedQuestion.tags],
+          },
+        }))}
+        quizId={String(result.id)}
+        title={result.title || "Untitled Quiz"}
+      />
     </QuizDetailsPage>
   )
 }
