@@ -1,29 +1,46 @@
 "use client"
-import React, { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { getPerformanceLevel, QuizResultBase } from "../../components/QuizResultBase"
 
 interface BlankQuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
   questions: { id: number; question: string; answer: string }[]
   onRestart: () => void
   onComplete: (score: number) => void
+  quizId: string
+  title: string
+  slug: string
+  clearGuestData?: () => void
 }
 
-export default function BlankQuizResults({ answers, questions, onRestart, onComplete }: BlankQuizResultsProps) {
+export default function BlankQuizResults({
+  answers,
+  questions,
+  onRestart,
+  onComplete,
+  quizId,
+  title,
+  slug,
+  clearGuestData,
+}: BlankQuizResultsProps) {
+  const { data: session } = useSession()
   const { score, results } = useMemo(() => {
     const calculatedResults = questions.map((question, index) => {
-      const userAnswer = answers[index].answer.trim()?.toLowerCase()
-      const correctAnswer = question.answer.trim()?.toLowerCase()
+      const userAnswer = answers[index]?.answer?.trim()?.toLowerCase() || ""
+      const correctAnswer = question.answer?.trim()?.toLowerCase() || ""
       const similarity = calculateSimilarity(correctAnswer, userAnswer)
       return {
         ...question,
-        userAnswer: answers[index].answer.trim(), // Preserve original case for display
-        correctAnswer: question.answer, // Preserve original case for display
+        userAnswer: answers[index]?.answer?.trim() || "", // Preserve original case for display
+        correctAnswer: question.answer || "", // Preserve original case for display
         similarity,
-        timeSpent: answers[index].timeSpent,
+        timeSpent: answers[index]?.timeSpent || 0,
+        isCorrect: similarity > 80,
       }
     })
 
@@ -34,65 +51,134 @@ export default function BlankQuizResults({ answers, questions, onRestart, onComp
   }, [answers, questions])
 
   const hasCalledComplete = useRef(false)
+  const hasSavedToDatabase = useRef(false)
+  const totalTime = useMemo(() => answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0), [answers])
 
+  // Save results to database if user is authenticated
   useEffect(() => {
     if (!hasCalledComplete.current) {
       hasCalledComplete.current = true
       onComplete(Math.round(score)) // Ensure score is rounded to an integer
     }
-  }, [score, onComplete])
+
+    // Save to database if authenticated and not already saved
+    if (session?.user && !hasSavedToDatabase.current && quizId) {
+      hasSavedToDatabase.current = true
+
+      // Format answers for submission
+      const formattedAnswers = answers.map((answer, index) => ({
+        userAnswer: answer.answer || "",
+        isCorrect: calculateSimilarity(questions[index]?.answer || "", answer.answer || "") > 80,
+        timeSpent: answer.timeSpent || 0,
+        hintsUsed: answer.hintsUsed || false,
+      }))
+
+      // Save to database
+      saveQuizResultToDatabase(quizId,slug, formattedAnswers, totalTime, Math.round(score), "blanks")
+    }
+  }, [score, onComplete, session, quizId, answers, questions, totalTime])
+
+  const performance = getPerformanceLevel(score)
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">Quiz Results</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center mb-6">
-            <p className="text-3xl font-bold mb-2">{score.toFixed(1)}%</p>
-            <Progress value={score} className="w-full h-2" />
-          </div>
-          {results.map((result, index) => (
-            <Card key={result.id} className="mb-4">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="mb-2">{result.question}</p>
-                <div className="flex flex-col gap-2 mb-4">
-                  <div className="flex items-center gap-2">
-                    <strong className="min-w-[120px]">Your Answer:</strong>
-                    <span className={getAnswerClassName(result.similarity)}>{result.userAnswer}</span>
+    <QuizResultBase
+      quizId={quizId}
+      title={title}
+      score={score}
+      totalQuestions={questions.length}
+      totalTime={totalTime}
+      slug={slug}
+      quizType="blanks"
+      clearGuestData={clearGuestData}
+    >
+      <div className="max-w-4xl mx-auto p-4">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">Quiz Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center mb-6">
+              <p className="text-3xl font-bold mb-2">{score.toFixed(1)}%</p>
+              <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
+              <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
+            </div>
+            {results.map((result, index) => (
+              <Card key={result.id} className="mb-4">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="mb-2">{result.question}</p>
+                  <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex items-center gap-2">
+                      <strong className="min-w-[120px]">Your Answer:</strong>
+                      <span className={getAnswerClassName(result.similarity)}>{result.userAnswer}</span>
+                    </div>
+                    {/* Only show correct answer if the user's answer was incorrect */}
+                    {result.similarity <= 80 && (
+                      <div className="flex items-center gap-2">
+                        <strong className="min-w-[120px]">Correct Answer:</strong>
+                        <span>{result.correctAnswer}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <strong className="min-w-[120px]">Correct Answer:</strong>
-                    <span>{result.correctAnswer}</span>
+                    {result.similarity === 100 ? (
+                      <CheckCircle className="text-green-500" />
+                    ) : result.similarity > 80 ? (
+                      <AlertTriangle className="text-yellow-500" />
+                    ) : (
+                      <XCircle className="text-red-500" />
+                    )}
+                    <span>Accuracy: {result.similarity.toFixed(1)}%</span>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {result.similarity === 100 ? (
-                    <CheckCircle className="text-green-500" />
-                  ) : result.similarity > 80 ? (
-                    <AlertTriangle className="text-yellow-500" />
-                  ) : (
-                    <XCircle className="text-red-500" />
-                  )}
-                  <span>Accuracy: {result.similarity.toFixed(1)}%</span>
-                </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Time spent: {Math.floor(result.timeSpent / 60)}m {result.timeSpent % 60}s
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-          <div className="flex justify-center mt-6">
-            <Button onClick={onRestart}>Restart Quiz</Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Time spent: {Math.floor(result.timeSpent / 60)}m {Math.round(result.timeSpent % 60)}s
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+            <div className="flex justify-center mt-6">
+              <Button onClick={onRestart}>Restart Quiz</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </QuizResultBase>
   )
+}
+
+// Add this function to save results to the database
+async function saveQuizResultToDatabase(
+  quizId: string,
+  slug: string,
+  answers: { userAnswer: string; isCorrect: boolean; timeSpent: number; hintsUsed: boolean }[],
+  totalTime: number,
+  score: number,
+  quizType: string,
+) {
+  try {
+    const response = await fetch(`/api/quiz/${slug}/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        quizId,
+        answers,
+        totalTime,
+        score,
+        quizType,
+        completedAt: new Date().toISOString(),
+      }),
+    })
+
+    if (!response.ok) {
+      console.error("Failed to save quiz results to database")
+    }
+  } catch (error) {
+    console.error("Error saving quiz results:", error)
+  }
 }
 
 function calculateSimilarity(str1: string, str2: string): number {
@@ -119,7 +205,8 @@ function levenshteinDistance(str1: string, str2: string): number {
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))
 
   for (let i = 0; i <= m; i++) dp[i][0] = i
-  for (let j = 0; j <= n; j++) dp[0][j] = j
+ 
+  for (let j = 0; j<= n; j++) dp[0][j] = j
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -139,4 +226,3 @@ function getAnswerClassName(similarity: number): string {
   if (similarity > 80) return "text-yellow-600 dark:text-yellow-400"
   return "text-red-600 dark:text-red-400"
 }
-

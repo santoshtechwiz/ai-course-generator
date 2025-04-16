@@ -14,6 +14,7 @@ import { useAnimation } from "@/providers/animation-provider"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { QuizProgress } from "../../components/QuizProgress"
 import { QuizFeedback } from "../../components/QuizFeedback"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -44,9 +45,18 @@ export function FlashCardComponent({
   const [reviewCards, setReviewCards] = useState<number[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const { animationsEnabled } = useAnimation()
+
+  // Add loading state with timeout
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   const calculateScore = useCallback(
     (selectedOptions: (string | null)[], questions: FlashCard[]) => {
@@ -300,6 +310,10 @@ export function FlashCardComponent({
     createConfetti()
   }, [showConfetti])
 
+  if (isLoading) {
+    return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
+  }
+
   const renderQuizContent = () => {
     if (quizCompleted) {
       const correctCount = calculateScore(selectedOptions, cards)
@@ -407,7 +421,7 @@ export function FlashCardComponent({
                       <div className="text-lg sm:text-xl md:text-2xl font-medium text-center text-foreground z-10 max-w-full sm:max-w-md leading-relaxed overflow-auto max-h-[200px] sm:max-h-[250px] md:max-h-[300px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-2">
                         {currentCard?.question}
                       </div>
-                      <motion.div
+                      <motion.span
                         className="mt-4 sm:mt-6 text-xs sm:text-sm text-muted-foreground flex items-center gap-1"
                         animate={{
                           y: [0, -5, 0],
@@ -419,7 +433,7 @@ export function FlashCardComponent({
                         }}
                       >
                         Tap to reveal answer
-                      </motion.div>
+                      </motion.span>
                     </motion.div>
                   ) : (
                     // Back of card with different color scheme, animated self-rating buttons, and improved text handling
@@ -566,11 +580,11 @@ export function FlashCardComponent({
                       <Bookmark className="h-3 w-3 sm:h-4 sm:w-4" />
                     )}
                   </motion.span>
-                  {isSaved ? "Saved" : "Save Card"}
+                  <span>{isSaved ? "Saved" : "Save Card"}</span>
                 </Button>
               </motion.div>
 
-              <motion.div
+              <motion.span
                 className="text-xs sm:text-sm text-muted-foreground"
                 animate={{
                   opacity: [0.7, 1, 0.7],
@@ -582,7 +596,7 @@ export function FlashCardComponent({
                 }}
               >
                 {flipped ? "Tap to see question" : "Tap to see answer"}
-              </motion.div>
+              </motion.span>
             </div>
           </div>
 

@@ -9,7 +9,19 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { CheckCircle2, XCircle, Clock, Lightbulb, HelpCircle, ArrowRight, Eye, EyeOff } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Lightbulb,
+  HelpCircle,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  AlertCircle,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Question {
@@ -114,10 +126,15 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
   const [hintLevel, setHintLevel] = useState(0)
   const [showHintPanel, setShowHintPanel] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
+  const [showTooFastWarning, setShowTooFastWarning] = useState(false)
+  const [showGarbageWarning, setShowGarbageWarning] = useState(false)
+  const [startTime, setStartTime] = useState(Date.now())
 
   const similarityThreshold = 3
   const minimumPrefixLength = 2
   const progressPercentage = (questionNumber / totalQuestions) * 100
+  const minimumTimeThreshold = 3 // seconds
+  const garbageThreshold = 0.8 // 80% different from any word in the question
 
   const questionParts = useMemo(() => {
     const parts = question.question.split("_____")
@@ -125,7 +142,9 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
   }, [question.question])
 
   const progressiveHints = useMemo(() => {
-    const correctAnswer = question.answer?.toLowerCase()
+    if (!question.answer) return []
+
+    const correctAnswer = question.answer.toLowerCase()
     const hintSteps = Math.ceil(correctAnswer.length / 3)
     const hints = []
 
@@ -135,13 +154,13 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
       const revealedLength = Math.floor((i / hintSteps) * correctAnswer.length)
       let hintText = ""
       for (let j = 0; j < correctAnswer.length; j++) {
-        hintText += j < revealedLength ? correctAnswer[j] : (correctAnswer[j] === " " ? " " : "•")
+        hintText += j < revealedLength ? correctAnswer[j] : correctAnswer[j] === " " ? " " : "•"
       }
       hints.push(hintText)
     }
 
-    return [...hints, ...question.openEndedQuestion.hints]
-  }, [question.answer, question.openEndedQuestion.hints])
+    return [...hints, ...(question.openEndedQuestion?.hints || [])]
+  }, [question.answer, question.openEndedQuestion?.hints])
 
   useEffect(() => {
     setAnswer("")
@@ -152,29 +171,80 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
     setElapsedTime(0)
     setHintLevel(0)
     setShowHintPanel(false)
-  }, [question.id, progressiveHints])
+    setShowTooFastWarning(false)
+    setShowGarbageWarning(false)
+    setStartTime(Date.now())
+  }, [question.id, progressiveHints.length])
 
   useEffect(() => {
     const timer = setInterval(() => setElapsedTime((prev) => prev + 1), 1000)
     return () => clearInterval(timer)
   }, [])
 
+  // Check if answer might be garbage
+  const checkForGarbage = (input: string): boolean => {
+    if (!input || input.length < 3) return false
+
+    // Get all words from the question
+    const allWords = question.question
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .split(/\s+/)
+      .filter((word) => word.length > 3)
+
+    // Add the correct answer to the words to check against
+    if (question.answer) {
+      allWords.push(question.answer.toLowerCase())
+    }
+
+    // Check if the input is significantly different from all relevant words
+    const inputLower = input.toLowerCase()
+    const minDistance = allWords.reduce((min, word) => {
+      const distance = levenshtein(inputLower, word.toLowerCase())
+      const normalizedDistance = distance / Math.max(inputLower.length, word.length)
+      return Math.min(min, normalizedDistance)
+    }, 1)
+
+    return minDistance > garbageThreshold
+  }
+
   const handleInputChange = (value: string) => {
     setAnswer(value)
-    const userInput = value.trim()?.toLowerCase()
-    const correctAnswer = question.answer.trim()?.toLowerCase()
+    setShowGarbageWarning(false)
 
-    if (userInput.length < minimumPrefixLength) {
+    const userInput = value.trim()?.toLowerCase()
+
+    if (!userInput || userInput.length < minimumPrefixLength) {
       setIsValidInput(false)
       return
     }
 
+    if (checkForGarbage(userInput)) {
+      setShowGarbageWarning(true)
+      setIsValidInput(false)
+      return
+    }
+
+    const correctAnswer = question.answer?.trim()?.toLowerCase() || ""
     const distance = levenshtein(userInput, correctAnswer)
     setIsValidInput(distance <= similarityThreshold || correctAnswer.startsWith(userInput))
   }
 
   const handleSubmit = () => {
-    const distance = levenshtein(answer.trim()?.toLowerCase(), question.answer.trim()?.toLowerCase())
+    // Check if user is answering too quickly
+    const timeSpent = (Date.now() - startTime) / 1000
+    if (timeSpent < minimumTimeThreshold) {
+      setShowTooFastWarning(true)
+      return
+    }
+
+    // Check for garbage input one more time
+    if (checkForGarbage(answer)) {
+      setShowGarbageWarning(true)
+      return
+    }
+
+    const distance = levenshtein(answer.trim()?.toLowerCase() || "", question.answer?.trim()?.toLowerCase() || "")
     const isAnswerCorrect = distance <= similarityThreshold
     setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
@@ -208,7 +278,10 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
               <Badge variant="outline" className="bg-primary/10 text-primary font-medium px-3 py-1">
                 Fill in the Blank
               </Badge>
-              <BadgeGroup tags={question.openEndedQuestion.tags} difficulty={question.openEndedQuestion.difficulty} />
+              <BadgeGroup
+                tags={question.openEndedQuestion?.tags || []}
+                difficulty={question.openEndedQuestion?.difficulty || "medium"}
+              />
             </div>
             <Timer elapsedTime={elapsedTime} />
           </div>
@@ -222,6 +295,49 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
 
         {/* Content Section */}
         <div className="px-6 py-4 space-y-6">
+          {/* Warning Alerts */}
+          <AnimatePresence>
+            {showTooFastWarning && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Alert
+                  variant="destructive"
+                  className="bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-900/30"
+                >
+                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertTitle className="text-amber-800 dark:text-amber-400">You're answering too quickly</AlertTitle>
+                  <AlertDescription className="text-amber-700 dark:text-amber-300">
+                    Please take your time to think about the answer before submitting.
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+
+            {showGarbageWarning && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Alert
+                  variant="destructive"
+                  className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-900/30"
+                >
+                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <AlertTitle className="text-red-800 dark:text-red-400">Invalid answer</AlertTitle>
+                  <AlertDescription className="text-red-700 dark:text-red-300">
+                    Your answer doesn't seem related to the question. Please try again with a relevant answer.
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="text-lg font-medium leading-relaxed p-4 bg-muted/30 rounded-lg flex flex-wrap items-center">
             <span>{questionParts[0]}</span>
             <span
@@ -266,7 +382,7 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
                 <XCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
               )}
               <span className={isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>
-                {isCorrect ? "Correct!" : `Incorrect. The correct answer is: ${question.answer}`}
+                {isCorrect ? "Correct!" : "Incorrect. You'll see the correct answer on the results page."}
               </span>
             </motion.div>
           )}
