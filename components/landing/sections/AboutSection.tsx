@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import MissionIcon from "../svg/MissionIcon"
 import VisionIcon from "../svg/VisionIcon"
 import TeamIcon from "../svg/TeamIcon"
-import RevealAnimation from "../RevealAnimation"
+import RevealAnimation from "@/components/shared/RevealAnimation"
 
 const AboutSection = () => {
   const containerRef = useRef<HTMLDivElement>(null)
