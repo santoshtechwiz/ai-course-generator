@@ -167,7 +167,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const handleUnauthenticatedSubscribe = useCallback(
     (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => {
       // Only show login modal if user is definitely not authenticated
-      if (sessionStatus === "unauthenticated") {
+      if (sessionStatus!='loading' && sessionStatus === "unauthenticated") {
         const subscriptionData = {
           planName,
           duration,
