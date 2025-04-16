@@ -20,8 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { ConfirmDialog } from "./ConfirmDialog"
-import PlanAwareButton from "@/app/dashboard/(quiz)/(components)/PlanAwareButton"
-import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
 import { quizSchema } from "@/schema/schema"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
@@ -30,6 +28,7 @@ import { cn } from "@/lib/utils"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
+import PlanAwareButton from "./PlanAwareButton"
 
 type QuizFormData = z.infer<typeof quizSchema> & {
   userType?: string

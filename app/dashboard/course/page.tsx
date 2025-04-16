@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
-import { QuizCourseWrapper } from "@/app/dashboard/(quiz)/(components)/QuizCourseWrapper"
 import RandomQuote from "@/components/RandomQuote"
 import { BookOpen, Lightbulb } from "lucide-react"
 import { getCourseDetails } from "@/app/actions/getCourseDetails"
 import { Card } from "@/components/ui/card"
 import type { QueryParams } from "@/app/types/types"
 import PopularCourses from "@/app/dashboard/course/components/PopularCourses"
+import { QuizCourseWrapper } from "../(quiz)/components/QuizCourseWrapper"
 
 // Add this line to explicitly mark the page as dynamic
 export const dynamic = "force-dynamic"

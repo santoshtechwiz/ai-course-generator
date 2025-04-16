@@ -20,9 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import PlanAwareButton from "@/app/dashboard/(quiz)/(components)/PlanAwareButton"
-import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
-
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
@@ -31,7 +28,9 @@ import { codeQuizSchema } from "@/schema/schema"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
-import { ConfirmDialog } from "@/app/dashboard/(quiz)/(components)/ConfirmDialog"
+import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
+import { ConfirmDialog } from "../../components/ConfirmDialog"
+import PlanAwareButton from "../../components/PlanAwareButton"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string
