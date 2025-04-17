@@ -2,9 +2,11 @@
 
 import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useAuth } from "../signin/context/AuthContext"
+import { useAuth } from "@/providers/unified-auth-provider"
 
-
+/**
+ * Hook to handle authentication redirects
+ */
 export function useAuthRedirect(defaultRedirect = "/") {
   const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()

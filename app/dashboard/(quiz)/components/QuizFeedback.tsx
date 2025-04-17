@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { Loader2, CheckCircle, AlertCircle, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { QuizType } from "@/app/types/types"
 
@@ -111,34 +111,55 @@ export function QuizFeedback({
         }
       }}
     >
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Quiz Submitted!</DialogTitle>
+      <DialogContent className="sm:max-w-md rounded-xl overflow-hidden">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-xl font-bold">Quiz Submitted!</DialogTitle>
           <DialogDescription className="text-base pt-2">
             {isError ? (
-              <span className="text-red-500">
+              <span className="text-red-500 flex items-center">
+                <AlertCircle className="h-4 w-4 mr-2" />
                 {errorMessage || "There was an error submitting your quiz. Please try again."}
               </span>
             ) : (
-              <span>Your score: {scoreDisplay()}</span>
+              <div className="flex items-center">
+                <span className="font-medium">Your score: </span>
+                <span
+                  className={`ml-2 text-lg font-bold ${score >= 70 ? "text-green-500" : score >= 50 ? "text-amber-500" : "text-red-500"}`}
+                >
+                  {scoreDisplay()}
+                </span>
+              </div>
             )}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex justify-center py-6">
+        <div className="flex justify-center py-8">
           {isSubmitting || !showIcon ? (
             <div className="flex flex-col items-center">
-              <Loader2 className="h-16 w-16 text-primary animate-spin" />
+              <div className="relative">
+                <Loader2 className="h-16 w-16 text-primary animate-spin" />
+                <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+              </div>
               <p className="mt-4 text-sm text-muted-foreground">Saving your results...</p>
             </div>
           ) : isError ? (
-            <AlertCircle className="h-16 w-16 text-red-500" />
+            <div className="flex flex-col items-center">
+              <div className="h-16 w-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-10 w-10 text-red-500" />
+              </div>
+              <p className="mt-4 text-sm text-red-500">Error submitting quiz</p>
+            </div>
           ) : (
-            <CheckCircle className="h-16 w-16 text-green-500" />
+            <div className="flex flex-col items-center">
+              <div className="h-16 w-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-10 w-10 text-green-500" />
+              </div>
+              <p className="mt-4 text-sm text-green-500">Quiz submitted successfully!</p>
+            </div>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row sm:justify-center gap-2">
+        <DialogFooter className="flex flex-col sm:flex-row sm:justify-center gap-2 pt-2 border-t">
           {isError && (
             <Button variant="outline" onClick={() => handleClose(false)} className={cn("w-full sm:w-auto")}>
               Try Again
@@ -146,10 +167,20 @@ export function QuizFeedback({
           )}
           <Button
             onClick={() => handleClose(true)}
-            className={cn("w-full sm:w-auto")}
+            className={cn("w-full sm:w-auto", !isError && "bg-primary hover:bg-primary/90")}
             disabled={isSubmitting || !buttonEnabled}
           >
-            View Results
+            {isSubmitting ? (
+              <div className="flex items-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading Results...
+              </div>
+            ) : (
+              <>
+                View Results
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

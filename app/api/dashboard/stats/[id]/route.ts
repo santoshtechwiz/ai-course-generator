@@ -1,14 +1,13 @@
-
-import { getUserStats } from "@/app/actions/userDashboard";
+import { getUserStats } from "@/app/actions/userDashboard"
 import { authOptions } from "@/lib/authOptions"
 import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
 
-
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)
-    const {id}= await params;
+    const { id } = await params
+
     // Check if user is authenticated
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -21,7 +20,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const userStats = await getUserStats(id)
 
-    return NextResponse.json(userStats)
+    // Add cache headers to reduce frequent calls
+    const headers = new Headers()
+    headers.set("Cache-Control", "max-age=60, s-maxage=60, stale-while-revalidate=120")
+
+    return NextResponse.json(userStats, {
+      headers: {
+        "Cache-Control": headers.get("Cache-Control") || "no-cache",
+      },
+    })
   } catch (error) {
     console.error("Error fetching user stats:", error)
     return NextResponse.json({ error: "Failed to fetch user stats" }, { status: 500 })

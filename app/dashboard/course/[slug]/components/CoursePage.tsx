@@ -10,7 +10,7 @@ import useProgress from "@/hooks/useProgress"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 
 interface FullChapter extends FullChapterType {
-  videoId: string;
+  videoId: string
 }
 
 import throttle from "lodash.throttle"
@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AnimatePresence, motion } from "framer-motion"
 import MobilePlayList from "./MobilePlayList"
-import { useUser } from "@/providers/userContext"
+import { useAuth } from "@/providers/unified-auth-provider"
+import { Loader2 } from "lucide-react"
 
 // State and Action Types
 interface State {
@@ -91,7 +92,7 @@ function useVideoPlaylist(course: FullCourseType) {
 }
 
 export default function CoursePage({ course, initialChapterId }: CoursePageProps) {
-  const { user, loading: isProfileLoading, error } = useUser()
+  const { user, isLoading: isProfileLoading } = useAuth()
   const [state, dispatch] = useReducer(reducer, {
     selectedVideoId: undefined,
     currentChapter: undefined,
@@ -282,22 +283,39 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     }
   }, [])
 
+  // Enhance the loading state for better user experience
   if (isLoading || isProfileLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="lg:hidden">
-          <Skeleton className="h-14 w-full" />
+          <div className="h-14 w-full bg-background border-b flex items-center px-4">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-6 w-40 ml-3" />
+            <Skeleton className="h-8 w-8 rounded-full ml-auto" />
+          </div>
         </div>
         <div className="flex flex-col lg:flex-row">
           <div className="flex-1">
-            <Skeleton className="aspect-video w-full" />
-            <div className="p-4 lg:p-6">
-              <Skeleton className="h-8 w-[200px] mb-4" />
-              <Skeleton className="h-4 w-full max-w-[600px]" />
+            <div className="aspect-video w-full bg-muted/50 flex items-center justify-center">
+              <Loader2 className="h-12 w-12 text-muted-foreground/50 animate-spin" />
+            </div>
+            <div className="p-6">
+              <Skeleton className="h-8 w-[300px] mb-4" />
+              <Skeleton className="h-4 w-full max-w-[600px] mb-2" />
+              <Skeleton className="h-4 w-full max-w-[500px]" />
             </div>
           </div>
           <div className="hidden lg:block w-[400px] border-l">
-            <Skeleton className="h-full" />
+            <div className="p-4 border-b">
+              <Skeleton className="h-8 w-[200px]" />
+            </div>
+            <div className="p-4">
+              <Skeleton className="h-10 w-full mb-4" />
+              <Skeleton className="h-8 w-full mb-3" />
+              <Skeleton className="h-8 w-full mb-3" />
+              <Skeleton className="h-8 w-full mb-3" />
+              <Skeleton className="h-8 w-full" />
+            </div>
           </div>
         </div>
       </div>
@@ -333,7 +351,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                 }}
                 progress={progress || undefined}
                 onChapterComplete={markChapterAsCompleted}
-                planId={user?.planId}
+                planId={user?.subscriptionPlan || "FREE"}
                 isLastVideo={isLastVideo}
               />
             </div>

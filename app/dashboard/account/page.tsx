@@ -43,31 +43,32 @@ export default async function SubscriptionAccountPage() {
         throw new Error("User ID is required but was null.")
       }
 
-      // Use Promise.allSettled to handle potential errors in individual requests
-      const [subscriptionStatusResult, tokenDataResult, billingHistoryResult, paymentMethodsResult] =
-        await Promise.allSettled([
-          SubscriptionService.getSubscriptionStatus(userId),
-          SubscriptionService.getTokensUsed(userId),
-          SubscriptionService.getBillingHistory(userId),
-          SubscriptionService.getPaymentMethods(userId),
-        ])
+      // Use Promise.all instead of Promise.allSettled for better performance
+      // and add a timeout to prevent long-running requests
+      const fetchWithTimeout = async (promise: Promise<any>, timeoutMs = 5000) => {
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Request timed out")), timeoutMs)
+        })
+        return Promise.race([promise, timeoutPromise])
+      }
 
-      // Extract values or use defaults for failed promises
-      const subscriptionStatus =
-        subscriptionStatusResult.status === "fulfilled"
-          ? subscriptionStatusResult.value
-          : { subscriptionPlan: "FREE", isSubscribed: false }
-
-      const tokenData = tokenDataResult.status === "fulfilled" ? tokenDataResult.value : { used: 0, total: 0 }
-
-      const billingHistory = billingHistoryResult.status === "fulfilled" ? billingHistoryResult.value : []
-
-      const paymentMethods = paymentMethodsResult.status === "fulfilled" ? paymentMethodsResult.value : []
+      const [subscriptionStatus, tokenData, billingHistory, paymentMethods] = await Promise.all([
+        fetchWithTimeout(SubscriptionService.getSubscriptionStatus(userId)),
+        fetchWithTimeout(SubscriptionService.getTokensUsed(userId)),
+        fetchWithTimeout(SubscriptionService.getBillingHistory(userId)),
+        fetchWithTimeout(SubscriptionService.getPaymentMethods(userId)),
+      ]).catch((error) => {
+        console.error("Error fetching subscription data:", error)
+        return [{ subscriptionPlan: "FREE", isSubscribed: false }, { used: 0, total: 0 }, [], []]
+      })
 
       return {
         currentPlan: subscriptionStatus.subscriptionPlan,
         subscriptionStatus: subscriptionStatus.isSubscribed ? "ACTIVE" : "INACTIVE",
-        endDate: "expirationDate" in subscriptionStatus && subscriptionStatus.expirationDate ? new Date(subscriptionStatus.expirationDate) : null,
+        endDate:
+          "expirationDate" in subscriptionStatus && subscriptionStatus.expirationDate
+            ? new Date(subscriptionStatus.expirationDate)
+            : null,
         tokensUsed: "used" in tokenData ? tokenData.used : 0,
         tokensTotal: "total" in tokenData ? tokenData.total : 0,
         billingHistory,
@@ -145,4 +146,3 @@ function SubscriptionDetailsSkeleton() {
     </div>
   )
 }
-

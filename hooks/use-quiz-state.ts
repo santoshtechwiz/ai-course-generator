@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
-
 interface Question {
   id: number
   text: string
@@ -27,7 +26,7 @@ interface UseQuizStateProps {
   timeLimit?: number
 }
 
-const useQuizState = ({ questions, slug, quizType, timeLimit }: UseQuizStateProps) => {
+const useQuizState = ({ questions = [], slug, quizType, timeLimit }: UseQuizStateProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedOptions, setSelectedOptions] = useState<string[]>(Array(questions.length).fill(null))
   const [timeSpent, setTimeSpent] = useState<number[]>(Array(questions.length).fill(0))
@@ -44,9 +43,11 @@ const useQuizState = ({ questions, slug, quizType, timeLimit }: UseQuizStateProp
   const isAuthenticated = status === "authenticated"
   const router = useRouter()
 
-  const currentQuestion = questions[currentQuestionIndex]
+  const currentQuestion = questions[currentQuestionIndex] || null
 
   useEffect(() => {
+    if (questions.length === 0) return // Avoid running effects if no questions are provided
+
     if (typeof window !== "undefined") {
       const storageKey = `quiz_${slug}_${quizType}`
       const savedState = sessionStorage.getItem(storageKey)
@@ -65,18 +66,18 @@ const useQuizState = ({ questions, slug, quizType, timeLimit }: UseQuizStateProp
   }, [questions.length, slug, quizType])
 
   useEffect(() => {
-    if (!quizCompleted && typeof window !== "undefined") {
-      const intervalId = setInterval(() => {
-        setTimeSpent((prevTimeSpent) => {
-          const newTimeSpent = [...prevTimeSpent]
-          newTimeSpent[currentQuestionIndex] = (prevTimeSpent[currentQuestionIndex] || 0) + 1
-          return newTimeSpent
-        })
-      }, 1000)
+    if (questions.length === 0 || quizCompleted || typeof window === "undefined") return
 
-      return () => clearInterval(intervalId)
-    }
-  }, [currentQuestionIndex, quizCompleted])
+    const intervalId = setInterval(() => {
+      setTimeSpent((prevTimeSpent) => {
+        const newTimeSpent = [...prevTimeSpent]
+        newTimeSpent[currentQuestionIndex] = (prevTimeSpent[currentQuestionIndex] || 0) + 1
+        return newTimeSpent
+      })
+    }, 1000)
+
+    return () => clearInterval(intervalId)
+  }, [currentQuestionIndex, quizCompleted, questions.length])
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -118,7 +119,7 @@ const useQuizState = ({ questions, slug, quizType, timeLimit }: UseQuizStateProp
   const handleNextQuestion = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
-    } else {
+    } else if (questions.length > 0) {
       // Calculate results and complete quiz
       let correctAnswers = 0
       questions.forEach((question, index) => {

@@ -315,8 +315,9 @@ export function QuizActions({
                 "flex items-center justify-center w-10 h-10 rounded-full shadow-lg",
                 customBgColor,
                 customTextColor,
-                "hover:shadow-xl transition-all duration-200",
+                "hover:shadow-xl transition-all duration-300",
                 "focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                "relative overflow-hidden", // Add this for the ripple effect
               )}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -334,18 +335,21 @@ export function QuizActions({
               aria-label="Quiz actions"
             >
               {icon || <Settings className="h-5 w-5" />}
+              {!hasBeenSeen && (
+                <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full animate-pulse" />
+              )}
             </motion.button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Quiz Actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="end" className="w-64 p-2 rounded-lg border border-border shadow-lg">
+            <DropdownMenuLabel className="px-2 py-1.5 text-sm font-medium">Quiz Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator className="my-1" />
 
             {/* Visibility Toggle */}
             {isOwner && (
               <DropdownMenuItem
                 onClick={togglePublic}
                 disabled={isPublicLoading}
-                className="flex justify-between items-center"
+                className="flex justify-between items-center px-2 py-2.5 rounded-md focus:bg-accent"
               >
                 <div className="flex items-center">
                   {isPublic ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
@@ -361,10 +365,10 @@ export function QuizActions({
             <DropdownMenuItem
               onClick={toggleFavorite}
               disabled={isFavoriteLoading}
-              className="flex justify-between items-center"
+              className="flex justify-between items-center px-2 py-2.5 rounded-md focus:bg-accent"
             >
               <div className="flex items-center">
-                <Star className={cn("mr-2 h-4 w-4", isFavorite ? "fill-yellow-500" : "")} />
+                <Star className={cn("mr-2 h-4 w-4", isFavorite ? "fill-yellow-500 text-yellow-500" : "")} />
                 <span>{isFavorite ? "Remove from Favorites" : "Add to Favorites"}</span>
               </div>
               {isFavoriteLoading && (
@@ -373,14 +377,20 @@ export function QuizActions({
             </DropdownMenuItem>
 
             {/* Share */}
-            <DropdownMenuItem onClick={handleShare} className="flex items-center">
+            <DropdownMenuItem
+              onClick={handleShare}
+              className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent"
+            >
               <Share2 className="mr-2 h-4 w-4" />
               <span>Share Quiz</span>
             </DropdownMenuItem>
 
             {/* Download PDF */}
             {canDownloadPDF() && (
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center">
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent"
+              >
                 <div className="w-full">
                   <QuizPDFDownload
                     quizData={data}
@@ -398,7 +408,10 @@ export function QuizActions({
             {/* Rate Quiz */}
             <Dialog>
               <DialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center">
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent"
+                >
                   <Star className="mr-2 h-4 w-4 fill-amber-500" />
                   <span>Rate Quiz {rating ? `(${rating})` : ""}</span>
                 </DropdownMenuItem>
@@ -407,13 +420,14 @@ export function QuizActions({
                 <DialogHeader>
                   <DialogTitle className="text-lg">Rate this Quiz</DialogTitle>
                 </DialogHeader>
-                <div className="flex justify-center p-4">
+                <div className="flex flex-col items-center p-4">
+                  <p className="text-sm text-muted-foreground mb-4">How would you rate this quiz?</p>
                   <Rating value={rating} onValueChange={handleRatingChange} className="scale-125" />
                 </div>
               </DialogContent>
             </Dialog>
 
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="my-1" />
 
             {/* Delete Quiz */}
             {isOwner && (
@@ -421,7 +435,7 @@ export function QuizActions({
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem
                     onSelect={(e) => e.preventDefault()}
-                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 px-2 py-2.5 rounded-md focus:bg-red-50 dark:focus:bg-red-950/20"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     <span>Delete Quiz</span>
@@ -441,9 +455,13 @@ export function QuizActions({
                       className="bg-destructive hover:bg-destructive/90 rounded-md text-sm py-1"
                     >
                       {isDeleteLoading ? (
-                        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                      ) : null}
-                      Delete
+                        <div className="flex items-center">
+                          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                          Deleting...
+                        </div>
+                      ) : (
+                        "Delete"
+                      )}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

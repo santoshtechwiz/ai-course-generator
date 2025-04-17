@@ -1,3 +1,4 @@
+// Improve session security and token refresh logic
 import { type DefaultSession, type DefaultUser, type NextAuthOptions, getServerSession } from "next-auth"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import GoogleProvider from "next-auth/providers/google"
@@ -37,27 +38,34 @@ declare module "next-auth/jwt" {
     userType: string
     subscriptionPlan: string | null
     subscriptionStatus: string | null
+    updatedAt?: number
   }
 }
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
-    strategy: "jwt", // Changed from "database" to "jwt" for better consistency
+    strategy: "jwt", // Using JWT for better performance
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, account }) {
       // Initial sign in
       if (user) {
         token.id = user.id
         token.credits = user.credits || 0
         token.isAdmin = user.isAdmin || false
         token.userType = user.userType || "FREE"
+        token.updatedAt = Date.now()
       }
 
       // On every JWT refresh, get the latest user data
-      if (token.id) {
+      // Only refresh user data if token is older than 5 minutes to reduce DB load
+      const now = Date.now()
+      const tokenUpdatedAt = (token.updatedAt as number) || 0
+      const shouldRefreshToken = !tokenUpdatedAt || now - tokenUpdatedAt > 5 * 60 * 1000
+
+      if (token.id && shouldRefreshToken) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id },
@@ -72,9 +80,12 @@ export const authOptions: NextAuthOptions = {
             token.userType = dbUser.userType
             token.subscriptionPlan = dbUser.subscription?.planId || null
             token.subscriptionStatus = dbUser.subscription?.status || null
+            token.updatedAt = now
           }
         } catch (error) {
           console.error("Error fetching user data for JWT:", error)
+          // Don't update the token.updatedAt if there was an error
+          // This will force another attempt on the next request
         }
       }
 
@@ -90,6 +101,15 @@ export const authOptions: NextAuthOptions = {
         session.user.subscriptionStatus = token.subscriptionStatus || null
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // Handle redirects more securely
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`
+      } else if (new URL(url).origin === baseUrl) {
+        return url
+      }
+      return baseUrl
     },
   },
   events: {
@@ -162,20 +182,49 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
-  //debug: process.env.NODE_ENV === "development",
 }
 
-export const getAuthSession = () => getServerSession(authOptions)
+// Improved session caching with proper invalidation
+let cachedSession: any = null
+let sessionCacheTime = 0
+const SESSION_CACHE_MAX_AGE = 30 * 1000 // 30 seconds
 
+export const getAuthSession = async () => {
+  const now = Date.now()
+
+  // Return cached session if it's still valid
+  if (cachedSession && now - sessionCacheTime < SESSION_CACHE_MAX_AGE) {
+    return cachedSession
+  }
+
+  // Otherwise fetch a new session
+  const session = await getServerSession(authOptions)
+
+  // Cache the result
+  cachedSession = session
+  sessionCacheTime = now
+
+  return session
+}
+
+// Helper to check if user is authenticated
+export async function isAuthenticated() {
+  const session = await getAuthSession()
+  return !!session?.user
+}
+
+// Helper to check if user is admin
 export async function isAdmin() {
   const session = await getAuthSession()
   return session?.user?.isAdmin === true
 }
 
+// Standard unauthorized response
 export function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 }
 
+// Helper to clear expired sessions
 export async function clearExpiredSessions() {
   const now = new Date()
   await prisma.session.deleteMany({
@@ -185,6 +234,7 @@ export async function clearExpiredSessions() {
   })
 }
 
+// Helper to update user data
 export async function updateUserData(userId: string, data: any) {
   await prisma.user.update({
     where: { id: userId },
@@ -192,3 +242,8 @@ export async function updateUserData(userId: string, data: any) {
   })
 }
 
+// Invalidate session cache
+export function invalidateSessionCache() {
+  cachedSession = null
+  sessionCacheTime = 0
+}

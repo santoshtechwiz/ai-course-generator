@@ -1,37 +1,18 @@
 import type React from "react"
-import { Suspense } from "react"
-import { Toaster } from "@/components/ui/toaster"
-import { getAuthSession } from "@/lib/authOptions"
-import { Chatbot } from "@/components/Chatbot"
-import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
-import { NavigationEvents } from "./NavigationEvents"
-import { FullPageLoader } from "@/components/ui/loader"
-import { redirect } from "next/navigation"
-import { SubscriptionRefresher } from "@/app/dashboard/subscription/components/SubscriptionRefresher"
+import type { Metadata } from "next"
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  // // Get the session here at the layout level
-  const session = await getAuthSession()
+import DashboardLayoutClient from "./DashboardLayoutClient"
 
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "User dashboard for managing courses and quizzes",
+}
 
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClientLayoutWrapper>
-      <div className="flex min-h-screen flex-col container mx-auto">
-        <SubscriptionRefresher></SubscriptionRefresher>
-        <NavigationEvents />
+    <div className="pt-16">
+      <DashboardLayoutClient children={children} />
 
-        <main className="flex-grow flex flex-col">
-          <div className="flex-grow section-spacing">
-            <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
-          </div>
-        </main>
-        <Toaster />
-        <Chatbot userId={session?.user?.id || ""} />
-      </div>
-    </ClientLayoutWrapper>
+    </div>
   )
 }

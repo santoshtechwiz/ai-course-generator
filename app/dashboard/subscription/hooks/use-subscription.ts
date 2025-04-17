@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
@@ -25,6 +25,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
+  const requestInProgressRef = useRef(false)
 
   const { allowPlanChanges = false, allowDowngrades = false, onSubscriptionSuccess, onSubscriptionError } = options
 
@@ -107,7 +108,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     [],
   )
 
-  // Handle subscription creation
+  // Handle subscription creation with debouncing to prevent duplicate requests
   const handleSubscribe = useCallback(
     async (
       planName: SubscriptionPlanType,
@@ -116,6 +117,16 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       promoDiscount?: number,
       referralCode?: string,
     ): Promise<SubscriptionResult> => {
+      // Prevent duplicate requests
+      if (requestInProgressRef.current) {
+        return {
+          success: false,
+          error: "A subscription request is already in progress",
+          message: "Please wait for the current request to complete",
+        }
+      }
+
+      requestInProgressRef.current = true
       setIsLoading(true)
 
       try {
@@ -221,13 +232,27 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
         return errorResult
       } finally {
         setIsLoading(false)
+        // Reset the request in progress flag after a short delay
+        setTimeout(() => {
+          requestInProgressRef.current = false
+        }, 1000)
       }
     },
     [toast, onSubscriptionSuccess, onSubscriptionError],
   )
 
-  // Handle subscription cancellation
+  // Handle subscription cancellation with debouncing
   const cancelSubscription = useCallback(async (): Promise<SubscriptionResult> => {
+    // Prevent duplicate requests
+    if (requestInProgressRef.current) {
+      return {
+        success: false,
+        error: "A subscription request is already in progress",
+        message: "Please wait for the current request to complete",
+      }
+    }
+
+    requestInProgressRef.current = true
     setIsLoading(true)
 
     try {
@@ -276,11 +301,25 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       }
     } finally {
       setIsLoading(false)
+      // Reset the request in progress flag after a short delay
+      setTimeout(() => {
+        requestInProgressRef.current = false
+      }, 1000)
     }
   }, [toast, router])
 
-  // Handle subscription resumption
+  // Handle subscription resumption with debouncing
   const resumeSubscription = useCallback(async (): Promise<SubscriptionResult> => {
+    // Prevent duplicate requests
+    if (requestInProgressRef.current) {
+      return {
+        success: false,
+        error: "A subscription request is already in progress",
+        message: "Please wait for the current request to complete",
+      }
+    }
+
+    requestInProgressRef.current = true
     setIsLoading(true)
 
     try {
@@ -329,6 +368,10 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       }
     } finally {
       setIsLoading(false)
+      // Reset the request in progress flag after a short delay
+      setTimeout(() => {
+        requestInProgressRef.current = false
+      }, 1000)
     }
   }, [toast, router])
 

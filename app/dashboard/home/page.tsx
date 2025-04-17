@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -36,21 +36,43 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const [activeTab, setActiveTab] = useState("overview")
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [userId, setUserId] = useState<string>("")
 
-  const { data: userData, isLoading: isLoadingUserData, error: userDataError } = useUserData(session?.user?.id ?? "")
+  // Only set userId when session is available to prevent unnecessary API calls
+  useEffect(() => {
+    if (session?.user?.id) {
+      setUserId(session.user.id)
+    }
+  }, [session])
+
+  const {
+    data: userData,
+    isLoading: isLoadingUserData,
+    error: userDataError,
+  } = useUserData(userId, {
+    // Only fetch when we have a userId
+    enabled: !!userId,
+    // Add staleTime to prevent frequent refetches
+    staleTime: 60000, // 1 minute
+  })
 
   const {
     data: userStats,
     isLoading: isLoadingUserStats,
     error: userStatsError,
-  } = useUserStats(session?.user?.id ?? "")
+  } = useUserStats(userId, {
+    // Only fetch when we have a userId
+    enabled: !!userId,
+    // Add staleTime to prevent frequent refetches
+    staleTime: 60000, // 1 minute
+  })
 
-  if (status === "loading" || isLoadingUserData || isLoadingUserStats) {
+  if (status === "loading" || (userId && (isLoadingUserData || isLoadingUserStats))) {
     return <LoadingState />
   }
 
   if (status === "unauthenticated") {
-    router.push("/login")
+    router.push("/auth/signin")
     return null
   }
 

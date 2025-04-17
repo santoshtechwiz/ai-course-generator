@@ -14,7 +14,7 @@ import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizBase } from "../../components/QuizBase"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
-import { useQuizState, formatQuizTime } from "@/hooks/use-quiz-state"
+import { useQuizState, } from "@/hooks/use-quiz-state"
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { QuizProgress } from "../../components/QuizProgress"
 
@@ -64,7 +64,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
   } = useQuizState({
     quizId,
     slug,
-    questions: quizData.questions,
+    questions: quizData.questions || [], // Ensure questions is always an array
     quizType: "code",
     calculateScore,
     onComplete,
@@ -148,6 +148,16 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
   )
 
   const renderQuizContent = () => {
+    if (quizData.questions.length === 0) {
+      return (
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
+            <p className="text-lg font-semibold">No questions available for this quiz.</p>
+          </CardContent>
+        </Card>
+      )
+    }
+
     if (quizCompleted) {
       const correctCount = calculateScore(selectedOptions, quizData.questions)
       const totalQuestions = quizData.questions.length

@@ -9,7 +9,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/hooks/use-toast"
 import Logo from "@/components/shared/Logo"
 import { createContactSubmission } from "@/app/actions/actions"
-import { Loader2, Bug, CreditCard, Lightbulb, HelpCircle, MessageSquare, ChevronRight, CheckCircle } from "lucide-react"
+import {
+  Loader2,
+  Bug,
+  CreditCard,
+  Lightbulb,
+  HelpCircle,
+  MessageSquare,
+  ChevronRight,
+  CheckCircle,
+  Send,
+} from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -114,42 +124,61 @@ export default function ImprovedContactForm() {
   }
 
   return (
-    <Card className="max-w-3xl mx-auto mt-10 shadow-md border-muted/40">
-      <CardHeader className="text-center space-y-4 pb-6 border-b">
-        <div className="w-20 h-20 mx-auto mb-2">
+    <Card className="max-w-3xl mx-auto mt-10 shadow-md border-muted/40 overflow-hidden">
+      <CardHeader className="text-center space-y-4 pb-6 border-b bg-muted/20">
+        <div className="w-20 h-20 mx-auto mb-2 bg-primary/5 rounded-full p-4 flex items-center justify-center">
           <Logo />
         </div>
-        <CardTitle className="text-3xl font-bold tracking-tight">Contact Us</CardTitle>
+        <CardTitle className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-blue-400">
+          Contact Us
+        </CardTitle>
         <CardDescription className="mt-2 text-muted-foreground text-base max-w-md mx-auto leading-relaxed">
           Have questions or need help? We're here for you. Select an issue type below to get started.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
         {success ? (
-          <div className="text-center p-8 space-y-4">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-              <CheckCircle className="h-8 w-8 text-primary" />
+          <div className="text-center p-8 space-y-4 animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
+            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <p className="text-2xl font-semibold">Thank you for reaching out!</p>
-            <p className="text-muted-foreground">
-              We've received your message and will get back to you as soon as possible.
+            <p className="text-muted-foreground max-w-md mx-auto">
+              We've received your message and will get back to you as soon as possible. You should receive a
+              confirmation email shortly.
             </p>
             <Button onClick={resetForm} variant="outline" className="mt-4">
+              <MessageSquare className="mr-2 h-4 w-4" />
               Send another message
             </Button>
           </div>
         ) : (
           <Tabs defaultValue="guided" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="guided">Guided Form</TabsTrigger>
-              <TabsTrigger value="direct">Direct Message</TabsTrigger>
+              <TabsTrigger
+                value="guided"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Lightbulb className="mr-2 h-4 w-4" />
+                Guided Form
+              </TabsTrigger>
+              <TabsTrigger
+                value="direct"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Direct Message
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="guided">
               <div className="space-y-6">
                 {currentStep === 1 && (
-                  <div className="space-y-4 animate-in fade-in-50">
-                    <h3 className="text-lg font-medium">What can we help you with?</h3>
+                  <div className="space-y-4 animate-in fade-in-50 slide-in-from-bottom-5 duration-300">
+                    <h3 className="text-lg font-medium flex items-center">
+                      <HelpCircle className="mr-2 h-5 w-5 text-primary" />
+                      What can we help you with?
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {issueTypes.map((issue) => {
                         const Icon = issue.icon
@@ -161,10 +190,11 @@ export default function ImprovedContactForm() {
                             className={cn(
                               "flex items-start p-4 rounded-lg border-2 text-left transition-all hover:border-primary/50 hover:bg-primary/5",
                               selectedIssueType === issue.value ? "border-primary bg-primary/5" : "border-muted",
+                              "group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
                             )}
                           >
                             <div className="mr-4 mt-0.5">
-                              <div className="p-2 rounded-md bg-primary/10 text-primary">
+                              <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                                 <Icon className="h-5 w-5" />
                               </div>
                             </div>
@@ -180,12 +210,15 @@ export default function ImprovedContactForm() {
                 )}
 
                 {currentStep === 2 && (
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 animate-in fade-in-50">
-                    <div className="flex items-center mb-6">
+                  <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="space-y-5 animate-in fade-in-50 slide-in-from-bottom-5 duration-300"
+                  >
+                    <div className="flex items-center mb-6 bg-muted/30 p-3 rounded-lg">
                       <button
                         type="button"
                         onClick={() => setCurrentStep(1)}
-                        className="flex items-center text-sm text-muted-foreground hover:text-foreground"
+                        className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <ChevronRight className="h-4 w-4 rotate-180 mr-1" />
                         Back to issue types
@@ -199,19 +232,23 @@ export default function ImprovedContactForm() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="name">Your Name</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="name" className="text-sm font-medium">
+                          Your Name
+                        </Label>
                         <Input
                           id="name"
                           {...register("name", { required: "Name is required" })}
                           placeholder="Full Name"
-                          className="mt-1.5"
+                          className={`${errors.name ? "border-red-300 focus-visible:ring-red-300" : ""}`}
                         />
-                        {errors.name && <p className="mt-1.5 text-sm text-destructive">{errors.name.message}</p>}
+                        {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
                       </div>
 
-                      <div>
-                        <Label htmlFor="email">Email Address</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="email" className="text-sm font-medium">
+                          Email Address
+                        </Label>
                         <Input
                           id="email"
                           type="email"
@@ -223,14 +260,14 @@ export default function ImprovedContactForm() {
                             },
                           })}
                           placeholder="you@example.com"
-                          className="mt-1.5"
+                          className={`${errors.email ? "border-red-300 focus-visible:ring-red-300" : ""}`}
                         />
-                        {errors.email && <p className="mt-1.5 text-sm text-destructive">{errors.email.message}</p>}
+                        {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
                       </div>
                     </div>
 
-                    <div>
-                      <Label>Priority Level</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Priority Level</Label>
                       <RadioGroup
                         defaultValue="medium"
                         className="grid grid-cols-3 gap-4 mt-1.5"
@@ -248,10 +285,17 @@ export default function ImprovedContactForm() {
                               className={cn(
                                 "flex flex-col items-center justify-between rounded-md border-2 border-muted p-3 hover:bg-primary/5 hover:border-primary/50 [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5",
                                 priority.value === "high" &&
-                                  "[&:has([data-state=checked])]:border-red-500 [&:has([data-state=checked])]:bg-red-50",
+                                  "[&:has([data-state=checked])]:border-red-500 [&:has([data-state=checked])]:bg-red-50 dark:[&:has([data-state=checked])]:bg-red-950/10",
+                                "transition-all cursor-pointer",
                               )}
                             >
-                              <span className={cn("text-sm font-medium", priority.value === "high" && "text-red-600")}>
+                              <span
+                                className={cn(
+                                  "text-sm font-medium",
+                                  priority.value === "high" && "text-red-600 dark:text-red-400",
+                                  "peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2",
+                                )}
+                              >
                                 {priority.label}
                               </span>
                             </Label>
@@ -260,15 +304,17 @@ export default function ImprovedContactForm() {
                       </RadioGroup>
                     </div>
 
-                    <div>
-                      <Label htmlFor="message">Message</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="message" className="text-sm font-medium">
+                        Message
+                      </Label>
                       <Textarea
                         id="message"
                         {...register("message", { required: "Message is required" })}
                         placeholder={getPlaceholderByIssueType(selectedIssueType)}
-                        className="mt-1.5 min-h-[160px] resize-y"
+                        className={`min-h-[160px] resize-y ${errors.message ? "border-red-300 focus-visible:ring-red-300" : ""}`}
                       />
-                      {errors.message && <p className="mt-1.5 text-sm text-destructive">{errors.message.message}</p>}
+                      {errors.message && <p className="text-sm text-red-500">{errors.message.message}</p>}
                     </div>
 
                     <Button type="submit" disabled={isSubmitting} className="w-full h-11 text-base font-medium">
@@ -278,7 +324,10 @@ export default function ImprovedContactForm() {
                           Sending...
                         </>
                       ) : (
-                        "Submit"
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Submit
+                        </>
                       )}
                     </Button>
                   </form>
@@ -287,21 +336,28 @@ export default function ImprovedContactForm() {
             </TabsContent>
 
             <TabsContent value="direct">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-5 animate-in fade-in-50 slide-in-from-bottom-5 duration-300"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="direct-name">Your Name</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="direct-name" className="text-sm font-medium">
+                      Your Name
+                    </Label>
                     <Input
                       id="direct-name"
                       {...register("name", { required: "Name is required" })}
                       placeholder="Full Name"
-                      className="mt-1.5"
+                      className={`${errors.name ? "border-red-300 focus-visible:ring-red-300" : ""}`}
                     />
-                    {errors.name && <p className="mt-1.5 text-sm text-destructive">{errors.name.message}</p>}
+                    {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
                   </div>
 
-                  <div>
-                    <Label htmlFor="direct-email">Email Address</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="direct-email" className="text-sm font-medium">
+                      Email Address
+                    </Label>
                     <Input
                       id="direct-email"
                       type="email"
@@ -313,16 +369,18 @@ export default function ImprovedContactForm() {
                         },
                       })}
                       placeholder="you@example.com"
-                      className="mt-1.5"
+                      className={`${errors.email ? "border-red-300 focus-visible:ring-red-300" : ""}`}
                     />
-                    {errors.email && <p className="mt-1.5 text-sm text-destructive">{errors.email.message}</p>}
+                    {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="direct-issue">Issue Type</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="direct-issue" className="text-sm font-medium">
+                    Issue Type
+                  </Label>
                   <Select onValueChange={(value) => setValue("issueType", value)}>
-                    <SelectTrigger id="direct-issue" className="mt-1.5">
+                    <SelectTrigger id="direct-issue" className={`${!selectedIssueType ? "text-muted-foreground" : ""}`}>
                       <SelectValue placeholder="Select an issue type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -331,7 +389,7 @@ export default function ImprovedContactForm() {
                         return (
                           <SelectItem key={issue.value} value={issue.value}>
                             <div className="flex items-center">
-                              <Icon className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <Icon className="h-4 w-4 mr-2 text-primary" />
                               {issue.label}
                             </div>
                           </SelectItem>
@@ -341,15 +399,17 @@ export default function ImprovedContactForm() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="direct-message">Message</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="direct-message" className="text-sm font-medium">
+                    Message
+                  </Label>
                   <Textarea
                     id="direct-message"
                     {...register("message", { required: "Message is required" })}
                     placeholder="How can we help you today?"
-                    className="mt-1.5 min-h-[160px] resize-y"
+                    className={`min-h-[160px] resize-y ${errors.message ? "border-red-300 focus-visible:ring-red-300" : ""}`}
                   />
-                  {errors.message && <p className="mt-1.5 text-sm text-destructive">{errors.message.message}</p>}
+                  {errors.message && <p className="text-sm text-red-500">{errors.message.message}</p>}
                 </div>
 
                 <Button type="submit" disabled={isSubmitting} className="w-full h-11 text-base font-medium">
@@ -359,7 +419,10 @@ export default function ImprovedContactForm() {
                       Sending...
                     </>
                   ) : (
-                    "Send Message"
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Message
+                    </>
                   )}
                 </Button>
               </form>
