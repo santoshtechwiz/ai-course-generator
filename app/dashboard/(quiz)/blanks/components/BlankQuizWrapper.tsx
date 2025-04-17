@@ -4,8 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
-import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
 import BlankQuizResults from "./BlankQuizResults"
+import { QuizFeedback } from "../../components/QuizFeedback"
 
 interface Question {
   id: number
@@ -156,7 +156,7 @@ export function BlankQuizWrapper({
 
   if (showFeedback) {
     return (
-      <QuizSubmissionFeedback
+      <QuizFeedback
         isSubmitting={isSubmitting}
         isSuccess={isSuccess}
         isError={!!error}
