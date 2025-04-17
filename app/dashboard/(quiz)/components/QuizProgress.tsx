@@ -4,8 +4,9 @@ import { Progress } from "@/components/ui/progress"
 import { Timer } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
-import { formatQuizTime } from "@/hooks/use-quiz-state"
+
 import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
+import { formatQuizTime } from "@/lib/utils"
 
 interface QuizProgressProps {
   currentQuestionIndex: number

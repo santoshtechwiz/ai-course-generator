@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { saveQuizStateBeforeAuth } from "@/hooks/quiz-session-storage"
+
 
 interface AuthRequiredModalProps {
   isOpen: boolean

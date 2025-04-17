@@ -1,159 +1,176 @@
 "use client"
 
-// Create a new hook for standardized quiz state management
 import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { useQuizResult } from "./use-quiz-result"
-import type { QuizType } from "@/app/types/types"
+import { useRouter } from "next/navigation"
 
-interface UseQuizStateOptions<T> {
-  quizId: string | number
-  slug: string
-  questions: T[]
-  quizType: QuizType
-  calculateScore: (selectedOptions: any[], questions: T[]) => number
-  onComplete?: () => void
+
+interface Question {
+  id: number
+  text: string
+  options: string[]
+  correctAnswer: string
+  explanation?: string
 }
 
-export function useQuizState<T>({
-  quizId,
-  slug,
-  questions,
-  quizType,
-  calculateScore,
-  onComplete,
-}: UseQuizStateOptions<T>) {
-  // Quiz progress state
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [selectedOptions, setSelectedOptions] = useState<any[]>(Array(questions.length).fill(null))
-  const [timeSpent, setTimeSpent] = useState<number[]>(Array(questions.length).fill(0))
-  const [startTime, setStartTime] = useState<number>(Date.now())
-  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
-  const [quizCompleted, setQuizCompleted] = useState(false)
-  const [quizResults, setQuizResults] = useState<any | null>(null)
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+interface QuizResults {
+  correctAnswers: number
+  totalQuestions: number
+  score: number
+  timeTaken: number[]
+}
 
-  // Authentication state
+interface UseQuizStateProps {
+  questions: Question[]
+  slug: string
+  quizType: string
+  timeLimit?: number
+}
+
+const useQuizState = ({ questions, slug, quizType, timeLimit }: UseQuizStateProps) => {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [selectedOptions, setSelectedOptions] = useState<string[]>(Array(questions.length).fill(null))
+  const [timeSpent, setTimeSpent] = useState<number[]>(Array(questions.length).fill(0))
+  const [quizCompleted, setQuizCompleted] = useState(false)
+  const [quizResults, setQuizResults] = useState<QuizResults | null>(null)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [isError, setIsError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [startTime, setStartTime] = useState(Date.now())
+
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
+  const router = useRouter()
 
-  // Quiz submission state
-  const { submitQuizResult, isSubmitting, isSuccess, isError, errorMessage, result, resetSubmissionState } =
-    useQuizResult({})
-
-  // Current question
   const currentQuestion = questions[currentQuestionIndex]
 
-  // Initialize timer for current question
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeSpent((prev) => {
-        const updated = [...prev]
-        updated[currentQuestionIndex] = (Date.now() - questionStartTime) / 1000
-        return updated
-      })
-    }, 1000)
+    if (typeof window !== "undefined") {
+      const storageKey = `quiz_${slug}_${quizType}`
+      const savedState = sessionStorage.getItem(storageKey)
 
-    return () => clearInterval(timer)
-  }, [currentQuestionIndex, questionStartTime])
+      if (savedState) {
+        const parsedState = JSON.parse(savedState)
+        setCurrentQuestionIndex(parsedState.currentQuestionIndex || 0)
+        setSelectedOptions(parsedState.selectedOptions || Array(questions.length).fill(null))
+        setTimeSpent(parsedState.timeSpent || Array(questions.length).fill(0))
+        setQuizCompleted(parsedState.quizCompleted || false)
+        setQuizResults(parsedState.quizResults || null)
+        setShowFeedbackModal(parsedState.showFeedbackModal || false)
+        setStartTime(parsedState.startTime || Date.now())
+      }
+    }
+  }, [questions.length, slug, quizType])
 
-  // Handle option selection
+  useEffect(() => {
+    if (!quizCompleted && typeof window !== "undefined") {
+      const intervalId = setInterval(() => {
+        setTimeSpent((prevTimeSpent) => {
+          const newTimeSpent = [...prevTimeSpent]
+          newTimeSpent[currentQuestionIndex] = (prevTimeSpent[currentQuestionIndex] || 0) + 1
+          return newTimeSpent
+        })
+      }, 1000)
+
+      return () => clearInterval(intervalId)
+    }
+  }, [currentQuestionIndex, quizCompleted])
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storageKey = `quiz_${slug}_${quizType}`
+      const stateToSave = {
+        currentQuestionIndex,
+        selectedOptions,
+        timeSpent,
+        quizCompleted,
+        quizResults,
+        showFeedbackModal,
+        startTime,
+      }
+      sessionStorage.setItem(storageKey, JSON.stringify(stateToSave))
+    }
+  }, [
+    currentQuestionIndex,
+    selectedOptions,
+    timeSpent,
+    quizCompleted,
+    quizResults,
+    showFeedbackModal,
+    slug,
+    quizType,
+    startTime,
+  ])
+
   const handleSelectOption = useCallback(
-    (value: string) => {
-      setSelectedOptions((prev) => {
-        const updated = [...prev]
-        updated[currentQuestionIndex] = value
-        return updated
+    (option: string) => {
+      setSelectedOptions((prevSelectedOptions) => {
+        const newSelectedOptions = [...prevSelectedOptions]
+        newSelectedOptions[currentQuestionIndex] = option
+        return newSelectedOptions
       })
     },
     [currentQuestionIndex],
   )
 
-  // Handle moving to next question or completing quiz
   const handleNextQuestion = useCallback(() => {
-    // Finalize time spent on current question
-    const finalTimeSpent = (Date.now() - questionStartTime) / 1000
-    setTimeSpent((prev) => {
-      const updated = [...prev]
-      updated[currentQuestionIndex] = finalTimeSpent
-      return updated
-    })
-
     if (currentQuestionIndex < questions.length - 1) {
-      // Move to next question
-      setCurrentQuestionIndex((prev) => prev + 1)
-      setQuestionStartTime(Date.now())
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
     } else {
-      // Complete quiz
-      const totalTime = (Date.now() - startTime) / 1000
-      const score = calculateScore(selectedOptions, questions)
-
-      setQuizResults({
-        score,
-        totalTime,
-        elapsedTime: totalTime,
-        answers: selectedOptions.map((option, index) => ({
-          answer: option,
-          timeSpent: timeSpent[index],
-          isCorrect: quizType === "mcq" ? option === (questions[index] as any).answer : undefined,
-        })),
+      // Calculate results and complete quiz
+      let correctAnswers = 0
+      questions.forEach((question, index) => {
+        if (question.correctAnswer === selectedOptions[index]) {
+          correctAnswers++
+        }
       })
 
-      if (isAuthenticated) {
-        // Submit results if authenticated
-        submitQuizResult(
-          quizId.toString(),
-          selectedOptions.map((option, index) => ({
-            answer: quizType === "mcq" ? (questions[index] as any).answer : option,
-            userAnswer: option,
-            isCorrect: quizType === "mcq" ? option === (questions[index] as any).answer : undefined,
-            timeSpent: timeSpent[index],
-          })),
-          totalTime,
-          score,
-          quizType,
-        )
-        setShowFeedbackModal(true)
-      } else {
-        // Just complete the quiz without submission for unauthenticated users
-        setQuizCompleted(true)
-      }
+      const score = (correctAnswers / questions.length) * 100
+      const totalTimeTaken = timeSpent.reduce((acc, curr) => acc + curr, 0)
 
-      if (onComplete) {
-        onComplete()
-      }
+      setQuizResults({
+        correctAnswers,
+        totalQuestions: questions.length,
+        score,
+        timeTaken: timeSpent,
+      })
+      setQuizCompleted(true)
+      setShowFeedbackModal(true)
     }
-  }, [
-    currentQuestionIndex,
-    questions,
-    questionStartTime,
-    startTime,
-    selectedOptions,
-    timeSpent,
-    calculateScore,
-    isAuthenticated,
-    quizId,
-    submitQuizResult,
-    quizType,
-    onComplete,
-  ])
+  }, [currentQuestionIndex, questions, selectedOptions, timeSpent])
 
-  // Handle feedback modal continuation
   const handleFeedbackContinue = useCallback(() => {
     setShowFeedbackModal(false)
-    setQuizCompleted(true)
-    resetSubmissionState()
-  }, [resetSubmissionState])
+  }, [])
 
-  // Format time for display
-  const formatQuizTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
+  // Add a handleRestart function to the useQuizState hook
+  const handleRestart = useCallback(() => {
+    // Reset all state
+    setCurrentQuestionIndex(0)
+    setSelectedOptions(Array(questions.length).fill(null))
+    setTimeSpent(Array(questions.length).fill(0))
+    setQuizCompleted(false)
+    setQuizResults(null)
+    setShowFeedbackModal(false)
+    setIsSubmitting(false)
+    setIsSuccess(false)
+    setIsError(false)
+    setErrorMessage(null)
 
+    // Reset the timer
+    setStartTime(Date.now())
+
+    // Clear any saved state in session storage
+    if (typeof window !== "undefined") {
+      const storageKey = `quiz_${slug}_${quizType}`
+      sessionStorage.removeItem(storageKey)
+    }
+  }, [questions.length, slug, quizType])
+
+  // Add handleRestart to the returned object
   return {
-    // State
     currentQuestionIndex,
     currentQuestion,
     selectedOptions,
@@ -167,18 +184,11 @@ export function useQuizState<T>({
     errorMessage,
     isAuthenticated,
     session,
-
-    // Actions
     handleSelectOption,
     handleNextQuestion,
     handleFeedbackContinue,
-    formatQuizTime,
+    handleRestart, // Add this line
   }
 }
 
-// Export the time formatter as a standalone function
-export function formatQuizTime(seconds: number): string {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = Math.floor(seconds % 60)
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-}
+export default useQuizState

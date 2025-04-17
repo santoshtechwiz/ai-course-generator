@@ -1,46 +1,52 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import type { User } from "@/app/types/types"
 import { Badge } from "@/components/ui/badge"
-import { CalendarDays } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Settings } from "lucide-react"
+import Link from "next/link"
 
-export default function UserProfile({ user }: { user: User }) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-      <Card className="bg-card text-card-foreground overflow-hidden">
-        <CardHeader className="border-b bg-muted/50">
-          <CardTitle>Your Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300, damping: 10 }}>
-              <Avatar className="h-24 w-24 ring-2 ring-primary/10" >
-                <AvatarImage src={user.image || ""} alt={user.name || ""} />
-                <AvatarFallback className="text-lg bg-primary/5">{user.name?.charAt(0) || "U"}</AvatarFallback>
-              </Avatar>
-            </motion.div>
-            <div className="space-y-2 text-center sm:text-left">
-              <h2 className="text-2xl font-bold tracking-tight">{user.name}</h2>
-              <p className="text-muted-foreground">{user.email}</p>
-              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" />
-                  Joined {new Date(user.createdAt).toLocaleDateString()}
-                </Badge>
-                {user.role && (
-                  <Badge variant="outline" className="bg-primary/5">
-                    {user.role}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  )
+interface UserProfileProps {
+  user: {
+    name: string
+    email: string
+    image: string
+    userType: string
+  }
 }
 
+export default function UserProfile({ user }: UserProfileProps) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-muted/50 pb-4">
+        <CardTitle>Profile</CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <Avatar className="h-24 w-24 border-4 border-background">
+            <AvatarImage src={user.image || ""} alt={user.name} />
+            <AvatarFallback className="text-2xl">{user.name?.charAt(0) || "U"}</AvatarFallback>
+          </Avatar>
+          <div className="space-y-3 text-center sm:text-left flex-1">
+            <div>
+              <h3 className="text-xl font-semibold">{user.name}</h3>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
+            </div>
+            <Badge variant="secondary" className="text-xs px-2 py-1">
+              {user.userType || "Standard"}
+            </Badge>
+            <div className="pt-2">
+              <Button variant="outline" size="sm" asChild className="gap-2">
+                <Link href="/dashboard/settings">
+                  <Settings className="h-4 w-4" />
+                  Edit Profile
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

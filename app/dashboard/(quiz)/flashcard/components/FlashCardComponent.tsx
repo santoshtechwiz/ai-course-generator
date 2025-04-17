@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
-import { useQuizState } from "@/hooks/use-quiz-state"
+
 
 import { Card, CardContent } from "@/components/ui/card"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
@@ -15,6 +15,7 @@ import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { QuizProgress } from "../../components/QuizProgress"
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { QuizLoader } from "@/components/ui/quiz-loader"
+import useQuizState from "@/hooks/use-quiz-state"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]

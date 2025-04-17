@@ -1,6 +1,7 @@
 "use client"
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import React from "react"
+import { useRouter } from "next/navigation"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,7 @@ import { useSession } from "next-auth/react"
 import { QuizResultBase, getPerformanceLevel } from "../../components/QuizResultBase"
 
 interface BlankQuizResultsProps {
-  answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
+  answers: { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]
   questions: { id: number; question: string; answer: string }[]
   onRestart: () => void
   onComplete: (score: number) => void
@@ -31,11 +32,35 @@ export default function BlankQuizResults({
   clearGuestData,
 }: BlankQuizResultsProps) {
   const { data: session } = useSession()
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveCompleted, setSaveCompleted] = useState(false)
+  const router = useRouter()
+
   const { score, results } = useMemo(() => {
     const calculatedResults = questions.map((question, index) => {
+      // If similarity is already calculated, use it
+      if (answers[index]?.similarity !== undefined) {
+        return {
+          ...question,
+          userAnswer: answers[index]?.answer?.trim() || "",
+          correctAnswer: question.answer,
+          similarity: answers[index].similarity!,
+          timeSpent: answers[index]?.timeSpent || 0,
+          isCorrect: (answers[index].similarity || 0) > 80,
+        }
+      }
+
+      // Otherwise calculate it
       const userAnswer = answers[index]?.answer?.trim()?.toLowerCase() || ""
       const correctAnswer = question.answer?.trim()?.toLowerCase() || ""
       const similarity = calculateSimilarity(correctAnswer, userAnswer)
+
+      // Store the similarity in the answers array for future reference
+      if (answers[index]) {
+        answers[index].similarity = similarity
+      }
+
       return {
         ...question,
         userAnswer: answers[index]?.answer?.trim() || "",
@@ -47,13 +72,12 @@ export default function BlankQuizResults({
     })
 
     const totalScore = calculatedResults.reduce((acc, result) => acc + result.similarity, 0)
-    const averageScore = Math.min(100, totalScore / questions.length)
+    const averageScore = Math.min(100, totalScore / Math.max(1, calculatedResults.length))
 
     return { score: averageScore, results: calculatedResults }
   }, [answers, questions])
 
   const hasCalledComplete = useRef(false)
-  const hasSavedToDatabase = useRef(false)
   const totalTime = useMemo(() => answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0), [answers])
 
   useEffect(() => {
@@ -62,29 +86,38 @@ export default function BlankQuizResults({
       onComplete(Math.round(score))
     }
 
-    if (session?.user && !hasSavedToDatabase.current && quizId) {
-      hasSavedToDatabase.current = true
-
-      const formattedAnswers = answers.map((answer, index) => ({
-        userAnswer: answer.answer || "",
-        timeSpent: answer.timeSpent || 0,
-        hintsUsed: answer.hintsUsed || false,
-      }))
-
-      saveQuizResultToDatabase(quizId, formattedAnswers, totalTime, Math.round(score), "fill-blanks")
-        .then(() => {
-          console.log("Quiz results saved successfully")
-        })
-        .catch((error) => {
-          console.error("Failed to save quiz results:", error)
-        })
-    } else if (!session?.user && clearGuestData) {
-      // If user is not logged in and clearGuestData is provided, call it
+    // If user is not logged in and clearGuestData is provided, call it
+    if (!session?.user && clearGuestData) {
       clearGuestData()
     }
-  }, [score, onComplete, session, quizId, slug, answers, questions, totalTime, clearGuestData])
+  }, [score, onComplete, session, clearGuestData])
 
   const performance = getPerformanceLevel(score)
+
+  const handleRestart = () => {
+    // Clear session storage for this quiz
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(`quiz_result_${quizId}`)
+
+      // Also clear any other related storage
+      const storageKey = `quiz_${slug}_fill-blanks`
+      sessionStorage.removeItem(storageKey)
+    }
+
+    // Reset all state before restarting
+    hasCalledComplete.current = false
+    setSaveCompleted(false)
+    setSaveError(null)
+
+    // Call the provided onRestart function
+    onRestart()
+
+    // Force a page refresh to ensure all state is reset
+    router.refresh()
+
+    // Optionally, navigate back to the quiz page
+    router.push(`/dashboard/blanks/${slug}`)
+  }
 
   return (
     <QuizResultBase
@@ -96,11 +129,15 @@ export default function BlankQuizResults({
       slug={slug}
       quizType="blanks"
       clearGuestData={clearGuestData}
+      isSaving={isSaving}
     >
       <div className="max-w-4xl mx-auto p-4">
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">Quiz Results</CardTitle>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              Quiz Results
+              {isSaving && <span className="text-sm text-muted-foreground">(Saving...)</span>}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center mb-6">
@@ -157,48 +194,20 @@ export default function BlankQuizResults({
               </Card>
             ))}
             <div className="flex justify-center mt-6">
-              <Button onClick={onRestart}>Restart Quiz</Button>
+              <Button onClick={handleRestart} disabled={isSaving}>
+                Restart Quiz
+              </Button>
             </div>
+            {saveError && (
+              <p className="text-red-500 text-center mt-4">
+                Error saving results: {saveError}. Your progress is still displayed here.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
     </QuizResultBase>
   )
-}
-
-async function saveQuizResultToDatabase(
-  quizId: string,
-  answers: { userAnswer: string; timeSpent: number; hintsUsed: boolean }[],
-  totalTime: number,
-  score: number,
-  quizType: string,
-) {
-  try {
-    const response = await fetch(`/api/quiz/${quizId}/complete`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        quizId,
-        answers,
-        totalTime,
-        score,
-        type: quizType,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error("Failed to save quiz results to database", errorData)
-      throw new Error(errorData.error || `Failed to save results: ${response.status}`)
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error("Error saving quiz results:", error)
-    throw error
-  }
 }
 
 function calculateSimilarity(str1: string, str2: string): number {

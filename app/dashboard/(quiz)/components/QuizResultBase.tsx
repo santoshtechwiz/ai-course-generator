@@ -2,16 +2,19 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
-import Link from "next/link"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { motion } from "framer-motion"
-import { User, RotateCw } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
+import { Separator } from "@/components/ui/separator"
 import { formatTime } from "@/lib/utils"
+import { motion } from "framer-motion"
+import { User } from "lucide-react"
+
+import type { QuizType } from "@/app/types/types"
+import QuizAuthWrapper from "./QuizAuthWrapper"
 
 interface QuizResultBaseProps {
   quizId: string
@@ -20,9 +23,10 @@ interface QuizResultBaseProps {
   totalQuestions: number
   totalTime: number
   slug: string
-  quizType: string
+  quizType: QuizType
+  children: React.ReactNode
   clearGuestData?: () => void
-  children?: React.ReactNode
+  isSaving?: boolean
 }
 
 export function QuizResultBase({
@@ -33,18 +37,17 @@ export function QuizResultBase({
   totalTime,
   slug,
   quizType,
-  clearGuestData,
   children,
+  clearGuestData,
+  isSaving = false,
 }: QuizResultBaseProps) {
-  const { status } = useSession()
-  const isAuthenticated = status === "authenticated"
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
-  // Get performance level based on score
-  const performance = getPerformanceLevel(score)
-
-  // Clear guest data after showing results
+  // Clear guest data after showing results if user is not authenticated
   useEffect(() => {
-    if (!isAuthenticated && clearGuestData) {
+    if (status === "unauthenticated" && clearGuestData) {
       // Set a timeout to clear data after the user has had time to view results
       const timer = setTimeout(() => {
         clearGuestData()
@@ -52,10 +55,14 @@ export function QuizResultBase({
 
       return () => clearTimeout(timer)
     }
-  }, [isAuthenticated, clearGuestData])
+  }, [status, clearGuestData])
 
   // If user is not authenticated, show sign-in prompt with results summary
-  if (!isAuthenticated) {
+  if (status === "unauthenticated") {
+    const percentage = Math.round(score)
+    const performance = getPerformanceLevel(percentage)
+    const formattedTime = formatTime(totalTime)
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -66,19 +73,13 @@ export function QuizResultBase({
         <Card className="w-full shadow-lg overflow-hidden">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold tracking-tight">{title}</CardTitle>
-            <div className="flex justify-center mt-2">
-              <Badge variant="outline" className={`text-sm ${performance.color}`}>
-                {performance.label}
-              </Badge>
-            </div>
           </CardHeader>
-
           <CardContent className="space-y-6 px-6">
             {/* Score Summary */}
             <div className="flex flex-col items-center justify-center space-y-4">
               <div className="relative">
                 <Progress
-                  value={score}
+                  value={percentage}
                   className="h-32 w-32 rounded-full [&>div]:bg-transparent"
                   indicatorClassName={`${performance.bgColor} [&>div]:stroke-[8]`}
                 />
@@ -88,14 +89,18 @@ export function QuizResultBase({
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  {score.toFixed(1)}%
+                  {percentage}%
                 </motion.div>
               </div>
               <div className="text-center space-y-2">
-                <p className="text-lg font-medium">You completed {totalQuestions} questions</p>
-                <p className="text-sm text-muted-foreground">Completed in {formatTime(totalTime)}</p>
+                <p className="text-lg font-medium">
+                  You scored {Math.round((percentage / 100) * totalQuestions)} out of {totalQuestions} questions
+                </p>
+                <p className="text-sm text-muted-foreground">Completed in {formattedTime}</p>
               </div>
             </div>
+
+            <Separator />
 
             {/* Sign In Prompt */}
             <div className="bg-muted/30 rounded-lg p-6">
@@ -109,39 +114,17 @@ export function QuizResultBase({
               <SignInPrompt callbackUrl={`/dashboard/${quizType}/${slug}`} />
             </div>
           </CardContent>
-
-          <CardFooter className="flex flex-col sm:flex-row gap-3 justify-center px-6 pb-6">
-            <motion.div whileHover={{ scale: 1.03 }}>
-              <Link
-                href={`/${quizType}/${slug}`}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full sm:w-auto"
-              >
-                <RotateCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Link>
-            </motion.div>
-
-            <motion.div whileHover={{ scale: 1.03 }}>
-              <Link
-                href="/dashboard/quizzes"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full sm:w-auto"
-              >
-                Browse More Quizzes
-              </Link>
-            </motion.div>
-          </CardFooter>
         </Card>
       </motion.div>
     )
   }
 
-  // For authenticated users, render the children (specific quiz result content)
-  return <>{children}</>
+  // For authenticated users, render the children
+  return <QuizAuthWrapper>{children}</QuizAuthWrapper>
 }
 
-// Helper function to determine performance level based on score
 export function getPerformanceLevel(score: number) {
-  const PERFORMANCE_LEVELS = [
+  const levels = [
     {
       threshold: 90,
       color: "text-green-500",
@@ -170,9 +153,7 @@ export function getPerformanceLevel(score: number) {
       label: "Needs Practice",
       message: "Keep learning! Let's strengthen these concepts.",
     },
-  ] as const
+  ]
 
-  return (
-    PERFORMANCE_LEVELS.find((level) => score >= level.threshold) || PERFORMANCE_LEVELS[PERFORMANCE_LEVELS.length - 1]
-  )
+  return levels.find((level) => score >= level.threshold) || levels[levels.length - 1]
 }

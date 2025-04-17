@@ -10,7 +10,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { getPerformanceLevel, QuizResultBase } from "../../components/QuizResultBase"
 import { QuizResultWrapper } from "../../components/QuizResultWrapper"
 import { useSession } from "next-auth/react"
-import { QuizFeedback } from "../../components/QuizFeedback"
 
 interface QuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
@@ -45,51 +44,19 @@ export default function QuizResultsOpenEnded({
   const score = useRef(calculateScore(answers, questions)).current
   const totalTime = useRef(answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0)).current
 
-  // Call onComplete only once and save to database if authenticated
+  // Call onComplete only once but don't save to database
   useEffect(() => {
-    const saveResults = async () => {
-      setIsLoading(true)
-      try {
-        if (!hasCalledComplete.current) {
-          hasCalledComplete.current = true
-          onComplete(score)
-        }
-
-        if (session?.user && !hasSavedToDatabase.current && quizId) {
-          hasSavedToDatabase.current = true
-
-          const formattedAnswers = answers.map((answer) => ({
-            userAnswer: answer.answer || "",
-            timeSpent: answer.timeSpent || 0,
-            hintsUsed: answer.hintsUsed || false,
-          }))
-
-          await saveQuizResultToDatabase(quizId, formattedAnswers, totalTime, score, "openended")
-        }
-        setIsSuccess(true)
-      } catch (error) {
-        setIsError(true)
-      } finally {
-        setIsLoading(false)
-      }
+    if (!hasCalledComplete.current) {
+      hasCalledComplete.current = true
+      onComplete(score)
     }
 
-    saveResults()
-  }, [score, onComplete, session, quizId, answers, totalTime])
-
-  if (isLoading || isSuccess || isError) {
-    return (
-      <QuizFeedback
-        score={score}
-        totalQuestions={questions.length}
-        isSubmitting={isLoading}
-        isSuccess={isSuccess}
-        isError={isError}
-        onContinue={() => setIsSuccess(false)} // Reset success state to show results
-        quizType="openended"
-      />
-    )
-  }
+    // Don't automatically save to database - let the QuizBase handle this
+    if (!session?.user && clearGuestData) {
+      // If user is not logged in and clearGuestData is provided, call it
+      clearGuestData()
+    }
+  }, [score, onComplete, session, clearGuestData])
 
   const performance = getPerformanceLevel(score)
 
@@ -99,6 +66,10 @@ export default function QuizResultsOpenEnded({
 
   const handleRestart = () => {
     setIsLoading(true)
+    // Reset state
+    hasCalledComplete.current = false
+    hasSavedToDatabase.current = false
+
     setTimeout(() => {
       onRestart()
       setIsLoading(false)
@@ -214,38 +185,6 @@ export default function QuizResultsOpenEnded({
       </QuizResultBase>
     </QuizResultWrapper>
   )
-}
-
-// Add this function to save results to the database
-async function saveQuizResultToDatabase(
-  quizId: string,
-  answers: { userAnswer: string; timeSpent: number; hintsUsed: boolean }[],
-  totalTime: number,
-  score: number,
-  quizType: string,
-) {
-  try {
-    const response = await fetch(`/api/quiz/${quizId}/complete`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        quizId,
-        answers,
-        totalTime,
-        score,
-        type: quizType,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error("Failed to save quiz results to database", errorData)
-    }
-  } catch (error) {
-    console.error("Error saving quiz results:", error)
-  }
 }
 
 function calculateScore(answers: { answer: string }[], questions: { answer: string }[]): number {

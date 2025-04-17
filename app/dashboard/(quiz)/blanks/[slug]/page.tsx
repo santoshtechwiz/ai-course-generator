@@ -6,7 +6,8 @@ import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import QuizDetailsPage from "../../components/QuizDetailsPage"
-import { BlankQuizWrapper } from "../components/BlankQuizWrapper"
+import BlankQuizWrapper from "../components/BlankQuizWrapper"
+"
 
 
 
@@ -74,11 +75,8 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
       breadcrumbItems={breadcrumbItems}
     >
       <BlankQuizWrapper
-        questions={result.questions}
-        slug={slug}
-        title={result.title}
-        quizId={String(result.id)}
-        key={result.id}
+       quizData={result}
+       slug={slug}
       />
     </QuizDetailsPage>
   )

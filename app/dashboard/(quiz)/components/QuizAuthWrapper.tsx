@@ -31,22 +31,33 @@ export default function QuizAuthWrapper({
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   // Check for saved quiz state on mount
   useEffect(() => {
-    if (typeof window !== "undefined" && status !== "loading" && !hasCheckedStorage) {
+    if (typeof window !== "undefined" && status !== "loading" && !hasCheckedStorage && !isRedirecting) {
       setHasCheckedStorage(true)
 
       // If user is authenticated and there's a saved quiz state, redirect to the saved path
       if (status === "authenticated" && hasSavedQuizState()) {
-        const { redirectPath } = getSavedQuizState()
-        if (redirectPath) {
+        try {
+          const savedState = getSavedQuizState()
+          if (savedState && savedState.redirectPath) {
+            setIsRedirecting(true)
+            // Add a small delay to ensure state is properly set before redirect
+            setTimeout(() => {
+              clearSavedQuizState()
+              router.push(savedState.redirectPath)
+            }, 100)
+          }
+        } catch (error) {
+          console.error("Error processing saved quiz state:", error)
+          // Clear invalid state
           clearSavedQuizState()
-          router.push(redirectPath)
         }
       }
     }
-  }, [status, router, hasCheckedStorage])
+  }, [status, router, hasCheckedStorage, isRedirecting])
 
   // Show auth modal if required
   useEffect(() => {
@@ -67,9 +78,13 @@ export default function QuizAuthWrapper({
     }
   }
 
-  // If still loading auth state, show nothing
-  if (status === "loading") {
-    return null
+  // If still loading auth state or redirecting, show loading state
+  if (status === "loading" || isRedirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   // If auth is required and user is not authenticated, show auth modal
