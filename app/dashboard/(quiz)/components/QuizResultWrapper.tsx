@@ -7,9 +7,8 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 
-import { QuizType } from "@/app/types/types"
+import type { QuizType } from "@/app/types/types"
 import AuthRequiredModal from "@/app/auth/AuthRequiredModal"
-
 
 interface QuizResultWrapperProps {
   children: React.ReactNode
@@ -71,6 +70,14 @@ export function QuizResultWrapper({
             // We've successfully authenticated and returned to the same quiz
             // Clear the stored state to prevent future issues
             sessionStorage.removeItem("lastQuizState")
+
+            // Also check for specific quiz result data
+            const quizResultKey = `quiz_result_${quizId}`
+            const quizResult = sessionStorage.getItem(quizResultKey)
+            if (quizResult) {
+              // Keep the quiz result for the component to use
+              console.log("Found stored quiz result after authentication")
+            }
           }
         }
       } catch (e) {
@@ -115,9 +122,9 @@ export function QuizResultWrapper({
       <AuthRequiredModal
         isOpen={showAuthModal}
         onClose={handleCloseAuthModal}
-        callbackUrl={`/quiz/${quizType}/${slug}`}
-        title="Sign in to save your results"
-        description="Create an account or sign in to save your quiz results and track your progress."
+        redirectPath={`/quiz/${quizType}/${slug}`}
+       
+       
       />
     </>
   )

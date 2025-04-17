@@ -10,6 +10,7 @@ import { BlankQuizWrapper } from "../components/BlankQuizWrapper"
 
 
 
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const quiz = await getQuiz(slug)
@@ -73,12 +74,12 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
       breadcrumbItems={breadcrumbItems}
     >
       <BlankQuizWrapper
-    questions={result.questions}
-    slug={slug}
-    title={result.title}
-    quizId={result.id}
-    key={result.id}
-              />
+        questions={result.questions}
+        slug={slug}
+        title={result.title}
+        quizId={String(result.id)}
+        key={result.id}
+      />
     </QuizDetailsPage>
   )
 }

@@ -289,6 +289,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Quiz not found" }, { status: 404 })
     }
 
+    // Handle case where answer count doesn't match question count
     if (quiz.questions && submission.answers.length !== quiz.questions.length) {
       console.warn(`Answer count mismatch: Expected ${quiz.questions.length}, got ${submission.answers.length}`)
       // Continue with available answers instead of failing
@@ -297,16 +298,27 @@ export async function POST(request: Request) {
     const totalQuestions = quiz.questions ? quiz.questions.length : 0
     const percentageScore = calculatePercentageScore(submission.score, totalQuestions, submission.type)
 
-    const result = await retryTransaction(() => processQuizSubmission(userId, submission, quiz, percentageScore))
+    try {
+      const result = await retryTransaction(() => processQuizSubmission(userId, submission, quiz, percentageScore))
 
-    return NextResponse.json({
-      success: true,
-      result: {
-        ...result,
-        score: percentageScore,
-        totalTime: Math.round(submission.totalTime),
-      },
-    })
+      return NextResponse.json({
+        success: true,
+        result: {
+          ...result,
+          score: percentageScore,
+          totalTime: Math.round(submission.totalTime),
+        },
+      })
+    } catch (processingError) {
+      console.error("Error in quiz submission processing:", processingError)
+      return NextResponse.json(
+        {
+          success: false,
+          error: processingError instanceof Error ? processingError.message : "Error processing submission",
+        },
+        { status: 500 },
+      )
+    }
   } catch (error) {
     console.error("Error processing quiz submission:", error)
 

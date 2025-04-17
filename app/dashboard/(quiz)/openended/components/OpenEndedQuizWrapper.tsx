@@ -7,6 +7,7 @@ import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { getSavedQuizState, clearSavedQuizState } from "@/hooks/quiz-session-storage"
+import { QuizFeedback } from "../../components/QuizFeedback" // Import QuizFeedback
 
 interface OpenEndedQuizWrapperProps {
   quizData: any
@@ -19,6 +20,8 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   const [isCompleted, setIsCompleted] = useState(false)
   const [startTime, setStartTime] = useState(Date.now())
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false) // Add showFeedbackModal state
+  const [quizResults, setQuizResults] = useState<any>(null) // Add quizResults state
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -34,7 +37,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         setIsCompleted(quizState.isCompleted)
 
         if (savedAnswers) {
-          setAnswers(savedAnswers)
+          setAnswers(savedAnswers as { answer: string; timeSpent: number; hintsUsed: boolean }[])
         }
 
         // Clear saved state
@@ -46,7 +49,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         }
       }
     }
-  }, [quizData.id, status])
+  }, [quizData?.id, status])
 
   const handleAnswer = (answer: string, timeSpent: number, hintsUsed: boolean) => {
     const newAnswers = [...answers]
@@ -83,6 +86,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
 
     // Otherwise, complete the quiz
     setIsCompleted(true)
+    setShowFeedbackModal(true) // Show feedback modal
   }
 
   const handleRestart = () => {
@@ -90,35 +94,28 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     setAnswers([])
     setIsCompleted(false)
     setStartTime(Date.now())
+    setShowFeedbackModal(false) // Reset showFeedbackModal on restart
   }
 
   const handleComplete = (score: number) => {
-    // Placeholder for additional actions after quiz completion
+    // This function is called when the quiz results are calculated
+    // You can use it to update UI or trigger other actions
+    setQuizResults({ score })
+    setShowFeedbackModal(true)
   }
 
-  if (isCompleted) {
-    return (
-      <QuizResultsOpenEnded
-        answers={answers}
-        questions={quizData.questions}
-        onRestart={handleRestart}
-        onComplete={handleComplete}
-        quizId={quizData.id}
-        title={quizData.title}
-        slug={slug}
-        clearGuestData={clearSavedQuizState}
-      />
-    )
+  const handleFeedbackContinue = () => {
+    setShowFeedbackModal(false)
   }
 
   return (
     <QuizAuthWrapper
       quizState={{
-        quizId: quizData.id,
+        quizId: quizData?.id,
         quizType: "openended",
         quizSlug: slug,
         currentQuestion,
-        totalQuestions: quizData.questions.length,
+        totalQuestions: quizData?.questions?.length || 0,
         startTime,
         isCompleted,
       }}
@@ -127,13 +124,39 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
       showAuthModal={showAuthModal}
       onAuthModalClose={() => setShowAuthModal(false)}
     >
-      <OpenEndedQuizQuestion
-        question={quizData.questions[currentQuestion]}
-        onAnswer={handleAnswer}
-        currentQuestion={currentQuestion}
-        totalQuestions={quizData.questions.length}
-        startTime={startTime}
-      />
+      {isCompleted ? (
+        <QuizResultsOpenEnded
+          answers={answers}
+          questions={quizData.questions}
+          onRestart={handleRestart}
+          onComplete={handleComplete}
+          quizId={quizData.id}
+          title={quizData.title}
+          slug={slug}
+          clearGuestData={clearSavedQuizState}
+        />
+      ) : (
+        <>
+          <OpenEndedQuizQuestion
+            question={quizData.questions[currentQuestion]}
+            onAnswer={handleAnswer}
+            questionNumber={currentQuestion + 1}
+            totalQuestions={quizData.questions.length}
+          />
+          {showFeedbackModal && (
+            <QuizFeedback
+              isSubmitting={false}
+              isSuccess={true}
+              isError={false}
+              score={quizResults?.score || 0}
+              totalQuestions={quizData.questions.length}
+              onContinue={handleFeedbackContinue}
+              errorMessage={undefined}
+              quizType="openended"
+            />
+          )}
+        </>
+      )}
     </QuizAuthWrapper>
   )
 }
