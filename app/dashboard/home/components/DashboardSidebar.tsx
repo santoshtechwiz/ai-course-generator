@@ -62,11 +62,7 @@ export default function DashboardSidebar({
       label: "User Management",
       href: "/admin/users",
     },
-    {
-      icon: BookOpen,
-      label: "Course Management",
-      href: "/admin/courses",
-    },
+   
   ]
 
   return (
@@ -115,13 +111,13 @@ export default function DashboardSidebar({
               <h3 className="text-xs uppercase text-muted-foreground font-medium tracking-wider mb-2">Create New</h3>
               <div className="space-y-1">
                 <Button variant="outline" className="w-full justify-start text-sm" asChild>
-                  <Link href="/dashboard/course/create">
+                  <Link href="/dashboard/course">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     New Course
                   </Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-sm" asChild>
-                  <Link href="/dashboard/quiz/create">
+                  <Link href="/dashboard/explore">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     New Quiz
                   </Link>
