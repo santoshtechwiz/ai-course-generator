@@ -18,6 +18,47 @@ import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+// Improve the animation variants for smoother transitions
+const messageVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.4,
+      ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
+    },
+  }),
+  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
+}
+
+// Improve the chat container animation
+const chatContainerVariants = {
+  hidden: { opacity: 0, scale: 0.8, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 350,
+      damping: 25,
+      duration: 0.4,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.8,
+    y: 20,
+    transition: {
+      duration: 0.3,
+      ease: [0.25, 0.1, 0.25, 1],
+    },
+  },
+}
+
+// Replace the existing AnimatedQuestions component with this improved version
 const AnimatedQuestions = () => {
   const questions = [
     "How do I enroll in a course?",
@@ -46,7 +87,7 @@ const AnimatedQuestions = () => {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -20, opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
           className="text-sm text-muted-foreground text-center"
         >
           {questions[currentQuestionIndex]}
@@ -169,21 +210,28 @@ export function Chatbot({ userId }: ChatbotProps) {
     return `${minutes}m ${seconds}s`
   }
 
+  // Update the return statement in the Chatbot component to use the improved animations
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <AnimatePresence>
         {isOpen ? (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={chatContainerVariants}
             className="relative"
           >
-            <Card className="w-[350px] sm:w-[400px] h-[500px] flex flex-col shadow-lg border-primary/20">
+            <Card className="w-[350px] sm:w-[400px] h-[500px] flex flex-col shadow-lg border-primary/20 rounded-2xl overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <BrainCircuit className="h-5 w-5 text-primary" />
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
+                  >
+                    <BrainCircuit className="h-5 w-5 text-primary" />
+                  </motion.div>
                   <CardTitle className="text-base font-medium">Course AI Assistant</CardTitle>
                   <TooltipProvider>
                     <Tooltip>
@@ -205,7 +253,12 @@ export function Chatbot({ userId }: ChatbotProps) {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <Button variant="ghost" size="sm" onClick={toggleChat} className="h-8 w-8 p-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleChat}
+                  className="h-8 w-8 p-0 rounded-full hover:bg-muted transition-colors"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </CardHeader>
@@ -213,36 +266,65 @@ export function Chatbot({ userId }: ChatbotProps) {
               <CardContent className="flex-grow overflow-hidden p-0">
                 <ScrollArea className="h-[400px] px-4" ref={scrollAreaRef}>
                   {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center p-4 space-y-4">
-                      <div className="bg-primary/10 p-3 rounded-full">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="flex flex-col items-center justify-center h-full text-center p-4 space-y-4"
+                    >
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2, duration: 0.5, type: "spring" }}
+                        className="bg-primary/10 p-3 rounded-full"
+                      >
                         <HelpCircle className="h-6 w-6 text-primary" />
-                      </div>
+                      </motion.div>
                       <div>
-                        <h3 className="font-medium text-base">How can I help you?</h3>
+                        <motion.h3
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.3, duration: 0.4 }}
+                          className="font-medium text-base"
+                        >
+                          How can I help you?
+                        </motion.h3>
                         <AnimatedQuestions />
                       </div>
-                      <div className="grid grid-cols-2 gap-2 w-full mt-2">
+                      <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.4, duration: 0.5 }}
+                        className="grid grid-cols-2 gap-2 w-full mt-2"
+                      >
                         {suggestions.map((suggestion, i) => (
-                          <Button
+                          <motion.div
                             key={i}
-                            variant="outline"
-                            size="sm"
-                            className="text-xs justify-start h-auto py-2 text-left"
-                            onClick={() => handleSuggestionClick(suggestion)}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 + i * 0.1, duration: 0.4 }}
                           >
-                            {suggestion}
-                          </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs justify-start h-auto py-2 text-left w-full transition-all hover:border-primary/50 hover:bg-primary/5"
+                              onClick={() => handleSuggestionClick(suggestion)}
+                            >
+                              {suggestion}
+                            </Button>
+                          </motion.div>
                         ))}
-                      </div>
-                    </div>
+                      </motion.div>
+                    </motion.div>
                   ) : (
                     <div className="space-y-4 pt-4 pb-4">
                       {messages.map((m, index) => (
                         <motion.div
                           key={m.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          custom={index}
+                          initial="hidden"
+                          animate="visible"
+                          variants={messageVariants}
                           className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
                         >
                           <div
@@ -287,18 +369,31 @@ export function Chatbot({ userId }: ChatbotProps) {
                             <div className="px-3 py-2 rounded-lg bg-muted">
                               <div className="flex items-center gap-2">
                                 <div className="flex space-x-1">
-                                  <div
-                                    className="w-2 h-2 bg-primary/60 rounded-full animate-pulse"
-                                    style={{ animationDelay: "0ms" }}
-                                  ></div>
-                                  <div
-                                    className="w-2 h-2 bg-primary/60 rounded-full animate-pulse"
-                                    style={{ animationDelay: "150ms" }}
-                                  ></div>
-                                  <div
-                                    className="w-2 h-2 bg-primary/60 rounded-full animate-pulse"
-                                    style={{ animationDelay: "300ms" }}
-                                  ></div>
+                                  <motion.div
+                                    animate={{ scale: [0.8, 1.2, 0.8] }}
+                                    transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.5, ease: "easeInOut" }}
+                                    className="w-2 h-2 bg-primary/60 rounded-full"
+                                  ></motion.div>
+                                  <motion.div
+                                    animate={{ scale: [0.8, 1.2, 0.8] }}
+                                    transition={{
+                                      repeat: Number.POSITIVE_INFINITY,
+                                      duration: 1.5,
+                                      ease: "easeInOut",
+                                      delay: 0.2,
+                                    }}
+                                    className="w-2 h-2 bg-primary/60 rounded-full"
+                                  ></motion.div>
+                                  <motion.div
+                                    animate={{ scale: [0.8, 1.2, 0.8] }}
+                                    transition={{
+                                      repeat: Number.POSITIVE_INFINITY,
+                                      duration: 1.5,
+                                      ease: "easeInOut",
+                                      delay: 0.4,
+                                    }}
+                                    className="w-2 h-2 bg-primary/60 rounded-full"
+                                  ></motion.div>
                                 </div>
                               </div>
                             </div>
@@ -306,20 +401,32 @@ export function Chatbot({ userId }: ChatbotProps) {
                         </motion.div>
                       )}
                       {error && (
-                        <Alert variant="destructive" className="mx-0 mt-2 p-2">
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          <AlertDescription className="text-xs">{error.message}</AlertDescription>
-                        </Alert>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <Alert variant="destructive" className="mx-0 mt-2 p-2">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            <AlertDescription className="text-xs">{error.message}</AlertDescription>
+                          </Alert>
+                        </motion.div>
                       )}
                       {!canUseChat() && (
-                        <Alert variant="destructive" className="mx-0 mt-2 p-2">
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          <AlertDescription className="text-xs">
-                            {!subscriptionStatus?.isSubscribed
-                              ? "You've reached the free limit. Upgrade to Pro for unlimited questions."
-                              : `Questions reset in ${formatTimeRemaining()}`}
-                          </AlertDescription>
-                        </Alert>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <Alert variant="destructive" className="mx-0 mt-2 p-2">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            <AlertDescription className="text-xs">
+                              {!subscriptionStatus?.isSubscribed
+                                ? "You've reached the free limit. Upgrade to Pro for unlimited questions."
+                                : `Questions reset in ${formatTimeRemaining()}`}
+                            </AlertDescription>
+                          </Alert>
+                        </motion.div>
                       )}
                     </div>
                   )}
@@ -334,15 +441,21 @@ export function Chatbot({ userId }: ChatbotProps) {
                     onChange={handleInputChange}
                     placeholder={canUseChat() ? "Ask a question..." : "Chatbot unavailable"}
                     disabled={isLoading || !canUseChat()}
-                    className="flex-grow text-sm h-9"
+                    className="flex-grow text-sm h-9 rounded-full transition-all focus-visible:ring-primary/30 focus-visible:border-primary/50"
                   />
                   <Button
                     type="submit"
                     disabled={isLoading || !input.trim() || !canUseChat()}
                     size="icon"
-                    className="shrink-0 h-9 w-9"
+                    className="shrink-0 h-9 w-9 rounded-full transition-all"
                   >
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                        <Send className="h-4 w-4" />
+                      </motion.div>
+                    )}
                   </Button>
                 </form>
               </CardFooter>
@@ -356,14 +469,14 @@ export function Chatbot({ userId }: ChatbotProps) {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.2 }}
-                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.3, type: "spring", stiffness: 400, damping: 25 }}
+                  whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button
                     onClick={toggleChat}
                     size="icon"
-                    className="rounded-full h-12 w-12 shadow-lg bg-primary hover:bg-primary/90"
+                    className="rounded-full h-12 w-12 shadow-lg bg-primary hover:bg-primary/90 transition-colors"
                   >
                     <MessageSquare className="h-5 w-5 text-primary-foreground" />
                   </Button>
@@ -379,4 +492,3 @@ export function Chatbot({ userId }: ChatbotProps) {
     </div>
   )
 }
-

@@ -13,6 +13,9 @@ export async function GET(req: NextRequest) {
     // Check for cache control headers
     const skipCache = req.headers.get("x-force-refresh") === "true"
 
+    // Use a more aggressive cache for non-forced refreshes
+    const cacheMaxAge = skipCache ? 0 : 60 // 1 minute cache for normal requests
+
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -30,19 +33,13 @@ export async function GET(req: NextRequest) {
         },
       },
     })
-    
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     const subscription = user.subscription
     const isActive = subscription?.status.toLowerCase() === "active"
-
-    // console.log("Database user:", {
-    //   id: user.id,
-    //   credits: user.credits,
-    //   subscription,
-    // })
 
     const credits = typeof user.credits === "number" ? user.credits : 0
     const tokensUsed = typeof user.creditsUsed === "number" ? user.creditsUsed : 0
@@ -60,10 +57,9 @@ export async function GET(req: NextRequest) {
       expiresAt: subscription?.currentPeriodEnd || null,
     }
 
-    
     const headers = new Headers()
     if (!skipCache) {
-      headers.set("Cache-Control", "max-age=30, s-maxage=30, stale-while-revalidate=60")
+      headers.set("Cache-Control", `max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge}, stale-while-revalidate=120`)
     } else {
       headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
     }

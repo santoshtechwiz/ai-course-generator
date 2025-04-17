@@ -65,6 +65,12 @@ export default async function LoginPage({
             </Link>
             .
           </div>
+
+          <div className="mt-4 text-center">
+            <Link href="/" className="text-indigo-600 hover:underline text-sm">
+              Go Back to Home Page
+            </Link>
+          </div>
         </div>
 
         <div className="hidden lg:flex flex-1 bg-indigo-700 text-white">

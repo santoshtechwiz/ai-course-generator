@@ -1,6 +1,5 @@
 "use client"
 
-import { useSession, signOut } from "next-auth/react"
 import { LogOut, User, Crown, CreditCard, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -19,39 +18,35 @@ import useSubscriptionStore from "@/store/useSubscriptionStore"
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/providers/unified-auth-provider"
 
 interface UserMenuProps {
   children?: ReactNode
 }
 
 export function UserMenu({ children }: UserMenuProps) {
-  const { data: session, status: sessionStatus } = useSession()
-  const {
-    subscriptionStatus,
-    isLoading: isLoadingSubscription,
-    refreshSubscription,
-    shouldRefresh,
-  } = useSubscriptionStore()
+  const { user, isLoading: isLoadingAuth, isAuthenticated, signOutUser } = useAuth()
+  const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription } = useSubscriptionStore()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   // Refresh subscription data when menu is opened
   const handleMenuOpen = (open: boolean) => {
     setIsMenuOpen(open)
-    if (open && session?.user) {
+    if (open && isAuthenticated) {
       refreshSubscription(true) // Force refresh when menu opens
     }
   }
 
   // Refresh subscription data on mount and when session changes
   useEffect(() => {
-    if (session?.user) {
+    if (isAuthenticated) {
       refreshSubscription(true) // Force refresh on mount
     }
-  }, [session?.user, refreshSubscription])
+  }, [isAuthenticated, refreshSubscription])
 
   const handleSignOut = async () => {
     const currentUrl = window.location.pathname
-    await signOut({ callbackUrl: currentUrl })
+    await signOutUser(currentUrl)
   }
 
   // Improved subscription badge display with loading state
@@ -94,8 +89,8 @@ export function UserMenu({ children }: UserMenuProps) {
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 
-  // Show loading state when session is loading
-  if (sessionStatus === "loading") {
+  // Show loading state when auth is loading
+  if (isLoadingAuth) {
     return (
       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
         <Loader2 className="h-5 w-5 animate-spin" />
@@ -103,16 +98,16 @@ export function UserMenu({ children }: UserMenuProps) {
     )
   }
 
-  if (!session) return null
+  if (!isAuthenticated || !user) return null
 
   return (
     <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={session.user?.image ?? undefined} alt={session.user?.name ?? "User"} />
+            <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
             <AvatarFallback>
-              {isLoadingSubscription ? <Loader2 className="h-4 w-4 animate-spin" /> : (session.user?.name?.[0] ?? "U")}
+              {isLoadingSubscription ? <Loader2 className="h-4 w-4 animate-spin" /> : (user?.name?.[0] ?? "U")}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -124,14 +119,10 @@ export function UserMenu({ children }: UserMenuProps) {
           <>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                {session.user?.name ? (
-                  <p className="font-medium text-sm">{session.user.name}</p>
-                ) : (
-                  <Skeleton className="h-4 w-24" />
-                )}
+                {user?.name ? <p className="font-medium text-sm">{user.name}</p> : <Skeleton className="h-4 w-24" />}
 
-                {session.user?.email ? (
-                  <p className="w-full truncate text-xs text-muted-foreground">{session.user.email}</p>
+                {user?.email ? (
+                  <p className="w-full truncate text-xs text-muted-foreground">{user.email}</p>
                 ) : (
                   <Skeleton className="h-3 w-32" />
                 )}
@@ -154,7 +145,7 @@ export function UserMenu({ children }: UserMenuProps) {
                   {getCreditsDisplay()}
                 </Link>
               </DropdownMenuItem>
-              {session.user?.isAdmin && (
+              {user?.isAdmin && (
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/admin" className="cursor-pointer">
                     <Crown className="mr-2 h-4 w-4" />

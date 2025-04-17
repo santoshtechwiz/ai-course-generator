@@ -1,24 +1,56 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 export function SubscriptionRefresher() {
   const { refreshSubscription, clearCache } = useSubscriptionStore()
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastRefreshRef = useRef<number>(0)
 
   useEffect(() => {
-    // Immediately clear cache and force a refresh on component mount
-    // This ensures we get fresh credit data right away
-    clearCache()
-    refreshSubscription(true) // Force refresh to get real-time data
+    // Clear any existing timeout when component mounts or unmounts
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
+    }
+  }, [])
 
-    // Set up an interval to refresh the subscription data frequently for real-time updates
-    const interval = setInterval(() => {
-      refreshSubscription(true) // Always force refresh to get real-time credit data
-    }, 30000) // Refresh every 30 seconds to keep credit data current
+  useEffect(() => {
+    // Initial refresh with debouncing
+    const now = Date.now()
+    const timeSinceLastRefresh = now - lastRefreshRef.current
+
+    // Only refresh if it's been more than 10 seconds since last refresh
+    if (timeSinceLastRefresh > 10000) {
+      clearCache()
+      refreshSubscription(false) // Use cached data if available
+      lastRefreshRef.current = now
+    }
+
+    // Set up an interval to refresh the subscription data less frequently
+    refreshTimeoutRef.current = setTimeout(() => {
+      refreshSubscription(false) // Use cached data when possible
+
+      // Set up recurring refresh at a reasonable interval
+      const interval = setInterval(() => {
+        // Only force refresh every 2 minutes, otherwise use cache
+        const shouldForceRefresh = Date.now() - lastRefreshRef.current > 120000
+        refreshSubscription(shouldForceRefresh)
+
+        if (shouldForceRefresh) {
+          lastRefreshRef.current = Date.now()
+        }
+      }, 60000) // Refresh every minute, but only force refresh every 2 minutes
+
+      return () => clearInterval(interval)
+    }, 30000) // Initial delay of 30 seconds
 
     return () => {
-      clearInterval(interval)
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
     }
   }, [refreshSubscription, clearCache])
 

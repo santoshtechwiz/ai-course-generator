@@ -18,9 +18,11 @@ import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/
 import { UserMenu } from "./UserMenu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { ThemeToggle } from "../ThemeToggle"
-import { useAuth } from "@/app/auth/signin/context/AuthContext"
-import { Skeleton } from "@/components/ui/skeleton"
 
+import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/providers/unified-auth-provider"
+
+// Enhance the NavItems component with better animations
 const NavItems = () => {
   const pathname = usePathname()
 
@@ -43,9 +45,19 @@ const NavItems = () => {
               }`}
             >
               <LayoutGroup>
-                <item.icon className="h-4 w-4" />
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0.8 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <item.icon className="h-4 w-4" />
+                </motion.div>
                 <span>{item.name}</span>
-                {item.subItems && item.subItems.length > 0 && <ChevronDown className="h-3 w-3 ml-1.5" />}
+                {item.subItems && item.subItems.length > 0 && (
+                  <motion.div animate={{ rotate: pathname === item.href ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <ChevronDown className="h-3 w-3 ml-1.5" />
+                  </motion.div>
+                )}
 
                 {pathname === item.href && (
                   <motion.div
@@ -65,6 +77,7 @@ const NavItems = () => {
   )
 }
 
+// Update the MainNavbar component with improved animations and responsiveness
 export default function MainNavbar() {
   const { data: session, status } = useSession()
   const { isAuthenticated, user, credits } = useAuth() // Use our custom auth context
@@ -96,7 +109,7 @@ export default function MainNavbar() {
   // Set up scroll listener
   useEffect(() => {
     const scrollListener = handleScroll()
-    window.addEventListener("scroll", scrollListener)
+    window.addEventListener("scroll", scrollListener, { passive: true })
     return () => window.removeEventListener("scroll", scrollListener)
   }, [handleScroll])
 
@@ -228,8 +241,14 @@ export default function MainNavbar() {
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Button variant="ghost" size="icon" onClick={() => setIsSearchModalOpen(true)} className="rounded-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSearchModalOpen(true)}
+              className="rounded-full hover:bg-accent hover:text-accent-foreground"
+            >
               <Search className="h-4 w-4" />
+              <span className="sr-only">Search</span>
             </Button>
           </motion.div>
 
@@ -237,7 +256,9 @@ export default function MainNavbar() {
             (showLoading ? (
               <Skeleton className="h-8 w-8 rounded-full" />
             ) : (
-              <NotificationsMenu initialCount={creditScore} />
+              <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
+                <NotificationsMenu initialCount={creditScore} />
+              </motion.div>
             ))}
 
           <motion.div
@@ -254,72 +275,86 @@ export default function MainNavbar() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               </Button>
             ) : (
-              <UserMenu>
-                <DropdownMenuContent className="w-56 rounded-xl p-2 shadow-lg">
-                  <div className="p-2 space-y-1">
-                    {isLoadingSubscription ? (
-                      <>
-                        <Skeleton className="h-5 w-24" />
-                        <Skeleton className="h-4 w-32" />
-                      </>
-                    ) : (
-                      <>
-                        <p className="font-medium truncate">{userName}</p>
-                        <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
-                      </>
-                    )}
-                    {isLoadingSubscription ? (
-                      <Skeleton className="h-5 w-16 mt-1" />
-                    ) : (
-                      subscriptionPlan && <Badge className="mt-1">{subscriptionPlan}</Badge>
-                    )}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  {isAdmin && (
+              <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
+                <UserMenu>
+                  <DropdownMenuContent className="w-56 rounded-xl p-2 shadow-lg">
+                    <div className="p-2 space-y-1">
+                      {isLoadingSubscription ? (
+                        <>
+                          <Skeleton className="h-5 w-24" />
+                          <Skeleton className="h-4 w-32" />
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-medium truncate">{userName}</p>
+                          <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
+                        </>
+                      )}
+                      {isLoadingSubscription ? (
+                        <Skeleton className="h-5 w-16 mt-1" />
+                      ) : (
+                        subscriptionPlan && <Badge className="mt-1">{subscriptionPlan}</Badge>
+                      )}
+                    </div>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard/admin" className="cursor-pointer">
-                        <Crown className="mr-2 h-4 w-4" />
-                        Admin Panel
+                      <Link href="/dashboard" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        Dashboard
                       </Link>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/account" className="cursor-pointer">
-                      <Crown className="mr-2 h-4 w-4" />
-                      Account Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => signOut({ callbackUrl: "/dashboard/explore" })}
-                    className="cursor-pointer text-destructive"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </UserMenu>
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/admin" className="cursor-pointer">
+                          <Crown className="mr-2 h-4 w-4" />
+                          Admin Panel
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/account" className="cursor-pointer">
+                        <Crown className="mr-2 h-4 w-4" />
+                        Account Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => signOut({ callbackUrl: "/dashboard/explore" })}
+                      className="cursor-pointer text-destructive"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </UserMenu>
+              </motion.div>
             )
           ) : (
-            <Button variant="default" onClick={() => signIn()} className="hidden md:flex rounded-full">
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In
-            </Button>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <Button variant="default" onClick={() => signIn()} className="hidden md:flex rounded-full">
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+            </motion.div>
           )}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden rounded-full"
-            onClick={() => setIsMobileMenuOpen(true)}
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Menu className="h-5 w-5" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden rounded-full"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </motion.div>
         </motion.div>
       </motion.div>
 
@@ -351,13 +386,23 @@ export default function MainNavbar() {
 
           <div className="p-4 space-y-4">
             <nav className="space-y-2">
-              {navItems.map((item) => (
+              {navItems.map((item, index) => (
                 <SheetClose asChild key={item.name}>
                   <Link href={item.href} passHref>
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => setIsMobileMenuOpen(false)}>
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {item.name}
-                    </Button>
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05, duration: 0.3 }}
+                    >
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {item.name}
+                      </Button>
+                    </motion.div>
                   </Link>
                 </SheetClose>
               ))}
@@ -366,7 +411,12 @@ export default function MainNavbar() {
             <div className="pt-4 border-t">
               {userAuthenticated ? (
                 <div className="space-y-4">
-                  <div className="p-2 rounded-lg bg-accent">
+                  <motion.div
+                    className="p-2 rounded-lg bg-accent"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
+                  >
                     {isLoadingSubscription ? (
                       <>
                         <Skeleton className="h-5 w-24 mb-1" />
@@ -378,31 +428,43 @@ export default function MainNavbar() {
                         <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
                       </>
                     )}
-                  </div>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.3 }}
+                  >
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => {
+                        signOut({ callbackUrl: "/" })
+                        setIsMobileMenuOpen(false)
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </motion.div>
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                >
                   <Button
-                    variant="destructive"
+                    variant="default"
                     className="w-full"
                     onClick={() => {
-                      signOut({ callbackUrl: "/" })
+                      signIn()
                       setIsMobileMenuOpen(false)
                     }}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In
                   </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="default"
-                  className="w-full"
-                  onClick={() => {
-                    signIn()
-                    setIsMobileMenuOpen(false)
-                  }}
-                >
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Sign In
-                </Button>
+                </motion.div>
               )}
             </div>
           </div>

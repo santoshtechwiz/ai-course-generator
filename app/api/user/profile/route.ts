@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
 import prisma from "@/lib/db"
 import { getAuthSession } from "@/lib/authOptions"
-
 
 export async function GET() {
   const session = await getAuthSession()
@@ -35,7 +33,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const session = await getServerSession()
+  const session = await getAuthSession()
   if (!session || !session.user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
   }
@@ -62,4 +60,3 @@ export async function PUT(request: Request) {
 
   return NextResponse.json(updatedUser)
 }
-

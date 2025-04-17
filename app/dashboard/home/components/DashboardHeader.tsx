@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect, memo } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -29,13 +29,29 @@ interface DashboardHeaderProps {
   toggleSidebar: () => void
 }
 
-export default function DashboardHeader({ userData, quickStats, toggleSidebar }: DashboardHeaderProps) {
+// Use memo to prevent unnecessary re-renders
+const DashboardHeader = memo(function DashboardHeader({ userData, quickStats, toggleSidebar }: DashboardHeaderProps) {
   const [greeting] = useState(() => {
     const hour = new Date().getHours()
     if (hour < 12) return "Good morning"
     if (hour < 18) return "Good afternoon"
     return "Good evening"
   })
+
+  // Memoize user data to prevent unnecessary re-renders
+  const [memoizedUserData, setMemoizedUserData] = useState(userData)
+
+  useEffect(() => {
+    // Only update if critical data has changed
+    if (
+      userData.name !== memoizedUserData.name ||
+      userData.image !== memoizedUserData.image ||
+      userData.credits !== memoizedUserData.credits ||
+      userData.streakDays !== memoizedUserData.streakDays
+    ) {
+      setMemoizedUserData(userData)
+    }
+  }, [userData, memoizedUserData])
 
   return (
     <header className="sticky top-0 z-10 bg-background border-b">
@@ -49,11 +65,11 @@ export default function DashboardHeader({ userData, quickStats, toggleSidebar }:
               </Button>
               <div>
                 <h1 className="text-2xl font-bold">
-                  {greeting}, {userData.name || "User"}!
+                  {greeting}, {memoizedUserData.name || "User"}!
                 </h1>
                 <p className="text-muted-foreground">
-                  {userData.streakDays > 0
-                    ? `You're on a ${userData.streakDays} day learning streak!`
+                  {memoizedUserData.streakDays > 0
+                    ? `You're on a ${memoizedUserData.streakDays} day learning streak!`
                     : "Start your learning journey today!"}
                 </p>
               </div>
@@ -64,7 +80,7 @@ export default function DashboardHeader({ userData, quickStats, toggleSidebar }:
                 <CreditCard className="h-5 w-5" />
                 <div>
                   <p className="text-xs opacity-90">Credits</p>
-                  <p className="font-medium">{userData.credits}</p>
+                  <p className="font-medium">{memoizedUserData.credits}</p>
                 </div>
               </Card>
 
@@ -72,8 +88,8 @@ export default function DashboardHeader({ userData, quickStats, toggleSidebar }:
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={userData.image || ""} alt={userData.name || "User"} />
-                      <AvatarFallback>{userData.name?.charAt(0) || "U"}</AvatarFallback>
+                      <AvatarImage src={memoizedUserData.image || ""} alt={memoizedUserData.name || "User"} />
+                      <AvatarFallback>{memoizedUserData.name?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -138,7 +154,7 @@ export default function DashboardHeader({ userData, quickStats, toggleSidebar }:
             <StatCard
               icon={<CreditCard className="h-5 w-5 text-green-500" />}
               label="Credits"
-              value={userData.credits}
+              value={memoizedUserData.credits}
               bgColor="bg-green-50"
               className="hidden md:flex"
             />
@@ -147,18 +163,24 @@ export default function DashboardHeader({ userData, quickStats, toggleSidebar }:
       </div>
     </header>
   )
-}
+})
 
-interface StatCardProps {
+// Memoize the StatCard component to prevent unnecessary re-renders
+const StatCard = memo(function StatCard({
+  icon,
+  label,
+  value,
+  unit,
+  bgColor,
+  className,
+}: {
   icon: React.ReactNode
   label: string
   value: string | number
   unit?: string
   bgColor: string
   className?: string
-}
-
-function StatCard({ icon, label, value, unit, bgColor, className }: StatCardProps) {
+}) {
   return (
     <div className={`flex items-center p-3 rounded-lg ${bgColor} ${className}`}>
       <div className="mr-3">{icon}</div>
@@ -171,4 +193,6 @@ function StatCard({ icon, label, value, unit, bgColor, className }: StatCardProp
       </div>
     </div>
   )
-}
+})
+
+export default DashboardHeader

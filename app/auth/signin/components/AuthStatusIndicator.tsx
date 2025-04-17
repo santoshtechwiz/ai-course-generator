@@ -1,14 +1,13 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { Loader2, UserCheck, UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { signIn, signOut } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
-
+import { useAuth } from "@/app/providers/auth-provider"
 
 export function AuthStatusIndicator() {
-  const { data: session, status } = useSession()
+  const { isAuthenticated, isLoading, user } = useAuth()
   const { toast } = useToast()
 
   const handleSignOut = async () => {
@@ -24,7 +23,7 @@ export function AuthStatusIndicator() {
     }
   }
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -33,11 +32,11 @@ export function AuthStatusIndicator() {
     )
   }
 
-  if (status === "authenticated" && session?.user) {
+  if (isAuthenticated && user) {
     return (
       <div className="flex items-center gap-2">
         <UserCheck className="h-4 w-4 text-green-500" />
-        <span>Signed in as {session.user.name || session.user.email}</span>
+        <span>Signed in as {user.name || user.email}</span>
         <Button variant="outline" size="sm" onClick={handleSignOut}>
           Sign Out
         </Button>

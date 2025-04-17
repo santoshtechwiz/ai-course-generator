@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
-import NProgress from "nprogress"
+import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 
 // Remove default styles
@@ -10,85 +9,86 @@ import "nprogress/nprogress.css"
 
 // Improved custom styles with smoother transitions and modern aesthetics
 const improvedStyles = `
-  #nprogress {
-    pointer-events: none;
-  }
-  
-  #nprogress .bar {
-    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
-    position: fixed;
-    z-index: 1100;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    border-radius: 0 2px 2px 0;
-    box-shadow: 0 0 10px rgba(var(--primary), 0.2);
-    transition: width 300ms ease-out;
-  }
-  
-  #nprogress .peg {
-    display: none;
-  }
+ #nprogress {
+   pointer-events: none;
+ }
+ 
+ #nprogress .bar {
+   background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
+   position: fixed;
+   z-index: 1100;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 3px;
+   border-radius: 0 2px 2px 0;
+   box-shadow: 0 0 10px rgba(var(--primary), 0.2);
+   transition: width 300ms ease-out;
+ }
+ 
+ #nprogress .peg {
+   display: none;
+ }
 
-  /* Page transition overlay with backdrop blur */
-  .page-transition-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: hsl(var(--background) / 0.7);
-    backdrop-filter: blur(4px);
-    opacity: 0;
-    pointer-events: none;
-    z-index: 1090;
-    transition: opacity 200ms ease-in-out;
-  }
+ /* Page transition overlay with backdrop blur */
+ .page-transition-overlay {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   background-color: hsl(var(--background) / 0.7);
+   backdrop-filter: blur(4px);
+   opacity: 0;
+   pointer-events: none;
+   z-index: 1090;
+   transition: opacity 200ms ease-in-out;
+ }
 
-  .nprogress-loading .page-transition-overlay {
-    opacity: 1;
-    pointer-events: all;
-  }
+ .nprogress-loading .page-transition-overlay {
+   opacity: 1;
+   pointer-events: all;
+ }
 
-  /* Loading spinner container */
-  .loading-spinner-container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1110;
-    opacity: 0;
-    transition: opacity 200ms ease-in-out;
-  }
+ /* Loading spinner container */
+ .loading-spinner-container {
+   position: fixed;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   z-index: 1110;
+   opacity: 0;
+   transition: opacity 200ms ease-in-out;
+ }
 
-  .nprogress-loading .loading-spinner-container {
-    opacity: 1;
-  }
+ .nprogress-loading .loading-spinner-container {
+   opacity: 1;
+ }
 `
 
-NProgress.configure({
-  minimum: 0.1,
-  easing: "ease-out",
-  speed: 400,
-  showSpinner: false,
-  trickleSpeed: 200,
-})
+// NProgress.configure({
+//  minimum: 0.1,
+//  easing: "ease-out",
+//  speed: 400,
+//  showSpinner: false,
+//  trickleSpeed: 200,
+// })
 
 export function NavigationEvents() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { theme } = useTheme()
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const handleStart = () => {
       document.documentElement.classList.add("nprogress-loading")
-      NProgress.start()
+      setIsLoading(true)
     }
 
     const handleStop = () => {
-      NProgress.done()
       document.documentElement.classList.remove("nprogress-loading")
+      setIsLoading(false)
     }
 
     handleStart()

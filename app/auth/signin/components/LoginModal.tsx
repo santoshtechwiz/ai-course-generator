@@ -9,7 +9,6 @@ import { Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 
-
 interface LoginModalProps {
   isOpen: boolean
   onClose: () => void
@@ -141,33 +140,64 @@ export function LoginModal({
     if (!providers) return null
 
     return (
-      <div className="flex flex-col space-y-3 w-full max-w-sm mx-auto px-4 sm:px-0">
-        {Object.values(providers).map((provider: any) => (
-          <button
-            key={provider.id}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              handleProviderSignIn(provider.id)
-            }}
-            disabled={isAuthenticating}
-            className="w-full flex items-center justify-center h-12 px-4 sm:px-6 text-base sm:text-lg font-medium transition-all duration-300 bg-white border-2 border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isAuthenticating ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                <span>Signing in...</span>
-              </>
-            ) : (
-              <>
-                <span className="mr-2">
-                  {provider.name === "Google" ? "G" : provider.name === "GitHub" ? "GH" : "FB"}
-                </span>
-                <span>Sign in with {provider.name}</span>
-              </>
-            )}
-          </button>
-        ))}
+      <div className="flex flex-col space-y-4 w-full">
+        {Object.values(providers).map((provider: any) => {
+          // Customize button appearance based on provider
+          const getProviderStyles = (id: string) => {
+            switch (id.toLowerCase()) {
+              case "google":
+                return {
+                  icon: "G",
+                  bgColor: "bg-white hover:bg-gray-50",
+                  textColor: "text-gray-800",
+                  borderColor: "border-gray-300 hover:border-gray-400",
+                }
+              case "github":
+                return {
+                  icon: "GH",
+                  bgColor: "bg-gray-900 hover:bg-gray-800",
+                  textColor: "text-white",
+                  borderColor: "border-gray-800 hover:border-gray-700",
+                }
+              default:
+                return {
+                  icon: id.charAt(0).toUpperCase(),
+                  bgColor: "bg-white hover:bg-gray-50",
+                  textColor: "text-gray-800",
+                  borderColor: "border-gray-300 hover:border-gray-400",
+                }
+            }
+          }
+
+          const style = getProviderStyles(provider.id)
+
+          return (
+            <button
+              key={provider.id}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleProviderSignIn(provider.id)
+              }}
+              disabled={isAuthenticating}
+              className={`w-full flex items-center justify-center h-12 px-6 text-base font-medium transition-all duration-200 ${style.bgColor} ${style.textColor} border-2 ${style.borderColor} rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed`}
+            >
+              {isAuthenticating ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <div className="mr-3 h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="font-semibold">{style.icon}</span>
+                  </div>
+                  <span>Continue with {provider.name}</span>
+                </>
+              )}
+            </button>
+          )
+        })}
       </div>
     )
   }
@@ -182,7 +212,7 @@ export function LoginModal({
       }}
     >
       <DialogContent
-        className="sm:max-w-[425px] animate-in fade-in-50 zoom-in-90 duration-300"
+        className="sm:max-w-[425px] animate-in fade-in-50 zoom-in-90 duration-300 p-0 overflow-hidden"
         onPointerDownOutside={(e) => {
           if (isAuthenticating) {
             e.preventDefault()
@@ -194,20 +224,30 @@ export function LoginModal({
           }
         }}
       >
-        <DialogHeader>
-          <DialogTitle className="text-xl">Sign in to continue</DialogTitle>
-          <DialogDescription>Please sign in to your account to access subscription features.</DialogDescription>
-        </DialogHeader>
+        <div className="bg-primary/5 p-6 border-b">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Sign in to continue</DialogTitle>
+            <DialogDescription className="text-base mt-1">
+              Please sign in to your account to access subscription features.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <form onSubmit={handleLogin} className="space-y-4 py-4">
+        <form onSubmit={handleLogin} className="space-y-5 p-6">
           {/* Auth Providers */}
           {isLoadingProviders ? (
-            <div className="flex justify-center py-6">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+              <p className="text-sm text-muted-foreground">Loading authentication options...</p>
             </div>
           ) : (
             <ModalAuthButtonGroup />
           )}
+
+          {/* Additional information */}
+          <div className="text-center text-sm text-muted-foreground pt-4 border-t">
+            <p>By signing in, you agree to our Terms of Service and Privacy Policy.</p>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

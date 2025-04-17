@@ -6,8 +6,7 @@ import githubLogo from "../public/github.png"
 import googleLogo from "../public/google.png"
 import facebookLogo from "../public/facebook.png"
 import { Loader2 } from "lucide-react"
-import { useAuth } from "../context/AuthContext"
-
+import { useAuth } from "@/providers/unified-auth-provider"
 
 const buttonVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -34,37 +33,61 @@ function AuthButtonSkeleton() {
 }
 
 export function GoogleSignInButton({ callbackUrl }: AuthButtonProps) {
-  const { isLoading } = useAuth()
+  const { signInWithProvider, isLoading } = useAuth()
 
   if (isLoading) return <AuthButtonSkeleton />
 
+  const handleGoogleSignIn = () => signInWithProvider("google", callbackUrl)
+
   return (
     <motion.div variants={buttonVariants} custom={0} initial="hidden" animate="visible">
-      <AuthButton provider="Google" logo={googleLogo} text="Sign in with Google" callbackUrl={callbackUrl} />
+      <AuthButton
+        provider="Google"
+        logo={googleLogo}
+        text="Sign in with Google"
+        callbackUrl={callbackUrl}
+        onClick={handleGoogleSignIn}
+      />
     </motion.div>
   )
 }
 
 export function GithubSignInButton({ callbackUrl }: AuthButtonProps) {
-  const { isLoading } = useAuth()
+  const { signInWithProvider, isLoading } = useAuth()
 
   if (isLoading) return <AuthButtonSkeleton />
 
+  const handleGithubSignIn = () => signInWithProvider("github", callbackUrl)
+
   return (
     <motion.div variants={buttonVariants} custom={1} initial="hidden" animate="visible">
-      <AuthButton provider="Github" logo={githubLogo} text="Sign in with Github" callbackUrl={callbackUrl} />
+      <AuthButton
+        provider="Github"
+        logo={githubLogo}
+        text="Sign in with Github"
+        callbackUrl={callbackUrl}
+        onClick={handleGithubSignIn}
+      />
     </motion.div>
   )
 }
 
 export function FacebookSignInButton({ callbackUrl }: AuthButtonProps) {
-  const { isLoading } = useAuth()
+  const { signInWithProvider, isLoading } = useAuth()
 
   if (isLoading) return <AuthButtonSkeleton />
 
+  const handleFacebookSignIn = () => signInWithProvider("facebook", callbackUrl)
+
   return (
     <motion.div variants={buttonVariants} custom={2} initial="hidden" animate="visible">
-      <AuthButton provider="Facebook" logo={facebookLogo} text="Sign in with Facebook" callbackUrl={callbackUrl} />
+      <AuthButton
+        provider="Facebook"
+        logo={facebookLogo}
+        text="Sign in with Facebook"
+        callbackUrl={callbackUrl}
+        onClick={handleFacebookSignIn}
+      />
     </motion.div>
   )
 }
