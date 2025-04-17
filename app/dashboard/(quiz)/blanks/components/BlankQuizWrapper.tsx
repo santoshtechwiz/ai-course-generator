@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
-
 import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
-import type { QuizAnswer } from "../../components/QuizBase"
 import BlankQuizResults from "./BlankQuizResults"
 
 interface Question {
@@ -25,8 +24,8 @@ interface BlankQuizWrapperProps {
   quizId: string
   slug: string
   title: string
-  onSubmitAnswer?: (answer: QuizAnswer) => void
-  onComplete?: () => void
+  onSubmitAnswer?: (answer: { userAnswer: string; timeSpent: number; hintsUsed: boolean }) => void
+  onComplete?: (score: number) => void
 }
 
 export function BlankQuizWrapper({
@@ -43,37 +42,26 @@ export function BlankQuizWrapper({
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showResults, setShowResults] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
   const router = useRouter()
   const [startTime, setStartTime] = useState(Date.now())
+  const [isCompleted, setIsCompleted] = useState(false)
+  const { data: session, status } = useSession()
+  const isLoggedIn = status === "authenticated"
 
-  const currentQuestion = questions[currentQuestionIndex]
+  const currentQuestion = questions[currentQuestionIndex] || null
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   const handleAnswer = (answer: string, timeSpent: number, hintsUsed: boolean) => {
     const newAnswer = { userAnswer: answer, timeSpent, hintsUsed }
     setAnswers((prev) => [...prev, newAnswer])
+    onSubmitAnswer?.(newAnswer)
 
-    // If this is the last question, prepare to show results
     if (isLastQuestion) {
-      // If we're using the QuizBase component, call onComplete
-      if (onSubmitAnswer && onComplete) {
-        const isCorrect = answer.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim()
-        onSubmitAnswer({
-          answer: answer,
-          isCorrect,
-          timeSpent,
-        })
-        onComplete()
-        return
-      }
-
-      // Otherwise handle submission ourselves
+      setShowFeedback(true)
       handleSubmitQuiz([...answers, newAnswer])
     } else {
-      // Move to the next question
-      setTimeout(() => {
-        setCurrentQuestionIndex((prev) => prev + 1)
-      }, 1000)
+      setCurrentQuestionIndex((prev) => prev + 1)
     }
   }
 
@@ -82,106 +70,125 @@ export function BlankQuizWrapper({
     setError(null)
 
     try {
-      // Calculate score based on correct answers
       const correctAnswers = finalAnswers.filter(
-        (answer, index) => answer.userAnswer.toLowerCase().trim() === questions[index].answer.toLowerCase().trim(),
+        (answer, index) => answer.userAnswer.toLowerCase().trim() === questions[index]?.answer?.toLowerCase().trim(),
       ).length
 
       const totalTime = (Date.now() - startTime) / 1000
+      const score = (correctAnswers / questions.length) * 100
 
-      // Submit to the correct API endpoint
-      const response = await fetch("/api/quiz/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          quizId,
-          answers: finalAnswers,
-          totalTime,
-          score: correctAnswers,
-          type: "fill-blanks",
-        }),
-      })
-
-      if (!response.ok) {
-        let errorMessage = "Failed to submit quiz results"
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch (e) {
-          errorMessage = `${response.status}: ${response.statusText}`
-        }
-        throw new Error(errorMessage)
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          `quiz_result_${quizId}`,
+          JSON.stringify({
+            answers: finalAnswers,
+            score,
+            totalTime,
+            timestamp: Date.now(),
+            isCompleted: true,
+          }),
+        )
       }
 
       setIsSuccess(true)
+      setIsCompleted(true)
+      onComplete?.(score)
     } catch (err) {
       console.error("Error submitting quiz:", err)
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setIsSubmitting(false)
-      setShowResults(true) // Always show results after submission attempt
     }
   }
 
-  const handleRetry = () => {
-    // Retry submission with the current answers
-    handleSubmitQuiz(answers)
-  }
-
   const handleContinue = () => {
-    setShowResults(true)
+    if (!isLoggedIn) {
+      // If not logged in, prompt for login
+      router.push(`/auth/signin?callbackUrl=/dashboard/blanks/${slug}`)
+      // Clear the cached results for guest users
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(`quiz_result_${quizId}`)
+      }
+    } else {
+      // For logged in users, show results
+      setShowFeedback(false)
+      setShowResults(true)
+    }
   }
 
-  // If we're showing results, render the results component
-  if (showResults) {
+  const handleRestart = () => {
+    // Clear all cached data when restarting
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(`quiz_result_${quizId}`)
+    }
+    router.refresh()
+  }
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedResult = sessionStorage.getItem(`quiz_result_${quizId}`)
+      if (storedResult) {
+        try {
+          const parsedResult = JSON.parse(storedResult)
+          if (Date.now() - parsedResult.timestamp < 30 * 60 * 1000) {
+            if (parsedResult.answers) {
+              setAnswers(parsedResult.answers)
+            }
+            if (parsedResult.isCompleted) {
+              setIsCompleted(true)
+              setShowResults(true)
+            }
+          } else {
+            sessionStorage.removeItem(`quiz_result_${quizId}`)
+          }
+        } catch (e) {
+          console.error("Error parsing stored quiz result:", e)
+        }
+      }
+    }
+  }, [quizId])
+
+  const clearGuestData = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(`quiz_result_${quizId}`)
+    }
+  }
+
+  if (showFeedback) {
     return (
-      <BlankQuizResults
-        questions={questions}
-        answers={answers}
-        quizId={quizId}
-        slug={slug}
-        title={title}
-        onRestart={() => {
-          setCurrentQuestionIndex(0)
-          setAnswers([])
-          setShowResults(false)
-          setStartTime(Date.now())
-        }}
-      />
-    )
-  }
-
-  // If we're using the QuizBase component, just render the quiz
-  if (onSubmitAnswer && onComplete) {
-    return (
-      <FillInTheBlanksQuiz
-        question={currentQuestion}
-        onAnswer={handleAnswer}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-      />
-    )
-  }
-
-  // Otherwise render the quiz with our own submission handling
-  return (
-    <>
-      <FillInTheBlanksQuiz
-        question={currentQuestion}
-        onAnswer={handleAnswer}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-      />
-
       <QuizSubmissionFeedback
         isSubmitting={isSubmitting}
         isSuccess={isSuccess}
-        error={error}
-        onRetry={handleRetry}
+        isError={!!error}
         onContinue={handleContinue}
+        score={0}
+        totalQuestions={questions.length}
+        quizType="fill-blanks"
       />
-    </>
-  )
+    )
+  }
+
+  if (showResults) {
+    return (
+      <BlankQuizResults
+        answers={answers.map(({ userAnswer, ...rest }) => ({ answer: userAnswer, ...rest }))}
+        questions={questions}
+        onRestart={handleRestart}
+        onComplete={onComplete || (() => {})}
+        quizId={quizId}
+        title={title}
+        slug={slug}
+        clearGuestData={!isLoggedIn ? clearGuestData : undefined}
+      />
+    )
+  }
+
+  return currentQuestion ? (
+    <FillInTheBlanksQuiz
+      question={currentQuestion}
+      onAnswer={handleAnswer}
+      questionNumber={currentQuestionIndex + 1}
+      totalQuestions={questions.length}
+    />
+  ) : null
 }

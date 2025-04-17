@@ -41,7 +41,6 @@ interface FillInTheBlanksQuizProps {
   totalQuestions: number
 }
 
-// Reusable Timer Component
 const Timer = ({ elapsedTime }: { elapsedTime: number }) => {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60)
@@ -63,10 +62,9 @@ const Timer = ({ elapsedTime }: { elapsedTime: number }) => {
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  );
+  )
 }
 
-// Reusable BadgeGroup Component
 const BadgeGroup = ({ tags, difficulty }: { tags: string[]; difficulty: string }) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty?.toLowerCase()) {
@@ -95,7 +93,6 @@ const BadgeGroup = ({ tags, difficulty }: { tags: string[]; difficulty: string }
   )
 }
 
-// Reusable ProgressBar Component
 interface ProgressBarProps {
   progressPercentage: number
   questionNumber: number
@@ -179,23 +176,19 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
     return () => clearInterval(timer)
   }, [])
 
-  // Check if answer might be garbage
   const checkForGarbage = (input: string): boolean => {
     if (!input || input.length < 3) return false
 
-    // Get all words from the question
     const allWords = question.question
       .toLowerCase()
       .replace(/[^\w\s]/g, "")
       .split(/\s+/)
       .filter((word) => word.length > 3)
 
-    // Add the correct answer to the words to check against
     if (question.answer) {
       allWords.push(question.answer.toLowerCase())
     }
 
-    // Check if the input is significantly different from all relevant words
     const inputLower = input.toLowerCase()
     const minDistance = allWords.reduce((min, word) => {
       const distance = levenshtein(inputLower, word.toLowerCase())
@@ -229,14 +222,12 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
   }
 
   const handleSubmit = () => {
-    // Check if user is answering too quickly
     const timeSpent = (Date.now() - startTime) / 1000
     if (timeSpent < minimumTimeThreshold) {
       setShowTooFastWarning(true)
       return
     }
 
-    // Check for garbage input one more time
     if (checkForGarbage(answer)) {
       setShowGarbageWarning(true)
       return
@@ -246,7 +237,7 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
     const isAnswerCorrect = distance <= similarityThreshold
     setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
-    onAnswer(answer, Math.round(timeSpent), hintLevel > 0);
+    onAnswer(answer, Math.round(timeSpent), hintLevel > 0)
   }
 
   const handleProgressiveHint = () => {
@@ -269,7 +260,6 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div className="rounded-lg shadow-md border bg-background">
-        {/* Header Section */}
         <div className="px-6 py-4 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -291,9 +281,7 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
           />
         </div>
 
-        {/* Content Section */}
         <div className="px-6 py-4 space-y-6">
-          {/* Warning Alerts */}
           <AnimatePresence>
             {showTooFastWarning && (
               <motion.div
@@ -385,7 +373,6 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
             </motion.div>
           )}
 
-          {/* Hint Panel */}
           <div className="relative">
             <AnimatePresence>
               {showHintPanel && (
@@ -439,7 +426,6 @@ export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQ
           </div>
         </div>
 
-        {/* Footer Section */}
         <div className="px-6 py-4 border-t flex justify-between items-center gap-4 flex-col-reverse sm:flex-row">
           <Button
             variant="outline"

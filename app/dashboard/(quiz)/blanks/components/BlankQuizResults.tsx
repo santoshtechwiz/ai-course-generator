@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { useSession } from "next-auth/react"
-import { getPerformanceLevel, QuizResultBase } from "../../components/QuizResultBase"
+import { QuizResultBase, getPerformanceLevel } from "../../components/QuizResultBase"
 
 interface BlankQuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
@@ -38,8 +38,8 @@ export default function BlankQuizResults({
       const similarity = calculateSimilarity(correctAnswer, userAnswer)
       return {
         ...question,
-        userAnswer: answers[index]?.answer?.trim() || "", // Preserve original case for display
-        correctAnswer: question.answer || "", // Preserve original case for display
+        userAnswer: answers[index]?.answer?.trim() || "",
+        correctAnswer: question.answer,
         similarity,
         timeSpent: answers[index]?.timeSpent || 0,
         isCorrect: similarity > 80,
@@ -56,28 +56,33 @@ export default function BlankQuizResults({
   const hasSavedToDatabase = useRef(false)
   const totalTime = useMemo(() => answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0), [answers])
 
-  // Save results to database if user is authenticated
   useEffect(() => {
     if (!hasCalledComplete.current) {
       hasCalledComplete.current = true
-      onComplete(Math.round(score)) // Ensure score is rounded to an integer
+      onComplete(Math.round(score))
     }
 
-    // Save to database if authenticated and not already saved
     if (session?.user && !hasSavedToDatabase.current && quizId) {
       hasSavedToDatabase.current = true
 
-      // Format answers for submission
       const formattedAnswers = answers.map((answer, index) => ({
         userAnswer: answer.answer || "",
         timeSpent: answer.timeSpent || 0,
         hintsUsed: answer.hintsUsed || false,
       }))
 
-      // Save to database
       saveQuizResultToDatabase(quizId, formattedAnswers, totalTime, Math.round(score), "fill-blanks")
+        .then(() => {
+          console.log("Quiz results saved successfully")
+        })
+        .catch((error) => {
+          console.error("Failed to save quiz results:", error)
+        })
+    } else if (!session?.user && clearGuestData) {
+      // If user is not logged in and clearGuestData is provided, call it
+      clearGuestData()
     }
-  }, [score, onComplete, session, quizId, slug, answers, questions, totalTime])
+  }, [score, onComplete, session, quizId, slug, answers, questions, totalTime, clearGuestData])
 
   const performance = getPerformanceLevel(score)
 
@@ -109,7 +114,6 @@ export default function BlankQuizResults({
                   <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {/* Fix for hydration error - Use proper HTML structure */}
                   <div className="mb-2">
                     {result.question.split("_____").map((part, i, arr) => (
                       <React.Fragment key={i}>
@@ -125,13 +129,10 @@ export default function BlankQuizResults({
                       <strong className="min-w-[120px]">Your Answer:</strong>
                       <span className={getAnswerClassName(result.similarity)}>{result.userAnswer}</span>
                     </div>
-                    {/* Only show correct answer if the user's answer was incorrect */}
-                    {result.similarity <= 80 && (
-                      <div className="flex items-center gap-2">
-                        <strong className="min-w-[120px]">Correct Answer:</strong>
-                        <span>{result.correctAnswer}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <strong className="min-w-[120px]">Accuracy:</strong>
+                      <span>{result.similarity.toFixed(1)}%</span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {result.similarity === 100 ? (
@@ -141,7 +142,13 @@ export default function BlankQuizResults({
                     ) : (
                       <XCircle className="text-red-500" />
                     )}
-                    <span>Accuracy: {result.similarity.toFixed(1)}%</span>
+                    <span>
+                      {result.similarity === 100
+                        ? "Perfect match!"
+                        : result.similarity > 80
+                          ? "Close enough!"
+                          : "Needs improvement"}
+                    </span>
                   </div>
                   <p className="text-sm text-gray-500 mt-2">
                     Time spent: {Math.floor(result.timeSpent / 60)}m {Math.round(result.timeSpent % 60)}s
@@ -159,7 +166,6 @@ export default function BlankQuizResults({
   )
 }
 
-// Add this function to save results to the database
 async function saveQuizResultToDatabase(
   quizId: string,
   answers: { userAnswer: string; timeSpent: number; hintsUsed: boolean }[],
@@ -185,14 +191,17 @@ async function saveQuizResultToDatabase(
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       console.error("Failed to save quiz results to database", errorData)
+      throw new Error(errorData.error || `Failed to save results: ${response.status}`)
     }
+
+    return await response.json()
   } catch (error) {
     console.error("Error saving quiz results:", error)
+    throw error
   }
 }
 
 function calculateSimilarity(str1: string, str2: string): number {
-  // Normalize strings by removing extra spaces and converting to lowercase
   const normalize = (str: string) => str.replace(/\s+/g, " ").trim()?.toLowerCase()
   const normalizedStr1 = normalize(str1)
   const normalizedStr2 = normalize(str2)
@@ -215,7 +224,6 @@ function levenshteinDistance(str1: string, str2: string): number {
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))
 
   for (let i = 0; i <= m; i++) dp[i][0] = i
-
   for (let j = 0; j <= n; j++) dp[0][j] = j
 
   for (let i = 1; i <= m; i++) {
