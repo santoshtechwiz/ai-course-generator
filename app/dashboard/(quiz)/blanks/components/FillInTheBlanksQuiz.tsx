@@ -111,7 +111,7 @@ const ProgressBar = ({ progressPercentage, questionNumber, totalQuestions }: Pro
   </div>
 )
 
-export function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQuestions }: FillInTheBlanksQuizProps) {
+export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQuestions }: FillInTheBlanksQuizProps) {
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [submitted, setSubmitted] = useState(false)

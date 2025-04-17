@@ -1,81 +1,77 @@
-/**
- * Utility functions for storing quiz state in session storage
- * to preserve it during authentication flow
- */
-
-// Keys for session storage
-const QUIZ_STATE_KEY = "quiz_state"
-const QUIZ_ANSWERS_KEY = "quiz_answers"
-const QUIZ_REDIRECT_KEY = "quiz_redirect"
-
-// Types
-interface QuizState {
+export interface SavedQuizState {
   quizId: string
-  quizType: string
-  quizSlug: string
-  currentQuestion: number
-  totalQuestions: number
-  startTime: number
-  isCompleted: boolean
+  slug: string
+  type: string
+  answers: any[]
+  score: number
+  totalTime: number
+  redirectPath?: string
+  timestamp: number
 }
 
-// Save quiz state before redirecting to auth
-export function saveQuizStateBeforeAuth(quizState: QuizState, answers: any[], redirectPath: string): void {
+const STORAGE_KEY = "quiz_state"
+const EXPIRY_TIME = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+
+export function saveQuizState(state: Omit<SavedQuizState, "timestamp">): void {
+  if (typeof window === "undefined") return
+
   try {
-    // Store quiz state
-    sessionStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(quizState))
-
-    // Store answers
-    sessionStorage.setItem(QUIZ_ANSWERS_KEY, JSON.stringify(answers))
-
-    // Store redirect path
-    sessionStorage.setItem(QUIZ_REDIRECT_KEY, redirectPath)
+    const stateWithTimestamp = {
+      ...state,
+      timestamp: Date.now(),
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stateWithTimestamp))
+    console.log("Quiz state saved to session storage")
   } catch (error) {
-    console.error("Error saving quiz state to session storage:", error)
+    console.error("Error saving quiz state:", error)
   }
 }
 
-// Get saved quiz state after auth
-export function getSavedQuizState(): {
-  quizState: QuizState | null
-  answers: any[] | null
-  redirectPath: string | null
-} {
+export function getSavedQuizState(): { quizState: any; answers: any[] } | null {
+  if (typeof window === "undefined") return null
+
   try {
-    // Get quiz state
-    const quizStateStr = sessionStorage.getItem(QUIZ_STATE_KEY)
-    const quizState = quizStateStr ? JSON.parse(quizStateStr) : null
+    const stateJson = localStorage.getItem(STORAGE_KEY)
+    if (!stateJson) return null
 
-    // Get answers
-    const answersStr = sessionStorage.getItem(QUIZ_ANSWERS_KEY)
-    const answers = answersStr ? JSON.parse(answersStr) : null
+    const state = JSON.parse(stateJson) as SavedQuizState
 
-    // Get redirect path
-    const redirectPath = sessionStorage.getItem(QUIZ_REDIRECT_KEY)
+    // Check if state has expired
+    if (Date.now() - state.timestamp > EXPIRY_TIME) {
+      clearSavedQuizState()
+      return null
+    }
 
-    return { quizState, answers, redirectPath }
+    // Return in the expected format
+    return {
+      quizState: {
+        quizId: state.quizId,
+        quizType: state.type,
+        quizSlug: state.slug,
+        currentQuestion: 0, // Default to first question
+        totalQuestions: state.answers.length,
+        startTime: Date.now() - state.totalTime * 1000, // Approximate start time
+        isCompleted: true, // If we have a saved state, it was completed
+      },
+      answers: state.answers || [],
+    }
   } catch (error) {
-    console.error("Error retrieving quiz state from session storage:", error)
-    return { quizState: null, answers: null, redirectPath: null }
+    console.error("Error retrieving quiz state:", error)
+    return null
   }
 }
 
-// Clear saved quiz state
-export function clearSavedQuizState(): void {
-  try {
-    sessionStorage.removeItem(QUIZ_STATE_KEY)
-    sessionStorage.removeItem(QUIZ_ANSWERS_KEY)
-    sessionStorage.removeItem(QUIZ_REDIRECT_KEY)
-  } catch (error) {
-    console.error("Error clearing quiz state from session storage:", error)
-  }
-}
-
-// Check if there's a saved quiz state
 export function hasSavedQuizState(): boolean {
+  return getSavedQuizState() !== null
+}
+
+export function clearSavedQuizState(): void {
+  if (typeof window === "undefined") return
+
   try {
-    return !!sessionStorage.getItem(QUIZ_STATE_KEY)
+    localStorage.removeItem(STORAGE_KEY)
+    console.log("Quiz state cleared from session storage")
   } catch (error) {
-    return false
+    console.error("Error clearing quiz state:", error)
   }
 }

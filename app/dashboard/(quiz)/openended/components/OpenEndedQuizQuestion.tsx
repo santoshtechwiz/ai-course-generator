@@ -72,70 +72,30 @@ export default function OpenEndedQuizQuestion({
     return () => clearInterval(timer)
   }, [])
 
-  // Check if answer might be garbage
-  // const checkForGarbage = (input: string): boolean => {
-  //   if (!input || input.length < minimumAnswerLength) return false
-
-  //   // Simple checks for garbage text
-  //   const repeatedCharPattern = /(.)\1{4,}/ // 5+ of the same character in a row
-  //   const keyboardSmashPattern = /[asdfghjkl]{5,}|[qwertyuiop]{5,}|[zxcvbnm]{5,}/i // Common keyboard smashes
-  //   const noSpacesPattern = /^[^\s]{20,}$/ // Long text with no spaces
-
-  //   if (repeatedCharPattern.test(input) || keyboardSmashPattern.test(input) || noSpacesPattern.test(input)) {
-  //     return true
-  //   }
-
-  //   // Check for relevance to the question
-  //   const questionWords = question.question
-  //     .toLowerCase()
-  //     .replace(/[^\w\s]/g, "")
-  //     .split(/\s+/)
-  //     .filter((word) => word.length > 3)
-
-  //   const answerWords = input
-  //     .toLowerCase()
-  //     .replace(/[^\w\s]/g, "")
-  //     .split(/\s+/)
-  //     .filter((word) => word.length > 3)
-
-  //   // If the answer has enough words but none match the question context
-  //   if (answerWords.length >= 3) {
-  //     const hasRelevantWord = answerWords.some((word) =>
-  //       questionWords.some((qWord) => qWord.includes(word.substring(0, 3)) || word.includes(qWord.substring(0, 3))),
-  //     )
-
-  //     if (!hasRelevantWord) {
-  //       return true
-  //     }
-  //   }
-
-  //   return false
-  // }
-
   const handleSubmit = async () => {
-    // Check if user is answering too quickly
-    // const timeSpent = (Date.now() - startTime) / 1000
-    // if (timeSpent < minimumTimeThreshold) {
-    //   setShowTooFastWarning(true)
-    //   return
-    // }
-
-    // Check for garbage input
-    // if (checkForGarbage(answer)) {
-    //   setShowGarbageWarning(true)
-    //   return
-    // }
-
-    // Check for minimum answer length
-    // if (answer.trim().length < minimumAnswerLength) {
-    //   setShowGarbageWarning(true)
-    //   return
-    // }
+    // Prevent empty submissions
+    if (!answer.trim()) {
+      setShowGarbageWarning(true)
+      return
+    }
 
     setIsSubmitting(true)
-    await new Promise((resolve) => setTimeout(resolve, 300)) // Animation delay
-    onAnswer(answer)
-    setIsSubmitting(false)
+    try {
+      // Calculate time spent on this question
+      const timeSpent = (Date.now() - startTime) / 1000
+
+      // Call the onAnswer prop with the user's answer
+      onAnswer(answer)
+
+      // Reset state for next question (if any)
+      setAnswer("")
+      setShowHints(Array(hints.length).fill(false))
+      setHintLevel(0)
+    } catch (error) {
+      console.error("Error submitting answer:", error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleProgressiveHint = () => {

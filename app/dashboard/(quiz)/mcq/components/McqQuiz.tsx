@@ -7,18 +7,18 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { cn, formatQuizTime } from "@/lib/utils"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
-
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizBase } from "../../components/QuizBase"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
-import { useQuizState, formatQuizTime } from "@/hooks/use-quiz-state"
+
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { QuizProgress } from "../../components/QuizProgress"
 import { AuthModal } from "@/components/ui/auth-modal"
+import useQuizState from "@/hooks/use-quiz-state"
 
 type Question = {
   id: number
@@ -65,6 +65,7 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
     handleSelectOption,
     handleNextQuestion: originalHandleNextQuestion,
     handleFeedbackContinue,
+    handleRestart,
   } = useQuizState({
     quizId,
     slug,
@@ -162,6 +163,7 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
               type="mcq"
               slug={slug}
               preventAutoSave={true} // Prevent duplicate saving
+              onRestart={handleRestart} // Add restart handler
             />
           </MotionWrapper>
         )
@@ -262,20 +264,21 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
     <>
       <QuizBase quizId={quizId.toString()} slug={slug} title={title} type="mcq" totalQuestions={questions.length}>
         {renderQuizContent()}
-
-        {showFeedbackModal && (
-          <QuizFeedback
-            isSubmitting={isSubmitting}
-            isSuccess={isSuccess}
-            isError={isError}
-            score={calculateScore(selectedOptions, questions)}
-            totalQuestions={questions.length}
-            onContinue={handleFeedbackContinue}
-            errorMessage={errorMessage ?? undefined}
-            quizType="mcq"
-          />
-        )}
       </QuizBase>
+
+      {showFeedbackModal && (
+        <QuizFeedback
+          isSubmitting={isSubmitting}
+          isSuccess={isSuccess}
+          isError={isError}
+          score={calculateScore(selectedOptions, questions)}
+          totalQuestions={questions.length}
+          onContinue={handleFeedbackContinue}
+          errorMessage={errorMessage ?? undefined}
+          quizType="mcq"
+          waitForSave={false} // Don't wait for save in the feedback dialog
+        />
+      )}
 
       {/* Authentication Modal */}
       <AuthModal

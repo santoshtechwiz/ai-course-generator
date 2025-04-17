@@ -1,194 +1,222 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { FillInTheBlanksQuiz } from "./FillInTheBlanksQuiz"
+import { useRouter } from "next/navigation"
+import FillInTheBlanksQuiz from "./FillInTheBlanksQuiz"
 import BlankQuizResults from "./BlankQuizResults"
+import QuizAuthWrapper from "../../components/QuizAuthWrapper"
+import { getSavedQuizState, clearSavedQuizState } from "@/hooks/quiz-session-storage"
 import { QuizFeedback } from "../../components/QuizFeedback"
-
-interface Question {
-  id: number
-  question: string
-  answer: string
-  openEndedQuestion: {
-    hints: string[]
-    difficulty: string
-    tags: string[]
-    inputType: string
-  }
-}
+import { submitQuizResult } from "@/lib/quiz-result-service"
 
 interface BlankQuizWrapperProps {
-  questions: Question[]
-  quizId: string
+  quizData: any
   slug: string
-  title: string
-  onSubmitAnswer?: (answer: { userAnswer: string; timeSpent: number; hintsUsed: boolean }) => void
-  onComplete?: (score: number) => void
 }
 
-export function BlankQuizWrapper({
-  questions,
-  quizId,
-  slug,
-  title,
-  onSubmitAnswer,
-  onComplete,
-}: BlankQuizWrapperProps) {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [answers, setAnswers] = useState<{ userAnswer: string; timeSpent: number; hintsUsed: boolean }[]>([])
+export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperProps) {
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [answers, setAnswers] = useState<
+    { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]
+  >([])
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [startTime, setStartTime] = useState(Date.now())
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [quizResults, setQuizResults] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showResults, setShowResults] = useState(false)
-  const [showFeedback, setShowFeedback] = useState(false)
-  const router = useRouter()
-  const [startTime, setStartTime] = useState(Date.now())
-  const [isCompleted, setIsCompleted] = useState(false)
   const { data: session, status } = useSession()
+  const router = useRouter()
   const isLoggedIn = status === "authenticated"
 
-  const currentQuestion = questions[currentQuestionIndex] || null
-  const isLastQuestion = currentQuestionIndex === questions.length - 1
+  // Check for saved quiz state on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && status !== "loading") {
+      const savedState = getSavedQuizState()
+
+      // Check if savedState is null before destructuring
+      if (savedState) {
+        const { quizState, answers: savedAnswers } = savedState
+
+        // If there's a saved state for this quiz, restore it
+        if (quizState && quizState.quizId === quizData.id && quizState.quizType === "blanks") {
+          setCurrentQuestion(quizState.currentQuestion)
+          setStartTime(quizState.startTime)
+          setIsCompleted(quizState.isCompleted)
+
+          if (savedAnswers) {
+            setAnswers(savedAnswers as { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[])
+          }
+
+          // Clear saved state
+          clearSavedQuizState()
+
+          // If quiz was completed, show results
+          if (quizState.isCompleted) {
+            setIsCompleted(true)
+          }
+        }
+      }
+    }
+  }, [quizData?.id, status])
 
   const handleAnswer = (answer: string, timeSpent: number, hintsUsed: boolean) => {
-    const newAnswer = { userAnswer: answer, timeSpent, hintsUsed }
-    setAnswers((prev) => [...prev, newAnswer])
-    onSubmitAnswer?.(newAnswer)
+    const newAnswers = [...answers]
+    newAnswers[currentQuestion] = { answer, timeSpent, hintsUsed }
+    setAnswers(newAnswers)
 
-    if (isLastQuestion) {
-      setShowFeedback(true)
-      handleSubmitQuiz([...answers, newAnswer])
+    if (currentQuestion < quizData.questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1)
     } else {
-      setCurrentQuestionIndex((prev) => prev + 1)
+      completeQuiz(newAnswers)
     }
   }
 
-  const handleSubmitQuiz = async (finalAnswers: { userAnswer: string; timeSpent: number; hintsUsed: boolean }[]) => {
+  const completeQuiz = async (finalAnswers: typeof answers) => {
     setIsSubmitting(true)
     setError(null)
 
     try {
-      const correctAnswers = finalAnswers.filter(
-        (answer, index) => answer.userAnswer.toLowerCase().trim() === questions[index]?.answer?.toLowerCase().trim(),
-      ).length
+      // Calculate score based on similarity (this will be updated by BlankQuizResults)
+      const score = 0 // Initial score, will be updated
 
-      const totalTime = (Date.now() - startTime) / 1000
-      const score = (correctAnswers / questions.length) * 100
-
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(
-          `quiz_result_${quizId}`,
-          JSON.stringify({
-            answers: finalAnswers,
-            score,
-            totalTime,
-            timestamp: Date.now(),
-            isCompleted: true,
-          }),
-        )
+      // If user is logged in, save to database
+      if (isLoggedIn) {
+        console.log("User is logged in, saving to database")
+        await submitQuizResult({
+          quizId: quizData.id,
+          slug,
+          answers: finalAnswers.map((a) => ({
+            answer: a.answer,
+            timeSpent: a.timeSpent,
+            hintsUsed: a.hintsUsed,
+            similarity: a.similarity,
+          })),
+          totalTime: (Date.now() - startTime) / 1000,
+          score,
+          type: "blanks",
+          totalQuestions: quizData.questions.length,
+        })
+      } else {
+        console.log("User is not logged in, not saving to database")
+        // If user is not authenticated, show auth modal
+        setShowAuthModal(true)
       }
 
+      setQuizResults({ score })
       setIsSuccess(true)
       setIsCompleted(true)
-      onComplete?.(score)
+      setShowFeedbackModal(true)
     } catch (err) {
-      console.error("Error submitting quiz:", err)
+      console.error("Error completing quiz:", err)
       setError(err instanceof Error ? err.message : "An error occurred")
+      setIsSuccess(false)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleContinue = () => {
-    if (!isLoggedIn) {
-      // If not logged in, prompt for login
-      router.push(`/auth/signin?callbackUrl=/dashboard/blanks/${slug}`)
-      // Clear the cached results for guest users
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem(`quiz_result_${quizId}`)
-      }
-    } else {
-      // For logged in users, show results
-      setShowFeedback(false)
-      setShowResults(true)
-    }
-  }
-
   const handleRestart = () => {
-    // Clear all cached data when restarting
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem(`quiz_result_${quizId}`)
-    }
+    setCurrentQuestion(0)
+    setAnswers([])
+    setIsCompleted(false)
+    setStartTime(Date.now())
+    setShowFeedbackModal(false)
+    setQuizResults(null)
+    setIsSubmitting(false)
+    setIsSuccess(false)
+    setError(null)
+
+    // Force a refresh to ensure all components are reset
     router.refresh()
   }
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedResult = sessionStorage.getItem(`quiz_result_${quizId}`)
-      if (storedResult) {
-        try {
-          const parsedResult = JSON.parse(storedResult)
-          if (Date.now() - parsedResult.timestamp < 30 * 60 * 1000) {
-            if (parsedResult.answers) {
-              setAnswers(parsedResult.answers)
-            }
-            if (parsedResult.isCompleted) {
-              setIsCompleted(true)
-              setShowResults(true)
-            }
-          } else {
-            sessionStorage.removeItem(`quiz_result_${quizId}`)
-          }
-        } catch (e) {
-          console.error("Error parsing stored quiz result:", e)
-        }
-      }
-    }
-  }, [quizId])
+  const handleComplete = (score: number, updatedAnswers: typeof answers) => {
+    // Update answers with similarity scores
+    setAnswers(updatedAnswers)
 
-  const clearGuestData = () => {
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem(`quiz_result_${quizId}`)
+    // Update quiz results
+    setQuizResults({ score })
+
+    // If user is logged in, update the score in the database
+    if (isLoggedIn) {
+      submitQuizResult({
+        quizId: quizData.id,
+        slug,
+        answers: updatedAnswers.map((a) => ({
+          answer: a.answer,
+          timeSpent: a.timeSpent,
+          hintsUsed: a.hintsUsed,
+          similarity: a.similarity,
+        })),
+        totalTime: (Date.now() - startTime) / 1000,
+        score,
+        type: "blanks",
+        totalQuestions: quizData.questions.length,
+      }).catch((err) => {
+        console.error("Error updating quiz score:", err)
+      })
     }
   }
 
-  if (showFeedback) {
-    return (
-      <QuizFeedback
-        isSubmitting={isSubmitting}
-        isSuccess={isSuccess}
-        isError={!!error}
-        onContinue={handleContinue}
-        score={0}
-        totalQuestions={questions.length}
-        quizType="fill-blanks"
-      />
-    )
+  const handleFeedbackContinue = () => {
+    setShowFeedbackModal(false)
   }
 
-  if (showResults) {
-    return (
-      <BlankQuizResults
-        answers={answers.map(({ userAnswer, ...rest }) => ({ answer: userAnswer, ...rest }))}
-        questions={questions}
-        onRestart={handleRestart}
-        onComplete={onComplete || (() => {})}
-        quizId={quizId}
-        title={title}
-        slug={slug}
-        clearGuestData={!isLoggedIn ? clearGuestData : undefined}
-      />
-    )
-  }
-
-  return currentQuestion ? (
-    <FillInTheBlanksQuiz
-      question={currentQuestion}
-      onAnswer={handleAnswer}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={questions.length}
-    />
-  ) : null
+  return (
+    <QuizAuthWrapper
+      quizState={{
+        quizId: quizData?.id,
+        quizType: "blanks",
+        quizSlug: slug,
+        currentQuestion,
+        totalQuestions: quizData?.questions?.length || 0,
+        startTime,
+        isCompleted,
+      }}
+      answers={answers}
+      redirectPath={`/quiz/blanks/${slug}`}
+      showAuthModal={showAuthModal}
+      onAuthModalClose={() => setShowAuthModal(false)}
+    >
+      {isCompleted ? (
+        <BlankQuizResults
+          answers={answers}
+          questions={quizData.questions}
+          onRestart={handleRestart}
+          onComplete={handleComplete}
+          quizId={quizData.id}
+          title={quizData.title}
+          slug={slug}
+          clearGuestData={clearSavedQuizState}
+        />
+      ) : (
+        <>
+          <FillInTheBlanksQuiz
+            question={quizData.questions[currentQuestion]}
+            onAnswer={handleAnswer}
+            questionNumber={currentQuestion + 1}
+            totalQuestions={quizData.questions.length}
+          />
+          {showFeedbackModal && (
+            <QuizFeedback
+              isSubmitting={isSubmitting}
+              isSuccess={isSuccess}
+              isError={!!error}
+              score={quizResults?.score || 0}
+              totalQuestions={100} // Use 100 for percentage display
+              onContinue={handleFeedbackContinue}
+              errorMessage={error || undefined}
+              quizType="blanks"
+              waitForSave={true}
+              autoClose={false}
+            />
+          )}
+        </>
+      )}
+    </QuizAuthWrapper>
+  )
 }
