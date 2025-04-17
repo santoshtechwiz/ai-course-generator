@@ -89,13 +89,14 @@ export function QuizBase({
       type,
     }
 
-    // Don't use setTimeout here, instead directly transition to completed state
-    // This prevents the "saving" state from persisting after the API call completes
-    setQuizState("completed")
+    // Set completed state after a short delay to show the submitting state
+    setTimeout(() => {
+      setQuizState("completed")
 
-    if (onQuizComplete) {
-      onQuizComplete(result)
-    }
+      if (onQuizComplete) {
+        onQuizComplete(result)
+      }
+    }, 500)
   }
 
   if (quizState === "submitting") {

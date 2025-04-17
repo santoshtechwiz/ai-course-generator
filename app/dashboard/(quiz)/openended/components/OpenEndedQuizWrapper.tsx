@@ -93,8 +93,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   }
 
   const handleComplete = (score: number) => {
-    // This function is called when the quiz results are calculated
-    // You can use it to update UI or trigger other actions
+    // Placeholder for additional actions after quiz completion
   }
 
   if (isCompleted) {

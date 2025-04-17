@@ -96,14 +96,9 @@ export function QuizResultDisplay({
         return
       }
 
-      if (isAuthenticated && quizId && slug) {
+      if (isAuthenticated && quizId && slug && !savedResultRef.current) {
         try {
-          // Use a ref to track if we've already saved
-          if (savedResultRef.current) {
-            console.log("Result already saved, skipping duplicate save")
-            return
-          }
-
+          // Mark as saved before the API call to prevent duplicate saves
           savedResultRef.current = true
 
           const response = await fetch(`/api/quiz/${slug}/complete`, {
@@ -122,16 +117,40 @@ export function QuizResultDisplay({
             }),
           })
 
+          // Check if the response is ok before trying to parse JSON
           if (!response.ok) {
-            console.error("Failed to save quiz results to database")
+            console.error(`Failed to save quiz results: ${response.status} ${response.statusText}`)
+
+            // Try to parse error details if available
+            try {
+              const errorData = await response.json()
+              console.error("Error details:", errorData)
+            } catch (jsonError) {
+              console.error("Could not parse error response")
+            }
+          } else {
+            try {
+              const data = await response.json()
+              console.log("Quiz results saved successfully:", data)
+            } catch (jsonError) {
+              console.warn("Response was successful but could not parse JSON response")
+              console.log("Quiz results saved successfully")
+            }
           }
         } catch (error) {
           console.error("Error saving quiz results:", error)
+          // Reset the saved flag so we can try again
+          savedResultRef.current = false
         }
       }
     }
 
-    saveResultToDatabase()
+    // Add a small delay to ensure we don't have race conditions
+    const timer = setTimeout(() => {
+      saveResultToDatabase()
+    }, 300)
+
+    return () => clearTimeout(timer)
   }, [isAuthenticated, quizId, slug, percentage, totalQuestions, correctAnswers, totalTime, type, preventAutoSave])
 
   // Clear guest data after showing results
