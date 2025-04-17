@@ -10,7 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { getPerformanceLevel, QuizResultBase } from "../../components/QuizResultBase"
 import { QuizResultWrapper } from "../../components/QuizResultWrapper"
 import { useSession } from "next-auth/react"
-import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
+import { QuizFeedback } from "../../components/QuizFeedback"
 
 interface QuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
@@ -79,7 +79,7 @@ export default function QuizResultsOpenEnded({
 
   if (isLoading || isSuccess || isError) {
     return (
-      <QuizSubmissionFeedback
+      <QuizFeedback
         score={score}
         totalQuestions={questions.length}
         isSubmitting={isLoading}
