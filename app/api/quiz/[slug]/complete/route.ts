@@ -2,12 +2,11 @@ import { prisma } from "@/lib/db"
 import { getAuthSession } from "@/lib/authOptions"
 import { NextResponse } from "next/server"
 import type { QuizType } from "@/app/types/types"
-import { extractUserAnswer } from "@/lib/quiz-result-service"
 
 // Type definitions
 export interface QuizAnswer {
   answer: string | string[]
-  userAnswer: string | string[]
+  userAnswer?: string | string[]
   isCorrect: boolean
   timeSpent: number
 }
@@ -31,6 +30,13 @@ interface QuizSubmission {
 
 // Helper functions
 function validateSubmissionData(body: any): { isValid: boolean; error?: string; details?: any } {
+  if (!body) {
+    return {
+      isValid: false,
+      error: "Request body is empty",
+    }
+  }
+
   if (
     !body.quizId ||
     !Array.isArray(body.answers) ||
@@ -52,6 +58,18 @@ function validateSubmissionData(body: any): { isValid: boolean; error?: string; 
   }
 
   return { isValid: true }
+}
+
+// Extract user answer from different answer types
+function extractUserAnswer(answer: any): string | string[] {
+  if (!answer) return ""
+
+  if (typeof answer.userAnswer !== "undefined") {
+    return answer.userAnswer
+  } else if (typeof answer.answer !== "undefined") {
+    return answer.answer
+  }
+  return ""
 }
 
 function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { isValid: boolean; error?: string } {
@@ -93,10 +111,14 @@ function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { is
 }
 
 function calculatePercentageScore(score: number, totalQuestions: number, type: QuizType): number {
-  if (type !== "openended" && type !== "fill-blanks" && type !== "code") {
+  // For open-ended and fill-blanks quizzes, the score is already a percentage
+  if (type === "openended" || type === "fill-blanks") {
+    // Ensure the score is within 0-100 range
+    return Math.min(100, Math.max(0, score))
+  }
+  // For other quiz types, calculate percentage based on correct answers
+  else {
     return (score / Math.max(1, totalQuestions)) * 100
-  } else {
-    return score
   }
 }
 
@@ -195,12 +217,19 @@ async function processQuestionAnswers(
       }
 
       const answer = answers[index]
+      if (!answer) {
+        console.warn(`Null or undefined answer at index ${index}`)
+        return Promise.resolve() // Skip this question if answer is null/undefined
+      }
+
       const userAnswer = extractUserAnswer(answer)
       let isCorrect = false
 
       if (quizType === "mcq" || quizType === "code") {
-        isCorrect = (answer as QuizAnswer).isCorrect
+        isCorrect = (answer as any).isCorrect === true
       }
+
+      const userAnswerString = Array.isArray(userAnswer) ? userAnswer.join(", ") : String(userAnswer || "")
 
       return tx.userQuizAttemptQuestion
         .upsert({
@@ -211,20 +240,25 @@ async function processQuestionAnswers(
             },
           },
           update: {
-            userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
+            userAnswer: userAnswerString,
             isCorrect: isCorrect,
-            timeSpent: Math.round(answer.timeSpent),
+            timeSpent: Math.round(answer.timeSpent || 0),
           },
           create: {
             attemptId,
             questionId: question.id,
-            userAnswer: Array.isArray(userAnswer) ? userAnswer.join(", ") : userAnswer,
+            userAnswer: userAnswerString,
             isCorrect: isCorrect,
-            timeSpent: Math.round(answer.timeSpent),
+            timeSpent: Math.round(answer.timeSpent || 0),
           },
         })
         .catch((error) => {
-          console.error("Error in upsert transaction:", error)
+          console.error("Error in upsert transaction:", error, {
+            attemptId,
+            questionId: question.id,
+            userAnswer: userAnswerString,
+            timeSpent: answer.timeSpent,
+          })
           throw error
         })
     })
@@ -263,7 +297,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "User not authenticated" }, { status: 401 })
     }
 
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (error) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid JSON in request body",
+        },
+        { status: 400 },
+      )
+    }
+
     const validationResult = validateSubmissionData(body)
 
     if (!validationResult.isValid) {
