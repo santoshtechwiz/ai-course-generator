@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { getPerformanceLevel, QuizResultBase } from "../../components/QuizResultBase"
 import { QuizResultWrapper } from "../../components/QuizResultWrapper"
 import { useSession } from "next-auth/react"
+import { QuizSubmissionFeedback } from "../../components/QuizSubmissionFeedback"
 
 interface QuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean }[]
@@ -34,6 +35,8 @@ export default function QuizResultsOpenEnded({
 }: QuizResultsProps) {
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [isError, setIsError] = useState(false)
   const hasCalledComplete = useRef(false)
   const hasSavedToDatabase = useRef(false)
   const { data: session } = useSession()
@@ -44,26 +47,49 @@ export default function QuizResultsOpenEnded({
 
   // Call onComplete only once and save to database if authenticated
   useEffect(() => {
-    if (!hasCalledComplete.current) {
-      hasCalledComplete.current = true
-      onComplete(score)
+    const saveResults = async () => {
+      setIsLoading(true)
+      try {
+        if (!hasCalledComplete.current) {
+          hasCalledComplete.current = true
+          onComplete(score)
+        }
+
+        if (session?.user && !hasSavedToDatabase.current && quizId) {
+          hasSavedToDatabase.current = true
+
+          const formattedAnswers = answers.map((answer) => ({
+            userAnswer: answer.answer || "",
+            timeSpent: answer.timeSpent || 0,
+            hintsUsed: answer.hintsUsed || false,
+          }))
+
+          await saveQuizResultToDatabase(quizId, formattedAnswers, totalTime, score, "openended")
+        }
+        setIsSuccess(true)
+      } catch (error) {
+        setIsError(true)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    // Save to database if authenticated and not already saved
-    if (session?.user && !hasSavedToDatabase.current && quizId) {
-      hasSavedToDatabase.current = true
-
-      // Format answers for submission
-      const formattedAnswers = answers.map((answer) => ({
-        userAnswer: answer.answer || "",
-        timeSpent: answer.timeSpent || 0,
-        hintsUsed: answer.hintsUsed || false,
-      }))
-
-      // Save to database
-      saveQuizResultToDatabase(quizId, formattedAnswers, totalTime, score, "openended")
-    }
+    saveResults()
   }, [score, onComplete, session, quizId, answers, totalTime])
+
+  if (isLoading || isSuccess || isError) {
+    return (
+      <QuizSubmissionFeedback
+        score={score}
+        totalQuestions={questions.length}
+        isSubmitting={isLoading}
+        isSuccess={isSuccess}
+        isError={isError}
+        onContinue={() => setIsSuccess(false)} // Reset success state to show results
+        quizType="openended"
+      />
+    )
+  }
 
   const performance = getPerformanceLevel(score)
 

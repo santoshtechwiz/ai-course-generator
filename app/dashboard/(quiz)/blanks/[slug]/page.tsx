@@ -6,7 +6,8 @@ import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import QuizDetailsPage from "../../components/QuizDetailsPage"
-import BlankQuizWrapper from "../components/BlankQuizWrapper"
+import { BlankQuizWrapper } from "../components/BlankQuizWrapper"
+
 
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -72,8 +73,12 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
       breadcrumbItems={breadcrumbItems}
     >
       <BlankQuizWrapper
-    
-        quizData={result} slug={slug}      />
+    questions={result.questions}
+    slug={slug}
+    title={result.title}
+    quizId={result.id}
+    key={result.id}
+              />
     </QuizDetailsPage>
   )
 }
