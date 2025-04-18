@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Brain, Info, AlertCircle } from "lucide-react"
+import { Brain, Info, AlertCircle, Sparkles } from "lucide-react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 
@@ -94,6 +95,15 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
 
   const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
 
+  // Memoize the difficulty options to prevent unnecessary re-renders
+  const difficultyOptions = useMemo(() => {
+    return [
+      { value: "easy", label: "Easy", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+      { value: "medium", label: "Medium", color: "bg-amber-100 text-amber-800 border-amber-200" },
+      { value: "hard", label: "Hard", color: "bg-rose-100 text-rose-800 border-rose-200" },
+    ]
+  }, [])
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -101,7 +111,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
       transition={{ duration: 0.5 }}
       className="w-full max-w-2xl mx-auto"
     >
-      <Card className="bg-background border border-border/60 shadow-md overflow-hidden">
+      <Card className="bg-background border border-border/60 shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
         <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
             <motion.div
@@ -131,16 +141,72 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
               <Label htmlFor="title" className="text-sm font-medium flex items-center gap-2">
                 <Info className="h-4 w-4 text-primary" />
                 Quiz Topic
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help ml-1" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p>Enter a specific programming topic for your fill-in-the-blank quiz</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </Label>
-              <Input
-                id="title"
-                {...register("title")}
-                placeholder="E.g., JavaScript Fundamentals, React Hooks, Data Structures..."
-                className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
-                aria-label="Quiz topic"
-                autoFocus
-              />
-              {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+              <div className="relative">
+                <Input
+                  id="title"
+                  {...register("title")}
+                  placeholder="E.g., JavaScript Fundamentals, React Hooks, Data Structures..."
+                  className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary pr-10"
+                  aria-label="Quiz topic"
+                  autoFocus
+                />
+                <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              </div>
+              {errors.title && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-sm text-destructive"
+                >
+                  {errors.title.message}
+                </motion.p>
+              )}
+            </motion.div>
+
+            <motion.div
+              className="space-y-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Label htmlFor="difficulty" className="text-sm font-medium flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" />
+                Difficulty Level
+              </Label>
+              <div className="grid grid-cols-3 gap-3">
+                {difficultyOptions.map((option) => (
+                  <Controller
+                    key={option.value}
+                    name="difficulty"
+                    control={control}
+                    render={({ field }) => (
+                      <button
+                        type="button"
+                        onClick={() => field.onChange(option.value)}
+                        className={`px-4 py-2 rounded-md border transition-all duration-200 ${
+                          field.value === option.value
+                            ? `${option.color} border-current shadow-sm`
+                            : "border-muted-foreground/20 hover:border-muted-foreground/40"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    )}
+                  />
+                ))}
+              </div>
             </motion.div>
 
             <motion.div
@@ -150,7 +216,10 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
               transition={{ delay: 0.2 }}
             >
               <Label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
-                <span>Number of Questions</span>
+                <span className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-primary" />
+                  Number of Questions
+                </span>
                 <motion.span
                   className="text-xl font-bold text-primary tabular-nums"
                   key={questionCount}
@@ -172,7 +241,16 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
                   />
                 )}
               />
-              {errors.questionCount && <p className="text-sm text-destructive">{errors.questionCount.message}</p>}
+              {errors.questionCount && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-sm text-destructive"
+                >
+                  {errors.questionCount.message}
+                </motion.p>
+              )}
             </motion.div>
 
             <motion.div
@@ -182,7 +260,10 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
               transition={{ delay: 0.3 }}
             >
               <div className="p-4 space-y-2">
-                <h3 className="text-base font-semibold mb-2">Available Credits</h3>
+                <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Available Credits
+                </h3>
                 <Progress value={(credits / 10) * 100} className="h-2" />
                 <p className="text-xs text-muted-foreground">
                   You have <span className="font-bold text-primary">{credits}</span> credits remaining.
@@ -254,4 +335,3 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
 export const FillInTheBlankQuizForm = memo(FillInTheBlankQuizFormComponent)
 
 export default FillInTheBlankQuizForm
-

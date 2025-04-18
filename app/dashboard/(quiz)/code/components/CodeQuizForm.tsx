@@ -8,7 +8,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 import { signIn, useSession } from "next-auth/react"
-import { Code, HelpCircle, Timer } from "lucide-react"
+import { Code, HelpCircle, Timer, Sparkles, Check } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
+import { Badge } from "@/components/ui/badge"
 
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
@@ -58,6 +58,15 @@ const PROGRAMMING_LANGUAGES = [
   "Ruby",
 ]
 
+// Group languages by popularity/category for better UX
+const LANGUAGE_GROUPS = {
+  Popular: ["JavaScript", "Python", "Java"],
+  Web: ["TypeScript", "JavaScript", "PHP"],
+  Mobile: ["Swift", "Kotlin", "Java"],
+  Systems: ["C++", "Rust", "Go", "C#"],
+  Other: ["Ruby", "PHP"],
+}
+
 export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params }: CodeQuizFormProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -65,6 +74,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
   const { subscriptionStatus } = useSubscriptionStore()
+  const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
 
   const [formData, setFormData] = usePersistentState<CodeQuizFormData>("codeQuizFormData", {
     title: params?.title || "",
@@ -190,14 +200,31 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
 
   const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
 
+  // Memoize the difficulty options to prevent unnecessary re-renders
+  const difficultyOptions = React.useMemo(() => {
+    return [
+      { value: "easy", label: "Easy", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+      { value: "medium", label: "Medium", color: "bg-amber-100 text-amber-800 border-amber-200" },
+      { value: "hard", label: "Hard", color: "bg-rose-100 text-rose-800 border-rose-200" },
+    ]
+  }, [])
+
+  // Filter languages based on selected group
+  const filteredLanguages = React.useMemo(() => {
+    if (selectedLanguageGroup === "All") {
+      return PROGRAMMING_LANGUAGES
+    }
+    return LANGUAGE_GROUPS[selectedLanguageGroup as keyof typeof LANGUAGE_GROUPS] || PROGRAMMING_LANGUAGES
+  }, [selectedLanguageGroup])
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
+      className="w-full max-w-4xl mx-auto p-6 space-y-8"
     >
-      <Card className="bg-background border border-border shadow-sm">
+      <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300">
         <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
             <motion.div
@@ -239,15 +266,22 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
                 <Input
                   id="title"
                   placeholder="Enter the programming title"
-                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
+                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all pr-10"
                   {...register("title")}
                   aria-describedby="title-description"
                 />
+                <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               </div>
               {errors.title && (
-                <p className="text-sm text-destructive mt-1" id="title-error">
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-sm text-destructive mt-1"
+                  id="title-error"
+                >
                   {errors.title.message}
-                </p>
+                </motion.p>
               )}
               <p className="text-sm text-muted-foreground" id="title-description">
                 Examples: React Hooks, Data Structures, Async/Await, etc.
@@ -273,25 +307,58 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <Controller
-                name="language"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all">
-                      <SelectValue placeholder="Select a language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROGRAMMING_LANGUAGES.map((lang) => (
-                        <SelectItem key={lang} value={lang}>
-                          {lang}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.language && <p className="text-sm text-destructive mt-1">{errors.language.message}</p>}
+
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {Object.keys(LANGUAGE_GROUPS).map((group) => (
+                    <Badge
+                      key={group}
+                      variant={selectedLanguageGroup === group ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setSelectedLanguageGroup(group)}
+                    >
+                      {group}
+                    </Badge>
+                  ))}
+                  <Badge
+                    variant={selectedLanguageGroup === "All" ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedLanguageGroup("All")}
+                  >
+                    All
+                  </Badge>
+                </div>
+
+                <Controller
+                  name="language"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all">
+                        <SelectValue placeholder="Select a language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredLanguages.map((lang) => (
+                          <SelectItem key={lang} value={lang}>
+                            {lang}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              {errors.language && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-sm text-destructive mt-1"
+                >
+                  {errors.language.message}
+                </motion.p>
+              )}
             </motion.div>
 
             <motion.div
@@ -341,7 +408,16 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
                   Select between 1 and {maxQuestions} questions
                 </p>
               </div>
-              {errors.amount && <p className="text-sm text-destructive mt-1">{errors.amount.message}</p>}
+              {errors.amount && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-sm text-destructive mt-1"
+                >
+                  {errors.amount.message}
+                </motion.p>
+              )}
               <p className="text-sm text-muted-foreground mt-2">
                 {isLoggedIn
                   ? "Unlimited quizzes available"
@@ -369,19 +445,20 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
                 </TooltipProvider>
               </Label>
               <div className="grid grid-cols-3 gap-4">
-                {["easy", "medium", "hard"].map((level) => (
+                {difficultyOptions.map((level) => (
                   <Button
-                    key={level}
+                    key={level.value}
                     type="button"
-                    variant={difficulty === level ? "default" : "outline"}
+                    variant={difficulty === level.value ? "default" : "outline"}
                     className={cn(
                       "capitalize w-full h-12 font-medium transition-all",
-                      difficulty === level ? "border-primary shadow-sm" : "hover:border-primary/50",
+                      difficulty === level.value ? "border-primary shadow-sm" : "hover:border-primary/50",
                     )}
-                    onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
-                    aria-pressed={difficulty === level}
+                    onClick={() => setValue("difficulty", level.value as "easy" | "medium" | "hard")}
+                    aria-pressed={difficulty === level.value}
                   >
-                    {level}
+                    {level.label}
+                    {difficulty === level.value && <Check className="ml-2 h-4 w-4" />}
                   </Button>
                 ))}
               </div>
@@ -393,7 +470,10 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <h3 className="text-base font-semibold mb-2">Available Credits</h3>
+              <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Available Credits
+              </h3>
               <Progress value={(credits / 10) * 100} className="h-2" />
               <p className="text-xs text-muted-foreground">
                 You have <span className="font-bold text-primary">{credits}</span> credits remaining.
@@ -457,4 +537,3 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
     </motion.div>
   )
 }
-
