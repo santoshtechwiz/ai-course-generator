@@ -79,76 +79,93 @@
   .animate-spin-slow {
     animation: spin 3s linear infinite;
   }
-}
 
-/* Keyframes */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+  /* Add new animation utilities */
+  .animate-bounce-subtle {
+    animation: bounceSubtle 2s infinite;
   }
-  to {
-    opacity: 1;
+
+  .animate-scale-subtle {
+    animation: scaleSubtle 2s infinite;
   }
-}
 
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
+  .animate-glow {
+    animation: glow 2s infinite;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow;
   }
-}
 
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
+  /* Keyframes */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
-}
 
-@keyframes pulseSubtle {
-  0%,
-  100% {
-    opacity: 1;
+  @keyframes slideDown {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
-  50% {
-    opacity: 0.7;
+
+  @keyframes pulseSubtle {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
   }
-}
 
-/* Navigation loading styles */
-#navigation-loading-indicator {
-  height: 3px;
-  overflow: hidden;
-}
+  /* Navigation loading styles */
+  #navigation-loading-indicator {
+    height: 3px;
+    overflow: hidden;
+  }
 
-.navigation-in-progress {
-  cursor: progress;
-}
+  .navigation-in-progress {
+    cursor: progress;
+  }
 
-/* Prevent interaction during navigation */
-.navigation-in-progress a,
-.navigation-in-progress button {
-  pointer-events: none;
-}
+  /* Prevent interaction during navigation */
+  .navigation-in-progress a,
+  .navigation-in-progress button {
+    pointer-events: none;
+  }
 
-/* Course card hover effects */
-.course-card-hover {
-  transition: all 0.3s ease;
-}
+  /* Course card hover effects */
+  .course-card-hover {
+    transition: all 0.3s ease;
+  }
 
-.course-card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-}
+  .course-card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  }
 
-.course-card-hover:active {
-  transform: translateY(-2px);
+  .course-card-hover:active {
+    transform: translateY(-2px);
+  }
 }

@@ -1,5 +1,7 @@
 "use client"
 
+import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -36,7 +38,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -174,7 +175,28 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                 ? "left-4 sm:left-6 top-1/2 -translate-y-1/2"
                 : "right-4 sm:right-6 top-1/2 -translate-y-1/2",
             )}
-            variants={containerVariants}
+            variants={{
+              hidden: {
+                opacity: 0,
+                y: 20,
+              },
+              visible: {
+                opacity: 1,
+                y: 0,
+                transition: {
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 25,
+                },
+              },
+              exit: {
+                opacity: 0,
+                y: 20,
+                transition: {
+                  duration: 0.2,
+                },
+              },
+            }}
             initial="hidden"
             animate="visible"
             exit="exit"
@@ -187,7 +209,36 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                     "bg-card border shadow-lg rounded-xl overflow-hidden mb-3",
                     position === "left" ? "origin-bottom-left" : "origin-bottom-right",
                   )}
-                  variants={panelVariants}
+                  variants={{
+                    hidden: {
+                      opacity: 0,
+                      x: position === "left" ? -20 : 20,
+                      width: 0,
+                    },
+                    visible: {
+                      opacity: 1,
+                      x: 0,
+                      width: "auto",
+                      transition: {
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                        when: "beforeChildren",
+                        staggerChildren: 0.05,
+                      },
+                    },
+                    exit: {
+                      opacity: 0,
+                      x: position === "left" ? -20 : 20,
+                      width: 0,
+                      transition: {
+                        duration: 0.2,
+                        when: "afterChildren",
+                        staggerChildren: 0.05,
+                        staggerDirection: -1,
+                      },
+                    },
+                  }}
                   initial="hidden"
                   animate="visible"
                   exit="exit"
@@ -200,10 +251,22 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                           onClick={() => handleAction("privacy")}
                           className={cn(
                             "w-10 h-10 flex items-center justify-center rounded-lg",
-                            "bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200",
+                            "bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200 shadow-md hover:shadow-lg",
                             "shadow-sm hover:shadow-md",
                           )}
-                          variants={itemVariants}
+                          variants={{
+                            hidden: { opacity: 0, y: 10 },
+                            visible: {
+                              opacity: 1,
+                              y: 0,
+                              transition: {
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 25,
+                              },
+                            },
+                            exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
+                          }}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           disabled={loading === "privacy"}
@@ -229,10 +292,22 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                           onClick={() => handleAction("favorite")}
                           className={cn(
                             "w-10 h-10 flex items-center justify-center rounded-lg",
-                            "bg-pink-500 hover:bg-pink-600 text-white transition-all duration-200",
+                            "bg-pink-500 hover:bg-pink-600 text-white transition-all duration-200 shadow-md hover:shadow-lg",
                             "shadow-sm hover:shadow-md",
                           )}
-                          variants={itemVariants}
+                          variants={{
+                            hidden: { opacity: 0, y: 10 },
+                            visible: {
+                              opacity: 1,
+                              y: 0,
+                              transition: {
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 25,
+                              },
+                            },
+                            exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
+                          }}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           disabled={loading === "favorite"}
@@ -257,10 +332,22 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                             <motion.button
                               className={cn(
                                 "w-10 h-10 flex items-center justify-center rounded-lg",
-                                "bg-blue-500 hover:bg-blue-600 text-white transition-all duration-200",
+                                "bg-blue-500 hover:bg-blue-600 text-white transition-all duration-200 shadow-md hover:shadow-lg",
                                 "shadow-sm hover:shadow-md",
                               )}
-                              variants={itemVariants}
+                              variants={{
+                                hidden: { opacity: 0, y: 10 },
+                                visible: {
+                                  opacity: 1,
+                                  y: 0,
+                                  transition: {
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 25,
+                                  },
+                                },
+                                exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
+                              }}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                             >
@@ -300,10 +387,22 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                           onClick={() => setShowRating(!showRating)}
                           className={cn(
                             "w-10 h-10 flex items-center justify-center rounded-lg",
-                            "bg-amber-500 hover:bg-amber-600 text-white transition-all duration-200",
+                            "bg-amber-500 hover:bg-amber-600 text-white transition-all duration-200 shadow-md hover:shadow-lg",
                             "shadow-sm hover:shadow-md",
                           )}
-                          variants={itemVariants}
+                          variants={{
+                            hidden: { opacity: 0, y: 10 },
+                            visible: {
+                              opacity: 1,
+                              y: 0,
+                              transition: {
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 25,
+                              },
+                            },
+                            exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
+                          }}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
@@ -321,7 +420,8 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="flex flex-col gap-2 items-center bg-muted/50 rounded-lg p-2"
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          className="flex flex-col gap-2 items-center bg-muted/50 rounded-lg p-2 shadow-sm"
                         >
                           <div className="text-xs font-medium text-muted-foreground">
                             {status.rating ? `Your rating: ${status.rating}/5` : "Rate this course"}
@@ -358,10 +458,22 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                             <motion.button
                               className={cn(
                                 "w-10 h-10 flex items-center justify-center rounded-lg",
-                                "bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all duration-200",
+                                "bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all duration-200 shadow-md hover:shadow-lg",
                                 "shadow-sm hover:shadow-md",
                               )}
-                              variants={itemVariants}
+                              variants={{
+                                hidden: { opacity: 0, y: 10 },
+                                visible: {
+                                  opacity: 1,
+                                  y: 0,
+                                  transition: {
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 25,
+                                  },
+                                },
+                                exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
+                              }}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                             >
@@ -475,4 +587,3 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
     </TooltipProvider>
   )
 }
-

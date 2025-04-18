@@ -67,7 +67,22 @@ export function QuizResultDisplay({
     if (session?.user && !hasSaved && !preventAutoSave) {
       const saveResults = async () => {
         setIsSaving(true)
+        setSaveError(null)
+
         try {
+          // Ensure answers is always an array
+          const formattedAnswers = answers || []
+
+          console.log("Saving quiz results:", {
+            quizId,
+            score,
+            totalQuestions,
+            correctAnswers,
+            totalTime,
+            type,
+            answers: formattedAnswers,
+          })
+
           const response = await fetch(`/api/quiz/${quizId}/complete`, {
             method: "POST",
             headers: {
@@ -81,12 +96,25 @@ export function QuizResultDisplay({
               totalTime,
               type,
               completedAt: new Date().toISOString(),
-              answers: answers || [],
+              answers: formattedAnswers,
             }),
           })
 
           if (!response.ok) {
-            throw new Error(`Failed to save results: ${response.status}`)
+            const errorText = await response.text()
+            let errorMessage = `Failed to save results: ${response.status}`
+
+            try {
+              const errorData = JSON.parse(errorText)
+              if (errorData.error) {
+                errorMessage = errorData.error
+              }
+            } catch (e) {
+              // If JSON parsing fails, use the raw error text if available
+              if (errorText) errorMessage += ` - ${errorText}`
+            }
+
+            throw new Error(errorMessage)
           }
 
           setHasSaved(true)
@@ -99,7 +127,7 @@ export function QuizResultDisplay({
           setSaveError(error instanceof Error ? error.message : "Unknown error")
           toast({
             title: "Error saving results",
-            description: "There was a problem saving your quiz results.",
+            description: error instanceof Error ? error.message : "Unknown error",
             variant: "destructive",
           })
         } finally {
@@ -173,14 +201,13 @@ export function QuizResultDisplay({
                         <CheckCircle className="mr-2 h-4 w-4" />
                         Your results have been saved.
                       </div>
-                    ) : (
-                      ""
-                    )}
-                    {saveError && (
-                      <span className="flex items-center text-red-500">
+                    ) : saveError ? (
+                      <div className="flex items-center text-red-500">
                         <AlertCircle className="mr-2 h-4 w-4" />
                         Error: {saveError}
-                      </span>
+                      </div>
+                    ) : (
+                      ""
                     )}
                   </CardDescription>
                 </CardHeader>
@@ -189,7 +216,9 @@ export function QuizResultDisplay({
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium">Score</div>
                       <div className="text-sm font-medium flex items-center">
-                        <span className={`text-lg font-bold ${score >= 70 ? 'text-green-500' : score >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                        <span
+                          className={`text-lg font-bold ${score >= 70 ? "text-green-500" : score >= 50 ? "text-amber-500" : "text-red-500"}`}
+                        >
                           {score.toFixed(1)}%
                         </span>
                       </div>
@@ -230,7 +259,7 @@ export function QuizResultDisplay({
                       </CardHeader>
                       <CardContent className="p-4 pt-4">
                         <div className="text-2xl font-bold flex items-baseline">
-                          <span className={correctAnswers === totalQuestions ? 'text-green-500' : ''}>
+                          <span className={correctAnswers === totalQuestions ? "text-green-500" : ""}>
                             {correctAnswers}
                           </span>
                           <span className="text-lg mx-1">/</span>
@@ -241,11 +270,7 @@ export function QuizResultDisplay({
                   </div>
                 </CardContent>
                 <CardFooter className="p-6 pt-0 flex flex-col sm:flex-row gap-3">
-                  <Button
-                    onClick={handleRestart}
-                    className="w-full sm:w-auto flex-1 sm:flex-none"
-                    disabled={isSaving}
-                  >
+                  <Button onClick={handleRestart} className="w-full sm:w-auto flex-1 sm:flex-none" disabled={isSaving}>
                     <RefreshCcw className="mr-2 h-4 w-4" />
                     Restart Quiz
                   </Button>
@@ -258,6 +283,22 @@ export function QuizResultDisplay({
                     Back to Quizzes
                   </Button>
                 </CardFooter>
+                {saveError && (
+                  <div className="mt-2 p-6">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setHasSaved(false)
+                        setSaveError(null)
+                      }}
+                      disabled={isSaving}
+                    >
+                      <RefreshCcw className="mr-2 h-3 w-3" />
+                      Retry
+                    </Button>
+                  </div>
+                )}
               </Card>
             </TabsContent>
             <TabsContent value="details" className="space-y-6">
@@ -273,7 +314,10 @@ export function QuizResultDisplay({
                   {answers && answers.length > 0 ? (
                     <div className="space-y-4">
                       {answers.map((answer, index) => (
-                        <Card key={index} className={`p-4 border-l-4 ${answer.isCorrect ? 'border-l-green-500 bg-green-50/50 dark:bg-green-950/10' : 'border-l-red-500 bg-red-50/50 dark:bg-red-950/10'}`}>
+                        <Card
+                          key={index}
+                          className={`p-4 border-l-4 ${answer.isCorrect ? "border-l-green-500 bg-green-50/50 dark:bg-green-950/10" : "border-l-red-500 bg-red-50/50 dark:bg-red-950/10"}`}
+                        >
                           <div className="flex justify-between items-center">
                             <div>
                               <p className="font-medium">Question {index + 1}</p>
@@ -282,7 +326,11 @@ export function QuizResultDisplay({
                                 {Math.floor(answer.timeSpent / 60)}m {Math.round(answer.timeSpent % 60)}s
                               </p>
                             </div>
-                            <div className={answer.isCorrect ? "text-green-500 flex items-center" : "text-red-500 flex items-center"}>
+                            <div
+                              className={
+                                answer.isCorrect ? "text-green-500 flex items-center" : "text-red-500 flex items-center"
+                              }
+                            >
                               {answer.isCorrect ? (
                                 <>
                                   <CheckCircle className="h-4 w-4 mr-1.5" />

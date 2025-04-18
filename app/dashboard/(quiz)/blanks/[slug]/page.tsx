@@ -7,7 +7,7 @@ import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import QuizDetailsPage from "../../components/QuizDetailsPage"
 import BlankQuizWrapper from "../components/BlankQuizWrapper"
-"
+
 
 
 

@@ -226,21 +226,24 @@ export interface OpenEndedQuestion {
 
 export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard" | "undefined"
 
+// Update the CodeChallenge interface to include id
 export interface CodeChallenge {
+  id?: number
   question: string
+  options: string[]
+  correctAnswer: string
   codeSnippet?: string
   language?: string
-  options: string | string[]
-  correctAnswer: string
+ 
 }
 
+// Make sure CodingQuizProps is defined correctly
 export interface CodingQuizProps {
+  quizId: string
+  slug: string
   isFavorite: boolean
   isPublic: boolean
-  slug: string
-  quizId: number
-  userId?: string
-  ownerId?: string
+  ownerId: string
   quizData: {
     title: string
     questions: CodeChallenge[]

@@ -318,7 +318,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
     <TooltipProvider>
       <div
         ref={containerRef}
-        className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-900 shadow-xl group"
+        className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-900 shadow-xl group transition-all duration-300 hover:shadow-2xl"
         onMouseEnter={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
       >
@@ -352,7 +352,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
         <div className="absolute top-4 right-4 z-10">{brandLogo}</div>
 
         {showCertificateOverlay && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-50">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-50 animate-in fade-in-50 duration-300">
             <div className="text-white text-center">
               <h2 className="text-2xl font-bold mb-4">Congratulations! You've completed the course.</h2>
               <div className="space-y-4">
@@ -361,13 +361,19 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                   fileName={`${courseName.replace(/\s+/g, "_")}_Certificate.pdf`}
                 >
                   {({ blob, url, loading, error }) => (
-                    <Button disabled={loading} className="bg-cyan-500 hover:bg-cyan-600">
+                    <Button
+                      disabled={loading}
+                      className="bg-cyan-500 hover:bg-cyan-600 transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
+                    >
                       <Download className="mr-2 h-4 w-4" />
                       {loading ? "Generating certificate..." : "Download Certificate"}
                     </Button>
                   )}
                 </PDFDownloadLink>
-                <Button onClick={handleShare} className="bg-green-500 hover:bg-green-600">
+                <Button
+                  onClick={handleShare}
+                  className="bg-green-500 hover:bg-green-600 transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
+                >
                   <Share2 className="mr-2 h-4 w-4" />
                   Share Certificate
                 </Button>
@@ -380,7 +386,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
 
         {showCourseAIVideos && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-50">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-50 animate-in fade-in-50 duration-300">
             <div className="text-white text-center max-w-md w-full">
               <h3 className="text-xl font-semibold mb-4">Related Videos</h3>
               {courseAIVideos.length > 0 ? (
@@ -388,7 +394,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                   {courseAIVideos.map((video) => (
                     <li
                       key={video.id}
-                      className="text-lg hover:text-cyan-400 cursor-pointer p-2 rounded transition-colors"
+                      className="text-lg hover:text-cyan-400 cursor-pointer p-2 rounded transition-all duration-200 hover:bg-white/5 hover:pl-4"
                       onClick={() => {
                         setShowCourseAIVideos(false)
                         onVideoSelect(video.id)
@@ -415,8 +421,8 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
 
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-            showControls ? "opacity-100" : "opacity-0"
+          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-all duration-300 ${
+            showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
           }`}
         >
           <Slider
@@ -424,7 +430,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
             onValueChange={handleSeekChange}
             max={1}
             step={0.001}
-            className="w-full mb-2 [&>span:first-child]:h-1 [&>span:first-child]:bg-white/30 [&_[role=slider]]:bg-cyan-400 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:border-0 [&>span:first-child_span]:bg-cyan-400"
+            className="w-full mb-2 [&>span:first-child]:h-1 [&>span:first-child]:bg-white/30 [&_[role=slider]]:bg-cyan-400 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:border-0 [&>span:first-child_span]:bg-cyan-400 [&_[role=slider]]:transition-transform [&_[role=slider]]:duration-200 [&_[role=slider]]:hover:scale-125"
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -434,7 +440,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={handlePlayPause}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
                   >
                     {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
@@ -450,7 +456,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={() => handleSkip(-10)}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
                   >
                     <SkipBack className="h-4 w-4" />
                   </Button>
@@ -466,7 +472,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={() => handleSkip(10)}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
                   >
                     <SkipForward className="h-4 w-4" />
                   </Button>
@@ -478,7 +484,12 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleReplay} className="text-white hover:bg-white/20">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleReplay}
+                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
+                  >
                     <Repeat className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -495,7 +506,12 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
               <div className="flex items-center space-x-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleMute} className="text-white hover:bg-white/20">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleMute}
+                      className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
+                    >
                       {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                     </Button>
                   </TooltipTrigger>
@@ -516,7 +532,11 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
+                      >
                         <Settings className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -560,7 +580,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowCourseAIVideos(true)}
-                      className="text-white hover:bg-white/20"
+                      className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
                     >
                       <List className="h-4 w-4" />
                     </Button>
@@ -578,7 +598,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                       variant="ghost"
                       size="icon"
                       onClick={handleDownloadCertificate}
-                      className="text-white hover:bg-white/20"
+                      className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
@@ -595,7 +615,7 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={handleFullscreen}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
                   >
                     {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                   </Button>
@@ -613,4 +633,3 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
 }
 
 export default EnhancedVideoPlayer
-

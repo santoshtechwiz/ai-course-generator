@@ -1,16 +1,18 @@
 "use client"
 
 import * as React from "react"
+import { toast as sonnerToast } from "sonner"
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 5 // Increased from 1 to show multiple toasts
-const TOAST_REMOVE_DELAY = 5000 // Reduced from 1000000 to 5000ms (5 seconds)
+const TOAST_LIMIT = 5
+const TOAST_REMOVE_DELAY = 5000
 
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  variant?: "default" | "destructive" | "success" | "warning" | "info"
 }
 
 const actionTypes = {
@@ -80,9 +82,7 @@ export const reducer = (state: State, action: Action): State => {
     case "UPDATE_TOAST":
       return {
         ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t
-        ),
+        toasts: state.toasts.map((t) => (t.id === action.toast.id ? { ...t, ...action.toast } : t)),
       }
 
     case "DISMISS_TOAST": {
@@ -104,7 +104,7 @@ export const reducer = (state: State, action: Action): State => {
                 ...t,
                 open: false,
               }
-            : t
+            : t,
         ),
       }
     }
@@ -135,16 +135,19 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
+// Map our variant types to Sonner's types
+const variantToSonnerType: Record<string, string> = {
+  default: "normal",
+  destructive: "error",
+  success: "success",
+  warning: "warning",
+  info: "info",
+}
+
 function toast({ ...props }: Toast) {
   const id = genId()
 
-  const update = (props: ToasterToast) =>
-    dispatch({
-      type: "UPDATE_TOAST",
-      toast: { ...props, id },
-    })
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
-
+  // Create the toast in our state management
   dispatch({
     type: "ADD_TOAST",
     toast: {
@@ -156,6 +159,63 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+
+  // Map our variant to Sonner's type
+  const type = props.variant ? variantToSonnerType[props.variant] : "normal"
+
+  // Create the toast in Sonner
+  if (type === "normal") {
+    sonnerToast(props.title as string, {
+      id,
+      description: props.description as string,
+      duration: TOAST_REMOVE_DELAY,
+      action: props.action
+        ? {
+            label: (props.action as any)?.altText || "Action",
+            onClick: (props.action as any)?.onClick,
+          }
+        : undefined,
+    })
+  } else {
+    sonnerToast[type as "success" | "error" | "warning" | "info"](props.title as string, {
+      id,
+      description: props.description as string,
+      duration: TOAST_REMOVE_DELAY,
+      action: props.action
+        ? {
+            label: (props.action as any)?.altText || "Action",
+            onClick: (props.action as any)?.onClick,
+          }
+        : undefined,
+    })
+  }
+
+  const update = (props: ToasterToast) => {
+    dispatch({
+      type: "UPDATE_TOAST",
+      toast: { ...props, id },
+    })
+
+    // Update the Sonner toast
+    const type = props.variant ? variantToSonnerType[props.variant] : "normal"
+
+    if (type === "normal") {
+      sonnerToast(props.title as string, {
+        id,
+        description: props.description as string,
+      })
+    } else {
+      sonnerToast[type as "success" | "error" | "warning" | "info"](props.title as string, {
+        id,
+        description: props.description as string,
+      })
+    }
+  }
+
+  const dismiss = () => {
+    dispatch({ type: "DISMISS_TOAST", toastId: id })
+    sonnerToast.dismiss(id)
+  }
 
   return {
     id: id,
@@ -180,9 +240,15 @@ function useToast() {
   return {
     ...state,
     toast,
-    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    dismiss: (toastId?: string) => {
+      dispatch({ type: "DISMISS_TOAST", toastId })
+      if (toastId) {
+        sonnerToast.dismiss(toastId)
+      } else {
+        sonnerToast.dismiss()
+      }
+    },
   }
 }
 
 export { useToast, toast }
-

@@ -21,7 +21,7 @@ export function saveQuizState(state: Omit<SavedQuizState, "timestamp">): void {
       timestamp: Date.now(),
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stateWithTimestamp))
-    console.log("Quiz state saved to session storage")
+    console.log("Quiz state saved to local storage")
   } catch (error) {
     console.error("Error saving quiz state:", error)
   }

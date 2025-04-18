@@ -6,13 +6,12 @@ import { notFound } from "next/navigation"
 import { useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
 
-
 import type { CodingQuizProps } from "@/app/types/types"
 
-import CodeQuiz from "./CodeQuiz"
 import { Loader } from "@/components/ui/loader"
 import QuizActions from "../../components/QuizActions"
 import { AuthModal } from "@/components/ui/auth-modal"
+import CodingQuiz from "./CodingQuiz"
 
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
@@ -70,14 +69,14 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
       <QuizActions
         quizId={quizData.quizId.toString()}
         quizSlug={quizData.slug}
-        initialIsPublic={false}
-        initialIsFavorite={false}
+        initialIsPublic={quizData.isPublic}
+        initialIsFavorite={quizData.isFavorite}
         userId={userId}
         ownerId={quizData?.ownerId || ""}
         position="left-center"
       />
 
-      <CodeQuiz
+      <CodingQuiz
         quizId={quizData.quizId.toString()}
         slug={quizData.slug}
         isFavorite={quizData.isFavorite}

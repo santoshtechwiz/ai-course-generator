@@ -180,11 +180,11 @@ export function LoginModal({
                 handleProviderSignIn(provider.id)
               }}
               disabled={isAuthenticating}
-              className={`w-full flex items-center justify-center h-12 px-6 text-base font-medium transition-all duration-200 ${style.bgColor} ${style.textColor} border-2 ${style.borderColor} rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed`}
+              className={`w-full flex items-center justify-center h-12 px-6 text-base font-medium transition-all duration-300 ${style.bgColor} ${style.textColor} border-2 ${style.borderColor} rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-md active:scale-[0.98]`}
             >
               {isAuthenticating ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
                   <span>Signing in...</span>
                 </>
               ) : (
@@ -212,7 +212,7 @@ export function LoginModal({
       }}
     >
       <DialogContent
-        className="sm:max-w-[425px] animate-in fade-in-50 zoom-in-90 duration-300 p-0 overflow-hidden"
+        className="sm:max-w-[425px] animate-in fade-in-50 zoom-in-90 duration-300 p-0 overflow-hidden shadow-lg border-border/60"
         onPointerDownOutside={(e) => {
           if (isAuthenticating) {
             e.preventDefault()
@@ -224,7 +224,7 @@ export function LoginModal({
           }
         }}
       >
-        <div className="bg-primary/5 p-6 border-b">
+        <div className="bg-primary/5 p-6 border-b border-border/60">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Sign in to continue</DialogTitle>
             <DialogDescription className="text-base mt-1">
@@ -245,7 +245,7 @@ export function LoginModal({
           )}
 
           {/* Additional information */}
-          <div className="text-center text-sm text-muted-foreground pt-4 border-t">
+          <div className="text-center text-sm text-muted-foreground pt-5 mt-2 border-t border-border/40">
             <p>By signing in, you agree to our Terms of Service and Privacy Policy.</p>
           </div>
         </form>
