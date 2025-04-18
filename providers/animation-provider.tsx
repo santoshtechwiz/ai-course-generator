@@ -30,15 +30,17 @@ export function AnimationProvider({ children, initialState = true }: AnimationPr
 
   // Check for reduced motion preference
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
-    setReducedMotion(mediaQuery.matches)
+    if (typeof window !== "undefined") {
+      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
+      setReducedMotion(mediaQuery.matches)
 
-    const handleChange = (e: MediaQueryListEvent) => {
-      setReducedMotion(e.matches)
+      const handleChange = (e: MediaQueryListEvent) => {
+        setReducedMotion(e.matches)
+      }
+
+      mediaQuery.addEventListener("change", handleChange)
+      return () => mediaQuery.removeEventListener("change", handleChange)
     }
-
-    mediaQuery.addEventListener("change", handleChange)
-    return () => mediaQuery.removeEventListener("change", handleChange)
   }, [])
 
   // If user has reduced motion preference, disable animations regardless of setting
@@ -50,7 +52,9 @@ export function AnimationProvider({ children, initialState = true }: AnimationPr
 
     // Save preference to localStorage
     try {
-      localStorage.setItem("animationsEnabled", newState.toString())
+      if (typeof window !== "undefined") {
+        localStorage.setItem("animationsEnabled", newState.toString())
+      }
     } catch (error) {
       console.error("Failed to save animation preference:", error)
     }
@@ -59,9 +63,11 @@ export function AnimationProvider({ children, initialState = true }: AnimationPr
   // Load preference from localStorage on mount
   useEffect(() => {
     try {
-      const savedPreference = localStorage.getItem("animationsEnabled")
-      if (savedPreference !== null) {
-        setAnimationsEnabled(savedPreference === "true")
+      if (typeof window !== "undefined") {
+        const savedPreference = localStorage.getItem("animationsEnabled")
+        if (savedPreference !== null) {
+          setAnimationsEnabled(savedPreference === "true")
+        }
       }
     } catch (error) {
       console.error("Failed to load animation preference:", error)

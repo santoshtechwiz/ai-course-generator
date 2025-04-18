@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import RandomQuote from "@/components/RandomQuote"
-import { BookOpen, Lightbulb } from "lucide-react"
+import { BookOpen, Lightbulb, Sparkles } from "lucide-react"
 import { getCourseDetails } from "@/app/actions/getCourseDetails"
 import { Card } from "@/components/ui/card"
 import type { QueryParams } from "@/app/types/types"
@@ -51,19 +51,14 @@ const Page = async ({
   try {
     const searchParams = await searchParamsPromise
 
-    title =
-      typeof params?.title === "string"
-        ? params.title
-        : Array.isArray(params?.title)
-        ? params.title[0]
-        : ""
+    title = typeof params?.title === "string" ? params.title : Array.isArray(params?.title) ? params.title[0] : ""
 
     category =
       typeof params?.categoryAttachment === "string"
         ? params.categoryAttachment
         : Array.isArray(searchParams?.category)
-        ? searchParams.category[0]
-        : searchParams?.category || ""
+          ? searchParams.category[0]
+          : searchParams?.category || ""
 
     courseData = await getCourseDetails()
   } catch (error) {
@@ -115,6 +110,7 @@ const Page = async ({
     <div className="container mx-auto py-6 space-y-6 min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+
       {/* RandomQuote Section */}
       <RandomQuote />
 
@@ -135,6 +131,32 @@ const Page = async ({
                   Pro tip: Be specific with your topic
                 </div>
               </div>
+
+              <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border/50">
+                <h3 className="text-lg font-medium mb-2 flex items-center">
+                  <Sparkles className="h-5 w-5 mr-2 text-primary" />
+                  Why Create a Course?
+                </h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start">
+                    <span className="mr-2 text-primary">•</span>
+                    <span>Share your expertise with the community</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 text-primary">•</span>
+                    <span>AI-powered content generation saves you time</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 text-primary">•</span>
+                    <span>Interactive lessons with quizzes and exercises</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 text-primary">•</span>
+                    <span>Track student progress and engagement</span>
+                  </li>
+                </ul>
+              </div>
+
               <QuizCourseWrapper
                 type="course"
                 queryParams={{
