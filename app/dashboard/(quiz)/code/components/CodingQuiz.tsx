@@ -14,10 +14,10 @@ import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizBase } from "../../components/QuizBase"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
-import { useQuizState, } from "@/hooks/use-quiz-state"
+import useQuizState from "@/hooks/use-quiz-state"
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { QuizProgress } from "../../components/QuizProgress"
-
+import { formatQuizTime } from "@/lib/utils"
 
 interface CodeQuizProps {
   quizId: string
@@ -61,10 +61,10 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
     handleSelectOption,
     handleNextQuestion,
     handleFeedbackContinue,
+    handleRestart,
   } = useQuizState({
-    quizId,
+    questions: quizData.questions || [],
     slug,
-    questions: quizData.questions || [], // Ensure questions is always an array
     quizType: "code",
     calculateScore,
     onComplete,
@@ -147,6 +147,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
     [currentQuestion?.language, renderCode],
   )
 
+  // Update the renderQuizContent function to improve the results display
   const renderQuizContent = () => {
     if (quizData.questions.length === 0) {
       return (
@@ -162,9 +163,21 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
       const correctCount = calculateScore(selectedOptions, quizData.questions)
       const totalQuestions = quizData.questions.length
       const percentage = (correctCount / totalQuestions) * 100
-      const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0)
+      const totalTime =
+        quizResults?.timeTaken?.reduce((sum, time) => sum + time, 0) ?? timeSpent.reduce((sum, time) => sum + time, 0)
 
       if (isAuthenticated) {
+        // Create formatted answers for the QuizResultDisplay
+        const formattedAnswers = quizData.questions.map((question, index) => {
+          const userAnswer = selectedOptions[index] || ""
+          return {
+            isCorrect: userAnswer === question.correctAnswer,
+            timeSpent: timeSpent[index] || 0,
+            answer: question.correctAnswer,
+            userAnswer: userAnswer,
+          }
+        })
+
         return (
           <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.6}>
             <QuizResultDisplay
@@ -176,6 +189,9 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
               correctAnswers={correctCount}
               type="code"
               slug={slug}
+              answers={formattedAnswers}
+              onRestart={handleRestart}
+              preventAutoSave={true} // Prevent QuizResultDisplay from saving again
             />
           </MotionWrapper>
         )
@@ -269,7 +285,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
           score={calculateScore(selectedOptions, quizData.questions)}
           totalQuestions={quizData.questions.length}
           onContinue={handleFeedbackContinue}
-          errorMessage={errorMessage}
+          errorMessage={errorMessage ?? undefined}
           quizType="code"
         />
       )}

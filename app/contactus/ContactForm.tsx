@@ -124,12 +124,12 @@ export default function ImprovedContactForm() {
   }
 
   return (
-    <Card className="max-w-3xl mx-auto mt-10 shadow-md border-muted/40 overflow-hidden">
+    <Card className="max-w-3xl mx-auto mt-10 shadow-md border-muted/40 overflow-hidden transition-all duration-300 hover:shadow-lg">
       <CardHeader className="text-center space-y-4 pb-6 border-b bg-muted/20">
-        <div className="w-20 h-20 mx-auto mb-2 bg-primary/5 rounded-full p-4 flex items-center justify-center">
+        <div className="w-20 h-20 mx-auto mb-2 bg-primary/5 rounded-full p-4 flex items-center justify-center animate-pulse-subtle">
           <Logo />
         </div>
-        <CardTitle className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-blue-400">
+        <CardTitle className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-blue-400 animate-fade-in">
           Contact Us
         </CardTitle>
         <CardDescription className="mt-2 text-muted-foreground text-base max-w-md mx-auto leading-relaxed">
@@ -139,7 +139,7 @@ export default function ImprovedContactForm() {
       <CardContent className="pt-6">
         {success ? (
           <div className="text-center p-8 space-y-4 animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
-            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center animate-pulse-subtle">
               <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <p className="text-2xl font-semibold">Thank you for reaching out!</p>
@@ -188,7 +188,7 @@ export default function ImprovedContactForm() {
                             type="button"
                             onClick={() => handleIssueSelect(issue.value)}
                             className={cn(
-                              "flex items-start p-4 rounded-lg border-2 text-left transition-all hover:border-primary/50 hover:bg-primary/5",
+                              "flex items-start p-4 rounded-lg border-2 text-left transition-all duration-300 hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm",
                               selectedIssueType === issue.value ? "border-primary bg-primary/5" : "border-muted",
                               "group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
                             )}
@@ -317,7 +317,11 @@ export default function ImprovedContactForm() {
                       {errors.message && <p className="text-sm text-red-500">{errors.message.message}</p>}
                     </div>
 
-                    <Button type="submit" disabled={isSubmitting} className="w-full h-11 text-base font-medium">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full h-11 text-base font-medium transition-all duration-300 hover:shadow-md active:scale-[0.98]"
+                    >
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

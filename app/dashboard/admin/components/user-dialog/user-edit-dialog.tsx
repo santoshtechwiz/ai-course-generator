@@ -339,7 +339,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in-50 slide-in-from-top-5 duration-300">
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center gap-2 text-foreground">
               <UserCog className="h-5 w-5 text-primary" />
@@ -360,7 +360,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row gap-4 items-start">
                     <div className="flex items-center gap-3 flex-1">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary text-lg font-semibold shadow-sm">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary text-lg font-semibold shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105">
                         {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                       </div>
                       <div>
@@ -423,7 +423,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
                     <TabsList className="grid w-full grid-cols-3 p-1 bg-muted/50">
                       <TabsTrigger
                         value="details"
-                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all duration-200"
+                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all duration-300 hover:bg-muted/70"
                       >
                         <User className="h-4 w-4 text-primary/70" />
                         User Details
@@ -461,7 +461,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
                                     <Input
                                       placeholder="User name"
                                       {...field}
-                                      className="border-muted-foreground/20 focus-visible:ring-primary/30 transition-all duration-200"
+                                      className="border-muted-foreground/20 focus-visible:ring-primary/30 transition-all duration-300 hover:border-muted-foreground/40 focus:shadow-sm"
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -536,7 +536,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
                             />
                           </div>
 
-                          <div className="p-4 border border-dashed border-amber-200 dark:border-amber-800 rounded-md bg-amber-50/50 dark:bg-amber-900/10">
+                          <div className="p-4 border border-dashed border-amber-200 dark:border-amber-800 rounded-md bg-amber-50/50 dark:bg-amber-900/10 animate-in fade-in-50 duration-300">
                             <div className="flex items-start">
                               <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 mr-2 mt-0.5" />
                               <div>
@@ -922,7 +922,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
                             type="button"
                             variant="destructive"
                             onClick={() => setIsDeleteDialogOpen(true)}
-                            className="mr-auto hover:bg-destructive/90 transition-colors duration-200"
+                            className="mr-auto hover:bg-destructive/90 transition-all duration-300 hover:shadow-md active:scale-[0.98]"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete User
@@ -940,7 +940,7 @@ export function UserEditDialog({ userId, open, onOpenChange, onSuccess }: UserEd
                             <Button
                               type="submit"
                               disabled={isSaving}
-                              className="shadow-sm hover:shadow-md transition-all duration-200"
+                              className="shadow-sm hover:shadow-md transition-all duration-300 active:scale-[0.98]"
                             >
                               {isSaving ? (
                                 <>

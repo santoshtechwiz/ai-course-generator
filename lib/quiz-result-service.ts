@@ -28,6 +28,7 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
     // For fill-in-the-blanks quizzes, we need to format the answers differently
     if (submission.type === "fill-blanks") {
       formattedAnswers = submission.answers.map((answer) => ({
+        answer: answer.answer,
         userAnswer: answer.answer,
         timeSpent: answer.timeSpent,
         hintsUsed: answer.hintsUsed || false,

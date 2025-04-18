@@ -340,7 +340,10 @@ export function QuizActions({
               )}
             </motion.button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 p-2 rounded-lg border border-border shadow-lg">
+          <DropdownMenuContent
+            align="end"
+            className="w-64 p-2 rounded-lg border border-border shadow-lg animate-in fade-in-50 slide-in-from-top-5 duration-200"
+          >
             <DropdownMenuLabel className="px-2 py-1.5 text-sm font-medium">Quiz Actions</DropdownMenuLabel>
             <DropdownMenuSeparator className="my-1" />
 
@@ -349,7 +352,7 @@ export function QuizActions({
               <DropdownMenuItem
                 onClick={togglePublic}
                 disabled={isPublicLoading}
-                className="flex justify-between items-center px-2 py-2.5 rounded-md focus:bg-accent"
+                className="flex justify-between items-center px-2 py-2.5 rounded-md focus:bg-accent hover:bg-accent/50 transition-colors duration-200"
               >
                 <div className="flex items-center">
                   {isPublic ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
@@ -365,10 +368,15 @@ export function QuizActions({
             <DropdownMenuItem
               onClick={toggleFavorite}
               disabled={isFavoriteLoading}
-              className="flex justify-between items-center px-2 py-2.5 rounded-md focus:bg-accent"
+              className="flex justify-between items-center px-2 py-2.5 rounded-md focus:bg-accent hover:bg-accent/50 transition-colors duration-200"
             >
               <div className="flex items-center">
-                <Star className={cn("mr-2 h-4 w-4", isFavorite ? "fill-yellow-500 text-yellow-500" : "")} />
+                <Star
+                  className={cn(
+                    "mr-2 h-4 w-4 transition-colors duration-300",
+                    isFavorite ? "fill-yellow-500 text-yellow-500" : "",
+                  )}
+                />
                 <span>{isFavorite ? "Remove from Favorites" : "Add to Favorites"}</span>
               </div>
               {isFavoriteLoading && (
@@ -379,7 +387,7 @@ export function QuizActions({
             {/* Share */}
             <DropdownMenuItem
               onClick={handleShare}
-              className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent"
+              className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent hover:bg-accent/50 transition-colors duration-200"
             >
               <Share2 className="mr-2 h-4 w-4" />
               <span>Share Quiz</span>
@@ -389,7 +397,7 @@ export function QuizActions({
             {canDownloadPDF() && (
               <DropdownMenuItem
                 onSelect={(e) => e.preventDefault()}
-                className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent"
+                className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent hover:bg-accent/50 transition-colors duration-200"
               >
                 <div className="w-full">
                   <QuizPDFDownload
@@ -410,7 +418,7 @@ export function QuizActions({
               <DialogTrigger asChild>
                 <DropdownMenuItem
                   onSelect={(e) => e.preventDefault()}
-                  className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent"
+                  className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent hover:bg-accent/50 transition-colors duration-200"
                 >
                   <Star className="mr-2 h-4 w-4 fill-amber-500" />
                   <span>Rate Quiz {rating ? `(${rating})` : ""}</span>
@@ -435,7 +443,7 @@ export function QuizActions({
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem
                     onSelect={(e) => e.preventDefault()}
-                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 px-2 py-2.5 rounded-md focus:bg-red-50 dark:focus:bg-red-950/20"
+                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 px-2 py-2.5 rounded-md focus:bg-red-50 dark:focus:bg-red-950/20 hover:bg-red-50/70 dark:hover:bg-red-950/10 transition-colors duration-200"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     <span>Delete Quiz</span>
@@ -483,6 +491,7 @@ export function QuizActions({
             }}
             style={{
               border: `2px solid ${backgroundColor || "var(--primary)"}`,
+              boxShadow: `0 0 10px 0 ${backgroundColor || "var(--primary)"}`,
               zIndex: -1,
             }}
           />

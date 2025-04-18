@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useAuth } from "@/providers/unified-auth-provider"
+
 
 interface AuthRequiredModalProps {
   isOpen: boolean
@@ -32,15 +33,11 @@ export default function AuthRequiredModal({
 }: AuthRequiredModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { signIn } = useAuth()
 
   // Save quiz state to session storage when modal opens
   useEffect(() => {
     if (isOpen && quizState && answers && redirectPath) {
-      // Assuming this function exists elsewhere in your codebase
-      if (typeof window !== "undefined" && window.saveQuizStateBeforeAuth) {
-        window.saveQuizStateBeforeAuth(quizState, answers, redirectPath)
-      }
+      saveQuizStateBeforeAuth(quizState, answers, redirectPath)
     }
   }, [isOpen, quizState, answers, redirectPath])
 

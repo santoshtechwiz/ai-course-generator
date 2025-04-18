@@ -363,9 +363,9 @@ export default function EmailCampaignManager() {
       </div>
 
       {showSuccess ? (
-        <Card className="border-green-200 dark:border-green-800">
+        <Card className="border-green-200 dark:border-green-800 animate-in fade-in-50 slide-in-from-top-5 duration-300">
           <CardContent className="pt-6 flex flex-col items-center justify-center py-10">
-            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mb-4">
+            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mb-4 animate-pulse-subtle">
               <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <h3 className="text-xl font-medium mb-2">Campaign Sent Successfully!</h3>
@@ -386,11 +386,11 @@ export default function EmailCampaignManager() {
           </CardContent>
         </Card>
       ) : isSending ? (
-        <Card>
+        <Card className="transition-all duration-300 hover:shadow-md border-border/60">
           <CardContent className="pt-6 flex flex-col items-center justify-center py-10">
             <h3 className="text-xl font-medium mb-6">Sending Campaign...</h3>
             <div className="w-full max-w-md mb-4">
-              <Progress value={sendProgress} className="h-2" />
+              <Progress value={sendProgress} className="h-2 transition-all duration-300" />
             </div>
             <p className="text-muted-foreground">
               {watchTestEmail ? "Sending test email..." : `Sending to ${selectedUserIds.length} recipients...`}
@@ -398,8 +398,8 @@ export default function EmailCampaignManager() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
+        <Card className="transition-all duration-300 hover:shadow-md border-border/60">
+          <CardHeader className="space-y-2">
             <CardTitle>Create New Campaign</CardTitle>
             <CardDescription>Configure your email campaign and select recipients</CardDescription>
           </CardHeader>
@@ -431,7 +431,7 @@ export default function EmailCampaignManager() {
                             control={form.control}
                             name="userTypeFilters"
                             render={({ field }) => (
-                              <FormItem>
+                              <FormItem className="space-y-2.5">
                                 <FormLabel>User Type</FormLabel>
                                 <div className="space-y-2">
                                   {userTypeOptions.map((option) => (
@@ -464,7 +464,7 @@ export default function EmailCampaignManager() {
                             control={form.control}
                             name="lastActiveFilter"
                             render={({ field }) => (
-                              <FormItem>
+                              <FormItem className="space-y-2.5">
                                 <FormLabel>Last Active</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
@@ -562,7 +562,7 @@ export default function EmailCampaignManager() {
                           </div>
                         ) : (
                           <>
-                            <div className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-md mb-2">
+                            <div className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-md mb-2 transition-all duration-200 hover:shadow-sm">
                               <Checkbox
                                 checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0}
                                 onCheckedChange={() => {
@@ -586,7 +586,7 @@ export default function EmailCampaignManager() {
                                   return (
                                     <div
                                       key={user.id}
-                                      className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50"
+                                      className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-all duration-200"
                                     >
                                       <Checkbox
                                         checked={isSelected}
@@ -642,7 +642,7 @@ export default function EmailCampaignManager() {
                           control={form.control}
                           name="name"
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="space-y-2.5">
                               <FormLabel>Campaign Name</FormLabel>
                               <FormControl>
                                 <Input placeholder="Spring Promotion 2023" {...field} />
@@ -659,7 +659,7 @@ export default function EmailCampaignManager() {
                           control={form.control}
                           name="templateType"
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="space-y-2.5">
                               <FormLabel>Email Template</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -685,7 +685,7 @@ export default function EmailCampaignManager() {
                           control={form.control}
                           name="subject"
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="space-y-2.5">
                               <FormLabel>Subject Line</FormLabel>
                               <FormControl>
                                 <Input placeholder="Your subject line here" {...field} />
@@ -717,7 +717,7 @@ export default function EmailCampaignManager() {
                             control={form.control}
                             name="scheduledDate"
                             render={({ field }) => (
-                              <FormItem>
+                              <FormItem className="space-y-2.5">
                                 <FormLabel>Schedule Date & Time</FormLabel>
                                 <FormControl>
                                   <Input type="datetime-local" {...field} />
@@ -854,6 +854,7 @@ export default function EmailCampaignManager() {
                       <Button
                         type="submit"
                         disabled={!selectedTemplateType || (!watchTestEmail && selectedUserIds.length === 0)}
+                        className="transition-all duration-300 hover:shadow-md active:scale-[0.98]"
                       >
                         <Send className="h-4 w-4 mr-2" />
                         {watchScheduleForLater ? "Schedule Campaign" : "Send Campaign"}

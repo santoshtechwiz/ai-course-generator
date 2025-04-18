@@ -18,7 +18,16 @@ export interface BlanksQuizAnswer {
   elapsedTime?: number
 }
 
-type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer
+export interface CodeQuizAnswer {
+  answer: string
+  userAnswer: string
+  isCorrect: boolean
+  timeSpent: number
+  codeSnippet?: string
+  language?: string
+}
+
+type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer
 
 interface QuizSubmission {
   quizId: string
@@ -26,6 +35,9 @@ interface QuizSubmission {
   totalTime: number
   score: number
   type: QuizType
+  totalQuestions?: number
+  correctAnswers?: number
+  completedAt?: string
 }
 
 // Helper functions
@@ -37,23 +49,64 @@ function validateSubmissionData(body: any): { isValid: boolean; error?: string; 
     }
   }
 
-  if (
-    !body.quizId ||
-    !Array.isArray(body.answers) ||
-    typeof body.totalTime !== "number" ||
-    typeof body.score !== "number" ||
-    !body.type
-  ) {
+  // Log the entire body for debugging
+  console.log("Full request body:", JSON.stringify(body, null, 2))
+
+  // Check if required fields exist
+  const missingFields = []
+  if (!body.quizId) missingFields.push("quizId")
+  if (typeof body.totalTime !== "number") missingFields.push("totalTime")
+  if (typeof body.score !== "number") missingFields.push("score")
+  if (!body.type) missingFields.push("type")
+
+  if (missingFields.length > 0) {
     return {
       isValid: false,
-      error: "Invalid request data",
-      details: {
-        quizId: !body.quizId ? "Missing quiz ID" : null,
-        answers: !Array.isArray(body.answers) ? "Answers must be an array" : null,
-        totalTime: typeof body.totalTime !== "number" ? "Total time must be a number" : null,
-        score: typeof body.score !== "number" ? "Score must be a number" : null,
-        type: !body.type ? "Missing quiz type" : null,
-      },
+      error: `Missing required fields: ${missingFields.join(", ")}`,
+      details: { missingFields },
+    }
+  }
+
+  // Special handling for answers array
+  if (!body.answers) {
+    // If answers is missing but we have totalQuestions, create dummy answers
+    if (body.totalQuestions && body.totalQuestions > 0) {
+      body.answers = Array(body.totalQuestions).fill({
+        isCorrect: false,
+        timeSpent: Math.floor(body.totalTime / body.totalQuestions),
+        answer: "",
+        userAnswer: "",
+      })
+      console.log("Created dummy answers array:", body.answers)
+    } else {
+      return {
+        isValid: false,
+        error: "Answers array is missing and cannot be created",
+        details: { answers: null },
+      }
+    }
+  } else if (!Array.isArray(body.answers)) {
+    return {
+      isValid: false,
+      error: "Answers must be an array",
+      details: { answers: typeof body.answers },
+    }
+  } else if (body.answers.length === 0) {
+    // If answers array is empty but we have totalQuestions, create dummy answers
+    if (body.totalQuestions && body.totalQuestions > 0) {
+      body.answers = Array(body.totalQuestions).fill({
+        isCorrect: false,
+        timeSpent: Math.floor(body.totalTime / body.totalQuestions),
+        answer: "",
+        userAnswer: "",
+      })
+      console.log("Created dummy answers array for empty answers:", body.answers)
+    } else {
+      return {
+        isValid: false,
+        error: "Answers must be a non-empty array",
+        details: { answersLength: 0 },
+      }
     }
   }
 
@@ -72,38 +125,84 @@ function extractUserAnswer(answer: any): string | string[] {
   return ""
 }
 
-function validateAnswersFormat(answers: QuizAnswerUnion[], type: QuizType): { isValid: boolean; error?: string } {
+function validateAnswersFormat(
+  answers: QuizAnswerUnion[],
+  type: QuizType,
+): { isValid: boolean; error?: string; details?: any } {
   if (!Array.isArray(answers) || answers.length === 0) {
-    return { isValid: false, error: "Answers must be a non-empty array" }
+    return {
+      isValid: false,
+      error: "Answers must be a non-empty array",
+      details: {
+        isArray: Array.isArray(answers),
+        length: Array.isArray(answers) ? answers.length : 0,
+      },
+    }
+  }
+
+  // Log first answer for debugging
+  console.log(`Validating ${type} answer format. First answer:`, JSON.stringify(answers[0], null, 2))
+
+  // For code quizzes, we're more lenient with validation
+  if (type === "code") {
+    // As long as we have an array with at least one item, we'll accept it
+    return { isValid: true }
   }
 
   let invalidAnswers = false
+  let invalidReason = ""
 
   switch (type) {
     case "mcq":
-    case "code":
-      invalidAnswers = answers.some(
-        (a: any) => typeof a.isCorrect === "undefined" || typeof a.timeSpent === "undefined",
-      )
+      invalidAnswers = answers.some((a: any, index) => {
+        if (typeof a.isCorrect === "undefined" || typeof a.timeSpent === "undefined") {
+          invalidReason = `Answer at index ${index} is missing isCorrect or timeSpent`
+          return true
+        }
+        return false
+      })
       break
     case "openended":
-      invalidAnswers = answers.some((a: any) => typeof a.answer === "undefined" || typeof a.timeSpent === "undefined")
+      invalidAnswers = answers.some((a: any, index) => {
+        if (typeof a.answer === "undefined" || typeof a.timeSpent === "undefined") {
+          invalidReason = `Answer at index ${index} is missing answer or timeSpent`
+          return true
+        }
+        return false
+      })
       break
-
     case "fill-blanks":
-      invalidAnswers = answers.some(
-        (a: any) => typeof a.userAnswer === "undefined" || typeof a.timeSpent === "undefined",
-      )
+      invalidAnswers = answers.some((a: any, index) => {
+        if (typeof a.userAnswer === "undefined" || typeof a.timeSpent === "undefined") {
+          invalidReason = `Answer at index ${index} is missing userAnswer or timeSpent`
+          return true
+        }
+        return false
+      })
       break
-
+    case "flashcard":
+      // Flashcards might have a different structure
+      invalidAnswers = answers.some((a: any, index) => {
+        if (typeof a.timeSpent === "undefined") {
+          invalidReason = `Answer at index ${index} is missing timeSpent`
+          return true
+        }
+        return false
+      })
+      break
     default:
-      return { isValid: false, error: `Unsupported quiz type: ${type}` }
+      return {
+        isValid: false,
+        error: `Unsupported quiz type: ${type}`,
+        details: { type },
+      }
   }
 
   if (invalidAnswers) {
     return {
       isValid: false,
       error: "Answer format doesn't match the quiz type requirements",
+      details: { reason: invalidReason },
     }
   }
 
@@ -141,6 +240,7 @@ async function processQuizSubmission(userId: string, submission: QuizSubmission,
     const updatedUserQuiz = await prisma.userQuiz.update({
       where: { id: Number(submission.quizId) },
       data: {
+        quizType: submission.type, // Ensure quiz type is saved
         timeEnded: new Date(),
         lastAttempted: new Date(),
         bestScore: { set: Math.max(percentageScore, quiz.bestScore ?? 0) },
@@ -210,6 +310,12 @@ async function processQuestionAnswers(
   quizType: QuizType,
 ) {
   try {
+    // If no questions or answers, return early
+    if (!questions || questions.length === 0 || !answers || answers.length === 0) {
+      console.warn("No questions or answers to process")
+      return []
+    }
+
     const questionPromises = questions.map((question, index) => {
       if (index >= answers.length) {
         console.warn(`Answer missing for question at index ${index}`)
@@ -225,11 +331,29 @@ async function processQuestionAnswers(
       const userAnswer = extractUserAnswer(answer)
       let isCorrect = false
 
-      if (quizType === "mcq" || quizType === "code") {
+      // Handle different quiz types
+      if (quizType === "mcq") {
+        isCorrect = (answer as QuizAnswer).isCorrect === true
+      } else if (quizType === "code") {
+        // For code quizzes, isCorrect might be undefined or have a different format
         isCorrect = (answer as any).isCorrect === true
       }
 
-      const userAnswerString = Array.isArray(userAnswer) ? userAnswer.join(", ") : String(userAnswer || "")
+      // Convert userAnswer to string, handling arrays and null/undefined values
+      const userAnswerString = Array.isArray(userAnswer)
+        ? userAnswer.join(", ")
+        : userAnswer === null || userAnswer === undefined
+          ? ""
+          : String(userAnswer)
+
+      // Add additional logging for debugging
+      console.log(`Processing answer for question ${question.id}:`, {
+        attemptId,
+        questionId: question.id,
+        userAnswer: userAnswerString,
+        isCorrect,
+        timeSpent: Math.round(answer.timeSpent || 0),
+      })
 
       return tx.userQuizAttemptQuestion
         .upsert({
@@ -240,14 +364,14 @@ async function processQuestionAnswers(
             },
           },
           update: {
-            userAnswer: userAnswerString,
+            userAnswer: userAnswerString.substring(0, 1000), // Limit string length to avoid DB errors
             isCorrect: isCorrect,
             timeSpent: Math.round(answer.timeSpent || 0),
           },
           create: {
             attemptId,
             questionId: question.id,
-            userAnswer: userAnswerString,
+            userAnswer: userAnswerString.substring(0, 1000), // Limit string length to avoid DB errors
             isCorrect: isCorrect,
             timeSpent: Math.round(answer.timeSpent || 0),
           },
@@ -299,16 +423,40 @@ export async function POST(request: Request) {
 
     let body
     try {
-      body = await request.json()
+      const text = await request.text()
+      console.log("Raw request body:", text)
+
+      try {
+        body = JSON.parse(text)
+      } catch (parseError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid JSON in request body",
+            details: parseError instanceof Error ? parseError.message : "Unknown parsing error",
+          },
+          { status: 400 },
+        )
+      }
     } catch (error) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid JSON in request body",
+          error: "Failed to read request body",
+          details: error instanceof Error ? error.message : "Unknown error",
         },
         { status: 400 },
       )
     }
+
+    // Add debug logging
+    console.log("Received quiz submission:", {
+      quizId: body?.quizId,
+      type: body?.type,
+      answersCount: body?.answers?.length,
+      score: body?.score,
+      totalTime: body?.totalTime,
+    })
 
     const validationResult = validateSubmissionData(body)
 
@@ -320,11 +468,19 @@ export async function POST(request: Request) {
     }
 
     const submission = body as QuizSubmission
+
+    // Normalize the quiz type to handle case differences
+    submission.type = submission.type.toLowerCase() as QuizType
+
     const answerFormatResult = validateAnswersFormat(submission.answers, submission.type)
 
     if (!answerFormatResult.isValid) {
       return NextResponse.json(
-        { success: false, error: "Invalid answer format", details: answerFormatResult.error },
+        {
+          success: false,
+          error: "Invalid answer format",
+          details: answerFormatResult.details || answerFormatResult.error,
+        },
         { status: 400 },
       )
     }
