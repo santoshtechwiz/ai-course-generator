@@ -2,9 +2,10 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookIcon, UsersIcon, FileQuestionIcon, StarIcon, EyeIcon, Clock } from "lucide-react"
+import { BookIcon, UsersIcon, FileQuestionIcon, StarIcon, EyeIcon, Clock, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
@@ -21,42 +22,55 @@ export interface CourseCardProps {
   duration?: string
   className?: string
   loading?: boolean
+  image?: string
+  difficulty?: string
 }
 
-// Simple level config with minimal classes
+// Level configuration with enhanced styling
 const LEVEL_CONFIG = {
   Beginner: {
-    badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    icon: "text-emerald-500",
+    badge:
+      "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+    icon: "text-emerald-500 dark:text-emerald-400",
     bg: "bg-emerald-50 dark:bg-emerald-900/20",
   },
   Intermediate: {
-    badge: "bg-amber-100 text-amber-700 border-amber-200",
-    icon: "text-amber-500",
+    badge:
+      "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+    icon: "text-amber-500 dark:text-amber-400",
     bg: "bg-amber-50 dark:bg-amber-900/20",
   },
   Advanced: {
-    badge: "bg-rose-100 text-rose-700 border-rose-200",
-    icon: "text-rose-500",
+    badge: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800",
+    icon: "text-rose-500 dark:text-rose-400",
     bg: "bg-rose-50 dark:bg-rose-900/20",
   },
 }
 
-// Simple category icons
+// Enhanced category icons with more options
 const getCategoryIcon = (category: string) => {
-  switch (category.toLowerCase()) {
-    case "programming":
-    case "web development":
-    case "development":
-      return <BookIcon className="h-full w-full" />
-    case "data science":
-      return <BookIcon className="h-full w-full" />
-    default:
-      return <BookIcon className="h-full w-full" />
+  const categoryLower = category?.toLowerCase() || ""
+
+  if (
+    categoryLower.includes("programming") ||
+    categoryLower.includes("coding") ||
+    categoryLower.includes("development")
+  ) {
+    return <BookIcon className="h-full w-full" />
+  } else if (
+    categoryLower.includes("data") ||
+    categoryLower.includes("science") ||
+    categoryLower.includes("analytics")
+  ) {
+    return <FileQuestionIcon className="h-full w-full" />
+  } else if (categoryLower.includes("design") || categoryLower.includes("ui") || categoryLower.includes("ux")) {
+    return <UsersIcon className="h-full w-full" />
+  } else {
+    return <BookOpen className="h-full w-full" />
   }
 }
 
-// Add improved hover animations and responsiveness to CourseCard
+// Improved CourseCard with enhanced animations, accessibility, and responsive design
 export const CourseCard = React.memo(
   ({
     title,
@@ -71,20 +85,23 @@ export const CourseCard = React.memo(
     duration = "4-6 weeks",
     className,
     loading = false,
+    image,
+    difficulty,
   }: CourseCardProps) => {
-    const courseLevel = determineCourseLevel(unitCount, lessonCount, quizCount)
-    const config = LEVEL_CONFIG[courseLevel]
+    const courseLevel = difficulty || determineCourseLevel(unitCount, lessonCount, quizCount)
+    const config = LEVEL_CONFIG[courseLevel as keyof typeof LEVEL_CONFIG] || LEVEL_CONFIG.Intermediate
 
+    // Loading skeleton with improved animation
     if (loading) {
       return (
-        <Card className={cn("h-full overflow-hidden", className)}>
-          <div className="w-full h-40 bg-muted animate-pulse rounded-t-lg" />
+        <Card className={cn("h-full overflow-hidden border border-border/50", className)}>
+          <div className="w-full h-40 bg-muted/60 animate-pulse rounded-t-lg" />
           <CardContent className="p-4 space-y-4">
-            <div className="h-6 w-3/4 bg-muted rounded-md animate-pulse" />
-            <div className="h-4 w-full bg-muted rounded-md animate-pulse" />
+            <div className="h-6 w-3/4 bg-muted/60 rounded-md animate-pulse" />
+            <div className="h-4 w-full bg-muted/60 rounded-md animate-pulse" />
             <div className="grid grid-cols-3 gap-2">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />
+                <div key={i} className="h-16 bg-muted/60 rounded-md animate-pulse" />
               ))}
             </div>
           </CardContent>
@@ -103,6 +120,7 @@ export const CourseCard = React.memo(
         <Link
           href={`/dashboard/course/${slug}`}
           className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+          aria-label={`View ${title} course`}
         >
           <motion.div
             initial={{ boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
@@ -113,7 +131,7 @@ export const CourseCard = React.memo(
             transition={{ duration: 0.3 }}
             className="h-full"
           >
-            <Card className="h-full overflow-hidden border-muted hover:border-primary/20 transition-colors duration-300">
+            <Card className="h-full overflow-hidden border-muted hover:border-primary/20 transition-colors duration-300 bg-card">
               {/* Course Image with Icon */}
               <motion.div
                 className={cn("relative w-full h-40", config.bg)}
@@ -121,26 +139,37 @@ export const CourseCard = React.memo(
                 whileHover={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
               >
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <div className="w-16 h-16 text-primary-600">{getCategoryIcon(category)}</div>
-                </motion.div>
+                {image ? (
+                  <Image
+                    src={image || "/placeholder.svg"}
+                    alt={title}
+                    fill
+                    className="object-cover opacity-90 hover:opacity-100 transition-opacity"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    loading="lazy"
+                  />
+                ) : (
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <div className="w-16 h-16 text-primary-600">{getCategoryIcon(category)}</div>
+                  </motion.div>
+                )}
 
                 {/* Level Badge */}
                 <Badge
                   variant="secondary"
-                  className={cn("absolute top-3 left-3 rounded-full px-2.5 py-0.5", config.badge)}
+                  className={cn("absolute top-3 left-3 rounded-full px-2.5 py-0.5 z-10", config.badge)}
                 >
                   {courseLevel}
                 </Badge>
 
                 {/* Rating and Views */}
-                <div className="absolute bottom-3 left-3 right-3 flex justify-between">
+                <div className="absolute bottom-3 left-3 right-3 flex justify-between z-10">
                   <motion.div
-                    className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5"
+                    className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 backdrop-blur-sm"
                     whileHover={{ scale: 1.05 }}
                     transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   >
@@ -150,12 +179,12 @@ export const CourseCard = React.memo(
                     </span>
                   </motion.div>
                   <motion.div
-                    className="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full text-white text-xs"
+                    className="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full text-white text-xs backdrop-blur-sm"
                     whileHover={{ scale: 1.05 }}
                     transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   >
                     <EyeIcon className="h-3 w-3" />
-                    <span>{viewCount}</span>
+                    <span>{viewCount > 999 ? `${(viewCount / 1000).toFixed(1)}k` : viewCount}</span>
                   </motion.div>
                 </div>
               </motion.div>

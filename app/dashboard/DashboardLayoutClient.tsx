@@ -9,6 +9,7 @@ import { Chatbot } from "@/components/Chatbot"
 import MainNavbar from "@/components/shared/MainNavbar"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { NavigationEvents } from "./NavigationEvents"
+import { Loader } from "@/components/ui/loader"
 
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, requireAuth } = useAuth()
@@ -21,7 +22,11 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
   }, [isAuthenticated, isLoading, router])
 
   if (isLoading) {
-    return <div>Loading...</div> // Or your loading component
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader size="lg" text="Loading your dashboard..." />
+      </div>
+    )
   }
 
   if (!isAuthenticated) {
@@ -31,12 +36,12 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
   // Continue with your existing layout
   return (
     <div className="flex flex-col min-h-screen">
-      <main className="flex-1">
+      <main className="flex-1 animate-fade-in">
         <MainNavbar></MainNavbar>
         <Suspense>
           <NavigationEvents />
         </Suspense>
-        {children}
+        <div className="container mx-auto px-4 py-6 max-w-7xl">{children}</div>
       </main>
       <Suspense fallback={null}>
         {/* @ts-expect-error Server Component */}

@@ -10,9 +10,8 @@ export const metadata: Metadata = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="pt-16">
+    <div className="min-h-screen bg-background pt-16 transition-all duration-300">
       <DashboardLayoutClient children={children} />
-
     </div>
   )
 }

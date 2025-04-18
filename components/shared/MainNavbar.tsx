@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { signIn, signOut, useSession } from "next-auth/react"
@@ -23,7 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/providers/unified-auth-provider"
 
 // Enhance the NavItems component with better animations
-const NavItems = () => {
+const NavItems = memo(() => {
   const pathname = usePathname()
 
   return (
@@ -75,7 +75,8 @@ const NavItems = () => {
       ))}
     </nav>
   )
-}
+})
+NavItems.displayName = "NavItems"
 
 // Update the MainNavbar component with improved animations and responsiveness
 export default function MainNavbar() {
@@ -154,18 +155,18 @@ export default function MainNavbar() {
   useEffect(() => {
     // Use a short timeout to debounce multiple rapid updates
     const debounceTimer = setTimeout(() => {
-      // Prioritize subscription status credits first
+      // Create a priority order for credit sources
       if (subscriptionStatus?.credits !== undefined) {
         setCreditScore(subscriptionStatus.credits)
+      } else if (credits !== undefined) {
+        setCreditScore(credits)
       } else if (session?.user?.credits !== undefined) {
         setCreditScore(session.user.credits)
-      } else if (user?.credits !== undefined) {
-        setCreditScore(user.credits)
       }
     }, 100)
 
     return () => clearTimeout(debounceTimer)
-  }, [subscriptionStatus, session?.user?.credits, user?.credits])
+  }, [subscriptionStatus, session?.user?.credits, credits])
 
   // Force refresh when user interacts with the page
   useEffect(() => {
@@ -395,7 +396,7 @@ export default function MainNavbar() {
                       transition={{ delay: index * 0.05, duration: 0.3 }}
                     >
                       <Button
-                        variant="ghost"
+                        variant={pathname === item.href ? "default" : "ghost"}
                         className="w-full justify-start"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
@@ -426,6 +427,7 @@ export default function MainNavbar() {
                       <>
                         <p className="font-medium truncate">{userName}</p>
                         <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
+                        {subscriptionPlan && <Badge className="mt-1">{subscriptionPlan}</Badge>}
                       </>
                     )}
                   </motion.div>
