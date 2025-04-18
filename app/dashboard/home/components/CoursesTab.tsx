@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Search, Clock, CheckCircle, PlusCircle } from "lucide-react"
+import { BookOpen, Search, Clock, CheckCircle, PlusCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import type { DashboardUser } from "@/app/types/types"
 
 interface CoursesTabProps {
@@ -19,6 +20,8 @@ interface CoursesTabProps {
 export default function CoursesTab({ userData }: CoursesTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("all")
+  const [loadingCourseId, setLoadingCourseId] = useState<string | null>(null)
+  const router = useRouter()
 
   // Filter and sort courses
   const allCourses = userData.courses || []
@@ -41,6 +44,13 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
   const filteredInProgressCourses = filterCourses(inProgressCourses.map((p) => p.course).filter(Boolean))
   const filteredCompletedCourses = filterCourses(completedCourses.map((p) => p.course).filter(Boolean))
   const filteredFavoriteCourses = filterCourses(favoriteCourses)
+
+  const handleCourseClick = (courseId: string, slug: string) => {
+    setLoadingCourseId(courseId)
+    setTimeout(() => {
+      router.push(`/dashboard/course/${slug}`)
+    }, 100)
+  }
 
   return (
     <div className="space-y-6">
@@ -66,7 +76,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-fade-in">
         <TabsList>
           <TabsTrigger value="all">All Courses ({filteredAllCourses.length})</TabsTrigger>
           <TabsTrigger value="in-progress">In Progress ({filteredInProgressCourses.length})</TabsTrigger>
@@ -75,19 +85,36 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
-          <CourseGrid courses={filteredAllCourses} />
+          <CourseGrid
+            courses={filteredAllCourses}
+            loadingCourseId={loadingCourseId}
+            onCourseClick={handleCourseClick}
+          />
         </TabsContent>
 
         <TabsContent value="in-progress" className="mt-6">
-          <CourseGrid courses={filteredInProgressCourses} showProgress />
+          <CourseGrid
+            courses={filteredInProgressCourses}
+            showProgress
+            loadingCourseId={loadingCourseId}
+            onCourseClick={handleCourseClick}
+          />
         </TabsContent>
 
         <TabsContent value="completed" className="mt-6">
-          <CourseGrid courses={filteredCompletedCourses} />
+          <CourseGrid
+            courses={filteredCompletedCourses}
+            loadingCourseId={loadingCourseId}
+            onCourseClick={handleCourseClick}
+          />
         </TabsContent>
 
         <TabsContent value="favorites" className="mt-6">
-          <CourseGrid courses={filteredFavoriteCourses} />
+          <CourseGrid
+            courses={filteredFavoriteCourses}
+            loadingCourseId={loadingCourseId}
+            onCourseClick={handleCourseClick}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -97,9 +124,11 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 interface CourseGridProps {
   courses: any[]
   showProgress?: boolean
+  loadingCourseId: string | null
+  onCourseClick: (courseId: string, slug: string) => void
 }
 
-function CourseGrid({ courses, showProgress = false }: CourseGridProps) {
+function CourseGrid({ courses, showProgress = false, loadingCourseId, onCourseClick }: CourseGridProps) {
   if (courses.length === 0) {
     return (
       <Card>
@@ -122,21 +151,28 @@ function CourseGrid({ courses, showProgress = false }: CourseGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {courses.map((course) => (
-        <Card key={course.id} className="overflow-hidden hover:shadow-md transition-shadow">
-          <Link href={`/dashboard/course/${course.slug}`}>
-            <div className="relative h-40 w-full">
-              <Image src={course.image || "/placeholder.svg"} alt={course.title} fill className="object-cover" />
-              {course.category && (
-                <Badge className="absolute top-2 right-2 bg-black/60 hover:bg-black/70">{course.category.name}</Badge>
-              )}
-            </div>
-          </Link>
+        <Card
+          key={course.id}
+          className={`overflow-hidden transition-all duration-300 ${
+            loadingCourseId === course.id ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
+          }`}
+          onClick={() => onCourseClick(course.id, course.slug)}
+        >
+          <div className="relative h-40 w-full cursor-pointer">
+            <Image src={course.image || "/placeholder.svg"} alt={course.title} fill className="object-cover" />
+            {course.category && (
+              <Badge className="absolute top-2 right-2 bg-black/60 hover:bg-black/70">{course.category.name}</Badge>
+            )}
+            {loadingCourseId === course.id && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+          </div>
           <CardContent className="p-4">
-            <Link href={`/dashboard/course/${course.slug}`}>
-              <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1">
-                {course.title}
-              </h3>
-            </Link>
+            <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 cursor-pointer">
+              {course.title}
+            </h3>
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{course.description}</p>
 
             {showProgress && (

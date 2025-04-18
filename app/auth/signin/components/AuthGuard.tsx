@@ -17,7 +17,7 @@ export function AuthGuard({
   requireAdmin = false,
   redirectTo = "/auth/signin",
 }: AuthGuardProps) {
-  const { isAuthenticated, isLoading, isAdmin, user } = useAuth()
+  const { isAuthenticated, isLoading, isAdmin } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
