@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, PlusCircle, GraduationCap, Clock, CheckCircle, AlertCircle, BookOpen } from "lucide-react"
+import { Search, PlusCircle, GraduationCap, Clock, CheckCircle, AlertCircle, BookOpen, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import type { DashboardUser, UserQuiz, UserQuizAttempt, QuizType } from "@/app/types/types"
 import QuizResultsDialog from "./QuizResultsDialog"
 
@@ -19,6 +20,8 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("quizzes")
   const [selectedAttempt, setSelectedAttempt] = useState<UserQuizAttempt | null>(null)
+  const [loadingQuizId, setLoadingQuizId] = useState<string | null>(null)
+  const router = useRouter()
 
   // Filter and sort quizzes
   const allQuizzes = userData.userQuizzes || []
@@ -74,6 +77,13 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
     }
   }
 
+  const handleQuizClick = (quizId: string, quizType: string, slug: string) => {
+    setLoadingQuizId(quizId)
+    setTimeout(() => {
+      router.push(`/dashboard/${quizType}/${slug}`)
+    }, 100)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -98,7 +108,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-fade-in">
         <TabsList>
           <TabsTrigger value="quizzes">My Quizzes ({filteredAllQuizzes.length})</TabsTrigger>
           <TabsTrigger value="in-progress">In Progress ({filteredInProgressQuizzes.length})</TabsTrigger>
@@ -111,6 +121,8 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
             quizzes={filteredAllQuizzes}
             getQuizTypeLabel={getQuizTypeLabel}
             getQuizTypeColor={getQuizTypeColor}
+            loadingQuizId={loadingQuizId}
+            onQuizClick={handleQuizClick}
           />
         </TabsContent>
 
@@ -119,6 +131,8 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
             quizzes={filteredInProgressQuizzes}
             getQuizTypeLabel={getQuizTypeLabel}
             getQuizTypeColor={getQuizTypeColor}
+            loadingQuizId={loadingQuizId}
+            onQuizClick={handleQuizClick}
           />
         </TabsContent>
 
@@ -127,6 +141,8 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
             quizzes={filteredCompletedQuizzes}
             getQuizTypeLabel={getQuizTypeLabel}
             getQuizTypeColor={getQuizTypeColor}
+            loadingQuizId={loadingQuizId}
+            onQuizClick={handleQuizClick}
           />
         </TabsContent>
 
@@ -155,9 +171,11 @@ interface QuizGridProps {
   quizzes: UserQuiz[]
   getQuizTypeLabel: (type: QuizType) => string
   getQuizTypeColor: (type: QuizType) => string
+  loadingQuizId: string | null
+  onQuizClick: (quizId: string, quizType: string, slug: string) => void
 }
 
-function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor }: QuizGridProps) {
+function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, loadingQuizId, onQuizClick }: QuizGridProps) {
   if (quizzes.length === 0) {
     return (
       <Card>
@@ -178,8 +196,20 @@ function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor }: QuizGridProps
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {quizzes.map((quiz) => (
-        <Card key={quiz.id} className="overflow-hidden hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
+        <Card
+          key={quiz.id}
+          className={`overflow-hidden transition-all duration-300 ${
+            loadingQuizId === quiz.id ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
+          }`}
+          onClick={() => onQuizClick(quiz.id, quiz.quizType as string, quiz.slug as string)}
+        >
+          <CardContent className="p-4 relative cursor-pointer">
+            {loadingQuizId === quiz.id && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-2">
               <Badge className={getQuizTypeColor(quiz.quizType as QuizType)}>
                 {getQuizTypeLabel(quiz.quizType as QuizType)}
@@ -203,11 +233,9 @@ function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor }: QuizGridProps
               )}
             </div>
 
-            <Link href={`/dashboard/${quiz.quizType}/${quiz.slug}`}>
-              <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 mt-2">
-                {quiz.title}
-              </h3>
-            </Link>
+            <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 mt-2">
+              {quiz.title}
+            </h3>
 
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center text-sm text-muted-foreground">
@@ -221,11 +249,7 @@ function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor }: QuizGridProps
             </div>
 
             <div className="mt-4 flex justify-end">
-              <Button asChild>
-                <Link href={`/dashboard/${quiz.quizType}/${quiz.slug}`}>
-                  {quiz.timeEnded ? "Review Quiz" : "Continue Quiz"}
-                </Link>
-              </Button>
+              <Button>{quiz.timeEnded ? "Review Quiz" : "Continue Quiz"}</Button>
             </div>
           </CardContent>
         </Card>
@@ -262,7 +286,10 @@ function AttemptsList({ attempts, onViewDetails, getQuizTypeLabel, getQuizTypeCo
   return (
     <div className="space-y-4">
       {attempts.map((attempt) => (
-        <Card key={attempt.id} className="overflow-hidden hover:shadow-md transition-shadow">
+        <Card
+          key={attempt.id}
+          className="overflow-hidden hover:shadow-md transition-all duration-300 hover:scale-[1.005]"
+        >
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -306,7 +333,9 @@ function AttemptsList({ attempts, onViewDetails, getQuizTypeLabel, getQuizTypeCo
                   <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{attempt.accuracy || 0}%</span>
                 </div>
 
-                <Button onClick={() => onViewDetails(attempt)}>View Details</Button>
+                <Button onClick={() => onViewDetails(attempt)} className="transition-all hover:scale-105">
+                  View Details
+                </Button>
               </div>
             </div>
           </CardContent>

@@ -7,22 +7,36 @@ import { authOptions } from "@/lib/authOptions"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
-
-
 import { Skeleton } from "@/components/ui/skeleton"
 import McqQuiz from "../components/McqQuiz"
 import QuizActions from "../../components/QuizActions"
 import QuizDetailsPage from "../../components/QuizDetailsPage"
 
 export const QuizSkeleton = () => (
-  <div className="space-y-4">
-    <Skeleton className="h-8 w-3/4" />
-    <Skeleton className="h-32 w-full" />
-    <Skeleton className="h-8 w-1/2" />
-    <Skeleton className="h-8 w-1/4" />
+  <div className="space-y-6 animate-pulse">
+    <div className="flex flex-col gap-4">
+      <Skeleton className="h-10 w-3/4 rounded-md" />
+      <Skeleton className="h-6 w-1/2 rounded-md" />
+    </div>
+
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-full rounded-md" />
+        <div className="grid gap-3">
+          <Skeleton className="h-16 w-full rounded-md" />
+          <Skeleton className="h-16 w-full rounded-md" />
+          <Skeleton className="h-16 w-full rounded-md" />
+          <Skeleton className="h-16 w-full rounded-md" />
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center">
+        <Skeleton className="h-10 w-24 rounded-md" />
+        <Skeleton className="h-10 w-24 rounded-md" />
+      </div>
+    </div>
   </div>
 )
-
 
 // SEO metadata generation
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -90,8 +104,8 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
 
   // Create breadcrumb items
   const breadcrumbItems = [
-    { name: "Quizzes", url: `${baseUrl}/dashboard/quizzes` },
-    { name: quizData.title, url: `${baseUrl}/dashboard/mcq/${slug}` },
+    { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
+    { name: quizData.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
 
   return (
@@ -104,7 +118,7 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       estimatedTime="PT30M"
       breadcrumbItems={breadcrumbItems}
     >
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8 animate-fade-in">
         {/* Quiz Actions Component */}
         <QuizActions
           quizId={quizData.id?.toString() || ""}
@@ -122,7 +136,6 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
           {questions && (
             <McqQuiz questions={questions} title={quizData.title} quizId={Number(quizData.id) || 0} slug={slug} />
           )}
-
         </Suspense>
       </div>
     </QuizDetailsPage>
@@ -130,4 +143,3 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
 }
 
 export default McqPage
-
