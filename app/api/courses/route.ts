@@ -4,10 +4,12 @@ import type { Prisma } from "@prisma/client"
 import type { CategoryId } from "@/config/categories"
 import NodeCache from "node-cache"
 
-// Cache instance with 10 minutes TTL for course listings
+// Enhanced cache with longer TTL for better performance
 const coursesCache = new NodeCache({
-  stdTTL: 600,
-  checkperiod: 60,
+  stdTTL: 1800, // 30 minutes cache TTL
+  checkperiod: 120, // Check for expired keys every 2 minutes
+  useClones: false, // Disable cloning for better performance
+  maxKeys: 1000, // Limit cache size
 })
 
 export async function GET(req: NextRequest) {
@@ -17,9 +19,11 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get("userId") || undefined
   const page = Number.parseInt(searchParams.get("page") || "1", 10)
   const limit = Number.parseInt(searchParams.get("limit") || "20", 10)
+  const sortBy = searchParams.get("sortBy") || "viewCount" // New sorting parameter
+  const sortOrder = searchParams.get("sortOrder") || "desc" // New sorting order parameter
 
-  // Create a cache key based on the request parameters
-  const cacheKey = `courses_${search || ""}_${category || ""}_${userId || ""}_${page}_${limit}`
+  // Create a cache key based on all request parameters
+  const cacheKey = `courses_${search || ""}_${category || ""}_${userId || ""}_${page}_${limit}_${sortBy}_${sortOrder}`
 
   // Check if we have a cached response
   const cachedResponse = coursesCache.get(cacheKey)
@@ -48,6 +52,21 @@ export async function GET(req: NextRequest) {
             },
           }
         : {}),
+    }
+
+    // Determine the order by configuration based on sortBy and sortOrder
+    const orderBy: Prisma.CourseOrderByWithRelationInput = {}
+
+    // Set the sort field and direction
+    if (sortBy === "title") {
+      orderBy.title = sortOrder as "asc" | "desc"
+    } else if (sortBy === "createdAt") {
+      orderBy.createdAt = sortOrder as "asc" | "desc"
+    } else if (sortBy === "updatedAt") {
+      orderBy.updatedAt = sortOrder as "asc" | "desc"
+    } else {
+      // Default to viewCount
+      orderBy.viewCount = sortOrder as "asc" | "desc"
     }
 
     const [courses, totalCount] = await Promise.all([
@@ -100,9 +119,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: {
-          viewCount: "desc",
-        },
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -152,7 +169,13 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    const response = { courses: formattedCourses, totalCount }
+    const response = {
+      courses: formattedCourses,
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    }
 
     // Cache the response
     coursesCache.set(cacheKey, response)

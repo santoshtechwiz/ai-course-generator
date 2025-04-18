@@ -66,7 +66,7 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true, // Optimize CSS
     optimizePackageImports: [],
-    serverComponentsExternalPackages: [], // Optimize server components
+
   },
 }
 

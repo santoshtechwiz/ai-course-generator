@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useCallback, useMemo } from "react"
-import { HelpCircle, ArrowRight } from "lucide-react"
+import React, { useCallback, useMemo, useState } from "react"
+import { ArrowRight, ArrowLeft, Code, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import QuizOptions from "./CodeQuizOptions"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
@@ -9,6 +9,8 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 import type { CodeChallenge } from "@/app/types/types"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
@@ -36,6 +38,8 @@ interface CodeQuizProps {
 
 const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplete }) => {
   const { animationsEnabled } = useAnimation()
+  const [showExplanation, setShowExplanation] = useState(false)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
   const calculateScore = useCallback((selectedOptions: (string | null)[], questions: CodeChallenge[]) => {
     return selectedOptions.reduce((score, selected, index) => {
@@ -45,8 +49,6 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
   }, [])
 
   const {
-    currentQuestionIndex,
-    currentQuestion,
     selectedOptions,
     timeSpent,
     quizCompleted,
@@ -69,6 +71,10 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
     calculateScore,
     onComplete,
   })
+
+  const currentQuestion = useMemo(() => {
+    return quizData.questions[currentQuestionIndex]
+  }, [quizData.questions, currentQuestionIndex])
 
   const options = useMemo(() => {
     return Array.isArray(currentQuestion?.options) ? currentQuestion.options : []
@@ -209,8 +215,8 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
     }
 
     return (
-      <Card className="w-full">
-        <CardHeader className="space-y-4">
+      <Card className="w-full overflow-hidden border shadow-md hover:shadow-lg transition-shadow duration-300">
+        <CardHeader className="space-y-4 bg-muted/30 border-b">
           <QuizProgress
             currentQuestionIndex={currentQuestionIndex}
             totalQuestions={quizData.questions.length}
@@ -220,16 +226,23 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
             animate={animationsEnabled}
           />
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <MotionTransition key={currentQuestionIndex}>
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
+                  <Badge
+                    variant="outline"
+                    className="bg-primary/10 text-primary font-medium px-3 py-1 flex items-center gap-1.5 mt-1"
+                  >
+                    <Code className="h-3.5 w-3.5" />
+                    Code Challenge
+                  </Badge>
                   <h2 className="text-lg sm:text-xl font-semibold">
                     {renderQuestionText(currentQuestion?.question || "")}
                   </h2>
                 </div>
+
                 {currentQuestion?.codeSnippet && (
                   <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
                     <div className="my-4 overflow-x-auto">
@@ -237,6 +250,7 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
                     </div>
                   </MotionWrapper>
                 )}
+
                 <QuizOptions
                   options={options}
                   selectedOption={selectedOptions[currentQuestionIndex]}
@@ -248,17 +262,45 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
             </div>
           </MotionTransition>
         </CardContent>
-        <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
-          <p className="text-sm text-muted-foreground">
-            Question time: {formatQuizTime(timeSpent[currentQuestionIndex] || 0)}
-          </p>
+        <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse p-6">
+          <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span className="font-mono">{formatQuizTime(timeSpent[currentQuestionIndex] || 0)}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Time spent on this question</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {currentQuestionIndex > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentQuestionIndex((prevIndex) => prevIndex - 1)}
+                className="gap-1"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Previous
+              </Button>
+            )}
+          </div>
+
           <Button
             onClick={() => handleNextQuestion()}
             disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
             className="w-full sm:w-auto"
           >
             {isSubmitting ? (
-              "Submitting..."
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <span>Submitting...</span>
+              </div>
             ) : currentQuestionIndex === quizData.questions.length - 1 ? (
               "Finish Quiz"
             ) : (
@@ -293,4 +335,4 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
   )
 }
 
-export default CodingQuiz
+export default React.memo(CodingQuiz)

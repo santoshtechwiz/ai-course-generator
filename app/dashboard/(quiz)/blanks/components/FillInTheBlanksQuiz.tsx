@@ -1,5 +1,7 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
+import type React from "react"
+
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,10 +19,11 @@ import {
   EyeOff,
   AlertTriangle,
   AlertCircle,
+  Brain,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import levenshtein from "js-levenshtein"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback, useRef } from "react"
 
 interface Question {
   id: number
@@ -107,11 +110,20 @@ const ProgressBar = ({ progressPercentage, questionNumber, totalQuestions }: Pro
       </span>
       <span>{Math.round(progressPercentage)}% Complete</span>
     </div>
-    <Progress value={progressPercentage} className="h-1.5" />
+    <Progress
+      value={progressPercentage}
+      className="h-1.5"
+      aria-label={`Question ${questionNumber} of ${totalQuestions}, ${Math.round(progressPercentage)}% complete`}
+    />
   </div>
 )
 
-export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber, totalQuestions }: FillInTheBlanksQuizProps) {
+export default function FillInTheBlanksQuiz({
+  question,
+  onAnswer,
+  questionNumber,
+  totalQuestions,
+}: FillInTheBlanksQuizProps) {
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [submitted, setSubmitted] = useState(false)
@@ -124,6 +136,8 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
   const [showTooFastWarning, setShowTooFastWarning] = useState(false)
   const [showGarbageWarning, setShowGarbageWarning] = useState(false)
   const [startTime, setStartTime] = useState(Date.now())
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const similarityThreshold = 3
   const minimumPrefixLength = 2
@@ -169,6 +183,13 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
     setShowTooFastWarning(false)
     setShowGarbageWarning(false)
     setStartTime(Date.now())
+
+    // Focus the input field when a new question is loaded
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus()
+      }
+    }, 300)
   }, [question.id, progressiveHints.length])
 
   useEffect(() => {
@@ -176,60 +197,70 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
     return () => clearInterval(timer)
   }, [])
 
-  const checkForGarbage = (input: string): boolean => {
-    if (!input || input.length < 3) return false
+  const checkForGarbage = useCallback(
+    (input: string): boolean => {
+      if (!input || input.length < 3) return false
 
-    const allWords = question.question
-      .toLowerCase()
-      .replace(/[^\w\s]/g, "")
-      .split(/\s+/)
-      .filter((word) => word.length > 3)
+      const allWords = question.question
+        .toLowerCase()
+        .replace(/[^\w\s]/g, "")
+        .split(/\s+/)
+        .filter((word) => word.length > 3)
 
-    if (question.answer) {
-      allWords.push(question.answer.toLowerCase())
-    }
+      if (question.answer) {
+        allWords.push(question.answer.toLowerCase())
+      }
 
-    const inputLower = input.toLowerCase()
-    const minDistance = allWords.reduce((min, word) => {
-      const distance = levenshtein(inputLower, word.toLowerCase())
-      const normalizedDistance = distance / Math.max(inputLower.length, word.length)
-      return Math.min(min, normalizedDistance)
-    }, 1)
+      const inputLower = input.toLowerCase()
+      const minDistance = allWords.reduce((min, word) => {
+        const distance = levenshtein(inputLower, word.toLowerCase())
+        const normalizedDistance = distance / Math.max(inputLower.length, word.length)
+        return Math.min(min, normalizedDistance)
+      }, 1)
 
-    return minDistance > garbageThreshold
-  }
+      return minDistance > garbageThreshold
+    },
+    [question.question, question.answer],
+  )
 
-  const handleInputChange = (value: string) => {
-    setAnswer(value)
-    setShowGarbageWarning(false)
+  const handleInputChange = useCallback(
+    (value: string) => {
+      setAnswer(value)
+      setShowGarbageWarning(false)
 
-    const userInput = value.trim()?.toLowerCase()
+      const userInput = value.trim()?.toLowerCase()
 
-    if (!userInput || userInput.length < minimumPrefixLength) {
-      setIsValidInput(false)
-      return
-    }
+      if (!userInput || userInput.length < minimumPrefixLength) {
+        setIsValidInput(false)
+        return
+      }
 
-    if (checkForGarbage(userInput)) {
-      setShowGarbageWarning(true)
-      setIsValidInput(false)
-      return
-    }
+      if (checkForGarbage(userInput)) {
+        setShowGarbageWarning(true)
+        setIsValidInput(false)
+        return
+      }
 
-    const correctAnswer = question.answer?.trim()?.toLowerCase() || ""
-    const distance = levenshtein(userInput, correctAnswer)
-    setIsValidInput(distance <= similarityThreshold || correctAnswer.startsWith(userInput))
-  }
+      const correctAnswer = question.answer?.trim()?.toLowerCase() || ""
+      const distance = levenshtein(userInput, correctAnswer)
+      setIsValidInput(distance <= similarityThreshold || correctAnswer.startsWith(userInput))
+    },
+    [checkForGarbage, minimumPrefixLength, question.answer, similarityThreshold],
+  )
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
+    setIsSubmitting(true)
+
     const timeSpent = (Date.now() - startTime) / 1000
     if (timeSpent < minimumTimeThreshold) {
       setShowTooFastWarning(true)
+      setIsSubmitting(false)
       return
     }
 
     if (checkForGarbage(answer)) {
       setShowGarbageWarning(true)
+      setIsSubmitting(false)
       return
     }
 
@@ -237,10 +268,24 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
     const isAnswerCorrect = distance <= similarityThreshold
     setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
-    onAnswer(answer, Math.round(timeSpent), hintLevel > 0)
-  }
 
-  const handleProgressiveHint = () => {
+    // Add a small delay to show the submission state
+    setTimeout(() => {
+      setIsSubmitting(false)
+      onAnswer(answer, Math.round(timeSpent), hintLevel > 0)
+    }, 500)
+  }, [
+    answer,
+    checkForGarbage,
+    hintLevel,
+    minimumTimeThreshold,
+    onAnswer,
+    question.answer,
+    similarityThreshold,
+    startTime,
+  ])
+
+  const handleProgressiveHint = useCallback(() => {
     if (hintLevel < progressiveHints.length) {
       setShowHints((prev) => {
         const newHints = [...prev]
@@ -249,21 +294,33 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
       })
       setHintLevel((prev) => prev + 1)
     }
-  }
+  }, [hintLevel, progressiveHints.length])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && isValidInput && !submitted) {
-      handleSubmit()
-    }
-  }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && isValidInput && !submitted && !isSubmitting) {
+        handleSubmit()
+      }
+    },
+    [handleSubmit, isSubmitting, isValidInput, submitted],
+  )
 
   return (
     <div className="w-full max-w-3xl mx-auto">
-      <div className="rounded-lg shadow-md border bg-background">
+      <motion.div
+        className="rounded-lg shadow-md border bg-background overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
         <div className="px-6 py-4 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-primary/10 text-primary font-medium px-3 py-1">
+              <Badge
+                variant="outline"
+                className="bg-primary/10 text-primary font-medium px-3 py-1 flex items-center gap-1.5"
+              >
+                <Brain className="h-3.5 w-3.5" />
                 Fill in the Blank
               </Badge>
               <BadgeGroup
@@ -324,7 +381,12 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
             )}
           </AnimatePresence>
 
-          <div className="text-lg font-medium leading-relaxed p-4 bg-muted/30 rounded-lg flex flex-wrap items-center">
+          <motion.div
+            className="text-lg font-medium leading-relaxed p-4 bg-muted/30 rounded-lg flex flex-wrap items-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
             <span>{questionParts[0]}</span>
             <span
               className={cn(
@@ -334,6 +396,7 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
               )}
             >
               <Input
+                ref={inputRef}
                 value={answer}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onFocus={() => setInputFocused(true)}
@@ -345,33 +408,36 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
                 )}
                 placeholder="Type answer"
                 disabled={submitted}
+                aria-label="Answer input field"
               />
             </span>
             <span>{questionParts[1]}</span>
-          </div>
+          </motion.div>
 
-          {submitted && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className={cn(
-                "flex items-center p-4 rounded-md",
-                isCorrect
-                  ? "bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-900/30"
-                  : "bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-900/30",
-              )}
-            >
-              {isCorrect ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-              ) : (
-                <XCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
-              )}
-              <span className={isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>
-                {isCorrect ? "Correct!" : "Incorrect. You'll see the correct answer on the results page."}
-              </span>
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {submitted && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className={cn(
+                  "flex items-center p-4 rounded-md",
+                  isCorrect
+                    ? "bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-900/30"
+                    : "bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-900/30",
+                )}
+              >
+                {isCorrect ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
+                )}
+                <span className={isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>
+                  {isCorrect ? "Correct!" : "Incorrect. You'll see the correct answer on the results page."}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="relative">
             <AnimatePresence>
@@ -449,11 +515,22 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
 
           <Button
             onClick={handleSubmit}
-            disabled={!isValidInput || submitted}
-            className="w-full sm:w-auto transition-colors duration-300"
+            disabled={!isValidInput || submitted || isSubmitting}
+            className="w-full sm:w-auto transition-colors duration-300 relative"
             size="lg"
           >
-            {submitted ? (
+            {isSubmitting ? (
+              <>
+                <span className="opacity-0">Submit Answer</span>
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <motion.div
+                    className="h-5 w-5 border-2 border-current border-t-transparent rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  />
+                </span>
+              </>
+            ) : submitted ? (
               <>
                 Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -463,7 +540,7 @@ export default function FillInTheBlanksQuiz({ question, onAnswer, questionNumber
             )}
           </Button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

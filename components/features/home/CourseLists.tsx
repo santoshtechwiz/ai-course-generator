@@ -83,11 +83,11 @@ export default function CourseList({ url, userId }: CourseListProps) {
       {/* Main content area */}
       <main className="flex-1">
         <div className="h-full overflow-y-auto">
-          <CoursesClient 
-            url={url} 
-            userId={userId} 
-            searchQuery={searchQuery} 
-            selectedCategory={selectedCategory} 
+          <CoursesClient
+            url={url}
+            userId={userId || "static-user-id"} // Ensure consistent userId
+            searchQuery={searchQuery}
+            selectedCategory={selectedCategory}
           />
         </div>
       </main>

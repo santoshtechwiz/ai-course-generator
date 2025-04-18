@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
@@ -16,7 +16,8 @@ import { QuizSidebar } from "./QuizSidebar"
 import { QuizzesListSkeleton } from "@/components/ui/loading/loading-skeleton"
 import { QuizList } from "./QuizList"
 import { ErrorBoundary } from "react-error-boundary"
-
+import { useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -37,16 +38,34 @@ function extractQuizzes(data: any): QuizListItem[] {
 }
 
 export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps) {
+  const router = useRouter()
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
+  const [questionCountRange, setQuestionCountRange] = useState<[number, number]>([0, 50])
+  const [showPublicOnly, setShowPublicOnly] = useState(false)
+  const [activeTab, setActiveTab] = useState("all")
   const debouncedSearch = useDebounce(search, 500)
   const { ref, inView } = useInView({
     threshold: 0.1,
     triggerOnce: false,
   })
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["quizzes", debouncedSearch, selectedTypes.join(","), userId],
+  // Memoize query key to prevent unnecessary refetches
+  const queryKey = useMemo(
+    () => [
+      "quizzes",
+      debouncedSearch,
+      selectedTypes.join(","),
+      userId,
+      questionCountRange.join("-"),
+      showPublicOnly,
+      activeTab,
+    ],
+    [debouncedSearch, selectedTypes, userId, questionCountRange, showPublicOnly, activeTab],
+  )
+
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
+    queryKey,
     queryFn: async ({ pageParam = 1 }) => {
       const result = await getQuizzes({
         page: pageParam,
@@ -54,6 +73,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         searchTerm: debouncedSearch,
         userId,
         quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
+        minQuestions: questionCountRange[0],
+        maxQuestions: questionCountRange[1],
+        publicOnly: showPublicOnly,
+        tab: activeTab,
       })
       return {
         quizzes: result?.quizzes || [],
@@ -63,7 +86,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: 1,
     initialData: () => {
-      if (search === "" && selectedTypes.length === 0) {
+      if (search === "" && selectedTypes.length === 0 && activeTab === "all") {
         return {
           pages: [initialQuizzesData],
           pageParams: [1],
@@ -89,14 +112,31 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   const handleClearSearch = useCallback(() => {
     setSearch("")
     setSelectedTypes([])
+    setQuestionCountRange([0, 50])
+    setShowPublicOnly(false)
+    setActiveTab("all")
   }, [])
 
   const toggleQuizType = useCallback((type: QuizType) => {
     setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
   }, [])
 
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value)
+  }, [])
+
+  const handleCreateQuiz = useCallback(() => {
+    router.push("/dashboard/mcq")
+  }, [router])
+
   const quizzes = extractQuizzes(data)
-  const isSearching = debouncedSearch.trim() !== "" || selectedTypes.length > 0
+  const isSearching =
+    debouncedSearch.trim() !== "" ||
+    selectedTypes.length > 0 ||
+    questionCountRange[0] > 0 ||
+    questionCountRange[1] < 50 ||
+    showPublicOnly ||
+    activeTab !== "all"
 
   // Empty state content
   const renderEmptyState = () => {
@@ -143,9 +183,18 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         isSearching={isSearching}
         selectedTypes={selectedTypes}
         toggleQuizType={toggleQuizType}
+        questionCountRange={questionCountRange}
+        onQuestionCountChange={setQuestionCountRange}
+        showPublicOnly={showPublicOnly}
+        onPublicOnlyChange={setShowPublicOnly}
       />
 
-      <div className="lg:w-3/4 space-y-6">
+      <motion.div
+        className="lg:w-3/4 space-y-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <ErrorBoundary
           fallback={
             <div className="p-8 text-center bg-red-50 rounded-lg text-red-500">
@@ -163,6 +212,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
               isFetchingNextPage={false}
               hasNextPage={false}
               isSearching={isSearching}
+              onRetry={refetch}
+              onCreateQuiz={handleCreateQuiz}
+              activeFilter={activeTab}
+              onFilterChange={handleTabChange}
             />
           ) : quizzes.length === 0 ? (
             renderEmptyState()
@@ -175,6 +228,9 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
                 isFetchingNextPage={isFetchingNextPage}
                 hasNextPage={!!hasNextPage}
                 isSearching={isSearching}
+                onCreateQuiz={handleCreateQuiz}
+                activeFilter={activeTab}
+                onFilterChange={handleTabChange}
               />
               <div ref={ref} className="h-20 flex items-center justify-center">
                 {isFetchingNextPage && (
@@ -184,7 +240,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
             </>
           )}
         </ErrorBoundary>
-      </div>
+      </motion.div>
     </div>
   )
 }
