@@ -79,7 +79,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    pointer-events: auto !important;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
@@ -87,6 +86,21 @@
 /* Animation utilities */
 @layer utilities {
   /* Base animations */
+  .video-wrapper {
+    @apply
+      relative
+      w-full
+      aspect-video
+      rounded-lg
+      overflow-hidden
+      bg-transparent
+      border
+      border-border
+      shadow-sm;
+  }
+  .video-wrapper > video {
+    background-color: transparent;
+  }
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;
   }
