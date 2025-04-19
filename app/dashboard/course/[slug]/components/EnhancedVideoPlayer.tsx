@@ -192,8 +192,11 @@ const EnhancedVideoPlayer = ({
 
   // Check if video is near completion
   useEffect(() => {
-    if (played > 0.95 && !videoCompleted) {
+    // Change from 0.95 to 0.98 to ensure video plays closer to the end
+    if (played > 0.99 && !videoCompleted) {
       setVideoCompleted(true)
+      setPlaying(false) // Pause the video when it's completed
+
       if (onChapterComplete) {
         onChapterComplete()
       }
@@ -238,14 +241,16 @@ const EnhancedVideoPlayer = ({
   const handleDuration = (duration: number) => setDuration(duration)
 
   const handleVideoEnd = () => {
+    // Pause the video
+    setPlaying(false)
+
     // Mark video as completed by setting position to end
     if (playerConfig.rememberPosition && typeof window !== "undefined") {
       localStorage.setItem(`video-position-${videoId}`, "1.0")
     }
 
-    if (autoplayNext && nextVideoId) {
-      onEnded()
-    }
+    // Always call onEnded when the video actually ends
+    onEnded()
   }
 
   const handleBuffer = () => setIsBuffering(true)
@@ -361,8 +366,12 @@ const EnhancedVideoPlayer = ({
         localStorage.setItem(`video-position-${videoId}`, newPlayed.toString())
         setLastSavedPosition(newPlayed)
       }
+      // Ensure time display updates immediately on mobile
+      if (onProgress) {
+        onProgress(newPlayed)
+      }
     },
-    [playerConfig.rememberPosition, videoId],
+    [playerConfig.rememberPosition, videoId, onProgress],
   )
 
   const handlePlaybackSpeedChange = useCallback((newSpeed: number) => {
@@ -411,49 +420,53 @@ const EnhancedVideoPlayer = ({
       className="relative w-full aspect-video rounded-lg overflow-hidden bg-background border border-border shadow-sm group"
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => playing && setShowControls(false)}
+      onClick={() => setShowControls(true)}
     >
       {playerError ? (
         <VideoPlayerFallback />
       ) : (
-        <ReactPlayer
-          ref={playerRef}
-          url={`https://www.youtube.com/watch?v=${videoId}`}
-          width="100%"
-          height="100%"
-          playing={playing}
-          volume={volume}
-          muted={muted}
-          onProgress={handleProgress}
-          onDuration={handleDuration}
-          onEnded={handleVideoEnd}
-          onBuffer={handleBuffer}
-          onBufferEnd={handleBufferEnd}
-          onError={(e) => {
-            console.error("ReactPlayer error:", e)
-            setPlayerError(true)
-            setIsBuffering(false)
-          }}
-          progressInterval={1000}
-          playbackRate={playbackSpeed}
-          config={{
-            youtube: {
-              playerVars: {
-                autoplay: autoPlay ? 1 : 0,
-                start: Math.floor(initialTime),
-                modestbranding: 1,
-                rel: 0,
-                showinfo: 0,
-                iv_load_policy: 3,
-                fs: 1,
-                controls: 0,
-                disablekb: 0,
-                playsinline: 1,
-                enablejsapi: 1,
-                origin: typeof window !== "undefined" ? window.location.origin : "",
+        <div className="w-full h-full bg-background">
+          <ReactPlayer
+            ref={playerRef}
+            url={`https://www.youtube.com/watch?v=${videoId}`}
+            width="100%"
+            height="100%"
+            playing={playing}
+            volume={volume}
+            muted={muted}
+            onProgress={handleProgress}
+            onDuration={handleDuration}
+            onEnded={handleVideoEnd}
+            onBuffer={handleBuffer}
+            onBufferEnd={handleBufferEnd}
+            onError={(e) => {
+              console.error("ReactPlayer error:", e)
+              setPlayerError(true)
+              setIsBuffering(false)
+            }}
+            progressInterval={1000}
+            playbackRate={playbackSpeed}
+            style={{ backgroundColor: "transparent" }}
+            config={{
+              youtube: {
+                playerVars: {
+                  autoplay: autoPlay ? 1 : 0,
+                  start: Math.floor(initialTime),
+                  modestbranding: 1,
+                  rel: 0,
+                  showinfo: 0,
+                  iv_load_policy: 3,
+                  fs: 1,
+                  controls: 0,
+                  disablekb: 0,
+                  playsinline: 1,
+                  enablejsapi: 1,
+                  origin: typeof window !== "undefined" ? window.location.origin : "",
+                },
               },
-            },
-          }}
-        />
+            }}
+          />
+        </div>
       )}
 
       {/* Bookmark Tooltip */}

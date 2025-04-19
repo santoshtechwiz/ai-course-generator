@@ -259,11 +259,11 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
         <PDFDownloadLink
           document={<Certificate userName={userName} courseName={courseName} />}
           fileName={`${courseName.replace(/\s+/g, "_")}_Certificate.pdf`}
-          className="flex-1"
+          className="flex-1 max-w-xs mx-auto" // Added max-width and centered
           onClick={handleDownload}
         >
           {({ blob, url, loading, error }) => (
-            <Button disabled={loading || isGenerating} className="w-full bg-primary hover:bg-primary/90">
+            <Button disabled={loading || isGenerating} className="w-full bg-primary hover:bg-primary/90 h-auto py-2">
               {loading || isGenerating ? (
                 <span className="flex items-center">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -279,7 +279,7 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
           )}
         </PDFDownloadLink>
 
-        <Button onClick={handleShare} variant="outline" className="flex-1">
+        <Button onClick={handleShare} variant="outline" className="flex-1 max-w-xs mx-auto h-auto py-2">
           <Share2 className="mr-2 h-4 w-4" />
           Share Certificate
         </Button>

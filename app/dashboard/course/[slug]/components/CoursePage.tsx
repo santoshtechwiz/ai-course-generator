@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
 import { useAuth } from "@/providers/unified-auth-provider"
 import MobilePlayList from "./MobilePlayList"
 
@@ -103,6 +104,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   const isInitialMount = useRef(true)
   const hasSetInitialVideo = useRef(false)
   const [courseCompleted, setCourseCompleted] = useState(false)
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
 
   const videoPlaylist = useVideoPlaylist(course)
 
@@ -205,6 +207,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     }
   }, [state.currentChapter, progress, throttledUpdateProgress, videoPlaylist.length])
 
+  // Modify the handleVideoEnd function to ensure video stops and overlay shows
   const handleVideoEnd = useCallback(() => {
     markChapterAsCompleted()
 
@@ -220,32 +223,30 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         })
       }
     } else {
-      const allChaptersCompleted = videoPlaylist.length === (progress?.completedChapters?.length || 0)
-      if (allChaptersCompleted) {
-        setIsLastVideo(true)
-        setCourseCompleted(true)
-        throttledUpdateProgress({
-          currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
-          isCompleted: true,
-          progress: 100,
-        })
+      // This is the last video - mark as completed and show completion overlay
+      setIsLastVideo(true)
+      setCourseCompleted(true)
+      setShowCompletionOverlay(true) // Show completion overlay immediately
 
-        toast({
-          title: "Course Completed",
-          description: "Congratulations! You've completed all videos in this course.",
-          variant: "default",
-        })
-      }
+      throttledUpdateProgress({
+        currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
+        isCompleted: true,
+        progress: 100,
+      })
+
+      toast({
+        title: "Course Completed",
+        description: "Congratulations! You've completed all videos in this course.",
+        variant: "default",
+      })
     }
   }, [
     state.nextVideoId,
     state.currentChapter,
-    videoPlaylist,
     findChapterByVideoId,
     throttledUpdateProgress,
     toast,
     markChapterAsCompleted,
-    progress?.completedChapters?.length,
   ])
 
   const handleVideoSelect = useCallback(
@@ -273,6 +274,11 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     router.push("/dashboard")
   }, [router])
 
+  const handleCloseCompletionOverlay = useCallback(() => {
+    setShowCompletionOverlay(false)
+    router.push("/dashboard")
+  }, [router])
+
   // Responsive Sidebar Handling
   useEffect(() => {
     const handleResize = () => {
@@ -295,6 +301,22 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   useEffect(() => {
     return () => {
       dispatch({ type: "RESET" })
+    }
+  }, [])
+
+  // Add related courses section to the completion overlay
+  // First, add a new function to fetch related courses:
+  const fetchRelatedCourses = useCallback(async () => {
+    try {
+      const response = await fetch("/api/courses?limit=3")
+      if (response.ok) {
+        const data = await response.json()
+        return data.courses
+      }
+      return []
+    } catch (error) {
+      console.error("Error fetching related courses:", error)
+      return []
     }
   }, [])
 
@@ -423,6 +445,14 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
           )}
         </AnimatePresence>
       </div>
+      {showCompletionOverlay && (
+        <CourseCompletionOverlay
+          courseName={course.title}
+          onClose={handleCloseCompletionOverlay}
+          onWatchAnotherCourse={handleWatchAnotherCourse}
+          fetchRelatedCourses={fetchRelatedCourses}
+        />
+      )}
     </div>
   )
 }

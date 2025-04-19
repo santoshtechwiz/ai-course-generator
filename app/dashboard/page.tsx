@@ -38,7 +38,7 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen">
       <div className="py-8 text-center">
-        <h1 className="text-4xl font-bold text-primary mb-2">Explore Quizzes</h1>
+        <h1 className="text-4xl font-bold text-primary mb-2">Explore Courses</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
           Discover interactive quizzes designed to enhance your learning experience and test your knowledge
         </p>

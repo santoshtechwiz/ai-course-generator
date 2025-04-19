@@ -24,7 +24,7 @@ export function CourseProgressList({ courses }: CourseProgressListProps) {
               <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md sm:h-16 sm:w-16">
                 <Image
                   src={course?.course?.image || "/placeholder.svg"}
-                  alt={course?.course?.name || "Course Image"}
+                  alt={course?.course?.title || "Course Image"}
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
                 />
@@ -32,7 +32,7 @@ export function CourseProgressList({ courses }: CourseProgressListProps) {
               <div className="flex flex-1 flex-col space-y-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium leading-none truncate sm:text-base">
-                    {course?.course?.name || "Untitled Course"}
+                    {course?.course?.title || "Untitled Course"}
                   </h3>
                   <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:h-5 sm:w-5" />
                 </div>

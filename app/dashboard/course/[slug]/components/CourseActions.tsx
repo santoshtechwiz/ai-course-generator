@@ -172,8 +172,8 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
             className={cn(
               "fixed z-50 flex flex-col items-center",
               position === "left"
-                ? "left-4 sm:left-6 top-1/2 -translate-y-1/2"
-                : "right-4 sm:right-6 top-1/2 -translate-y-1/2",
+                ? "left-4 sm:left-6 bottom-20 sm:top-1/2 sm:-translate-y-1/2"
+                : "right-4 sm:right-6 bottom-20 sm:top-1/2 sm:-translate-y-1/2",
             )}
             variants={{
               hidden: {
@@ -206,19 +206,19 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
               {isOpen && (
                 <motion.div
                   className={cn(
-                    "bg-card border shadow-lg rounded-xl overflow-hidden mb-3",
+                    "bg-card/95 backdrop-blur-sm border shadow-lg rounded-xl overflow-hidden mb-3",
                     position === "left" ? "origin-bottom-left" : "origin-bottom-right",
                   )}
                   variants={{
                     hidden: {
                       opacity: 0,
+                      scale: 0.8,
                       x: position === "left" ? -20 : 20,
-                      width: 0,
                     },
                     visible: {
                       opacity: 1,
+                      scale: 1,
                       x: 0,
-                      width: "auto",
                       transition: {
                         type: "spring",
                         stiffness: 400,
@@ -229,8 +229,8 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
                     },
                     exit: {
                       opacity: 0,
+                      scale: 0.8,
                       x: position === "left" ? -20 : 20,
-                      width: 0,
                       transition: {
                         duration: 0.2,
                         when: "afterChildren",

@@ -1,8 +1,7 @@
 "use client"
 
-import React from "react"
+import React, { useState, useRef, useEffect } from "react"
 
-import { useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Play,
@@ -180,6 +179,9 @@ export const VideoControls = ({
 }: VideoControlsProps) => {
   const progressBarRef = useRef<HTMLDivElement>(null)
 
+  // Add a new state to track scrubbing position
+  const [scrubbingPosition, setScrubbingPosition] = useState<number | null>(null)
+
   // Calculate progress bar bookmark positions
   const getBookmarkPositions = () => {
     return bookmarks.map((time) => ({
@@ -188,7 +190,7 @@ export const VideoControls = ({
     }))
   }
 
-  // Click on progress bar to seek
+  // Modify the progress bar click handler to update display during scrubbing
   const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (progressBarRef.current) {
       const rect = progressBarRef.current.getBoundingClientRect()
@@ -198,6 +200,50 @@ export const VideoControls = ({
     }
   }
 
+  // Add new mouse events for scrubbing
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = progressBarRef.current?.getBoundingClientRect()
+    if (rect) {
+      const offsetX = e.clientX - rect.left
+      const newPosition = offsetX / rect.width
+      setScrubbingPosition(newPosition)
+
+      // Add event listeners for drag and release
+      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mouseup", handleMouseUp)
+    }
+  }
+
+  // New function to handle mouse movement during scrubbing
+  const handleMouseMove = (e: MouseEvent) => {
+    const rect = progressBarRef.current?.getBoundingClientRect()
+    if (rect) {
+      const offsetX = Math.max(0, Math.min(e.clientX - rect.left, rect.width))
+      const newPosition = offsetX / rect.width
+      setScrubbingPosition(newPosition)
+    }
+  }
+
+  // New function to handle mouse up (end of scrubbing)
+  const handleMouseUp = (e: MouseEvent) => {
+    document.removeEventListener("mousemove", handleMouseMove)
+    document.removeEventListener("mouseup", handleMouseUp)
+
+    const rect = progressBarRef.current?.getBoundingClientRect()
+    if (rect && scrubbingPosition !== null) {
+      onSeekChange(scrubbingPosition)
+      setScrubbingPosition(null)
+    }
+  }
+
+  // Cleanup event listeners on component unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [])
+
   // Get volume icon based on volume level
   const getVolumeIcon = () => {
     if (muted || volume === 0) return <VolumeX className="h-4 w-4" />
@@ -205,10 +251,14 @@ export const VideoControls = ({
     return <Volume2 className="h-4 w-4" />
   }
 
+  // Update the time display to show scrubbing position when available
+  const displayedTime =
+    scrubbingPosition !== null ? formatTime(duration * scrubbingPosition) : formatTime(duration * played)
+
   return (
     <div
       className={cn(
-        "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/90 to-transparent px-4 py-3 transition-all duration-300",
+        "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-4 py-3 transition-all duration-300 z-20",
         show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
       )}
     >
@@ -217,9 +267,21 @@ export const VideoControls = ({
         ref={progressBarRef}
         className="relative w-full h-2 mb-3 bg-white/30 rounded-full cursor-pointer group"
         onClick={handleProgressBarClick}
+        onMouseDown={handleMouseDown}
       >
-        <div className="h-full bg-primary rounded-full" style={{ width: `${played * 100}%` }} />
+        <div
+          className="h-full bg-primary rounded-full"
+          style={{ width: `${(scrubbingPosition !== null ? scrubbingPosition : played) * 100}%` }}
+        />
         <div className="h-full bg-primary/40 rounded-full absolute top-0" style={{ width: `${loaded * 100}%` }} />
+
+        {/* Add scrubbing handle that only appears during scrubbing */}
+        {scrubbingPosition !== null && (
+          <div
+            className="absolute top-1/2 w-4 h-4 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-md"
+            style={{ left: `${scrubbingPosition * 100}%` }}
+          />
+        )}
 
         {/* Bookmarks on progress bar */}
         {bookmarks.length > 0 &&
@@ -269,7 +331,7 @@ export const VideoControls = ({
           </Button>
 
           <span className="text-white text-xs ml-2 font-medium">
-            {formatTime(duration * played)} / {formatTime(duration)}
+            {displayedTime} / {formatTime(duration)}
           </span>
         </div>
         <div className="flex items-center space-x-3">

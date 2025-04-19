@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 import { cn } from "@/lib/utils"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { motion } from "framer-motion"
 
 // Simple Info icon without tooltip to avoid infinite loops
 const InfoIcon = () => <Info className="h-4 w-4 text-muted-foreground" />
@@ -247,12 +248,24 @@ function VideoNavigationSidebar({
   // Memoize the content to prevent unnecessary re-renders
   const sidebarContent = useMemo(
     () => (
-      <div className="flex h-full flex-col bg-background">
+      <div className={cn("flex h-full flex-col bg-background transition-all duration-300", isCollapsed && "w-16")}>
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold tracking-tight">Course Content</h2>
+          {!isCollapsed ? (
+            <h2 className="text-lg font-semibold tracking-tight">Course Content</h2>
+          ) : (
+            <span className="sr-only">Course Content</span>
+          )}
           {!isMobile && (
-            <Button variant="ghost" size="sm" onClick={() => setIsCollapsed(!isCollapsed)} className="ml-auto">
-              {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className={cn("transition-all duration-200 hover:bg-accent", isCollapsed ? "mx-auto" : "ml-auto")}
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <motion.div animate={{ rotate: isCollapsed ? 0 : 180 }} transition={{ duration: 0.2 }}>
+                <ChevronUp className="h-4 w-4" />
+              </motion.div>
             </Button>
           )}
         </div>
@@ -292,9 +305,11 @@ function VideoNavigationSidebar({
           )}
 
           {!isCollapsed && (
-            <div className="overflow-hidden h-full">
-              {/* Use a div instead of ScrollArea to avoid the infinite loop */}
-              <div className="h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="flex-1 overflow-hidden">
+              <div
+                className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
+                style={{ maxHeight: "calc(100vh - 200px)" }}
+              >
                 <VideoPlaylist
                   courseUnits={course.courseUnits}
                   currentChapter={currentChapter}

@@ -62,6 +62,15 @@ export default function MainContent({
   const isAuthenticated = status === "authenticated"
   const tabsRef = useRef<HTMLDivElement>(null)
   const isPremium = planId === "PRO" || planId === "ULTIMATE"
+  const [played, setPlayed] = useState(0)
+  const nextVideoIdRef = useRef(nextVideoId)
+  const [playing, setPlaying] = useState(true)
+  const playerRef = useRef<any>(null)
+  const { playerConfig, autoplayNext } = { playerConfig: { rememberPosition: true }, autoplayNext: true }
+
+  useEffect(() => {
+    nextVideoIdRef.current = nextVideoId
+  }, [nextVideoId])
 
   // Process markdown content
   useEffect(() => {
@@ -80,6 +89,13 @@ export default function MainContent({
       setShowCompletionOverlay(true)
     }
   }, [courseCompleted])
+
+  // Add this additional check for isLastVideo:
+  useEffect(() => {
+    if (courseCompleted || (isLastVideo && played > 0.95)) {
+      setShowCompletionOverlay(true)
+    }
+  }, [courseCompleted, isLastVideo, played])
 
   // Load bookmarks from localStorage
   useEffect(() => {
@@ -115,12 +131,13 @@ export default function MainContent({
   }, [])
 
   const handleNextVideo = useCallback(() => {
-    if (nextVideoId) {
-      onVideoSelect(nextVideoId)
+    const currentNextVideoId = nextVideoIdRef.current
+    if (currentNextVideoId) {
+      onVideoSelect(currentNextVideoId)
     } else if (isLastVideo) {
       setShowCompletionOverlay(true)
     }
-  }, [nextVideoId, onVideoSelect, isLastVideo])
+  }, [onVideoSelect, isLastVideo])
 
   const handlePrevVideo = useCallback(() => {
     if (prevVideoId) {
@@ -318,13 +335,55 @@ export default function MainContent({
     )
   }
 
+  const handleVideoEnd = useCallback(() => {
+    const currentNextVideoId = nextVideoIdRef.current
+    if (currentNextVideoId) {
+      onVideoSelect(currentNextVideoId)
+    } else if (isLastVideo) {
+      setShowCompletionOverlay(true)
+    }
+  }, [onVideoSelect, isLastVideo])
+
+  // Add this effect to pause the video when the completion overlay is shown
+  useEffect(() => {
+    if (showCompletionOverlay && playerRef.current) {
+      setPlaying(false)
+    }
+  }, [showCompletionOverlay])
+
+  // Modify the handleVideoEnd function to ensure video pauses
+  const handleVideoEndUpdated = useCallback(() => {
+    // Pause the video
+    setPlaying(false)
+
+    // Mark video as completed by setting position to end
+    if (playerConfig.rememberPosition && typeof window !== "undefined") {
+      localStorage.setItem(`video-position-${initialVideoId}`, "1.0")
+    }
+
+    if (autoplayNext && nextVideoId) {
+      onVideoEnd()
+    } else if (isLastVideo) {
+      setShowCompletionOverlay(true)
+    }
+  }, [
+    onVideoEnd,
+    nextVideoId,
+    autoplayNext,
+    playerConfig.rememberPosition,
+    initialVideoId,
+    isLastVideo,
+    setPlaying,
+    setShowCompletionOverlay,
+  ])
+
   return (
     <div className="flex flex-col w-full">
       <div className="relative rounded-lg overflow-hidden border border-border">
         {initialVideoId ? (
           <EnhancedVideoPlayer
             videoId={initialVideoId}
-            onEnded={onVideoEnd}
+            onEnded={handleVideoEndUpdated}
             autoPlay={true}
             onProgress={onTimeUpdate}
             initialTime={currentTime}
@@ -342,6 +401,7 @@ export default function MainContent({
               rememberMute: true,
               showCertificateButton: isLastVideo,
             }}
+            onProgressChange={(progress) => setPlayed(progress)}
           />
         ) : (
           <div className="flex items-center justify-center w-full aspect-video bg-background rounded-lg">

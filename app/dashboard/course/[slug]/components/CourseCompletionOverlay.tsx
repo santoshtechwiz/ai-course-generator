@@ -9,21 +9,34 @@ import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import confetti from "canvas-confetti"
-import CertificateGenerator from "./CertificateGenerator"
+import { Certificate } from "./CertificateGenerator"
+import Link from "next/link"
 
 export const CourseCompletionOverlay = ({
   onClose,
   onWatchAnotherCourse,
   courseName,
+  fetchRelatedCourses,
 }: {
   onClose: () => void
   onWatchAnotherCourse: () => void
   courseName: string
+  fetchRelatedCourses?: () => Promise<any[]>
 }) => {
   const { data: session } = useSession()
   const userName = session?.user?.name || "Student"
   const [isDownloading, setIsDownloading] = useState(false)
+  const [relatedCourses, setRelatedCourses] = useState<any[]>([])
   const { toast } = useToast()
+
+  // Add useEffect to fetch related courses
+  useEffect(() => {
+    if (fetchRelatedCourses) {
+      fetchRelatedCourses().then((courses) => {
+        setRelatedCourses(courses || [])
+      })
+    }
+  }, [fetchRelatedCourses])
 
   // Trigger confetti on mount
   useEffect(() => {
@@ -115,7 +128,7 @@ export const CourseCompletionOverlay = ({
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="relative bg-card rounded-xl shadow-2xl max-w-lg w-full overflow-hidden"
+          className="relative bg-card rounded-xl shadow-2xl max-w-md w-full mx-auto overflow-hidden"
         >
           <button
             onClick={onClose}
@@ -159,12 +172,16 @@ export const CourseCompletionOverlay = ({
 
             <div className="grid gap-4 mt-8">
               <PDFDownloadLink
-                document={<CertificateGenerator  courseName={courseName} />}
+                document={<Certificate courseName={courseName} />}
                 fileName={`${courseName.replace(/\s+/g, "_")}_Certificate.pdf`}
                 onClick={handleDownload}
+                className="mx-auto max-w-xs w-full" // Added max-width and centered
               >
                 {({ blob, url, loading, error }) => (
-                  <Button disabled={loading || isDownloading} className="w-full bg-primary hover:bg-primary/90">
+                  <Button
+                    disabled={loading || isDownloading}
+                    className="w-full bg-primary hover:bg-primary/90 py-2 px-4 h-auto text-sm"
+                  >
                     {loading || isDownloading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -180,17 +197,42 @@ export const CourseCompletionOverlay = ({
                 )}
               </PDFDownloadLink>
 
-              <Button variant="outline" onClick={handleShare}>
+              <Button
+                variant="outline"
+                onClick={handleShare}
+                className="mx-auto max-w-xs w-full text-sm py-2 px-4 h-auto"
+              >
                 <Share2 className="mr-2 h-4 w-4" />
                 Share Certificate
               </Button>
 
-              <Button variant="secondary" onClick={onWatchAnotherCourse}>
+              <Button
+                variant="secondary"
+                onClick={onWatchAnotherCourse}
+                className="mx-auto max-w-xs w-full text-sm py-2 px-4 h-auto"
+              >
                 <ArrowRight className="mr-2 h-4 w-4" />
                 Explore More Courses
               </Button>
             </div>
           </div>
+          {relatedCourses.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-border">
+              <h3 className="text-lg font-semibold mb-4">Continue Learning</h3>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {relatedCourses.slice(0, 3).map((course) => (
+                  <Link
+                    key={course.id}
+                    href={`/dashboard/course/${course.slug}`}
+                    className="block p-3 border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <div className="font-medium text-sm mb-1 truncate">{course.title}</div>
+                    <div className="text-xs text-muted-foreground">{course.category?.name || "Uncategorized"}</div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>
