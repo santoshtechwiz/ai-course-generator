@@ -24,7 +24,7 @@ const FloatingCourseActions: React.FC<FloatingCourseActionsProps> = ({ slug, pos
         variant="outline"
         size="icon"
         onClick={toggleOverlay}
-        className={`fixed ${position}-4 top-1/2 -translate-y-1/2 z-50 bg-background shadow-md rounded-full p-2`}
+        className={`fixed ${position}-4 bottom-20 sm:top-1/2 sm:-translate-y-1/2 z-50 bg-background shadow-md rounded-full p-2`}
         aria-label="Toggle course actions"
       >
         <Settings className="h-5 w-5" />
@@ -40,7 +40,6 @@ const FloatingCourseActions: React.FC<FloatingCourseActionsProps> = ({ slug, pos
           >
             <div className="bg-background border rounded-lg shadow-lg overflow-hidden">
               <div className="p-2">
-               
                 <CourseActionsWithErrorBoundary slug={slug} />
               </div>
             </div>
@@ -52,4 +51,3 @@ const FloatingCourseActions: React.FC<FloatingCourseActionsProps> = ({ slug, pos
 }
 
 export default FloatingCourseActions
-

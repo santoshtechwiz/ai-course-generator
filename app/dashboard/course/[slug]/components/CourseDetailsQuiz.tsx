@@ -120,6 +120,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     ]
   }, [])
 
+  // Modify the query function to better work with your existing API routes
   const {
     data: questions,
     isError,
@@ -131,22 +132,48 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
       if (!chapter?.videoId || !effectiveChapterId) {
         throw new Error("Required chapter data is missing.")
       }
+
+      console.log("Fetching quiz data for:", {
+        videoId: chapter.videoId,
+        chapterId: Number(effectiveChapterId),
+        chapterName: chapter.title || chapter.name,
+      })
+
+      // Use the existing coursequiz API route
       const response = await axios.post("/api/coursequiz", {
         videoId: chapter.videoId,
         chapterId: Number(effectiveChapterId),
-        chapterName: chapter.title,
+        chapterName: chapter.title || chapter.name,
       })
-      if (response.data.error) {
-        throw new Error(response.data.error)
+
+      // Log the response for debugging
+      console.log("Quiz API response:", response.data)
+
+      // If the response is empty or not an array, return an empty array
+      if (!response.data || !Array.isArray(response.data)) {
+        console.warn("Invalid response format from quiz API:", response.data)
+        return []
       }
+
+      // Process the response data based on your API's actual response format
       return response.data.map((question: any) => ({
         ...question,
-        options: Array.isArray(question.options) ? question.options : JSON.parse(question.options),
+        id: question.id || `question-${Math.random().toString(36).substr(2, 9)}`,
+        options: Array.isArray(question.options)
+          ? question.options
+          : typeof question.options === "string"
+            ? JSON.parse(question.options)
+            : question.options
+              ? [question.options]
+              : [],
       }))
     },
     retry: 3,
     staleTime: 5 * 60 * 1000,
-    enabled: isPremium && quizStarted && isAuthenticated, // Only fetch if user is premium, authenticated and quiz has started
+    enabled: isPremium && quizStarted && isAuthenticated,
+    onError: (err) => {
+      console.error("Quiz data fetch error:", err)
+    },
   })
 
   // Use demo questions for unauthenticated users
@@ -154,8 +181,20 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     if (!isPremium || !isAuthenticated) {
       return demoQuestions
     }
-    return questions || []
-  }, [isPremium, isAuthenticated, questions, demoQuestions])
+
+    // If we have questions from the API, use them
+    if (questions && questions.length > 0) {
+      return questions
+    }
+
+    // If we're not loading and there are no questions, use demo questions as fallback
+    if (!isQuizLoading && (!questions || questions.length === 0)) {
+      console.log("No quiz questions found, using demo questions as fallback")
+      return demoQuestions
+    }
+
+    return []
+  }, [isPremium, isAuthenticated, questions, demoQuestions, isQuizLoading])
 
   const currentQuestion = useMemo(
     () => (effectiveQuestions && effectiveQuestions.length > 0 ? effectiveQuestions[currentQuestionIndex] : null),
@@ -323,6 +362,21 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
       <Card className="w-full max-w-4xl mx-auto">
         <CardContent className="flex items-center justify-center h-40">
           <p className="text-muted-foreground text-lg">No quiz available for this chapter.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (isPremium && isAuthenticated && !quizStarted) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+          <CheckCircle className="w-12 h-12 text-primary mb-4" />
+          <h3 className="text-xl font-semibold mb-2">Chapter Quiz Available</h3>
+          <p className="text-muted-foreground mb-6">Test your knowledge of this chapter with our interactive quiz.</p>
+          <Button onClick={startQuiz} size="lg">
+            Start Quiz
+          </Button>
         </CardContent>
       </Card>
     )
