@@ -9,23 +9,17 @@ import VideoNavigationSidebar from "./VideoNavigationSidebar"
 import useProgress from "@/hooks/useProgress"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 
-// Fix TypeScript errors with proper typing for FullChapter
-interface FullChapter extends FullChapterType {
-  videoId: string | null // Change to allow null
-  summary: string | null
-}
+import { throttle } from "lodash"
+import { Loader2, X } from "lucide-react"
 
-import throttle from "lodash.throttle"
-import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Skeleton } from "@/components/ui/skeleton"
 import { AnimatePresence, motion } from "framer-motion"
-import MobilePlayList from "./MobilePlayList"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import { useAuth } from "@/providers/unified-auth-provider"
-import { Loader2 } from "lucide-react"
+import MobilePlayList from "./MobilePlayList"
 
-// State and Action Types
+// Ensure proper typing for the reducer state and actions
 interface State {
   selectedVideoId: string | undefined
   currentChapter: FullChapterType | undefined
@@ -34,7 +28,7 @@ interface State {
 }
 
 type Action =
-  | { type: "SET_VIDEO"; payload: { videoId: string; chapter: FullChapter } }
+  | { type: "SET_VIDEO"; payload: { videoId: string; chapter: FullChapterType } }
   | { type: "SET_NAVIGATION"; payload: { next?: string; prev?: string } }
   | { type: "RESET" }
 
@@ -78,15 +72,14 @@ const MemoizedVideoNavigationSidebar = React.memo(VideoNavigationSidebar)
 // Custom Hook for Video Playlist
 function useVideoPlaylist(course: FullCourseType) {
   return useMemo(() => {
-    const playlist: { videoId: string; chapter: FullChapter }[] = []
+    const playlist: { videoId: string; chapter: FullChapterType }[] = []
     course.courseUnits?.forEach((unit) => {
       unit.chapters
-        .filter(
-          (chapter): chapter is FullChapter & { videoId: string; summary: string | null } =>
-            "videoId" in chapter && Boolean(chapter.videoId),
-        )
+        .filter((chapter): chapter is FullChapterType => Boolean(chapter.videoId))
         .forEach((chapter) => {
-          playlist.push({ videoId: chapter.videoId, chapter })
+          if (chapter.videoId) {
+            playlist.push({ videoId: chapter.videoId, chapter })
+          }
         })
     })
     return playlist
@@ -353,7 +346,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
       <div className="flex flex-col lg:flex-row">
         <main className="flex-1 min-w-0">
           <div className="relative">
-            <div className="aspect-video w-full bg-black">
+            <div className="aspect-video w-full bg-background">
               <MemoizedMainContent
                 course={course}
                 initialVideoId={state.selectedVideoId}

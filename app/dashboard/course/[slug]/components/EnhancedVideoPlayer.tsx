@@ -43,7 +43,7 @@ const formatTime = (seconds: number): string => {
 
 // Add this fallback component for when the player fails to load
 const VideoPlayerFallback = () => (
-  <div className="flex flex-col items-center justify-center w-full h-full bg-card rounded-lg border border-border aspect-video">
+  <div className="flex flex-col items-center justify-center w-full h-full bg-background rounded-lg border border-border aspect-video">
     <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
     <p className="text-muted-foreground mb-4">Unable to load video player</p>
     <Button variant="outline" className="mt-2" onClick={() => window.location.reload()}>
@@ -90,33 +90,34 @@ const EnhancedVideoPlayer = ({
   const [lastSavedPosition, setLastSavedPosition] = useState(0)
   const playerRef = useRef<ReactPlayer>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const progressBarRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const [playerError, setPlayerError] = useState(false)
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load global player settings from localStorage on mount
   useEffect(() => {
-    const savedMute = localStorage.getItem("global-player-mute")
-    const savedVolume = localStorage.getItem("global-player-volume")
-    const savedAutoplay = localStorage.getItem("global-player-autoplay")
-    const savedPlaybackSpeed = localStorage.getItem("global-player-speed")
+    if (typeof window !== "undefined") {
+      const savedMute = localStorage.getItem("global-player-mute")
+      const savedVolume = localStorage.getItem("global-player-volume")
+      const savedAutoplay = localStorage.getItem("global-player-autoplay")
+      const savedPlaybackSpeed = localStorage.getItem("global-player-speed")
 
-    if (savedMute) {
-      setMuted(savedMute === "true")
-    }
-    if (savedVolume) {
-      setVolume(Number.parseFloat(savedVolume))
-    }
-    if (savedAutoplay !== null) {
-      setAutoplayNext(savedAutoplay === "true")
-    } else {
-      // Default to true if not set
-      setAutoplayNext(true)
-      localStorage.setItem("global-player-autoplay", "true")
-    }
-    if (savedPlaybackSpeed) {
-      setPlaybackSpeed(Number.parseFloat(savedPlaybackSpeed))
+      if (savedMute) {
+        setMuted(savedMute === "true")
+      }
+      if (savedVolume) {
+        setVolume(Number.parseFloat(savedVolume))
+      }
+      if (savedAutoplay !== null) {
+        setAutoplayNext(savedAutoplay === "true")
+      } else {
+        // Default to true if not set
+        setAutoplayNext(true)
+        localStorage.setItem("global-player-autoplay", "true")
+      }
+      if (savedPlaybackSpeed) {
+        setPlaybackSpeed(Number.parseFloat(savedPlaybackSpeed))
+      }
     }
   }, [])
 
@@ -135,7 +136,7 @@ const EnhancedVideoPlayer = ({
 
   // Load saved position from localStorage
   useEffect(() => {
-    if (playerConfig.rememberPosition) {
+    if (playerConfig.rememberPosition && typeof window !== "undefined") {
       const savedPosition = localStorage.getItem(`video-position-${videoId}`)
       if (savedPosition) {
         const position = Number.parseFloat(savedPosition)
@@ -155,8 +156,10 @@ const EnhancedVideoPlayer = ({
       setFullscreen(!!document.fullscreenElement)
     }
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange)
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+    if (typeof document !== "undefined") {
+      document.addEventListener("fullscreenchange", handleFullscreenChange)
+      return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+    }
   }, [])
 
   // Auto-hide controls after inactivity
@@ -175,12 +178,14 @@ const EnhancedVideoPlayer = ({
       }
     }
 
-    document.addEventListener("mousemove", handleMouseMove)
+    if (typeof document !== "undefined") {
+      document.addEventListener("mousemove", handleMouseMove)
 
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove)
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove)
+        if (controlsTimeoutRef.current) {
+          clearTimeout(controlsTimeoutRef.current)
+        }
       }
     }
   }, [playing])
@@ -217,7 +222,11 @@ const EnhancedVideoPlayer = ({
         }
 
         // Only save position if it's changed significantly (throttling)
-        if (Math.abs(state.played - lastSavedPosition) > 0.01 && playerConfig.rememberPosition) {
+        if (
+          Math.abs(state.played - lastSavedPosition) > 0.01 &&
+          playerConfig.rememberPosition &&
+          typeof window !== "undefined"
+        ) {
           localStorage.setItem(`video-position-${videoId}`, state.played.toString())
           setLastSavedPosition(state.played)
         }
@@ -230,7 +239,7 @@ const EnhancedVideoPlayer = ({
 
   const handleVideoEnd = () => {
     // Mark video as completed by setting position to end
-    if (playerConfig.rememberPosition) {
+    if (playerConfig.rememberPosition && typeof window !== "undefined") {
       localStorage.setItem(`video-position-${videoId}`, "1.0")
     }
 
@@ -257,8 +266,10 @@ const EnhancedVideoPlayer = ({
       }, 1000)
     }
 
-    window.addEventListener("error", handlePlayerError)
-    return () => window.removeEventListener("error", handlePlayerError)
+    if (typeof window !== "undefined") {
+      window.addEventListener("error", handlePlayerError)
+      return () => window.removeEventListener("error", handlePlayerError)
+    }
   }, [])
 
   // Handlers for VideoControls component
@@ -274,7 +285,7 @@ const EnhancedVideoPlayer = ({
       playerRef.current?.seekTo(newPosition)
       setPlayed(newPosition)
 
-      if (playerConfig.rememberPosition) {
+      if (playerConfig.rememberPosition && typeof window !== "undefined") {
         localStorage.setItem(`video-position-${videoId}`, newPosition.toString())
         setLastSavedPosition(newPosition)
       }
@@ -285,7 +296,9 @@ const EnhancedVideoPlayer = ({
   const handleMute = useCallback(() => {
     setMuted((prev) => {
       const newMutedState = !prev
-      localStorage.setItem("global-player-mute", newMutedState.toString())
+      if (typeof window !== "undefined") {
+        localStorage.setItem("global-player-mute", newMutedState.toString())
+      }
       return newMutedState
     })
   }, [])
@@ -293,25 +306,29 @@ const EnhancedVideoPlayer = ({
   const handleVolumeChange = useCallback((newVolume: number) => {
     setVolume(newVolume)
     setMuted(newVolume === 0)
-    localStorage.setItem("global-player-mute", (newVolume === 0).toString())
-    localStorage.setItem("global-player-volume", newVolume.toString())
+    if (typeof window !== "undefined") {
+      localStorage.setItem("global-player-mute", (newVolume === 0).toString())
+      localStorage.setItem("global-player-volume", newVolume.toString())
+    }
   }, [])
 
   const handleFullscreenToggle = useCallback(() => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`)
-      })
-    } else {
-      document.exitFullscreen().catch((err) => {
-        console.error(`Error attempting to exit fullscreen: ${err.message}`)
-      })
+    if (typeof document !== "undefined") {
+      if (!document.fullscreenElement) {
+        containerRef.current?.requestFullscreen().catch((err) => {
+          console.error(`Error attempting to enable fullscreen: ${err.message}`)
+        })
+      } else {
+        document.exitFullscreen().catch((err) => {
+          console.error(`Error attempting to exit fullscreen: ${err.message}`)
+        })
+      }
     }
   }, [])
 
   const handleNextVideo = useCallback(() => {
     if (nextVideoId) {
-      if (playerConfig.rememberPosition) {
+      if (playerConfig.rememberPosition && typeof window !== "undefined") {
         localStorage.setItem(`video-position-${videoId}`, played.toString())
       }
       onEnded()
@@ -340,7 +357,7 @@ const EnhancedVideoPlayer = ({
     (newPlayed: number) => {
       setPlayed(newPlayed)
       playerRef.current?.seekTo(newPlayed)
-      if (playerConfig.rememberPosition) {
+      if (playerConfig.rememberPosition && typeof window !== "undefined") {
         localStorage.setItem(`video-position-${videoId}`, newPlayed.toString())
         setLastSavedPosition(newPlayed)
       }
@@ -350,13 +367,17 @@ const EnhancedVideoPlayer = ({
 
   const handlePlaybackSpeedChange = useCallback((newSpeed: number) => {
     setPlaybackSpeed(newSpeed)
-    localStorage.setItem("global-player-speed", newSpeed.toString())
+    if (typeof window !== "undefined") {
+      localStorage.setItem("global-player-speed", newSpeed.toString())
+    }
   }, [])
 
   const handleAutoplayToggle = useCallback(() => {
     setAutoplayNext((prev) => {
       const newState = !prev
-      localStorage.setItem("global-player-autoplay", newState.toString())
+      if (typeof window !== "undefined") {
+        localStorage.setItem("global-player-autoplay", newState.toString())
+      }
 
       toast({
         title: newState ? "Autoplay enabled" : "Autoplay disabled",
@@ -387,7 +408,7 @@ const EnhancedVideoPlayer = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-video rounded-lg overflow-hidden bg-card border border-border shadow-sm group"
+      className="relative w-full aspect-video rounded-lg overflow-hidden bg-background border border-border shadow-sm group"
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => playing && setShowControls(false)}
     >
