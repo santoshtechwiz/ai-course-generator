@@ -22,66 +22,47 @@ import { ThemeToggle } from "../ThemeToggle"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/providers/unified-auth-provider"
 
-// Enhance the NavItems component with better animations
 const NavItems = memo(() => {
   const pathname = usePathname()
 
   return (
-    <nav className="mx-6 hidden items-center space-x-4 md:flex">
+    <nav className="mx-6 hidden items-center space-x-8 md:flex">
       {navItems.map((item) => (
-        <motion.div
-          key={item.name}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
-          <Link href={item.href} passHref>
-            <Button
-              variant={pathname === item.href ? "default" : "ghost"}
-              className={`relative flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium ${
-                pathname === item.href
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
-              }`}
-            >
-              <LayoutGroup>
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0.8 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <item.icon className="h-4 w-4" />
-                </motion.div>
-                <span>{item.name}</span>
-                {item.subItems && item.subItems.length > 0 && (
-                  <motion.div animate={{ rotate: pathname === item.href ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown className="h-3 w-3 ml-1.5" />
-                  </motion.div>
-                )}
-
-                {pathname === item.href && (
-                  <motion.div
-                    layoutId="nav-underline"
-                    className="absolute bottom-0 left-0 h-0.5 w-full bg-primary"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                )}
-              </LayoutGroup>
-            </Button>
-          </Link>
-        </motion.div>
+        <Link href={item.href} passHref key={item.name}>
+          <motion.div
+            className={`relative py-2 text-sm font-medium transition-colors ${
+              pathname === item.href
+                ? "text-primary font-semibold"
+                : "text-foreground hover:text-primary/80"
+            }`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            {item.name}
+            {pathname === item.href && (
+              <motion.div
+                layoutId="nav-underline"
+                className="absolute bottom-0 left-0 h-0.5 w-full bg-primary"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              />
+            )}
+            {item.subItems && item.subItems.length > 0 && (
+              <ChevronDown className="inline h-3 w-3 ml-1" />
+            )}
+          </motion.div>
+        </Link>
       ))}
     </nav>
   )
 })
 NavItems.displayName = "NavItems"
 
-// Update the MainNavbar component with improved animations and responsiveness
 export default function MainNavbar() {
   const { data: session, status } = useSession()
-  const { isAuthenticated, user, credits } = useAuth() // Use our custom auth context
+  const { isAuthenticated, user, credits } = useAuth()
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -90,13 +71,11 @@ export default function MainNavbar() {
   const [creditScore, setCreditScore] = useState(0)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Sync user data from both sources
   const isAdmin = session?.user?.isAdmin || user?.isAdmin || false
   const userName = session?.user?.name || user?.name || ""
   const userEmail = session?.user?.email || user?.email || ""
   const userAuthenticated = status === "authenticated" || isAuthenticated
 
-  // Scroll handler with debounce
   const handleScroll = useCallback(() => {
     let timer: NodeJS.Timeout
     return () => {
@@ -107,37 +86,29 @@ export default function MainNavbar() {
     }
   }, [])
 
-  // Set up scroll listener
   useEffect(() => {
     const scrollListener = handleScroll()
     window.addEventListener("scroll", scrollListener, { passive: true })
     return () => window.removeEventListener("scroll", scrollListener)
   }, [handleScroll])
 
-  // Refresh subscription data and sync with user credits
   useEffect(() => {
     if (userAuthenticated) {
-      // Track initial load state
       const initialLoadTimer = setTimeout(() => {
         setIsInitialLoad(false)
       }, 3000)
 
-      // Immediately refresh subscription data on auth
       refreshSubscription(true)
 
-      // Set up polling with a shorter initial interval for faster initial load
       const quickInitialRefresh = setTimeout(() => {
         refreshSubscription(true)
-      }, 1000) // Quick first refresh
+      }, 1000)
 
-      // Then set up regular interval with exponential backoff
-      let interval = 30000 // Start with 30s
+      let interval = 30000
       const intervalId = setInterval(() => {
-        // If there was an error, increase the interval (up to 2 minutes)
         if (isError) {
           interval = Math.min(interval * 1.5, 120000)
         } else {
-          // If successful, gradually decrease interval (down to 30s)
           interval = Math.max(interval * 0.9, 30000)
         }
         refreshSubscription()
@@ -151,11 +122,8 @@ export default function MainNavbar() {
     }
   }, [refreshSubscription, userAuthenticated, isError])
 
-  // Improve credit score synchronization with debouncing
   useEffect(() => {
-    // Use a short timeout to debounce multiple rapid updates
     const debounceTimer = setTimeout(() => {
-      // Create a priority order for credit sources
       if (subscriptionStatus?.credits !== undefined) {
         setCreditScore(subscriptionStatus.credits)
       } else if (credits !== undefined) {
@@ -168,7 +136,6 @@ export default function MainNavbar() {
     return () => clearTimeout(debounceTimer)
   }, [subscriptionStatus, session?.user?.credits, credits])
 
-  // Force refresh when user interacts with the page
   useEffect(() => {
     const handleUserActivity = () => {
       if (userAuthenticated && !isLoadingSubscription) {
@@ -176,7 +143,6 @@ export default function MainNavbar() {
       }
     }
 
-    // Add event listeners for user activity
     window.addEventListener("mousemove", handleUserActivity, { passive: true, once: true })
     window.addEventListener("touchstart", handleUserActivity, { passive: true, once: true })
 
@@ -195,15 +161,7 @@ export default function MainNavbar() {
     },
   }
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: -10 },
-    visible: { opacity: 1, y: 0 },
-  }
-
-  // Get subscription plan from subscription status
   const subscriptionPlan = subscriptionStatus?.subscriptionPlan || "FREE"
-
-  // Determine if we should show loading states
   const showLoading = isInitialLoad && isLoadingSubscription && userAuthenticated
 
   return (
@@ -214,15 +172,9 @@ export default function MainNavbar() {
       variants={headerVariants}
       initial="hidden"
       animate="visible"
-      layout
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <motion.div
-        className="w-full px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between"
-        layout
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      >
-        <motion.div className="flex items-center" variants={itemVariants}>
+      <div className="w-full px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
+        <div className="flex items-center">
           <Link href="/" passHref>
             <motion.div
               whileHover={{ scale: 1.05 }}
@@ -234,9 +186,9 @@ export default function MainNavbar() {
             </motion.div>
           </Link>
           <NavItems />
-        </motion.div>
+        </div>
 
-        <motion.div className="flex items-center gap-2 md:gap-4" variants={itemVariants}>
+        <div className="flex items-center gap-2 md:gap-4">
           <motion.div
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -356,8 +308,8 @@ export default function MainNavbar() {
               <Menu className="h-5 w-5" />
             </Button>
           </motion.div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       <AnimatePresence>
         {isSearchModalOpen && (
@@ -394,15 +346,13 @@ export default function MainNavbar() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05, duration: 0.3 }}
+                      className={`py-2 text-sm font-medium ${
+                        pathname === item.href
+                          ? "text-primary font-semibold"
+                          : "text-foreground hover:text-primary/80"
+                      }`}
                     >
-                      <Button
-                        variant={pathname === item.href ? "default" : "ghost"}
-                        className="w-full justify-start"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {item.name}
-                      </Button>
+                      {item.name}
                     </motion.div>
                   </Link>
                 </SheetClose>

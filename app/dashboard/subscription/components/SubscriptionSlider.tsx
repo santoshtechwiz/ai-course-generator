@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { Lock, Unlock } from "lucide-react"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
-import { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
 interface SubscriptionSliderProps {
   value: number
@@ -25,7 +25,7 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
 
   const currentPlan =
     SUBSCRIPTION_PLANS.find((plan) => plan.id === subscriptionStatus?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
-  const maxQuestions = currentPlan.limits.maxQuestionsPerQuiz;
+  const maxQuestions = currentPlan.limits.maxQuestionsPerQuiz
   const isMaxPlan = currentPlan.name === "ULTIMATE"
 
   const getNextPlan = (): SubscriptionPlanType => {
@@ -75,7 +75,7 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
       {!isMaxPlan && (
         <div className="text-center mt-4">
           <p className="text-sm text-muted-foreground mb-2">Need more questions? Upgrade your plan!</p>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full">
             Upgrade to {nextPlan}
           </Button>
         </div>
@@ -83,4 +83,3 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
     </div>
   )
 }
-

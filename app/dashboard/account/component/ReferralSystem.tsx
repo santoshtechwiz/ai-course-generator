@@ -64,7 +64,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
 
   const copyToClipboard = useCallback(() => {
     if (!referralData?.referralCode) return
-    
+
     const referralUrl = `${window.location.origin}/dashboard/subscription?ref=${referralData.referralCode}`
     navigator.clipboard.writeText(referralUrl)
     setCopied(true)
@@ -86,13 +86,15 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
     }
 
     const referralUrl = `${window.location.origin}/dashboard/subscription?ref=${referralData.referralCode}`
-    
+
     if (navigator.share) {
-      navigator.share({
-        title: "Join me on this awesome platform!",
-        text: `Use my referral code ${referralData.referralCode} to get started with a special bonus!`,
-        url: referralUrl,
-      }).catch(() => copyToClipboard())
+      navigator
+        .share({
+          title: "Join me on this awesome platform!",
+          text: `Use my referral code ${referralData.referralCode} to get started with a special bonus!`,
+          url: referralUrl,
+        })
+        .catch(() => copyToClipboard())
     } else {
       copyToClipboard()
     }
@@ -149,12 +151,14 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
+        {/* Ensure consistent grid styling */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <StatCard label="Total Referrals" value={referralData?.totalReferrals ?? 0} />
           <StatCard label="Completed" value={referralData?.completedReferrals ?? 0} />
           <StatCard label="Tokens Earned" value={referralData?.tokensEarned ?? 0} />
         </div>
 
+        {/* Ensure consistent input and button styling */}
         <div className="space-y-4">
           <div>
             <label htmlFor="referral-code" className="text-sm font-medium mb-2 block">
@@ -167,15 +171,15 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
               )}
             </label>
             <div className="flex">
-              <Input 
-                id="referral-code" 
-                value={referralData?.referralCode || "Generating..."} 
-                readOnly 
-                className="rounded-r-none font-mono" 
+              <Input
+                id="referral-code"
+                value={referralData?.referralCode || "Generating..."}
+                readOnly
+                className="rounded-r-none font-mono"
               />
-              <Button 
-                variant="outline" 
-                className="rounded-l-none border-l-0" 
+              <Button
+                variant="outline"
+                className="rounded-l-none border-l-0"
                 onClick={copyToClipboard}
                 disabled={!referralData?.referralCode}
               >
@@ -184,6 +188,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
             </div>
           </div>
 
+          {/* Ensure consistent button styling */}
           <div className="pt-2 space-y-2">
             <Button
               onClick={shareReferral}
@@ -197,9 +202,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
               )}
               Share with Friends
             </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              Earn 10 tokens for each successful referral
-            </p>
+            <p className="text-xs text-muted-foreground text-center">Earn 10 tokens for each successful referral</p>
           </div>
         </div>
       </CardContent>

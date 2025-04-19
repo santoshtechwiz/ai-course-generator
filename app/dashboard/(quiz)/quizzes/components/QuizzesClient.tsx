@@ -7,17 +7,18 @@ import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
 
-import type { QuizListItem, QuizType } from "@/app/types/types"
+import type { QuizListItem } from "@/app/types/types"
+import type { QuizType } from "./QuizSidebar"
 
 import { getQuizzes } from "@/app/actions/getQuizes"
-import { CreateCard } from "@/components/CreateCard"
 import { QuizSidebar } from "./QuizSidebar"
-
-import { QuizzesListSkeleton } from "@/components/ui/loading/loading-skeleton"
 import { QuizList } from "./QuizList"
 import { ErrorBoundary } from "react-error-boundary"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import { QuizzesSkeleton } from "./QuizzesSkeleton"
+import { AlertCircle, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -64,45 +65,71 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     [debouncedSearch, selectedTypes, userId, questionCountRange, showPublicOnly, activeTab],
   )
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
-    queryKey,
-    queryFn: async ({ pageParam = 1 }) => {
-      const result = await getQuizzes({
-        page: pageParam,
-        limit: 10,
-        searchTerm: debouncedSearch,
-        userId,
-        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
-        minQuestions: questionCountRange[0],
-        maxQuestions: questionCountRange[1],
-        publicOnly: showPublicOnly,
-        tab: activeTab,
-      })
-      return {
-        quizzes: result?.quizzes || [],
-        nextCursor: result?.nextCursor ?? null,
-      }
-    },
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    initialPageParam: 1,
-    initialData: () => {
-      if (search === "" && selectedTypes.length === 0 && activeTab === "all") {
-        return {
-          pages: [initialQuizzesData],
-          pageParams: [1],
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, isRefetching } =
+    useInfiniteQuery({
+      queryKey,
+      queryFn: async ({ pageParam }) => {
+        try {
+          const result = await getQuizzes({
+            page: pageParam as number,
+            limit: 10,
+            searchTerm: debouncedSearch,
+            userId,
+            quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
+            minQuestions: questionCountRange[0],
+            maxQuestions: questionCountRange[1],
+            publicOnly: showPublicOnly,
+            tab: activeTab,
+          })
+
+          // Transform the result to match QuizListItem type
+          const quizzes = result?.quizzes?.map((quiz: any) => ({
+            ...quiz,
+            questions: quiz.questions || [],
+            tags: quiz.tags || [],
+          })) || []
+
+          return {
+            quizzes,
+            nextCursor: result?.nextCursor ?? null,
+          }
+
+          // Check if there was an error in the server action
+          if (result.error) {
+            throw new Error(result.error)
+          }
+
+          return {
+            quizzes: result?.quizzes || [],
+            nextCursor: result?.nextCursor ?? null,
+          }
+        } catch (error) {
+          console.error("Error fetching quizzes:", error)
+          throw error // Re-throw to trigger error state
         }
-      }
-      return undefined
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes stale time
-  })
+      },
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      initialPageParam: 1,
+      initialData: () => {
+        if (search === "" && selectedTypes.length === 0 && activeTab === "all") {
+          return {
+            pages: [initialQuizzesData],
+            pageParams: [1],
+          }
+        }
+        return undefined
+      },
+      staleTime: 1000 * 60 * 5, // 5 minutes stale time
+      retry: 2, // Retry failed requests twice
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    })
 
   // Load more quizzes when scrolling to the bottom
   useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
+    if (inView && hasNextPage && !isFetchingNextPage && !isError) {
       fetchNextPage()
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, isError])
 
   // Handlers for search and filters
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,6 +156,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     router.push("/dashboard/mcq")
   }, [router])
 
+  const handleRetry = useCallback(() => {
+    refetch()
+  }, [refetch])
+
   const quizzes = extractQuizzes(data)
   const isSearching =
     debouncedSearch.trim() !== "" ||
@@ -138,41 +169,45 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     showPublicOnly ||
     activeTab !== "all"
 
-  // Empty state content
-  const renderEmptyState = () => {
-    if (isSearching) {
-      return (
-        <div className="text-center space-y-4 p-8 bg-muted/30 rounded-lg">
-          <h3 className="text-xl font-semibold">No quizzes found</h3>
-          <p className="text-muted-foreground">
-            We couldn't find any quizzes matching your search criteria. Try adjusting your filters.
-          </p>
-          <button
-            onClick={handleClearSearch}
-            className="px-4 py-2 mt-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
-          >
-            Clear filters
-          </button>
-        </div>
-      )
+  // Calculate quiz counts by type
+  const quizCounts = useMemo(() => {
+    return {
+      all: quizzes.length,
+      mcq: quizzes.filter((q) => q.quizType === "mcq").length,
+      openended: quizzes.filter((q) => q.quizType === "openended").length,
+      code: quizzes.filter((q) => q.quizType === "code").length,
+      "fill-blanks": quizzes.filter((q) => q.quizType === "fill-blanks").length,
     }
+  }, [quizzes])
 
-    return (
-      <div className="space-y-6">
-        <div className="text-center mb-6">
-          <h3 className="text-2xl font-bold mb-2">Get Started with Your First Quiz</h3>
-          <p className="text-muted-foreground">
-            You don't have any quizzes yet. Create your first quiz to start engaging your audience!
-          </p>
-        </div>
-        <CreateCard
-          title="Create Your First Quiz"
-          description="Transform your knowledge into an engaging quiz in minutes! Start your journey now."
-          createUrl="/dashboard/mcq"
-        />
-      </div>
-    )
-  }
+  // Error state content
+  const renderErrorState = () => (
+    <div className="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-800 flex flex-col items-center">
+      <AlertCircle className="w-10 h-10 mb-3 text-red-500 dark:text-red-400" />
+      <h3 className="font-semibold text-xl mb-2">Error loading quizzes</h3>
+      <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+        We couldn't load your quizzes. Please try again later.
+      </p>
+      <Button
+        onClick={handleRetry}
+        variant="outline"
+        className="mt-2 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+        disabled={isRefetching}
+      >
+        {isRefetching ? (
+          <>
+            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            Retrying...
+          </>
+        ) : (
+          <>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try Again
+          </>
+        )}
+      </Button>
+    </div>
+  )
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-[50vh]">
@@ -195,30 +230,11 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <ErrorBoundary
-          fallback={
-            <div className="p-8 text-center bg-red-50 rounded-lg text-red-500">
-              Error loading quizzes. Please try again later.
-            </div>
-          }
-        >
+        <ErrorBoundary fallback={renderErrorState()} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
           {isLoading ? (
-            <QuizzesListSkeleton />
+            <QuizzesSkeleton />
           ) : isError ? (
-            <QuizList
-              quizzes={[]}
-              isLoading={false}
-              isError={true}
-              isFetchingNextPage={false}
-              hasNextPage={false}
-              isSearching={isSearching}
-              onRetry={refetch}
-              onCreateQuiz={handleCreateQuiz}
-              activeFilter={activeTab}
-              onFilterChange={handleTabChange}
-            />
-          ) : quizzes.length === 0 ? (
-            renderEmptyState()
+            renderErrorState()
           ) : (
             <>
               <QuizList
@@ -231,6 +247,8 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
                 onCreateQuiz={handleCreateQuiz}
                 activeFilter={activeTab}
                 onFilterChange={handleTabChange}
+                onRetry={handleRetry}
+                quizCounts={quizCounts}
               />
               <div ref={ref} className="h-20 flex items-center justify-center">
                 {isFetchingNextPage && (

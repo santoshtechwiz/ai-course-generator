@@ -8,6 +8,7 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import { QuizzesClient } from "./components/QuizzesClient"
 import { QuizzesSkeleton } from "./components/QuizzesSkeleton"
 import { Loader } from "@/components/ui/loader"
+import ClientOnly from "@/components/ClientOnly"
 
 export const metadata: Metadata = generatePageMetadata({
   title: "Free Quizzes – MCQs, Open-ended and Code Challenges",
@@ -35,20 +36,6 @@ const QuizPage = async () => {
   const userId = session?.user?.id
   const initialQuizzesData = await getQuizzes({ page: 1, limit: 5, searchTerm: "", userId: userId, quizTypes: [] })
 
-  // Prepare data for collection page schema
-  const collectionPageData = {
-    name: "Explore Quizzes",
-    description: "Discover a variety of interactive quizzes to test and enhance your programming knowledge and skills.",
-    url: "/dashboard/quizzes",
-  }
-
-  // Prepare data for breadcrumb schema
-  const breadcrumbData = [
-    { name: "Home", href: "/" },
-    { name: "Dashboard", href: "/dashboard" },
-    { name: "Quizzes", href: "/dashboard/quizzes" },
-  ]
-
   return (
     <div className="container mx-auto px-4 py-8">
       <JsonLd type="default" />
@@ -67,7 +54,9 @@ const QuizPage = async () => {
           </div>
         }
       >
-        <QuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
+        <ClientOnly>
+          <QuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
+        </ClientOnly>
       </Suspense>
     </div>
   )

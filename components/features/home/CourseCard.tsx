@@ -1,11 +1,13 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import { useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookIcon, UsersIcon, FileQuestionIcon, StarIcon, EyeIcon, Clock, BookOpen } from "lucide-react"
+import { BookIcon, UsersIcon, FileQuestionIcon, StarIcon, EyeIcon, Clock, BookOpen, Loader2 } from "lucide-react"
+import { Code, Globe, Database, Cloud, Paintbrush, Smartphone, Shield, Brain } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
@@ -49,22 +51,27 @@ const LEVEL_CONFIG = {
 
 // Enhanced category icons with more options
 const getCategoryIcon = (category: string) => {
-  const categoryLower = category?.toLowerCase() || ""
+  if (!category) return <BookOpen className="h-full w-full" />
 
-  if (
-    categoryLower.includes("programming") ||
-    categoryLower.includes("coding") ||
-    categoryLower.includes("development")
-  ) {
-    return <BookIcon className="h-full w-full" />
-  } else if (
-    categoryLower.includes("data") ||
-    categoryLower.includes("science") ||
-    categoryLower.includes("analytics")
-  ) {
-    return <FileQuestionIcon className="h-full w-full" />
+  const categoryLower = category.toLowerCase()
+
+  // Map category names to appropriate icons
+  if (categoryLower.includes("programming") || categoryLower.includes("coding")) {
+    return <Code className="h-full w-full" />
+  } else if (categoryLower.includes("web") || categoryLower.includes("development")) {
+    return <Globe className="h-full w-full" />
+  } else if (categoryLower.includes("data") || categoryLower.includes("science")) {
+    return <Database className="h-full w-full" />
+  } else if (categoryLower.includes("cloud") || categoryLower.includes("devops")) {
+    return <Cloud className="h-full w-full" />
   } else if (categoryLower.includes("design") || categoryLower.includes("ui") || categoryLower.includes("ux")) {
-    return <UsersIcon className="h-full w-full" />
+    return <Paintbrush className="h-full w-full" />
+  } else if (categoryLower.includes("mobile") || categoryLower.includes("app")) {
+    return <Smartphone className="h-full w-full" />
+  } else if (categoryLower.includes("security") || categoryLower.includes("cyber")) {
+    return <Shield className="h-full w-full" />
+  } else if (categoryLower.includes("ai") || categoryLower.includes("machine")) {
+    return <Brain className="h-full w-full" />
   } else {
     return <BookOpen className="h-full w-full" />
   }
@@ -81,15 +88,24 @@ export const CourseCard = React.memo(
     lessonCount,
     quizCount,
     viewCount,
-    category = "Development",
+    category,
     duration = "4-6 weeks",
     className,
     loading = false,
     image,
     difficulty,
   }: CourseCardProps) => {
+    const [isNavigating, setIsNavigating] = useState(false)
+    const router = useRouter()
     const courseLevel = difficulty || determineCourseLevel(unitCount, lessonCount, quizCount)
     const config = LEVEL_CONFIG[courseLevel as keyof typeof LEVEL_CONFIG] || LEVEL_CONFIG.Intermediate
+
+    // Handle card click with loading state
+    const handleCardClick = (e: React.MouseEvent) => {
+      e.preventDefault()
+      setIsNavigating(true)
+      router.push(`/dashboard/course/${slug}`)
+    }
 
     // Loading skeleton with improved animation
     if (loading) {
@@ -117,8 +133,9 @@ export const CourseCard = React.memo(
           className,
         )}
       >
-        <Link
+        <a
           href={`/dashboard/course/${slug}`}
+          onClick={handleCardClick}
           className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
           aria-label={`View ${title} course`}
         >
@@ -131,10 +148,16 @@ export const CourseCard = React.memo(
             transition={{ duration: 0.3 }}
             className="h-full"
           >
-            <Card className="h-full overflow-hidden border-muted hover:border-primary/20 transition-colors duration-300 bg-card">
+            <Card className="h-full overflow-hidden border-muted hover:border-primary/20 transition-colors duration-300 bg-card relative">
+              {isNavigating && (
+                <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20 backdrop-blur-sm">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              )}
+
               {/* Course Image with Icon */}
               <motion.div
-                className={cn("relative w-full h-40", config.bg)}
+                className={cn("relative w-full h-52", config.bg)}
                 initial={{ opacity: 0.9 }}
                 whileHover={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
@@ -189,7 +212,7 @@ export const CourseCard = React.memo(
                 </div>
               </motion.div>
 
-              <CardContent className="p-4 space-y-3">
+              <CardContent className="p-5 space-y-4">
                 {/* Title and Description */}
                 <div>
                   <motion.h3
@@ -247,7 +270,7 @@ export const CourseCard = React.memo(
               </CardContent>
             </Card>
           </motion.div>
-        </Link>
+        </a>
       </motion.div>
     )
   },

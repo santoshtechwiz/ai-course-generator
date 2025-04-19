@@ -60,7 +60,7 @@ const nextConfig: NextConfig = {
 
   // Performance optimizations
   compress: true,
-  swcMinify: true, // Use SWC minifier for better performance
+
 
   // Experimental features
   experimental: {

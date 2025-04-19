@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CourseSidebar } from "./CourseSidebar"
 import CoursesClient from "./CoursesClient"
-import { categories, type CategoryId } from "@/config/categories"
+import type { CategoryId } from "@/config/categories"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react"
@@ -13,18 +13,49 @@ interface CourseListProps {
   userId?: string
 }
 
+interface Category {
+  id: string
+  name: string
+  courseCount?: number
+}
+
 export default function CourseList({ url, userId }: CourseListProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  // Add rating filter state
+  const [ratingFilter, setRatingFilter] = useState(0)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch("/api/categories")
+        if (response.ok) {
+          const data = await response.json()
+          setCategories(data)
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const handleCategoryChange = (categoryId: CategoryId | null) => {
     setSelectedCategory(categoryId === selectedCategory ? null : categoryId)
   }
 
+  // Update the resetFilters function to also reset the rating filter
   const resetFilters = () => {
     setSearchQuery("")
     setSelectedCategory(null)
+    setRatingFilter(0) // Reset rating filter
   }
 
   return (
@@ -49,6 +80,8 @@ export default function CourseList({ url, userId }: CourseListProps) {
             handleCategoryChange={handleCategoryChange}
             resetFilters={resetFilters}
             courseTypes={categories}
+            ratingFilter={ratingFilter}
+            setRatingFilter={setRatingFilter}
           />
         </SheetContent>
       </Sheet>
@@ -77,6 +110,8 @@ export default function CourseList({ url, userId }: CourseListProps) {
           resetFilters={resetFilters}
           courseTypes={categories}
           isCollapsed={!sidebarOpen}
+          ratingFilter={ratingFilter}
+          setRatingFilter={setRatingFilter}
         />
       </div>
 
@@ -88,6 +123,7 @@ export default function CourseList({ url, userId }: CourseListProps) {
             userId={userId || "static-user-id"} // Ensure consistent userId
             searchQuery={searchQuery}
             selectedCategory={selectedCategory}
+            ratingFilter={ratingFilter}
           />
         </div>
       </main>

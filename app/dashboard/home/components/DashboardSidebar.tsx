@@ -62,7 +62,6 @@ export default function DashboardSidebar({
       label: "User Management",
       href: "/admin/users",
     },
-   
   ]
 
   return (
@@ -93,7 +92,7 @@ export default function DashboardSidebar({
               <item.icon className="h-5 w-5 mr-2" />
               {isOpen && (
                 <>
-                  <span>{item.label}</span>
+                  <span className="flex-1 text-left">{item.label}</span>
                   {item.count !== undefined && (
                     <Badge variant="secondary" className="ml-auto">
                       {item.count}
@@ -113,7 +112,7 @@ export default function DashboardSidebar({
                 <Button variant="outline" className="w-full justify-start text-sm" asChild>
                   <Link href="/dashboard/course">
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    New Course
+                    <span className="flex-1 text-left">New Course</span>
                   </Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-sm" asChild>
@@ -151,7 +150,7 @@ export default function DashboardSidebar({
               <>
                 <div className="flex items-center">
                   <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                  <span>Settings</span>
                 </div>
                 <ChevronRight className="h-4 w-4" />
               </>

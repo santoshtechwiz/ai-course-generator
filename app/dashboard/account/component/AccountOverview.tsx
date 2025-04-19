@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge } from "./status-badge"
 import { ReferralSystem } from "./ReferralSystem"
-import { CreditCard, Calendar, User, Mail } from "lucide-react"
+import { CreditCard, User, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
 
@@ -63,7 +63,7 @@ export function AccountOverview({ userId }: { userId: string }) {
         {/* Account Summary Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Account Summary</CardTitle>
+            <CardTitle className="text-lg font-semibold">Account Summary</CardTitle>
             <CardDescription>Overview of your account and subscription</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -88,7 +88,7 @@ export function AccountOverview({ userId }: { userId: string }) {
               </div>
             </div>
 
-            {/* Subscription Summary */}
+            {/* Subscription Summary - Ensure consistent styling */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Subscription</h3>
@@ -110,15 +110,6 @@ export function AccountOverview({ userId }: { userId: string }) {
                     Manage
                   </Button>
                 </div>
-
-                {subscriptionData?.expirationDate && (
-                  <div className="flex items-center text-sm text-muted-foreground mt-2">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <span>
-                      {subscriptionData?.isSubscribed ? "Renews on" : "Expires on"} {formattedExpirationDate}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
 

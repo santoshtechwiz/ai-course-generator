@@ -1,23 +1,34 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import React from "react"
+
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import type { CategoryId } from "@/config/categories"
 import { BookOpen, ChevronDown, Loader2, LayoutGrid, List, Filter } from "lucide-react"
+// Add import for missing icons
+import { AlertCircle, RefreshCw } from "lucide-react"
 import { CreateCard } from "@/components/CreateCard"
 import { useDebounce } from "@/hooks/useDebounce"
 import { CourseCard } from "./CourseCard"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
+// Add missing imports at the top of the file
+// Remove this line:
+// import { useInView } from "react-intersection-observer";
+// Add memo and useCallback to optimize rendering
+const MemoizedCourseCard = React.memo(CourseCard)
 
+// Update interface to include ratingFilter
 interface CoursesClientProps {
   url: string
   userId?: string
   searchQuery: string
   selectedCategory: CategoryId | null
+  ratingFilter?: number
 }
 
 interface Course {
@@ -31,7 +42,7 @@ interface Course {
   lessonCount?: number
   quizCount?: number
   viewCount?: number
-  category?: string
+  category?: any
   duration?: string
   createdAt?: string
   image?: string
@@ -40,59 +51,155 @@ interface Course {
 
 const ITEMS_PER_PAGE = 12
 
-export default function CoursesClient({ url, userId, searchQuery, selectedCategory }: CoursesClientProps) {
+// Update function parameters to include ratingFilter
+export default function CoursesClient({
+  url,
+  userId,
+  searchQuery,
+  selectedCategory,
+  ratingFilter = 0,
+}: CoursesClientProps) {
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [showFilters, setShowFilters] = useState(false)
 
+  // Update query key to include ratingFilter
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, refetch, isLoading } = useInfiniteQuery({
-    queryKey: ["courses", { search: debouncedSearchQuery, category: selectedCategory, userId }],
+    queryKey: ["courses", { search: debouncedSearchQuery, category: selectedCategory, userId, rating: ratingFilter }],
     initialPageParam: 1,
+    // Update the queryFn to include ratingFilter in the API call
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await fetch(
-        `/api/courses?page=${pageParam}&limit=${ITEMS_PER_PAGE}${
-          debouncedSearchQuery ? `&search=${debouncedSearchQuery}` : ""
-        }${selectedCategory ? `&category=${selectedCategory}` : ""}${userId ? `&userId=${userId}` : ""}`,
-      )
-      const data = await response.json()
-      return data
+      try {
+        // Build the API URL with proper parameters
+        const apiUrl = new URL("/api/courses", window.location.origin)
+        apiUrl.searchParams.set("page", pageParam.toString())
+        apiUrl.searchParams.set("limit", ITEMS_PER_PAGE.toString())
+
+        if (debouncedSearchQuery) {
+          apiUrl.searchParams.set("search", debouncedSearchQuery)
+        }
+
+        if (selectedCategory) {
+          apiUrl.searchParams.set("category", selectedCategory)
+        }
+
+        if (userId) {
+          apiUrl.searchParams.set("userId", userId)
+        }
+
+        if (ratingFilter > 0) {
+          apiUrl.searchParams.set("minRating", ratingFilter.toString())
+        }
+
+        apiUrl.searchParams.set(
+          "sortBy",
+          activeTab === "popular" ? "viewCount" : activeTab === "newest" ? "createdAt" : "viewCount",
+        )
+        apiUrl.searchParams.set("sortOrder", "desc")
+
+        console.log("Fetching courses from:", apiUrl.toString())
+
+        const response = await fetch(apiUrl.toString(), {
+          headers: {
+            "Cache-Control": "no-cache",
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log("Fetched courses data:", data)
+        return data
+      } catch (error) {
+        console.error("Error fetching courses:", error)
+        throw error
+      }
     },
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.courses?.length === ITEMS_PER_PAGE ? allPages.length + 1 : undefined
     },
+    refetchOnWindowFocus: false,
+    staleTime: 60000, // 1 minute
   })
 
+  // Add this after the query definition
+  const [loadMoreRef, setLoadMoreRef] = useState<HTMLDivElement | null>(null)
+
+  // Add this useEffect for infinite scrolling
+  useEffect(() => {
+    if (!loadMoreRef || !hasNextPage || isFetchingNextPage) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: "200px" },
+    )
+
+    observer.observe(loadMoreRef)
+    return () => observer.disconnect()
+  }, [loadMoreRef, hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  useEffect(() => {
+    if (debouncedSearchQuery !== searchQuery || selectedCategory) {
+      refetch()
+    }
+  }, [refetch, debouncedSearchQuery, searchQuery, selectedCategory])
+
+  // Force refetch when activeTab changes
+  // Update useEffect to refetch when ratingFilter changes
   useEffect(() => {
     refetch()
-  }, [refetch, debouncedSearchQuery, selectedCategory])
+  }, [activeTab, ratingFilter, refetch])
 
   const courses = data?.pages.flatMap((page) => page.courses) || []
 
+  // Use useCallback for handlers
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value)
+  }, [])
+
+  const handleViewModeChange = useCallback((mode: "grid" | "list") => {
+    setViewMode(mode)
+  }, [])
+
+  // Use useMemo for filtered and sorted courses
+  // Update the filtered courses to filter by rating if not already filtered by the API
+  const filteredCourses = useMemo(() => {
+    return courses.filter((course) => {
+      // Filter by rating if not already filtered by the API
+      if (ratingFilter > 0 && (course.rating || 0) < ratingFilter) {
+        return false
+      }
+      return true
+    })
+  }, [courses, ratingFilter])
+
   const sortedCourses = useMemo(() => {
     if (activeTab === "popular") {
-      return [...courses].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+      return [...filteredCourses].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
     } else if (activeTab === "newest") {
-      return [...courses].sort((a, b) => {
+      return [...filteredCourses].sort((a, b) => {
         if (a.createdAt && b.createdAt) {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         }
         return 0
       })
     }
-    return courses
-  }, [courses, activeTab])
+    return filteredCourses
+  }, [filteredCourses, activeTab])
 
-  if (status === "error") {
-    toast({
-      title: "Error loading courses",
-      description: (error as Error).message,
-      variant: "destructive",
-    })
-  }
+  // Fix the "No course found" flash issue by improving loading state handling
+  // Update the isLoading condition to include when selectedCategory changes
+  const isLoadingState = isLoading || (selectedCategory !== null && status === "loading")
 
-  // Enhanced loading state with skeleton cards
-  if (isLoading) {
+  // Replace the existing isLoading check with this updated condition
+  if (isLoadingState) {
     return (
       <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
         <div className="flex justify-between items-center mb-6">
@@ -150,6 +257,30 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
     )
   }
 
+  if (status === "error") {
+    toast({
+      title: "Error loading courses",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive",
+    })
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+        <div className="text-destructive mb-4">
+          <AlertCircle className="h-12 w-12 mx-auto mb-2" />
+        </div>
+        <h3 className="text-2xl font-bold mb-2">Failed to load courses</h3>
+        <p className="text-muted-foreground mb-4 text-center max-w-md">
+          There was a problem loading the courses. Please try again later.
+        </p>
+        <Button onClick={() => refetch()} variant="outline">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Try Again
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 w-full">
@@ -170,7 +301,7 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
             <SheetContent side="right" className="w-[280px] sm:max-w-none">
               <div className="space-y-4 py-4">
                 <h3 className="text-lg font-medium">Sort & Filter</h3>
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                   <TabsList className="w-full">
                     <TabsTrigger value="all" className="flex-1">
                       All
@@ -192,7 +323,7 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
                       size="sm"
                       className="h-9 w-full rounded-none"
                       onClick={() => {
-                        setViewMode("grid")
+                        handleViewModeChange("grid")
                         setShowFilters(false)
                       }}
                     >
@@ -204,7 +335,7 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
                       size="sm"
                       className="h-9 w-full rounded-none"
                       onClick={() => {
-                        setViewMode("list")
+                        handleViewModeChange("list")
                         setShowFilters(false)
                       }}
                     >
@@ -220,7 +351,7 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
           {/* Desktop controls */}
           <div className="hidden sm:flex items-center gap-4">
             {!searchQuery && !selectedCategory && (
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <TabsList>
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="popular">Popular</TabsTrigger>
@@ -234,7 +365,7 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
                 variant={viewMode === "grid" ? "default" : "ghost"}
                 size="icon"
                 className="h-9 w-9 rounded-none"
-                onClick={() => setViewMode("grid")}
+                onClick={() => handleViewModeChange("grid")}
                 aria-label="Grid view"
               >
                 <LayoutGrid className="h-4 w-4" />
@@ -243,7 +374,7 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
                 variant={viewMode === "list" ? "default" : "ghost"}
                 size="icon"
                 className="h-9 w-9 rounded-none"
-                onClick={() => setViewMode("list")}
+                onClick={() => handleViewModeChange("list")}
                 aria-label="List view"
               >
                 <List className="h-4 w-4" />
@@ -262,13 +393,17 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
           transition={{ duration: 0.3 }}
           className="w-full"
         >
+          {/* Increase the grid gap for larger cards */}
+          {/* Update the grid class in the return statement */}
           <div
-            className={`grid gap-5 w-full ${
-              viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"
+            className={`grid gap-6 w-full ${
+              viewMode === "grid"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4"
+                : "grid-cols-1"
             }`}
           >
             {sortedCourses.map((course: Course) => (
-              <CourseCard
+              <MemoizedCourseCard
                 key={course.id}
                 title={course.title || course.name || "Untitled Course"}
                 description={course.description || "No description available"}
@@ -278,7 +413,7 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
                 lessonCount={course.lessonCount || 0}
                 quizCount={course.quizCount || 0}
                 viewCount={course.viewCount || 0}
-                category={typeof course.category === "string" ? course.category : "Development"}
+                category={course.category?.name || (typeof course.category === "string" ? course.category : "")}
                 duration={typeof course.duration === "string" ? course.duration : "4-6 weeks"}
                 image={course.image}
                 difficulty={course.difficulty}
@@ -295,10 +430,13 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
             disabled={isFetchingNextPage}
             size="lg"
             variant="outline"
-            className="rounded-full px-8 gap-2"
+            className="rounded-full px-8 gap-2 transition-all duration-300 hover:bg-primary/10"
           >
             {isFetchingNextPage ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading more courses...</span>
+              </div>
             ) : (
               <>
                 Show More Courses
@@ -308,6 +446,9 @@ export default function CoursesClient({ url, userId, searchQuery, selectedCatego
           </Button>
         </div>
       )}
+
+      {/* Infinite Scroll Observer */}
+      <div ref={setLoadMoreRef} className="h-4 w-full mt-8" />
     </div>
   )
 }
