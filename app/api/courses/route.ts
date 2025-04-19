@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import type { Prisma } from "@prisma/client"
-import type { CategoryId } from "@/config/categories"
 import NodeCache from "node-cache"
 
 // Enhanced cache with longer TTL for better performance
@@ -15,15 +14,16 @@ const coursesCache = new NodeCache({
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const search = searchParams.get("search") || undefined
-  const category = searchParams.get("category") as CategoryId | undefined
+  const categoryParam = searchParams.get("category")
   const userId = searchParams.get("userId") || undefined
   const page = Number.parseInt(searchParams.get("page") || "1", 10)
   const limit = Number.parseInt(searchParams.get("limit") || "20", 10)
   const sortBy = searchParams.get("sortBy") || "viewCount" // New sorting parameter
   const sortOrder = searchParams.get("sortOrder") || "desc" // New sorting order parameter
+  const minRating = Number.parseFloat(searchParams.get("minRating") || "0") // New rating filter
 
   // Create a cache key based on all request parameters
-  const cacheKey = `courses_${search || ""}_${category || ""}_${userId || ""}_${page}_${limit}_${sortBy}_${sortOrder}`
+  const cacheKey = `courses_${search || ""}_${categoryParam || ""}_${userId || ""}_${page}_${limit}_${sortBy}_${sortOrder}_${minRating}`
 
   // Check if we have a cached response
   const cachedResponse = coursesCache.get(cacheKey)
@@ -32,6 +32,23 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Determine if categoryParam is an ID (number) or name
+    let categoryId: number | undefined
+    let categoryName: string | undefined
+
+    if (categoryParam) {
+      // Try to parse as number for ID
+      const parsedId = Number.parseInt(categoryParam, 10)
+      if (!isNaN(parsedId)) {
+        categoryId = parsedId
+      } else {
+        // If not a number, treat as name
+        categoryName = categoryParam
+      }
+    }
+
+    console.log("Category filter:", { categoryId, categoryName, categoryParam })
+
     const where: Prisma.CourseWhereInput = {
       OR: [
         { isPublic: true }, // Public courses
@@ -45,11 +62,13 @@ export async function GET(req: NextRequest) {
             ],
           }
         : {}),
-      ...(category
+      ...(categoryId || categoryName
         ? {
-            category: {
-              name: category,
-            },
+            category: categoryId
+              ? { id: categoryId }
+              : categoryName
+                ? { name: { equals: categoryName, mode: "insensitive" } }
+                : undefined,
           }
         : {}),
     }
@@ -126,48 +145,55 @@ export async function GET(req: NextRequest) {
       prisma.course.count({ where }),
     ])
 
-    const formattedCourses = courses.map((course) => {
-      // Calculate average rating
-      const ratings = course.ratings || []
-      const avgRating = ratings.length ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length : 0
+    // After fetching courses, filter by rating if minRating is specified
+    const formattedCourses = courses
+      .map((course) => {
+        // Calculate average rating
+        const ratings = course.ratings || []
+        const avgRating = ratings.length
+          ? Number.parseFloat((ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1))
+          : 0
 
-      // Calculate total lessons and quizzes
-      const lessonCount = course.courseUnits.reduce((acc, unit) => acc + unit._count.chapters, 0)
-      const quizCount = course.courseUnits.reduce(
-        (acc, unit) =>
-          acc + unit.chapters.reduce((chapterAcc, chapter) => chapterAcc + chapter._count.courseQuizzes, 0),
-        0,
-      )
+        // Calculate total lessons and quizzes
+        const lessonCount = course.courseUnits.reduce((acc, unit) => acc + unit._count.chapters, 0)
+        const quizCount = course.courseUnits.reduce(
+          (acc, unit) =>
+            acc + unit.chapters.reduce((chapterAcc, chapter) => chapterAcc + chapter._count.courseQuizzes, 0),
+          0,
+        )
 
-      // Estimate duration based on content
-      const estimatedHours = course.estimatedHours || Math.max(1, Math.ceil((lessonCount * 0.5 + quizCount * 0.25) / 2))
+        // Estimate duration based on content
+        const estimatedHours =
+          course.estimatedHours || Math.max(1, Math.ceil((lessonCount * 0.5 + quizCount * 0.25) / 2))
 
-      return {
-        id: course.id.toString(),
-        name: course.title,
-        title: course.title,
-        description: course.description || "No description available",
-        image: course.image,
-        rating: avgRating,
-        slug: course.slug || "",
-        viewCount: course.viewCount,
-        categoryId: course.category?.name as CategoryId,
-        difficulty: course.difficulty || determineDifficulty(lessonCount, quizCount),
-        estimatedHours,
-        createdAt: course.createdAt,
-        updatedAt: course.updatedAt,
-        category: course.category
-          ? {
-              id: course.category.id.toString(),
-              name: course.category.name as CategoryId,
-            }
-          : null,
-        unitCount: course._count.courseUnits,
-        lessonCount,
-        quizCount,
-        userId: course.userId,
-      }
-    })
+        return {
+          id: course.id.toString(),
+          name: course.title,
+          title: course.title,
+          description: course.description || "No description available",
+          image: course.image,
+          rating: avgRating,
+          slug: course.slug || "",
+          viewCount: course.viewCount,
+          categoryId: course.category?.id.toString(),
+          difficulty: course.difficulty || determineDifficulty(lessonCount, quizCount),
+          estimatedHours,
+          createdAt: course.createdAt,
+          updatedAt: course.updatedAt,
+          category: course.category
+            ? {
+                id: course.category.id.toString(),
+                name: course.category.name,
+              }
+            : null,
+          unitCount: course._count.courseUnits,
+          lessonCount,
+          quizCount,
+          userId: course.userId,
+        }
+      })
+      // Filter by minimum rating if specified
+      .filter((course) => minRating <= 0 || course.rating >= minRating)
 
     const response = {
       courses: formattedCourses,
@@ -183,7 +209,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(response)
   } catch (error) {
     console.error("Error fetching courses:", error)
-    return NextResponse.json({ error: "Failed to fetch courses" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch courses", details: error }, { status: 500 })
   }
 }
 

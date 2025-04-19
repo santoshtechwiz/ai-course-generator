@@ -1,12 +1,12 @@
 "use client"
 
-import { memo, useEffect, useCallback, useState } from "react"
+import { memo, useEffect } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import NProgress from "nprogress"
 import { useInView } from "react-intersection-observer"
 import { AlertCircle, FileQuestion, Search, Plus, RefreshCw } from "lucide-react"
 import { CreateCard } from "@/components/CreateCard"
-import { QuizCard } from "@/components/shared/QuizCard"
+import { QuizCard } from "./QuizCard"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -33,6 +33,13 @@ interface QuizListProps {
   onCreateQuiz?: () => void
   activeFilter?: string
   onFilterChange?: (filter: string) => void
+  quizCounts: {
+    all: number
+    mcq: number
+    openended: number
+    code: number
+    "fill-blanks": number
+  }
 }
 
 const containerVariants = {
@@ -69,9 +76,12 @@ function QuizListComponent({
   onCreateQuiz,
   activeFilter = "all",
   onFilterChange,
+  quizCounts,
 }: QuizListProps) {
-  const [sortedQuizzes, setSortedQuizzes] = useState<QuizListItem[]>([])
-  const [sortOption, setSortOption] = useState<string>("newest")
+  const [endMessageRef, endMessageInView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  })
 
   useEffect(() => {
     if (isFetchingNextPage) {
@@ -85,67 +95,18 @@ function QuizListComponent({
     }
   }, [isFetchingNextPage])
 
-  const [endMessageRef, endMessageInView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  })
-
-  // Helper functions moved from PublicQuizCardListing
-  const getEstimatedTime = useCallback((questionCount: number): string => {
+  // Helper functions
+  const getEstimatedTime = (questionCount: number): string => {
     const minutes = Math.max(Math.ceil(questionCount * 0.5), 1) // At least 1 minute
     return `${minutes} min`
-  }, [])
+  }
 
-  const getQuestionCount = useCallback(
-    (quiz: {
-      quizType: string
-      questionCount: number
-      openEndedCount?: number
-      flashCardCount?: number
-    }): number => {
-      if (quiz.quizType === "mcq") {
-        return quiz.questionCount
-      }
-      if (quiz.quizType === "openended") {
-        return quiz.openEndedCount || 0
-      }
-      if (quiz.quizType === "fill-blanks") {
-        return quiz.flashCardCount || 0
-      }
-      if (quiz.quizType === "code") {
-        return quiz.questionCount
-      }
-      return 0
-    },
-    [],
-  )
-
-  // Sort quizzes based on selected option
-  useEffect(() => {
-    if (!quizzes.length) return
-
-    let sorted = [...quizzes]
-
-    switch (sortOption) {
-      case "newest":
-        sorted = sorted.sort((a, b) => new Date(b.timeStarted).getTime() - new Date(a.timeStarted).getTime())
-        break
-      case "oldest":
-        sorted = sorted.sort((a, b) => new Date(a.timeStarted).getTime() - new Date(b.timeStarted).getTime())
-        break
-      case "a-z":
-        sorted = sorted.sort((a, b) => a.title.localeCompare(b.title))
-        break
-      case "z-a":
-        sorted = sorted.sort((a, b) => b.title.localeCompare(a.title))
-        break
-      case "most-questions":
-        sorted = sorted.sort((a, b) => b.questionCount - a.questionCount)
-        break
-    }
-
-    setSortedQuizzes(sorted)
-  }, [quizzes, sortOption])
+  const getQuestionCount = (quiz: {
+    quizType: string
+    questionCount: number
+  }): number => {
+    return quiz.questionCount || 0
+  }
 
   if (isLoading) {
     return <QuizzesSkeleton />
@@ -207,6 +168,9 @@ function QuizListComponent({
     )
   }
 
+  // Filter quizzes based on active filter
+  const filteredQuizzes = activeFilter === "all" ? quizzes : quizzes.filter((quiz) => quiz.quizType === activeFilter)
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -216,51 +180,37 @@ function QuizListComponent({
               <TabsTrigger value="all" className="flex items-center gap-1.5">
                 All
                 <Badge variant="secondary" className="ml-1 text-xs">
-                  {quizzes.length}
+                  {quizCounts.all}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="mcq" className="flex items-center gap-1.5">
                 MCQ
                 <Badge variant="secondary" className="ml-1 text-xs">
-                  {quizzes.filter((q) => q.quizType === "mcq").length}
+                  {quizCounts.mcq}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="openended" className="flex items-center gap-1.5">
                 Open Ended
                 <Badge variant="secondary" className="ml-1 text-xs">
-                  {quizzes.filter((q) => q.quizType === "openended").length}
+                  {quizCounts.openended}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="code" className="flex items-center gap-1.5">
                 Code
                 <Badge variant="secondary" className="ml-1 text-xs">
-                  {quizzes.filter((q) => q.quizType === "code").length}
+                  {quizCounts.code}
                 </Badge>
               </TabsTrigger>
             </TabsList>
           </Tabs>
         )}
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            className="bg-background border rounded-md px-3 py-1.5 text-sm"
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="a-z">A-Z</option>
-            <option value="z-a">Z-A</option>
-            <option value="most-questions">Most Questions</option>
-          </select>
-
-          {onCreateQuiz && (
-            <Button onClick={onCreateQuiz} className="whitespace-nowrap">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Quiz
-            </Button>
-          )}
-        </div>
+        {onCreateQuiz && (
+          <Button onClick={onCreateQuiz} className="whitespace-nowrap">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Quiz
+          </Button>
+        )}
       </div>
 
       <motion.div
@@ -270,8 +220,8 @@ function QuizListComponent({
         animate="visible"
       >
         <LayoutGroup>
-          <AnimatePresence mode="wait">
-            {sortedQuizzes.map((quiz) => (
+          <AnimatePresence>
+            {filteredQuizzes.map((quiz) => (
               <motion.div
                 key={quiz.id}
                 variants={itemVariants}
@@ -311,20 +261,6 @@ function QuizListComponent({
           <span className="font-medium">You've reached the end!</span> No more quizzes to load.
         </div>
       )}
-
-      {/* Add the animation keyframes */}
-      <style jsx global>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }

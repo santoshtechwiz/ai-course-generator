@@ -132,7 +132,7 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
           <Button
             className={`w-full justify-center py-2 px-4 text-sm sm:text-base md:text-lg lg:py-3 lg:px-6 ${className}`}
             onClick={handleClick}
-            variant={currentState.variant}
+            variant={currentState.variant as any}
             disabled={isDisabled}
             {...props}
           >
@@ -141,7 +141,7 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{currentState.tooltip}</p>
+          <p className="text-sm">{currentState.tooltip}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -151,4 +151,3 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
 PlanAwareButton.displayName = "PlanAwareButton"
 
 export default PlanAwareButton
-
