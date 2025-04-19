@@ -9,8 +9,10 @@ import VideoNavigationSidebar from "./VideoNavigationSidebar"
 import useProgress from "@/hooks/useProgress"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 
+// Fix TypeScript errors with proper typing for FullChapter
 interface FullChapter extends FullChapterType {
-  videoId: string
+  videoId: string | null // Change to allow null
+  summary: string | null
 }
 
 import throttle from "lodash.throttle"
@@ -107,6 +109,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   const router = useRouter()
   const isInitialMount = useRef(true)
   const hasSetInitialVideo = useRef(false)
+  const [courseCompleted, setCourseCompleted] = useState(false)
 
   const videoPlaylist = useVideoPlaylist(course)
 
@@ -153,12 +156,18 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     }
   }, [state.selectedVideoId, videoPlaylist])
 
+  // Memoize these values to prevent unnecessary re-renders
+  const courseId = useMemo(() => +course.id, [course.id])
+  const currentChapterId = useMemo(() => state.currentChapter?.id?.toString(), [state.currentChapter?.id])
+
+  // Use the progress hook with memoized values
   const { progress, isLoading, updateProgress } = useProgress({
-    courseId: +course.id,
+    courseId,
     initialProgress: undefined,
-    currentChapterId: state.currentChapter?.id?.toString(),
+    currentChapterId,
   })
 
+  // Create a stable throttled update function
   const throttledUpdateProgress = useCallback(
     throttle(
       (updateData: {
@@ -169,13 +178,14 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         isCompleted?: boolean
         lastAccessedAt?: Date
       }) => {
-        if (session) {
+        if (session?.user?.id) {
           updateProgress(updateData)
         }
       },
       5000,
+      { leading: true, trailing: true },
     ),
-    [updateProgress, session],
+    [updateProgress, session?.user?.id],
   )
 
   const markChapterAsCompleted = useCallback(() => {
@@ -188,10 +198,16 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
       const totalChapters = videoPlaylist.length
       const newProgress = Math.round((updatedCompletedChapters.length / totalChapters) * 100)
 
+      // Check if course is completed
+      if (updatedCompletedChapters.length === totalChapters) {
+        setCourseCompleted(true)
+      }
+
       throttledUpdateProgress({
         currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
         completedChapters: updatedCompletedChapters,
         progress: newProgress,
+        isCompleted: updatedCompletedChapters.length === totalChapters,
       })
     }
   }, [state.currentChapter, progress, throttledUpdateProgress, videoPlaylist.length])
@@ -211,9 +227,10 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         })
       }
     } else {
-      const allChaptersCompleted = videoPlaylist.length === progress?.completedChapters.length
+      const allChaptersCompleted = videoPlaylist.length === (progress?.completedChapters?.length || 0)
       if (allChaptersCompleted) {
         setIsLastVideo(true)
+        setCourseCompleted(true)
         throttledUpdateProgress({
           currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
           isCompleted: true,
@@ -235,7 +252,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     throttledUpdateProgress,
     toast,
     markChapterAsCompleted,
-    progress?.completedChapters.length,
+    progress?.completedChapters?.length,
   ])
 
   const handleVideoSelect = useCallback(
@@ -268,13 +285,18 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     const handleResize = () => {
       const smallScreen = window.innerWidth < 1024
       setIsSmallScreen(smallScreen)
-      setIsSidebarOpen(!smallScreen)
+      // Only auto-close on small screens when first loading
+      if (!isSidebarOpen && !smallScreen) {
+        setIsSidebarOpen(true)
+      } else if (smallScreen && isSidebarOpen) {
+        setIsSidebarOpen(false)
+      }
     }
 
     handleResize()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
-  }, [])
+  }, [isSidebarOpen])
 
   // Cleanup on Unmount
   useEffect(() => {
@@ -283,7 +305,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     }
   }, [])
 
-  // Enhance the loading state for better user experience
+  // Improve the loading state with more realistic skeleton
   if (isLoading || isProfileLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -353,6 +375,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                 onChapterComplete={markChapterAsCompleted}
                 planId={user?.subscriptionPlan || "FREE"}
                 isLastVideo={isLastVideo}
+                courseCompleted={courseCompleted}
               />
             </div>
           </div>

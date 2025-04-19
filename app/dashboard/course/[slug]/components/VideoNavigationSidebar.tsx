@@ -1,16 +1,17 @@
 "use client"
 
-import React from "react"
-import { signIn, useSession } from "next-auth/react"
-import { Lock, PlayCircle, ChevronDown, CheckCircle, ListVideo, BarChart3, LogIn } from "lucide-react"
+import { useState, useEffect, memo, useMemo } from "react"
+import { signIn } from "next-auth/react"
+import { Lock, PlayCircle, ChevronDown, CheckCircle, ChevronUp, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 import { cn } from "@/lib/utils"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+
+// Simple Info icon without tooltip to avoid infinite loops
+const InfoIcon = () => <Info className="h-4 w-4 text-muted-foreground" />
 
 interface VideoNavigationSidebarProps {
   course: FullCourseType
@@ -25,6 +26,158 @@ interface VideoNavigationSidebarProps {
   completedChapters: string | string[]
 }
 
+// Separate VideoPlaylist component to avoid re-renders
+const VideoPlaylist = memo(function VideoPlaylist({
+  courseUnits,
+  currentChapter,
+  onVideoSelect,
+  currentVideoId,
+  progress,
+  nextVideoId,
+  prevVideoId,
+}: {
+  courseUnits: FullCourseType["courseUnits"]
+  currentChapter?: FullChapterType
+  onVideoSelect: (videoId: string) => void
+  currentVideoId: string
+  progress: CourseProgress | null
+  nextVideoId?: string
+  prevVideoId?: string
+}) {
+  const showFullContent = true
+  const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({})
+
+  // Initialize expanded state based on current chapter
+  useEffect(() => {
+    if (currentChapter) {
+      const currentUnitId = courseUnits
+        ?.find((unit) => unit.chapters.some((chapter) => chapter.id === currentChapter.id))
+        ?.id.toString()
+
+      if (currentUnitId) {
+        setExpandedUnits((prev) => ({
+          ...prev,
+          [currentUnitId]: true,
+        }))
+      }
+    }
+  }, [currentChapter, courseUnits])
+
+  const toggleUnit = (unitId: string) => {
+    setExpandedUnits((prev) => ({
+      ...prev,
+      [unitId]: !prev[unitId],
+    }))
+  }
+
+  return (
+    <div className="p-4">
+      {courseUnits?.map((unit) => {
+        const isCurrentUnit = unit.chapters.some((chapter) => chapter.id === currentChapter?.id)
+        const isExpanded = expandedUnits[unit.id.toString()] || isCurrentUnit
+        const completedChaptersInUnit = unit.chapters.filter((chapter) =>
+          progress?.completedChapters.includes(chapter.id),
+        ).length
+        const totalChaptersInUnit = unit.chapters.length
+        const unitProgress = totalChaptersInUnit > 0 ? (completedChaptersInUnit / totalChaptersInUnit) * 100 : 0
+
+        return (
+          <Collapsible
+            key={unit.id}
+            open={isExpanded}
+            onOpenChange={() => toggleUnit(unit.id.toString())}
+            className="mb-4 border rounded-lg overflow-hidden"
+          >
+            <CollapsibleTrigger className="flex w-full items-center justify-between p-3 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
+              <div className="flex flex-col w-full">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold">{unit.title}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-muted-foreground">
+                      {completedChaptersInUnit}/{totalChaptersInUnit}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                    />
+                  </div>
+                </div>
+                <Progress value={unitProgress} className="h-1" />
+              </div>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent className="space-y-1 p-2 bg-muted/20">
+              {unit.chapters.map((chapter, index) => {
+                const isCompleted = showFullContent && progress?.completedChapters.includes(chapter.id)
+                const isCurrent = chapter.videoId === currentVideoId
+                const isNext = chapter.videoId === nextVideoId
+
+                return (
+                  <button
+                    key={chapter.id}
+                    onClick={() => showFullContent && chapter.videoId && onVideoSelect(chapter.videoId)}
+                    disabled={!showFullContent || !chapter.videoId}
+                    className={cn(
+                      "group relative w-full rounded-md p-3 text-left text-sm transition-all duration-200",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      isCurrent && "bg-accent/70 text-accent-foreground",
+                      !showFullContent && "cursor-not-allowed opacity-60",
+                      !chapter.videoId && "opacity-50 cursor-not-allowed",
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center shrink-0">
+                        {showFullContent ? (
+                          isCurrent ? (
+                            <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                              <PlayCircle className="h-4 w-4 text-primary" />
+                            </div>
+                          ) : isCompleted ? (
+                            <div className="h-6 w-6 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            </div>
+                          ) : (
+                            <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center">
+                              <div className="h-2 w-2 rounded-full bg-muted-foreground/70" />
+                            </div>
+                          )
+                        ) : (
+                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                            <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <span className={cn("flex-1 truncate", isCurrent && "font-medium")}>
+                        {index + 1}. {chapter.title}
+                      </span>
+                      {isNext && (
+                        <Badge
+                          variant="outline"
+                          className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                        >
+                          Next
+                        </Badge>
+                      )}
+                      {isCurrent && (
+                        <Badge
+                          variant="outline"
+                          className="ml-2 bg-primary/10 text-primary border-primary/20 animate-pulse"
+                        >
+                          Playing
+                        </Badge>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </CollapsibleContent>
+          </Collapsible>
+        )
+      })}
+    </div>
+  )
+})
+
 function VideoNavigationSidebar({
   course,
   currentChapter,
@@ -35,162 +188,143 @@ function VideoNavigationSidebar({
   nextVideoId,
   prevVideoId,
 }: VideoNavigationSidebarProps) {
-  const { data: session } = useSession()
+  // Allow unauthenticated users to see content but with limited functionality
   const showFullContent = course.isPublic || isAuthenticated
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [localProgress, setLocalProgress] = useState<{
+    completedChapters: string[]
+    progress: number
+    currentChapterId: string | null
+  }>({
+    completedChapters: [],
+    progress: 0,
+    currentChapterId: null,
+  })
 
-  return (
-    <div className="flex h-full flex-col border-l border-border bg-background">
-      <div className="flex flex-col space-y-4 p-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <ListVideo className="h-4 w-4 text-primary" />
-            </div>
-            <h2 className="text-base font-medium text-foreground">Course Content</h2>
-          </div>
-          {showFullContent && progress && (
-            <Badge variant="outline" className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
-              {Math.round(progress.progress)}% complete
-            </Badge>
+  // Load local progress for unauthenticated users - only once on mount
+  useEffect(() => {
+    if (!isAuthenticated) {
+      try {
+        const savedProgress = localStorage.getItem(`local-course-progress-${course.id}`)
+        if (savedProgress) {
+          setLocalProgress(JSON.parse(savedProgress))
+        }
+      } catch (e) {
+        console.error("Error loading local progress:", e)
+      }
+    }
+  }, [isAuthenticated, course.id])
+
+  // Calculate effective progress outside of render to prevent infinite loops
+  const effectiveProgress = useMemo(() => {
+    if (isAuthenticated && progress) {
+      return progress
+    }
+
+    // Create a fallback progress object for unauthenticated users
+    const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
+    const progressPercentage = totalChapters > 0 ? (localProgress.completedChapters.length / totalChapters) * 100 : 0
+
+    return {
+      completedChapters: localProgress.completedChapters,
+      progress: progressPercentage,
+      currentChapterId: localProgress.currentChapterId,
+    }
+  }, [isAuthenticated, progress, localProgress, course.courseUnits])
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024)
+    }
+
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
+
+  // Memoize the content to prevent unnecessary re-renders
+  const sidebarContent = useMemo(
+    () => (
+      <div className="flex h-full flex-col bg-background">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold tracking-tight">Course Content</h2>
+          {!isMobile && (
+            <Button variant="ghost" size="sm" onClick={() => setIsCollapsed(!isCollapsed)} className="ml-auto">
+              {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </Button>
           )}
         </div>
 
-        {currentChapter && (
-          <div className="flex items-center gap-2 bg-muted/50 p-2 rounded-md">
-            <PlayCircle className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium line-clamp-1">Currently watching: {currentChapter.title}</p>
-          </div>
-        )}
-
-        {showFullContent && progress && (
-          <div className="space-y-2 bg-muted/30 p-3 rounded-md">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Progress</span>
+        <div className="flex-1 flex flex-col min-h-0 z-0">
+          {effectiveProgress && !isCollapsed && (
+            <div className="px-6 py-4 sticky top-0 bg-background z-10 border-b">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium">Course Progress</h3>
+                <Button variant="ghost" size="icon" className="h-auto w-auto p-0 hover:bg-transparent">
+                  <InfoIcon />
+                  <span className="sr-only">Course progress info</span>
+                </Button>
               </div>
-              <span className="text-muted-foreground font-medium">
-                {progress.completedChapters.length}/
-                {course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0)} lessons
-              </span>
+              <Progress value={effectiveProgress.progress} className="h-2" />
+              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  {effectiveProgress.completedChapters.length} /{" "}
+                  {course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0)} chapters
+                </span>
+                <span>{Math.round(effectiveProgress.progress)}% complete</span>
+              </div>
+
+              {!isAuthenticated && (
+                <div className="mt-2 pt-2 border-t border-dashed border-muted">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => signIn(undefined, { callbackUrl: window.location.href })}
+                    className="text-xs p-0 h-auto text-primary"
+                  >
+                    Sign in to save your progress
+                  </Button>
+                </div>
+              )}
             </div>
-            <Progress value={progress.progress} className="h-1.5 rounded-full" />
-          </div>
-        )}
+          )}
+
+          {!isCollapsed && (
+            <div className="overflow-hidden h-full">
+              {/* Use a div instead of ScrollArea to avoid the infinite loop */}
+              <div className="h-[calc(100vh-200px)] overflow-y-auto">
+                <VideoPlaylist
+                  courseUnits={course.courseUnits}
+                  currentChapter={currentChapter}
+                  onVideoSelect={onVideoSelect}
+                  currentVideoId={currentVideoId}
+                  progress={effectiveProgress}
+                  nextVideoId={nextVideoId}
+                  prevVideoId={prevVideoId}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      <Separator className="bg-border" />
-
-      <ScrollArea className="flex-1">
-        <div className="p-4">
-          {course.courseUnits?.map((unit) => {
-            const isCurrentUnit = unit.chapters.some((chapter) => chapter.id === currentChapter?.id)
-
-            return (
-              <Collapsible key={unit.id} defaultOpen={isCurrentUnit} className="space-y-2">
-                <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-2 py-1 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground">
-                  {unit.title}
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 ui-open:rotate-180" />
-                </CollapsibleTrigger>
-
-                <CollapsibleContent className="space-y-1">
-                  {unit.chapters.map((chapter, index) => {
-                    const isCompleted = showFullContent && progress?.completedChapters.includes(chapter.id)
-                    const isCurrent = chapter.videoId === currentVideoId
-                    const isNext = chapter.videoId === nextVideoId
-
-                    return (
-                      <button
-                        key={chapter.id}
-                        onClick={() => showFullContent && onVideoSelect(chapter.videoId || "")}
-                        disabled={!showFullContent}
-                        className={cn(
-                          "group relative w-full rounded-md p-3 text-left text-sm transition-all duration-200",
-                          "hover:bg-accent hover:text-accent-foreground",
-                          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                          isCurrent && "bg-accent/70 text-accent-foreground",
-                          !showFullContent && "cursor-not-allowed opacity-60",
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-6 w-6 items-center justify-center shrink-0">
-                            {showFullContent ? (
-                              isCurrent ? (
-                                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
-                                  <PlayCircle className="h-4 w-4 text-primary" />
-                                </div>
-                              ) : isCompleted ? (
-                                <div className="h-6 w-6 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                </div>
-                              ) : (
-                                <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center">
-                                  <div className="h-2 w-2 rounded-full bg-muted-foreground/70" />
-                                </div>
-                              )
-                            ) : (
-                              <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <span className={cn("flex-1 truncate", isCurrent && "font-medium")}>
-                            {index + 1}. {chapter.title}
-                          </span>
-                          {isNext && (
-                            <Badge
-                              variant="outline"
-                              className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800"
-                            >
-                              Next
-                            </Badge>
-                          )}
-                          {isCurrent && (
-                            <Badge
-                              variant="outline"
-                              className="ml-2 bg-primary/10 text-primary border-primary/20 animate-pulse"
-                            >
-                              Playing
-                            </Badge>
-                          )}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </CollapsibleContent>
-              </Collapsible>
-            )
-          })}
-        </div>
-      </ScrollArea>
-
-      {!showFullContent && (
-        <div className="p-4 border-t border-border">
-          <div className="rounded-lg border border-border bg-card p-6 space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 rounded-full p-3 bg-primary/10">
-                <Lock className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-lg text-card-foreground">Premium Content</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Sign in to access all lessons and track your progress
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={() => signIn(undefined, { callbackUrl: window.location.href })}
-              className="w-full"
-              size="lg"
-            >
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In to Continue
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+    ),
+    [
+      course.courseUnits,
+      currentChapter,
+      currentVideoId,
+      effectiveProgress,
+      isAuthenticated,
+      isCollapsed,
+      isMobile,
+      nextVideoId,
+      onVideoSelect,
+      prevVideoId,
+    ],
   )
+
+  return sidebarContent
 }
 
-export default React.memo(VideoNavigationSidebar)
+export default memo(VideoNavigationSidebar)

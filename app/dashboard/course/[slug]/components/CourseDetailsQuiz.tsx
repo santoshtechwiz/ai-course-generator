@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
@@ -11,29 +11,114 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
+import { useSession } from "next-auth/react"
 
 import QuizBackground from "./QuizBackground"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
-import type { CourseQuiz } from "@prisma/client"
-import { Loader } from "@/components/ui/loader"
-
 
 type Props = {
-  course: FullCourseType
-  chapter: FullChapterType & {
-    questions: CourseQuestion[]
-  }
   isPremium: boolean
   isPublicCourse: boolean
+  chapter: FullChapterType
+  course: FullCourseType
+  chapterId?: string
 }
 
-export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublicCourse }: Props) {
+// Improve the quiz experience for unauthenticated users
+export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublicCourse, chapterId }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [score, setScore] = useState(0)
   const [showResults, setShowResults] = useState(false)
+  const [quizStarted, setQuizStarted] = useState(false)
+  const [quizProgress, setQuizProgress] = useState<Record<string, any>>({})
+  const { toast } = useToast()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session
+
+  // Use the provided chapterId or fall back to chapter.id
+  const effectiveChapterId = chapterId || chapter?.id?.toString()
+
+  // Load saved quiz progress from localStorage
+  useEffect(() => {
+    if (effectiveChapterId) {
+      const savedProgress = localStorage.getItem(`quiz-progress-${effectiveChapterId}`)
+      if (savedProgress) {
+        try {
+          const progress = JSON.parse(savedProgress)
+          setQuizProgress(progress)
+
+          // If quiz was completed, show results
+          if (progress.completed) {
+            setQuizCompleted(true)
+            setScore(progress.score || 0)
+            setAnswers(progress.answers || {})
+          } else if (progress.currentIndex !== undefined) {
+            setCurrentQuestionIndex(progress.currentIndex)
+            setAnswers(progress.answers || {})
+            setQuizStarted(true)
+          }
+        } catch (e) {
+          console.error("Error parsing saved quiz progress:", e)
+        }
+      }
+    }
+  }, [effectiveChapterId])
+
+  // Save quiz progress to localStorage
+  const saveProgress = useCallback(
+    (data: Record<string, any>) => {
+      if (effectiveChapterId) {
+        localStorage.setItem(
+          `quiz-progress-${effectiveChapterId}`,
+          JSON.stringify({
+            ...quizProgress,
+            ...data,
+            lastUpdated: new Date().toISOString(),
+          }),
+        )
+      }
+    },
+    [effectiveChapterId, quizProgress],
+  )
+
+  // Create a set of demo questions for unauthenticated users
+  const demoQuestions = useMemo(() => {
+    return [
+      {
+        id: "demo1",
+        question: "What is the primary purpose of this course?",
+        options: [
+          "To teach programming fundamentals",
+          "To explore advanced concepts",
+          "To provide practical examples",
+          "All of the above",
+        ],
+        answer: "All of the above",
+      },
+      {
+        id: "demo2",
+        question: "Which of the following is a key benefit of taking this course?",
+        options: [
+          "Hands-on coding exercises",
+          "Theoretical knowledge only",
+          "No practical applications",
+          "Limited examples",
+        ],
+        answer: "Hands-on coding exercises",
+      },
+      {
+        id: "demo3",
+        question: "What would you need to access the full quiz content?",
+        options: ["A premium subscription", "Nothing, it's all free", "A different browser", "Special software"],
+        answer: "A premium subscription",
+      },
+    ]
+  }, [])
 
   const {
     data: questions,
@@ -41,41 +126,51 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     error,
     isLoading: isQuizLoading,
   } = useQuery<CourseQuestion[]>({
-    queryKey: ["transcript", chapter?.id],
+    queryKey: ["transcript", effectiveChapterId],
     queryFn: async () => {
-      if (!chapter?.videoId || !chapter?.id) {
+      if (!chapter?.videoId || !effectiveChapterId) {
         throw new Error("Required chapter data is missing.")
       }
       const response = await axios.post("/api/coursequiz", {
         videoId: chapter.videoId,
-        chapterId: chapter.id,
+        chapterId: Number(effectiveChapterId),
         chapterName: chapter.title,
       })
       if (response.data.error) {
         throw new Error(response.data.error)
       }
-      return response.data.map((question: CourseQuiz) => ({
+      return response.data.map((question: any) => ({
         ...question,
         options: Array.isArray(question.options) ? question.options : JSON.parse(question.options),
       }))
     },
     retry: 3,
     staleTime: 5 * 60 * 1000,
-    enabled: isPremium, // Only fetch if user is premium
+    enabled: isPremium && quizStarted && isAuthenticated, // Only fetch if user is premium, authenticated and quiz has started
   })
 
+  // Use demo questions for unauthenticated users
+  const effectiveQuestions = useMemo(() => {
+    if (!isPremium || !isAuthenticated) {
+      return demoQuestions
+    }
+    return questions || []
+  }, [isPremium, isAuthenticated, questions, demoQuestions])
+
   const currentQuestion = useMemo(
-    () => (questions && questions.length > 0 ? questions[currentQuestionIndex] : null),
-    [questions, currentQuestionIndex],
+    () => (effectiveQuestions && effectiveQuestions.length > 0 ? effectiveQuestions[currentQuestionIndex] : null),
+    [effectiveQuestions, currentQuestionIndex],
   )
 
   const handleAnswer = useCallback(
     (value: string) => {
       if (currentQuestion) {
-        setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }))
+        const newAnswers = { ...answers, [currentQuestion.id]: value }
+        setAnswers(newAnswers)
+        saveProgress({ answers: newAnswers, currentIndex: currentQuestionIndex })
       }
     },
-    [currentQuestion],
+    [currentQuestion, answers, currentQuestionIndex, saveProgress],
   )
 
   const checkAnswer = useCallback(() => {
@@ -87,13 +182,26 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
         setScore((prev) => prev + 1)
       }
 
-      if (currentQuestionIndex < (questions?.length ?? 0) - 1) {
-        setCurrentQuestionIndex((prev) => prev + 1)
+      if (currentQuestionIndex < (effectiveQuestions?.length ?? 0) - 1) {
+        const nextIndex = currentQuestionIndex + 1
+        setCurrentQuestionIndex(nextIndex)
+        saveProgress({ currentIndex: nextIndex })
       } else {
+        const finalScore = score + (isCorrect ? 1 : 0)
         setQuizCompleted(true)
+        saveProgress({
+          completed: true,
+          score: finalScore,
+          completedAt: new Date().toISOString(),
+        })
+
+        toast({
+          title: "Quiz Completed!",
+          description: `You scored ${finalScore} out of ${effectiveQuestions?.length}`,
+        })
       }
     }
-  }, [currentQuestion, answers, currentQuestionIndex, questions])
+  }, [currentQuestion, answers, currentQuestionIndex, effectiveQuestions?.length, score, saveProgress, toast])
 
   const retakeQuiz = useCallback(() => {
     setAnswers({})
@@ -101,11 +209,65 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     setQuizCompleted(false)
     setScore(0)
     setShowResults(false)
-  }, [])
+    saveProgress({
+      completed: false,
+      currentIndex: 0,
+      answers: {},
+      score: 0,
+    })
+  }, [saveProgress])
 
   const handleShowResults = useCallback(() => {
     setShowResults(true)
   }, [])
+
+  const startQuiz = useCallback(() => {
+    setQuizStarted(true)
+    saveProgress({ started: true, startedAt: new Date().toISOString() })
+  }, [saveProgress])
+
+  // If not premium but public course, show demo quiz with a premium upgrade prompt
+  if (!isPremium && isPublicCourse) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto bg-card">
+        <CardHeader className="relative z-10 text-center">
+          <CardTitle className="text-2xl">Chapter Quiz Preview</CardTitle>
+        </CardHeader>
+        <CardContent className="relative z-10 p-6">
+          <div className="bg-background/50 rounded-lg p-6 border border-border mb-6">
+            <h3 className="text-lg font-semibold mb-2">Sample Question</h3>
+            <p className="mb-4">What is the primary purpose of this course?</p>
+            <div className="space-y-2">
+              {[
+                "To teach programming fundamentals",
+                "To explore advanced concepts",
+                "To provide practical examples",
+                "All of the above",
+              ].map((option, i) => (
+                <div key={i} className="p-3 border rounded-md bg-card/50">
+                  {option}
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 flex justify-between">
+              <Button variant="outline" disabled>
+                Previous
+              </Button>
+              <Button disabled>Next</Button>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
+            <p className="text-muted-foreground mb-4">
+              Upgrade to Premium to access interactive quizzes for all chapters.
+            </p>
+            <Button onClick={() => (window.location.href = "/dashboard/subscription")}>Upgrade to Premium</Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   if (!isPremium) {
     return (
@@ -133,10 +295,30 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
   }
 
   if (isQuizLoading) {
-    return <Loader fullPage text="Please wait..." />
+    return (
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardContent className="p-8">
+          <div className="flex items-center space-x-2 mb-4">
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <Skeleton className="h-6 w-48" />
+          </div>
+          <Skeleton className="h-4 w-full mb-8" />
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full rounded-md" />
+            <Skeleton className="h-12 w-full rounded-md" />
+            <Skeleton className="h-12 w-full rounded-md" />
+            <Skeleton className="h-12 w-full rounded-md" />
+          </div>
+          <div className="flex justify-between mt-8">
+            <Skeleton className="h-10 w-24 rounded-md" />
+            <Skeleton className="h-10 w-24 rounded-md" />
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
-  if (!questions || questions.length === 0) {
+  if (!effectiveQuestions || effectiveQuestions.length === 0) {
     return (
       <Card className="w-full max-w-4xl mx-auto">
         <CardContent className="flex items-center justify-center h-40">
@@ -149,7 +331,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
   return (
     <Card className="w-full max-w-4xl mx-auto relative overflow-hidden bg-card">
       <QuizBackground />
-      <CardHeader className="p-8 bg-muted/50 relative z-10 border-b border-border">
+      <CardHeader className="p-8 bg-background/50 relative z-10 border-b">
         <CardTitle className="text-3xl flex items-center space-x-4">
           <CheckCircle className="w-8 h-8 text-primary" />
           <span>Concept Check</span>
@@ -165,7 +347,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="mb-6 h-2" />
+              <Progress value={((currentQuestionIndex + 1) / effectiveQuestions.length) * 100} className="mb-6 h-2" />
               <h2 className="text-xl font-semibold mb-6">{currentQuestion.question}</h2>
               <RadioGroup onValueChange={handleAnswer} value={answers[currentQuestion.id]} className="space-y-2">
                 {currentQuestion.options.map((option: string, index: number) => (
@@ -192,7 +374,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
               <p className="text-2xl mb-8">
                 Your score:{" "}
                 <span className="text-primary font-bold">
-                  {score} / {questions.length}
+                  {score} / {effectiveQuestions.length}
                 </span>
               </p>
               <div className="space-x-4">
@@ -209,15 +391,37 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
         {showResults && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8">
             <h3 className="text-2xl font-bold mb-4">Quiz Results</h3>
-            {questions.map((question, index) => (
-              <div key={`${question.id}-${index}`} className="mb-6 p-4 bg-muted rounded-lg">
+            {effectiveQuestions.map((question, index) => (
+              <div
+                key={`${question.id}-${index}`}
+                className={cn(
+                  "mb-6 p-4 rounded-lg",
+                  answers[question.id] === question.answer
+                    ? "bg-green-100/50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                    : "bg-red-100/50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
+                )}
+              >
                 <p className="font-semibold mb-2">
                   {index + 1}. {question.question}
                 </p>
-                <p className="text-sm mb-1">Your answer: {answers[question.id]}</p>
-                <p className="text-sm text-primary">Correct answer: {question.answer}</p>
+                <p
+                  className={cn(
+                    "text-sm mb-1",
+                    answers[question.id] === question.answer
+                      ? "text-green-700 dark:text-green-400"
+                      : "text-red-700 dark:text-red-400",
+                  )}
+                >
+                  Your answer: {answers[question.id] || "Not answered"}
+                </p>
+                <p className="text-sm text-primary font-medium">Correct answer: {question.answer}</p>
               </div>
             ))}
+            <div className="mt-6 text-center">
+              <Button onClick={retakeQuiz} size="lg">
+                Retake Quiz
+              </Button>
+            </div>
           </motion.div>
         )}
       </CardContent>
@@ -241,7 +445,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
             })}
             size="lg"
           >
-            {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"}
+            {currentQuestionIndex === effectiveQuestions.length - 1 ? "Finish" : "Next"}
             <ChevronRight className="w-6 h-6 ml-2" />
           </Button>
         </CardFooter>
@@ -249,4 +453,3 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     </Card>
   )
 }
-

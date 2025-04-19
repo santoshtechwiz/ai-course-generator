@@ -183,16 +183,16 @@ export function MotionItem({
 export function MotionTransition({
   children,
   className,
-  key,
+  motionKey,
 }: {
   children: ReactNode
   className?: string
-  key: string | number
+  motionKey: string | number
 }) {
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={key}
+        key={motionKey}
         className={className}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
