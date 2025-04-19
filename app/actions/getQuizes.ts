@@ -1,7 +1,8 @@
 "use server"
 
 import { prisma } from "@/lib/db"
-import type { QuizType } from "@/quizzes/components/QuizSidebar"
+import { QuizType } from "../types/types"
+
 
 interface GetQuizzesParams {
   page?: number

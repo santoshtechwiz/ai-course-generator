@@ -1,124 +1,12 @@
 "use client"
 
-import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {
-  Play,
-  Pause,
-  SkipForward,
-  SkipBack,
-  Volume2,
-  VolumeX,
-  Maximize2,
-  Minimize2,
-  Settings,
-  Loader2,
-  Repeat,
-  Download,
-  List,
-  Share2,
-} from "lucide-react"
-import { formatTime, getVideoQualityOptions, PLAYBACK_SPEEDS } from "@/lib/utils"
-
-import { Document, Page, Text, StyleSheet, PDFDownloadLink, Image } from "@react-pdf/renderer"
-import { useSession } from "next-auth/react"
-import Logo from "@/components/shared/Logo"
-
-// Define styles for the PDF
-const styles = StyleSheet.create({
-  page: {
-    flexDirection: "column",
-    backgroundColor: "#FFFFFF",
-    padding: 30,
-  },
-  header: {
-    fontSize: 24,
-    marginBottom: 20,
-    textAlign: "center",
-    color: "#2C3E50",
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 42,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#2980B9",
-  },
-  content: {
-    fontSize: 18,
-    marginBottom: 20,
-    textAlign: "center",
-    color: "#34495E",
-  },
-  name: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#E74C3C",
-  },
-  courseName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#27AE60",
-  },
-  date: {
-    fontSize: 14,
-    marginTop: 30,
-    textAlign: "center",
-    color: "#7F8C8D",
-  },
-  footer: {
-    position: "absolute",
-    bottom: 30,
-    left: 30,
-    right: 30,
-    textAlign: "center",
-    color: "#7F8C8D",
-    fontSize: 10,
-  },
-})
-
-// Certificate component
-const Certificate = ({ userName, courseName }: { userName: string; courseName: string }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <Image src="/path/to/courseai-logo.png" style={styles.logo} />
-      <Text style={styles.header}>Certificate of Completion</Text>
-      <Text style={styles.title}>Congratulations!</Text>
-      <Text style={styles.content}>This is to certify that</Text>
-      <Text style={styles.name}>{userName}</Text>
-      <Text style={styles.content}>has successfully completed the course</Text>
-      <Text style={styles.courseName}>{courseName}</Text>
-      <Text style={styles.date}>{new Date().toLocaleDateString()}</Text>
-      <Text style={styles.footer}>
-        This certificate is proudly presented by CourseAI Verify this certificate at: https://courseai.com/verify
-      </Text>
-    </Page>
-  </Document>
-)
+import { Loader2, Bookmark, CheckCircle } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useToast } from "@/hooks/use-toast"
+import { VideoControls } from "./VideoControls"
 
 interface VideoPlayerProps {
   videoId: string
@@ -126,161 +14,227 @@ interface VideoPlayerProps {
   autoPlay?: boolean
   onProgress?: (progress: number) => void
   initialTime?: number
-  brandLogo?: React.ReactNode
   isLastVideo?: boolean
-  courseAIVideos?: { id: string; title: string }[]
-  onDownloadCertificate?: () => void
+  onVideoSelect: (videoId: string) => void
+  courseName: string
+  nextVideoId?: string
+  onBookmark?: (time: number) => void
+  bookmarks?: number[]
+  isAuthenticated?: boolean
+  onChapterComplete?: () => void
   playerConfig?: {
     showRelatedVideos?: boolean
     rememberPosition?: boolean
     rememberMute?: boolean
     showCertificateButton?: boolean
   }
-  onVideoSelect: (videoId: string) => void
-  courseName: string
 }
 
-const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
+const formatTime = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = Math.floor(seconds % 60)
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+  return `${minutes}:${secs.toString().padStart(2, "0")}`
+}
+
+// Add this fallback component for when the player fails to load
+const VideoPlayerFallback = () => (
+  <div className="flex flex-col items-center justify-center w-full h-full bg-card rounded-lg border border-border aspect-video">
+    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+    <p className="text-muted-foreground mb-4">Unable to load video player</p>
+    <Button variant="outline" className="mt-2" onClick={() => window.location.reload()}>
+      Reload Page
+    </Button>
+  </div>
+)
+
+const EnhancedVideoPlayer = ({
   videoId,
   onEnded,
   autoPlay = false,
   onProgress,
   initialTime = 0,
-  brandLogo = <Logo />,
   isLastVideo = false,
-  courseAIVideos = [],
-  onDownloadCertificate,
+  onVideoSelect,
+  courseName,
+  nextVideoId,
+  onBookmark,
+  bookmarks = [],
+  isAuthenticated = false,
+  onChapterComplete,
   playerConfig = {
     showRelatedVideos: false,
     rememberPosition: true,
     rememberMute: true,
     showCertificateButton: false,
   },
-  onVideoSelect,
-  courseName,
-}) => {
+}: VideoPlayerProps) => {
   const [playing, setPlaying] = useState(autoPlay)
   const [volume, setVolume] = useState(0.8)
   const [muted, setMuted] = useState(false)
   const [played, setPlayed] = useState(0)
+  const [loaded, setLoaded] = useState(0)
   const [duration, setDuration] = useState(0)
   const [showControls, setShowControls] = useState(true)
   const [fullscreen, setFullscreen] = useState(false)
-  const [quality, setQuality] = useState("auto")
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
-  const [availableQualities, setAvailableQualities] = useState<string[]>([])
-  const [showCertificateOverlay, setShowCertificateOverlay] = useState(false)
   const [isBuffering, setIsBuffering] = useState(false)
-  const [showCourseAIVideos, setShowCourseAIVideos] = useState(false)
+  const [autoplayNext, setAutoplayNext] = useState(true)
+  const [showBookmarkTooltip, setShowBookmarkTooltip] = useState(false)
+  const [showCompletionToast, setShowCompletionToast] = useState(false)
+  const [videoCompleted, setVideoCompleted] = useState(false)
+  const [lastSavedPosition, setLastSavedPosition] = useState(0)
   const playerRef = useRef<ReactPlayer>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const { data: session } = useSession()
+  const progressBarRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
+  const [playerError, setPlayerError] = useState(false)
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Load global player settings from localStorage on mount
   useEffect(() => {
-    setPlaying(autoPlay)
-    setPlayed(0)
-    if (playerRef.current) {
-      playerRef.current.seekTo(0)
-    }
-  }, [autoPlay])
+    const savedMute = localStorage.getItem("global-player-mute")
+    const savedVolume = localStorage.getItem("global-player-volume")
+    const savedAutoplay = localStorage.getItem("global-player-autoplay")
+    const savedPlaybackSpeed = localStorage.getItem("global-player-speed")
 
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === " ") handlePlayPause()
-      if (e.key === "ArrowLeft") handleSkip(-10)
-      if (e.key === "ArrowRight") handleSkip(10)
-      if (e.key === "m") handleMute()
-      if (e.key === "f") handleFullscreen()
+    if (savedMute) {
+      setMuted(savedMute === "true")
     }
-    document.addEventListener("keydown", handleKeyPress)
-    return () => document.removeEventListener("keydown", handleKeyPress)
+    if (savedVolume) {
+      setVolume(Number.parseFloat(savedVolume))
+    }
+    if (savedAutoplay !== null) {
+      setAutoplayNext(savedAutoplay === "true")
+    } else {
+      // Default to true if not set
+      setAutoplayNext(true)
+      localStorage.setItem("global-player-autoplay", "true")
+    }
+    if (savedPlaybackSpeed) {
+      setPlaybackSpeed(Number.parseFloat(savedPlaybackSpeed))
+    }
   }, [])
 
+  // Reset video state when videoId changes
+  useEffect(() => {
+    setPlaying(autoPlay)
+    setVideoCompleted(false)
+    if (playerRef.current) {
+      if (initialTime > 0) {
+        playerRef.current.seekTo(initialTime)
+      } else {
+        playerRef.current.seekTo(0)
+      }
+    }
+  }, [autoPlay, initialTime, videoId])
+
+  // Load saved position from localStorage
   useEffect(() => {
     if (playerConfig.rememberPosition) {
       const savedPosition = localStorage.getItem(`video-position-${videoId}`)
       if (savedPosition) {
-        setPlayed(Number.parseFloat(savedPosition))
-        playerRef.current?.seekTo(Number.parseFloat(savedPosition))
+        const position = Number.parseFloat(savedPosition)
+        setPlayed(position)
+        setLastSavedPosition(position)
+        // Only seek if the position is valid and not at the end
+        if (position > 0 && position < 0.99) {
+          playerRef.current?.seekTo(position)
+        }
       }
     }
-    if (playerConfig.rememberMute) {
-      const savedMute = localStorage.getItem(`video-mute-${videoId}`)
-      const savedVolume = localStorage.getItem(`video-volume-${videoId}`)
-      if (savedMute) {
-        setMuted(savedMute === "true")
-      }
-      if (savedVolume) {
-        setVolume(Number.parseFloat(savedVolume))
-      }
-    }
-  }, [videoId, playerConfig.rememberPosition, playerConfig.rememberMute])
+  }, [videoId, playerConfig.rememberPosition])
 
-  const handlePlayPause = () => setPlaying(!playing)
-  const handleMute = () => {
-    const newMutedState = !muted
-    setMuted(newMutedState)
-    setVolume(newMutedState ? 0 : 0.8)
-    if (playerConfig.rememberMute) {
-      localStorage.setItem(`video-mute-${videoId}`, newMutedState.toString())
-      localStorage.setItem(`video-volume-${videoId}`, newMutedState ? "0" : "0.8")
+  // Handle fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setFullscreen(!!document.fullscreenElement)
     }
-  }
-  const handleVolumeChange = (newVolume: number[]) => {
-    const volumeValue = newVolume[0]
-    setVolume(volumeValue)
-    setMuted(volumeValue === 0)
-    if (playerConfig.rememberMute) {
-      localStorage.setItem(`video-mute-${videoId}`, (volumeValue === 0).toString())
-      localStorage.setItem(`video-volume-${videoId}`, volumeValue.toString())
-    }
-  }
-  const handleSeekChange = (newPlayed: number[]) => {
-    setPlayed(newPlayed[0])
-    playerRef.current?.seekTo(newPlayed[0])
-    if (playerConfig.rememberPosition) {
-      localStorage.setItem(`video-position-${videoId}`, newPlayed[0].toString())
-    }
-  }
-  const handleProgress = (state: { played: number; playedSeconds: number; loaded: number }) => {
-    if (!playerRef.current?.getInternalPlayer()?.seeking) {
-      setPlayed(state.played)
-      onProgress?.(state.played)
-      if (playerConfig.rememberPosition) {
-        localStorage.setItem(`video-position-${videoId}`, state.played.toString())
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+  }, [])
+
+  // Auto-hide controls after inactivity
+  useEffect(() => {
+    const handleMouseMove = () => {
+      setShowControls(true)
+
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current)
+      }
+
+      if (playing) {
+        controlsTimeoutRef.current = setTimeout(() => {
+          setShowControls(false)
+        }, 3000)
       }
     }
-  }
+
+    document.addEventListener("mousemove", handleMouseMove)
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove)
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current)
+      }
+    }
+  }, [playing])
+
+  // Check if video is near completion
+  useEffect(() => {
+    if (played > 0.95 && !videoCompleted) {
+      setVideoCompleted(true)
+      if (onChapterComplete) {
+        onChapterComplete()
+      }
+      setShowCompletionToast(true)
+
+      setTimeout(() => {
+        setShowCompletionToast(false)
+      }, 3000)
+    }
+  }, [played, videoCompleted, onChapterComplete])
+
+  // Throttled progress update
+  const handleProgress = useCallback(
+    (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
+      if (!playerRef.current?.getInternalPlayer()?.seeking) {
+        // Only update state if the change is significant enough
+        if (Math.abs(state.played - played) > 0.01) {
+          setPlayed(state.played)
+        }
+        if (Math.abs(state.loaded - loaded) > 0.01) {
+          setLoaded(state.loaded)
+        }
+
+        if (onProgress && Math.abs(state.played - played) > 0.01) {
+          onProgress(state.played)
+        }
+
+        // Only save position if it's changed significantly (throttling)
+        if (Math.abs(state.played - lastSavedPosition) > 0.01 && playerConfig.rememberPosition) {
+          localStorage.setItem(`video-position-${videoId}`, state.played.toString())
+          setLastSavedPosition(state.played)
+        }
+      }
+    },
+    [onProgress, videoId, playerConfig.rememberPosition, lastSavedPosition, played, loaded],
+  )
+
   const handleDuration = (duration: number) => setDuration(duration)
-  const handleSkip = (seconds: number) => {
-    const newTime = (playerRef.current?.getCurrentTime() || 0) + seconds
-    playerRef.current?.seekTo(newTime / duration)
-  }
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen()
-      setFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setFullscreen(false)
-    }
-  }
-  const handleQualityChange = (newQuality: string) => setQuality(newQuality)
-  const handlePlaybackSpeedChange = (newSpeed: number) => setPlaybackSpeed(newSpeed)
-
-  const handleReady = () => {
-    const player = playerRef.current?.getInternalPlayer()
-    if (player && player.getAvailableQualityLevels) {
-      setAvailableQualities(player.getAvailableQualityLevels())
-    }
-  }
 
   const handleVideoEnd = () => {
-    if (isLastVideo) {
-      setShowCertificateOverlay(true)
-    } else if (playerConfig.showRelatedVideos) {
-      setShowCourseAIVideos(true)
-    } else {
+    // Mark video as completed by setting position to end
+    if (playerConfig.rememberPosition) {
+      localStorage.setItem(`video-position-${videoId}`, "1.0")
+    }
+
+    if (autoplayNext && nextVideoId) {
       onEnded()
     }
   }
@@ -288,40 +242,158 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleBuffer = () => setIsBuffering(true)
   const handleBufferEnd = () => setIsBuffering(false)
 
-  const handleReplay = () => {
-    setPlaying(true)
-    playerRef.current?.seekTo(0)
-  }
+  // Add this useEffect to handle player initialization errors
+  useEffect(() => {
+    const handlePlayerError = () => {
+      console.log("Handling player error...")
+      setIsBuffering(false)
 
-  const handleDownloadCertificate = () => {
-    setShowCertificateOverlay(true)
-  }
-
-  const handleShare = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `${session?.user?.name}'s Certificate for ${courseName}`,
-          text: `Check out my certificate for completing ${courseName} on CourseAI!`,
-          url: `https://courseai.com/certificate/${encodeURIComponent(courseName)}`,
-        })
-      } else {
-        // Fallback for browsers that don't support the Web Share API
-        alert("Sharing is not supported on this browser. You can copy the certificate link manually.")
-      }
-    } catch (error) {
-      console.error("Error sharing certificate:", error)
+      // Try to reinitialize player after a short delay
+      setTimeout(() => {
+        if (playerRef.current) {
+          setPlaying(false)
+          setTimeout(() => setPlaying(true), 500)
+        }
+      }, 1000)
     }
-  }
+
+    window.addEventListener("error", handlePlayerError)
+    return () => window.removeEventListener("error", handlePlayerError)
+  }, [])
+
+  // Handlers for VideoControls component
+  const handlePlayPause = useCallback(() => {
+    setPlaying((prev) => !prev)
+  }, [])
+
+  const handleSkip = useCallback(
+    (seconds: number) => {
+      const currentTime = playerRef.current?.getCurrentTime() || 0
+      const newTime = currentTime + seconds
+      const newPosition = Math.max(0, Math.min(newTime / duration, 0.999))
+      playerRef.current?.seekTo(newPosition)
+      setPlayed(newPosition)
+
+      if (playerConfig.rememberPosition) {
+        localStorage.setItem(`video-position-${videoId}`, newPosition.toString())
+        setLastSavedPosition(newPosition)
+      }
+    },
+    [duration, playerConfig.rememberPosition, videoId],
+  )
+
+  const handleMute = useCallback(() => {
+    setMuted((prev) => {
+      const newMutedState = !prev
+      localStorage.setItem("global-player-mute", newMutedState.toString())
+      return newMutedState
+    })
+  }, [])
+
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    setVolume(newVolume)
+    setMuted(newVolume === 0)
+    localStorage.setItem("global-player-mute", (newVolume === 0).toString())
+    localStorage.setItem("global-player-volume", newVolume.toString())
+  }, [])
+
+  const handleFullscreenToggle = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`)
+      })
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error(`Error attempting to exit fullscreen: ${err.message}`)
+      })
+    }
+  }, [])
+
+  const handleNextVideo = useCallback(() => {
+    if (nextVideoId) {
+      if (playerConfig.rememberPosition) {
+        localStorage.setItem(`video-position-${videoId}`, played.toString())
+      }
+      onEnded()
+    }
+  }, [nextVideoId, onEnded, playerConfig.rememberPosition, played, videoId])
+
+  const handleAddBookmark = useCallback(() => {
+    if (onBookmark && playerRef.current) {
+      const currentTime = playerRef.current.getCurrentTime()
+      onBookmark(currentTime)
+      setShowBookmarkTooltip(true)
+
+      toast({
+        title: "Bookmark Added",
+        description: `Bookmark added at ${formatTime(currentTime)}`,
+        duration: 3000,
+      })
+
+      setTimeout(() => {
+        setShowBookmarkTooltip(false)
+      }, 2000)
+    }
+  }, [onBookmark, toast])
+
+  const handleSeekChange = useCallback(
+    (newPlayed: number) => {
+      setPlayed(newPlayed)
+      playerRef.current?.seekTo(newPlayed)
+      if (playerConfig.rememberPosition) {
+        localStorage.setItem(`video-position-${videoId}`, newPlayed.toString())
+        setLastSavedPosition(newPlayed)
+      }
+    },
+    [playerConfig.rememberPosition, videoId],
+  )
+
+  const handlePlaybackSpeedChange = useCallback((newSpeed: number) => {
+    setPlaybackSpeed(newSpeed)
+    localStorage.setItem("global-player-speed", newSpeed.toString())
+  }, [])
+
+  const handleAutoplayToggle = useCallback(() => {
+    setAutoplayNext((prev) => {
+      const newState = !prev
+      localStorage.setItem("global-player-autoplay", newState.toString())
+
+      toast({
+        title: newState ? "Autoplay enabled" : "Autoplay disabled",
+        description: newState ? "Videos will play automatically" : "Videos will not play automatically",
+        duration: 2000,
+      })
+
+      return newState
+    })
+  }, [toast])
+
+  const handleSeekToBookmark = useCallback(
+    (time: number) => {
+      if (playerRef.current) {
+        playerRef.current.seekTo(time / duration)
+        setPlayed(time / duration)
+
+        toast({
+          title: "Jumped to Bookmark",
+          description: `Playback resumed at ${formatTime(time)}`,
+          duration: 2000,
+        })
+      }
+    },
+    [duration, toast],
+  )
 
   return (
-    <TooltipProvider>
-      <div
-        ref={containerRef}
-        className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-900 shadow-xl group transition-all duration-300 hover:shadow-2xl"
-        onMouseEnter={() => setShowControls(true)}
-        onMouseLeave={() => setShowControls(false)}
-      >
+    <div
+      ref={containerRef}
+      className="relative w-full aspect-video rounded-lg overflow-hidden bg-card border border-border shadow-sm group"
+      onMouseEnter={() => setShowControls(true)}
+      onMouseLeave={() => playing && setShowControls(false)}
+    >
+      {playerError ? (
+        <VideoPlayerFallback />
+      ) : (
         <ReactPlayer
           ref={playerRef}
           url={`https://www.youtube.com/watch?v=${videoId}`}
@@ -333,302 +405,100 @@ const EnhancedVideoPlayer: React.FC<VideoPlayerProps> = ({
           onProgress={handleProgress}
           onDuration={handleDuration}
           onEnded={handleVideoEnd}
-          onReady={handleReady}
           onBuffer={handleBuffer}
           onBufferEnd={handleBufferEnd}
+          onError={(e) => {
+            console.error("ReactPlayer error:", e)
+            setPlayerError(true)
+            setIsBuffering(false)
+          }}
           progressInterval={1000}
           playbackRate={playbackSpeed}
           config={{
             youtube: {
               playerVars: {
+                autoplay: autoPlay ? 1 : 0,
                 start: Math.floor(initialTime),
                 modestbranding: 1,
-                rel: playerConfig.showRelatedVideos ? 1 : 0,
+                rel: 0,
+                showinfo: 0,
+                iv_load_policy: 3,
+                fs: 1,
+                controls: 0,
+                disablekb: 0,
+                playsinline: 1,
+                enablejsapi: 1,
+                origin: typeof window !== "undefined" ? window.location.origin : "",
               },
             },
           }}
         />
+      )}
 
-        <div className="absolute top-4 right-4 z-10">{brandLogo}</div>
-
-        {showCertificateOverlay && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-50 animate-in fade-in-50 duration-300">
-            <div className="text-white text-center">
-              <h2 className="text-2xl font-bold mb-4">Congratulations! You've completed the course.</h2>
-              <div className="space-y-4">
-                <PDFDownloadLink
-                  document={<Certificate userName={session?.user?.name || "Student"} courseName={courseName} />}
-                  fileName={`${courseName.replace(/\s+/g, "_")}_Certificate.pdf`}
-                >
-                  {({ blob, url, loading, error }) => (
-                    <Button
-                      disabled={loading}
-                      className="bg-cyan-500 hover:bg-cyan-600 transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {loading ? "Generating certificate..." : "Download Certificate"}
-                    </Button>
-                  )}
-                </PDFDownloadLink>
-                <Button
-                  onClick={handleShare}
-                  className="bg-green-500 hover:bg-green-600 transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
-                >
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Share Certificate
-                </Button>
-                <Button onClick={() => setShowCertificateOverlay(false)} className="bg-gray-500 hover:bg-gray-600">
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
+      {/* Bookmark Tooltip */}
+      <AnimatePresence>
+        {showBookmarkTooltip && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-4 py-2 rounded-lg z-50 flex items-center shadow-lg"
+          >
+            <Bookmark className="h-5 w-5 mr-2" />
+            <span className="text-sm font-medium">Bookmark added!</span>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {showCourseAIVideos && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-50 animate-in fade-in-50 duration-300">
-            <div className="text-white text-center max-w-md w-full">
-              <h3 className="text-xl font-semibold mb-4">Related Videos</h3>
-              {courseAIVideos.length > 0 ? (
-                <ul className="space-y-2">
-                  {courseAIVideos.map((video) => (
-                    <li
-                      key={video.id}
-                      className="text-lg hover:text-cyan-400 cursor-pointer p-2 rounded transition-all duration-200 hover:bg-white/5 hover:pl-4"
-                      onClick={() => {
-                        setShowCourseAIVideos(false)
-                        onVideoSelect(video.id)
-                      }}
-                    >
-                      {video.title}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No related videos available.</p>
-              )}
-              <Button onClick={() => setShowCourseAIVideos(false)} className="mt-4 bg-cyan-500 hover:bg-cyan-600">
-                Close
-              </Button>
-            </div>
-          </div>
+      {/* Completion Toast */}
+      <AnimatePresence>
+        {showCompletionToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full z-50 flex items-center shadow-lg"
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            <span className="text-sm font-medium">Chapter completed!</span>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {isBuffering && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-40">
-            <Loader2 className="h-8 w-8 animate-spin text-white" />
-          </div>
-        )}
-
-        <div
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-all duration-300 ${
-            showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-          }`}
-        >
-          <Slider
-            value={[played]}
-            onValueChange={handleSeekChange}
-            max={1}
-            step={0.001}
-            className="w-full mb-2 [&>span:first-child]:h-1 [&>span:first-child]:bg-white/30 [&_[role=slider]]:bg-cyan-400 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:border-0 [&>span:first-child_span]:bg-cyan-400 [&_[role=slider]]:transition-transform [&_[role=slider]]:duration-200 [&_[role=slider]]:hover:scale-125"
-          />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handlePlayPause}
-                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                  >
-                    {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Pause</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleSkip(-10)}
-                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Rewind 10 seconds</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleSkip(10)}
-                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Forward 10 seconds</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleReplay}
-                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                  >
-                    <Repeat className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Replay</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <span className="text-white text-sm ml-2">
-                {formatTime(duration * played)} / {formatTime(duration)}
-              </span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleMute}
-                      className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                    >
-                      {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{muted ? "Unmute" : "Mute"}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Slider
-                  value={[muted ? 0 : volume]}
-                  onValueChange={handleVolumeChange}
-                  max={1}
-                  step={0.1}
-                  className="w-20 [&>span:first-child]:h-1 [&>span:first-child]:bg-white/30 [&_[role=slider]]:bg-cyan-400 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:border-0 [&>span:first-child_span]:bg-cyan-400"
-                />
-              </div>
-
-              <DropdownMenu>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Settings</p>
-                  </TooltipContent>
-                </Tooltip>
-                <DropdownMenuContent>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Quality: {quality}</DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        {getVideoQualityOptions(availableQualities).map((option) => (
-                          <DropdownMenuItem key={option.value} onSelect={() => handleQualityChange(option.value)}>
-                            {option.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Speed: {playbackSpeed}x</DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        {PLAYBACK_SPEEDS.map((speed) => (
-                          <DropdownMenuItem key={speed.value} onSelect={() => handlePlaybackSpeedChange(speed.value)}>
-                            {speed.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {playerConfig.showRelatedVideos && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowCourseAIVideos(true)}
-                      className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Show Related Videos</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
-              {isLastVideo && playerConfig.showCertificateButton && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleDownloadCertificate}
-                      className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Download Certificate</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleFullscreen}
-                    className="text-white hover:bg-white/20 transition-colors duration-200 hover:text-cyan-400"
-                  >
-                    {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
+      {isBuffering && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-40">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
-    </TooltipProvider>
+      )}
+
+      {/* Video Controls - Extracted to a separate component */}
+      <VideoControls
+        show={showControls}
+        playing={playing}
+        muted={muted}
+        volume={volume}
+        played={played}
+        loaded={loaded}
+        duration={duration}
+        fullscreen={fullscreen}
+        playbackSpeed={playbackSpeed}
+        autoplayNext={autoplayNext}
+        bookmarks={bookmarks}
+        nextVideoId={nextVideoId}
+        onPlayPause={handlePlayPause}
+        onSkip={handleSkip}
+        onMute={handleMute}
+        onVolumeChange={handleVolumeChange}
+        onFullscreenToggle={handleFullscreenToggle}
+        onNextVideo={handleNextVideo}
+        onSeekChange={handleSeekChange}
+        onPlaybackSpeedChange={handlePlaybackSpeedChange}
+        onAutoplayToggle={handleAutoplayToggle}
+        onSeekToBookmark={handleSeekToBookmark}
+        onAddBookmark={handleAddBookmark}
+        formatTime={formatTime}
+      />
+    </div>
   )
 }
 

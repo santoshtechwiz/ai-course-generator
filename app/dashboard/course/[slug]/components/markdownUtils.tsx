@@ -3,19 +3,19 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { remark } from "remark"
+import html from "remark-html"
 
 export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
   return (
     <ReactMarkdown
-      className="prose lg:prose-xl dark:prose-invert max-w-none"
+      className="prose prose-slate dark:prose-invert max-w-none"
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeRaw]}
       components={{
         p: ({ children }) => <p className="mb-4 leading-relaxed text-base">{children}</p>,
         h3: ({ children }) => (
-          <h3 className="text-xl font-semibold mb-3 mt-6 text-primary border-b border-primary pb-2">
-            {children}
-          </h3>
+          <h3 className="text-xl font-semibold mb-3 mt-6 text-primary border-b border-primary/30 pb-2">{children}</h3>
         ),
         ul: ({ children }) => <ul className="list-disc pl-5 mb-4 space-y-2">{children}</ul>,
         li: ({ children }) => {
@@ -51,12 +51,7 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
           )
         },
         a: ({ href, children }) => (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
+          <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
             {children}
           </a>
         ),
@@ -65,4 +60,8 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
       {content}
     </ReactMarkdown>
   )
+}
+export const markdownToHtml = async (markdown: any) => {
+  const result = await remark().use(html).process(markdown)
+  return result.toString()
 }

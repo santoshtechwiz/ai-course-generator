@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle, Edit, Trash2, Save, X } from "lucide-react"
+import { AlertCircle, Edit, Trash2, Save, X, Loader2, Lock } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,19 +16,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-
-
+import { Skeleton } from "@/components/ui/skeleton"
 import { useChapterSummary } from "@/hooks/useChapterSummary"
 import { processMarkdown } from "@/lib/markdownProcessor"
 import { MarkdownRenderer } from "./markdownUtils"
-
 import { useToast } from "@/hooks/use-toast"
 import PDFGenerator from "@/components/shared/PDFGenerator"
-import { Loader } from "@/components/ui/loader"
 import AIEmoji from "@/app/dashboard/create/components/AIEmoji"
+import { useSession } from "next-auth/react"
 
 interface CourseAISummaryProps {
-  chapterId: number
+  chapterId: number | string
   name: string
   existingSummary: string | null
   isPremium: boolean
@@ -40,8 +38,15 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
   const [isEditing, setIsEditing] = useState(false)
   const [editedSummary, setEditedSummary] = useState(existingSummary || "")
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
-  const { data, isLoading, isError, refetch, isFetching } = useChapterSummary(chapterId)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { data, isLoading, isError, refetch, isFetching } = useChapterSummary(Number(chapterId))
   const { toast } = useToast()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session
+
+  // For unauthenticated users, show a blurred preview
+  const [showPreview, setShowPreview] = useState(!isPremium && !isAuthenticated)
 
   useEffect(() => {
     if (!existingSummary && !isPremium) {
@@ -60,6 +65,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
 
   const handleSave = async () => {
     try {
+      setIsSaving(true)
       const response = await fetch(`/api/chapter/${chapterId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -82,11 +88,14 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
         description: "Failed to update the summary. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handleDelete = async () => {
     try {
+      setIsDeleting(true)
       const response = await fetch(`/api/chapter/${chapterId}`, {
         method: "DELETE",
       })
@@ -108,8 +117,64 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
         variant: "destructive",
       })
     } finally {
+      setIsDeleting(false)
       setShowDeleteConfirmation(false)
     }
+  }
+
+  // For unauthenticated users, show a preview with blur effect
+  if (showPreview) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-3xl font-bold mb-6">{name}</h2>
+        <Card className="bg-card relative overflow-hidden">
+          <CardContent className="p-6">
+            <div className="relative">
+              {/* Blurred content */}
+              <div className="filter blur-sm">
+                <div className="prose dark:prose-invert max-w-none">
+                  <h3>Chapter Summary</h3>
+                  <p>
+                    This chapter explores the fundamental concepts of programming, including variables, data types, and
+                    control structures. We begin by examining how to declare and initialize variables, understanding
+                    their scope and lifetime within a program.
+                  </p>
+                  <p>
+                    Next, we delve into various data types such as integers, floating-point numbers, characters, and
+                    booleans. The chapter also covers complex data structures like arrays, lists, and dictionaries,
+                    explaining how they store and organize information.
+                  </p>
+                  <h3>Key Concepts</h3>
+                  <ul>
+                    <li>Variable declaration and initialization</li>
+                    <li>Understanding data types and type conversion</li>
+                    <li>Control structures: conditionals and loops</li>
+                    <li>Function definition and parameter passing</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Overlay with sign-in prompt */}
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                <div className="text-center p-6 max-w-md">
+                  <Lock className="h-12 w-12 text-primary/50 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Premium Content</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Sign in or upgrade to access AI-generated summaries for this chapter.
+                  </p>
+                  <div className="flex space-x-4 justify-center">
+                    <Button onClick={() => (window.location.href = "/api/auth/signin")}>Sign In</Button>
+                    <Button variant="outline" onClick={() => (window.location.href = "/dashboard/subscription")}>
+                      Upgrade
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   const renderContent = () => {
@@ -118,7 +183,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
     }
 
     if (isLoading || isFetching) {
-      return <Loader text="Loading" />
+      return <LoadingSkeleton />
     }
 
     if (isError && !existingSummary) {
@@ -141,6 +206,7 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
             setIsEditing(false)
             setEditedSummary(existingSummary || "")
           }}
+          isSaving={isSaving}
         />
       )
     }
@@ -170,8 +236,17 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -185,12 +260,34 @@ const AIPreparingContent: React.FC = () => (
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 0.8 }}
     transition={{ duration: 0.5 }}
-    className="flex flex-col items-center justify-center space-y-4"
+    className="flex flex-col items-center justify-center space-y-4 bg-card/20 p-8 rounded-lg"
   >
     <AIEmoji />
     <p className="text-lg font-semibold text-primary">Preparing your AI summary...</p>
     <p className="text-sm text-muted-foreground">This may take a minute</p>
   </motion.div>
+)
+
+const LoadingSkeleton: React.FC = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-10 w-2/3 mb-4" />
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-4 w-4/6" />
+    </div>
+    <div className="space-y-2 mt-6">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+    </div>
+    <div className="space-y-2 mt-6">
+      <Skeleton className="h-4 w-1/2" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-2/3" />
+    </div>
+  </div>
 )
 
 const ErrorContent: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
@@ -199,7 +296,7 @@ const ErrorContent: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
     transition={{ duration: 0.3 }}
-    className="space-y-4"
+    className="space-y-4 bg-card/20 p-6 rounded-lg"
   >
     <div className="flex items-center space-x-2 text-destructive">
       <AlertCircle size={20} />
@@ -225,6 +322,7 @@ const SummaryContent: React.FC<{
   onDelete: () => void
   onCancelEdit: () => void
   setEditedSummary: (summary: string) => void
+  isSaving: boolean
 }> = ({
   name,
   isAdmin,
@@ -236,6 +334,7 @@ const SummaryContent: React.FC<{
   onDelete,
   onCancelEdit,
   setEditedSummary,
+  isSaving,
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
@@ -248,10 +347,19 @@ const SummaryContent: React.FC<{
       <div className="flex space-x-2 mb-4">
         {isEditing ? (
           <>
-            <Button onClick={onSave} variant="outline" size="sm">
-              <Save className="mr-2 h-4 w-4" /> Save
+            <Button onClick={onSave} variant="outline" size="sm" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" /> Save
+                </>
+              )}
             </Button>
-            <Button onClick={onCancelEdit} variant="outline" size="sm">
+            <Button onClick={onCancelEdit} variant="outline" size="sm" disabled={isSaving}>
               <X className="mr-2 h-4 w-4" /> Cancel
             </Button>
           </>
@@ -274,7 +382,8 @@ const SummaryContent: React.FC<{
             <textarea
               value={editedSummary}
               onChange={(e) => setEditedSummary(e.target.value)}
-              className="w-full h-64 p-2 border rounded"
+              className="w-full h-64 p-4 border rounded-md bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-y"
+              placeholder="Enter your summary here..."
             />
           </div>
         ) : (
@@ -302,4 +411,3 @@ const NoContentAvailable: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 )
 
 export default CourseAISummary
-

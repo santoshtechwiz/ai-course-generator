@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils"
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "./PlanAwareButton"
+import { SubscriptionSlider } from "../../subscription/components/SubscriptionSlider"
 
 type QuizFormData = z.infer<typeof quizSchema> & {
   userType?: string

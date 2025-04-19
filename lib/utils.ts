@@ -73,25 +73,34 @@ export function generateSlug(text: string): string {
 }
 
 
-export const getVideoQualityOptions = (availableQualities: string[]): { value: string; label: string }[] => {
-  if (availableQualities.length === 0) {
-    return [{ value: 'auto', label: 'Auto' }];
+export function getVideoQualityOptions(availableQualities: string[]): { value: string; label: string }[] {
+  const defaultOptions = [
+    { value: "auto", label: "Auto" },
+    { value: "hd1080", label: "1080p" },
+    { value: "hd720", label: "720p" },
+    { value: "large", label: "480p" },
+    { value: "medium", label: "360p" },
+    { value: "small", label: "240p" },
+    { value: "tiny", label: "144p" },
+  ]
+
+  if (!availableQualities || availableQualities.length === 0) {
+    return defaultOptions
   }
-  return [
-    { value: 'auto', label: 'Auto' },
-    ...availableQualities.map(quality => ({
-      value: quality,
-      label: quality === 'tiny' ? '144p' : quality.includes('hd') ? quality.toUpperCase() : `${quality}p`,
-    })),
-  ];
-};
+
+  return defaultOptions.filter((option) => option.value === "auto" || availableQualities.includes(option.value))
+}
 
 export const PLAYBACK_SPEEDS = [
-  { value: 0.5, label: '0.5x' },
-  { value: 1, label: '1x' },
-  { value: 1.5, label: '1.5x' },
-  { value: 2, label: '2x' },
-];
+  { value: 0.25, label: "0.25x" },
+  { value: 0.5, label: "0.5x" },
+  { value: 0.75, label: "0.75x" },
+  { value: 1, label: "1x" },
+  { value: 1.25, label: "1.25x" },
+  { value: 1.5, label: "1.5x" },
+  { value: 1.75, label: "1.75x" },
+  { value: 2, label: "2x" },
+]
 
 export const extractUserAnswer = (answer: Object): string | string[] => {
   if (typeof answer === "object" && answer !== null) {
@@ -130,4 +139,16 @@ export const  formatQuizTime = (time: number): string => {
   const seconds = time % 60;
 
   return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`;
+}
+
+export async function markdownToHtml(markdown: string): Promise<string> {
+  // Simple implementation - in a real app, you might use a library like marked or remark
+  return markdown
+    .replace(/^### (.*$)/gim, "<h3>$1</h3>")
+    .replace(/^## (.*$)/gim, "<h2>$1</h2>")
+    .replace(/^# (.*$)/gim, "<h1>$1</h1>")
+    .replace(/\*\*(.*)\*\*/gim, "<strong>$1</strong>")
+    .replace(/\*(.*)\*/gim, "<em>$1</em>")
+    .replace(/\n/gim, "<br>")
+    .replace(/\[([^\]]+)\]$$([^)]+)$$/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
 }

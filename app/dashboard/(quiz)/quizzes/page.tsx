@@ -9,6 +9,7 @@ import { QuizzesClient } from "./components/QuizzesClient"
 import { QuizzesSkeleton } from "./components/QuizzesSkeleton"
 import { Loader } from "@/components/ui/loader"
 import ClientOnly from "@/components/ClientOnly"
+import type { QuizListItem } from "@/app/types/types"
 
 export const metadata: Metadata = generatePageMetadata({
   title: "Free Quizzes – MCQs, Open-ended and Code Challenges",
@@ -34,7 +35,13 @@ export const dynamic = "force-dynamic"
 const QuizPage = async () => {
   const session = await getAuthSession()
   const userId = session?.user?.id
-  const initialQuizzesData = await getQuizzes({ page: 1, limit: 5, searchTerm: "", userId: userId, quizTypes: [] })
+  const quizzesData = await getQuizzes({ page: 1, limit: 5, searchTerm: "", userId: userId, quizTypes: [] })
+
+  // Transform the data to match the expected interface
+  const initialQuizzesData = {
+    quizzes: quizzesData.quizzes as QuizListItem[],
+    nextCursor: quizzesData.nextCursor,
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
