@@ -6,7 +6,12 @@
  * plan details without changing the core functionality.
  */
 
-import type { AddOnPackage, FAQItem, SubscriptionPlan } from "@/app/dashboard/subscription/types/subscription"
+import type {
+  AddOnPackage,
+  FAQItem,
+  SubscriptionPlan,
+  FeatureAvailability,
+} from "@/app/dashboard/subscription/types/subscription"
 import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
 
 // First, let's examine the current structure of features in the subscription plans
@@ -28,7 +33,16 @@ export enum FeatureCategory {
 /**
  * Feature definitions with metadata for better management
  */
-export const FEATURES = {
+export const FEATURES: Record<
+  string,
+  {
+    id: string
+    name: string
+    description: string
+    category: FeatureCategory
+    icon: string
+  }
+> = {
   // Core Features
   COURSE_CREATION: {
     id: "course-creation",
@@ -106,7 +120,7 @@ export const FEATURES = {
  * Feature availability matrix for each plan
  * This makes it easier to update which features are available in which plans
  */
-export const PLAN_FEATURES = {
+export const PLAN_FEATURES: Record<string, Record<string, { available: boolean }>> = {
   FREE: {
     [FEATURES.COURSE_CREATION.id]: { available: true },
     [FEATURES.MCQ_GENERATOR.id]: { available: true },
@@ -158,7 +172,7 @@ export const PLAN_FEATURES = {
 }
 
 // Helper function to get features for a plan with proper structure
-export function getPlanFeatures(planId: string) {
+export function getPlanFeatures(planId: string): FeatureAvailability[] {
   const planFeatureMatrix = PLAN_FEATURES[planId] || {}
 
   return Object.entries(FEATURES).map(([key, feature]) => {
@@ -182,14 +196,17 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       {
         duration: 1,
         price: 0,
+        currency: "USD",
       },
       {
         duration: 6,
         price: 0,
+        currency: "USD",
       },
       {
         duration: 12,
         price: 0,
+        currency: "USD",
       },
     ],
     limits: {
@@ -209,15 +226,18 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       {
         duration: 1,
         price: 12.99,
+        currency: "USD",
       },
       {
         duration: 6,
         price: 69.99,
+        currency: "USD",
         savings: 10,
       },
       {
         duration: 12,
         price: 129.99,
+        currency: "USD",
         savings: 17,
       },
     ],
@@ -239,15 +259,18 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       {
         duration: 1,
         price: 24.99,
+        currency: "USD",
       },
       {
         duration: 6,
         price: 134.99,
+        currency: "USD",
         savings: 10,
       },
       {
         duration: 12,
         price: 249.99,
+        currency: "USD",
         savings: 17,
       },
     ],
@@ -268,15 +291,18 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       {
         duration: 1,
         price: 49.99,
+        currency: "USD",
       },
       {
         duration: 6,
         price: 269.99,
+        currency: "USD",
         savings: 10,
       },
       {
         duration: 12,
         price: 499.99,
+        currency: "USD",
         savings: 17,
       },
     ],

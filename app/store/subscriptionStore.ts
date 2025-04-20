@@ -1,27 +1,24 @@
 import { create } from "zustand"
 import { devtools, persist } from "zustand/middleware"
-import type { SubscriptionPlanType } from "../dashboard/subscription/types/subscription"
+import type {
+  SubscriptionPlanType,
+  SubscriptionStatusType,
+  SubscriptionData,
+} from "../dashboard/subscription/types/subscription"
 import { dispatchSubscriptionEvent, SUBSCRIPTION_EVENTS } from "../dashboard/subscription/utils/events"
+import { validateSubscriptionResponse } from "../dashboard/subscription/utils/validation"
 
 // Define the subscription state interface
 interface SubscriptionState {
   status: "idle" | "loading" | "succeeded" | "failed"
   error: string | null
-  data: {
-    credits: number
-    tokensUsed: number
-    isSubscribed: boolean
-    subscriptionPlan: SubscriptionPlanType | "FREE"
-    expirationDate?: string
-    cancelAtPeriodEnd?: boolean
-    status?: string
-  } | null
+  data: SubscriptionData | null
   lastFetched: number
   detailsData: any | null
   lastDetailsFetched: number
   isRefreshing: boolean
-  isLoading: boolean // Add isLoading state
-  isError: boolean // Add isError state
+  isLoading: boolean
+  isError: boolean
 
   // Actions
   fetchSubscriptionStatus: (forceRefresh?: boolean) => Promise<void>
@@ -48,8 +45,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
         detailsData: null,
         lastDetailsFetched: 0,
         isRefreshing: false,
-        isLoading: false, // Initialize isLoading to false
-        isError: false, // Initialize isError to false
+        isLoading: false,
+        isError: false,
 
         // Actions
         fetchSubscriptionStatus: async (forceRefresh = false) => {
@@ -66,9 +63,9 @@ export const useSubscriptionStore = create<SubscriptionState>()(
           set({
             status: state.data && state.status === "succeeded" ? "succeeded" : "loading",
             isRefreshing: true,
-            isLoading: true, // Set isLoading to true
-            isError: false, // Reset isError to false
-            error: null, // Clear any existing error
+            isLoading: true,
+            isError: false,
+            error: null,
           })
 
           try {
@@ -87,36 +84,30 @@ export const useSubscriptionStore = create<SubscriptionState>()(
               throw new Error(`Failed to fetch subscription status: ${response.statusText}`)
             }
 
-            const data = await response.json()
+            const rawData = await response.json()
 
-            const isActive = data.status === "ACTIVE" || data.isActive === true || data.active === true
-            const isSubscribed = isActive && data.subscriptionPlan !== "FREE" && data.plan !== "FREE"
+            // Validate and transform the API response to match expected types
+            const validatedData = validateSubscriptionResponse(rawData)
 
             set({
               status: "succeeded",
-              data: {
-                credits: typeof data.credits === "number" ? data.credits : 0,
-                tokensUsed: data.tokensUsed || 0,
-                isSubscribed,
-                subscriptionPlan: ((data.subscriptionPlan || data.plan) as SubscriptionPlanType) || "FREE",
-                expirationDate: data.expirationDate || data.expiresAt,
-                cancelAtPeriodEnd: data.cancelAtPeriodEnd || false,
-                status: data.status,
-              },
+              data: validatedData,
               lastFetched: Date.now(),
               error: null,
               isRefreshing: false,
-              isLoading: false, // Set isLoading to false
-              isError: false, // Reset isError to false
+              isLoading: false,
+              isError: false,
             })
           } catch (error) {
+            console.error("Error fetching subscription status:", error)
+
             // Keep existing data if available, just update status and error
             set((state) => ({
               status: "failed",
               error: error instanceof Error ? error.message : "Unknown error",
               isRefreshing: false,
-              isLoading: false, // Set isLoading to false
-              isError: true, // Set isError to true
+              isLoading: false,
+              isError: true,
               // Keep existing data if we have it
               data: state.data,
             }))
@@ -157,13 +148,22 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
             const detailsData = await response.json()
 
+            // Validate token usage data if it exists
+            const tokenUsage = detailsData?.tokenUsage
+              ? {
+                  used: typeof detailsData.tokenUsage.used === "number" ? detailsData.tokenUsage.used : 0,
+                  total: typeof detailsData.tokenUsage.total === "number" ? detailsData.tokenUsage.total : 0,
+                }
+              : null
+
             set((state) => {
               // Update tokensUsed if available in details
               const updatedData =
-                state.data && detailsData?.tokenUsage
+                state.data && tokenUsage
                   ? {
                       ...state.data,
-                      tokensUsed: detailsData.tokenUsage.used,
+                      tokensUsed: tokenUsage.used,
+                      credits: tokenUsage.total,
                     }
                   : state.data
 
@@ -177,6 +177,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
               }
             })
           } catch (error) {
+            console.error("Error fetching subscription details:", error)
+
             // Keep existing details data if available
             set((state) => ({
               isRefreshing: false,
@@ -211,7 +213,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
                 ? {
                     ...state.data,
                     cancelAtPeriodEnd: true,
-                    status: "CANCELED",
+                    status: "CANCELED" as SubscriptionStatusType,
                   }
                 : null,
               lastFetched: 0, // Force refresh on next fetch
@@ -224,6 +226,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
             return result
           } catch (error) {
+            console.error("Error canceling subscription:", error)
             set({ isLoading: false, isError: true })
             throw error
           }
@@ -251,7 +254,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
                 ? {
                     ...state.data,
                     cancelAtPeriodEnd: false,
-                    status: "ACTIVE",
+                    status: "ACTIVE" as SubscriptionStatusType,
                   }
                 : null,
               lastFetched: 0, // Force refresh on next fetch
@@ -264,6 +267,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
             return result
           } catch (error) {
+            console.error("Error resuming subscription:", error)
             set({ isLoading: false, isError: true })
             throw error
           }
@@ -292,8 +296,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
               data: state.data
                 ? {
                     ...state.data,
-                    subscriptionPlan: "FREE",
-                    status: "ACTIVE",
+                    subscriptionPlan: "FREE" as SubscriptionPlanType,
+                    status: "ACTIVE" as SubscriptionStatusType,
                     isSubscribed: false,
                   }
                 : null,
@@ -310,6 +314,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
             return result
           } catch (error) {
+            console.error("Error activating free plan:", error)
             set({ isLoading: false, isError: true })
             throw error
           }

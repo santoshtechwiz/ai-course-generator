@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { shallow } from "zustand/shallow"
 import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import type { SubscriptionData, TokenUsage } from "../types/subscription"
 
 /**
  * Custom hook to access subscription data from the Zustand store
@@ -30,7 +31,11 @@ export function useSubscriptionData({
   const error = useSubscriptionStore((state) => state.error)
 
   // Memoize the subscription object to prevent recreating it on each render
-  const subscription = useMemo(() => ({ data, status, error }), [data, status, error])
+  const subscription = useMemo<{
+    data: SubscriptionData | null
+    status: string
+    error: string | null
+  }>(() => ({ data, status, error }), [data, status, error])
 
   // Get actions from the store
   const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
@@ -94,12 +99,11 @@ export function useSubscriptionPlan() {
   // Use shallow comparison to prevent unnecessary rerenders
   const subscriptionData = useSubscriptionStore((state) => state.data)
 
-  // Safely access properties with fallbacks
   const isSubscribed = subscriptionData?.isSubscribed || false
   const currentPlan = subscriptionData?.subscriptionPlan || "FREE"
   const expirationDate = subscriptionData?.expirationDate
   const cancelAtPeriodEnd = subscriptionData?.cancelAtPeriodEnd || false
-  const status = subscriptionData?.status
+  const status = subscriptionData?.status || "NONE"
 
   return {
     isSubscribed,
@@ -117,22 +121,22 @@ export function useSubscriptionPlan() {
 /**
  * Hook for accessing token usage information
  */
-export function useTokenUsage() {
+export function useTokenUsage(): TokenUsage {
   // Use shallow comparison to prevent unnecessary rerenders
-  const subscriptionData = useSubscriptionStore((state) => state.data)
+  const subscriptionData = useSubscriptionStore((state) => state.data, shallow)
 
-  // Safely access token usage properties with fallbacks
   const tokensUsed = subscriptionData?.tokensUsed || 0
   const totalTokens = subscriptionData?.credits || 0
 
   const tokenUsagePercentage = totalTokens > 0 ? Math.min((tokensUsed / totalTokens) * 100, 100) : 0
+
   const hasExceededLimit = tokensUsed > 0 && tokensUsed > totalTokens
 
   return {
-    tokensUsed,
-    totalTokens,
-    tokenUsagePercentage,
+    used: tokensUsed,
+    total: totalTokens,
+    percentage: tokenUsagePercentage,
     hasExceededLimit,
-    remainingTokens: Math.max(totalTokens - tokensUsed, 0),
+    remaining: Math.max(totalTokens - tokensUsed, 0),
   }
 }

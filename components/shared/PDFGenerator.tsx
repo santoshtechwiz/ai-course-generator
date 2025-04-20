@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 
 import { useState } from "react"
 import { SiAdobe } from "react-icons/si"
-import useSubscriptionStore from "@/app/dashboard/subscription/services/useSubscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 // Register a font with multiple weights
 Font.register({
@@ -156,7 +156,7 @@ const PDFDocument = ({ content, chapterName }: { content: string; chapterName: s
 
 const PDFGenerator = ({ markdown, chapterName }: { markdown: string; chapterName: string }) => {
   const [isDownloading, setIsDownloading] = useState(false)
-  const { subscriptionStatus,canDownloadPDF } = useSubscriptionStore()
+  const { data,canDownloadPDF } = useSubscriptionStore()
 
   const handleDownload = async () => {
     setIsDownloading(true)
@@ -181,9 +181,9 @@ const PDFGenerator = ({ markdown, chapterName }: { markdown: string; chapterName
   }
 
   const isDisabled =
-    !subscriptionStatus ||
-    subscriptionStatus.subscriptionPlan === "FREE" ||
-    subscriptionStatus.subscriptionPlan === "BASIC"
+    !data ||
+    data.subscriptionPlan === "FREE" ||
+    data.subscriptionPlan === "BASIC"
 
   return (
     <div className="flex justify-end mt-4">

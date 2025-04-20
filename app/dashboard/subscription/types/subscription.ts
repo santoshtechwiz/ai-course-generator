@@ -6,21 +6,23 @@
  * the subscription system.
  */
 
+import type { LucideIcon } from "lucide-react"
+
 // Subscription plan identifiers
 export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE"
 
 // Subscription status types
-export type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | "PENDING" | null
+export type SubscriptionStatusType = "ACTIVE" | "CANCELED" | "PAST_DUE" | "UNPAID" | "TRIAL" | "NONE"
 
 // Feature availability
 export interface FeatureAvailability {
+  id: string
   name: string
+  description: string
+  category: string
+  icon: string
   available: boolean
   comingSoon?: boolean
-  id?: string
-  description?: string
-  category?: string
-  icon?: string
 }
 
 // Plan limits
@@ -34,6 +36,7 @@ export interface PriceOption {
   duration: number
   price: number
   currency: string
+  savings?: number
 }
 
 export interface PaymentOptions {
@@ -47,12 +50,33 @@ export interface SubscriptionPlan {
   id: SubscriptionPlanType
   name: string
   description: string
-  icon: any
+  icon: LucideIcon
   tokens: number
   options: PriceOption[]
   limits: PlanLimits
   features: FeatureAvailability[]
   popular?: boolean
+}
+
+// Subscription data structure
+export interface SubscriptionData {
+  credits: number
+  tokensUsed: number
+  isSubscribed: boolean
+  subscriptionPlan: SubscriptionPlanType
+  expirationDate?: string
+  cancelAtPeriodEnd?: boolean
+  status?: SubscriptionStatusType
+  features?: string[]
+}
+
+// Token usage data
+export interface TokenUsage {
+  used: number
+  total: number
+  percentage: number
+  hasExceededLimit: boolean
+  remaining: number
 }
 
 // User subscription data
@@ -68,17 +92,25 @@ export interface UserSubscription {
 }
 
 // Token usage data
-export interface TokenUsage {
+export interface TokenUsageResponse {
   used: number
   total: number
 }
 
 // Subscription status response
-export interface SubscriptionStatus {
+export interface SubscriptionStatusResponse {
   credits: number
+  tokensUsed: number
   isSubscribed: boolean
   subscriptionPlan: SubscriptionPlanType
   expirationDate?: string
+  cancelAtPeriodEnd?: boolean
+  status?: string
+  isActive?: boolean
+  active?: boolean
+  plan?: string
+  expiresAt?: string
+  features?: string[]
 }
 
 // Payment gateway interface

@@ -81,7 +81,7 @@ export default function PlanCards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
       {plans.map((plan, index) => {
-        const priceOption = plan.options.find((o: { duration: number }) => o.duration === duration) || plan.options[0]
+        const priceOption = plan.options.find((o) => o.duration === duration) || plan.options[0]
         const isPlanActive = currentPlan === plan.id
         const isBestValue = plan.name === bestPlan?.name
         const isCurrentActivePlan = isSubscribed && currentPlan === plan.id
