@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import {useSubscriptionStore} from "@/store/useSubscriptionStore"
 
 interface NotificationsMenuProps {
   initialCount?: number

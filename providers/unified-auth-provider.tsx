@@ -11,6 +11,7 @@ type AuthContextType = {
   user: any
   isAuthenticated: boolean
   isAdmin: boolean
+  credits: number,
   isLoading: boolean
   signIn: (provider?: string, options?: any) => Promise<any>
   signOut: (options?: any) => Promise<any>
@@ -30,6 +31,7 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
   // Determine if user is authenticated and admin
   const isAuthenticated = !!session?.user
   const isAdmin = !!session?.user?.isAdmin
+  const credits = session?.user?.credits || 0 
 
   // Effect to handle loading state
   useEffect(() => {
@@ -57,7 +59,9 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
   const contextValue: AuthContextType = {
     user: session?.user,
     isAuthenticated,
+   
     isAdmin,
+    credits,
     isLoading,
     signIn: (provider, options) => signIn(provider, options),
     signOut: (options) => signOut(options),

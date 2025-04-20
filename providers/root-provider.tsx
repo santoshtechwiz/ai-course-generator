@@ -8,8 +8,9 @@ import { Toaster } from "sonner"
 import { Suspense, useState, useEffect } from "react"
 import { UnifiedAuthProvider } from "./unified-auth-provider"
 import TrialModal from "@/components/TrialModal"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+
 import { AnimationProvider } from "./animation-provider"
+import { useSubscriptionStore } from "@/store/useSubscriptionStore"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -17,6 +18,7 @@ const createQueryClient = () =>
     defaultOptions: {
       queries: {
         staleTime: 60 * 1000, // 1 minute
+        gcTime: 10 * 60 * 1000, // 10 minutes
         retry: 1,
         refetchOnWindowFocus: false,
       },
@@ -60,7 +62,7 @@ export function RootProvider({ children, session, ...props }: RootProviderProps)
 
 // Extract subscription status logic into a separate component
 function SubscriptionStatus() {
-  const { subscriptionStatus } = useSubscriptionStore()
+  const { subscriptionStatus } = useSubscriptionStore();
 
   const isSubscribed = subscriptionStatus?.isActive || false
   const currentPlan = subscriptionStatus?.subscriptionPlan || null

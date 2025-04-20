@@ -7,7 +7,6 @@ import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/su
 import { useIdleTimer } from "@/hooks/use-idle-timer"
 import { useVisibilityChange } from "@/hooks/use-visibility-change"
 
-  export  const SUBSCRIPTION_UPDATED_EVENT="subscription-updated";
 // Define subscription status interface
 export interface SubscriptionStatus {
   credits: number
