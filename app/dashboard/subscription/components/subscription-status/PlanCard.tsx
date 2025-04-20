@@ -9,14 +9,14 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
-import { Check, Loader2, Lock, AlertTriangle, Calendar, Info } from "lucide-react"
+import { Check, Loader2, AlertTriangle, Calendar, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
-import { planIcons } from "@/config/plan-icons"
+import { FeatureCategoryList } from "../FeatureComparison"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
-import type { SUBSCRIPTION_PLANS } from "../subscription-plans"
+import type { SUBSCRIPTION_PLANS as SubscriptionPlansType } from "../subscription-plans"
 import { motion } from "framer-motion"
 
 // Redesigned PlanCards component with reduced animations
@@ -39,9 +39,9 @@ export default function PlanCards({
   hasAnyPaidPlan = false,
   hasAllPlans = false,
   cancelAtPeriodEnd = false,
-  userId = null, // Add this line
+  userId = null,
 }: {
-  plans: typeof SUBSCRIPTION_PLANS
+  plans: typeof SubscriptionPlansType
   currentPlan: SubscriptionPlanType | null
   subscriptionStatus: SubscriptionStatusType | null
   loading: SubscriptionPlanType | null
@@ -59,7 +59,7 @@ export default function PlanCards({
   hasAnyPaidPlan?: boolean
   hasAllPlans?: boolean
   cancelAtPeriodEnd?: boolean
-  userId?: string | null // Add this line
+  userId?: string | null
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
@@ -126,6 +126,9 @@ export default function PlanCards({
           return "shadow-sm"
         })()
 
+        // Get the icon component for the plan
+        const PlanIcon = plan.icon
+
         return (
           <motion.div
             key={plan.id}
@@ -157,8 +160,8 @@ export default function PlanCards({
               <CardHeader className={`${isBestValue ? "pb-4" : "pb-2"}`}>
                 <div className="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between mb-1">
                   <div className="flex items-center">
-                    <div>{planIcons[plan.id as SubscriptionPlanType]}</div>
-                    <CardTitle className="text-xl ml-2">{plan.name}</CardTitle>
+                    {PlanIcon && <PlanIcon className="h-5 w-5 mr-2" />}
+                    <CardTitle className="text-xl">{plan.name}</CardTitle>
                   </div>
                   {isPlanActive && isAuthenticated && (
                     <Badge
@@ -212,57 +215,9 @@ export default function PlanCards({
                     />
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2 text-sm uppercase tracking-wider text-muted-foreground text-center sm:text-left">
-                      Included Features
-                    </h4>
-                    <ul className="space-y-2">
-                      {plan.features
-                        .filter((feature) => feature.available)
-                        .slice(0, 5) // Limit to 5 features for better UI
-                        .map((feature, index) => (
-                          <motion.li
-                            key={index}
-                            className="flex items-start"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.3, delay: 0.1 * index }}
-                          >
-                            <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                            <span className="text-sm">{feature.name}</span>
-                          </motion.li>
-                        ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2 text-sm uppercase tracking-wider text-muted-foreground text-center sm:text-left">
-                      Not Included
-                    </h4>
-                    <ul className="space-y-2">
-                      {plan.features
-                        .filter((feature) => !feature.available)
-                        .slice(0, 3) // Limit to 3 features for better UI
-                        .map((feature, index) => (
-                          <motion.li
-                            key={index}
-                            className="flex items-start"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.3, delay: 0.1 * index }}
-                          >
-                            <Lock className="h-5 w-5 text-muted-foreground mr-2 flex-shrink-0 mt-0.5" />
-                            <span className="text-sm text-muted-foreground">{feature.name}</span>
-                            {feature.comingSoon && (
-                              <Badge variant="outline" className="ml-2 text-xs whitespace-nowrap">
-                                Coming Soon
-                              </Badge>
-                            )}
-                          </motion.li>
-                        ))}
-                    </ul>
-                  </div>
-                </div>
+
+                {/* Replace the old feature list with our new FeatureCategoryList component */}
+                <FeatureCategoryList planId={plan.id as SubscriptionPlanType} />
               </CardContent>
               <CardFooter className="pt-4">
                 <div className="w-full">

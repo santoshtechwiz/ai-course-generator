@@ -31,7 +31,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 
 import PlanCards from "./subscription-status/PlanCard"
-import ComparisonTable from "./subscription-status/ComparisonTable"
 import DevModeBanner from "./subscription-status/DevModeBanner"
 import FAQSection from "./subscription-status/FaqSection"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
@@ -47,6 +46,9 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { CancellationDialog } from "./cancellation-dialog"
 import { SUBSCRIPTION_EVENTS, dispatchSubscriptionEvent } from "../utils/events"
 import { handleSubscriptionError } from "../utils/error-handler"
+
+// Update the import for FeatureComparison
+import { FeatureComparison } from "./FeatureComparison"
 
 interface PricingPageProps {
   userId: string | null
@@ -859,7 +861,9 @@ export function PricingPage({
         </TabsList>
 
         <TabsContent value="comparison" className="animate-in fade-in-50 duration-300">
-          <ComparisonTable plans={SUBSCRIPTION_PLANS} />
+          {/* Replace this line */}
+          <FeatureComparison />
+          {/* Instead of <ComparisonTable plans={SUBSCRIPTION_PLANS} /> */}
         </TabsContent>
 
         <TabsContent value="faq" className="animate-in fade-in-50 duration-300">

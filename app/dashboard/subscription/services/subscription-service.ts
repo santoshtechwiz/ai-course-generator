@@ -11,13 +11,20 @@
  * - User credits (current balance of available tokens)
  */
 
-import { SUBSCRIPTION_PLANS, VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
+import { VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
 import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
 import { prisma } from "@/lib/db"
 import type { SubscriptionStatus } from "@/store/useSubscriptionStore"
-import type { TokenUsage } from "@langchain/core/language_models/base"
 import { getPaymentGateway } from "./payment-gateway-factory"
-import type { PaymentOptions } from "./payment-gateway-factory"
+import type { PaymentOptions } from "./payment-gateway-interface"
+
+
+// Initialize logger
+const logger = createLogger("subscription-service")
+
+// Cache for subscription status to reduce database queries
+const subscriptionCache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 60 * 1000 // 60 seconds
 
 /**
  * Service for managing user subscriptions and token transactions
@@ -33,7 +40,7 @@ export class SubscriptionService {
     userId: string,
   ): Promise<{ success: boolean; message?: string; alreadySubscribed?: boolean }> {
     try {
-      console.log(`Activating free plan for user ${userId}`)
+      logger.info(`Activating free plan for user ${userId}`)
 
       // Use a transaction to ensure all database operations succeed or fail together
       return await prisma.$transaction(async (tx) => {
@@ -67,7 +74,7 @@ export class SubscriptionService {
           existingSubscription.planId === "FREE" &&
           existingSubscription.status === "ACTIVE"
         ) {
-          console.log(`User ${userId} is already on the free plan. Not adding tokens again.`)
+          logger.info(`User ${userId} is already on the free plan. Not adding tokens again.`)
           return {
             success: true,
             message: "You are already on the free plan",
@@ -137,10 +144,13 @@ export class SubscriptionService {
             },
           })
 
-          console.log(`Added 5 tokens to user ${userId}, new balance: ${updatedUser.credits}`)
+          logger.info(`Added 5 tokens to user ${userId}, new balance: ${updatedUser.credits}`)
         }
 
-        console.log(`Free plan activated successfully for user ${userId}`)
+        // Clear cache for this user
+        this.clearUserCache(userId)
+
+        logger.info(`Free plan activated successfully for user ${userId}`)
 
         return {
           success: true,
@@ -148,7 +158,7 @@ export class SubscriptionService {
         }
       })
     } catch (error) {
-      console.error(`Error activating free plan for user ${userId}:`, error)
+      logger.error(`Error activating free plan for user ${userId}:`, error)
       throw new Error(`Failed to activate free plan: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
@@ -178,12 +188,12 @@ export class SubscriptionService {
       if (!planName) throw new Error("Plan name is required")
       if (!duration || duration <= 0) throw new Error("Valid duration is required")
 
-      console.log(`Creating checkout session for user ${userId}, plan ${planName}, duration ${duration}`)
+      logger.info(`Creating checkout session for user ${userId}, plan ${planName}, duration ${duration}`)
 
       // Verify user exists before proceeding
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true },
+        select: { id: true, email: true, name: true },
       })
 
       if (!user) {
@@ -191,16 +201,19 @@ export class SubscriptionService {
       }
 
       const paymentGateway = getPaymentGateway()
-      const options: PaymentOptions = {}
+      const options: PaymentOptions = {
+        customerEmail: user.email,
+        customerName: user.name || undefined,
+      }
 
       if (referralCode) {
         // Validate referral code before applying
         const isValidReferral = await this.validateReferralCode(referralCode)
         if (isValidReferral) {
           options.referralCode = referralCode
-          console.log(`Applied referral code: ${referralCode}`)
+          logger.info(`Applied referral code: ${referralCode}`)
         } else {
-          console.warn(`Invalid referral code attempted: ${referralCode}`)
+          logger.warn(`Invalid referral code attempted: ${referralCode}`)
         }
       }
 
@@ -210,23 +223,26 @@ export class SubscriptionService {
         if (promoValidation.valid) {
           options.promoCode = promoCode
           options.promoDiscount = promoDiscount
-          console.log(`Applied promo code: ${promoCode} with discount: ${promoDiscount}%`)
+          logger.info(`Applied promo code: ${promoCode} with discount: ${promoDiscount}%`)
         } else {
-          console.warn(`Invalid promo code attempted: ${promoCode}`)
+          logger.warn(`Invalid promo code attempted: ${promoCode}`)
         }
       }
+
+      // Clear cache for this user
+      this.clearUserCache(userId)
 
       const result = await paymentGateway.createCheckoutSession(userId, planName, duration, options)
 
       // Log the result for debugging
-      console.log("Payment gateway checkout session created:", {
+      logger.info("Payment gateway checkout session created:", {
         sessionId: result.sessionId,
         hasUrl: !!result.url,
       })
 
       // Ensure we have a URL
       if (!result.url) {
-        console.error("No checkout URL returned from payment gateway")
+        logger.error("No checkout URL returned from payment gateway")
         throw new Error("No checkout URL returned from payment gateway")
       }
 
@@ -235,7 +251,7 @@ export class SubscriptionService {
         url: result.url,
       }
     } catch (error) {
-      console.error(`Error creating checkout session:`, error)
+      logger.error(`Error creating checkout session:`, error)
       throw new Error(`Failed to create checkout session: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
@@ -252,13 +268,22 @@ export class SubscriptionService {
         throw new Error("User ID is required")
       }
 
+      // Check cache first
+      const cacheKey = `subscription_${userId}`
+      const cachedData = subscriptionCache.get(cacheKey)
+
+      if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
+        logger.debug(`Using cached subscription data for user ${userId}`)
+        return cachedData.data
+      }
+
       // Get user subscription data with improved error handling
       const userSubscription = await prisma.userSubscription
         .findUnique({
           where: { userId },
         })
         .catch((error) => {
-          console.error("Database error fetching user subscription:", error)
+          logger.error("Database error fetching user subscription:", error)
           throw new Error("Failed to fetch subscription data from database")
         })
 
@@ -266,20 +291,26 @@ export class SubscriptionService {
       const user = await prisma.user
         .findUnique({
           where: { id: userId },
-          select: { credits: true },
+          select: { credits: true, creditsUsed: true },
         })
         .catch((error) => {
-          console.error("Database error fetching user credits:", error)
+          logger.error("Database error fetching user credits:", error)
           throw new Error("Failed to fetch user credits from database")
         })
 
       // Default values if no subscription exists
       if (!userSubscription) {
-        return {
+        const result = {
           credits: user?.credits || 0,
+          tokensUsed: user?.creditsUsed || 0,
           isSubscribed: false,
-          subscriptionPlan: "FREE",
+          subscriptionPlan: "FREE" as SubscriptionPlanType,
         }
+
+        // Cache the result
+        subscriptionCache.set(cacheKey, { data: result, timestamp: Date.now() })
+
+        return result
       }
 
       // Determine if the subscription is active
@@ -290,17 +321,26 @@ export class SubscriptionService {
         ? userSubscription.currentPeriodEnd.toISOString()
         : undefined
 
-      return {
+      const result = {
         credits: user?.credits || 0,
+        tokensUsed: user?.creditsUsed || 0,
         isSubscribed,
         subscriptionPlan: userSubscription.planId as SubscriptionPlanType,
         expirationDate,
+        cancelAtPeriodEnd: userSubscription.cancelAtPeriodEnd || false,
+        status: userSubscription.status,
       }
+
+      // Cache the result
+      subscriptionCache.set(cacheKey, { data: result, timestamp: Date.now() })
+
+      return result
     } catch (error) {
-      console.error("Error getting subscription status:", error)
+      logger.error("Error getting subscription status:", error)
       // Return default values in case of error
       return {
         credits: 0,
+        tokensUsed: 0,
         isSubscribed: false,
         subscriptionPlan: "FREE",
       }
@@ -313,10 +353,19 @@ export class SubscriptionService {
    * @param userId - The ID of the user
    * @returns Object with used and total tokens
    */
-  static async getTokensUsed(userId: string): Promise<TokenUsage> {
+  static async getTokensUsed(userId: string): Promise<{ used: number; total: number }> {
     try {
       if (!userId) {
         throw new Error("User ID is required")
+      }
+
+      // Check cache first
+      const cacheKey = `tokens_${userId}`
+      const cachedData = subscriptionCache.get(cacheKey)
+
+      if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
+        logger.debug(`Using cached token usage data for user ${userId}`)
+        return cachedData.data
       }
 
       // Get user's current credits directly from the user table with improved error handling
@@ -326,31 +375,30 @@ export class SubscriptionService {
           select: { credits: true, creditsUsed: true },
         })
         .catch((error) => {
-          console.error("Database error fetching user token usage:", error)
+          logger.error("Database error fetching user token usage:", error)
           throw new Error("Failed to fetch token usage data from database")
         })
 
       if (!user) {
-        console.warn(`User with ID ${userId} not found when getting token usage`)
+        logger.warn(`User with ID ${userId} not found when getting token usage`)
         return { used: 0, total: 0 }
       }
 
-      // Get the user's subscription to determine token limit
-      const subscription = await this.getSubscriptionStatus(userId)
-
-      // Find the plan to get the token limit
-      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === subscription.subscriptionPlan)
-
-      // Use the actual credits from the user record as the total available
+      // Use the actual credits from the user record
       const totalTokens = user.credits || 0
       const tokensUsed = user.creditsUsed || 0
 
-      return {
+      const result = {
         used: tokensUsed,
         total: totalTokens,
       }
+
+      // Cache the result
+      subscriptionCache.set(cacheKey, { data: result, timestamp: Date.now() })
+
+      return result
     } catch (error) {
-      console.error("Error getting token usage:", error)
+      logger.error("Error getting token usage:", error)
       return { used: 0, total: 0 }
     }
   }
@@ -367,6 +415,8 @@ export class SubscriptionService {
         throw new Error("User ID is required")
       }
 
+      logger.info(`Cancelling subscription for user ${userId}`)
+
       // Use a transaction to ensure database consistency
       return await prisma.$transaction(async (tx) => {
         const userSubscription = await tx.userSubscription.findUnique({
@@ -374,43 +424,21 @@ export class SubscriptionService {
         })
 
         if (!userSubscription) {
-          console.warn(`No subscription found for user ${userId}`)
+          logger.warn(`No subscription found for user ${userId}`)
           return false
         }
 
-        if (!userSubscription.stripeSubscriptionId) {
-          console.warn(`No Stripe subscription ID found for user ${userId}`)
-
-          // Update our database to mark as canceled even if no Stripe subscription exists
-          await tx.userSubscription.update({
-            where: { userId },
-            data: {
-              status: "CANCELED",
-              cancelAtPeriodEnd: true,
-            },
-          })
-
-          return true
-        }
+        const paymentGateway = getPaymentGateway()
 
         try {
-          const paymentGateway = getPaymentGateway()
           // Cancel with the payment gateway
           await paymentGateway.cancelSubscription(userId)
-        } catch (stripeError: any) {
-          console.error("Stripe error when canceling subscription:", stripeError)
-
-          // If the subscription doesn't exist in Stripe, we should still update our database
-          if (stripeError.type === "StripeInvalidRequestError" && stripeError.code === "resource_missing") {
-            console.warn(
-              `Stripe subscription ${userSubscription.stripeSubscriptionId} not found, updating local database only`,
-            )
-          } else {
-            throw stripeError
-          }
+        } catch (error) {
+          logger.error("Error when canceling subscription with payment gateway:", error)
+          // Continue with database update even if payment gateway fails
         }
 
-        // Update our database regardless of Stripe status
+        // Update our database
         await tx.userSubscription.update({
           where: { userId },
           data: {
@@ -430,10 +458,14 @@ export class SubscriptionService {
           },
         })
 
+        // Clear cache for this user
+        this.clearUserCache(userId)
+
+        logger.info(`Successfully cancelled subscription for user ${userId}`)
         return true
       })
     } catch (error) {
-      console.error("Error canceling subscription:", error)
+      logger.error("Error canceling subscription:", error)
       throw new Error(`Failed to cancel subscription: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   }
@@ -450,6 +482,8 @@ export class SubscriptionService {
         throw new Error("User ID is required")
       }
 
+      logger.info(`Resuming subscription for user ${userId}`)
+
       // Use a transaction to ensure database consistency
       return await prisma.$transaction(async (tx) => {
         const userSubscription = await tx.userSubscription.findUnique({
@@ -457,43 +491,21 @@ export class SubscriptionService {
         })
 
         if (!userSubscription) {
-          console.warn(`No subscription found for user ${userId}`)
+          logger.warn(`No subscription found for user ${userId}`)
           return false
         }
 
-        if (!userSubscription.stripeSubscriptionId) {
-          console.warn(`No Stripe subscription ID found for user ${userId}`)
-
-          // Update our database to mark as active even if no Stripe subscription exists
-          await tx.userSubscription.update({
-            where: { userId },
-            data: {
-              status: "ACTIVE",
-              cancelAtPeriodEnd: false,
-            },
-          })
-
-          return true
-        }
+        const paymentGateway = getPaymentGateway()
 
         try {
-          const paymentGateway = getPaymentGateway()
           // Resume with the payment gateway
           await paymentGateway.resumeSubscription(userId)
-        } catch (stripeError: any) {
-          console.error("Stripe error when resuming subscription:", stripeError)
-
-          // If the subscription doesn't exist in Stripe, we should still update our database
-          if (stripeError.type === "StripeInvalidRequestError" && stripeError.code === "resource_missing") {
-            console.warn(
-              `Stripe subscription ${userSubscription.stripeSubscriptionId} not found, updating local database only`,
-            )
-          } else {
-            throw stripeError
-          }
+        } catch (error) {
+          logger.error("Error when resuming subscription with payment gateway:", error)
+          // Continue with database update even if payment gateway fails
         }
 
-        // Update our database regardless of Stripe status
+        // Update our database
         await tx.userSubscription.update({
           where: { userId },
           data: {
@@ -513,10 +525,14 @@ export class SubscriptionService {
           },
         })
 
+        // Clear cache for this user
+        this.clearUserCache(userId)
+
+        logger.info(`Successfully resumed subscription for user ${userId}`)
         return true
       })
     } catch (error) {
-      console.error("Error resuming subscription:", error)
+      logger.error("Error resuming subscription:", error)
       throw new Error(`Failed to resume subscription: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   }
@@ -539,13 +555,27 @@ export class SubscriptionService {
         return false
       }
 
+      // Check cache first
+      const cacheKey = `referral_${normalizedCode}`
+      const cachedData = subscriptionCache.get(cacheKey)
+
+      if (cachedData) {
+        logger.debug(`Using cached referral validation for code ${normalizedCode}`)
+        return cachedData.data
+      }
+
       const referral = await prisma.userReferral.findUnique({
         where: { referralCode: normalizedCode },
       })
 
-      return !!referral
+      const isValid = !!referral
+
+      // Cache the result
+      subscriptionCache.set(cacheKey, { data: isValid, timestamp: Date.now() })
+
+      return isValid
     } catch (error) {
-      console.error("Error validating referral code:", error)
+      logger.error("Error validating referral code:", error)
       return false
     }
   }
@@ -568,21 +598,56 @@ export class SubscriptionService {
         return { valid: false, discountPercentage: 0 }
       }
 
+      // Check cache first
+      const cacheKey = `promo_${normalizedCode}`
+      const cachedData = subscriptionCache.get(cacheKey)
+
+      if (cachedData) {
+        logger.debug(`Using cached promo validation for code ${normalizedCode}`)
+        return cachedData.data
+      }
+
       // Check if the provided code exists in our valid codes
       if (normalizedCode in VALID_PROMO_CODES) {
-        return {
+        const result = {
           valid: true,
           discountPercentage: VALID_PROMO_CODES[normalizedCode],
           code: normalizedCode,
         }
+
+        // Cache the result
+        subscriptionCache.set(cacheKey, { data: result, timestamp: Date.now() })
+
+        return result
       }
 
-      // Additional validation logic could be added here
-      // For example, checking a database for dynamic promo codes
+      // Check database for dynamic promo codes
+      const dbPromoCode = await prisma.promoCode.findUnique({
+        where: { code: normalizedCode, isActive: true },
+        select: { discountPercentage: true, expiresAt: true },
+      })
+
+      if (dbPromoCode) {
+        // Check if the promo code has expired
+        if (dbPromoCode.expiresAt && dbPromoCode.expiresAt < new Date()) {
+          return { valid: false, discountPercentage: 0 }
+        }
+
+        const result = {
+          valid: true,
+          discountPercentage: dbPromoCode.discountPercentage,
+          code: normalizedCode,
+        }
+
+        // Cache the result
+        subscriptionCache.set(cacheKey, { data: result, timestamp: Date.now() })
+
+        return result
+      }
 
       return { valid: false, discountPercentage: 0 }
     } catch (error) {
-      console.error("Error validating promo code:", error)
+      logger.error("Error validating promo code:", error)
       return { valid: false, discountPercentage: 0 }
     }
   }
@@ -605,7 +670,7 @@ export class SubscriptionService {
       const paymentGateway = getPaymentGateway()
       return await paymentGateway.verifyPaymentStatus(sessionId)
     } catch (error) {
-      console.error(`Error verifying payment status: ${error instanceof Error ? error.message : String(error)}`)
+      logger.error(`Error verifying payment status: ${error instanceof Error ? error.message : String(error)}`)
       return { status: "failed" }
     }
   }
@@ -619,8 +684,17 @@ export class SubscriptionService {
   static async getBillingHistory(userId: string): Promise<any[]> {
     try {
       if (!userId) {
-        console.warn("No user ID provided for billing history")
+        logger.warn("No user ID provided for billing history")
         return []
+      }
+
+      // Check cache first
+      const cacheKey = `billing_${userId}`
+      const cachedData = subscriptionCache.get(cacheKey)
+
+      if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
+        logger.debug(`Using cached billing history for user ${userId}`)
+        return cachedData.data
       }
 
       // Get invoices from database
@@ -631,12 +705,12 @@ export class SubscriptionService {
           take: 50,
         })
         .catch((error) => {
-          console.error("Database error fetching billing history:", error)
+          logger.error("Database error fetching billing history:", error)
           return []
         })
 
       // Format transactions
-      return transactions.map((transaction) => ({
+      const result = transactions.map((transaction) => ({
         id: transaction.id,
         amount: transaction.amount,
         credits: transaction.credits,
@@ -644,8 +718,13 @@ export class SubscriptionService {
         description: transaction.description,
         date: transaction.createdAt.toISOString(),
       }))
+
+      // Cache the result
+      subscriptionCache.set(cacheKey, { data: result, timestamp: Date.now() })
+
+      return result
     } catch (error) {
-      console.error("Error fetching billing history:", error)
+      logger.error("Error fetching billing history:", error)
       return []
     }
   }
@@ -659,31 +738,20 @@ export class SubscriptionService {
   static async getPaymentMethods(userId: string): Promise<any[]> {
     try {
       if (!userId) {
-        console.warn("No user ID provided for payment methods")
+        logger.warn("No user ID provided for payment methods")
         return []
       }
 
-      // Get the user's subscription to find the Stripe customer ID
-      const userSubscription = await prisma.userSubscription
-        .findUnique({
-          where: { userId },
-          select: { stripeCustomerId: true },
-        })
-        .catch((error) => {
-          console.error("Database error fetching user subscription for payment methods:", error)
-          return null
-        })
+      const paymentGateway = getPaymentGateway()
 
-      if (!userSubscription || !userSubscription.stripeCustomerId) {
-        // No Stripe customer ID found, return empty array
-        return []
+      // Check if the gateway implements getPaymentMethods
+      if (typeof paymentGateway.getPaymentMethods === "function") {
+        return await paymentGateway.getPaymentMethods(userId)
       }
 
-      // In a real implementation, we would fetch payment methods from Stripe
-      // For now, we'll return a placeholder
       return []
     } catch (error) {
-      console.error("Error fetching payment methods:", error)
+      logger.error("Error fetching payment methods:", error)
       return []
     }
   }
@@ -711,8 +779,10 @@ export class SubscriptionService {
         throw new Error("User ID is required")
       }
 
+      logger.info(`Updating credits for user ${userId}: ${credits > 0 ? "+" : ""}${credits}, type: ${type}`)
+
       // Use a transaction to ensure user credits and token transaction stay in sync
-      return await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
         // Update user credits
         const updatedUser = await tx.user.update({
           where: { id: userId },
@@ -741,14 +811,42 @@ export class SubscriptionService {
           },
         })
 
-        console.log(
-          `Updated credits for user ${userId}: ${credits > 0 ? "+" : ""}${credits}, new balance: ${updatedUser.credits}`,
-        )
         return updatedUser
       })
+
+      // Clear cache for this user
+      this.clearUserCache(userId)
+
+      logger.info(
+        `Updated credits for user ${userId}: ${credits > 0 ? "+" : ""}${credits}, new balance: ${result.credits}`,
+      )
+      return result
     } catch (error) {
-      console.error(`Error updating user credits: ${error instanceof Error ? error.message : String(error)}`)
+      logger.error(`Error updating user credits: ${error instanceof Error ? error.message : String(error)}`)
       throw new Error(`Failed to update user credits: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   }
+
+  /**
+   * Clear cache for a specific user
+   * @private
+   */
+  private static clearUserCache(userId: string): void {
+    const keysToDelete = [`subscription_${userId}`, `tokens_${userId}`, `billing_${userId}`]
+
+    keysToDelete.forEach((key) => {
+      if (subscriptionCache.has(key)) {
+        subscriptionCache.delete(key)
+      }
+    })
+  }
+
+  /**
+   * Clear all cache
+   */
+  static clearAllCache(): void {
+    subscriptionCache.clear()
+    logger.info("Cleared all subscription cache")
+  }
 }
+

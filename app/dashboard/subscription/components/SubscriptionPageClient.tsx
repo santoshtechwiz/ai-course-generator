@@ -25,7 +25,8 @@ import useSWR from "swr"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { SUBSCRIPTION_EVENTS, subscribeToEvent } from "@/app/dashboard/subscription/utils/events"
 import { CancellationDialog } from "./cancellation-dialog"
-import { useSubscription } from "@/hooks/use-subscription"
+import { useSubscription } from "../hooks/use-subscription"
+
 
 // Lazy load the PricingPage component
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))
