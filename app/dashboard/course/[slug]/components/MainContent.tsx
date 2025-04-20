@@ -15,6 +15,8 @@ import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/type
 import { markdownToHtml } from "./markdownUtils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Skeleton } from "@/components/ui/skeleton"
+import CourseActions from "./CourseActions"
+import FloatingCourseActions from "./FloatingCourseActions"
 
 interface MainContentProps {
   course: FullCourseType
@@ -518,6 +520,7 @@ export default function MainContent({
           onWatchAnotherCourse={onWatchAnotherCourse}
         />
       )}
+      <FloatingCourseActions slug={course.slug ?? ""}></FloatingCourseActions>
     </div>
   )
 }
