@@ -51,19 +51,14 @@ const Page = async ({
   try {
     const searchParams = await searchParamsPromise
 
-    title =
-      typeof params?.title === "string"
-        ? params.title
-        : Array.isArray(params?.title)
-        ? params.title[0]
-        : ""
+    title = typeof params?.title === "string" ? params.title : Array.isArray(params?.title) ? params.title[0] : ""
 
     category =
       typeof params?.categoryAttachment === "string"
         ? params.categoryAttachment
         : Array.isArray(searchParams?.category)
-        ? searchParams.category[0]
-        : searchParams?.category || ""
+          ? searchParams.category[0]
+          : searchParams?.category || ""
 
     courseData = await getCourseDetails()
   } catch (error) {

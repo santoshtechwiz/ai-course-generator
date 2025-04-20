@@ -108,7 +108,6 @@ interface Question {
 }
 
 export interface QuizPDFProps {
-  
   disabled?: boolean
   quizData: {
     title: string
@@ -173,4 +172,3 @@ const ConfigurableQuizPDF: React.FC<QuizPDFProps> = ({ quizData, config = {} }) 
 }
 
 export default ConfigurableQuizPDF
-

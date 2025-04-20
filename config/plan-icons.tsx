@@ -1,19 +1,10 @@
 import type React from "react"
-/**
- * Plan Icons Configuration
- *
- * This file contains the icon components for each subscription plan.
- */
-
 import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
-import { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
-
-// Map of plan IDs to their icon components
 export const planIcons: Record<SubscriptionPlanType, React.ReactNode> = {
-  FREE: <CreditCard className="h-6 w-6" />,
-  BASIC: <Zap className="h-6 w-6" />,
-  PRO: <Rocket className="h-6 w-6" />,
-  ULTIMATE: <Crown className="h-6 w-6" />,
+  FREE: <CreditCard className="h-5 w-5 mr-2 text-slate-500" />,
+  BASIC: <Zap className="h-5 w-5 mr-2 text-blue-500" />,
+  PRO: <Rocket className="h-5 w-5 mr-2 text-purple-500" />,
+  ULTIMATE: <Crown className="h-5 w-5 mr-2 text-amber-500" />,
 }
-

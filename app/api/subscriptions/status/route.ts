@@ -14,8 +14,10 @@ export async function GET(req: NextRequest) {
     const skipCache = req.headers.get("x-force-refresh") === "true"
 
     // Use a more aggressive cache for non-forced refreshes
-    const cacheMaxAge = skipCache ? 0 : 60 // 1 minute cache for normal requests
+    const cacheMaxAge = skipCache ? 0 : 30 // 30 seconds cache for normal requests
+    const staleWhileRevalidate = 60 // 1 minute stale-while-revalidate
 
+    // Optimize database query to only select needed fields
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -55,11 +57,15 @@ export async function GET(req: NextRequest) {
       plan: subscription?.planId || "FREE",
       status: subscription?.status || null,
       expiresAt: subscription?.currentPeriodEnd || null,
+      cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
     }
 
     const headers = new Headers()
     if (!skipCache) {
-      headers.set("Cache-Control", `max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge}, stale-while-revalidate=120`)
+      headers.set(
+        "Cache-Control",
+        `max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
+      )
     } else {
       headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
     }

@@ -30,7 +30,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 
-
 import PlanCards from "./subscription-status/PlanCard"
 import ComparisonTable from "./subscription-status/ComparisonTable"
 import DevModeBanner from "./subscription-status/DevModeBanner"
@@ -43,6 +42,11 @@ import { SUBSCRIPTION_PLANS } from "./subscription-plans"
 import { calculateSavings } from "../utils/subscription-utils"
 import { useSubscription } from "../hooks/use-subscription"
 
+// Add these imports at the top
+import { useMediaQuery } from "@/hooks/use-media-query"
+import { CancellationDialog } from "./cancellation-dialog"
+import { SUBSCRIPTION_EVENTS, dispatchSubscriptionEvent } from "../utils/events"
+import { handleSubscriptionError } from "../utils/error-handler"
 
 interface PricingPageProps {
   userId: string | null
@@ -53,12 +57,15 @@ interface PricingPageProps {
   credits?: number
   expirationDate?: string | null
   referralCode?: string | null
+  cancelAtPeriodEnd?: boolean
   onUnauthenticatedSubscribe?: (
     planName: SubscriptionPlanType,
     duration: number,
     promoCode?: string,
     promoDiscount?: number,
   ) => void
+  onManageSubscription?: () => void
+  isMobile?: boolean
 }
 
 export function PricingPage({
@@ -70,7 +77,9 @@ export function PricingPage({
   credits = 0,
   expirationDate = null,
   referralCode = null,
+  cancelAtPeriodEnd = false,
   onUnauthenticatedSubscribe,
+  onManageSubscription,
 }: PricingPageProps) {
   const [loading, setLoading] = useState<SubscriptionPlanType | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<1 | 6>(1)
@@ -84,6 +93,13 @@ export function PricingPage({
   const [isPromoValid, setIsPromoValid] = useState<boolean>(false)
   const [promoDiscount, setPromoDiscount] = useState<number>(0)
   const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false)
+  const [hasShownPromoToast, setHasShownPromoToast] = useState<boolean>(false)
+
+  // Add these state variables inside the component
+  const [promoInputFocused, setPromoInputFocused] = useState(false)
+  const [showPromoHint, setShowPromoHint] = useState(false)
+  const [showCancellationDialog, setShowCancellationDialog] = useState(false)
+  const isMobile = useMediaQuery("(max-width: 768px)")
 
   // Normalize subscription status for case-insensitive comparison
   const normalizedStatus = subscriptionStatus?.toUpperCase() as "ACTIVE" | "CANCELED" | null
@@ -110,9 +126,12 @@ export function PricingPage({
 
   // Get user plan details
   const userPlan = SUBSCRIPTION_PLANS.find((plan) => plan.id === currentPlan) || SUBSCRIPTION_PLANS[0]
-  const tokenUsagePercentage = tokensUsed && credits ? (tokensUsed / credits) * 100 : 0
+  const tokenUsagePercentage = useMemo(() => {
+    if (!tokensUsed || !credits || credits === 0) return 0
+    return (tokensUsed / credits) * 100
+  }, [tokensUsed, credits])
 
-  // Add this function after the useState declarations
+  // Replace the validatePromoCode function with this improved version
   const validatePromoCode = useCallback(
     async (code: string) => {
       if (!code) return false
@@ -124,18 +143,27 @@ export function PricingPage({
           setPromoDiscount(20)
           setIsPromoValid(true)
 
-          toast({
-            title: "Promo Code Applied!",
-            description: "20% discount will be applied to your subscription.",
-            variant: "default",
-          })
+          // Only show toast if we haven't shown it yet
+          if (!hasShownPromoToast) {
+            toast({
+              title: "Promo Code Applied!",
+              description: "20% discount will be applied to your subscription.",
+              variant: "default",
+            })
+            setHasShownPromoToast(true)
+          }
 
           return true
         }
 
+        // In a real implementation, we would call an API endpoint here
+        // For now, we'll simulate an API call with a timeout
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
         // For now, only AILAUNCH20 is valid
         setIsPromoValid(false)
         setPromoDiscount(0)
+        setHasShownPromoToast(false)
 
         toast({
           title: "Invalid Promo Code",
@@ -146,20 +174,29 @@ export function PricingPage({
         return false
       } catch (error) {
         console.error("Error validating promo code:", error)
+
+        handleSubscriptionError(error, "VALIDATION_ERROR", {
+          notify: true,
+          log: true,
+          details: "Failed to validate promo code. Please try again.",
+        })
+
         setIsPromoValid(false)
         setPromoDiscount(0)
+        setHasShownPromoToast(false)
         return false
       } finally {
         setIsApplyingPromo(false)
       }
     },
-    [toast],
+    [toast, hasShownPromoToast],
   )
 
   // Use the subscription hook with options
   const {
     handleSubscribe: hookHandleSubscribe,
-    
+    cancelSubscription,
+    resumeSubscription,
     canSubscribeToPlan,
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
@@ -301,9 +338,44 @@ export function PricingPage({
   }
 
   // Handle subscription management
-  const handleManageSubscription = () => {
-    window.location.href = "/account"
-  }
+  const handleManageSubscription = useCallback(() => {
+    if (cancelAtPeriodEnd) {
+      // If subscription is already cancelled, show resume option
+      toast({
+        title: "Resume Subscription?",
+        description: "Your subscription is currently set to cancel at the end of the billing period.",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                await resumeSubscription()
+                toast({
+                  title: "Subscription Resumed",
+                  description: "Your subscription will now continue automatically.",
+                })
+              } catch (error) {
+                toast({
+                  title: "Error",
+                  description: "Failed to resume subscription. Please try again.",
+                  variant: "destructive",
+                })
+              }
+            }}
+          >
+            Resume
+          </Button>
+        ),
+      })
+    } else if (normalizedStatus === "ACTIVE") {
+      // Show cancellation dialog for active subscriptions
+      setShowCancellationDialog(true)
+    } else {
+      // Otherwise redirect to account page
+      window.location.href = "/dashboard/account"
+    }
+  }, [cancelAtPeriodEnd, normalizedStatus, resumeSubscription, toast])
 
   // Enhanced promo code validation with better feedback
   const handleApplyPromoCode = useCallback(async () => {
@@ -330,11 +402,7 @@ export function PricingPage({
       const result = await validatePromoCode(promoCode)
 
       if (result) {
-        toast({
-          title: "Promo Code Applied!",
-          description: `${promoDiscount}% discount will be applied to your subscription.`,
-          variant: "default",
-        })
+        // Toast is now handled in validatePromoCode
       }
     } catch (error) {
       console.error("Error applying promo code:", error)
@@ -374,6 +442,48 @@ export function PricingPage({
     }
   }, [isAuthenticated, validatePromoCode])
 
+  const isPlanAvailable = useCallback(
+    (planName: SubscriptionPlanType) => {
+      // If not authenticated, all plans should be available
+      if (!isAuthenticated) return true
+
+      // If this is the FREE plan and user has a paid plan, disable it
+      if (planName === "FREE" && hasAnyPaidPlan) {
+        return false
+      }
+
+      // If user has all plans, disable all subscription buttons
+      if (hasAllPlans) {
+        return false
+      }
+
+      const { canSubscribe } = canSubscribeToPlan(currentPlan, planName, normalizedStatus)
+      return canSubscribe
+    },
+    [isAuthenticated, hasAnyPaidPlan, hasAllPlans, canSubscribeToPlan, currentPlan, normalizedStatus],
+  )
+
+  const getPlanUnavailableReason = useCallback(
+    (planName: SubscriptionPlanType) => {
+      // If not authenticated, no reason to show
+      if (!isAuthenticated) return undefined
+
+      // If this is the FREE plan and user has a paid plan
+      if (planName === "FREE" && hasAnyPaidPlan) {
+        return "You already have a paid subscription"
+      }
+
+      // If user has all plans
+      if (hasAllPlans) {
+        return "You already have access to all features"
+      }
+
+      const { canSubscribe, reason } = canSubscribeToPlan(currentPlan, planName, normalizedStatus)
+      return canSubscribe ? undefined : reason
+    },
+    [isAuthenticated, hasAnyPaidPlan, hasAllPlans, canSubscribeToPlan, currentPlan, normalizedStatus],
+  )
+
   return (
     <div className="container max-w-6xl space-y-8 px-4 sm:px-6 animate-in fade-in duration-500">
       {!isProd && <DevModeBanner />}
@@ -400,7 +510,7 @@ export function PricingPage({
           <AlertDescription className="text-blue-600 dark:text-blue-400">
             <p>
               You currently have an active {currentPlan} plan that will{" "}
-              {normalizedStatus === "CANCELED" ? "expire" : normalizedStatus === "ACTIVE" ? "renew" : "update"} on{" "}
+              {cancelAtPeriodEnd ? "expire" : normalizedStatus === "ACTIVE" ? "renew" : "update"} on{" "}
               {formattedExpirationDate}. You can manage your subscription details in your account page.
             </p>
 
@@ -411,7 +521,7 @@ export function PricingPage({
                 className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
                 onClick={handleManageSubscription}
               >
-                Manage Subscription
+                {cancelAtPeriodEnd ? "Resume Subscription" : "Manage Subscription"}
               </Button>
             </div>
           </AlertDescription>
@@ -442,21 +552,53 @@ export function PricingPage({
                 <span className="font-mono font-bold bg-muted px-2 py-0.5 rounded-md">AILAUNCH20</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                {/* Replace the promo code input with this enhanced version */}
                 <div className="relative flex-1">
-                  <Input
-                    placeholder="Enter promo code"
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value.trim())}
-                    className={`pr-24 transition-all duration-300 ${isPromoValid ? "border-green-500 focus-visible:ring-green-500" : ""}`}
+                  <div
+                    className={`
+                    absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 
+                    dark:from-blue-900/30 dark:to-purple-900/30 rounded-md transition-opacity duration-300
+                    ${promoInputFocused || promoCode ? "opacity-100" : "opacity-0"}
+                  `}
                   />
-                  {isPromoValid && (
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                      <Badge
-                        variant="outline"
-                        className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800 animate-in fade-in duration-300"
-                      >
-                        <Check className="h-3 w-3 mr-1" /> Valid
-                      </Badge>
+
+                  <div className="relative">
+                    <Input
+                      placeholder="Enter promo code"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.trim())}
+                      onFocus={() => {
+                        setPromoInputFocused(true)
+                        setShowPromoHint(true)
+                      }}
+                      onBlur={() => {
+                        setPromoInputFocused(false)
+                        setTimeout(() => setShowPromoHint(false), 200)
+                      }}
+                      className={`
+                        pr-24 transition-all duration-300 bg-transparent
+                        ${isPromoValid ? "border-green-500 focus-visible:ring-green-500" : ""}
+                      `}
+                    />
+
+                    {isPromoValid && (
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                        <Badge
+                          variant="outline"
+                          className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 
+                                    border-green-200 dark:border-green-800 animate-in fade-in duration-300"
+                        >
+                          <Check className="h-3 w-3 mr-1" /> {promoDiscount}% off
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+
+                  {showPromoHint && !isPromoValid && (
+                    <div className="absolute mt-1 p-2 bg-card rounded-md shadow-md border text-sm z-10 animate-in fade-in slide-in-from-top-5 duration-200">
+                      <p>
+                        Try code <span className="font-mono font-bold">AILAUNCH20</span> for 20% off!
+                      </p>
                     </div>
                   )}
                 </div>
@@ -541,58 +683,117 @@ export function PricingPage({
         </Button>
       </div>
 
-      {/* Plan Cards - ALWAYS SHOW IMMEDIATELY, regardless of authentication status */}
-      <PlanCards
-        plans={SUBSCRIPTION_PLANS}
-        currentPlan={currentPlan}
-        subscriptionStatus={subscriptionStatus}
-        loading={loading}
-        handleSubscribe={handleSubscribe}
-        duration={selectedDuration}
-        isSubscribed={isSubscribed ?? false}
-        promoCode={promoCode}
-        isPromoValid={isPromoValid}
-        promoDiscount={promoDiscount}
-        getDiscountedPrice={getDiscountedPrice}
-        isPlanAvailable={(planName) => {
-          // If not authenticated, all plans should be available
-          if (!isAuthenticated) return true
+      {/* Add conditional rendering for mobile vs desktop in the Plan Cards section */}
+      {isMobile ? (
+        // Mobile-optimized layout
+        <div className="space-y-6">
+          {SUBSCRIPTION_PLANS.map((plan) => {
+            const priceOption = plan.options.find((o) => o.duration === selectedDuration)
+            const price = priceOption?.price || 0
+            const discountedPrice = isPromoValid ? getDiscountedPrice(price) : price
+            const isPlanDisabled =
+              loading !== null || (isAuthenticated && !isPlanAvailable(plan.id as SubscriptionPlanType))
+            const buttonText = (() => {
+              if (loading === plan.id) return "Processing..."
+              if (isAuthenticated) {
+                if (isSubscribed && currentPlan === plan.id) {
+                  return cancelAtPeriodEnd ? "Cancels Soon" : "Current Plan"
+                }
+                if (hasAllPlans) return "All Plans Active"
+                if (plan.id === "FREE" && hasAnyPaidPlan) return "Paid Plan Active"
+                if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return "Unavailable"
+              }
+              if (plan.id === "FREE") return "Start for Free"
+              return "Subscribe Now"
+            })()
 
-          // If this is the FREE plan and user has a paid plan, disable it
-          if (planName === "FREE" && hasAnyPaidPlan) {
-            return false
-          }
+            return (
+              <div
+                key={plan.id}
+                className={`
+                  border rounded-lg p-4 transition-all duration-300
+                  ${plan.popular ? "border-blue-300 dark:border-blue-700 shadow-md" : ""}
+                `}
+              >
+                {plan.popular && (
+                  <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-blue-500">
+                    Most Popular
+                  </Badge>
+                )}
 
-          // If user has all plans, disable all subscription buttons
-          if (hasAllPlans) {
-            return false
-          }
+                <h3 className="text-lg font-bold">{plan.name}</h3>
 
-          const { canSubscribe } = canSubscribeToPlan(currentPlan, planName, normalizedStatus)
-          return canSubscribe
-        }}
-        getPlanUnavailableReason={(planName) => {
-          // If not authenticated, no reason to show
-          if (!isAuthenticated) return undefined
+                <div className="mt-2">
+                  {isPromoValid && (
+                    <div className="text-sm line-through text-muted-foreground">${price.toFixed(2)}</div>
+                  )}
+                  <div className="text-2xl font-bold">
+                    ${discountedPrice.toFixed(2)}
+                    <span className="text-sm font-normal text-muted-foreground">
+                      /{selectedDuration === 1 ? "month" : "6 months"}
+                    </span>
+                  </div>
+                </div>
 
-          // If this is the FREE plan and user has a paid plan
-          if (planName === "FREE" && hasAnyPaidPlan) {
-            return "You already have a paid subscription"
-          }
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    <span>{plan.tokens} tokens</span>
+                  </div>
+                  {plan.features.slice(0, 2).map((feature, i) => (
+                    <div key={i} className="flex items-center gap-2 mt-1">
+                      <Check className="h-4 w-4 text-green-500" />
+                      <span>{feature.name}</span>
+                    </div>
+                  ))}
+                </div>
 
-          // If user has all plans
-          if (hasAllPlans) {
-            return "You already have access to all features"
-          }
+                <Button
+                  className="w-full mt-4"
+                  variant={plan.popular ? "default" : "outline"}
+                  onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, selectedDuration)}
+                  disabled={isPlanDisabled}
+                >
+                  {loading === plan.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : buttonText}
+                </Button>
 
-          const { canSubscribe, reason } = canSubscribeToPlan(currentPlan, planName, normalizedStatus)
-          return canSubscribe ? undefined : reason
-        }}
-        expirationDate={formattedExpirationDate}
-        isAuthenticated={isAuthenticated}
-        hasAnyPaidPlan={hasAnyPaidPlan}
-        hasAllPlans={hasAllPlans}
-      />
+                {/* Add sign-in message for mobile view with correct authentication check */}
+                {!userId && plan.id !== "FREE" && (
+                  <div className="mt-2 text-center">
+                    <div className="flex items-center justify-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                      <Info className="h-4 w-4" />
+                      <p>Sign in to subscribe</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        // Desktop layout (existing code)
+        <PlanCards
+          plans={SUBSCRIPTION_PLANS}
+          currentPlan={currentPlan}
+          subscriptionStatus={subscriptionStatus}
+          loading={loading}
+          handleSubscribe={handleSubscribe}
+          duration={selectedDuration}
+          isSubscribed={isSubscribed ?? false}
+          promoCode={promoCode}
+          isPromoValid={isPromoValid}
+          promoDiscount={promoDiscount}
+          getDiscountedPrice={getDiscountedPrice}
+          isPlanAvailable={isPlanAvailable}
+          getPlanUnavailableReason={getPlanUnavailableReason}
+          expirationDate={formattedExpirationDate}
+          isAuthenticated={isAuthenticated}
+          hasAnyPaidPlan={hasAnyPaidPlan}
+          hasAllPlans={hasAllPlans}
+          cancelAtPeriodEnd={cancelAtPeriodEnd}
+          userId={userId}
+        />
+      )}
 
       {/* Why Upgrade Section - Always show immediately */}
       <div className="text-center mt-12 mb-8 bg-muted/30 p-8 rounded-xl border animate-in fade-in slide-in-from-bottom-5 duration-500 delay-500">
@@ -665,6 +866,37 @@ export function PricingPage({
           <FAQSection />
         </TabsContent>
       </Tabs>
+
+      {/* Add the CancellationDialog component at the end of the return statement */}
+      {showCancellationDialog && (
+        <CancellationDialog
+          isOpen={showCancellationDialog}
+          onClose={() => setShowCancellationDialog(false)}
+          onConfirm={async (reason) => {
+            try {
+              await cancelSubscription()
+              toast({
+                title: "Subscription Cancelled",
+                description: "Your subscription has been cancelled and will end at the current billing period.",
+              })
+
+              // Dispatch an event to notify other components
+              dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.CANCELED, { reason })
+
+              // Close the dialog
+              setShowCancellationDialog(false)
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to cancel subscription. Please try again.",
+                variant: "destructive",
+              })
+            }
+          }}
+          expirationDate={formattedExpirationDate}
+          planName={currentPlan || ""}
+        />
+      )}
     </div>
   )
 }

@@ -38,6 +38,8 @@ export default function PlanCards({
   isAuthenticated = true,
   hasAnyPaidPlan = false,
   hasAllPlans = false,
+  cancelAtPeriodEnd = false,
+  userId = null, // Add this line
 }: {
   plans: typeof SUBSCRIPTION_PLANS
   currentPlan: SubscriptionPlanType | null
@@ -56,6 +58,8 @@ export default function PlanCards({
   isAuthenticated?: boolean
   hasAnyPaidPlan?: boolean
   hasAllPlans?: boolean
+  cancelAtPeriodEnd?: boolean
+  userId?: string | null // Add this line
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PRO")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
@@ -97,7 +101,9 @@ export default function PlanCards({
         const buttonText = (() => {
           if (loading === plan.id) return "Processing..."
           if (isAuthenticated) {
-            if (isCurrentActivePlan) return "Current Plan"
+            if (isCurrentActivePlan) {
+              return cancelAtPeriodEnd ? "Cancels Soon" : "Current Plan"
+            }
             if (hasAllPlans) return "All Plans Active"
             if (plan.id === "FREE" && hasAnyPaidPlan) return "Paid Plan Active"
             if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return "Unavailable"
@@ -108,10 +114,14 @@ export default function PlanCards({
 
         // Determine card highlight style
         const cardHighlightClass = (() => {
-          if (isAuthenticated && isPlanActive && normalizedStatus === ("ACTIVE" as SubscriptionStatusType))
-            return "border-2 border-green-500 dark:border-green-400"
-          if (isAuthenticated && isPlanActive && normalizedStatus === ("CANCELED" as SubscriptionStatusType))
+          if (isAuthenticated && isPlanActive && normalizedStatus === "ACTIVE") {
+            return cancelAtPeriodEnd
+              ? "border-2 border-amber-500 dark:border-amber-400"
+              : "border-2 border-green-500 dark:border-green-400"
+          }
+          if (isAuthenticated && isPlanActive && normalizedStatus === "CANCELED") {
             return "border-2 border-amber-500 dark:border-amber-400"
+          }
           if (isBestValue) return "shadow-lg ring-1 ring-purple-500"
           return "shadow-sm"
         })()
@@ -138,10 +148,10 @@ export default function PlanCards({
               {isCurrentActivePlan && (
                 <div
                   className={`${
-                    normalizedStatus === ("ACTIVE" as SubscriptionStatusType) ? "bg-green-500" : "bg-amber-500"
+                    cancelAtPeriodEnd ? "bg-amber-500" : "bg-green-500"
                   } text-white text-center py-1.5 text-sm font-medium`}
                 >
-                  {normalizedStatus === ("ACTIVE" as SubscriptionStatusType) ? "Current Plan" : "Canceled Plan"}
+                  {cancelAtPeriodEnd ? "Cancels at Period End" : "Current Plan"}
                 </div>
               )}
               <CardHeader className={`${isBestValue ? "pb-4" : "pb-2"}`}>
@@ -152,10 +162,10 @@ export default function PlanCards({
                   </div>
                   {isPlanActive && isAuthenticated && (
                     <Badge
-                      variant={normalizedStatus === ("ACTIVE" as SubscriptionStatusType) ? "default" : "destructive"}
+                      variant={normalizedStatus === "ACTIVE" ? "default" : "destructive"}
                       className="whitespace-nowrap mt-2 sm:mt-0"
                     >
-                      {normalizedStatus === ("ACTIVE" as SubscriptionStatusType) ? "Active" : "Inactive"}
+                      {cancelAtPeriodEnd ? "Cancelling" : normalizedStatus === "ACTIVE" ? "Active" : "Inactive"}
                     </Badge>
                   )}
                 </div>
@@ -181,6 +191,7 @@ export default function PlanCards({
                   <SavingsHighlight plan={plan} duration={duration} />
                 </div>
               </CardHeader>
+
               <CardContent className="flex-grow">
                 <div className="mb-4">
                   <p className="text-lg font-semibold text-center sm:text-left">{plan.tokens} tokens</p>
@@ -209,6 +220,7 @@ export default function PlanCards({
                     <ul className="space-y-2">
                       {plan.features
                         .filter((feature) => feature.available)
+                        .slice(0, 5) // Limit to 5 features for better UI
                         .map((feature, index) => (
                           <motion.li
                             key={index}
@@ -230,6 +242,7 @@ export default function PlanCards({
                     <ul className="space-y-2">
                       {plan.features
                         .filter((feature) => !feature.available)
+                        .slice(0, 3) // Limit to 3 features for better UI
                         .map((feature, index) => (
                           <motion.li
                             key={index}
@@ -292,9 +305,8 @@ export default function PlanCards({
                               <p className="font-medium text-sm">{unavailableReason}</p>
                               {expirationDate && normalizedStatus !== "ACTIVE" && (
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Your current plan{" "}
-                                  {normalizedStatus === ("CANCELED" as SubscriptionStatusType) ? "expires" : "renews"}{" "}
-                                  on {expirationDate}
+                                  Your current plan {normalizedStatus === "CANCELED" ? "expires" : "renews"} on{" "}
+                                  {expirationDate}
                                 </p>
                               )}
                             </div>
@@ -311,7 +323,11 @@ export default function PlanCards({
                 <div className="px-6 pb-4 text-center">
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-2">
                     <Info className="h-4 w-4" />
-                    <p>You are currently subscribed to this plan</p>
+                    <p>
+                      {cancelAtPeriodEnd
+                        ? "Your subscription will cancel at the end of the billing period"
+                        : "You are currently subscribed to this plan"}
+                    </p>
                   </div>
                 </div>
               )}
@@ -333,10 +349,7 @@ export default function PlanCards({
                     ) : (
                       <>
                         <Calendar className="h-4 w-4" />
-                        <p>
-                          Available after current plan{" "}
-                          {normalizedStatus === ("CANCELED" as SubscriptionStatusType) ? "expires" : "ends"}
-                        </p>
+                        <p>Available after current plan {normalizedStatus === "CANCELED" ? "expires" : "ends"}</p>
                       </>
                     )}
                   </div>
@@ -344,7 +357,7 @@ export default function PlanCards({
               )}
 
               {/* Add a note for unauthenticated users */}
-              {!isAuthenticated && plan.id !== "FREE" && (
+              {!userId && plan.id !== "FREE" && (
                 <div className="px-6 pb-4 text-center">
                   <div className="flex items-center justify-center gap-2 text-sm text-blue-600 dark:text-blue-400 mt-2">
                     <Info className="h-4 w-4" />

@@ -15,8 +15,8 @@ type Props = {
   }
 }
 
-export async function generateMetadata({ params }: { params:Promise< { slug: string } >}): Promise<Metadata> {
-  const {slug} = await params // Await the promise to extract slug
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params // Await the promise to extract slug
   const course = await getCourseData(slug)
 
   if (!course) {

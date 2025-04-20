@@ -50,4 +50,3 @@ export function PreviewStep({ watch }: PreviewStepProps) {
     </div>
   )
 }
-
