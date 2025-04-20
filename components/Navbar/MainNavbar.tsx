@@ -9,18 +9,22 @@ import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Button } from "@/components/ui/button"
 
 import { navItems } from "@/constants/navItems"
-import Logo from "./Logo"
-import NotificationsMenu from "./NotificationsMenu"
+
+
 import SearchModal from "./SearchModal"
 import { Badge } from "@/components/ui/badge"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import {useSubscriptionStore} from "@/store/useSubscriptionStore"
 import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { UserMenu } from "./UserMenu"
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
-import { ThemeToggle } from "../ThemeToggle"
+
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/providers/unified-auth-provider"
+import Logo from "./Logo"
+import NotificationsMenu from "./NotificationsMenu"
+import { ThemeToggle } from "./ThemeToggle"
+import { UserMenu } from "./UserMenu"
 
 const NavItems = memo(() => {
   const pathname = usePathname()

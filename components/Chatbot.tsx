@@ -14,7 +14,7 @@ import { MessageSquare, X, Send, Loader2, BrainCircuit, Crown, AlertCircle, Help
 import ReactMarkdown from "react-markdown"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import {useSubscriptionStore} from "@/store/useSubscriptionStore"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 

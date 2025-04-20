@@ -14,7 +14,7 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import {useSubscriptionStore} from "@/store/useSubscriptionStore"
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"

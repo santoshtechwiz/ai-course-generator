@@ -6,9 +6,10 @@ import type React from "react"
 import { Suspense } from "react"
 
 import { Chatbot } from "@/components/Chatbot"
-import MainNavbar from "@/components/shared/MainNavbar"
+
 import { useAuth } from "@/providers/unified-auth-provider"
 import { NavigationEvents } from "./NavigationEvents"
+import MainNavbar from "@/components/Navbar/MainNavbar"
 
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, requireAuth } = useAuth()

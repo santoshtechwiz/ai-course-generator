@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import {useSubscriptionStore} from "@/store/useSubscriptionStore"
 
 interface CreateTileGridProps {
   icon: LucideIcon

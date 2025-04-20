@@ -39,8 +39,15 @@ declare module "next-auth/jwt" {
     subscriptionPlan: string | null
     subscriptionStatus: string | null
     updatedAt?: number
+    tokenVersion?: number // Added for token invalidation
   }
 }
+
+// Session cache with improved invalidation
+let cachedSession: any = null
+let sessionCacheTime = 0
+const SESSION_CACHE_MAX_AGE = 30 * 1000 // 30 seconds
+let globalTokenVersion = 1 // Used to invalidate all sessions
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -49,7 +56,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       // Initial sign in
       if (user) {
         token.id = user.id
@@ -57,6 +64,13 @@ export const authOptions: NextAuthOptions = {
         token.isAdmin = user.isAdmin || false
         token.userType = user.userType || "FREE"
         token.updatedAt = Date.now()
+        token.tokenVersion = globalTokenVersion // Set initial token version
+      }
+
+      // Handle token refresh
+      if (trigger === "update") {
+        // Force token refresh on explicit update
+        token.updatedAt = 0
       }
 
       // On every JWT refresh, get the latest user data
@@ -89,10 +103,21 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // Check if token version is current
+      if (token.tokenVersion !== globalTokenVersion) {
+        // Token is invalidated, force a new sign in
+        return { ...token, error: "TokenExpired" }
+      }
+
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
+        // Check for token error (invalidated token)
+        if (token.error === "TokenExpired") {
+          throw new Error("Session expired")
+        }
+
         session.user.id = token.id
         session.user.credits = token.credits || 0
         session.user.isAdmin = token.isAdmin || false
@@ -159,6 +184,10 @@ export const authOptions: NextAuthOptions = {
         console.error("Error in signIn event:", error)
       }
     },
+    async signOut() {
+      // Invalidate session cache on sign out
+      invalidateSessionCache()
+    },
   },
   pages: {
     signIn: "/auth/signin",
@@ -185,10 +214,6 @@ export const authOptions: NextAuthOptions = {
 }
 
 // Improved session caching with proper invalidation
-let cachedSession: any = null
-let sessionCacheTime = 0
-const SESSION_CACHE_MAX_AGE = 30 * 1000 // 30 seconds
-
 export const getAuthSession = async () => {
   const now = Date.now()
 
@@ -240,10 +265,35 @@ export async function updateUserData(userId: string, data: any) {
     where: { id: userId },
     data,
   })
+
+  // Invalidate session cache for this user
+  invalidateSessionCache()
 }
 
 // Invalidate session cache
 export function invalidateSessionCache() {
   cachedSession = null
   sessionCacheTime = 0
+}
+
+// Invalidate all active sessions (for password change, security breach, etc.)
+export async function invalidateAllSessions() {
+  // Increment global token version to invalidate all tokens
+  globalTokenVersion += 1
+
+  // Clear session cache
+  invalidateSessionCache()
+}
+
+// Invalidate sessions for a specific user
+export async function invalidateUserSessions(userId: string) {
+  // Update user's sessions in the database
+  await prisma.session.deleteMany({
+    where: {
+      userId,
+    },
+  })
+
+  // Clear session cache
+  invalidateSessionCache()
 }
