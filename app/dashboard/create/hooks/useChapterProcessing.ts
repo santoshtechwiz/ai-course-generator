@@ -30,6 +30,13 @@ export const useChapterProcessing = (chapter: Chapter) => {
     return () => closeEventSource()
   }, [closeEventSource])
 
+  // Update state when chapter changes (e.g., when videoId is added manually)
+  useEffect(() => {
+    if (chapter.videoId && state.videoStatus === "idle") {
+      setState({ videoStatus: "success" })
+    }
+  }, [chapter.videoId, state.videoStatus])
+
   const { mutateAsync: generateVideo, status } = useMutation({
     mutationFn: async () => {
       const response = await axios.post("/api/video", { chapterId: chapter.id })
@@ -81,6 +88,33 @@ export const useChapterProcessing = (chapter: Chapter) => {
     },
   })
 
+  const validateVideoId = useCallback(async (videoId: string): Promise<boolean> => {
+    try {
+      // Extract video ID if a full URL was pasted
+      let extractedVideoId = videoId
+      if (videoId.includes("youtube.com") || videoId.includes("youtu.be")) {
+        const url = new URL(videoId)
+        if (videoId.includes("youtube.com")) {
+          extractedVideoId = url.searchParams.get("v") || ""
+        } else {
+          extractedVideoId = url.pathname.substring(1)
+        }
+      }
+
+      // Simple validation - YouTube IDs are 11 characters
+      if (extractedVideoId.length !== 11) {
+        return false
+      }
+
+      // You could make an API call to validate the video exists
+      // For now, we'll just return true if it's the right format
+      return true
+    } catch (error) {
+      console.error("Error validating video ID:", error)
+      return false
+    }
+  }, [])
+
   const triggerProcessing = useCallback(async () => {
     if (state.videoStatus === "idle" || state.videoStatus === "error") {
       await generateVideo()
@@ -90,7 +124,7 @@ export const useChapterProcessing = (chapter: Chapter) => {
   return {
     state,
     triggerProcessing,
-    isLoading: status === "success",
+    validateVideoId,
+    isLoading: status === "pending",
   }
 }
-

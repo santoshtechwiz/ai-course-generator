@@ -7,8 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { CreateCourseInput } from "@/schema/schema"
 import { Loader2 } from 'lucide-react'
-import { CreateCourseInput } from "./schema"
+
 
 
 interface ConfirmationDialogProps {
