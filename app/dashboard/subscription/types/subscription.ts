@@ -12,12 +12,15 @@ export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE"
 // Subscription status types
 export type SubscriptionStatusType = "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | "PENDING" | null
 
-
 // Feature availability
 export interface FeatureAvailability {
   name: string
   available: boolean
   comingSoon?: boolean
+  id?: string
+  description?: string
+  category?: string
+  icon?: string
 }
 
 // Plan limits
@@ -27,7 +30,17 @@ export interface PlanLimits {
   apiCallsPerDay?: number
 }
 
+export interface PriceOption {
+  duration: number
+  price: number
+  currency: string
+}
 
+export interface PaymentOptions {
+  successUrl?: string
+  cancelUrl?: string
+  metadata?: Record<string, string>
+}
 
 // Complete subscription plan definition
 export interface SubscriptionPlan {
@@ -108,4 +121,3 @@ export interface AddOnPackage {
   price: number
   features: string[]
 }
-

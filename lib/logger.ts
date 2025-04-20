@@ -1,75 +1,76 @@
 /**
- * Simple logger utility for consistent logging across the application
+ * Logger Utility
+ *
+ * This file provides a centralized logging system for the application.
+ * It supports different log levels and can be configured to output to
+ * different destinations based on the environment.
  */
 
-type LogLevel = "debug" | "info" | "warn" | "error"
-
-interface LogData {
-  [key: string]: any
+// Log levels in order of severity
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
 }
 
-class Logger {
-  private isDevelopment = process.env.NODE_ENV === "development"
+// Current log level based on environment
+const currentLogLevel =
+  process.env.NODE_ENV === "production"
+    ? LogLevel.INFO
+    : process.env.LOG_LEVEL
+      ? Number.parseInt(process.env.LOG_LEVEL)
+      : LogLevel.DEBUG
 
-  /**
-   * Log a debug message
-   */
-  debug(message: string, data?: LogData) {
-    this.log("debug", message, data)
-  }
-
-  /**
-   * Log an info message
-   */
-  info(message: string, data?: LogData) {
-    this.log("info", message, data)
-  }
-
-  /**
-   * Log a warning message
-   */
-  warn(message: string, data?: LogData) {
-    this.log("warn", message, data)
-  }
-
-  /**
-   * Log an error message
-   */
-  error(message: string, data?: LogData) {
-    this.log("error", message, data)
-  }
-
-  /**
-   * Internal logging method
-   */
-  private log(level: LogLevel, message: string, data?: LogData) {
-    const timestamp = new Date().toISOString()
-    const logObject = {
-      timestamp,
-      level,
-      message,
-      ...(data || {}),
-    }
-
-    // In development, log with colors and formatting
-    if (this.isDevelopment) {
-      const colors = {
-        debug: "\x1b[34m", // Blue
-        info: "\x1b[32m", // Green
-        warn: "\x1b[33m", // Yellow
-        error: "\x1b[31m", // Red
-        reset: "\x1b[0m", // Reset
+/**
+ * Creates a logger instance with the specified name
+ *
+ * @param name - The name of the logger (typically the module name)
+ * @returns A logger object with methods for each log level
+ */
+export function createLogger(name: string) {
+  return {
+    debug: (message: string, ...args: any[]) => {
+      if (currentLogLevel <= LogLevel.DEBUG) {
+        console.debug(`[${name}] ${message}`, ...args)
       }
-
-      console[level === "debug" ? "log" : level](
-        `${colors[level]}[${level.toUpperCase()}]${colors.reset} ${message}`,
-        data ? data : "",
-      )
-    } else {
-      // In production, log structured JSON for easier parsing
-      console[level === "debug" ? "log" : level](JSON.stringify(logObject))
-    }
+    },
+    info: (message: string, ...args: any[]) => {
+      if (currentLogLevel <= LogLevel.INFO) {
+        console.info(`[${name}] ${message}`, ...args)
+      }
+    },
+    warn: (message: string, ...args: any[]) => {
+      if (currentLogLevel <= LogLevel.WARN) {
+        console.warn(`[${name}] ${message}`, ...args)
+      }
+    },
+    error: (message: string, ...args: any[]) => {
+      if (currentLogLevel <= LogLevel.ERROR) {
+        console.error(`[${name}] ${message}`, ...args)
+      }
+    },
   }
 }
 
-export const logger = new Logger()
+/**
+ * Global application logger
+ */
+export const logger = createLogger("app")
+
+/**
+ * Formats an error for logging
+ *
+ * @param error - The error to format
+ * @returns A formatted error object
+ */
+export function formatError(error: unknown): Record<string, any> {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      name: error.name,
+      stack: process.env.NODE_ENV !== "production" ? error.stack : undefined,
+    }
+  }
+  return { message: String(error) }
+}

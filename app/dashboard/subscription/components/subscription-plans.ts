@@ -6,10 +6,171 @@
  * plan details without changing the core functionality.
  */
 
-import { AddOnPackage, FAQItem, SubscriptionPlan} from "@/app/dashboard/subscription/types/subscription"
+import type { AddOnPackage, FAQItem, SubscriptionPlan } from "@/app/dashboard/subscription/types/subscription"
 import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
 
-// Define all subscription plans
+// First, let's examine the current structure of features in the subscription plans
+// Each plan has a features array with objects containing name and availability
+
+// Let's modify this to create a more maintainable feature management system
+
+/**
+ * Feature Categories for better organization
+ */
+export enum FeatureCategory {
+  CORE = "Core Features",
+  CONTENT = "Content Creation",
+  ANALYTICS = "Analytics & Reporting",
+  SUPPORT = "Support & Services",
+  ADVANCED = "Advanced Features",
+}
+
+/**
+ * Feature definitions with metadata for better management
+ */
+export const FEATURES = {
+  // Core Features
+  COURSE_CREATION: {
+    id: "course-creation",
+    name: "Course Creation",
+    description: "Create and manage custom learning courses",
+    category: FeatureCategory.CORE,
+    icon: "BookOpen",
+  },
+  MCQ_GENERATOR: {
+    id: "mcq-generator",
+    name: "MCQ Generator",
+    description: "Generate multiple-choice questions automatically",
+    category: FeatureCategory.CONTENT,
+    icon: "ListChecks",
+  },
+  FILL_BLANKS: {
+    id: "fill-blanks",
+    name: "Fill in the Blanks",
+    description: "Create fill-in-the-blank exercises",
+    category: FeatureCategory.CONTENT,
+    icon: "TextCursor",
+  },
+  OPEN_ENDED: {
+    id: "open-ended",
+    name: "Open-ended Questions",
+    description: "Generate open-ended questions for deeper learning",
+    category: FeatureCategory.CONTENT,
+    icon: "MessageSquare",
+  },
+  CODE_QUIZ: {
+    id: "code-quiz",
+    name: "Code Quiz",
+    description: "Create coding challenges and quizzes",
+    category: FeatureCategory.CONTENT,
+    icon: "Code",
+  },
+  VIDEO_QUIZ: {
+    id: "video-quiz",
+    name: "Video Quiz",
+    description: "Generate quizzes from video content",
+    category: FeatureCategory.CONTENT,
+    icon: "Video",
+  },
+  PDF_DOWNLOADS: {
+    id: "pdf-downloads",
+    name: "PDF Downloads",
+    description: "Download content as PDF documents",
+    category: FeatureCategory.CORE,
+    icon: "FileDown",
+  },
+  VIDEO_TRANSCRIPTS: {
+    id: "video-transcripts",
+    name: "Video Transcripts",
+    description: "Access transcripts of video content",
+    category: FeatureCategory.CONTENT,
+    icon: "FileText",
+  },
+  AI_ACCURACY: {
+    id: "ai-accuracy",
+    name: "AI Accuracy",
+    description: "Enhanced AI accuracy for better content generation",
+    category: FeatureCategory.ADVANCED,
+    icon: "Zap",
+  },
+  PRIORITY_SUPPORT: {
+    id: "priority-support",
+    name: "Priority Support",
+    description: "Get faster responses to support requests",
+    category: FeatureCategory.SUPPORT,
+    icon: "HeadphonesIcon",
+  },
+}
+
+/**
+ * Feature availability matrix for each plan
+ * This makes it easier to update which features are available in which plans
+ */
+export const PLAN_FEATURES = {
+  FREE: {
+    [FEATURES.COURSE_CREATION.id]: { available: true },
+    [FEATURES.MCQ_GENERATOR.id]: { available: true },
+    [FEATURES.FILL_BLANKS.id]: { available: true },
+    [FEATURES.OPEN_ENDED.id]: { available: true },
+    [FEATURES.CODE_QUIZ.id]: { available: true },
+    [FEATURES.VIDEO_TRANSCRIPTS.id]: { available: true },
+    [FEATURES.VIDEO_QUIZ.id]: { available: true },
+    [FEATURES.PDF_DOWNLOADS.id]: { available: true },
+    [FEATURES.AI_ACCURACY.id]: { available: false },
+    [FEATURES.PRIORITY_SUPPORT.id]: { available: false },
+  },
+  BASIC: {
+    [FEATURES.COURSE_CREATION.id]: { available: true },
+    [FEATURES.MCQ_GENERATOR.id]: { available: true },
+    [FEATURES.FILL_BLANKS.id]: { available: true },
+    [FEATURES.OPEN_ENDED.id]: { available: true },
+    [FEATURES.CODE_QUIZ.id]: { available: true },
+    [FEATURES.VIDEO_TRANSCRIPTS.id]: { available: true },
+    [FEATURES.VIDEO_QUIZ.id]: { available: true },
+    [FEATURES.PDF_DOWNLOADS.id]: { available: true },
+    [FEATURES.AI_ACCURACY.id]: { available: false },
+    [FEATURES.PRIORITY_SUPPORT.id]: { available: false },
+  },
+  PRO: {
+    [FEATURES.COURSE_CREATION.id]: { available: true },
+    [FEATURES.MCQ_GENERATOR.id]: { available: true },
+    [FEATURES.FILL_BLANKS.id]: { available: true },
+    [FEATURES.OPEN_ENDED.id]: { available: true },
+    [FEATURES.CODE_QUIZ.id]: { available: true },
+    [FEATURES.VIDEO_TRANSCRIPTS.id]: { available: true },
+    [FEATURES.VIDEO_QUIZ.id]: { available: true },
+    [FEATURES.PDF_DOWNLOADS.id]: { available: true },
+    [FEATURES.AI_ACCURACY.id]: { available: true },
+    [FEATURES.PRIORITY_SUPPORT.id]: { available: false },
+  },
+  ULTIMATE: {
+    [FEATURES.COURSE_CREATION.id]: { available: true },
+    [FEATURES.MCQ_GENERATOR.id]: { available: true },
+    [FEATURES.FILL_BLANKS.id]: { available: true },
+    [FEATURES.OPEN_ENDED.id]: { available: true },
+    [FEATURES.CODE_QUIZ.id]: { available: true },
+    [FEATURES.VIDEO_TRANSCRIPTS.id]: { available: true },
+    [FEATURES.VIDEO_QUIZ.id]: { available: true },
+    [FEATURES.PDF_DOWNLOADS.id]: { available: true },
+    [FEATURES.AI_ACCURACY.id]: { available: true },
+    [FEATURES.PRIORITY_SUPPORT.id]: { available: true },
+  },
+}
+
+// Helper function to get features for a plan with proper structure
+export function getPlanFeatures(planId: string) {
+  const planFeatureMatrix = PLAN_FEATURES[planId] || {}
+
+  return Object.entries(FEATURES).map(([key, feature]) => {
+    const availability = planFeatureMatrix[feature.id] || { available: false }
+    return {
+      ...feature,
+      ...availability,
+    }
+  })
+}
+
+// Now update the SUBSCRIPTION_PLANS to use the new feature system
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: "FREE",
@@ -36,18 +197,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       maxCoursesPerMonth: 1,
       apiCallsPerDay: 10,
     },
-    features: [
-      { name: "Course Creation", available: true },
-      { name: "MCQ Generator", available: true },
-      { name: "Fill in the Blanks", available: true },
-      { name: "Open-ended Questions", available: true },
-      { name: "Code Quiz", available: true },
-      { name: "Video Transcripts", available: true },
-      { name: "Video Quiz", available: true },
-      { name: "PDF Downloads", available: true },
-      { name: "AI Accuracy", available: false },
-      { name: "Priority Support", available: false },
-    ],
+    features: getPlanFeatures("FREE"),
   },
   {
     id: "BASIC",
@@ -76,19 +226,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       maxCoursesPerMonth: 5,
       apiCallsPerDay: 50,
     },
-    features: [
-      { name: "Course Creation", available: true },
-      { name: "MCQ Generator", available: true },
-      { name: "Fill in the Blanks", available: true },
-      { name: "Open-ended Questions", available: true },
-      { name: "Code Quiz", available: true },
-      { name: "Video Transcripts", available: true },
-      { name: "Video Quiz", available: true },
-      { name: "PDF Downloads", available: true },
-      { name: "Video Transcripts", available: true },
-      { name: "AI Accuracy", available: false },
-      { name: "Priority Support", available: false },
-    ],
+    features: getPlanFeatures("BASIC"),
   },
   {
     id: "PRO",
@@ -118,19 +256,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       maxCoursesPerMonth: 20,
       apiCallsPerDay: 200,
     },
-    features: [
-      { name: "Course Creation", available: true },
-      { name: "MCQ Generator", available: true },
-      { name: "Fill in the Blanks", available: true },
-      { name: "Open-ended Questions", available: true },
-      { name: "Code Quiz", available: true },
-      { name: "Video Transcripts", available: true },
-      { name: "Video Quiz", available: true },
-      { name: "PDF Downloads", available: true },
-      { name: "Video Transcripts", available: true },
-      { name: "AI Accuracy", available: true },
-      { name: "Priority Support", available: false },
-    ],
+    features: getPlanFeatures("PRO"),
   },
   {
     id: "ULTIMATE",
@@ -159,19 +285,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       maxCoursesPerMonth: 50,
       apiCallsPerDay: 500,
     },
-    features: [
-      { name: "Course Creation", available: true },
-      { name: "MCQ Generator", available: true },
-      { name: "Fill in the Blanks", available: true },
-      { name: "Open-ended Questions", available: true },
-      { name: "Code Quiz", available: true },
-      { name: "Video Transcripts", available: true },
-      { name: "Video Quiz", available: true },
-      { name: "PDF Downloads", available: true },
-      { name: "Video Transcripts", available: true },
-      { name: "AI Accuracy", available: true },
-      { name: "Priority Support", available: true },
-    ],
+    features: getPlanFeatures("ULTIMATE"),
   },
 ]
 
@@ -212,7 +326,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     answer:
       "We offer a one-month free trial of our Pro plan for new users. During the trial, you'll have access to all Pro features including Code Quiz and Video Quiz generation. No credit card is required to start your trial.",
   },
-];
+]
 // Add-on packages
 export const ADD_ON_PACKAGES: AddOnPackage[] = [
   {
@@ -256,4 +370,3 @@ export const VALID_PROMO_CODES: Record<string, number> = {
   WELCOME10: 10,
   SPRING2025: 15,
 }
-
