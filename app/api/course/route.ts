@@ -3,6 +3,11 @@ import prisma from "@/lib/db"
 import type { Prisma } from "@prisma/client"
 import type { CategoryId } from "@/config/categories"
 import NodeCache from "node-cache"
+import { getAuthSession } from "@/lib/authOptions"
+import { generateCourseContent } from "@/lib/chatgpt/generateCourseContent"
+import { getUnsplashImage } from "@/lib/unsplash"
+import { generateSlug } from "@/lib/utils"
+import { createChaptersSchema } from "@/schema/schema"
 
 // Enhanced cache with longer TTL for better performance
 const coursesCache = new NodeCache({
@@ -19,8 +24,47 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get("userId") || undefined
   const page = Number.parseInt(searchParams.get("page") || "1", 10)
   const limit = Number.parseInt(searchParams.get("limit") || "20", 10)
-  const sortBy = searchParams.get("sortBy") || "viewCount" // New sorting parameter
-  const sortOrder = searchParams.get("sortOrder") || "desc" // New sorting order parameter
+  const sortBy = searchParams.get("sortBy") || "viewCount"
+  const sortOrder = searchParams.get("sortOrder") || "desc"
+  const slug = searchParams.get("slug")
+
+  // Handle single course fetch by slug
+  if (slug) {
+    try {
+      if (!slug) {
+        return NextResponse.json({ error: "Slug is required" }, { status: 400 })
+      }
+
+      // Fetch from database
+      const session = await getAuthSession()
+      if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+
+      const course = await prisma.course.findUnique({
+        where: { slug },
+        include: {
+          courseUnits: {
+            orderBy: { createdAt: "asc" },
+            include: {
+              chapters: {
+                orderBy: { createdAt: "asc" },
+              },
+            },
+          },
+        },
+      })
+
+      if (!course) {
+        return NextResponse.json({ error: "Course not found" }, { status: 404 })
+      }
+
+      return NextResponse.json(course)
+    } catch (error) {
+      console.error("Error fetching course:", error)
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    }
+  }
 
   // Create a cache key based on all request parameters
   const cacheKey = `courses_${search || ""}_${category || ""}_${userId || ""}_${page}_${limit}_${sortBy}_${sortOrder}`
@@ -193,4 +237,322 @@ function determineDifficulty(lessonCount: number, quizCount: number): string {
   if (totalItems < 15) return "Beginner"
   if (totalItems < 30) return "Intermediate"
   return "Advanced"
+}
+
+async function validateUserCredits(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { credits: true },
+  })
+
+  if (!user || user.credits <= 0) {
+    throw new Error("Insufficient credits")
+  }
+
+  return user
+}
+
+async function createCategory(category: string) {
+  const cacheKey = `category_${category}`
+  const cachedCategory = coursesCache.get<number>(cacheKey)
+
+  if (cachedCategory) {
+    return cachedCategory
+  }
+
+  const existingCategory = await prisma.category.findUnique({
+    where: { name: category },
+  })
+
+  if (existingCategory) {
+    coursesCache.set(cacheKey, existingCategory.id)
+    return existingCategory.id
+  }
+
+  const createdCategory = await prisma.category.create({
+    data: { name: category },
+  })
+
+  coursesCache.set(cacheKey, createdCategory.id)
+  return createdCategory.id
+}
+
+async function generateUniqueSlug(title: string) {
+  let slug = generateSlug(title)
+  let counter = 1
+
+  while (true) {
+    const existingCourse = await prisma.course.findUnique({
+      where: { slug },
+    })
+
+    if (!existingCourse) break
+    slug = generateSlug(title) + `-${counter++}`
+  }
+
+  return slug
+}
+
+type OutputUnits = {
+  title: string
+  chapters: {
+    youtube_search_query: string
+    chapter_title: string
+  }[]
+}[]
+
+const removeDuplicate = (data: OutputUnits): OutputUnits => {
+  const uniqueData = []
+  const uniqueUnits = new Set()
+
+  for (const item of data) {
+    const unitIdentifier = item.title
+    if (!uniqueUnits.has(unitIdentifier)) {
+      uniqueUnits.add(unitIdentifier)
+      const uniqueItem = {
+        ...item,
+        chapters: item.chapters.reduce(
+          (accChapters, chapter) => {
+            const normalizedQuery = chapter.youtube_search_query.trim()?.toLowerCase()
+            const existingChapter = accChapters.find(
+              (c) => c.youtube_search_query.trim()?.toLowerCase() === normalizedQuery,
+            )
+            if (!existingChapter) {
+              accChapters.push(chapter)
+            }
+            return accChapters
+          },
+          [] as (typeof item)["chapters"],
+        ),
+      }
+      uniqueData.push(uniqueItem)
+    }
+  }
+
+  return uniqueData
+}
+
+async function createCourseWithUnits(
+  courseData: {
+    title: string
+    description: string
+    image: string
+    userId: string
+    categoryId: number
+    slug: string
+  },
+  outputUnits: OutputUnits,
+) {
+  const course = await prisma.course.create({
+    data: {
+      title: courseData.title,
+      image: courseData.image,
+      description: courseData.description,
+      userId: courseData.userId,
+      categoryId: courseData.categoryId,
+      slug: courseData.slug,
+      isPublic: false,
+    },
+  })
+
+  const outputUnitsClone = removeDuplicate(outputUnits)
+
+  for (const unit of outputUnitsClone) {
+    const prismaUnit = await prisma.courseUnit.create({
+      data: {
+        name: unit.title,
+        courseId: course.id,
+      },
+    })
+
+    await prisma.chapter.createMany({
+      data: unit.chapters.map((chapter) => ({
+        title: chapter.chapter_title,
+        youtubeSearchQuery: chapter.youtube_search_query,
+        unitId: prismaUnit.id,
+      })),
+    })
+  }
+
+  return course
+}
+
+export async function POST(req: Request) {
+  try {
+    // Real implementation
+    const session = await getAuthSession()
+    if (!session?.user) {
+      return new NextResponse("unauthorised", { status: 401 })
+    }
+
+    // Validate user credits before starting expensive operations
+    await validateUserCredits(session.user.id)
+
+    const data = await req.json()
+    const { title, units, category, description } = createChaptersSchema.parse(data)
+
+    // Generate unique slug
+    const slug = await generateUniqueSlug(title)
+
+    // Generate course content
+    const outputUnits = await generateCourseContent(title, units)
+
+    // Get course image
+    const courseImage = await getUnsplashImage(title)
+
+    // Create or get category
+    const categoryId = await createCategory(category)
+
+    // Create course and its units
+    const course = await createCourseWithUnits(
+      {
+        title,
+        description,
+        image: courseImage,
+        userId: session.user.id,
+        categoryId,
+        slug,
+      },
+      outputUnits,
+    )
+
+    // Only deduct credits after successful course creation
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { credits: { decrement: 1 } },
+    })
+
+    // Cache the new course
+    coursesCache.set(`course_${course.id}`, course)
+
+    return NextResponse.json({ slug: course.slug })
+  } catch (error: any) {
+    console.error(`Course creation error: ${error.message}`)
+
+    if (error.message === "Insufficient credits") {
+      return new NextResponse("Insufficient credits", { status: 402 })
+    }
+
+    console.error("Error updating course:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to update course",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const { chapterId, videoId } = await req.json()
+
+    if (!chapterId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Chapter ID is required",
+        },
+        { status: 400 },
+      )
+    }
+
+    // Authenticate user
+    const session = await getAuthSession()
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Find the chapter
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId },
+    })
+
+    if (!chapter) {
+      return NextResponse.json({ error: "Chapter not found" }, { status: 404 })
+    }
+
+    // If videoId is provided, use it directly
+    if (videoId) {
+      await prisma.chapter.update({
+        where: { id: chapterId },
+        data: {
+          videoId,
+          videoStatus: "success",
+        },
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: "Video ID set successfully",
+        chapter: {
+          ...chapter,
+          videoId,
+          videoStatus: "success",
+        },
+      })
+    }
+
+    // Otherwise, update the chapter status to processing for generation
+    await prisma.chapter.update({
+      where: { id: chapterId },
+      data: { videoStatus: "processing" },
+    })
+
+    // Return immediate response that processing has started
+    const response = NextResponse.json({
+      success: true,
+      message: "Video generation started",
+      chapter: {
+        ...chapter,
+        videoStatus: "processing",
+      },
+    })
+
+    // In a real implementation, you would trigger an async job here
+    // For this example, we'll simulate it with setTimeout
+    const processingTime = 3000 + Math.random() * 2000
+    setTimeout(async () => {
+      try {
+        // Update the chapter with completed status
+        await prisma.chapter.update({
+          where: { id: chapterId },
+          data: {
+            videoId: `video-${Math.random().toString(36).substring(2, 10)}`,
+            videoStatus: "success",
+          },
+        })
+
+        console.log(`Video generation completed for chapter ${chapterId}`)
+      } catch (error) {
+        console.error(`Error completing video generation for chapter ${chapterId}:`, error)
+
+        // Update the chapter with error status
+        try {
+          await prisma.chapter.update({
+            where: { id: chapterId },
+            data: {
+              videoStatus: "error",
+            },
+          })
+        } catch (updateError) {
+          console.error(`Error updating chapter status to error: ${updateError}`)
+        }
+      }
+    }, processingTime)
+
+    return response
+  } catch (error) {
+    console.error("Error generating video:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to generate video",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
+  }
 }
