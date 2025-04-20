@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, BookOpen, Video, Plus, Pencil, X, GripVertical, CheckCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ChevronLeft, ChevronRight, BookOpen, Plus, Pencil, X, GripVertical, CheckCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -16,6 +17,7 @@ import VideoPlayer from "./VideoPlayer"
 import { useToast } from "@/hooks/use-toast"
 import DebugPanel from "./DebugPanel"
 import { cn } from "@/lib/utils"
+import axios from "axios"
 
 export type CourseProps = {
   course: Course & {
@@ -27,6 +29,7 @@ export type CourseProps = {
 
 const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
   const { toast } = useToast()
+  const router = useRouter()
   const [course, setCourse] = useState(initialCourse)
   const [completedChapters, setCompletedChapters] = useState<Set<string>>(new Set())
   const chapterRefs = useRef<Record<string, React.RefObject<ChapterCardHandler>>>({})
@@ -37,6 +40,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
   const [currentVideoTitle, setCurrentVideoTitle] = useState("")
   const [newChapter, setNewChapter] = useState({ title: "", youtubeId: "" })
   const [addingToUnitId, setAddingToUnitId] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Ensure all IDs are strings
   useEffect(() => {
@@ -143,9 +147,11 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
 
   // Handle showing video
   const showVideo = (chapter: Chapter) => {
-    setCurrentVideoId(chapter.youtubeId)
-    setCurrentVideoTitle(chapter.title)
-    setShowVideoDialog(true)
+    if (chapter.videoId) {
+      setCurrentVideoId(chapter.videoId)
+      setCurrentVideoTitle(chapter.title)
+      setShowVideoDialog(true)
+    }
   }
 
   // Handle adding new chapter
@@ -155,8 +161,29 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
   }
 
   const validateYoutubeId = (id: string) => {
+    // Check if it's a YouTube URL
+    if (id.includes("youtube.com") || id.includes("youtu.be")) {
+      try {
+        const url = new URL(id)
+        let videoId = ""
+
+        if (id.includes("youtube.com")) {
+          videoId = url.searchParams.get("v") || ""
+        } else if (id.includes("youtu.be")) {
+          videoId = url.pathname.substring(1)
+        }
+
+        return /^[a-zA-Z0-9_-]{11}$/.test(videoId)
+      } catch (e) {
+        return false
+      }
+    }
+
+    // Check if it's a direct video ID (11 characters)
     return /^[a-zA-Z0-9_-]{11}$/.test(id)
   }
+
+  // Update the addNewChapter function to properly validate the YouTube ID
 
   const addNewChapter = () => {
     if (!addingToUnitId) return
@@ -169,7 +196,8 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
       return
     }
 
-    if (!validateYoutubeId(newChapter.youtubeId)) {
+    // Only validate YouTube ID if one was provided
+    if (newChapter.youtubeId.trim() && !validateYoutubeId(newChapter.youtubeId.trim())) {
       toast({
         title: "Error",
         description: "Please enter a valid YouTube ID (11 characters)",
@@ -183,24 +211,86 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
 
     if (unitIndex !== -1) {
       const newChapterId = `new-${Date.now()}`
+      const youtubeId = newChapter.youtubeId.trim() || null
+
       newCourse.units[unitIndex].chapters.push({
         id: newChapterId,
         title: newChapter.title,
-        youtubeId: newChapter.youtubeId,
-        unitId: addingToUnitId,
+        videoId: youtubeId,
+        unitId: Number(addingToUnitId),
         createdAt: new Date(),
         updatedAt: new Date(),
+        youtubeSearchQuery: newChapter.title,
+        videoStatus: youtubeId ? "completed" : "idle",
+        summary: "Custom chapter created by user", // Mark as custom chapter
+        summaryStatus: "COMPLETED",
+        order: newCourse.units[unitIndex].chapters.length, // Set order based on position
+        isCompleted: false,
       })
 
       // Create a ref for the new chapter
       chapterRefs.current[newChapterId] = React.createRef()
 
-      // Mark the new chapter as completed
-      setCompletedChapters((prev) => new Set(prev).add(newChapterId))
+      // Mark the new chapter as completed if it has a video ID
+      if (youtubeId) {
+        setCompletedChapters((prev) => new Set(prev).add(newChapterId))
+      }
     }
 
     setCourse(newCourse)
     setAddingToUnitId(null)
+
+    // Reset the form
+    setNewChapter({ title: "", youtubeId: "" })
+
+    toast({
+      title: "Success",
+      description: "New chapter added successfully",
+    })
+  }
+
+  // Save course changes before redirecting
+  const saveAndContinue = async () => {
+    try {
+      setIsSaving(true)
+
+      // Prepare data for API
+      const updatedCourse = {
+        courseId: course.id,
+        slug: course.slug,
+        units: course.units.map((unit) => ({
+          id: unit.id,
+          chapters: unit.chapters.map((chapter, index) => ({
+            id: String(chapter.id).startsWith("new-") ? null : chapter.id, // null for new chapters
+            title: chapter.title,
+            videoId: chapter.videoId,
+            unitId: unit.id,
+            position: index, // This will map to 'order' in the API
+            isCustom: chapter.summary?.includes("Custom chapter") || String(chapter.id).startsWith("new-"),
+            youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
+          })),
+        })),
+      }
+
+      // Save the updated course structure
+      await axios.post("/api/course/update-chapters", updatedCourse)
+
+      toast({
+        title: "Success",
+        description: "Course structure saved successfully",
+      })
+
+      // Redirect to the course page
+      router.push(`/dashboard/course/${course.slug}`)
+    } catch (error) {
+      console.error("Error saving course:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save course changes. Please try again.",
+        variant: "destructive",
+      })
+      setIsSaving(false)
+    }
   }
 
   useEffect(() => {
@@ -287,9 +377,10 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                                         <Button size="sm" variant="ghost" onClick={() => startEditingChapter(chapter)}>
                                           <Pencil className="h-4 w-4" />
                                         </Button>
-                                        {chapter.youtubeId && (
+                                        {chapter.videoId && (
                                           <Button size="sm" variant="ghost" onClick={() => showVideo(chapter)}>
-                                            <Video className="h-4 w-4" />
+                                            <span className="sr-only">Preview Video</span>
+                                            👁️
                                           </Button>
                                         )}
                                       </div>
@@ -300,6 +391,8 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                                       chapterIndex={chapterIndex}
                                       onChapterComplete={handleChapterComplete}
                                       isCompleted={completedChapters.has(String(chapter.id))}
+                                      isGenerating={false}
+                                      hideVideoControls={true} // Hide video controls in preview mode
                                     />
                                   </div>
                                 </div>
@@ -323,10 +416,13 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                           onChange={(e) => setNewChapter({ ...newChapter, title: e.target.value })}
                         />
                         <Input
-                          placeholder="YouTube ID (11 characters)"
+                          placeholder="YouTube Video ID (optional)"
                           value={newChapter.youtubeId}
                           onChange={(e) => setNewChapter({ ...newChapter, youtubeId: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Enter a valid YouTube ID (11 characters) or leave blank to generate later
+                        </p>
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => setAddingToUnitId(null)}>
                             Cancel
@@ -343,6 +439,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                       size="sm"
                       className="mt-2 w-full"
                       onClick={() => startAddingChapter(String(unit.id))}
+                      data-sidebar="add-chapter-button"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Chapter
@@ -364,16 +461,22 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           </Button>
           {allChaptersCompleted ? (
             <Button
-              asChild
-              className="bg-green-600 hover:bg-green-700 transition-all duration-300 shadow-md animate-pulse"
+              onClick={saveAndContinue}
+              disabled={isSaving}
+              className="bg-green-600 hover:bg-green-700 transition-all duration-300 shadow-md"
             >
-              <Link href={`/dashboard/course/${course.slug}`} className="flex items-center">
+              {isSaving ? (
+                <span className="flex items-center">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </span>
+              ) : (
                 <span className="flex items-center">
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Save & Continue
                 </span>
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Link>
+              )}
+              <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
             <Button onClick={handleGenerateAll}>
