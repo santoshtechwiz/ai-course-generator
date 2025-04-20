@@ -22,6 +22,7 @@ type Props = {
   onPreviewVideo?: (videoId: string, title: string) => void
   onRemove?: (unitId: number, chapterId: number) => void
   unitId?: number
+  hideVideoControls?: boolean // Add this prop
 }
 
 export type ChapterCardHandler = {
@@ -231,7 +232,28 @@ const ChapterCard = React.memo(
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <StatusIndicator icon={PlayCircle} label="Video" status={state.videoStatus} />
 
-              {isEditingVideo ? (
+              {!isEditingVideo ? (
+                <div className="flex gap-2 mt-2">
+                  {!props.hideVideoControls && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setIsEditingVideo(true)}
+                      data-sidebar="video-button"
+                    >
+                      <Video className="h-3.5 w-3.5 mr-1" />
+                      {chapter.videoId ? "Change Video" : "Add Video"}
+                    </Button>
+                  )}
+                  {chapter.videoId && (
+                    <Button variant="outline" size="sm" className="text-xs" onClick={handlePreviewVideo}>
+                      <Eye className="h-3.5 w-3.5 mr-1" />
+                      Preview
+                    </Button>
+                  )}
+                </div>
+              ) : (
                 <div className="flex w-full gap-2 mt-2">
                   <Input
                     value={videoId}
@@ -253,25 +275,6 @@ const ChapterCard = React.memo(
                   >
                     Cancel
                   </Button>
-                </div>
-              ) : (
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setIsEditingVideo(true)}
-                    data-sidebar="video-button"
-                  >
-                    <Video className="h-3.5 w-3.5 mr-1" />
-                    {chapter.videoId ? "Change Video" : "Add Video"}
-                  </Button>
-                  {chapter.videoId && (
-                    <Button variant="outline" size="sm" className="text-xs" onClick={handlePreviewVideo}>
-                      <Eye className="h-3.5 w-3.5 mr-1" />
-                      Preview
-                    </Button>
-                  )}
                 </div>
               )}
             </div>
