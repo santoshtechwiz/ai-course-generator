@@ -23,7 +23,7 @@ interface NotificationsMenuProps {
 export default function NotificationsMenu({ initialCount = 0, refreshCredits }: NotificationsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [creditCount, setCreditCount] = useState(initialCount)
-  const { subscriptionStatus, refreshSubscription } = useSubscriptionStore()
+  const { data, setRefreshing } = useSubscriptionStore()
   const [isClient, setIsClient] = useState(false)
 
   // Set isClient to true when component mounts (client-side only)
@@ -33,18 +33,18 @@ export default function NotificationsMenu({ initialCount = 0, refreshCredits }: 
 
   // Update credit count when subscription status changes
   useEffect(() => {
-    if (subscriptionStatus && typeof subscriptionStatus.credits === "number") {
-      setCreditCount(subscriptionStatus.credits - (subscriptionStatus.tokensUsed ?? 0))
+    if (data && typeof data.credits === "number") {
+      setCreditCount(data.credits - (data.tokensUsed ?? 0))
     } else if (initialCount > 0) {
       setCreditCount(initialCount)
     }
-  }, [subscriptionStatus, initialCount])
+  }, [data, initialCount])
 
   // Refresh credits when the dropdown is opened
   const handleOpen = (open: boolean) => {
     setIsOpen(open)
     if (open) {
-      refreshSubscription()
+      setRefreshing(true)
       if (refreshCredits) {
         refreshCredits()
       }
@@ -97,11 +97,11 @@ export default function NotificationsMenu({ initialCount = 0, refreshCredits }: 
             <div className="flex w-full justify-between items-center">
               <span className="font-medium">Subscription Status</span>
               <Badge variant="outline" className="ml-2">
-                {subscriptionStatus?.subscriptionPlan || "FREE"}
+                {data?.subscriptionPlan || "FREE"}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {subscriptionStatus?.isSubscribed ? "Your subscription is active" : "Your subscription is inactive"}
+              {data?.isSubscribed ? "Your subscription is active" : "Your subscription is inactive"}
             </p>
           </DropdownMenuItem>
         </div>
