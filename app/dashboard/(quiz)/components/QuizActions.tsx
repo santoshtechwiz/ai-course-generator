@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "@/hooks/use-toast"
 import { Rating } from "@/components/ui/rating"
 import { motion } from "framer-motion"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+// import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 import QuizPDFDownload from "@/app/dashboard/create/components/QuizPDFDownload"
 import {
   DropdownMenu,
@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 interface QuizActionsProps {
   quizId: string

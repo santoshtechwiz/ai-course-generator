@@ -1,412 +1,144 @@
-import type { CourseRating, CourseUnit, Prisma, User } from "@prisma/client"
+/**
+ * Subscription types for the application
+ */
 
-// Type definitions
-export type UserType = "FREE" | "BASIC" | "PRO" | "PREMIUM" | "ULTIMATE"
+// Subscription plan types
+export type SubscriptionPlanType = "FREE" | "BASIC" | "PREMIUM" | "ENTERPRISE"
 
-export interface DashboardUser extends User {
-  courses: Course[]
-  courseProgress: CourseProgress[]
-  userQuizzes: UserQuiz[]
-  subscriptions: UserSubscription | null
-  favorites: Favorite[]
-  quizAttempts: UserQuizAttempt[]
-  engagementScore: number
-  streakDays: number
-  lastStreakDate: Date | null
+// Subscription status types
+export type SubscriptionStatusType = "ACTIVE" | "CANCELED" | "PAST_DUE" | "UNPAID" | "TRIAL" | "NONE"
+
+// Subscription data interface
+export interface SubscriptionData {
+  isSubscribed: boolean
+  subscriptionPlan: SubscriptionPlanType
+  status?: SubscriptionStatusType
+  expirationDate?: string
+  cancelAtPeriodEnd?: boolean
   credits: number
+  tokensUsed: number
+  features?: string[]
 }
 
-// Update the UserQuizAttempt interface to make userId optional
-export interface UserQuizAttempt {
-  id: number
-  userId?: string // Make userId optional to match the actual data structure
-  userQuizId: number
-  score: number | null
-  timeSpent: number | null
-  improvement: number | null
-  accuracy: number | null
-  createdAt: Date
-  updatedAt: Date
-  attemptQuestions: {
-    id: number
-    questionId: number
-    userAnswer: string | null
-    isCorrect: boolean | null
-    timeSpent: number
-  }[]
-  userQuiz: {
-    id: number
-    title: string
-    questions: {
-      id: number
-      question: string
-      answer: string
-    }[]
-  }
+// Token usage interface
+export interface TokenUsage {
+  used: number
+  total: number
+  percentage: number
+  hasExceededLimit: boolean
+  remaining: number
 }
 
-export type CourseCardProps = {
-  title: string
-  description: string
-  rating: number
-  slug: string
-  unitCount: number
-  lessonCount: number
-  quizCount: number
-  viewCount: number
+// Subscription details interface
+export interface SubscriptionDetails {
+  id?: string
+  customerId?: string
+  plan?: SubscriptionPlanType
+  status?: SubscriptionStatusType
+  currentPeriodStart?: string
+  currentPeriodEnd?: string
+  cancelAtPeriodEnd?: boolean
+  canceledAt?: string
+  endedAt?: string
+  trialStart?: string
+  trialEnd?: string
+  tokenUsage?: TokenUsage
+  paymentMethod?: any
+  invoices?: any[]
+}
+
+// Feature availability
+export interface FeatureAvailability {
+  name: string
+  available: boolean
+  comingSoon?: boolean
+  id?: string
+  description?: string
   category?: string
-  duration?: string
+  icon?: string
 }
 
-// Define CourseMetadata
-export interface CourseMetadata {
-  duration?: number
-  difficulty?: string
-  estimatedHours?: number | null
+// Plan limits
+export interface PlanLimits {
+  maxQuestionsPerQuiz: number
+  maxCoursesPerMonth: number
+  apiCallsPerDay?: number
 }
 
-export interface Course extends CourseMetadata {
-  id: number
-  title: string
-  description: string | null
-  image: string
-  slug: string | null
-  courseUnits?: CourseUnit[]
-  createdAt: Date
-  updatedAt?: Date
-  viewCount?: number
-  category?: {
-    id: number
-    name: string
-  }
+export interface PriceOption {
+  duration: number
+  price: number
+  currency: string
 }
 
-export interface UserQuiz {
-  id: number
-  title: string
-  slug: string
-  timeStarted: Date
-  timeEnded: Date | null
-  quizType: string
-  questions: { id: number; question: string; answer: string }[]
-  bestScore: number | null
-  attempts: { score: number | null }[]
-  percentageCorrect: number
-  totalAttempts: number
-  isPublic?: boolean
+export interface PaymentOptions {
+  successUrl?: string
+  cancelUrl?: string
+  metadata?: Record<string, string>
 }
 
-export interface UserSubscription {
-  id: string
-  status: string
-  currentPeriodStart: Date
-  currentPeriodEnd: Date
-  planId: string
-  cancelAtPeriodEnd: boolean
-  stripeSubscriptionId: string | null
-  stripeCustomerId?: string | null
-}
-
-export interface Favorite {
-  id: number
-  course: Course
-  userId?: string
-  courseId?: number
-}
-
-export interface UserStats {
-  totalQuizzes: number
-  totalAttempts: number
-  averageScore: number
-  highestScore: number
-  completedCourses: number
-  totalTimeSpent: number
-  averageTimePerQuiz: number
-  topPerformingTopics: TopicPerformance[]
-  recentImprovement: number
-  quizzesPerMonth: number
-  courseCompletionRate: number
-  consistencyScore: number
-  learningEfficiency: number
-  difficultyProgression: number
-}
-
-export interface TopicPerformance {
-  topic: string
-  averageScore: number
-  attempts: number
-  averageTimeSpent: number
-}
-
-export interface CourseDetails {
-  id: number
-  title: string
-  category: string
-  totalChapters: number
-  totalUnits: number
-  slug: string
-}
-
-export class CourseAIErrors {
-  constructor(public message: string) {}
-}
-
-export interface FullChapterType {
-  id: number
-  videoId: string | null
-  chapterId?: number
-  description: string | null
-  title: string
-  order: number | null
-  courseId?: number
-  isCompleted: boolean
-  questions: CourseQuestion[]
-  summary: string | null
-  chapter?: FullChapterType
-}
-
-export type CourseQuestion = {
-  id: number
-  question: string
-  options: string[] | string
-  answer: string
-}
-
-export type Question = {
-  id: number
-  question: string
-  answer: string
-  option1: string
-  option2: string
-  option3: string
-}
-
-export interface QuizCardProps {
-  title: string
-  questionCount: number
-  isTrending: boolean
-  slug: string
-  quizType: string
-  estimatedTime?: string
+// Complete subscription plan definition
+export interface SubscriptionPlan {
+  id: SubscriptionPlanType
+  name: string
   description: string
+  icon: any
+  tokens: number
+  options: PriceOption[]
+  limits: PlanLimits
+  features: FeatureAvailability[]
+  popular?: boolean
 }
 
-export type QuizWithQuestionsAndTags = Prisma.UserQuizGetPayload<{
-  include: {
-    questions: true
-  }
-}>
-
-export interface QuizListItem {
-  id: number
-  title: string
-  slug: string
-  questionCount: number
-  questions: Prisma.UserQuizQuestionGetPayload<{}>[]
-  isPublic: boolean
-  quizType: string
-  tags: string[]
-  difficulty?: string
-  bestScore?: number | null
-  lastAttempted?: Date | null
-}
-
-export interface MultipleChoiceQuestion {
-  question: string
-  answer: string
-  option1: string
-  option2: string
-  option3: string
-}
-
-export interface OpenEndedQuestion {
-  question: string
-  answer: string
-}
-
-export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard" | "undefined"
-
-// Update the CodeChallenge interface to include id
-export interface CodeChallenge {
-  id?: number
-  question: string
-  options: string[]
-  correctAnswer: string
-  codeSnippet?: string
-  language?: string
- 
-}
-
-// Make sure CodingQuizProps is defined correctly
-export interface CodingQuizProps {
-  quizId: string
-  slug: string
-  isFavorite: boolean
-  isPublic: boolean
-  ownerId: string
-  quizData: {
-    title: string
-    questions: CodeChallenge[]
-  }
-}
-
-export interface OpenAIMessage {
-  role: "system" | "user" | "assistant"
-  content: string
-}
-
-export interface FullCourseType {
-  id: number
-  title: string
-  description: string | null
-  image: string
-  viewCount: number
+// User subscription data
+export interface UserSubscription {
   userId: string
-  categoryId: number | null
-  isCompleted: boolean | null
-  isPublic: boolean
-  slug: string | null
-  difficulty: string | null
-  estimatedHours: number | null
-  category: {
-    id: number
-    name: string
-  } | null
-  ratings: CourseRating[]
-  courseUnits: FullCourseUnit[]
-  courseProgress: CourseProgress[]
-  createdAt: Date
-  updatedAt: Date
+  planId: SubscriptionPlanType
+  status: SubscriptionStatusType
+  currentPeriodStart?: Date
+  currentPeriodEnd?: Date
+  cancelAtPeriodEnd?: boolean
+  stripeCustomerId?: string
+  stripeSubscriptionId?: string
 }
 
-export interface FullCourseUnit {
-  id: number
-  courseId: number
-  title: string
-  isCompleted: boolean | null
-  chapters: FullChapter[]
-  duration?: number | null
-  order?: number | null
+// Payment gateway interface
+export interface PaymentGateway {
+  createCheckoutSession(
+    userId: string,
+    planName: string,
+    duration: number,
+    options?: PaymentOptions,
+  ): Promise<{ sessionId: string; url: string }>
+
+  cancelSubscription(userId: string): Promise<boolean>
+
+  resumeSubscription(userId: string): Promise<boolean>
+
+  verifyPaymentStatus(sessionId: string): Promise<{
+    status: "succeeded" | "pending" | "failed" | "canceled"
+    subscription?: any
+  }>
 }
 
-export interface FullChapter {
-  id: number
-  title: string
-  videoId: string | null
-  order: number | null
-  isCompleted: boolean | null
-  summary: string | null
-  description: string | null
-  questions: CourseQuestion[]
-  unitId?: number
-  summaryStatus?: string
-  videoStatus?: string
+// Promo code validation result
+export interface PromoValidationResult {
+  valid: boolean
+  discountPercentage: number
+  code?: string
 }
 
-export interface CourseProgress {
-  id: number
-  userId: string
-  courseId: number
-  currentChapterId: number
-  currentUnitId: number | null
-  completedChapters: string
-  progress: number
-  lastAccessedAt: Date
-  timeSpent: number
-  isCompleted: boolean
-  completionDate: Date | null
-  quizProgress: any | null
-  notes: string | null
-  bookmarks: string | null
-  lastInteractionType: string | null
-  interactionCount: number
-  engagementScore: number
-  createdAt?: Date
-  updatedAt?: Date
-  course?: {
-    id: number
-    title: string
-    description: string | null
-    image: string
-    slug: string | null
-    createdAt: Date
-    updatedAt: Date
-    courseUnits?: {
-      id: number
-      name: string
-      chapters: {
-        id: number
-        title: string
-      }[]
-    }[]
-    category?: {
-      id: number
-      name: string
-    }
-  }
-}
-
-export interface QuestionOpenEnded {
-  id: number
+// FAQ item structure
+export interface FAQItem {
   question: string
   answer: string
-  openEndedQuestion: {
-    hints: string
-    difficulty: string
-    tags: string
-    inputType: string
-  }
 }
 
-export interface TranscriptResponse {
-  status: number
-  message: string
-}
-
-export interface QueryParams {
-  title?: string
-  categoryAttachment?: string
-  [key: string]: string | undefined
-}
-
-export interface QuizWrapperProps {
-  type: QuizType
-  queryParams?: QueryParams
-}
-
-export interface FlashCard {
-  id?: string | number
-  question: string
-  answer: string
-  userId?: string
-  quizId?: string | number
-  userQuizId?: number
-  createdAt?: Date
-  updatedAt?: Date
-  isSaved?: boolean
-  saved?: boolean
-  difficulty?: string | null
-  slug?: string | null
-}
-
-export interface ContactSubmission {
+// Add-on package structure
+export interface AddOnPackage {
   id: string
   name: string
-  email: string
-  subject: string
-  message: string
-  status: string
-  response: string | null
-  adminNotes: string | null
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface UserWithTransactions extends User {
-  transactions: {
-    id: string
-    amount: number
-    status: string
-    createdAt: Date
-  }[]
+  description: string
+  price: number
+  features: string[]
 }

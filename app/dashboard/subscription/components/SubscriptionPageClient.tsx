@@ -2,7 +2,7 @@
  * Client Component: SubscriptionPageClient
  *
  * This component handles the client-side logic for the subscription page,
- * including fetching subscription data and rendering the appropriate UI.
+ * using Redux for state management to prevent infinite API calls.
  */
 
 "use client"
@@ -21,12 +21,12 @@ import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/su
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 import TrialModal from "@/components/TrialModal"
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
-import useSWR from "swr"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { SUBSCRIPTION_EVENTS, subscribeToEvent } from "@/app/dashboard/subscription/utils/events"
 import { CancellationDialog } from "./cancellation-dialog"
 import { useSubscription } from "../hooks/use-subscription"
 
+import { SubscriptionRefresher } from "./SubscriptionRefresher"
+import { useSubscriptionData } from "../store/hooks"
 
 // Lazy load the PricingPage component
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))
@@ -34,7 +34,6 @@ const StripeSecureCheckout = lazy(() =>
   import("./StripeSecureCheckout").then((mod) => ({ default: mod.StripeSecureCheckout })),
 )
 
-// Replace the fetchSubscriptionData and related state with SWR
 export default function SubscriptionPageClient({ refCode }: { refCode: string | null }) {
   // Ensure userId is properly set and passed to PricingPage
   const [userId, setUserId] = useState<string | null>(null)
@@ -51,38 +50,27 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
-  // Use SWR for subscription data
-  const {
-    data: subscriptionData,
-    error: fetchError,
-    isLoading,
-    mutate,
-  } = useSWR(
-    id ? "/api/subscriptions/status" : null,
-    async (url) => {
-      const response = await fetch(url, {
-        headers: { "x-force-refresh": "true" },
-      })
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Failed to fetch subscription data: ${response.statusText}`)
-      }
-      return response.json()
-    },
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      dedupingInterval: 10000,
-      onSuccess: (data) => {
-        if (id) setUserId(id)
-      },
-      onError: (error) => {
-        console.error("Error fetching subscription data:", error)
-      },
-    },
-  )
+  // Use our custom hook for subscription data
+  const { subscription, refreshData, isLoading, isError, error } = useSubscriptionData({
+    refreshInterval: 120000, // 2 minutes
+    initialFetch: !!id, // Only fetch initially if user is logged in
+  })
 
-  // Transform the SWR data to match the expected format
+  const subscriptionData = subscription.data
+  const isDataFetched = subscription.status === "succeeded" || subscription.status === "failed"
+
+  // Handle subscription cancellation
+  const { cancelSubscription } = useSubscription()
+
+  const handleCancelSubscription = async (reason: string) => {
+    const result = await cancelSubscription(reason)
+    if (result.success) {
+      refreshData(true) // Force refresh after cancellation
+    }
+    return
+  }
+
+  // Transform the Redux data to match the expected format
   const transformedData = useMemo(() => {
     if (!subscriptionData) {
       return {
@@ -104,18 +92,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   }, [subscriptionData])
 
   const isSubscribed = subscriptionData?.isSubscribed || false
-  const isDataFetched = !!subscriptionData || !!fetchError
-
-  // Handle subscription cancellation
-  const { cancelSubscription } = useSubscription()
-
-  const handleCancelSubscription = async (reason: string) => {
-    const result = await cancelSubscription(reason)
-    if (result.success) {
-      mutate() // Refresh the data after cancellation
-    }
-    return result.success
-  }
 
   // Extract referral code from URL parameters
   useEffect(() => {
@@ -148,16 +124,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [])
 
-  // Subscribe to subscription events
-  useEffect(() => {
-    const unsubscribe = subscribeToEvent(SUBSCRIPTION_EVENTS.CHANGED, () => {
-      mutate() // Refresh data when subscription changes
-    })
-
-    return unsubscribe
-  }, [mutate])
-
-  // In the useEffect or wherever userId is set, make sure it's properly updated
+  // Update userId when session changes
   useEffect(() => {
     if (session?.user?.id) {
       setUserId(session.user.id)
@@ -165,8 +132,8 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   }, [session])
 
   const handleRetry = useCallback(() => {
-    mutate()
-  }, [mutate])
+    refreshData(true) // Force refresh on retry
+  }, [refreshData])
 
   const handleUnauthenticatedSubscribe = useCallback(
     (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => {
@@ -204,12 +171,12 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
     return (
       <div className="space-y-8">
-        {fetchError && (
+        {isError && (
           <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
             <AlertTriangle className="h-5 w-5" />
             <AlertTitle>Error loading subscription data</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
-              <p>{fetchError?.message}</p>
+              <p>{error}</p>
               <Button variant="outline" size="sm" onClick={handleRetry} className="w-fit mt-2">
                 Retry
               </Button>
@@ -279,6 +246,9 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Include the SubscriptionRefresher component to handle background refreshes */}
+      <SubscriptionRefresher />
+
       {!isLoading && isDataFetched && (
         <Suspense fallback={null}>
           <TrialModal isSubscribed={isSubscribed} currentPlan={transformedData.currentPlan} />
@@ -308,6 +278,8 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         isOpen={showCancellationDialog}
         onClose={() => setShowCancellationDialog(false)}
         onConfirm={handleCancelSubscription}
+        expirationDate={transformedData.expirationDate || null}
+        planName={transformedData.currentPlan || ""}
       />
     </div>
   )

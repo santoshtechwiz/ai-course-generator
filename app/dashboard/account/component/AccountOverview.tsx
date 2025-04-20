@@ -12,21 +12,21 @@ import { ReferralSystem } from "./ReferralSystem"
 import { CreditCard, User, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 export function AccountOverview({ userId }: { userId: string }) {
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
-  const [subscriptionData, setSubscriptionData] = useState<any>(null)
   const router = useRouter()
 
+  // Use the subscription store instead of direct API calls
+  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
+  const subscriptionData = useSubscriptionStore((state) => state.data)
+
   useEffect(() => {
-    async function fetchData() {
+    async function loadData() {
       try {
-        const response = await fetch("/api/subscriptions/status")
-        if (response.ok) {
-          const data = await response.json()
-          setSubscriptionData(data)
-        }
+        await fetchSubscriptionStatus(false)
       } catch (error) {
         console.error("Error fetching subscription data:", error)
       } finally {
@@ -34,8 +34,8 @@ export function AccountOverview({ userId }: { userId: string }) {
       }
     }
 
-    fetchData()
-  }, [])
+    loadData()
+  }, [fetchSubscriptionStatus])
 
   const handleManageSubscription = () => {
     router.push("/dashboard/subscription")

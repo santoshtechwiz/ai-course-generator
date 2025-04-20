@@ -24,6 +24,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
 import { PaymentMethodForm } from "./PaymentMethod"
 import { StatusBadge } from "./status-badge"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 interface ManageSubscriptionProps {
   userId: string
@@ -45,6 +46,10 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const router = useRouter()
   const session = useSession()
   const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [], totalTokens } = subscriptionData
+
+  // Use the subscription store for actions
+  const cancelSubscription = useSubscriptionStore((state) => state.cancelSubscription)
+  const resumeSubscription = useSubscriptionStore((state) => state.resumeSubscription)
 
   // Memoize plan details to avoid recalculation on every render
   const planDetails = useMemo(() => {
@@ -72,28 +77,13 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
       const hasExceededLimit = tokensUsed > 0 && tokensUsed > totalTokens
 
       return { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree, hasExceededLimit }
-    }, [subscriptionStatus, currentPlan, tokensUsed, planDetails, totalTokens])
+    }, [subscriptionStatus, currentPlan, tokensUsed, totalTokens])
 
   // Use useCallback for event handlers to prevent unnecessary re-renders
   const handleResumeSubscription = useCallback(async () => {
     setIsLoading(true)
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-
-      const response = await fetch("/api/subscriptions/resume", {
-        method: "POST",
-        signal: controller.signal,
-      })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ details: "Unknown error occurred" }))
-        throw new Error(errorData.details || "Failed to resume subscription")
-      }
-
-      const data = await response.json()
+      await resumeSubscription()
 
       toast({
         title: "Subscription Resumed",
@@ -117,7 +107,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
     } finally {
       setIsLoading(false)
     }
-  }, [toast, router])
+  }, [toast, router, resumeSubscription])
 
   const handleUpgradeSubscription = useCallback(() => {
     // Use router.push to navigate to the subscription page
@@ -461,4 +451,3 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
     </Card>
   )
 }
-

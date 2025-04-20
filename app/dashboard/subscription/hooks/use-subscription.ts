@@ -7,6 +7,8 @@ import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboa
 import { SUBSCRIPTION_EVENTS, dispatchSubscriptionEvent } from "@/app/dashboard/subscription/utils/events"
 import { handleSubscriptionError, createSuccessResponse } from "@/app/dashboard/subscription/utils/error-handler"
 import type { SubscriptionErrorType } from "@/app/dashboard/subscription/utils/error-handler"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+
 
 interface UseSubscriptionOptions {
   allowPlanChanges?: boolean
@@ -30,6 +32,14 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
   const router = useRouter()
   const requestInProgressRef = useRef(false)
 
+  // Use Zustand store instead of Redux
+  const {
+    fetchSubscriptionStatus,
+    cancelSubscription: cancelSubscriptionAction,
+    resumeSubscription: resumeSubscriptionAction,
+    activateFreePlan: activateFreePlanAction,
+  } = useSubscriptionStore()
+
   const { allowPlanChanges = false, allowDowngrades = false, onSubscriptionSuccess, onSubscriptionError } = options
 
   // Function to check if a user can subscribe to a specific plan
@@ -39,24 +49,12 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       targetPlan: SubscriptionPlanType,
       currentStatus: SubscriptionStatusType | null,
     ): { canSubscribe: boolean; reason?: string } => {
-      // Always allow subscribing to FREE plan if not already on it
-      if (targetPlan === "FREE") {
-        // If already on FREE plan and it's active, can't subscribe again
-        if (currentPlan === "FREE" && currentStatus === "ACTIVE") {
-          return {
-            canSubscribe: false,
-            reason: "You are already on the free plan",
-          }
-        }
+      // If no current plan or inactive, they can subscribe to any plan
+      if (!currentPlan || currentStatus !== "ACTIVE") {
         return { canSubscribe: true }
       }
 
-      // If no current plan, can subscribe to any plan
-      if (!currentPlan) {
-        return { canSubscribe: true }
-      }
-
-      // If current plan is the same as target plan and active, can't subscribe again
+      // If they're trying to subscribe to the same plan they already have
       if (currentPlan === targetPlan && currentStatus === "ACTIVE") {
         return {
           canSubscribe: false,
@@ -141,38 +139,23 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       }, 30000) // 30 second safety timeout
 
       try {
-        // For free plan, use the activate-free endpoint
+        // For free plan, use Zustand action
         if (planName === "FREE") {
-          const response = await fetch("/api/subscriptions/activate-free", {
-            method: "POST",
-            body: JSON.stringify({ confirmed: true }),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
+          await activateFreePlanAction()
 
-          const data = await response.json()
+          // Refresh subscription data
+          fetchSubscriptionStatus(true)
 
-          if (!response.ok) {
-            throw new Error(data.details || "Failed to activate free plan")
-          }
-
-          // Dispatch an event to notify other components about the subscription change
-          dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.CHANGED, {
-            planId: "FREE",
-            status: "ACTIVE",
-          })
-
-          const result = {
+          const successResult = {
             success: true,
-            message: data.message || "Free plan activated successfully",
+            message: "Free plan activated successfully",
           }
 
           if (onSubscriptionSuccess) {
-            onSubscriptionSuccess(result)
+            onSubscriptionSuccess(successResult)
           }
 
-          return result
+          return successResult
         }
 
         // For paid plans, create a checkout session
@@ -266,10 +249,10 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
         }, 1000)
       }
     },
-    [toast, onSubscriptionSuccess, onSubscriptionError],
+    [toast, onSubscriptionSuccess, onSubscriptionError, fetchSubscriptionStatus, activateFreePlanAction],
   )
 
-  // Handle subscription cancellation with debouncing
+  // Handle subscription cancellation with Zustand
   const cancelSubscription = useCallback(
     async (reason?: string): Promise<SubscriptionResult> => {
       // Prevent duplicate requests
@@ -284,36 +267,8 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       requestInProgressRef.current = true
       setIsLoading(true)
 
-      // Add a safety timeout to prevent deadlocks
-      const safetyTimeout = setTimeout(() => {
-        if (requestInProgressRef.current) {
-          console.warn("Request timeout - resetting request in progress flag")
-          requestInProgressRef.current = false
-        }
-      }, 30000) // 30 second safety timeout
-
       try {
-        const response = await fetch("/api/subscriptions/cancel", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ reason }),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          return handleSubscriptionError(new Error(data.details || "Failed to cancel subscription"), "SERVER_ERROR", {
-            notify: true,
-            log: true,
-          })
-        }
-
-        // Dispatch an event to notify other components about the subscription change
-        dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.CANCELED, {
-          reason,
-        })
+        await cancelSubscriptionAction(reason || "")
 
         toast({
           title: "Subscription Cancelled",
@@ -331,18 +286,15 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
         })
       } finally {
         setIsLoading(false)
-        clearTimeout(safetyTimeout)
-
-        // Reset the request in progress flag after a short delay
         setTimeout(() => {
           requestInProgressRef.current = false
         }, 1000)
       }
     },
-    [toast, router],
+    [toast, router, cancelSubscriptionAction],
   )
 
-  // Handle subscription resumption with debouncing
+  // Handle subscription resumption with Zustand
   const resumeSubscription = useCallback(async (): Promise<SubscriptionResult> => {
     // Prevent duplicate requests
     if (requestInProgressRef.current) {
@@ -356,33 +308,8 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     requestInProgressRef.current = true
     setIsLoading(true)
 
-    // Add a safety timeout to prevent deadlocks
-    const safetyTimeout = setTimeout(() => {
-      if (requestInProgressRef.current) {
-        console.warn("Request timeout - resetting request in progress flag")
-        requestInProgressRef.current = false
-      }
-    }, 30000) // 30 second safety timeout
-
     try {
-      const response = await fetch("/api/subscriptions/resume", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        return handleSubscriptionError(new Error(data.details || "Failed to resume subscription"), "SERVER_ERROR", {
-          notify: true,
-          log: true,
-        })
-      }
-
-      // Dispatch an event to notify other components about the subscription change
-      dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.RESUMED)
+      await resumeSubscriptionAction()
 
       toast({
         title: "Subscription Resumed",
@@ -400,14 +327,11 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       })
     } finally {
       setIsLoading(false)
-      clearTimeout(safetyTimeout)
-
-      // Reset the request in progress flag after a short delay
       setTimeout(() => {
         requestInProgressRef.current = false
       }, 1000)
     }
-  }, [toast, router])
+  }, [toast, router, resumeSubscriptionAction])
 
   return {
     isLoading,

@@ -14,10 +14,9 @@
 import { VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
 import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
 import { prisma } from "@/lib/db"
-import type { SubscriptionStatus } from "@/store/useSubscriptionStore"
 import { getPaymentGateway } from "./payment-gateway-factory"
 import type { PaymentOptions } from "./payment-gateway-interface"
-import {createLogger} from '@/lib/logger';
+import { createLogger } from "@/lib/logger"
 
 // Initialize logger
 const logger = createLogger("subscription-service")
@@ -262,7 +261,7 @@ export class SubscriptionService {
    * @param userId - The ID of the user
    * @returns Object with subscription status information
    */
-  static async getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
+  static async getSubscriptionStatus(userId: string): Promise<any> {
     try {
       if (!userId) {
         throw new Error("User ID is required")
@@ -273,7 +272,7 @@ export class SubscriptionService {
       const cachedData = subscriptionCache.get(cacheKey)
 
       if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
-        logger.debug(`Using cached subscription data for user ${userId}`)
+        //logger.debug(`Using cached subscription data for user ${userId}`)
         return cachedData.data
       }
 
@@ -364,7 +363,7 @@ export class SubscriptionService {
       const cachedData = subscriptionCache.get(cacheKey)
 
       if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
-        logger.debug(`Using cached token usage data for user ${userId}`)
+        // logger.debug(`Using cached token usage data for user ${userId}`)
         return cachedData.data
       }
 
@@ -828,6 +827,28 @@ export class SubscriptionService {
   }
 
   /**
+   * Check if a user can download PDF files based on their subscription
+   *
+   * @param userId - The ID of the user
+   * @returns Boolean indicating if the user can download PDFs
+   */
+  static async canDownloadPDF(userId: string): Promise<boolean> {
+    try {
+      if (!userId) {
+        return false
+      }
+
+      const subscriptionStatus = await this.getSubscriptionStatus(userId)
+
+      // Users can download PDFs if they have a paid subscription
+      return subscriptionStatus.isSubscribed || subscriptionStatus.subscriptionPlan !== "FREE"
+    } catch (error) {
+      logger.error(`Error checking PDF download permission: ${error instanceof Error ? error.message : String(error)}`)
+      return false
+    }
+  }
+
+  /**
    * Clear cache for a specific user
    * @private
    */
@@ -849,4 +870,3 @@ export class SubscriptionService {
     logger.info("Cleared all subscription cache")
   }
 }
-

@@ -5,16 +5,18 @@ import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { signIn, signOut, useSession } from "next-auth/react"
 import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown, X, Loader2 } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Button } from "@/components/ui/button"
 
 import { navItems } from "@/constants/navItems"
+
 
 import SearchModal from "./SearchModal"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
+
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/providers/unified-auth-provider"
@@ -33,7 +35,9 @@ const NavItems = memo(() => {
         <Link href={item.href} passHref key={item.name}>
           <motion.div
             className={`relative py-2 text-sm font-medium transition-colors ${
-              pathname === item.href ? "text-primary font-semibold" : "text-foreground hover:text-primary/80"
+              pathname === item.href
+                ? "text-primary font-semibold"
+                : "text-foreground hover:text-primary/80"
             }`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -49,7 +53,9 @@ const NavItems = memo(() => {
                 transition={{ duration: 0.3 }}
               />
             )}
-            {item.subItems && item.subItems.length > 0 && <ChevronDown className="inline h-3 w-3 ml-1" />}
+            {item.subItems && item.subItems.length > 0 && (
+              <ChevronDown className="inline h-3 w-3 ml-1" />
+            )}
           </motion.div>
         </Link>
       ))}
@@ -64,13 +70,7 @@ export default function MainNavbar() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-
-  // Use the correct function from the subscription store
-  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
-  const subscriptionStatus = useSubscriptionStore((state) => state.data)
-  const isLoadingSubscription = useSubscriptionStore((state) => state.isLoading)
-  const isError = useSubscriptionStore((state) => state.isError)
-
+  const { subscriptionStatus, isLoading: isLoadingSubscription, refreshSubscription, isError } = useSubscriptionStore()
   const pathname = usePathname()
   const [creditScore, setCreditScore] = useState(0)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
@@ -102,11 +102,10 @@ export default function MainNavbar() {
         setIsInitialLoad(false)
       }, 3000)
 
-      // Use fetchSubscriptionStatus instead of refreshSubscription
-      fetchSubscriptionStatus(true)
+      refreshSubscription(true)
 
       const quickInitialRefresh = setTimeout(() => {
-        fetchSubscriptionStatus(true)
+        refreshSubscription(true)
       }, 1000)
 
       let interval = 30000
@@ -116,7 +115,7 @@ export default function MainNavbar() {
         } else {
           interval = Math.max(interval * 0.9, 30000)
         }
-        fetchSubscriptionStatus()
+        refreshSubscription()
       }, interval)
 
       return () => {
@@ -125,7 +124,7 @@ export default function MainNavbar() {
         clearInterval(intervalId)
       }
     }
-  }, [fetchSubscriptionStatus, userAuthenticated, isError])
+  }, [refreshSubscription, userAuthenticated, isError])
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -144,7 +143,7 @@ export default function MainNavbar() {
   useEffect(() => {
     const handleUserActivity = () => {
       if (userAuthenticated && !isLoadingSubscription) {
-        fetchSubscriptionStatus()
+        refreshSubscription()
       }
     }
 
@@ -155,7 +154,7 @@ export default function MainNavbar() {
       window.removeEventListener("mousemove", handleUserActivity)
       window.removeEventListener("touchstart", handleUserActivity)
     }
-  }, [userAuthenticated, isLoadingSubscription, fetchSubscriptionStatus])
+  }, [userAuthenticated, isLoadingSubscription, refreshSubscription])
 
   const headerVariants = {
     hidden: { opacity: 0, y: -20 },
@@ -352,7 +351,9 @@ export default function MainNavbar() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05, duration: 0.3 }}
                       className={`py-2 text-sm font-medium ${
-                        pathname === item.href ? "text-primary font-semibold" : "text-foreground hover:text-primary/80"
+                        pathname === item.href
+                          ? "text-primary font-semibold"
+                          : "text-foreground hover:text-primary/80"
                       }`}
                     >
                       {item.name}
