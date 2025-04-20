@@ -15,8 +15,9 @@ type Props = {
   }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const course = await getCourseData(params.slug)
+export async function generateMetadata({ params }: { params:Promise< { slug: string } >}): Promise<Metadata> {
+  const {slug} = await params // Await the promise to extract slug
+  const course = await getCourseData(slug)
 
   if (!course) {
     return {
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return generatePageMetadata({
     title: `Creating: ${course.title} | Course AI`,
     description: `Design and build your ${course.title?.toLowerCase()} course with our intuitive course creation tools. Share your expertise and engage learners effectively.`,
-    path: `/dashboard/explore/${params.slug}`,
+    path: `/dashboard/explore/${slug}`,
     keywords: [
       `${course.title?.toLowerCase()} course creation`,
       "build online course",
@@ -41,8 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function CreateChapters({ params }: Props) {
-  const slug = params.slug
+export default async function CreateChapters({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params // Await the promise to extract slug
   const session = await getAuthSession()
 
   if (!session?.user) {
@@ -68,4 +69,3 @@ export default async function CreateChapters({ params }: Props) {
     </div>
   )
 }
-
