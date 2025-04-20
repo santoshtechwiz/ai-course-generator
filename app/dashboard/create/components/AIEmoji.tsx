@@ -1,4 +1,5 @@
-import Logo from "@/components/shared/Logo"
+
+import Logo from "@/components/Navbar/Logo"
 import type React from "react"
 
 const AIEmoji: React.FC = () => {

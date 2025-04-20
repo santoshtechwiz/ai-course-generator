@@ -1,134 +1,140 @@
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
+/**
+ * Subscription Utility Functions
+ *
+ * This file contains utility functions for subscription-related operations.
+ */
 
 /**
- * Calculate the savings percentage between monthly and longer-term pricing
- *
- * @param monthlyPrice - The price for a single month
- * @param longerTermPrice - The price for a longer term (e.g., 6 months)
- * @param months - The number of months in the longer term
- * @returns The savings percentage
+ * Calculate the percentage savings between monthly and longer-term plans
  */
 export function calculateSavings(monthlyPrice: number, longerTermPrice: number, months: number): number {
+  if (monthlyPrice <= 0 || longerTermPrice <= 0 || months <= 0) {
+    return 0
+  }
+
   const totalMonthlyPrice = monthlyPrice * months
   const savings = totalMonthlyPrice - longerTermPrice
   const savingsPercentage = (savings / totalMonthlyPrice) * 100
+
   return Math.round(savingsPercentage)
 }
 
 /**
- * Check if a plan is available for subscription based on current plan and status
- *
- * @param planName - The plan to check availability for
- * @param currentPlan - The user's current plan
- * @param subscriptionStatus - The current subscription status
- * @returns Whether the plan is available for subscription
+ * Format a price with currency symbol
  */
-export function isPlanAvailable(
-  planName: SubscriptionPlanType,
-  currentPlan: SubscriptionPlanType | null,
-  subscriptionStatus: SubscriptionStatusType,
-): boolean {
-  // If no current plan or inactive, they can subscribe to any plan
-  if (!currentPlan || subscriptionStatus !== "ACTIVE") {
-    return true
-  }
+export function formatPrice(price: number, currency = "USD"): string {
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  })
 
-  // If they're trying to subscribe to the same plan they already have
-  if (currentPlan === planName) {
-    return false
-  }
-
-  // If they're on the free plan, they can upgrade to any paid plan
-  if (currentPlan === "FREE") {
-    return true
-  }
-
-  // If they're trying to downgrade to the free plan
-  if (planName === "FREE") {
-    return false
-  }
-
-  // Plan hierarchy for determining upgrades/downgrades
-  const planHierarchy: Record<SubscriptionPlanType, number> = {
-    FREE: 0,
-    BASIC: 1,
-    PRO: 2,
-    ULTIMATE: 3,
-  }
-
-  // If they have a paid plan, they can't change until it expires
-  return false
+  return formatter.format(price)
 }
 
 /**
- * Get a human-readable reason why a plan is not available
- *
- * @param planName - The plan to check availability for
- * @param currentPlan - The user's current plan
- * @param subscriptionStatus - The current subscription status
- * @returns A human-readable reason or undefined if the plan is available
+ * Calculate discounted price based on a percentage discount
  */
-export function getPlanUnavailableReason(
-  planName: SubscriptionPlanType,
-  currentPlan: SubscriptionPlanType | null,
-  subscriptionStatus: SubscriptionStatusType,
-): string | undefined {
-  // If plan is available, no reason needed
-  if (isPlanAvailable(planName, currentPlan, subscriptionStatus)) {
-    return undefined
+export function calculateDiscountedPrice(originalPrice: number, discountPercentage: number): number {
+  if (discountPercentage <= 0 || discountPercentage >= 100) {
+    return originalPrice
   }
 
-  // If they're trying to subscribe to the same plan they already have
-  if (currentPlan === planName) {
-    return "You are already subscribed to this plan"
-  }
-
-  // If they're trying to downgrade to the free plan
-  if (planName === "FREE") {
-    return "You need to cancel your current subscription before switching to the free plan"
-  }
-
-  // If they have a paid plan, they can't change until it expires
-  return "You cannot change your subscription until your current plan expires"
+  const discountAmount = (originalPrice * discountPercentage) / 100
+  return Math.round((originalPrice - discountAmount) * 100) / 100 // Round to 2 decimal places
 }
 
 /**
- * Check if a plan is an upgrade from the current plan
- *
- * @param currentPlan - The user's current plan
- * @param targetPlan - The plan to check
- * @returns Whether the target plan is an upgrade
+ * Determine if a plan change is allowed based on current plan and target plan
  */
-export function isPlanUpgrade(currentPlan: SubscriptionPlanType | null, targetPlan: SubscriptionPlanType): boolean {
-  if (!currentPlan) return true
-
-  const planHierarchy: Record<SubscriptionPlanType, number> = {
-    FREE: 0,
-    BASIC: 1,
-    PRO: 2,
-    ULTIMATE: 3,
+export function canChangePlan(
+  currentPlan: string | null,
+  targetPlan: string,
+  subscriptionStatus: string | null,
+): { canChange: boolean; reason?: string } {
+  // If no current plan, any plan can be selected
+  if (!currentPlan) {
+    return { canChange: true }
   }
 
-  return planHierarchy[targetPlan] > planHierarchy[currentPlan]
+  // Normalize status for comparison
+  const normalizedStatus = subscriptionStatus?.toUpperCase() || null
+
+  // If subscription is not active, any plan can be selected
+  if (normalizedStatus !== "ACTIVE" && normalizedStatus !== "TRIAL") {
+    return { canChange: true }
+  }
+
+  // Cannot change to the same plan
+  if (currentPlan === targetPlan) {
+    return {
+      canChange: false,
+      reason: "You are already subscribed to this plan",
+    }
+  }
+
+  // Free plan cannot be selected if user has a paid plan
+  if (targetPlan === "FREE" && currentPlan !== "FREE") {
+    return {
+      canChange: false,
+      reason: "You must cancel your current subscription before switching to the free plan",
+    }
+  }
+
+  // Allow upgrades (assuming plan hierarchy: FREE < BASIC < PRO < ULTIMATE)
+  const planHierarchy = { FREE: 0, BASIC: 1, PRO: 2, ULTIMATE: 3 }
+  const currentPlanRank = planHierarchy[currentPlan as keyof typeof planHierarchy] || 0
+  const targetPlanRank = planHierarchy[targetPlan as keyof typeof planHierarchy] || 0
+
+  if (targetPlanRank <= currentPlanRank) {
+    return {
+      canChange: false,
+      reason: "You can only upgrade to a higher tier plan",
+    }
+  }
+
+  return { canChange: true }
 }
 
 /**
- * Check if a plan is a downgrade from the current plan
- *
- * @param currentPlan - The user's current plan
- * @param targetPlan - The plan to check
- * @returns Whether the target plan is a downgrade
+ * Format a date string in a user-friendly format
  */
-export function isPlanDowngrade(currentPlan: SubscriptionPlanType | null, targetPlan: SubscriptionPlanType): boolean {
-  if (!currentPlan) return false
+export function formatDate(dateString: string | undefined): string {
+  if (!dateString) return "N/A"
 
-  const planHierarchy: Record<SubscriptionPlanType, number> = {
-    FREE: 0,
-    BASIC: 1,
-    PRO: 2,
-    ULTIMATE: 3,
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  } catch (error) {
+    console.error("Error formatting date:", error)
+    return "Invalid Date"
   }
-
-  return planHierarchy[targetPlan] < planHierarchy[currentPlan]
 }
 
+/**
+ * Calculate days remaining until a date
+ */
+export function calculateDaysRemaining(dateString: string | undefined): number {
+  if (!dateString) return 0
+
+  try {
+    const targetDate = new Date(dateString)
+    const currentDate = new Date()
+
+    // Reset time portion for accurate day calculation
+    targetDate.setHours(0, 0, 0, 0)
+    currentDate.setHours(0, 0, 0, 0)
+
+    const differenceInTime = targetDate.getTime() - currentDate.getTime()
+    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24))
+
+    return Math.max(0, differenceInDays)
+  } catch (error) {
+    console.error("Error calculating days remaining:", error)
+    return 0
+  }
+}
