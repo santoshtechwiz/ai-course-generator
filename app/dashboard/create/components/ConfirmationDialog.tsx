@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -7,10 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CreateCourseInput } from "@/schema/schema"
-import { Loader2 } from 'lucide-react'
-
-
+import type { CreateCourseInput } from "@/schema/schema"
+import { Loader2 } from "lucide-react"
 
 interface ConfirmationDialogProps {
   open: boolean
@@ -31,19 +31,31 @@ export function ConfirmationDialog({ open, onOpenChange, onConfirm, formData, is
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <p><strong>Title:</strong> {formData.title}</p>
-          <p><strong>Description:</strong> {formData.description}</p>
-          <p><strong>Category:</strong> {formData.category}</p>
-          <p><strong>Units:</strong></p>
+          <p>
+            <strong>Title:</strong> {formData.title}
+          </p>
+          <p>
+            <strong>Description:</strong> {formData.description}
+          </p>
+          <p>
+            <strong>Category:</strong> {formData.category}
+          </p>
+          <p>
+            <strong>Units:</strong>
+          </p>
           <ul className="list-disc pl-5 text-gray-700">
             {formData.units.map((unit, index) => (
               <li key={index}>{unit}</li>
             ))}
           </ul>
-          <p><strong>Note:</strong> This action will deduct 1 credit from your account.</p>
+          <p>
+            <strong>Note:</strong> This action will deduct 1 credit from your account.
+          </p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button onClick={onConfirm} disabled={isSubmitting}>
             {isSubmitting ? (
               <>
@@ -51,7 +63,7 @@ export function ConfirmationDialog({ open, onOpenChange, onConfirm, formData, is
                 Creating...
               </>
             ) : (
-              'Confirm and Create'
+              "Confirm and Create"
             )}
           </Button>
         </DialogFooter>
@@ -59,4 +71,3 @@ export function ConfirmationDialog({ open, onOpenChange, onConfirm, formData, is
     </Dialog>
   )
 }
-

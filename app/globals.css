@@ -79,6 +79,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    pointer-events: auto !important;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

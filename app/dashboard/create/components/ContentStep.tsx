@@ -1,3 +1,5 @@
+"use client"
+
 import { type Control, Controller, type FieldErrors, type UseFormSetValue, type UseFormWatch } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -88,4 +90,3 @@ export function ContentStep({ control, errors, watch, setValue }: ContentStepPro
     </div>
   )
 }
-

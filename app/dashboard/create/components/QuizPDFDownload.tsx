@@ -6,7 +6,7 @@ import { pdf } from "@react-pdf/renderer"
 import type { QuizPDFProps } from "./ConfigurableQuizPDF"
 import { Button } from "@/components/ui/button"
 import ConfigurableQuizPDF from "./ConfigurableQuizPDF"
-import { Download, FileDown, FileText, Lock } from 'lucide-react'
+import { Download, FileText, Lock } from "lucide-react"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -23,12 +23,12 @@ interface QuizPDFDownloadProps extends QuizPDFProps {
   size?: "default" | "sm" | "lg" | "icon"
 }
 
-const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({ 
-  quizData, 
-  config, 
-  className, 
+const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
+  quizData,
+  config,
+  className,
   variant = "outline",
-  size = "lg"
+  size = "lg",
 }) => {
   const [isClient, setIsClient] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -41,7 +41,10 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
 
   const isDataReady = useMemo(() => quizData && Object.keys(quizData).length > 0, [quizData])
 
-  const quizSlug = useMemo(() => (isDataReady ? `${quizData?.title || "quiz"}.pdf` : "quiz.pdf"), [isDataReady, quizData])
+  const quizSlug = useMemo(
+    () => (isDataReady ? `${quizData?.title || "quiz"}.pdf` : "quiz.pdf"),
+    [isDataReady, quizData],
+  )
 
   const isDisabled = useMemo(
     () => !isClient || !isDataReady || isLoading || !canDownloadPDF(),
@@ -74,7 +77,6 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
   if (!isClient) {
     return null
   }
-
 
   return (
     <TooltipProvider>
@@ -127,6 +129,4 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
   )
 }
 
-
-
-export default QuizPDFDownload;
+export default QuizPDFDownload

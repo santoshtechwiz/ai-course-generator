@@ -1,6 +1,4 @@
 "use client"
-
-import * as React from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { categories } from "@/config/categories"
@@ -52,4 +50,3 @@ export function CategorySelector({ value, onChange, error, disabled }: CategoryS
     </div>
   )
 }
-

@@ -30,199 +30,245 @@ export class StripeGateway implements PaymentGateway {
     duration: number,
     options?: PaymentOptions,
   ): Promise<{ sessionId: string; url: string }> {
-    // Find the plan in our configuration
-    const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planName)
-    if (!plan) {
-      throw new Error("Invalid plan name")
-    }
+    try {
+      // Find the plan in our configuration
+      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planName)
+      if (!plan) {
+        throw new Error("Invalid plan name")
+      }
 
-    // Get the user from the database
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { subscription: true },
-    })
-
-    if (!user) {
-      throw new Error("User not found")
-    }
-
-    // Check if user already has an active subscription
-    if (user.subscription?.planId !== "FREE" && user.subscription?.status === "ACTIVE") {
-      throw new Error("User already has an active subscription")
-    }
-
-    // Find the price option for the selected duration
-    const priceOption = plan.options.find((o) => o.duration === duration)
-    if (!priceOption) {
-      throw new Error("Invalid duration for the selected plan")
-    }
-
-    // Get or create a Stripe customer for the user
-    let stripeCustomerId = user.subscription?.stripeCustomerId
-    if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        email: user.email!,
-        name: user.name || undefined,
-        metadata: { userId: user.id },
+      // Get the user from the database
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { subscription: true },
       })
-      stripeCustomerId = customer.id
 
-      // Create or update the user's subscription record
-      await prisma.userSubscription.upsert({
-        where: { userId: user.id },
-        update: { stripeCustomerId },
-        create: {
-          userId: user.id,
-          planId: plan.id,
-          status: "PENDING",
-          stripeCustomerId,
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(),
-        },
-      })
-    }
+      if (!user) {
+        throw new Error("User not found")
+      }
 
-    // Process referral if provided
-    let referrerUserId: string | undefined
-    let referralRecordId: string | undefined
-    let referralUseId: string | undefined
-    let referralCodeToUse: string | undefined
+      // Check if user already has an active subscription
+      if (user.subscription?.planId !== "FREE" && user.subscription?.status === "ACTIVE") {
+        throw new Error("User already has an active subscription")
+      }
 
-    if (options?.referralCode) {
-      // Store the original referral code even if processing fails
-      referralCodeToUse = options.referralCode
+      // Find the price option for the selected duration
+      const priceOption = plan.options.find((o) => o.duration === duration)
+      if (!priceOption) {
+        throw new Error("Invalid duration for the selected plan")
+      }
 
-      try {
-        const referral = await prisma.userReferral.findUnique({
-          where: { referralCode: options.referralCode },
-          select: { userId: true, id: true },
-        })
+      // Get or create a Stripe customer for the user
+      let stripeCustomerId = user.subscription?.stripeCustomerId
+      if (!stripeCustomerId) {
+        try {
+          const customer = await stripe.customers.create({
+            email: user.email!,
+            name: user.name || undefined,
+            metadata: { userId: user.id },
+          })
+          stripeCustomerId = customer.id
 
-        if (referral && referral.userId !== userId) {
-          referrerUserId = referral.userId
-          referralRecordId = referral.id
-
-          // Check if this user has already used a referral code
-          const existingReferralUse = await prisma.userReferralUse.findFirst({
-            where: {
-              referredId: userId,
-              status: { in: ["PENDING", "COMPLETED"] },
+          // Create or update the user's subscription record
+          await prisma.userSubscription.upsert({
+            where: { userId: user.id },
+            update: { stripeCustomerId },
+            create: {
+              userId: user.id,
+              planId: plan.id,
+              status: "PENDING",
+              stripeCustomerId,
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(),
             },
           })
+        } catch (stripeError: any) {
+          // More specific error handling for customer creation
+          if (stripeError.type === "StripeCardError") {
+            throw new Error(`Payment method error: ${stripeError.message}`)
+          } else if (stripeError.type === "StripeInvalidRequestError") {
+            throw new Error(`Invalid request: ${stripeError.message}`)
+          } else {
+            console.error("Error creating Stripe customer:", stripeError)
+            throw new Error("Failed to create customer account")
+          }
+        }
+      }
 
-          if (!existingReferralUse) {
-            // Record the referral
-            const referralUse = await prisma.userReferralUse.create({
-              data: {
-                referrerId: referrerUserId,
+      // Process referral if provided
+      let referrerUserId: string | undefined
+      let referralRecordId: string | undefined
+      let referralUseId: string | undefined
+      let referralCodeToUse: string | undefined
+
+      if (options?.referralCode) {
+        // Store the original referral code even if processing fails
+        referralCodeToUse = options.referralCode
+
+        try {
+          const referral = await prisma.userReferral.findUnique({
+            where: { referralCode: options.referralCode },
+            select: { userId: true, id: true },
+          })
+
+          if (referral && referral.userId !== userId) {
+            referrerUserId = referral.userId
+            referralRecordId = referral.id
+
+            // Check if this user has already used a referral code
+            const existingReferralUse = await prisma.userReferralUse.findFirst({
+              where: {
                 referredId: userId,
-                referralId: referralRecordId,
-                status: "PENDING",
-                planId: plan.id,
+                status: { in: ["PENDING", "COMPLETED"] },
               },
             })
 
-            referralUseId = referralUse.id
+            if (!existingReferralUse) {
+              // Record the referral
+              const referralUse = await prisma.userReferralUse.create({
+                data: {
+                  referrerId: referrerUserId,
+                  referredId: userId,
+                  referralId: referralRecordId,
+                  status: "PENDING",
+                  planId: plan.id,
+                },
+              })
+
+              referralUseId = referralUse.id
+            }
           }
-        }
-      } catch (error) {
-        console.error("Error processing referral:", error)
-        // Clean up if needed
-        if (referralUseId) {
-          try {
-            await prisma.userReferralUse.delete({
-              where: { id: referralUseId },
-            })
-            referralUseId = undefined
-          } catch (cleanupError) {
-            console.error("Failed to clean up referral use record:", cleanupError)
+        } catch (error) {
+          console.error("Error processing referral:", error)
+          // Clean up if needed
+          if (referralUseId) {
+            try {
+              await prisma.userReferralUse.delete({
+                where: { id: referralUseId },
+              })
+              referralUseId = undefined
+            } catch (cleanupError) {
+              console.error("Failed to clean up referral use record:", cleanupError)
+            }
           }
+          // We keep referralCodeToUse even if there's an error
         }
-        // We keep referralCodeToUse even if there's an error
       }
-    }
 
-    // Calculate price with discount if promo code is provided
-    let unitAmount = Math.round(priceOption.price * 100)
-    let promoCodeApplied = false
-    let promoCodeToUse: string | undefined
-    let promoDiscountToUse: number | undefined
+      // Calculate price with discount if promo code is provided
+      let unitAmount = Math.round(priceOption.price * 100)
+      let promoCodeApplied = false
+      let promoCodeToUse: string | undefined
+      let promoDiscountToUse: number | undefined
 
-    if (options?.promoCode && options?.promoDiscount && options.promoDiscount > 0) {
-      promoCodeToUse = options.promoCode
-      promoDiscountToUse = options.promoDiscount
-      unitAmount = Math.round(unitAmount * (1 - options.promoDiscount / 100))
-      promoCodeApplied = true
-    }
+      if (options?.promoCode && options?.promoDiscount && options.promoDiscount > 0) {
+        promoCodeToUse = options.promoCode
+        promoDiscountToUse = options.promoDiscount
+        unitAmount = Math.round(unitAmount * (1 - options.promoDiscount / 100))
+        promoCodeApplied = true
+      }
 
-    // Create metadata object with only defined values
-    const metadata: Record<string, string> = {
-      userId,
-      planName: plan.id,
-      tokens: plan.tokens.toString(),
-    }
+      // Create metadata object with only defined values
+      const metadata: Record<string, string> = {
+        userId,
+        planName: plan.id,
+        tokens: plan.tokens.toString(),
+      }
 
-    // Only add non-empty values to metadata
-    if (referrerUserId) metadata.referrerId = referrerUserId
-    if (referralUseId) metadata.referralUseId = referralUseId
-    if (referralCodeToUse) metadata.referralCode = referralCodeToUse
-    if (promoCodeToUse) metadata.promoCode = promoCodeToUse
-    if (promoDiscountToUse !== undefined) metadata.promoDiscount = promoDiscountToUse.toString()
+      // Only add non-empty values to metadata
+      if (referrerUserId) metadata.referrerId = referrerUserId
+      if (referralUseId) metadata.referralUseId = referralUseId
+      if (referralCodeToUse) metadata.referralCode = referralCodeToUse
+      if (promoCodeToUse) metadata.promoCode = promoCodeToUse
+      if (promoDiscountToUse !== undefined) metadata.promoDiscount = promoDiscountToUse.toString()
 
-    // Add custom metadata from options
-    if (options?.metadata) {
-      Object.entries(options.metadata).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "") {
-          metadata[key] = value
+      // Add custom metadata from options
+      if (options?.metadata) {
+        Object.entries(options.metadata).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== "") {
+            metadata[key] = value
+          }
+        })
+      }
+
+      // Log metadata for debugging
+      console.log("Session metadata:", metadata)
+
+      // Create the Stripe checkout session
+      try {
+        const session = await stripe.checkout.sessions.create({
+          customer: stripeCustomerId,
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: `${plan.name} Plan - ${duration} month${duration > 1 ? "s" : ""}`,
+                  description: promoCodeApplied
+                    ? `Applied discount: ${promoDiscountToUse}% off with code ${promoCodeToUse}`
+                    : undefined,
+                },
+                unit_amount: unitAmount,
+                recurring: {
+                  interval: duration === 1 ? "month" : "year",
+                  interval_count: duration === 1 ? 1 : duration / 12,
+                },
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "subscription",
+          success_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/cancelled?session_id={CHECKOUT_SESSION_ID}`,
+          metadata,
+        })
+
+        // Log the session for debugging
+        console.log(`Created Stripe checkout session: ${session.id}`)
+        console.log(`Checkout URL: ${session.url ? "Available" : "Not available"}`)
+
+        // Make sure we have a URL
+        if (!session.url) {
+          console.error("Stripe did not return a checkout URL")
+          throw new Error("Failed to generate checkout URL")
         }
-      })
-    }
 
-    // Log metadata for debugging
-    console.log("Session metadata:", metadata)
-
-    // Create the Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      customer: stripeCustomerId,
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `${plan.name} Plan - ${duration} month${duration > 1 ? "s" : ""}`,
-              description: promoCodeApplied
-                ? `Applied discount: ${promoDiscountToUse}% off with code ${promoCodeToUse}`
-                : undefined,
-            },
-            unit_amount: unitAmount,
-            recurring: {
-              interval: duration === 1 ? "month" : "year",
-              interval_count: duration === 1 ? 1 : duration / 12,
-            },
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
-      success_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL || "https://courseai.io"}/dashboard/cancelled?session_id={CHECKOUT_SESSION_ID}`,
-      metadata,
-    })
-
-    // Log the session for debugging
-    console.log(`Created Stripe checkout session: ${session.id}`)
-    console.log(`Checkout URL: ${session.url ? "Available" : "Not available"}`)
-
-    // Make sure we have a URL
-    if (!session.url) {
-      console.error("Stripe did not return a checkout URL")
-      throw new Error("Failed to generate checkout URL")
-    }
-
-    return {
-      sessionId: session.id,
-      url: session.url,
+        return {
+          sessionId: session.id,
+          url: session.url,
+        }
+      } catch (stripeError: any) {
+        // Enhanced error handling for Stripe checkout creation
+        if (stripeError.type === "StripeCardError") {
+          // Handle card errors (e.g., declined card)
+          console.error("Card error:", stripeError.message)
+          throw new Error(`Payment failed: ${stripeError.message}`)
+        } else if (stripeError.type === "StripeInvalidRequestError") {
+          // Handle invalid request errors
+          console.error("Invalid request:", stripeError.message)
+          throw new Error("Invalid payment request. Please try again.")
+        } else if (stripeError.type === "StripeAPIError") {
+          // Handle API errors
+          console.error("Stripe API error:", stripeError.message)
+          throw new Error("Payment service unavailable. Please try again later.")
+        } else if (stripeError.type === "StripeConnectionError") {
+          // Handle connection errors
+          console.error("Connection error:", stripeError.message)
+          throw new Error("Could not connect to payment service. Please check your internet connection.")
+        } else if (stripeError.type === "StripeAuthenticationError") {
+          // Handle authentication errors
+          console.error("Authentication error:", stripeError.message)
+          throw new Error("Payment service authentication failed. Please contact support.")
+        } else {
+          // Handle other errors
+          console.error("Unexpected payment error:", stripeError)
+          throw new Error("An unexpected error occurred. Please try again.")
+        }
+      }
+    } catch (error) {
+      console.error("Error creating checkout session:", error)
+      throw error
     }
   }
 

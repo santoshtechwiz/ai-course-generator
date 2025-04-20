@@ -1,9 +1,9 @@
-'use client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Lock, LogIn } from "lucide-react";
-import Link from "next/link";
-import { signIn } from "next-auth/react";
+"use client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Lock, LogIn } from "lucide-react"
+import Link from "next/link"
+import { signIn } from "next-auth/react"
 
 export default function UnauthenticatedContent() {
   return (
@@ -16,13 +16,12 @@ export default function UnauthenticatedContent() {
       </CardHeader>
       <CardContent className="p-6">
         <p className="text-muted-foreground mb-4">
-          Please log in or sign up to access the course content and track your
-          progress.
+          Please log in or sign up to access the course content and track your progress.
         </p>
         <div className="flex gap-4">
           <Button
             onClick={() => {
-              signIn();
+              signIn()
             }}
             variant="default"
             className="w-full mt-4"
@@ -36,5 +35,5 @@ export default function UnauthenticatedContent() {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

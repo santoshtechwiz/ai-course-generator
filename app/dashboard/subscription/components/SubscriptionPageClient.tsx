@@ -7,7 +7,7 @@
 
 "use client"
 
-import { useEffect, useState, useCallback, Suspense, lazy } from "react"
+import { useEffect, useState, useCallback, Suspense, lazy, useMemo } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -21,6 +21,11 @@ import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/su
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 import TrialModal from "@/components/TrialModal"
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
+import useSWR from "swr"
+import { useMediaQuery } from "@/hooks/use-media-query"
+import { SUBSCRIPTION_EVENTS, subscribeToEvent } from "@/app/dashboard/subscription/utils/events"
+import { CancellationDialog } from "./cancellation-dialog"
+import { useSubscription } from "@/hooks/use-subscription"
 
 // Lazy load the PricingPage component
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))
@@ -28,36 +33,88 @@ const StripeSecureCheckout = lazy(() =>
   import("./StripeSecureCheckout").then((mod) => ({ default: mod.StripeSecureCheckout })),
 )
 
+// Replace the fetchSubscriptionData and related state with SWR
 export default function SubscriptionPageClient({ refCode }: { refCode: string | null }) {
+  // Ensure userId is properly set and passed to PricingPage
   const [userId, setUserId] = useState<string | null>(null)
-  const [subscriptionData, setSubscriptionData] = useState<{
-    currentPlan: SubscriptionPlanType | null
-    subscriptionStatus: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
-    tokensUsed: number
-    credits: number
-    expirationDate?: string
-    error?: string
-  }>({
-    currentPlan: null,
-    subscriptionStatus: null,
-    tokensUsed: 0,
-    credits: 0,
-  })
-  const [isSubscribed, setIsSubscribed] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isDataFetched, setIsDataFetched] = useState(false)
-  const [fetchError, setFetchError] = useState<string | null>(null)
-  const [retryCount, setRetryCount] = useState(0)
-  const [referralCode, setReferralCode] = useState<string | null>(refCode)
   const [showReferralBanner, setShowReferralBanner] = useState(true)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [pendingSubscriptionData, setPendingSubscriptionData] = useState<any>(null)
+  const [referralCode, setReferralCode] = useState<string | null>(refCode)
+  const [showCancellationDialog, setShowCancellationDialog] = useState(false)
 
   const isProd = process.env.NODE_ENV === "production"
   const { data: session, status: sessionStatus } = useSession()
   const id = session?.user?.id ?? null
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isMobile = useMediaQuery("(max-width: 768px)")
+
+  // Use SWR for subscription data
+  const {
+    data: subscriptionData,
+    error: fetchError,
+    isLoading,
+    mutate,
+  } = useSWR(
+    id ? "/api/subscriptions/status" : null,
+    async (url) => {
+      const response = await fetch(url, {
+        headers: { "x-force-refresh": "true" },
+      })
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to fetch subscription data: ${response.statusText}`)
+      }
+      return response.json()
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 10000,
+      onSuccess: (data) => {
+        if (id) setUserId(id)
+      },
+      onError: (error) => {
+        console.error("Error fetching subscription data:", error)
+      },
+    },
+  )
+
+  // Transform the SWR data to match the expected format
+  const transformedData = useMemo(() => {
+    if (!subscriptionData) {
+      return {
+        currentPlan: null,
+        subscriptionStatus: null,
+        tokensUsed: 0,
+        credits: 0,
+      }
+    }
+
+    return {
+      currentPlan: subscriptionData.subscriptionPlan,
+      subscriptionStatus: subscriptionData.status || (subscriptionData.isSubscribed ? "ACTIVE" : "INACTIVE"),
+      tokensUsed: subscriptionData.tokensUsed || 0,
+      credits: subscriptionData.credits || 0,
+      expirationDate: subscriptionData.expirationDate,
+      cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
+    }
+  }, [subscriptionData])
+
+  const isSubscribed = subscriptionData?.isSubscribed || false
+  const isDataFetched = !!subscriptionData || !!fetchError
+
+  // Handle subscription cancellation
+  const { cancelSubscription } = useSubscription()
+
+  const handleCancelSubscription = async (reason: string) => {
+    const result = await cancelSubscription(reason)
+    if (result.success) {
+      mutate() // Refresh the data after cancellation
+    }
+    return result.success
+  }
 
   // Extract referral code from URL parameters
   useEffect(() => {
@@ -90,84 +147,30 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [])
 
-  const fetchSubscriptionData = useCallback(async () => {
-    if (!id) {
-      // Only set loading to false if we're definitely not authenticated
-      if (sessionStatus === "unauthenticated") {
-        setIsLoading(false)
-        setIsDataFetched(true)
-      }
-      return
+  // Subscribe to subscription events
+  useEffect(() => {
+    const unsubscribe = subscribeToEvent(SUBSCRIPTION_EVENTS.CHANGED, () => {
+      mutate() // Refresh data when subscription changes
+    })
+
+    return unsubscribe
+  }, [mutate])
+
+  // In the useEffect or wherever userId is set, make sure it's properly updated
+  useEffect(() => {
+    if (session?.user?.id) {
+      setUserId(session.user.id)
     }
-
-    setIsLoading(true)
-    setFetchError(null)
-
-    try {
-      setUserId(id)
-      const response = await fetch("/api/subscriptions/status")
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Failed to fetch subscription data: ${response.statusText}`)
-      }
-
-      const subscriptionResult = await response.json()
-
-      if (subscriptionResult.error) {
-        throw new Error(subscriptionResult.details || "Failed to fetch subscription data")
-      }
-
-      setSubscriptionData({
-        currentPlan: subscriptionResult.subscriptionPlan as SubscriptionPlanType,
-        subscriptionStatus: subscriptionResult.status || (subscriptionResult.isSubscribed ? "ACTIVE" : "INACTIVE"),
-        tokensUsed: subscriptionResult.tokensUsed || 0,
-        credits: subscriptionResult.credits || 0,
-        expirationDate: subscriptionResult.expirationDate,
-      })
-      setIsSubscribed(subscriptionResult.isSubscribed)
-    } catch (error) {
-      console.error("Error fetching subscription data:", error)
-      setFetchError(error instanceof Error ? error.message : "Failed to fetch subscription data")
-      setSubscriptionData({
-        currentPlan: "FREE",
-        subscriptionStatus: null,
-        tokensUsed: 0,
-        credits: 0,
-      })
-    } finally {
-      setIsLoading(false)
-      setIsDataFetched(true)
-    }
-  }, [id, sessionStatus])
+  }, [session])
 
   const handleRetry = useCallback(() => {
-    setRetryCount((prev) => prev + 1)
-    fetchSubscriptionData()
-  }, [fetchSubscriptionData])
-
-  useEffect(() => {
-    // Only fetch data when we have a confirmed session state
-    if (sessionStatus !== "loading") {
-      fetchSubscriptionData()
-    }
-  }, [id, sessionStatus, fetchSubscriptionData, retryCount])
-
-  useEffect(() => {
-    const handleSubscriptionChange = () => {
-      fetchSubscriptionData()
-    }
-
-    window.addEventListener("subscription-changed", handleSubscriptionChange)
-    return () => {
-      window.removeEventListener("subscription-changed", handleSubscriptionChange)
-    }
-  }, [fetchSubscriptionData])
+    mutate()
+  }, [mutate])
 
   const handleUnauthenticatedSubscribe = useCallback(
     (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => {
       // Only show login modal if user is definitely not authenticated
-      if (sessionStatus!='loading' && sessionStatus === "unauthenticated") {
+      if (sessionStatus != "loading" && sessionStatus === "unauthenticated") {
         const subscriptionData = {
           planName,
           duration,
@@ -182,6 +185,16 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     [referralCode, sessionStatus],
   )
 
+  const handleManageSubscription = useCallback(() => {
+    if (transformedData.cancelAtPeriodEnd) {
+      // If subscription is already cancelled, offer to resume
+      router.push("/dashboard/account")
+    } else {
+      // Otherwise show cancellation dialog
+      setShowCancellationDialog(true)
+    }
+  }, [transformedData.cancelAtPeriodEnd, router])
+
   const renderContent = () => {
     // Show skeleton only during initial session loading
     if (sessionStatus === "loading" && !isDataFetched) {
@@ -195,7 +208,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
             <AlertTriangle className="h-5 w-5" />
             <AlertTitle>Error loading subscription data</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
-              <p>{fetchError}</p>
+              <p>{fetchError?.message}</p>
               <Button variant="outline" size="sm" onClick={handleRetry} className="w-fit mt-2">
                 Retry
               </Button>
@@ -237,16 +250,20 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         )}
 
         <Suspense fallback={<SubscriptionSkeleton />}>
+          {/* When rendering the PricingPage component, ensure userId is passed */}
           <PricingPage
             userId={userId}
-            currentPlan={subscriptionData.currentPlan}
-            subscriptionStatus={subscriptionData.subscriptionStatus}
-            tokensUsed={subscriptionData.tokensUsed}
-            credits={subscriptionData.credits}
+            currentPlan={transformedData.currentPlan}
+            subscriptionStatus={transformedData.subscriptionStatus}
+            tokensUsed={transformedData.tokensUsed}
+            credits={transformedData.credits}
             isProd={isProd}
-            expirationDate={subscriptionData.expirationDate}
+            expirationDate={transformedData.expirationDate}
             referralCode={referralCode}
             onUnauthenticatedSubscribe={handleUnauthenticatedSubscribe}
+            cancelAtPeriodEnd={transformedData.cancelAtPeriodEnd}
+            onManageSubscription={handleManageSubscription}
+            isMobile={isMobile}
           />
         </Suspense>
 
@@ -263,7 +280,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     <div className="container mx-auto px-4 py-8">
       {!isLoading && isDataFetched && (
         <Suspense fallback={null}>
-          <TrialModal isSubscribed={isSubscribed} currentPlan={subscriptionData.currentPlan} />
+          <TrialModal isSubscribed={isSubscribed} currentPlan={transformedData.currentPlan} />
         </Suspense>
       )}
 
@@ -285,6 +302,12 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           <span className="text-sm">Loading your data...</span>
         </div>
       )}
+
+      <CancellationDialog
+        isOpen={showCancellationDialog}
+        onClose={() => setShowCancellationDialog(false)}
+        onConfirm={handleCancelSubscription}
+      />
     </div>
   )
 }

@@ -4,6 +4,9 @@ import { useState, useCallback, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
+import { SUBSCRIPTION_EVENTS, dispatchSubscriptionEvent } from "@/app/dashboard/subscription/utils/events"
+import { handleSubscriptionError, createSuccessResponse } from "@/app/dashboard/subscription/utils/error-handler"
+import type { SubscriptionErrorType } from "@/app/dashboard/subscription/utils/error-handler"
 
 interface UseSubscriptionOptions {
   allowPlanChanges?: boolean
@@ -129,6 +132,14 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       requestInProgressRef.current = true
       setIsLoading(true)
 
+      // Add a safety timeout to prevent deadlocks
+      const safetyTimeout = setTimeout(() => {
+        if (requestInProgressRef.current) {
+          console.warn("Request timeout - resetting request in progress flag")
+          requestInProgressRef.current = false
+        }
+      }, 30000) // 30 second safety timeout
+
       try {
         // For free plan, use the activate-free endpoint
         if (planName === "FREE") {
@@ -147,7 +158,10 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
           }
 
           // Dispatch an event to notify other components about the subscription change
-          window.dispatchEvent(new Event("subscription-changed"))
+          dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.CHANGED, {
+            planId: "FREE",
+            status: "ACTIVE",
+          })
 
           const result = {
             success: true,
@@ -179,11 +193,25 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
         const data = await response.json()
 
         if (!response.ok) {
-          throw new Error(data.details || "There was an error processing your subscription. Please try again.")
+          const errorType: SubscriptionErrorType = response.status === 401 ? "AUTHENTICATION_REQUIRED" : "SERVER_ERROR"
+
+          return handleSubscriptionError(
+            new Error(data.details || "There was an error processing your subscription."),
+            errorType,
+            {
+              notify: true,
+              log: true,
+              details: data.details || "Please try again later.",
+            },
+          )
         }
 
         if (data.error) {
-          throw new Error(data.details || "An unexpected error occurred")
+          return handleSubscriptionError(
+            new Error(data.details || "An unexpected error occurred"),
+            "VALIDATION_ERROR",
+            { notify: true, log: true },
+          )
         }
 
         // For successful checkout session creation
@@ -198,6 +226,12 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
           onSubscriptionSuccess(result)
         }
 
+        // Dispatch an event before redirecting
+        dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.CREATED, {
+          planId: planName,
+          sessionId: data.sessionId,
+        })
+
         // Redirect to the checkout URL
         if (data.url) {
           window.location.href = data.url
@@ -207,31 +241,25 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       } catch (error) {
         console.error("Subscription error:", error)
 
-        const errorMessage = error instanceof Error ? error.message : "Failed to process subscription"
+        let errorType: SubscriptionErrorType = "SERVER_ERROR"
 
-        const errorResult = {
-          success: false,
-          error: "Subscription failed",
-          message: errorMessage,
-          details: error instanceof Error ? error.message : undefined,
+        // Determine error type based on the error
+        if (error instanceof Error) {
+          if (error.message.includes("network") || error.message.includes("fetch")) {
+            errorType = "NETWORK_ERROR"
+          } else if (error.message.includes("payment") || error.message.includes("card")) {
+            errorType = "PAYMENT_FAILED"
+          }
         }
 
-        if (onSubscriptionError) {
-          onSubscriptionError({
-            message: errorMessage,
-            details: error instanceof Error ? error.message : undefined,
-          })
-        }
-
-        toast({
-          title: "Subscription Error",
-          description: errorMessage,
-          variant: "destructive",
+        return handleSubscriptionError(error, errorType, {
+          notify: true,
+          log: true,
         })
-
-        return errorResult
       } finally {
         setIsLoading(false)
+        clearTimeout(safetyTimeout)
+
         // Reset the request in progress flag after a short delay
         setTimeout(() => {
           requestInProgressRef.current = false
@@ -242,71 +270,77 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
   )
 
   // Handle subscription cancellation with debouncing
-  const cancelSubscription = useCallback(async (): Promise<SubscriptionResult> => {
-    // Prevent duplicate requests
-    if (requestInProgressRef.current) {
-      return {
-        success: false,
-        error: "A subscription request is already in progress",
-        message: "Please wait for the current request to complete",
-      }
-    }
-
-    requestInProgressRef.current = true
-    setIsLoading(true)
-
-    try {
-      const response = await fetch("/api/subscriptions/cancel", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.details || "Failed to cancel subscription")
+  const cancelSubscription = useCallback(
+    async (reason?: string): Promise<SubscriptionResult> => {
+      // Prevent duplicate requests
+      if (requestInProgressRef.current) {
+        return {
+          success: false,
+          error: "A subscription request is already in progress",
+          message: "Please wait for the current request to complete",
+        }
       }
 
-      // Dispatch an event to notify other components about the subscription change
-      window.dispatchEvent(new Event("subscription-changed"))
+      requestInProgressRef.current = true
+      setIsLoading(true)
 
-      toast({
-        title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled and will end at the current billing period.",
-      })
+      // Add a safety timeout to prevent deadlocks
+      const safetyTimeout = setTimeout(() => {
+        if (requestInProgressRef.current) {
+          console.warn("Request timeout - resetting request in progress flag")
+          requestInProgressRef.current = false
+        }
+      }, 30000) // 30 second safety timeout
 
-      router.refresh()
+      try {
+        const response = await fetch("/api/subscriptions/cancel", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reason }),
+        })
 
-      return {
-        success: true,
-        message: "Subscription cancelled successfully",
+        const data = await response.json()
+
+        if (!response.ok) {
+          return handleSubscriptionError(new Error(data.details || "Failed to cancel subscription"), "SERVER_ERROR", {
+            notify: true,
+            log: true,
+          })
+        }
+
+        // Dispatch an event to notify other components about the subscription change
+        dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.CANCELED, {
+          reason,
+        })
+
+        toast({
+          title: "Subscription Cancelled",
+          description: "Your subscription has been cancelled and will end at the current billing period.",
+        })
+
+        router.refresh()
+
+        return createSuccessResponse("Subscription cancelled successfully")
+      } catch (error) {
+        console.error("Cancellation error:", error)
+        return handleSubscriptionError(error, "SERVER_ERROR", {
+          notify: true,
+          log: true,
+        })
+      } finally {
+        setIsLoading(false)
+        clearTimeout(safetyTimeout)
+
+        // Reset the request in progress flag after a short delay
+        setTimeout(() => {
+          requestInProgressRef.current = false
+        }, 1000)
       }
-    } catch (error) {
-      console.error("Cancellation error:", error)
-
-      const errorMessage = error instanceof Error ? error.message : "Failed to cancel subscription"
-
-      toast({
-        title: "Cancellation Error",
-        description: errorMessage,
-        variant: "destructive",
-      })
-
-      return {
-        success: false,
-        error: "Cancellation failed",
-        message: errorMessage,
-      }
-    } finally {
-      setIsLoading(false)
-      // Reset the request in progress flag after a short delay
-      setTimeout(() => {
-        requestInProgressRef.current = false
-      }, 1000)
-    }
-  }, [toast, router])
+    },
+    [toast, router],
+  )
 
   // Handle subscription resumption with debouncing
   const resumeSubscription = useCallback(async (): Promise<SubscriptionResult> => {
@@ -322,6 +356,14 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     requestInProgressRef.current = true
     setIsLoading(true)
 
+    // Add a safety timeout to prevent deadlocks
+    const safetyTimeout = setTimeout(() => {
+      if (requestInProgressRef.current) {
+        console.warn("Request timeout - resetting request in progress flag")
+        requestInProgressRef.current = false
+      }
+    }, 30000) // 30 second safety timeout
+
     try {
       const response = await fetch("/api/subscriptions/resume", {
         method: "POST",
@@ -333,11 +375,14 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.details || "Failed to resume subscription")
+        return handleSubscriptionError(new Error(data.details || "Failed to resume subscription"), "SERVER_ERROR", {
+          notify: true,
+          log: true,
+        })
       }
 
       // Dispatch an event to notify other components about the subscription change
-      window.dispatchEvent(new Event("subscription-changed"))
+      dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.RESUMED)
 
       toast({
         title: "Subscription Resumed",
@@ -346,28 +391,17 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
 
       router.refresh()
 
-      return {
-        success: true,
-        message: "Subscription resumed successfully",
-      }
+      return createSuccessResponse("Subscription resumed successfully")
     } catch (error) {
       console.error("Resume error:", error)
-
-      const errorMessage = error instanceof Error ? error.message : "Failed to resume subscription"
-
-      toast({
-        title: "Resume Error",
-        description: errorMessage,
-        variant: "destructive",
+      return handleSubscriptionError(error, "SERVER_ERROR", {
+        notify: true,
+        log: true,
       })
-
-      return {
-        success: false,
-        error: "Resume failed",
-        message: errorMessage,
-      }
     } finally {
       setIsLoading(false)
+      clearTimeout(safetyTimeout)
+
       // Reset the request in progress flag after a short delay
       setTimeout(() => {
         requestInProgressRef.current = false

@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import type React from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
@@ -16,11 +16,7 @@ const sizes = {
   lg: "w-40 h-40",
 }
 
-const CourseAILoader: React.FC<CourseAILoaderProps> = ({ 
-  className, 
-  size = "md", 
-  color = "hsl(var(--primary))"
-}) => {
+const CourseAILoader: React.FC<CourseAILoaderProps> = ({ className, size = "md", color = "hsl(var(--primary))" }) => {
   const orbitCount = 3
   const particleCount = 6
 
@@ -30,7 +26,7 @@ const CourseAILoader: React.FC<CourseAILoaderProps> = ({
       transition: {
         duration: 20,
         ease: "linear",
-        repeat: Infinity,
+        repeat: Number.POSITIVE_INFINITY,
       },
     },
   }
@@ -42,7 +38,7 @@ const CourseAILoader: React.FC<CourseAILoaderProps> = ({
       transition: {
         duration: 2,
         ease: "easeInOut",
-        repeat: Infinity,
+        repeat: Number.POSITIVE_INFINITY,
       },
     },
   }
@@ -54,7 +50,7 @@ const CourseAILoader: React.FC<CourseAILoaderProps> = ({
       transition: {
         duration: 3,
         ease: "easeInOut",
-        repeat: Infinity,
+        repeat: Number.POSITIVE_INFINITY,
       },
     },
   }
@@ -66,7 +62,7 @@ const CourseAILoader: React.FC<CourseAILoaderProps> = ({
       transition: {
         duration: 3,
         ease: "easeInOut",
-        repeat: Infinity,
+        repeat: Number.POSITIVE_INFINITY,
       },
     },
   }
@@ -80,14 +76,14 @@ const CourseAILoader: React.FC<CourseAILoaderProps> = ({
           className="absolute inset-0"
           variants={orbitVariants}
           animate="rotate"
-          style={{ 
+          style={{
             rotateZ: index * (360 / orbitCount),
             rotateY: index * 30,
           }}
         >
-          <div 
+          <div
             className="absolute inset-0 rounded-full border-2"
-            style={{ 
+            style={{
               borderColor: color,
               opacity: 0.2 - index * 0.05,
             }}
@@ -113,9 +109,9 @@ const CourseAILoader: React.FC<CourseAILoaderProps> = ({
       {/* Core */}
       <motion.div
         className="absolute inset-0 m-auto rounded-full"
-        style={{ 
-          width: '30%', 
-          height: '30%', 
+        style={{
+          width: "30%",
+          height: "30%",
           backgroundColor: color,
         }}
         variants={coreVariants}
@@ -125,9 +121,9 @@ const CourseAILoader: React.FC<CourseAILoaderProps> = ({
       {/* Glow Effect */}
       <motion.div
         className="absolute inset-0 m-auto rounded-full blur-md"
-        style={{ 
-          width: '40%', 
-          height: '40%', 
+        style={{
+          width: "40%",
+          height: "40%",
           backgroundColor: color,
         }}
         variants={glowVariants}
@@ -138,4 +134,3 @@ const CourseAILoader: React.FC<CourseAILoaderProps> = ({
 }
 
 export default CourseAILoader
-

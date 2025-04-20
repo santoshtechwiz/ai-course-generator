@@ -1,43 +1,37 @@
 "use client"
 
+/**
+ * Custom hook for responsive design using media queries
+ */
+
 import { useState, useEffect } from "react"
 
-/**
- * Custom hook to detect media queries
- *
- * @param query - CSS media query string (e.g., "(max-width: 768px)")
- * @returns boolean indicating if the media query matches
- */
 export function useMediaQuery(query: string): boolean {
+  // Default to false on the server
   const [matches, setMatches] = useState(false)
 
   useEffect(() => {
-    // Check if we're in a browser environment
-    if (typeof window === "undefined") {
-      return
-    }
+    // Check if window is available (client-side)
+    if (typeof window !== "undefined") {
+      const media = window.matchMedia(query)
 
-    const media = window.matchMedia(query)
-
-    // Set initial value
-    if (media.matches !== matches) {
+      // Set initial value
       setMatches(media.matches)
+
+      // Define listener function
+      const listener = (event: MediaQueryListEvent) => {
+        setMatches(event.matches)
+      }
+
+      // Add listener
+      media.addEventListener("change", listener)
+
+      // Clean up
+      return () => {
+        media.removeEventListener("change", listener)
+      }
     }
-
-    // Define listener function
-    const listener = () => {
-      setMatches(media.matches)
-    }
-
-    // Add event listener
-    media.addEventListener("change", listener)
-
-    // Clean up
-    return () => media.removeEventListener("change", listener)
-  }, [matches, query])
+  }, [query])
 
   return matches
 }
-
-export default useMediaQuery
-

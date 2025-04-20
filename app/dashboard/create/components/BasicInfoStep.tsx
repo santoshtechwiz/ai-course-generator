@@ -69,4 +69,3 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
     </div>
   )
 }
-
