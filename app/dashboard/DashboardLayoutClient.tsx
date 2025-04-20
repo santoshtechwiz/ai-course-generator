@@ -11,6 +11,7 @@ import { useAuth } from "@/providers/unified-auth-provider"
 import { NavigationEvents } from "./NavigationEvents"
 import MainNavbar from "@/components/Navbar/MainNavbar"
 
+
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, requireAuth } = useAuth()
   const router = useRouter()
@@ -46,6 +47,8 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
   return (
     <div>
       <MainNavbar />
+
+
       <main className="flex-1 animate-fade-in">
         <Suspense>
           <NavigationEvents />
@@ -56,6 +59,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
         {/* @ts-expect-error Server Component */}
         <Chatbot userId={"test"} />
       </Suspense>
-    </div>
+
+    </div >
   )
 }

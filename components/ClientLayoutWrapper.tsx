@@ -10,7 +10,7 @@ import { AnimationProvider } from "@/providers/animation-provider"
 import MainNavbar from "./shared/MainNavbar"
 import { useEffect } from "react"
 import { useSession } from "next-auth/react"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 import { usePathname } from "next/navigation"
 
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 
 import { useState } from "react"
 import { SiAdobe } from "react-icons/si"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import useSubscriptionStore from "@/app/dashboard/subscription/services/useSubscriptionStore"
 
 // Register a font with multiple weights
 Font.register({

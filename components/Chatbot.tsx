@@ -14,9 +14,9 @@ import { MessageSquare, X, Send, Loader2, BrainCircuit, Crown, AlertCircle, Help
 import ReactMarkdown from "react-markdown"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
-import {useSubscriptionStore} from "@/store/useSubscriptionStore"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 // Improve the animation variants for smoother transitions
 const messageVariants = {
@@ -105,7 +105,7 @@ export function Chatbot({ userId }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const { subscriptionStatus, isLoading: isSubscriptionLoading } = useSubscriptionStore()
+  const { data, isLoading: isSubscriptionLoading } = useSubscriptionStore()
   const [remainingQuestions, setRemainingQuestions] = useState(5)
   const [lastQuestionTime, setLastQuestionTime] = useState(Date.now())
   const [showTooltip, setShowTooltip] = useState(false)
@@ -165,9 +165,9 @@ export function Chatbot({ userId }: ChatbotProps) {
 
   const canUseChat = useCallback(() => {
     if (isSubscriptionLoading) return false
-    if (!subscriptionStatus?.isSubscribed) return remainingQuestions > 0 // Allow free users some questions
+    if (!data?.isSubscribed) return remainingQuestions > 0 // Allow free users some questions
     return true // Subscribers have unlimited questions
-  }, [isSubscriptionLoading, subscriptionStatus, remainingQuestions])
+  }, [isSubscriptionLoading, data?.status, remainingQuestions])
 
   const handleChatSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -240,11 +240,11 @@ export function Chatbot({ userId }: ChatbotProps) {
                           variant={remainingQuestions > 0 ? "outline" : "destructive"}
                           className="ml-2 text-xs font-normal cursor-help"
                         >
-                          {subscriptionStatus?.isSubscribed ? "Pro" : `${remainingQuestions} left`}
+                          {data?.isSubscribed ? "Pro" : `${remainingQuestions} left`}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent side="left">
-                        {subscriptionStatus?.isSubscribed
+                        {data?.isSubscribed
                           ? "Unlimited questions with your Pro subscription"
                           : remainingQuestions > 0
                             ? `${remainingQuestions} questions remaining this hour`
@@ -421,7 +421,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                           <Alert variant="destructive" className="mx-0 mt-2 p-2">
                             <AlertCircle className="h-3.5 w-3.5" />
                             <AlertDescription className="text-xs">
-                              {!subscriptionStatus?.isSubscribed
+                              {!data?.isSubscribed
                                 ? "You've reached the free limit. Upgrade to Pro for unlimited questions."
                                 : `Questions reset in ${formatTimeRemaining()}`}
                             </AlertDescription>

@@ -3,37 +3,33 @@
 import type React from "react"
 import { useEffect } from "react"
 import { useSession } from "next-auth/react"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
-import { SubscriptionPlanType } from "@/app/dashboard/subscription/components/subscription-plans"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
-  const { setSubscriptionStatus, setIsLoading } = useSubscriptionStore()
+  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
 
   useEffect(() => {
+    // When authentication status changes, update subscription data
     if (status === "authenticated" && session?.user) {
-      const credits = session.user.credits ?? 0
-      const subscriptionPlan = (session.user.subscriptionPlan as SubscriptionPlanType) || "FREE"
-
-      setSubscriptionStatus({
-        credits,
-        isSubscribed: subscriptionPlan !== "FREE",
-        subscriptionPlan,
-        expirationDate: session.user.subscriptionExpirationDate,
-      })
-      setIsLoading(false)
+      // Fetch subscription data from API
+      fetchSubscriptionStatus(true)
     } else if (status === "unauthenticated") {
-      setSubscriptionStatus({
-        credits: 0,
-        isSubscribed: false,
-        subscriptionPlan: "FREE",
+      // Reset subscription data for unauthenticated users
+      useSubscriptionStore.setState({
+        data: {
+          credits: 0,
+          tokensUsed: 0,
+          isSubscribed: false,
+          subscriptionPlan: "FREE",
+        },
+        status: "succeeded",
+        isLoading: false,
+        isError: false,
+        error: null,
       })
-      setIsLoading(false)
-    } else {
-      setSubscriptionStatus(null)
-      setIsLoading(true)
     }
-  }, [session, status, setSubscriptionStatus, setIsLoading])
+  }, [session, status, fetchSubscriptionStatus])
 
   return <>{children}</>
 }

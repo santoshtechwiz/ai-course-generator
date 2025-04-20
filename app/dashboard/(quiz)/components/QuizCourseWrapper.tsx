@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 import type { QueryParams } from "@/app/types/types"
 import CreateQuizForm from "./CreateQuizForm"

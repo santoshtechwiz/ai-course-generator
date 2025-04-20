@@ -7,7 +7,7 @@ import type { QuizPDFProps } from "./ConfigurableQuizPDF"
 import { Button } from "@/components/ui/button"
 import ConfigurableQuizPDF from "./ConfigurableQuizPDF"
 import { Download, FileText, Lock } from "lucide-react"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 

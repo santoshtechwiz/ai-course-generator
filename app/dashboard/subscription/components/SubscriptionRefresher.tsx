@@ -1,59 +1,89 @@
+/**
+ * SubscriptionRefresher Component
+ *
+ * This component handles background refreshing of subscription data.
+ * It doesn't render anything visible but ensures subscription data
+ * stays up-to-date.
+ */
+
 "use client"
 
 import { useEffect, useRef } from "react"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 export function SubscriptionRefresher() {
-  const { refreshSubscription, clearCache } = useSubscriptionStore()
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const lastRefreshRef = useRef<number>(0)
+  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
+  const fetchSubscriptionDetails = useSubscriptionStore((state) => state.fetchSubscriptionDetails)
+  const lastFetchRef = useRef<number>(0)
+  const isRefreshingRef = useRef<boolean>(false)
 
+  // Initial fetch on mount
   useEffect(() => {
-    // Clear any existing timeout when component mounts or unmounts
-    return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    // Initial refresh with debouncing
     const now = Date.now()
-    const timeSinceLastRefresh = now - lastRefreshRef.current
 
-    // Only refresh if it's been more than 10 seconds since last refresh
-    if (timeSinceLastRefresh > 10000) {
-      clearCache()
-      refreshSubscription(false) // Use cached data if available
-      lastRefreshRef.current = now
+    // Prevent multiple fetches within a short time period
+    if (now - lastFetchRef.current < 10000 || isRefreshingRef.current) {
+      return
     }
 
-    // Set up an interval to refresh the subscription data less frequently
-    refreshTimeoutRef.current = setTimeout(() => {
-      refreshSubscription(false) // Use cached data when possible
+    isRefreshingRef.current = true
+    lastFetchRef.current = now
 
-      // Set up recurring refresh at a reasonable interval
-      const interval = setInterval(() => {
-        // Only force refresh every 2 minutes, otherwise use cache
-        const shouldForceRefresh = Date.now() - lastRefreshRef.current > 120000
-        refreshSubscription(shouldForceRefresh)
+    // Fetch data with a slight delay to prevent race conditions
+    const timeoutId = setTimeout(() => {
+      Promise.all([fetchSubscriptionStatus(false), fetchSubscriptionDetails(false)]).finally(() => {
+        isRefreshingRef.current = false
+      })
+    }, 100)
 
-        if (shouldForceRefresh) {
-          lastRefreshRef.current = Date.now()
-        }
-      }, 60000) // Refresh every minute, but only force refresh every 2 minutes
+    // Set up event listener for subscription changes
+    const handleSubscriptionChange = () => {
+      const now = Date.now()
 
-      return () => clearInterval(interval)
-    }, 30000) // Initial delay of 30 seconds
+      // Prevent multiple fetches within a short time period
+      if (now - lastFetchRef.current < 5000 || isRefreshingRef.current) {
+        return
+      }
+
+      isRefreshingRef.current = true
+      lastFetchRef.current = now
+
+      Promise.all([fetchSubscriptionStatus(true), fetchSubscriptionDetails(true)]).finally(() => {
+        isRefreshingRef.current = false
+      })
+    }
+
+    window.addEventListener("subscription-changed", handleSubscriptionChange)
 
     return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current)
-      }
+      clearTimeout(timeoutId)
+      window.removeEventListener("subscription-changed", handleSubscriptionChange)
     }
-  }, [refreshSubscription, clearCache])
+  }, [fetchSubscriptionStatus, fetchSubscriptionDetails])
 
-  // This is a utility component that doesn't render anything
+  // Refresh data periodically with debouncing
+  useEffect(() => {
+    const intervalId = setInterval(
+      () => {
+        const now = Date.now()
+
+        // Skip if we've fetched recently or are currently refreshing
+        if (now - lastFetchRef.current < 60000 || isRefreshingRef.current) {
+          return
+        }
+
+        isRefreshingRef.current = true
+        lastFetchRef.current = now
+
+        fetchSubscriptionStatus(false).finally(() => {
+          isRefreshingRef.current = false
+        })
+      },
+      5 * 60 * 1000,
+    ) // Refresh every 5 minutes
+
+    return () => clearInterval(intervalId)
+  }, [fetchSubscriptionStatus])
+
   return null
 }

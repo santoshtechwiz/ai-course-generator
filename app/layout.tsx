@@ -58,9 +58,9 @@ export default async function RootLayout({
       <body className={inter.className}>
         <RootProvider session={session}>
           <UnifiedAuthProvider>
-          <SubscriptionSyncProvider>
+          {/* <SubscriptionSyncProvider> */}
               <Suspense>{children}</Suspense>
-            </SubscriptionSyncProvider>
+            {/* </SubscriptionSyncProvider> */}
           </UnifiedAuthProvider>
         </RootProvider>
       </body>

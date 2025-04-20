@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ConfirmDialog } from "./ConfirmDialog"
 
 import { quizSchema } from "@/schema/schema"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/utils"
 
