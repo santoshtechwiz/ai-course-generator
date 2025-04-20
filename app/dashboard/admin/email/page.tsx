@@ -4,9 +4,10 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { LoadingSkeleton } from "../components/loading-skeleton"
+
 import EmailCampaignManager from "../components/email/email-campaign-manager"
 import EmailTemplateSystem from "../components/email/email-template-system"
+import { LoadingSkeleton } from "@/components/ui/loader"
 
 
 export const metadata = {
