@@ -62,12 +62,12 @@ const nextConfig: NextConfig = {
   compress: true,
 
 
-  // Experimental features
-  experimental: {
-    optimizeCss: true, // Optimize CSS
-    optimizePackageImports: [],
+  // // Experimental features
+  // experimental: {
+  //   optimizeCss: true, // Optimize CSS
+  //   optimizePackageImports: [],
 
-  },
+  // },
 }
 
 export default nextConfig

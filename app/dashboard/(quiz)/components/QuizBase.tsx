@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useRef } from "react"
 
-
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { QuizResultDisplay } from "./QuizResultDisplay"
 import { QuizFeedback } from "./QuizFeedback"
 import { useSession } from "next-auth/react"
 import { saveQuizState } from "@/hooks/quiz-session-storage"
 import { submitQuizResult } from "@/lib/quiz-result-service"
+import { QuizType } from "@/app/types/quiz-types"
 
 // Define more specific types for quiz answers
 export interface QuizAnswer {

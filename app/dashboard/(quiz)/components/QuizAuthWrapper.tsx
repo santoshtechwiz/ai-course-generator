@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useQuiz } from "../../../context/QuizContext"
 import { fixCallbackUrl } from "@/hooks/quiz-session-storage"
+// Add this to the imports
+import { clearAllQuizData } from "@/hooks/quiz-session-storage"
 
 interface QuizAuthWrapperProps {
   children: React.ReactNode
@@ -77,6 +79,22 @@ export default function QuizAuthWrapper({
       }
     }
   }, [status, router, hasCheckedStorage, isRedirecting, getQuizState, clearQuizState])
+
+  // Add this effect to detect sign-out
+  useEffect(() => {
+    // If user was authenticated and is now not, they signed out
+    const wasAuthenticated = localStorage.getItem("wasAuthenticated") === "true"
+
+    if (wasAuthenticated && status === "unauthenticated") {
+      console.log("User signed out, clearing all quiz data")
+      clearAllQuizData()
+    }
+
+    // Update authentication state
+    if (status !== "loading") {
+      localStorage.setItem("wasAuthenticated", status === "authenticated" ? "true" : "false")
+    }
+  }, [status])
 
   // Add a timeout to prevent infinite loading
   useEffect(() => {
