@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
-import { QuizBase } from "../../components/QuizBase"
+import { QuizBase, type QuizAnswer } from "../../components/QuizBase"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
 import useQuizState from "@/hooks/use-quiz-state"
 import { QuizFeedback } from "../../components/QuizFeedback"
@@ -32,15 +32,21 @@ interface CodeQuizProps {
     title: string
     questions: CodeChallenge[]
   }
-  onSubmitAnswer?: (answer: any) => void
+  onSubmitAnswer?: (answer: QuizAnswer) => void
   onComplete?: () => void
 }
 
-const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplete }) => {
+const CodingQuiz: React.FC<CodeQuizProps> = ({
+  quizId,
+  slug,
+  quizData,
+  onSubmitAnswer, // Accept from QuizBase
+  onComplete, // Accept from QuizBase
+}) => {
   const { animationsEnabled } = useAnimation()
   const [showExplanation, setShowExplanation] = useState(false)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
+  // Calculate score function - moved outside of useQuizState to avoid recreations
   const calculateScore = useCallback((selectedOptions: (string | null)[], questions: CodeChallenge[]) => {
     return selectedOptions.reduce((score, selected, index) => {
       const correctAnswer = questions[index]?.correctAnswer
@@ -49,6 +55,8 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
   }, [])
 
   const {
+    currentQuestionIndex,
+    setCurrentQuestionIndex,
     selectedOptions,
     timeSpent,
     quizCompleted,
@@ -69,7 +77,8 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
     slug,
     quizType: "code",
     calculateScore,
-    onComplete,
+    onComplete, // Pass through the onComplete callback
+    onSubmitAnswer, // Pass through the onSubmitAnswer callback
   })
 
   const currentQuestion = useMemo(() => {
@@ -153,15 +162,17 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
     [currentQuestion?.language, renderCode],
   )
 
-  // Update the renderQuizContent function to improve the results display
+  // Improved renderQuizContent function with better error handling and performance
   const renderQuizContent = () => {
-    if (quizData.questions.length === 0) {
+    if (!quizData.questions || quizData.questions.length === 0) {
       return (
-        <Card className="w-full max-w-2xl mx-auto">
-          <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
-            <p className="text-lg font-semibold">No questions available for this quiz.</p>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-2xl mx-auto">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
+              <p className="text-lg font-semibold">No questions available for this quiz.</p>
+            </CardContent>
+          </Card>
+        </div>
       )
     }
 
@@ -205,117 +216,121 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
 
       return (
         <MotionWrapper animate={true} variant="fade" duration={0.6}>
-          <Card className="w-full max-w-2xl mx-auto">
-            <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
-              <h2 className="text-xl font-bold mb-2">Sign in to Save Your Progress</h2>
-              <p className="text-muted-foreground mb-4">
-                You've completed the quiz! Sign in to save your results and track your progress over time.
-              </p>
-              {!session ? <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} /> : null}
-            </CardContent>
-          </Card>
+          <div className="w-full max-w-2xl mx-auto">
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
+                <h2 className="text-xl font-bold mb-2">Sign in to Save Your Progress</h2>
+                <p className="text-muted-foreground mb-4">
+                  You've completed the quiz! Sign in to save your results and track your progress over time.
+                </p>
+                {!session ? <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} /> : null}
+              </CardContent>
+            </Card>
+          </div>
         </MotionWrapper>
       )
     }
 
     return (
-      <Card className="w-full overflow-hidden border shadow-md hover:shadow-lg transition-shadow duration-300">
-        <CardHeader className="space-y-4 bg-muted/30 border-b">
-          <QuizProgress
-            currentQuestionIndex={currentQuestionIndex}
-            totalQuestions={quizData.questions.length}
-            timeSpent={timeSpent}
-            title={quizData.title}
-            quizType="Code Quiz"
-            animate={animationsEnabled}
-          />
-        </CardHeader>
-        <CardContent className="p-6">
-          <MotionTransition key={currentQuestionIndex}>
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Badge
-                    variant="outline"
-                    className="bg-primary/10 text-primary font-medium px-3 py-1 flex items-center gap-1.5 mt-1"
-                  >
-                    <Code className="h-3.5 w-3.5" />
-                    Code Challenge
-                  </Badge>
-                  <h2 className="text-lg sm:text-xl font-semibold">
-                    {renderQuestionText(currentQuestion?.question || "")}
-                  </h2>
-                </div>
-
-                {currentQuestion?.codeSnippet && (
-                  <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
-                    <div className="my-4 overflow-x-auto">
-                      {renderCode(currentQuestion.codeSnippet, currentQuestion.language)}
-                    </div>
-                  </MotionWrapper>
-                )}
-
-                <QuizOptions
-                  options={options}
-                  selectedOption={selectedOptions[currentQuestionIndex]}
-                  onSelect={handleSelectOption}
-                  disabled={isSubmitting}
-                  renderOptionContent={renderOptionContent}
-                />
-              </div>
-            </div>
-          </MotionTransition>
-        </CardContent>
-        <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse p-6">
-          <div className="flex items-center gap-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span className="font-mono">{formatQuizTime(timeSpent[currentQuestionIndex] || 0)}</span>
+      <div className="w-full">
+        <Card className="overflow-hidden border shadow-md hover:shadow-lg transition-shadow duration-300">
+          <CardHeader className="space-y-4 bg-muted/30 border-b">
+            <QuizProgress
+              currentQuestionIndex={currentQuestionIndex}
+              totalQuestions={quizData.questions.length}
+              timeSpent={timeSpent}
+              title={quizData.title}
+              quizType="Code Quiz"
+              animate={animationsEnabled}
+            />
+          </CardHeader>
+          <CardContent className="p-6">
+            <MotionTransition key={currentQuestionIndex}>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Badge
+                      variant="outline"
+                      className="bg-primary/10 text-primary font-medium px-3 py-1 flex items-center gap-1.5 mt-1"
+                    >
+                      <Code className="h-3.5 w-3.5" />
+                      Code Challenge
+                    </Badge>
+                    <h2 className="text-lg sm:text-xl font-semibold">
+                      {renderQuestionText(currentQuestion?.question || "")}
+                    </h2>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Time spent on this question</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
 
-            {currentQuestionIndex > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentQuestionIndex((prevIndex) => prevIndex - 1)}
-                className="gap-1"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Previous
-              </Button>
-            )}
-          </div>
+                  {currentQuestion?.codeSnippet && (
+                    <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
+                      <div className="my-4 overflow-x-auto">
+                        {renderCode(currentQuestion.codeSnippet, currentQuestion.language)}
+                      </div>
+                    </MotionWrapper>
+                  )}
 
-          <Button
-            onClick={() => handleNextQuestion()}
-            disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
-            className="w-full sm:w-auto"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <span>Submitting...</span>
+                  <QuizOptions
+                    options={options}
+                    selectedOption={selectedOptions[currentQuestionIndex]}
+                    onSelect={handleSelectOption}
+                    disabled={isSubmitting}
+                    renderOptionContent={renderOptionContent}
+                  />
+                </div>
               </div>
-            ) : currentQuestionIndex === quizData.questions.length - 1 ? (
-              "Finish Quiz"
-            ) : (
-              <>
-                Next Question
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
+            </MotionTransition>
+          </CardContent>
+          <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse p-6">
+            <div className="flex items-center gap-3">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span className="font-mono">{formatQuizTime(timeSpent[currentQuestionIndex] || 0)}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Time spent on this question</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {currentQuestionIndex > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentQuestionIndex((prevIndex) => prevIndex - 1)}
+                  className="gap-1"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Previous
+                </Button>
+              )}
+            </div>
+
+            <Button
+              onClick={handleNextQuestion}
+              disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
+              className="w-full sm:w-auto"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <span>Submitting...</span>
+                </div>
+              ) : currentQuestionIndex === quizData.questions.length - 1 ? (
+                "Finish Quiz"
+              ) : (
+                <>
+                  Next Question
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     )
   }
 

@@ -13,11 +13,12 @@ import QuizActions from "../../components/QuizActions"
 import { AuthModal } from "@/components/ui/auth-modal"
 import CodingQuiz from "./CodingQuiz"
 
+// Improved error handling for API requests
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
   try {
     const response = await axios.get<CodingQuizProps>(`/api/code-quiz/${slug}`)
     if (response.status !== 200) {
-      throw new Error("Failed to fetch quiz data")
+      throw new Error(`Failed to fetch quiz data: ${response.statusText}`)
     }
     return response.data
   } catch (error) {
@@ -40,9 +41,12 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     data: quizData,
     isLoading,
     isError,
+    error,
   } = useQuery({
     queryKey: ["quizData", slug],
     queryFn: () => getQuizData(slug),
+    retry: 1, // Limit retries to avoid excessive API calls
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
   })
 
   const handleQuizComplete = useCallback(() => {
@@ -61,11 +65,12 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
   }
 
   if (isError || !quizData) {
+    console.error("Error loading quiz:", error)
     return notFound()
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 ">
+    <div className="flex flex-col gap-4 p-4">
       <QuizActions
         quizId={quizData.quizId.toString()}
         quizSlug={quizData.slug}

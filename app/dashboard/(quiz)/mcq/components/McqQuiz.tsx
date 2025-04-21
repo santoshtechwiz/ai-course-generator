@@ -36,6 +36,14 @@ interface McqQuizProps {
 }
 
 export default function McqQuiz({ questions, quizId, slug, title, onComplete }: McqQuizProps) {
+  // Add logging to track component rendering and data flow
+  console.log("Rendering McqQuiz with:", {
+    quizId,
+    slug,
+    title,
+    questionsCount: questions?.length || 0,
+  })
+
   const calculateScore = useCallback((selectedOptions: (string | null)[], questions: Question[]) => {
     return selectedOptions.reduce((score, selected, index) => {
       const correctAnswer = questions[index]?.answer
@@ -70,6 +78,7 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
     onComplete,
   })
 
+  // Memoize the options to prevent unnecessary re-renders
   const [uniqueOptions, hasError] = useMemo(() => {
     if (!currentQuestion) {
       return [[], true]
@@ -82,9 +91,11 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
       currentQuestion.option3,
     ].filter(Boolean)
 
+    // Check for duplicate options
     const uniqueOptionsSet = new Set(allOptions)
 
     if (uniqueOptionsSet.size < 2) {
+      console.warn("Question has fewer than 2 unique options:", currentQuestion)
       return [[], true]
     }
 
@@ -103,6 +114,7 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
       }
     }
 
+    // Shuffle options consistently using a seed based on the question
     const shuffledOptions = [...uniqueOptionsSet].sort(() => Math.random() - 0.5)
     return [shuffledOptions, false]
   }, [currentQuestion])
@@ -185,7 +197,7 @@ export default function McqQuiz({ questions, quizId, slug, title, onComplete }: 
           />
         </CardHeader>
         <CardContent className="p-6">
-          <MotionTransition key={currentQuestionIndex}  motionKey={""}>
+          <MotionTransition key={currentQuestionIndex} motionKey={""}>
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">

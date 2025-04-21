@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { toast } from "./use-toast"
 import { useRouter } from "next/navigation"
 import type { QuizType } from "@/app/types/types"
@@ -23,6 +23,7 @@ export function useQuizResult({
   const [isError, setIsError] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [result, setResult] = useState<any | null>(null)
+  const submissionInProgress = useRef(false)
   const router = useRouter()
 
   const resetSubmissionState = () => {
@@ -31,9 +32,10 @@ export function useQuizResult({
     setIsError(false)
     setErrorMessage(null)
     setResult(null)
+    submissionInProgress.current = false
   }
 
-  // Completely rewritten to ensure proper parameter handling
+  // Improved submission function with better error handling and duplicate submission prevention
   const submitQuizResult = async (
     quizId: string | number,
     answers: any[],
@@ -42,12 +44,14 @@ export function useQuizResult({
     type: QuizType,
     slug: string,
   ) => {
-    if (isSubmitting) {
+    // Prevent duplicate submissions
+    if (submissionInProgress.current || isSubmitting) {
       console.log("Preventing duplicate submission")
-      return null // Prevent multiple submissions
+      return null
     }
 
     try {
+      submissionInProgress.current = true
       setIsSubmitting(true)
       setIsSuccess(false)
       setIsError(false)
@@ -73,14 +77,20 @@ export function useQuizResult({
         data: submissionData,
       })
 
-      // Submit to the correct endpoint
+      // Submit to the correct endpoint with timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+
       const response = await fetch(`/api/quiz/${quizIdString}/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(submissionData),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
@@ -90,7 +100,6 @@ export function useQuizResult({
       const data = await response.json()
       setResult(data)
       setIsSuccess(true)
-      setIsSubmitting(false) // Important: Set isSubmitting to false after success
 
       if (onSuccess) {
         onSuccess(data)
@@ -110,7 +119,6 @@ export function useQuizResult({
       console.error("Error submitting quiz results:", error)
       setIsError(true)
       setErrorMessage(error.message || "An error occurred while submitting your quiz results")
-      setIsSubmitting(false) // Important: Set isSubmitting to false after error
 
       if (onError) {
         onError(error)
@@ -123,6 +131,9 @@ export function useQuizResult({
       })
 
       return null
+    } finally {
+      setIsSubmitting(false)
+      submissionInProgress.current = false
     }
   }
 

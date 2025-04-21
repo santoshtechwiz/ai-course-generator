@@ -89,8 +89,14 @@ export function QuizBase({
     }
   }
 
-  // Update the completeQuiz function to properly handle state transitions
+  // Optimize the completeQuiz function to prevent duplicate API calls
   const completeQuiz = async () => {
+    // Prevent multiple submissions
+    if (quizState !== "in-progress") {
+      console.log("Quiz already completed or submitting, ignoring duplicate completion request")
+      return
+    }
+
     setQuizState("submitting")
     const finalTotalTime = (Date.now() - startTime) / 1000
     setTotalTime(finalTotalTime)
@@ -103,7 +109,7 @@ export function QuizBase({
       quizId,
       answers,
       totalTime: finalTotalTime,
-      score: calculatedScore, // Use the calculated score
+      score: calculatedScore,
       type,
     }
 
@@ -114,7 +120,7 @@ export function QuizBase({
         slug,
         type,
         answers,
-        score: calculatedScore, // Use the calculated score
+        score: calculatedScore,
         totalTime: finalTotalTime,
         redirectPath: `/dashboard/${type}/${slug}`,
       })
@@ -139,7 +145,7 @@ export function QuizBase({
       console.log("Submitting quiz result to API:", {
         quizId: String(quizId),
         slug,
-        answers,
+        answersCount: answers.length,
         totalTime: finalTotalTime,
         score: calculatedScore,
         type,
@@ -151,7 +157,7 @@ export function QuizBase({
         slug,
         answers,
         totalTime: finalTotalTime,
-        score: calculatedScore, // Use the calculated score
+        score: calculatedScore,
         type,
         totalQuestions,
       })
@@ -175,16 +181,21 @@ export function QuizBase({
     }
   }
 
-  // Improve the calculateFinalScore function to handle different quiz types more consistently
+  // Improve the calculateFinalScore function for more consistent scoring
   const calculateFinalScore = () => {
+    console.log("Calculating final score:", {
+      type,
+      score,
+      totalQuestions,
+      answersLength: answers.length,
+    })
+
     if (type === "mcq" || type === "code") {
       // For MCQ and code quizzes, calculate percentage
-      return Math.round((score / totalQuestions) * 100)
+      return Math.round((score / Math.max(1, totalQuestions)) * 100)
     } else if (type === "fill-blanks") {
       // For fill-in-the-blanks, calculate from answer similarities
-      // This should match the calculation in BlankQuizResults
       const totalSimilarity = answers.reduce((acc, answer) => {
-        // Get similarity from answer if available
         return acc + ((answer as any).similarity || 0)
       }, 0)
 
@@ -195,7 +206,7 @@ export function QuizBase({
     }
 
     // Default fallback
-    return Math.round((score / totalQuestions) * 100)
+    return Math.round((score / Math.max(1, totalQuestions)) * 100)
   }
 
   const handleFeedbackContinue = (proceed: boolean) => {
