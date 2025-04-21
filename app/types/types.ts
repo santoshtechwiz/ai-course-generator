@@ -2,6 +2,7 @@
  * Subscription types for the application
  */
 
+export type QuizType = "mcq" | "openended" | "fill-blanks" | "code"
 // Subscription plan types
 export type SubscriptionPlanType = "FREE" | "BASIC" | "PREMIUM" | "ENTERPRISE"
 
@@ -141,4 +142,11 @@ export interface AddOnPackage {
   description: string
   price: number
   features: string[]
+}
+
+export interface MultipleChoiceQuestion {
+  question: string
+  options: string[]
+  correctAnswer: string
+ 
 }

@@ -89,29 +89,6 @@ export function QuizBase({
     }
   }
 
-  // Calculate the final score based on quiz type
-  const calculateFinalScore = () => {
-    if (type === "mcq" || type === "code") {
-      // For MCQ and code quizzes, calculate percentage
-      return Math.round((score / totalQuestions) * 100)
-    } else if (type === "fill-blanks") {
-      // For fill-in-the-blanks, calculate from answer similarities
-      // This should match the calculation in BlankQuizResults
-      const totalSimilarity = answers.reduce((acc, answer) => {
-        // Get similarity from answer if available
-        return acc + ((answer as any).similarity || 0)
-      }, 0)
-
-      return Math.round(totalSimilarity / Math.max(1, answers.length))
-    } else if (type === "openended") {
-      // For open-ended, use the score directly (should be a percentage)
-      return Math.round(score)
-    }
-
-    // Default fallback
-    return Math.round((score / totalQuestions) * 100)
-  }
-
   // Update the completeQuiz function to properly handle state transitions
   const completeQuiz = async () => {
     setQuizState("submitting")
@@ -196,6 +173,29 @@ export function QuizBase({
         onQuizComplete(result)
       }
     }
+  }
+
+  // Improve the calculateFinalScore function to handle different quiz types more consistently
+  const calculateFinalScore = () => {
+    if (type === "mcq" || type === "code") {
+      // For MCQ and code quizzes, calculate percentage
+      return Math.round((score / totalQuestions) * 100)
+    } else if (type === "fill-blanks") {
+      // For fill-in-the-blanks, calculate from answer similarities
+      // This should match the calculation in BlankQuizResults
+      const totalSimilarity = answers.reduce((acc, answer) => {
+        // Get similarity from answer if available
+        return acc + ((answer as any).similarity || 0)
+      }, 0)
+
+      return Math.round(totalSimilarity / Math.max(1, answers.length))
+    } else if (type === "openended") {
+      // For open-ended, use the score directly (should be a percentage)
+      return Math.round(score)
+    }
+
+    // Default fallback
+    return Math.round((score / totalQuestions) * 100)
   }
 
   const handleFeedbackContinue = (proceed: boolean) => {

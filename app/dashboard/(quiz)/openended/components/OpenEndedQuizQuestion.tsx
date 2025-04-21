@@ -72,10 +72,24 @@ export default function OpenEndedQuizQuestion({
     return () => clearInterval(timer)
   }, [])
 
+  // Improve the handleSubmit function to provide better feedback
   const handleSubmit = async () => {
     // Prevent empty submissions
     if (!answer.trim()) {
       setShowGarbageWarning(true)
+      return
+    }
+
+    // Check if answer is too short
+    if (answer.trim().length < minimumAnswerLength) {
+      setShowGarbageWarning(true)
+      return
+    }
+
+    // Check if answer was submitted too quickly
+    const timeSpent = (Date.now() - startTime) / 1000
+    if (timeSpent < minimumTimeThreshold) {
+      setShowTooFastWarning(true)
       return
     }
 
@@ -96,6 +110,11 @@ export default function OpenEndedQuizQuestion({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Add a function to check if the answer is valid
+  const isAnswerValid = () => {
+    return answer.trim().length >= minimumAnswerLength && !isSubmitting
   }
 
   const handleProgressiveHint = () => {
@@ -266,7 +285,7 @@ export default function OpenEndedQuizQuestion({
         <CardFooter>
           <Button
             onClick={handleSubmit}
-            disabled={!answer.trim() || isSubmitting}
+            disabled={!isAnswerValid()}
             className="w-full sm:w-auto ml-auto bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isSubmitting ? (

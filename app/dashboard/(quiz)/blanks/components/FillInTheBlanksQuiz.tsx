@@ -1,6 +1,5 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
-import type React from "react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -23,7 +22,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import levenshtein from "js-levenshtein"
-import { useState, useMemo, useEffect, useCallback, useRef } from "react"
+import { useState, useRef, useMemo, useEffect, useCallback } from "react"
 
 interface Question {
   id: number
@@ -39,7 +38,7 @@ interface Question {
 
 interface FillInTheBlanksQuizProps {
   question: Question
-  onAnswer: (answer: string, timeSpent: number, hintsUsed: boolean) => void
+  onAnswer: (answer: string, timeSpent: number, hintsUsed: boolean, similarity?: number) => void
   questionNumber: number
   totalQuestions: number
 }
@@ -63,8 +62,8 @@ const Timer = ({ elapsedTime }: { elapsedTime: number }) => {
         <TooltipContent>
           <p>Time spent on this question</p>
         </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        </Tooltip>
+      </TooltipProvider>
   )
 }
 
@@ -142,12 +141,10 @@ export default function FillInTheBlanksQuiz({
   const similarityThreshold = 3
   const minimumPrefixLength = 2
   const progressPercentage = (questionNumber / totalQuestions) * 100
-  const minimumTimeThreshold = 3 // seconds
-  const garbageThreshold = 0.8 // 80% different from any word in the question
-
+  const garbageThreshold = 0.75 // Adjust as needed
+  const minimumTimeThreshold = 2 // seconds
   const questionParts = useMemo(() => {
-    const parts = question.question.split("_____")
-    return parts.length === 2 ? parts : [question.question, ""]
+    return question.question.split("...")
   }, [question.question])
 
   const progressiveHints = useMemo(() => {
@@ -227,6 +224,7 @@ export default function FillInTheBlanksQuiz({
     (value: string) => {
       setAnswer(value)
       setShowGarbageWarning(false)
+      setShowTooFastWarning(false)
 
       const userInput = value.trim()?.toLowerCase()
 
@@ -243,7 +241,12 @@ export default function FillInTheBlanksQuiz({
 
       const correctAnswer = question.answer?.trim()?.toLowerCase() || ""
       const distance = levenshtein(userInput, correctAnswer)
-      setIsValidInput(distance <= similarityThreshold || correctAnswer.startsWith(userInput))
+
+      // Consider an answer valid if it's close enough to the correct answer or starts with the correct prefix
+      const isCloseEnough = distance <= similarityThreshold
+      const hasCorrectPrefix = correctAnswer.startsWith(userInput) && userInput.length >= minimumPrefixLength
+
+      setIsValidInput(isCloseEnough || hasCorrectPrefix)
     },
     [checkForGarbage, minimumPrefixLength, question.answer, similarityThreshold],
   )
@@ -269,10 +272,14 @@ export default function FillInTheBlanksQuiz({
     setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
 
+    // Calculate similarity percentage for more granular scoring
+    const maxLength = Math.max(answer.length, question.answer.length)
+    const similarity = maxLength > 0 ? Math.max(0, 100 - (distance / maxLength) * 100) : 0
+
     // Add a small delay to show the submission state
     setTimeout(() => {
       setIsSubmitting(false)
-      onAnswer(answer, Math.round(timeSpent), hintLevel > 0)
+      onAnswer(answer, Math.round(timeSpent), hintLevel > 0, similarity)
     }, 500)
   }, [
     answer,
