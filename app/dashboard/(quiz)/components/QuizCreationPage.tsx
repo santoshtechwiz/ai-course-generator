@@ -7,7 +7,7 @@ import { BookOpen, Lightbulb, Brain } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import RandomQuote from "@/components/RandomQuote"
 import { QuizCourseWrapper } from "./QuizCourseWrapper"
-import RandomQuiz from "./RandomQuiz"
+import {RandomQuiz} from "./RandomQuiz"
 
 export default function QuizCreationPage({
   type,

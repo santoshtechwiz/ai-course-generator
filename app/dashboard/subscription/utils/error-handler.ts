@@ -4,8 +4,6 @@
  * This file provides standardized error handling for subscription-related operations.
  */
 
-import { toast } from "@/hooks/use-toast"
-
 export type SubscriptionErrorType =
   | "AUTHENTICATION_REQUIRED"
   | "PAYMENT_FAILED"
@@ -32,7 +30,7 @@ export const handleSubscriptionError = (
   options: ErrorOptions = { notify: true, log: true },
 ): { success: false; error: SubscriptionErrorType; message: string; details?: string } => {
   const message = error instanceof Error ? error.message : String(error)
-
+  const toast = useToast();
   if (options.log) {
     console.error(`Subscription error (${errorType}):`, error)
   }

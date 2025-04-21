@@ -13,8 +13,11 @@ import { formatTime } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { User } from "lucide-react"
 
-import type { QuizType } from "@/app/types/types"
+
 import QuizAuthWrapper from "./QuizAuthWrapper"
+import { useQuiz } from "../../../context/QuizContext"
+import { QuizType } from "@/app/types/quiz-types"
+
 
 interface QuizResultBaseProps {
   quizId: string
@@ -44,10 +47,25 @@ export function QuizResultBase({
   const { data: session, status } = useSession()
   const router = useRouter()
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const { saveGuestResult, setShowSignInPrompt } = useQuiz()
 
   // Clear guest data after showing results if user is not authenticated
   useEffect(() => {
     if (status === "unauthenticated" && clearGuestData) {
+      // Save result for guest user if not already saved
+      saveGuestResult({
+        quizId,
+        quizType,
+        slug,
+        score,
+        answers: [],
+        totalTime,
+        timestamp: Date.now(),
+      })
+
+      // Show sign-in prompt
+      setShowSignInPrompt(true)
+
       // Set a timeout to clear data after the user has had time to view results
       const timer = setTimeout(() => {
         clearGuestData()
@@ -55,7 +73,7 @@ export function QuizResultBase({
 
       return () => clearTimeout(timer)
     }
-  }, [status, clearGuestData])
+  }, [status, clearGuestData, saveGuestResult, setShowSignInPrompt, quizId, quizType, slug, score, totalTime])
 
   // If user is not authenticated, show sign-in prompt with results summary
   if (status === "unauthenticated") {

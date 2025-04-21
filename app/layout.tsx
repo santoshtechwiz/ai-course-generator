@@ -9,8 +9,6 @@ import "./globals.css"
 import { Suspense } from "react"
 // Update the layout to use the unified auth provider
 import { UnifiedAuthProvider } from "@/providers/unified-auth-provider"
-import { SubscriptionSyncProvider } from "@/providers/subscription-sync-provider"
-// Keep other imports as they are
 
 const inter = Inter({ subsets: ["latin"] })
 

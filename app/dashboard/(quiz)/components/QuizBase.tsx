@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
-import type { QuizType } from "@/app/types/types"
+
 
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { QuizResultDisplay } from "./QuizResultDisplay"
