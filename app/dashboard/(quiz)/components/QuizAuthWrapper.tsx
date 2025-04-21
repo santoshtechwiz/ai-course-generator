@@ -5,7 +5,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import AuthRequiredModal from "@/app/auth/AuthRequiredModal"
+import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { hasSavedQuizState, getSavedQuizState, clearSavedQuizState } from "@/hooks/quiz-session-storage"
 
 interface QuizAuthWrapperProps {
@@ -81,8 +81,11 @@ export default function QuizAuthWrapper({
   // If still loading auth state or redirecting, show loading state
   if (status === "loading" || isRedirecting) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
+      <div className="flex flex-col items-center justify-center min-h-[200px] gap-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p className="text-sm text-muted-foreground">
+          {isRedirecting ? "Redirecting to your saved quiz..." : "Checking authentication..."}
+        </p>
       </div>
     )
   }
@@ -92,12 +95,14 @@ export default function QuizAuthWrapper({
     return (
       <>
         {children}
-        <AuthRequiredModal
-          isOpen={showModal}
-          onClose={handleCloseModal}
-          quizState={quizState}
-          answers={answers}
-          redirectPath={redirectPath}
+        <SignInPrompt
+          
+       
+       
+       
+          callbackUrl={redirectPath}
+          title="Sign in to save your results"
+          message="Please sign in to save your quiz results and track your progress."
         />
       </>
     )

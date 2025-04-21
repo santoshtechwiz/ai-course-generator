@@ -248,6 +248,13 @@ export function QuizResultDisplay({
                           {seconds}
                           <span className="text-lg ml-1">s</span>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {minutes < 1
+                            ? "Quick work!"
+                            : minutes > 5
+                              ? "You took your time - great for learning!"
+                              : "Good pace!"}
+                        </p>
                       </CardContent>
                     </Card>
                     <Card className="overflow-hidden border-muted/60">
@@ -265,6 +272,13 @@ export function QuizResultDisplay({
                           <span className="text-lg mx-1">/</span>
                           {totalQuestions}
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {correctAnswers === totalQuestions
+                            ? "Perfect score!"
+                            : correctAnswers > totalQuestions * 0.7
+                              ? "Great job!"
+                              : "Keep practicing!"}
+                        </p>
                       </CardContent>
                     </Card>
                   </div>

@@ -102,23 +102,6 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
     }
   }, [answers, currentQuestion, isCompleted, quizData.id, quizData.questions?.length, slug, startTime])
 
-  const handleAnswer = useCallback(
-    (answer: string, timeSpent: number, hintsUsed: boolean) => {
-      setAnswers((prev) => {
-        const newAnswers = [...prev]
-        newAnswers[currentQuestion] = { answer, timeSpent, hintsUsed }
-        return newAnswers
-      })
-
-      if (currentQuestion < quizData.questions.length - 1) {
-        setCurrentQuestion((prev) => prev + 1)
-      } else {
-        completeQuiz([...answers, { answer, timeSpent, hintsUsed }])
-      }
-    },
-    [answers, currentQuestion, quizData.questions.length],
-  )
-
   const completeQuiz = useCallback(
     async (finalAnswers: typeof answers) => {
       setIsSubmitting(true)
@@ -164,6 +147,24 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
       }
     },
     [isLoggedIn, quizData.id, quizData.questions.length, slug, startTime],
+  )
+
+  const handleAnswer = useCallback(
+    (answer: string, timeSpent: number, hintsUsed: boolean, similarity?: number) => {
+      setAnswers((prev) => {
+        const newAnswers = [...prev]
+        newAnswers[currentQuestion] = { answer, timeSpent, hintsUsed, similarity }
+        return newAnswers
+      })
+
+      if (currentQuestion < quizData.questions.length - 1) {
+        setCurrentQuestion((prev) => prev + 1)
+        setStartTime(Date.now()) // Reset start time for the next question
+      } else {
+        completeQuiz([...answers, { answer, timeSpent, hintsUsed, similarity }])
+      }
+    },
+    [answers, currentQuestion, quizData.questions.length, completeQuiz],
   )
 
   const handleRestart = useCallback(() => {
@@ -319,7 +320,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
           totalQuestions={100} // Use 100 for percentage display
           onContinue={handleFeedbackContinue}
           errorMessage={error || undefined}
-          quizType="blanks"
+          quizType="fill-blanks"
           waitForSave={true}
           autoClose={false}
         />

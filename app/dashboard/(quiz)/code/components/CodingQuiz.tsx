@@ -207,6 +207,10 @@ const CodingQuiz: React.FC<CodeQuizProps> = ({ quizId, slug, quizData, onComplet
         <MotionWrapper animate={true} variant="fade" duration={0.6}>
           <Card className="w-full max-w-2xl mx-auto">
             <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
+              <h2 className="text-xl font-bold mb-2">Sign in to Save Your Progress</h2>
+              <p className="text-muted-foreground mb-4">
+                You've completed the quiz! Sign in to save your results and track your progress over time.
+              </p>
               {!session ? <SignInPrompt callbackUrl={`/dashboard/code/${slug}`} /> : null}
             </CardContent>
           </Card>

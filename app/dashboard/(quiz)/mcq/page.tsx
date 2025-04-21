@@ -1,87 +1,82 @@
-import QuizCreationPage from "../components/QuizCreationPage"
-
+import { notFound } from "next/navigation"
+import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 
+import { authOptions } from "@/lib/authOptions"
+import { getQuiz } from "@/app/actions/getQuiz"
+import { generatePageMetadata } from "@/lib/seo-utils"
+import QuizDetailsPage from "../components/QuizDetailsPage"
+import MCQWrapper from "./components/MCQWrapper"
 
-export const metadata: Metadata = {
-  title: "Free Multiple Choice Quiz Generator",
-  description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-  keywords: [
-    "multiple choice quiz",
-    "programming quiz",
-    "coding questions",
-    "tech assessment",
-    "developer quiz",
-    "interactive test",
-  ],
-  openGraph: {
-    title: "Free Multiple Choice Quiz Generator",
-    description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-    url: "https://courseai.io/dashboard/mcq",
-    type: "website",
-    images: [{ url: "/og-image-mcq.jpg" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Free Multiple Choice Quiz Generator",
-    description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-    images: ["/twitter-image-mcq.jpg"],
-  },
+
+
+type Params = Promise<{ slug: string }>
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { slug } = await params
+  const quiz = await getQuiz(slug)
+
+  if (!quiz) {
+    return generatePageMetadata({
+      title: "Code Challenge Not Found | CourseAI",
+      description:
+        "The requested programming challenge could not be found. Explore our other coding challenges and assessments.",
+      path: `/dashboard/code/${slug}`,
+      noIndex: true,
+    })
+  }
+
+  return generatePageMetadata({
+    title: `${quiz.title} | Programming Code Challenge`,
+    description: `Test your coding skills with this ${quiz.title?.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
+    path: `/dashboard/code/${slug}`,
+    keywords: [
+      `${quiz.title?.toLowerCase()} challenge`,
+      "programming exercise",
+      "coding practice",
+      "developer skills test",
+      "programming challenge",
+    ],
+    ogType: "article",
+  })
 }
 
-const Page = async () => {
+const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
+  const params = await props.params
+  const { slug } = params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
-  // CreativeWork schema
-  const creativeWorkSchema = {
-    "@context": "https://schema.org",
-    "@type": "CreativeWork",
-    name: "Multiple Choice Quiz Creator",
-    description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-    creator: {
-      "@type": "Organization",
-      name: "Course AI",
-    },
-    url: `${baseUrl}/dashboard/mcq`,
+  const session = await getServerSession(authOptions)
+  const currentUserId = session?.user?.id
+
+  const result = await getQuiz(slug)
+  if (!result) {
+    notFound()
   }
 
-  // Breadcrumb schema
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: baseUrl,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Dashboard",
-        item: `${baseUrl}/dashboard`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: "Multiple Choice Quiz",
-        item: `${baseUrl}/dashboard/mcq`,
-      },
-    ],
-  }
+  // Calculate estimated time based on question count and complexity
+  const questionCount = result.questions?.length || 3
+  const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M` // 10 minutes per coding question, minimum 15 minutes
+
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
+    { name: result.title, href: `${baseUrl}/dashboard/code/${slug}` },
+  ]
 
   return (
-    <QuizCreationPage
-      type="mcq"
-      title="Multiple Choice Quiz"
-      metadata={{
-        creativeWorkSchema,
-        breadcrumbSchema,
-      }}
-    />
+    <QuizDetailsPage
+      title={result.title}
+      description={`Test your coding skills on ${result.title} with interactive programming challenges`}
+      slug={slug}
+      quizType="mcq"
+      questionCount={questionCount}
+      estimatedTime={estimatedTime}
+      breadcrumbItems={breadcrumbItems}
+    >
+      <MCQWrapper slug={slug} userId={currentUserId || ""} />
+    </QuizDetailsPage>
   )
 }
 
-export default Page
-
+export default McqPage
