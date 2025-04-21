@@ -150,3 +150,24 @@ export interface MultipleChoiceQuestion {
   correctAnswer: string
  
 }
+export interface CodeChallenge {
+  id?: string | number
+  question: string
+  options: string[]
+  correctAnswer: string
+  codeSnippet?: string
+  language?: string
+  explanation?: string
+}
+
+export interface CodingQuizProps {
+  quizId: string | number
+  slug: string
+  isFavorite: boolean
+  isPublic: boolean
+  ownerId?: string
+  quizData: {
+    title: string
+    questions: CodeChallenge[]
+  }
+}
