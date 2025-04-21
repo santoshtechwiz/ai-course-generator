@@ -2,7 +2,7 @@
  * Subscription types for the application
  */
 
-export type QuizType = "mcq" | "openended" | "fill-blanks" | "code"
+type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"; // Updated to match QuizDetailsPageWithContext
 // Subscription plan types
 export type SubscriptionPlanType = "FREE" | "BASIC" | "PREMIUM" | "ENTERPRISE"
 

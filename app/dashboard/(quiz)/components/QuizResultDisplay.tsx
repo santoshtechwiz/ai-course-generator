@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +23,7 @@ import {
   RefreshCcw,
   X,
 } from "lucide-react"
+import { useQuiz } from "@/context/QuizContext"
 
 interface QuizResultDisplayProps {
   quizId: string
@@ -57,10 +58,12 @@ export function QuizResultDisplay({
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [hasSaved, setHasSaved] = useState(preventAutoSave)
+  const hasSavedRef = useRef(preventAutoSave)
 
   const performance = getPerformanceLevel(score)
   const minutes = Math.floor(totalTime / 60)
   const seconds = Math.round(totalTime % 60)
+  const { getGuestResult, isAuthenticated } = useQuiz()
 
   // Auto-save results if user is logged in and we haven't saved yet
   useEffect(() => {
@@ -118,6 +121,7 @@ export function QuizResultDisplay({
           }
 
           setHasSaved(true)
+          hasSavedRef.current = true
           toast({
             title: "Results saved",
             description: "Your quiz results have been saved successfully.",
@@ -149,6 +153,89 @@ export function QuizResultDisplay({
     type,
     answers,
     toast,
+  ])
+
+  useEffect(() => {
+    // If user just logged in and we have guest results, try to save them
+    if (isAuthenticated && !hasSavedRef.current && !preventAutoSave) {
+      const guestResult = getGuestResult(quizId)
+
+      if (guestResult) {
+        const saveGuestResults = async () => {
+          setIsSaving(true)
+          setSaveError(null)
+
+          try {
+            const response = await fetch(`/api/quiz/${quizId}/complete`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                quizId,
+                score: guestResult.score,
+                totalQuestions,
+                correctAnswers,
+                totalTime: guestResult.totalTime,
+                type,
+                completedAt: new Date().toISOString(),
+                answers: guestResult.answers,
+              }),
+            })
+
+            if (!response.ok) {
+              const errorText = await response.text()
+              let errorMessage = `Failed to save results: ${response.status}`
+
+              try {
+                const errorData = JSON.parse(errorText)
+                if (errorData.error) {
+                  errorMessage = errorData.error
+                }
+              } catch (e) {
+                // If JSON parsing fails, use the raw error text if available
+                if (errorText) errorMessage += ` - ${errorText}`
+              }
+
+              throw new Error(errorMessage)
+            }
+
+            setHasSaved(true)
+            hasSavedRef.current = true
+
+            toast({
+              title: "Guest results saved",
+              description: "Your previous quiz results have been saved to your account.",
+            })
+          } catch (error) {
+            console.error("Error saving guest results:", error)
+            setSaveError(error instanceof Error ? error.message : "Unknown error")
+            toast({
+              title: "Error saving results",
+              description: error instanceof Error ? error.message : "Unknown error",
+              variant: "destructive",
+            })
+          } finally {
+            setIsSaving(false)
+          }
+        }
+
+        saveGuestResults()
+      }
+    }
+  }, [
+    isAuthenticated,
+    hasSaved,
+    preventAutoSave,
+    getGuestResult,
+    quizId,
+    slug,
+    type,
+    totalQuestions,
+    toast,
+    correctAnswers,
+    totalTime,
+    score,
   ])
 
   const handleRestart = () => {
@@ -304,6 +391,7 @@ export function QuizResultDisplay({
                       size="sm"
                       onClick={() => {
                         setHasSaved(false)
+                        hasSavedRef.current = false
                         setSaveError(null)
                       }}
                       disabled={isSaving}

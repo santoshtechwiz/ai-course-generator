@@ -37,8 +37,46 @@ export default function BlankQuizResults({
   const [saveCompleted, setSaveCompleted] = useState(false)
   const router = useRouter()
 
+  // Add this debugging log at the beginning of the component to see what data we're receiving
+  console.log("BlankQuizResults received:", {
+    answersLength: answers?.length,
+    answers,
+    questionsLength: questions?.length,
+    quizId,
+    slug,
+  })
+
+  // Modify the useMemo calculation to handle empty answers better
   const { score, results } = useMemo(() => {
+    // Add defensive check for empty answers
+    if (!answers || answers.length === 0) {
+      console.warn("No answers provided to BlankQuizResults")
+      // Create empty results with default values
+      const emptyResults = questions.map((question) => ({
+        ...question,
+        userAnswer: "",
+        correctAnswer: question.answer,
+        similarity: 0,
+        timeSpent: 0,
+        isCorrect: false,
+      }))
+      return { score: 0, results: emptyResults }
+    }
+
     const calculatedResults = questions.map((question, index) => {
+      // If we don't have an answer for this question, provide a default
+      if (!answers[index]) {
+        console.warn(`No answer found for question ${index}`)
+        return {
+          ...question,
+          userAnswer: "",
+          correctAnswer: question.answer,
+          similarity: 0,
+          timeSpent: 0,
+          isCorrect: false,
+        }
+      }
+
       // If similarity is already calculated, use it
       if (answers[index]?.similarity !== undefined) {
         return {
@@ -84,13 +122,21 @@ export default function BlankQuizResults({
     if (!hasCalledComplete.current) {
       hasCalledComplete.current = true
       onComplete(Math.round(score))
+
+      // Log the answers for debugging
+      console.log("Displaying quiz results with answers:", answers)
     }
 
     // If user is not logged in and clearGuestData is provided, call it
     if (!session?.user && clearGuestData) {
-      clearGuestData()
+      // Don't clear immediately - give user time to see results
+      const timer = setTimeout(() => {
+        clearGuestData()
+      }, 300000) // 5 minutes
+
+      return () => clearTimeout(timer)
     }
-  }, [score, onComplete, session, clearGuestData])
+  }, [score, onComplete, session, clearGuestData, answers])
 
   const performance = getPerformanceLevel(score)
 
@@ -115,7 +161,7 @@ export default function BlankQuizResults({
     // Force a page refresh to ensure all state is reset
     router.refresh()
 
-    // Optionally, navigate back to the quiz page
+    // Navigate back to the quiz page
     router.push(`/dashboard/blanks/${slug}`)
   }
 
@@ -127,7 +173,7 @@ export default function BlankQuizResults({
       totalQuestions={questions.length}
       totalTime={totalTime}
       slug={slug}
-      quizType="blanks"
+      quizType="fill-blanks"
       clearGuestData={clearGuestData}
       isSaving={isSaving}
     >
@@ -145,8 +191,17 @@ export default function BlankQuizResults({
               <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
               <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
             </div>
+
+            {/* Debug info - can be removed in production */}
+            {answers.length === 0 && (
+              <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-amber-800 font-medium">No answers found to display.</p>
+                <p className="text-sm text-amber-700">This may happen if you signed out and back in.</p>
+              </div>
+            )}
+
             {results.map((result, index) => (
-              <Card key={result.id} className="mb-4">
+              <Card key={result.id || index} className="mb-4">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
                 </CardHeader>
@@ -164,7 +219,13 @@ export default function BlankQuizResults({
                   <div className="flex flex-col gap-2 mb-4">
                     <div className="flex items-center gap-2">
                       <strong className="min-w-[120px]">Your Answer:</strong>
-                      <span className={getAnswerClassName(result.similarity)}>{result.userAnswer}</span>
+                      <span className={getAnswerClassName(result.similarity)}>
+                        {result.userAnswer || "(No answer provided)"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <strong className="min-w-[120px]">Correct Answer:</strong>
+                      <span className="font-bold text-green-600 dark:text-green-400">{result.correctAnswer}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <strong className="min-w-[120px]">Accuracy:</strong>
@@ -249,7 +310,7 @@ function levenshteinDistance(str1: string, str2: string): number {
 }
 
 function getAnswerClassName(similarity: number): string {
-  if (similarity === 100) return "text-green-600 dark:text-green-400"
-  if (similarity > 80) return "text-yellow-600 dark:text-yellow-400"
-  return "text-red-600 dark:text-red-400"
+  if (similarity === 100) return "font-bold text-green-600 dark:text-green-400"
+  if (similarity > 80) return "font-bold text-yellow-600 dark:text-yellow-400"
+  return "font-bold text-red-600 dark:text-red-400"
 }

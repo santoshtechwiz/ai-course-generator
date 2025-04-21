@@ -5,12 +5,8 @@ import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import QuizDetailsPage from "../../components/QuizDetailsPage"
 import BlankQuizWrapper from "../components/BlankQuizWrapper"
-
-
-
-
+import QuizDetailsPageWithContext from "@/hooks/(quiz)/components/QuizDetailsPageWithContext"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -65,7 +61,7 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
   ]
 
   return (
-    <QuizDetailsPage
+    <QuizDetailsPageWithContext
       title={result.title}
       description={`Test your coding knowledge on ${result.title} with fill in the blanks questions`}
       slug={slug}
@@ -73,12 +69,13 @@ const BlanksPage = async (props: { params: Promise<{ slug: string }> }) => {
       questionCount={questionCount}
       estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
+      quizId={result.id.toString()}
+      authorId={result.userId}
+      isPublic={false}
+      isFavorite={false}
     >
-      <BlankQuizWrapper
-       quizData={result}
-       slug={slug}
-      />
-    </QuizDetailsPage>
+      <BlankQuizWrapper quizData={result} slug={slug} />
+    </QuizDetailsPageWithContext>
   )
 }
 

@@ -10,6 +10,7 @@ import { Chatbot } from "@/components/Chatbot"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { NavigationEvents } from "./NavigationEvents"
 import MainNavbar from "@/components/Navbar/MainNavbar"
+import { QuizProvider } from "../context/QuizContext"
 
 
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
@@ -53,7 +54,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
         <Suspense>
           <NavigationEvents />
         </Suspense>
-        <div className="container mx-auto px-4 py-6 max-w-7xl">{children}</div>
+        <div className="container mx-auto px-4 py-6 max-w-7xl">  <QuizProvider>{children}</QuizProvider></div>
       </main>
       <Suspense fallback={null}>
         {/* @ts-expect-error Server Component */}

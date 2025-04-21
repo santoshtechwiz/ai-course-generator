@@ -1,5 +1,6 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
+import type React from "react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -21,7 +22,6 @@ import {
   Brain,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import levenshtein from "js-levenshtein"
 import { useState, useRef, useMemo, useEffect, useCallback } from "react"
 
 interface Question {
@@ -62,8 +62,8 @@ const Timer = ({ elapsedTime }: { elapsedTime: number }) => {
         <TooltipContent>
           <p>Time spent on this question</p>
         </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
@@ -144,7 +144,7 @@ export default function FillInTheBlanksQuiz({
   const garbageThreshold = 0.75 // Adjust as needed
   const minimumTimeThreshold = 2 // seconds
   const questionParts = useMemo(() => {
-    return question.question.split("...")
+    return question.question.split("_____")
   }, [question.question])
 
   const progressiveHints = useMemo(() => {
@@ -406,15 +406,15 @@ export default function FillInTheBlanksQuiz({
                 ref={inputRef}
                 value={answer}
                 onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                onKeyDown={handleKeyDown}
                 className={cn(
                   "border-none text-center focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors duration-300 font-semibold",
                   submitted && (isCorrect ? "text-green-600" : "text-red-600"),
                 )}
                 placeholder="Type answer"
-                disabled={submitted}
+                disabled={submitted || isSubmitting}
                 aria-label="Answer input field"
               />
             </span>
@@ -440,7 +440,7 @@ export default function FillInTheBlanksQuiz({
                   <XCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
                 )}
                 <span className={isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>
-                  {isCorrect ? "Correct!" : "Incorrect. You'll see the correct answer on the results page."}
+                  {isCorrect ? "Correct!" : "Incorrect. You'll see the correct answer after completing the quiz."}
                 </span>
               </motion.div>
             )}
@@ -486,7 +486,7 @@ export default function FillInTheBlanksQuiz({
                         size="sm"
                         className="text-xs w-full border-blue-200 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30"
                         onClick={handleProgressiveHint}
-                        disabled={submitted}
+                        disabled={submitted || isSubmitting}
                       >
                         <Lightbulb className="w-3.5 h-3.5 mr-1" />
                         Reveal Next Hint
@@ -505,7 +505,7 @@ export default function FillInTheBlanksQuiz({
             size="sm"
             className="text-sm w-full sm:w-auto"
             onClick={() => setShowHintPanel(!showHintPanel)}
-            disabled={submitted}
+            disabled={submitted || isSubmitting}
           >
             {showHintPanel ? (
               <>
@@ -550,4 +550,32 @@ export default function FillInTheBlanksQuiz({
       </motion.div>
     </div>
   )
+}
+
+// Levenshtein distance calculation function
+function levenshtein(a: string, b: string): number {
+  const an = a.length
+  const bn = b.length
+  if (an === 0) return bn
+  if (bn === 0) return an
+
+  const matrix = Array(bn + 1)
+    .fill(0)
+    .map(() => Array(an + 1).fill(0))
+
+  for (let i = 0; i <= an; i++) matrix[0][i] = i
+  for (let j = 0; j <= bn; j++) matrix[j][0] = j
+
+  for (let j = 1; j <= bn; j++) {
+    for (let i = 1; i <= an; i++) {
+      const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1, // deletion
+        matrix[j - 1][i] + 1, // insertion
+        matrix[j - 1][i - 1] + substitutionCost, // substitution
+      )
+    }
+  }
+
+  return matrix[bn][an]
 }

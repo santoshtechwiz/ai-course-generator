@@ -38,7 +38,23 @@ export const SignInPrompt: React.FC<SignInPromptProps> = ({
     e.preventDefault()
     setIsLoading(true)
     try {
-      await signIn(undefined, { callbackUrl })
+      // Fix the callback URL to ensure it uses /dashboard/ instead of /quiz/
+      let fixedCallbackUrl = callbackUrl
+
+      // If the URL contains /quiz/, replace it with /dashboard/
+      if (fixedCallbackUrl.includes("/quiz/")) {
+        fixedCallbackUrl = fixedCallbackUrl.replace("/quiz/", "/dashboard/")
+      }
+
+      // Ensure the URL starts with /dashboard if it's a relative path
+      if (fixedCallbackUrl.startsWith("/") && !fixedCallbackUrl.startsWith("/dashboard")) {
+        // But don't duplicate /dashboard if it's already there
+        if (!fixedCallbackUrl.startsWith("/dashboard")) {
+          fixedCallbackUrl = `/dashboard${fixedCallbackUrl}`
+        }
+      }
+
+      await signIn(undefined, { callbackUrl: fixedCallbackUrl })
     } catch (error) {
       console.error("Sign in error:", error)
       setIsLoading(false)
