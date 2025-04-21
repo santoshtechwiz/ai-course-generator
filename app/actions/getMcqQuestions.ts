@@ -1,8 +1,24 @@
 "use server";
 import prisma from "@/lib/db";
-import { Question } from "../types/types";
 
+interface McqQuestionsResponse {
+  result: {
+    id: string;
+    title: string;
+    slug: string;
+    isPublic: boolean;
+    isFavorite: boolean;
+    userId: string;
+  } | null;
+  questions: Question[];
+}
 
+interface Question {
+  id: string;
+  question: string;
+  options: string[];
+  
+}
 
 const getMcqQuestions = async (slug: string): Promise<McqQuestionsResponse> => {
   const result = await prisma.userQuiz.findUnique({

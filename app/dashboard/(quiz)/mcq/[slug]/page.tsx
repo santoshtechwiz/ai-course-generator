@@ -9,7 +9,6 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import McqQuiz from "../components/McqQuiz"
-import QuizActions from "../../components/QuizActions"
 import QuizDetailsPage from "../../components/QuizDetailsPage"
 
 export const QuizSkeleton = () => (
@@ -86,6 +85,7 @@ export async function generateStaticParams() {
   return quizzes.filter((quiz) => quiz.slug).map((quiz) => ({ slug: quiz.slug }))
 }
 
+// Optimize the MCQ Quiz Page component to prevent redundant API calls
 const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   const { slug } = await props.params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -94,19 +94,27 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id || ""
 
-  // Fetch quiz data
+  console.log(`Fetching MCQ quiz data for slug: ${slug}`)
+
+  // Fetch quiz data - this is the only API call we should make
   const result = await getMcqQuestions(slug)
   if (!result || !result.result) {
+    console.error(`Quiz not found for slug: ${slug}`)
     notFound()
   }
 
   const { result: quizData, questions } = result
+
+  console.log(`Successfully fetched quiz: ${quizData.title} with ${questions.length} questions`)
 
   // Create breadcrumb items
   const breadcrumbItems = [
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
     { name: quizData.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
+
+  // Estimate quiz time based on question count
+  const estimatedTime = `PT${Math.max(5, Math.min(60, questions.length * 2))}M`
 
   return (
     <QuizDetailsPage
@@ -115,22 +123,15 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
       slug={slug}
       quizType="mcq"
       questionCount={questions.length}
-      estimatedTime="PT30M"
+      estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
+      authorId={quizData.userId}
+      quizId={quizData.id?.toString()}
+      isFavorite={quizData.isFavorite}
+      isPublic={quizData.isPublic}
+      difficulty={quizData.difficulty || "medium"}
     >
       <div className="flex flex-col gap-8 animate-fade-in">
-        {/* Quiz Actions Component */}
-        <QuizActions
-          quizId={quizData.id?.toString() || ""}
-          userId={currentUserId}
-          ownerId={quizData.userId || ""}
-          quizSlug={quizData.slug || ""}
-          initialIsPublic={quizData.isPublic || false}
-          initialIsFavorite={quizData.isFavorite || false}
-          quizType="mcq"
-          position="left-center"
-        />
-
         {/* Quiz Content with Suspense */}
         <Suspense fallback={<QuizSkeleton />}>
           {questions && (

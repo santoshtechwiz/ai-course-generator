@@ -1,6 +1,6 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -31,25 +31,37 @@ interface SimilarQuiz {
 export function SimilarQuizzes() {
   const [quizzes, setQuizzes] = useState<SimilarQuiz[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState<boolean>(true) // Added loading state
+  const [loading, setLoading] = useState<boolean>(true)
+
+  // Use a ref to prevent duplicate API calls
+  const fetchedRef = useRef(false)
 
   useEffect(() => {
+    // Only fetch if we haven't already
+    if (fetchedRef.current) return
+
     async function fetchSimilarQuizzes() {
       try {
+        console.log("Fetching similar quizzes")
         const result = await getSimilarQuiz()
         if (result && result.similarQuizzes) {
-          setQuizzes(result.similarQuizzes.map(q => ({
-            id: q.id,
-            title: q.title,
-            type: q.quizType,
-            difficulty: q.difficulty,
-            slug: q.slug
-          })))
+          setQuizzes(
+            result.similarQuizzes.map((q) => ({
+              id: q.id,
+              title: q.title,
+              type: q.quizType,
+              difficulty: q.difficulty,
+              slug: q.slug,
+            })),
+          )
+          console.log(`Found ${result.similarQuizzes.length} similar quizzes`)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error occurred')
+        console.error("Error fetching similar quizzes:", err)
+        setError(err instanceof Error ? err.message : "Unknown error occurred")
       } finally {
-        setLoading(false) // Set loading to false after fetching
+        setLoading(false)
+        fetchedRef.current = true
       }
     }
 
@@ -100,28 +112,20 @@ export function SimilarQuizzes() {
       </h3>
       <div className="grid grid-cols-1 gap-3">
         {quizzes.map((quiz, index) => (
-          <QuizCard 
-            key={quiz.id}
-            quiz={quiz}
-            index={index}
-          />
+          <QuizCard key={quiz.id} quiz={quiz} index={index} />
         ))}
       </div>
     </div>
   )
 }
 
-function QuizCard({ quiz, index }: { quiz: SimilarQuiz, index: number }) {
-  const difficultyColor = QUIZ_DIFFICULTY_COLORS[
-    quiz.difficulty?.toLowerCase() as keyof typeof QUIZ_DIFFICULTY_COLORS
-  ] || "bg-gray-100 text-gray-800"
+function QuizCard({ quiz, index }: { quiz: SimilarQuiz; index: number }) {
+  const difficultyColor =
+    QUIZ_DIFFICULTY_COLORS[quiz.difficulty?.toLowerCase() as keyof typeof QUIZ_DIFFICULTY_COLORS] ||
+    "bg-gray-100 text-gray-800"
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 * index }}
-    >
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * index }}>
       <Link href={buildQuizUrl(quiz.slug, quiz.type)}>
         <Card className="hover:shadow-md transition-all duration-200 hover:bg-slate-50 group">
           <CardContent className="p-4 flex items-center justify-between">
@@ -130,9 +134,7 @@ function QuizCard({ quiz, index }: { quiz: SimilarQuiz, index: number }) {
                 <BookOpen className="h-5 w-5 text-slate-500 group-hover:text-primary" />
               </div>
               <div>
-                <h4 className="font-medium text-base group-hover:text-primary">
-                  {quiz.title}
-                </h4>
+                <h4 className="font-medium text-base group-hover:text-primary">{quiz.title}</h4>
                 <div className="flex flex-wrap gap-2 mt-1">
                   <Badge variant="outline" className="text-xs">
                     {formatQuizType(quiz.type)}

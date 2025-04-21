@@ -27,7 +27,7 @@ import { Progress } from "@/components/ui/progress"
 import { ShareButton } from "@/components/ShareButton"
 
 import { Breadcrumb } from "../../../../components/breadcrumb"
-import RandomQuiz from "./RandomQuiz"
+import {RandomQuiz} from "./RandomQuiz"
 import RandomQuote from "@/components/RandomQuote"
 import { cn } from "@/lib/utils"
 import QuizActions from "./QuizActions"

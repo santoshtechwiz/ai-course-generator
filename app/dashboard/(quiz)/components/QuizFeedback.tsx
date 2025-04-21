@@ -1,14 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2, CheckCircle, AlertCircle, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -114,13 +107,14 @@ export function QuizFeedback({
       <DialogContent className="sm:max-w-md rounded-xl overflow-hidden">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-xl font-bold">Quiz Submitted!</DialogTitle>
-          <DialogDescription className="text-base pt-2">
-            {isError ? (
-              <span className="text-red-500 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-2" />
-                {errorMessage || "There was an error submitting your quiz. Please try again."}
-              </span>
-            ) : (
+          {/* Fix: Remove DialogDescription wrapper to avoid p > div nesting */}
+          {isError ? (
+            <span className="text-red-500 flex items-center pt-2">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              {errorMessage || "There was an error submitting your quiz. Please try again."}
+            </span>
+          ) : (
+            <div className="pt-2">
               <div className="flex items-center">
                 <span className="font-medium">Your score: </span>
                 <span
@@ -129,8 +123,8 @@ export function QuizFeedback({
                   {scoreDisplay()}
                 </span>
               </div>
-            )}
-          </DialogDescription>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="flex justify-center py-8">
