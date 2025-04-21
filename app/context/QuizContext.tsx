@@ -316,6 +316,7 @@ export function QuizProvider({
             timestamp: Date.now(),
             isCompleted: true,
             score: result.score,
+            answers: result.answers,
           }),
         )
       }

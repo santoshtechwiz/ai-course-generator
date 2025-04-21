@@ -108,6 +108,7 @@ export function saveQuizState(state: QuizState, answers: QuizAnswers = {}): void
           totalTime: 0, // This will be updated later
           timestamp: Date.now(),
           isCompleted: true,
+          redirectPath: state.redirectPath,
         }),
       )
     }

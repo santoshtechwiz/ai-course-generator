@@ -2,21 +2,19 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { Separator } from "@/components/ui/separator"
 import { formatTime } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { User } from "lucide-react"
-
 
 import QuizAuthWrapper from "./QuizAuthWrapper"
 import { useQuiz } from "../../../context/QuizContext"
-import { QuizType } from "@/app/types/quiz-types"
+import type { QuizType } from "@/app/types/quiz-types"
+import { GuestSignInPrompt } from "./GuestSignInPrompt"
 
 
 interface QuizResultBaseProps {
@@ -89,10 +87,7 @@ export function QuizResultBase({
         className="w-full max-w-4xl mx-auto"
       >
         <Card className="w-full shadow-lg overflow-hidden">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold tracking-tight">{title}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 px-6">
+          <CardContent className="space-y-6 px-6 py-8">
             {/* Score Summary */}
             <div className="flex flex-col items-center justify-center space-y-4">
               <div className="relative">
@@ -121,16 +116,13 @@ export function QuizResultBase({
             <Separator />
 
             {/* Sign In Prompt */}
-            <div className="bg-muted/30 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <User className="h-6 w-6 text-primary" />
-                <h3 className="text-lg font-semibold">Sign in to save your results</h3>
-              </div>
-              <p className="text-muted-foreground mb-6">
-                Create an account or sign in to save your quiz results, track your progress, and access more features.
-              </p>
-              <SignInPrompt callbackUrl={`/dashboard/${quizType}/${slug}`} />
-            </div>
+            <GuestSignInPrompt
+              callbackUrl={`/dashboard/${quizType}/${slug}`}
+              quizType={quizType}
+              quizId={slug}
+              score={percentage}
+              onSkip={() => router.push("/dashboard")}
+            />
           </CardContent>
         </Card>
       </motion.div>

@@ -64,10 +64,11 @@ export function QuizResultDisplay({
   const minutes = Math.floor(totalTime / 60)
   const seconds = Math.round(totalTime % 60)
   const { getGuestResult, isAuthenticated } = useQuiz()
+  const percentage = Number.parseFloat(score.toFixed(1))
 
   // Auto-save results if user is logged in and we haven't saved yet
   useEffect(() => {
-    if (session?.user && !hasSaved && !preventAutoSave) {
+    if (session?.user && !hasSavedRef.current && !preventAutoSave) {
       const saveResults = async () => {
         setIsSaving(true)
         setSaveError(null)
@@ -104,17 +105,17 @@ export function QuizResultDisplay({
           })
 
           if (!response.ok) {
-            const errorText = await response.text()
+            const errorData = await response.text()
             let errorMessage = `Failed to save results: ${response.status}`
 
             try {
-              const errorData = JSON.parse(errorText)
-              if (errorData.error) {
-                errorMessage = errorData.error
+              const errorJson = JSON.parse(errorData)
+              if (errorJson.error) {
+                errorMessage = errorJson.error
               }
             } catch (e) {
               // If JSON parsing fails, use the raw error text if available
-              if (errorText) errorMessage += ` - ${errorText}`
+              if (errorData) errorMessage += ` - ${errorData}`
             }
 
             throw new Error(errorMessage)

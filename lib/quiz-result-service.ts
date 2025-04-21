@@ -1,4 +1,4 @@
-import type { QuizType } from "@/app/types/types"
+import type { QuizType } from "@/app/types/quiz-types"
 
 interface QuizAnswer {
   answer: string | string[]
@@ -26,12 +26,13 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
     let formattedAnswers = submission.answers
 
     // For fill-in-the-blanks quizzes, we need to format the answers differently
-    if (submission.type === "fill-blanks") {
+    if (submission.type === "blanks" || submission.type === "openended") {
       formattedAnswers = submission.answers.map((answer) => ({
         answer: answer.answer,
         userAnswer: answer.answer,
         timeSpent: answer.timeSpent,
         hintsUsed: answer.hintsUsed || false,
+        similarity: answer.similarity,
       }))
     }
 
@@ -51,6 +52,7 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
       totalTime: submission.totalTime,
       score: submission.score,
       type: submission.type,
+      totalQuestions: submission.totalQuestions,
     }
 
     console.log("Sending API request to save quiz result:", payload)
@@ -65,9 +67,18 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Error response from API:", errorData)
-      throw new Error(errorData.error || `Failed to save quiz result: ${response.status}`)
+      let errorMessage = `Failed to save quiz result: ${response.status}`
+
+      try {
+        const errorData = await response.json()
+        if (errorData.error) {
+          errorMessage = errorData.error
+        }
+      } catch (e) {
+        // If JSON parsing fails, just use the status code error
+      }
+
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
