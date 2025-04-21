@@ -2,8 +2,19 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Clock, HelpCircle, RotateCcw, Filter, Trophy, ChevronRight } from "lucide-react"
-import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
+import {
+  Clock,
+  HelpCircle,
+  RotateCcw,
+  Filter,
+  Trophy,
+  ChevronRight,
+  FileText,
+  ClipboardList,
+  FileCode,
+  StickyNote,
+} from "lucide-react"
+
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,10 +23,10 @@ import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { motion } from "framer-motion"
+import { useRandomQuizzes } from "../hooks/useRandomQuizzes"
 
 // SVG Background Pattern Component
 const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => {
-  // Different patterns based on quiz type
   const patterns = {
     "fill-blanks": (
       <path
@@ -55,7 +66,6 @@ const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => 
     ),
   }
 
-  // Default pattern if quiz type doesn't match
   const defaultPattern = (
     <g>
       <circle cx="20" cy="20" r="5" fill="currentColor" fillOpacity="0.1" />
@@ -67,10 +77,8 @@ const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => 
     </g>
   )
 
-  // Get the appropriate pattern or use default
   const patternElement = patterns[quizType as keyof typeof patterns] || defaultPattern
 
-  // Get color based on quiz type
   const getColorClass = () => {
     switch (quizType) {
       case "fill-blanks":
@@ -111,11 +119,12 @@ const quizTypeRoutes = {
   code: "dashboard/code",
 }
 
-const quizTypeBgColors = {
-  "fill-blanks": "bg-blue-50 text-blue-600",
-  flashcard: "bg-orange-50 text-orange-600",
-  openended: "bg-purple-50 text-purple-600",
-  code: "bg-green-50 text-green-600",
+const quizTypeIcons = {
+  "fill-blanks": FileText,
+  flashcard: StickyNote,
+  openended: ClipboardList,
+  code: FileCode,
+  mcq: HelpCircle,
 }
 
 export const RandomQuiz: React.FC = () => {
@@ -134,9 +143,9 @@ export const RandomQuiz: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="sticky top-0 z-10 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
-          <div className="flex items-center space-x-2">{/* Title removed to avoid potential nesting issues */}</div>
+      <div className="sticky top-0 z-10 p-4 bg-background/95 backdrop-blur border-b">
+        <div className="flex justify-between items-center gap-3 mb-3">
+          <div className="flex items-center space-x-2" />
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
@@ -147,23 +156,18 @@ export const RandomQuiz: React.FC = () => {
               <Filter className="h-4 w-4 mr-2" />
               <span>{filter ? filter.replace("-", " ") : "All"}</span>
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRefresh}
-              className="h-8 w-8 rounded-full"
-              title="Refresh quizzes"
-            >
+            <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-8 w-8 rounded-full" title="Refresh quizzes">
               <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
         </div>
+
         <div className="flex flex-wrap gap-2">
           {quizTypes.map((type) => (
             <Badge
               key={type}
               variant="outline"
-              className={`cursor-pointer hover:bg-primary/10 transition-colors capitalize ${
+              className={`cursor-pointer hover:bg-primary/10 capitalize ${
                 filter === type ? "bg-primary/20 border-primary/50" : ""
               }`}
               onClick={() => setFilter(type)}
@@ -209,173 +213,122 @@ export const RandomQuiz: React.FC = () => {
               Try Again
             </Button>
           </div>
-        ) : (
-          <>
-            {filteredQuizzes.length > 0 ? (
-              filteredQuizzes.map((quiz, index) => {
-                const Icon = HelpCircle // Replace with actual icon component if available
-                const bgColor = quiz.difficulty
-                  ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
-                  : difficultyColors.Medium
-                const color = "text-muted-foreground"
+        ) : filteredQuizzes.length > 0 ? (
+          filteredQuizzes.map((quiz, index) => {
+            const Icon = quizTypeIcons[quiz.quizType as keyof typeof quizTypeIcons] || HelpCircle
+            const bgColor = quiz.difficulty
+              ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
+              : difficultyColors.Medium
+            const color = "text-muted-foreground"
 
-                return (
-                  <motion.div
-                    key={`${quiz.id}-${refreshKey}-${index}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ delay: index * 0.1, duration: 0.3 }}
-                    className="relative group mb-4"
-                  >
-                    {/* Hover glow effect */}
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-primary/10 rounded-lg opacity-0 group-hover:opacity-100 blur transition-all duration-300 group-hover:duration-200 animate-tilt"></div>
+            return (
+              <motion.div
+                key={`${quiz.id}-${refreshKey}-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: index * 0.1, duration: 0.3 }}
+                className="relative group mb-4"
+              >
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-primary/10 rounded-lg opacity-0 group-hover:opacity-100 blur transition-all duration-300 group-hover:duration-200 animate-tilt"></div>
 
-                    <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden">
-                      {/* Subtle gradient overlay on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                      {/* SVG Background Pattern */}
-                      <QuizBackgroundPattern quizType={quiz.quizType || ""} />
+                  <QuizBackgroundPattern quizType={quiz.quizType || ""} />
 
-                      <CardHeader className="space-y-2 p-4 pb-2 relative z-10">
-                        <CardTitle className="flex justify-between items-center text-base sm:text-lg">
-                          <span className="group-hover:text-primary/90 transition-colors duration-300 line-clamp-1 mr-2">
-                            {quiz.title}
-                          </span>
-                          <motion.div
-                            whileHover={{ scale: 1.1, rotate: 15 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                              "h-8 w-8 shrink-0 rounded-full flex items-center justify-center transition-colors duration-300 shadow-sm",
-                              bgColor,
-                            )}
-                          >
-                            <Icon className={cn("h-4 w-4", color)} />
-                          </motion.div>
-                        </CardTitle>
-                        <CardDescription className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              quiz.difficulty
-                                ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
-                                : difficultyColors.Medium,
-                            )}
-                          >
-                            {quiz.difficulty || "Medium"}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">{quiz.quizType}</span>
-                        </CardDescription>
-                      </CardHeader>
+                  <CardHeader className="space-y-2 p-4 pb-2 relative z-10">
+                    <CardTitle className="flex justify-between items-center text-base sm:text-lg">
+                      <span className="group-hover:text-primary/90 transition-colors duration-300 line-clamp-1 mr-2">
+                        {quiz.title}
+                      </span>
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 15 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={cn("h-8 w-8 shrink-0 rounded-full flex items-center justify-center transition-colors duration-300 shadow-sm", bgColor)}
+                      >
+                        <Icon className={cn("h-4 w-4", color)} />
+                      </motion.div>
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className={cn(bgColor)}>
+                        {quiz.difficulty || "Medium"}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">{quiz.quizType}</span>
+                    </CardDescription>
+                  </CardHeader>
 
-                      <CardContent className="relative z-10 p-4 pt-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
-                          <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300">
-                            <Clock className="h-4 w-4 mr-2 group-hover:text-primary/70 transition-colors duration-300" />
-                            <span>{quiz.duration} minutes</span>
-                          </div>
-                          {quiz.bestScore !== null && (
-                            <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300">
-                              <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
-                              <span>Best: {quiz.bestScore}%</span>
-                            </div>
-                          )}
+                  <CardContent className="relative z-10 p-4 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                      <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300">
+                        <Clock className="h-4 w-4 mr-2 group-hover:text-primary/70" />
+                        <span>{quiz.duration} minutes</span>
+                      </div>
+                      {quiz.bestScore !== null && (
+                        <div className="flex items-center text-muted-foreground group-hover:text-foreground/80">
+                          <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
+                          <span>Best: {quiz.bestScore}%</span>
                         </div>
+                      )}
+                    </div>
 
-                        {quiz.completionRate !== undefined && (
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs text-muted-foreground">Progress</span>
-                              <span className="text-xs font-medium">{quiz.completionRate}%</span>
-                            </div>
-                            <Progress value={quiz.completionRate} className="h-1.5" />
-                          </div>
+                    {quiz.completionRate !== undefined && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">Progress</span>
+                          <span className="text-xs font-medium">{quiz.completionRate}%</span>
+                        </div>
+                        <Progress value={quiz.completionRate} className="h-1.5" />
+                      </div>
+                    )}
+                  </CardContent>
+
+                  <CardFooter className="relative z-10 p-4 pt-2">
+                    <Link
+                      href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}
+                      className="w-full"
+                    >
+                      <Button
+                        className={cn(
+                          "w-full group relative overflow-hidden transition-all duration-300 bg-primary hover:bg-primary/90",
+                          "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent",
+                          "after:translate-x-[-100%] after:group-hover:translate-x-[100%] after:transition-transform after:duration-500",
+                          "shadow-md hover:shadow-lg"
                         )}
-                      </CardContent>
-
-                      <CardFooter className="relative z-10 p-4 pt-2">
-                        <Link
-                          href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${
-                            quiz.slug
-                          }`}
-                          className="w-full"
+                        size="sm"
+                      >
+                        <span className="relative z-10 mr-1">Start Quiz</span>
+                        <motion.span
+                          className="relative z-10 ml-1"
+                          initial={{ x: 0 }}
+                          whileHover={{ x: 5 }}
+                          animate={{ x: [0, 2, 0] }}
+                          transition={{
+                            x: {
+                              duration: 1.5,
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: "reverse",
+                            },
+                          }}
                         >
-                          <Button
-                            className={cn(
-                              "w-full group relative overflow-hidden transition-all duration-300",
-                              "bg-primary hover:bg-primary/90",
-                              "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent",
-                              "after:translate-x-[-100%] after:group-hover:translate-x-[100%] after:transition-transform after:duration-500",
-                              "shadow-md hover:shadow-lg",
-                            )}
-                            size="sm"
-                          >
-                            <span className="relative z-10 mr-1">Start Quiz</span>
-                            <motion.span
-                              className="relative z-10 ml-1"
-                              initial={{ x: 0 }}
-                              whileHover={{ x: 5 }}
-                              animate={{ x: [0, 2, 0] }}
-                              transition={{
-                                x: {
-                                  duration: 1.5,
-                                  repeat: Number.POSITIVE_INFINITY,
-                                  repeatType: "reverse",
-                                },
-                                whileHover: {
-                                  type: "spring",
-                                  stiffness: 400,
-                                  damping: 10,
-                                },
-                              }}
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </motion.span>
-                          </Button>
-                        </Link>
-                      </CardFooter>
-                    </Card>
-                  </motion.div>
-                )
-              })
-            ) : (
-              <div className="text-center p-8 border border-dashed rounded-lg bg-muted/30">
-                <div className="flex justify-center mb-4">
-                  <HelpCircle className="h-12 w-12 text-muted-foreground/50" />
-                </div>
-                <h3 className="text-lg font-medium mb-2">No quizzes found</h3>
-                <p className="text-muted-foreground mb-4">Try changing your filter or refresh to see more quizzes</p>
-                <Button variant="outline" onClick={() => setFilter(null)} className="mr-2">
-                  Show All Quizzes
-                </Button>
-                <Button variant="ghost" onClick={handleRefresh} size="sm">
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
-              </div>
-            )}
-          </>
+                          <ChevronRight className="h-4 w-4" />
+                        </motion.span>
+                      </Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            )
+          })
+        ) : (
+          <div className="text-center p-8 border border-dashed rounded-lg bg-muted/30">
+            <div className="flex justify-center mb-4">
+              <HelpCircle className="h-12 w-12 text-muted-foreground/50" />
+            </div>
+            <p className="text-muted-foreground">No quizzes found for this filter.</p>
+          </div>
         )}
-      </div>
-
-      <div className="p-4 pt-2 border-t">
-        <Button className="w-full group relative overflow-hidden transition-all duration-300" variant="outline" asChild>
-          <Link href="/dashboard/quizzes" className="flex items-center justify-center">
-            <span>Explore More Quizzes</span>
-            <motion.span
-              className="ml-2"
-              initial={{ x: 0 }}
-              whileHover={{ x: 5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </motion.span>
-          </Link>
-        </Button>
       </div>
     </div>
   )
 }
-
-export default RandomQuiz
