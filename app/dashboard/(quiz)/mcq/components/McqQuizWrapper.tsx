@@ -20,9 +20,10 @@ import {
 } from "@/hooks/quiz-session-storage"
 
 import McqQuiz from "./McqQuiz"
-import McqQuizResult from "./McqQuizResult"
+
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { QuizFeedback } from "../../components/QuizFeedback"
+import McqQuizResult from "./McqQuizResult"
 
 interface McqQuizWrapperProps {
   quizData: any
