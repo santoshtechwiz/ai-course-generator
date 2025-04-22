@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Button } from "@/components/ui/button"
 import { Loader2, CheckCircle, AlertCircle, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { QuizType } from "@/app/types/types"
+import { QuizType } from "@/app/types/quiz-types"
+
 
 interface QuizFeedbackProps {
   isSubmitting: boolean
@@ -47,8 +48,9 @@ export function QuizFeedback({
       quizType,
       waitForSave,
       autoClose,
+      open,
     })
-  }, [isSubmitting, isSuccess, isError, score, totalQuestions, quizType, waitForSave, autoClose])
+  }, [isSubmitting, isSuccess, isError, score, totalQuestions, quizType, waitForSave, autoClose, open])
 
   // Format the score display based on quiz type
   const scoreDisplay = () => {

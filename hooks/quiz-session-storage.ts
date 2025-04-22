@@ -130,6 +130,7 @@ export function clearSavedQuizState() {
 
   try {
     sessionStorage.removeItem("quizState")
+    console.log("Cleared saved quiz state from session storage")
   } catch (error) {
     console.error("Error clearing saved quiz state:", error)
   }
@@ -142,6 +143,7 @@ export function saveQuizAnswers(quizId: string, answers: any[]) {
   try {
     const storageKey = `quiz_answers_${quizId}`
     localStorage.setItem(storageKey, JSON.stringify(answers))
+    console.log(`Saved ${answers.length} quiz answers to localStorage for quiz ${quizId}`)
   } catch (error) {
     console.error("Error saving quiz answers:", error)
   }
@@ -154,7 +156,11 @@ export function loadQuizAnswers(quizId: string) {
   try {
     const storageKey = `quiz_answers_${quizId}`
     const savedAnswers = localStorage.getItem(storageKey)
-    return savedAnswers ? JSON.parse(savedAnswers) : null
+    if (savedAnswers) {
+      console.log(`Loaded quiz answers from localStorage for quiz ${quizId}`)
+      return JSON.parse(savedAnswers)
+    }
+    return null
   } catch (error) {
     console.error("Error loading quiz answers:", error)
     return null
@@ -183,13 +189,13 @@ export function saveQuizResult(quizId: string, result: any) {
   if (typeof window === "undefined") return
 
   try {
-    localStorage.setItem(
-      `quiz_result_${quizId}`,
-      JSON.stringify({
-        ...result,
-        timestamp: Date.now(),
-      }),
-    )
+    const resultWithTimestamp = {
+      ...result,
+      timestamp: Date.now(),
+    }
+
+    localStorage.setItem(`quiz_result_${quizId}`, JSON.stringify(resultWithTimestamp))
+    console.log(`Saved quiz result to localStorage for quiz ${quizId}:`, resultWithTimestamp)
   } catch (error) {
     console.error("Error saving quiz result:", error)
   }
@@ -201,7 +207,12 @@ export function loadQuizResult(quizId: string) {
 
   try {
     const savedResult = localStorage.getItem(`quiz_result_${quizId}`)
-    return savedResult ? JSON.parse(savedResult) : null
+    if (savedResult) {
+      const result = JSON.parse(savedResult)
+      console.log(`Loaded quiz result from localStorage for quiz ${quizId}:`, result)
+      return result
+    }
+    return null
   } catch (error) {
     console.error("Error loading quiz result:", error)
     return null
@@ -258,8 +269,6 @@ export function calculateSimilarity(str1: string, str2: string): number {
 
 // Add a function to clear guest quiz results specifically
 // This will help with the guest results persistence issue
-
-// Add this function to the file
 export function clearGuestQuizResults(quizId: string) {
   if (typeof window === "undefined") return
 
@@ -269,13 +278,40 @@ export function clearGuestQuizResults(quizId: string) {
     sessionStorage.removeItem(`guestQuizResults_${quizId}`)
 
     // Also clear any related state
-    localStorage.removeItem(`quiz_state_${quizId}`)
-    sessionStorage.removeItem(`quiz_state_${quizId}`)
-    localStorage.removeItem(`quiz_answers_${quizId}`)
-    sessionStorage.removeItem(`quiz_answers_${quizId}`)
+    localStorage.removeItem(`quiz_state_code_${quizId}`)
+    sessionStorage.removeItem(`quiz_state_code_${quizId}`)
+
+    // Don't clear the quiz result itself, as it might be needed
+    // localStorage.removeItem(`quiz_result_${quizId}`);
 
     console.log(`Cleared guest quiz results for quiz ${quizId}`)
   } catch (error) {
     console.error("Error clearing guest quiz results:", error)
+  }
+}
+
+// Add a function to check if a user has guest results that need to be saved
+export function hasGuestResults(quizId: string): boolean {
+  if (typeof window === "undefined") return false
+
+  try {
+    // Check for guest results in localStorage
+    const guestResults = localStorage.getItem(`guestQuizResults_${quizId}`)
+    if (guestResults) {
+      return true
+    }
+
+    // Check for quiz results that might need to be saved
+    const quizResult = localStorage.getItem(`quiz_result_${quizId}`)
+    if (quizResult) {
+      const result = JSON.parse(quizResult)
+      // If the result has answers and is marked as completed, it might need to be saved
+      return !!result && !!result.isCompleted && !!result.answers && result.answers.length > 0
+    }
+
+    return false
+  } catch (error) {
+    console.error("Error checking for guest results:", error)
+    return false
   }
 }
