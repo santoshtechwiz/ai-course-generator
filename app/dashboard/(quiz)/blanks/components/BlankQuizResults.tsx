@@ -143,7 +143,11 @@ export default function BlankQuizResults({
   const handleRestart = () => {
     // Clear session storage for this quiz
     if (typeof window !== "undefined") {
+      // Clear all storage related to this quiz
       sessionStorage.removeItem(`quiz_result_${quizId}`)
+      localStorage.removeItem(`quiz_result_${quizId}`)
+      sessionStorage.removeItem(`quiz_state_blanks_${quizId}`)
+      localStorage.removeItem(`quiz_answers_${quizId}`)
 
       // Also clear any other related storage
       const storageKey = `quiz_${slug}_fill-blanks`

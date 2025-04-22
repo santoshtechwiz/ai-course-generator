@@ -18,6 +18,7 @@ interface QuizSubmission {
   totalQuestions: number
 }
 
+// Fix the submitQuizResult function to properly handle different quiz types
 export async function submitQuizResult(submission: QuizSubmission): Promise<any> {
   console.log("Submitting quiz result:", submission)
 
@@ -26,21 +27,22 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
     let formattedAnswers = submission.answers
 
     // For fill-in-the-blanks quizzes, we need to format the answers differently
-    if (submission.type === "blanks" || submission.type === "openended") {
+    if (submission.type === "blanks") {
       formattedAnswers = submission.answers.map((answer) => ({
-        answer: answer.answer,
-        userAnswer: answer.answer,
-        timeSpent: answer.timeSpent,
+        answer: typeof answer.answer === "string" ? answer.answer : "",
+        userAnswer: typeof answer.answer === "string" ? answer.answer : "",
+        timeSpent: answer.timeSpent || 0,
         hintsUsed: answer.hintsUsed || false,
-        similarity: answer.similarity,
+        similarity: answer.similarity || 0,
+        isCorrect: (answer.similarity || 0) > 80,
       }))
     }
 
     // For open-ended quizzes, we need to format the answers differently
     if (submission.type === "openended") {
       formattedAnswers = submission.answers.map((answer) => ({
-        answer: answer.answer,
-        timeSpent: answer.timeSpent,
+        answer: typeof answer.answer === "string" ? answer.answer : "",
+        timeSpent: answer.timeSpent || 0,
         hintsUsed: answer.hintsUsed || false,
       }))
     }
@@ -53,12 +55,13 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
       score: submission.score,
       type: submission.type,
       totalQuestions: submission.totalQuestions,
+      completedAt: new Date().toISOString(),
     }
 
     console.log("Sending API request to save quiz result:", payload)
 
     // Make the API call to save the quiz result
-    const response = await fetch(`/api/quiz/${submission.slug}/complete`, {
+    const response = await fetch(`/api/quiz/${submission.quizId}/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -75,7 +78,15 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
           errorMessage = errorData.error
         }
       } catch (e) {
-        // If JSON parsing fails, just use the status code error
+        // If JSON parsing fails, try to get the text response
+        try {
+          const errorText = await response.text()
+          if (errorText) {
+            errorMessage += ` - ${errorText}`
+          }
+        } catch (textError) {
+          // If text extraction fails, just use the status code error
+        }
       }
 
       throw new Error(errorMessage)

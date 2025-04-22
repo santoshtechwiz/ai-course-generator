@@ -1,179 +1,255 @@
-export interface QuizState {
-  quizId: string
-  quizType: string
-  slug: string
-  currentQuestion: number
-  totalQuestions: number
-  startTime: number
-  isCompleted: boolean
-  redirectPath?: string
+// Define all quiz session storage functions in one place for better organization
+
+// Clear all quiz data from storage
+export function clearAllQuizData() {
+  if (typeof window === "undefined") return
+
+  // Clear all quiz-related data from localStorage and sessionStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (
+      key.startsWith("quiz_") ||
+      key.includes("QuizState") ||
+      key.includes("guestQuizResults") ||
+      key.includes("currentQuizState")
+    ) {
+      localStorage.removeItem(key)
+    }
+  })
+
+  Object.keys(sessionStorage).forEach((key) => {
+    if (
+      key.startsWith("quiz_") ||
+      key.includes("QuizState") ||
+      key.includes("guestQuizResults") ||
+      key.includes("currentQuizState")
+    ) {
+      sessionStorage.removeItem(key)
+    }
+  })
 }
 
-export interface QuizAnswers {
-  [key: string]: any
-}
+// Improve the getSavedQuizState function to better handle the quiz state
+// Update the function to ensure we're properly retrieving the answers:
 
-export interface SavedQuizState {
-  quizState: QuizState
-  answers: QuizAnswers
-}
+export function getSavedQuizState() {
+  if (typeof window === "undefined") return null
 
-// Add this function to fix callback URLs in the quiz session storage
-
-export function fixCallbackUrl(url: string): string {
-  if (!url) return "/dashboard"
-
-  // If the URL contains /quiz/, replace it with /dashboard/
-  if (url.includes("/quiz/")) {
-    return url.replace("/quiz/", "/dashboard/")
-  }
-
-  // Ensure the URL starts with /dashboard if it's a relative path
-  if (url.startsWith("/") && !url.startsWith("/dashboard")) {
-    // But don't duplicate /dashboard if it's already there
-    return `/dashboard${url}`
-  }
-
-  return url
-}
-
-// Add a function to get and set quiz answers
-export function saveQuizAnswers(quizId: string, answers: any[]): void {
   try {
-    if (typeof window === "undefined") return
-
-    const storageKey = `quiz_answers_${quizId}`
-    localStorage.setItem(storageKey, JSON.stringify(answers))
-    console.log(`Saved ${answers.length} answers for quiz ${quizId}`)
-  } catch (error) {
-    console.error("Error saving quiz answers:", error)
-  }
-}
-
-export function getQuizAnswers(quizId: string): any[] | null {
-  try {
-    if (typeof window === "undefined") return null
-
-    const storageKey = `quiz_answers_${quizId}`
-    const savedAnswers = localStorage.getItem(storageKey)
-    if (!savedAnswers) return null
-
-    return JSON.parse(savedAnswers)
-  } catch (error) {
-    console.error("Error getting quiz answers:", error)
-    return null
-  }
-}
-
-// Modify the saveQuizState function to better handle answers
-export function saveQuizState(state: QuizState, answers: QuizAnswers = {}): void {
-  try {
-    if (typeof window === "undefined") return
-
-    // Ensure we have a redirectPath
-    if (!state.redirectPath) {
-      state.redirectPath = `/dashboard/${state.quizType}/${state.slug}`
+    const stateStr = sessionStorage.getItem("quizState")
+    if (!stateStr) {
+      console.log("No quiz state found in session storage")
+      return null
     }
 
-    // If the quiz is completed, add that to the state
-    if (state.isCompleted) {
-      // Add completed flag to the redirect path
-      if (!state.redirectPath.includes("completed=true")) {
-        state.redirectPath += `${state.redirectPath.includes("?") ? "&" : "?"}completed=true`
+    const state = JSON.parse(stateStr)
+    console.log("Retrieved quiz state from session storage:", state)
+
+    // Ensure the redirectPath is properly formatted
+    if (state.quizState && state.quizState.redirectPath) {
+      // Make sure it uses /dashboard/ not /quiz/
+      if (state.quizState.redirectPath.includes("/quiz/")) {
+        state.quizState.redirectPath = state.quizState.redirectPath.replace("/quiz/", "/dashboard/")
+      }
+
+      // Add completed=true parameter if the quiz is completed
+      if (state.quizState.isCompleted && !state.quizState.redirectPath.includes("completed=true")) {
+        state.quizState.redirectPath += `${state.quizState.redirectPath.includes("?") ? "&" : "?"}completed=true`
       }
     }
 
-    const savedState: SavedQuizState = {
-      quizState: state,
-      answers,
-    }
-
-    sessionStorage.setItem("savedQuizState", JSON.stringify(savedState))
-
-    // Also save answers separately for better persistence
-    if (state.quizId && Object.keys(answers).length > 0) {
-      saveQuizAnswers(state.quizId, Object.values(answers))
-    }
-
-    // Also save to localStorage for better persistence
-    if (state.isCompleted) {
-      localStorage.setItem(
-        `quiz_result_${state.quizId}`,
-        JSON.stringify({
-          quizId: state.quizId,
-          quizType: state.quizType,
-          slug: state.slug,
-          score: 0, // This will be updated later
-          answers: Object.values(answers),
-          totalTime: 0, // This will be updated later
-          timestamp: Date.now(),
-          isCompleted: true,
-          redirectPath: state.redirectPath,
-        }),
-      )
-    }
-  } catch (error) {
-    console.error("Error saving quiz state:", error)
-  }
-}
-
-// Get saved quiz state from session storage
-export function getSavedQuizState(): SavedQuizState | null {
-  try {
-    if (typeof window === "undefined") return null
-
-    const savedState = sessionStorage.getItem("savedQuizState")
-    if (!savedState) return null
-
-    return JSON.parse(savedState)
+    return state
   } catch (error) {
     console.error("Error getting saved quiz state:", error)
     return null
   }
 }
 
-// Clear saved quiz state from session storage
-export function clearSavedQuizState(): void {
-  try {
-    if (typeof window === "undefined") return
+// Add a new function to ensure we're saving the quiz state properly
+export function saveQuizStateWithAnswers(
+  quizId: string,
+  quizType: string,
+  slug: string,
+  answers: any[],
+  isCompleted: boolean,
+) {
+  if (typeof window === "undefined") return
 
-    sessionStorage.removeItem("savedQuizState")
+  try {
+    // Create a redirectPath that includes the completed parameter if needed
+    let redirectPath = `/dashboard/${quizType}/${slug}`
+    if (isCompleted) {
+      redirectPath += `${redirectPath.includes("?") ? "&" : "?"}completed=true`
+    }
+
+    // Save to sessionStorage for the auth flow
+    sessionStorage.setItem(
+      "quizState",
+      JSON.stringify({
+        quizState: {
+          quizId,
+          quizType,
+          slug,
+          isCompleted,
+          redirectPath,
+        },
+        answers,
+      }),
+    )
+
+    // Also save to localStorage for persistence
+    localStorage.setItem(
+      `quiz_state_${quizType}_${quizId}`,
+      JSON.stringify({
+        quizId,
+        quizType,
+        slug,
+        isCompleted,
+        answers,
+        timestamp: Date.now(),
+      }),
+    )
+
+    console.log("Saved quiz state with answers:", {
+      quizId,
+      quizType,
+      slug,
+      isCompleted,
+      redirectPath,
+      answersCount: answers.length,
+    })
+  } catch (error) {
+    console.error("Error saving quiz state with answers:", error)
+  }
+}
+
+// Clear saved quiz state from session storage
+export function clearSavedQuizState() {
+  if (typeof window === "undefined") return
+
+  try {
+    sessionStorage.removeItem("quizState")
   } catch (error) {
     console.error("Error clearing saved quiz state:", error)
   }
 }
 
-// Add a function to get quiz result by ID
-export function getQuizResultById(quizId: string): any | null {
+// Save quiz answers to local storage
+export function saveQuizAnswers(quizId: string, answers: any[]) {
+  if (typeof window === "undefined") return
+
   try {
-    if (typeof window === "undefined") return null
-
-    const resultStr = localStorage.getItem(`quiz_result_${quizId}`)
-    if (!resultStr) return null
-
-    return JSON.parse(resultStr)
+    const storageKey = `quiz_answers_${quizId}`
+    localStorage.setItem(storageKey, JSON.stringify(answers))
   } catch (error) {
-    console.error("Error getting quiz result:", error)
+    console.error("Error saving quiz answers:", error)
+  }
+}
+
+// Load quiz answers from local storage
+export function loadQuizAnswers(quizId: string) {
+  if (typeof window === "undefined") return null
+
+  try {
+    const storageKey = `quiz_answers_${quizId}`
+    const savedAnswers = localStorage.getItem(storageKey)
+    return savedAnswers ? JSON.parse(savedAnswers) : null
+  } catch (error) {
+    console.error("Error loading quiz answers:", error)
     return null
   }
 }
 
-// Add a function to clear all quiz data
-export function clearAllQuizData(): void {
+// Verify if a quiz has been completed
+export function verifyQuizCompletion(quizId: string): boolean {
+  if (typeof window === "undefined") return false
+
+  // Check if there's a saved result in localStorage
+  const savedResult = localStorage.getItem(`quiz_result_${quizId}`)
+  if (!savedResult) return false
+
   try {
-    if (typeof window === "undefined") return
-
-    // Clear session storage
-    sessionStorage.removeItem("savedQuizState")
-    sessionStorage.removeItem("wasSignedIn")
-
-    // Clear all quiz results from localStorage
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith("quiz_result_") || key.startsWith("quiz_state_")) {
-        localStorage.removeItem(key)
-      }
-    })
-  } catch (error) {
-    console.error("Error clearing all quiz data:", error)
+    const result = JSON.parse(savedResult)
+    return !!result && !!result.timestamp && !!result.answers && result.answers.length > 0
+  } catch (e) {
+    console.error("Error verifying quiz completion:", e)
+    return false
   }
+}
+
+// Save quiz result to local storage
+export function saveQuizResult(quizId: string, result: any) {
+  if (typeof window === "undefined") return
+
+  try {
+    localStorage.setItem(
+      `quiz_result_${quizId}`,
+      JSON.stringify({
+        ...result,
+        timestamp: Date.now(),
+      }),
+    )
+  } catch (error) {
+    console.error("Error saving quiz result:", error)
+  }
+}
+
+// Load quiz result from local storage
+export function loadQuizResult(quizId: string) {
+  if (typeof window === "undefined") return null
+
+  try {
+    const savedResult = localStorage.getItem(`quiz_result_${quizId}`)
+    return savedResult ? JSON.parse(savedResult) : null
+  } catch (error) {
+    console.error("Error loading quiz result:", error)
+    return null
+  }
+}
+
+// Add this function to calculate similarity between strings
+export function calculateSimilarity(str1: string, str2: string): number {
+  const normalize = (str: string) => str.replace(/\s+/g, " ").trim()?.toLowerCase()
+  const normalizedStr1 = normalize(str1)
+  const normalizedStr2 = normalize(str2)
+
+  if (normalizedStr1 === normalizedStr2) return 100
+
+  const longer = normalizedStr1.length > normalizedStr2.length ? normalizedStr1 : normalizedStr2
+  const shorter = normalizedStr1.length > normalizedStr2.length ? normalizedStr2 : normalizedStr1
+  const longerLength = longer.length
+
+  if (longerLength === 0) return 100
+
+  // Function to calculate Levenshtein distance
+  function levenshteinDistance(s1: string, s2: string): number {
+    const matrix: number[][] = []
+
+    // Initialize matrix
+    for (let i = 0; i <= s2.length; i++) {
+      matrix[i] = [i]
+    }
+    for (let j = 0; j <= s1.length; j++) {
+      matrix[0][j] = j
+    }
+
+    // Calculate Levenshtein distance
+    for (let i = 1; i <= s2.length; i++) {
+      for (let j = 1; j <= s1.length; j++) {
+        if (s2[i - 1] === s1[j - 1]) {
+          matrix[i][j] = matrix[i - 1][j - 1]
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1, // deletion
+          )
+        }
+      }
+    }
+
+    return matrix[s2.length][s1.length]
+  }
+
+  const editDistance = levenshteinDistance(longer, shorter)
+  return Math.round(Math.max(0, Math.min(100, (1 - editDistance / longerLength) * 100)))
 }

@@ -3,11 +3,10 @@
 import type React from "react"
 
 import { useEffect, useState } from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useQuiz } from "../../../context/QuizContext"
-import { fixCallbackUrl } from "@/hooks/quiz-session-storage"
 // Add this to the imports
 import { clearAllQuizData } from "@/hooks/quiz-session-storage"
 
@@ -19,6 +18,29 @@ interface QuizAuthWrapperProps {
   requireAuth?: boolean
   showAuthModal?: boolean
   onAuthModalClose?: () => void
+}
+
+// Fix the callback URL function to properly handle the path transformation and preserve query parameters
+export function fixCallbackUrl(url: string): string {
+  if (!url) return "/dashboard"
+
+  // Parse the URL to handle parameters properly
+  let baseUrl = url
+  let queryParams = ""
+
+  if (url.includes("?")) {
+    const parts = url.split("?")
+    baseUrl = parts[0]
+    queryParams = parts[1]
+  }
+
+  // Replace /quiz/ with /dashboard/ in the URL path
+  if (baseUrl.includes("/quiz/")) {
+    baseUrl = baseUrl.replace("/quiz/", "/dashboard/")
+  }
+
+  // Return the fixed URL with query parameters if any
+  return queryParams ? `${baseUrl}?${queryParams}` : baseUrl
 }
 
 export default function QuizAuthWrapper({
@@ -38,7 +60,16 @@ export default function QuizAuthWrapper({
 
   const { saveQuizState, getQuizState, clearQuizState, isAuthenticated } = useQuiz()
 
-  // Check for saved quiz state on mount
+  // Debug the current path and redirectPath
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      console.log("Current path:", window.location.pathname)
+      console.log("Redirect path:", redirectPath)
+      console.log("Fixed redirect path:", redirectPath ? fixCallbackUrl(redirectPath) : null)
+    }
+  }, [redirectPath])
+
+  // Update the useEffect that handles saved quiz state to properly add the completed parameter
   useEffect(() => {
     if (typeof window !== "undefined" && status !== "loading" && !hasCheckedStorage && !isRedirecting) {
       setHasCheckedStorage(true)
@@ -49,21 +80,28 @@ export default function QuizAuthWrapper({
         if (savedState && savedState.redirectPath) {
           // Check if we're already on the target page to prevent redirect loops
           const currentPath = window.location.pathname
-          const targetPath = savedState.redirectPath.split("?")[0] // Remove query params for comparison
+          const currentSearch = window.location.search
+          const currentUrl = currentPath + currentSearch
 
-          console.log("Current path:", currentPath)
+          // Always fix the path to ensure it uses /dashboard/ instead of /quiz/
+          const targetPath = fixCallbackUrl(savedState.redirectPath)
+
+          console.log("Current URL:", currentUrl)
           console.log("Target path:", targetPath)
           console.log("Saved state:", savedState)
 
-          // Only redirect if we're not already on the target page
-          if (!currentPath.includes(targetPath)) {
+          // Only redirect if we're not already on the target page with the completed parameter
+          if (!currentUrl.includes("completed=true") && savedState.isCompleted) {
             setIsRedirecting(true)
             // Add a small delay to ensure state is properly set before redirect
             setTimeout(() => {
+              // Ensure we add the completed parameter if the quiz is completed
+              let redirectUrl = targetPath
+
               // Add completed=true parameter to the URL if the quiz was completed
-              const redirectUrl = savedState.isCompleted
-                ? `${savedState.redirectPath}${savedState.redirectPath.includes("?") ? "&" : "?"}completed=true`
-                : savedState.redirectPath
+              if (savedState.isCompleted && !redirectUrl.includes("completed=true")) {
+                redirectUrl += `${redirectUrl.includes("?") ? "&" : "?"}completed=true`
+              }
 
               console.log("Redirecting to:", redirectUrl)
               router.push(redirectUrl)
@@ -80,7 +118,7 @@ export default function QuizAuthWrapper({
     }
   }, [status, router, hasCheckedStorage, isRedirecting, getQuizState, clearQuizState])
 
-  // Add this effect to detect sign-out
+  // Fix the useEffect that handles authentication state changes
   useEffect(() => {
     // If user was authenticated and is now not, they signed out
     const wasAuthenticated = localStorage.getItem("wasAuthenticated") === "true"
@@ -158,12 +196,15 @@ export default function QuizAuthWrapper({
                   // Ensure we're using the correct path format for the callback URL
                   let callbackUrl = redirectPath || `/dashboard/${quizState?.quizType}/${quizState?.quizSlug}`
 
+                  // Always ensure we're using /dashboard/ not /quiz/
+                  callbackUrl = fixCallbackUrl(callbackUrl)
+
                   // Add completed=true parameter if the quiz is completed
-                  if (quizState?.isCompleted) {
+                  if (quizState?.isCompleted && !callbackUrl.includes("completed=true")) {
                     callbackUrl += `${callbackUrl.includes("?") ? "&" : "?"}completed=true`
                   }
 
-                  router.push(`/auth/signin?callbackUrl=${encodeURIComponent(fixCallbackUrl(callbackUrl))}`)
+                  signIn("credentials", { callbackUrl })
                 }}
               >
                 Sign In
@@ -175,6 +216,7 @@ export default function QuizAuthWrapper({
     )
   }
 
+  // Fix the modal display logic for better UX
   if (quizState && quizState.quizType && showModal) {
     return (
       <>
@@ -192,12 +234,25 @@ export default function QuizAuthWrapper({
                   // Ensure we're using the correct path format for the callback URL
                   let callbackUrl = redirectPath || `/dashboard/${quizState?.quizType}/${quizState?.quizSlug}`
 
-                  // Add completed=true parameter if the quiz is completed
-                  if (quizState?.isCompleted) {
-                    callbackUrl += `${callbackUrl.includes("?") ? "&" : "?"}completed=true`
+                  // Always ensure we're using /dashboard/ not /quiz/
+                  callbackUrl = fixCallbackUrl(callbackUrl)
+
+                  // Save the current state before redirecting
+                  if (quizState && answers) {
+                    saveQuizState({
+                      quizId: quizState.quizId,
+                      quizType: quizState.quizType,
+                      slug: quizState.quizSlug,
+                      currentQuestion: quizState.currentQuestion,
+                      totalQuestions: quizState.totalQuestions,
+                      startTime: quizState.startTime,
+                      isCompleted: quizState.isCompleted, // This flag is enough
+                      answers: answers,
+                      redirectPath: callbackUrl, // Use the fixed URL
+                    })
                   }
 
-                  router.push(`/auth/signin?callbackUrl=${encodeURIComponent(fixCallbackUrl(callbackUrl))}`)
+                  signIn("credentials", { callbackUrl })
                 }}
               >
                 Sign In

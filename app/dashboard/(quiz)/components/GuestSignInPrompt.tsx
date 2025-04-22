@@ -16,6 +16,18 @@ interface GuestSignInPromptProps {
   onSkip?: () => void
 }
 
+// Add the missing fixCallbackUrl function
+function fixCallbackUrl(url: string): string {
+  if (!url) return "/dashboard"
+
+  // Replace /quiz/ with /dashboard/ in the URL path
+  if (url.includes("/quiz/")) {
+    return url.replace("/quiz/", "/dashboard/")
+  }
+
+  return url
+}
+
 export function GuestSignInPrompt({
   callbackUrl = "/dashboard",
   quizType = "quiz",
@@ -26,11 +38,11 @@ export function GuestSignInPrompt({
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
+  // Fix the handleSignIn function to properly handle redirection
   const handleSignIn = async () => {
     setIsLoading(true)
 
     // Ensure the callbackUrl is properly formatted and preserved
-    // Make sure we're redirecting to the specific quiz page
     let redirectUrl = callbackUrl
 
     // Fix the callback URL to ensure it uses /dashboard/ instead of /quiz/
@@ -38,7 +50,7 @@ export function GuestSignInPrompt({
 
     // If callbackUrl doesn't include the quiz type and ID, construct it
     if (quizId && quizType && !redirectUrl.includes(quizId)) {
-      redirectUrl = `/dashboard/${quizType}/${quizId}`
+      redirectUrl = `/dashboard/${quizType==='fill-blanks'?"blanks":quizType}/${quizId}`
     }
 
     // Add completed=true parameter if it's not already there
@@ -47,8 +59,15 @@ export function GuestSignInPrompt({
     }
 
     console.log("Signing in with callback URL:", redirectUrl)
-    const encodedCallbackUrl = encodeURIComponent(redirectUrl)
-    await signIn("credentials", { callbackUrl: encodedCallbackUrl })
+
+    try {
+      // Don't encode the URL - let the signIn function handle it
+      // Use the default provider instead of specifying "credentials"
+      await signIn(undefined, { callbackUrl: redirectUrl })
+    } catch (error) {
+      console.error("Sign in error:", error)
+      setIsLoading(false)
+    }
   }
 
   return (
