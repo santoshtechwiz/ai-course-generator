@@ -1,11 +1,13 @@
 "use client"
 
+import { Alert } from "@/components/ui/alert"
+
 import { useEffect, useState, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 import type { QuizAnswer } from "./QuizBase"
 import { useRouter } from "next/navigation"
@@ -14,16 +16,19 @@ import QuizAuthWrapper from "./QuizAuthWrapper"
 import { getPerformanceLevel } from "./QuizResultBase"
 import {
   AlertCircle,
-  BarChart3,
   CheckCircle,
   Clock,
   FileQuestion,
-  ListChecks,
+  Home,
   Loader2,
-  RefreshCcw,
+  RefreshCw,
+  Trophy,
   X,
+  ArrowLeft,
+  Share2,
 } from "lucide-react"
-import { useQuiz } from "@/context/QuizContext"
+import { useQuiz } from "@/app/context/QuizContext"
+import { motion } from "framer-motion"
 
 interface QuizResultDisplayProps {
   quizId: string
@@ -37,6 +42,7 @@ interface QuizResultDisplayProps {
   answers?: QuizAnswer[]
   preventAutoSave?: boolean
   onRestart?: () => void
+  showAuthModal?: boolean // Add this prop
 }
 
 export function QuizResultDisplay({
@@ -51,6 +57,7 @@ export function QuizResultDisplay({
   answers,
   preventAutoSave = false,
   onRestart,
+  showAuthModal = false, // Default to false
 }: QuizResultDisplayProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -66,9 +73,12 @@ export function QuizResultDisplay({
   const { getGuestResult, isAuthenticated } = useQuiz()
   const percentage = Number.parseFloat(score.toFixed(1))
 
+  // Add a new ref to track if we're currently saving guest results
+  const isSavingGuestResults = useRef(false)
+
   // Auto-save results if user is logged in and we haven't saved yet
   useEffect(() => {
-    if (session?.user && !hasSavedRef.current && !preventAutoSave) {
+    if (session?.user && !hasSavedRef.current && !preventAutoSave && !isSavingGuestResults.current) {
       const saveResults = async () => {
         setIsSaving(true)
         setSaveError(null)
@@ -129,12 +139,29 @@ export function QuizResultDisplay({
           })
         } catch (error) {
           console.error("Error saving quiz results:", error)
-          setSaveError(error instanceof Error ? error.message : "Unknown error")
-          toast({
-            title: "Error saving results",
-            description: error instanceof Error ? error.message : "Unknown error",
-            variant: "destructive",
-          })
+
+          // Check if this is a deadlock error and retry after a delay
+          const errorMessage = error instanceof Error ? error.message : "Unknown error"
+          if (errorMessage.includes("deadlock") || errorMessage.includes("write conflict")) {
+            toast({
+              title: "Database busy",
+              description: "We'll try again in a moment...",
+            })
+
+            // Retry after a short delay
+            setTimeout(() => {
+              setHasSaved(false)
+              hasSavedRef.current = false
+              setSaveError(null)
+            }, 2000)
+          } else {
+            setSaveError(errorMessage)
+            toast({
+              title: "Error saving results",
+              description: errorMessage,
+              variant: "destructive",
+            })
+          }
         } finally {
           setIsSaving(false)
         }
@@ -158,15 +185,20 @@ export function QuizResultDisplay({
 
   useEffect(() => {
     // If user just logged in and we have guest results, try to save them
-    if (isAuthenticated && !hasSavedRef.current && !preventAutoSave) {
+    if (isAuthenticated && !hasSavedRef.current && !preventAutoSave && !isSaving) {
       const guestResult = getGuestResult(quizId)
 
       if (guestResult) {
         const saveGuestResults = async () => {
+          // Set the ref to prevent the other effect from running
+          isSavingGuestResults.current = true
           setIsSaving(true)
           setSaveError(null)
 
           try {
+            // Add a small delay to ensure we don't hit the database at the exact same time
+            await new Promise((resolve) => setTimeout(resolve, 500))
+
             const response = await fetch(`/api/quiz/${quizId}/complete`, {
               method: "POST",
               headers: {
@@ -210,14 +242,32 @@ export function QuizResultDisplay({
             })
           } catch (error) {
             console.error("Error saving guest results:", error)
-            setSaveError(error instanceof Error ? error.message : "Unknown error")
-            toast({
-              title: "Error saving results",
-              description: error instanceof Error ? error.message : "Unknown error",
-              variant: "destructive",
-            })
+
+            // Check if this is a deadlock error and retry after a delay
+            const errorMessage = error instanceof Error ? error.message : "Unknown error"
+            if (errorMessage.includes("deadlock") || errorMessage.includes("write conflict")) {
+              toast({
+                title: "Database busy",
+                description: "We'll try again in a moment...",
+              })
+
+              // Retry after a short delay
+              setTimeout(() => {
+                setHasSaved(false)
+                hasSavedRef.current = false
+                setSaveError(null)
+              }, 3000)
+            } else {
+              setSaveError(errorMessage)
+              toast({
+                title: "Error saving results",
+                description: errorMessage,
+                variant: "destructive",
+              })
+            }
           } finally {
             setIsSaving(false)
+            isSavingGuestResults.current = false
           }
         }
 
@@ -237,6 +287,7 @@ export function QuizResultDisplay({
     correctAnswers,
     totalTime,
     score,
+    isSaving,
   ])
 
   const handleRestart = () => {
@@ -248,145 +299,210 @@ export function QuizResultDisplay({
     }
   }
 
-  return (
-    <QuizAuthWrapper>
-      <div className="container mx-auto py-6 px-4 md:px-6">
-        <div className="grid gap-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-              <p className="text-muted-foreground">Quiz Results</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={handleRestart} variant="outline" disabled={isSaving}>
-                Restart Quiz
-              </Button>
-              <Button onClick={() => router.push("/dashboard/quizzes")} variant="outline">
-                Back to Quizzes
-              </Button>
-            </div>
-          </div>
-          <Tabs defaultValue="summary" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
-            </TabsList>
-            <TabsContent value="summary" className="space-y-6">
-              <Card className="overflow-hidden border-muted/60">
-                <CardHeader className="bg-muted/30 border-b border-muted/60">
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="mr-2 h-5 w-5 text-primary" />
-                    Quiz Performance
-                  </CardTitle>
-                  <CardDescription>
-                    {isSaving ? (
-                      <div className="flex items-center">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
-                        Saving your results...
-                      </div>
-                    ) : hasSaved ? (
-                      <div className="flex items-center text-green-500">
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Your results have been saved.
-                      </div>
-                    ) : saveError ? (
-                      <div className="flex items-center text-red-500">
-                        <AlertCircle className="mr-2 h-4 w-4" />
-                        Error: {saveError}
-                      </div>
-                    ) : (
-                      ""
-                    )}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6 p-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">Score</div>
-                      <div className="text-sm font-medium flex items-center">
-                        <span
-                          className={`text-lg font-bold ${score >= 70 ? "text-green-500" : score >= 50 ? "text-amber-500" : "text-red-500"}`}
-                        >
-                          {score.toFixed(1)}%
-                        </span>
+  const handleShare = async () => {
+    try {
+      const shareText = `I scored ${score.toFixed(0)}% on the "${title}" quiz!`
+      const shareUrl = `${window.location.origin}/dashboard/${type}/${slug}`
+
+      if (navigator.share) {
+        await navigator.share({
+          title: `Quiz Result: ${title}`,
+          text: shareText,
+          url: shareUrl,
+        })
+      } else {
+        await navigator.clipboard.writeText(`${shareText} ${shareUrl}`)
+        toast({
+          title: "Link copied!",
+          description: "Share your results with friends",
+        })
+      }
+    } catch (error) {
+      console.error("Error sharing:", error)
+    }
+  }
+
+  // If auth modal is showing, render the results but with reduced opacity behind the modal
+  // This way the user can see their results even if they choose to continue as guest
+  if (showAuthModal) {
+    return (
+      <QuizAuthWrapper
+        quizState={{
+          quizId,
+          quizType: type,
+          quizSlug: slug,
+          isCompleted: true,
+        }}
+        answers={answers}
+        redirectPath={`/dashboard/${type}/${slug}?completed=true`}
+        showAuthModal={showAuthModal}
+      >
+        <div className="container mx-auto py-6 px-4 md:px-6 max-w-4xl pointer-events-none">
+          {/* Render a blurred version of the content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 0.7, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="filter blur-[2px]"
+          >
+            <Card className="border shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b p-6 md:p-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-center mb-2">{title}</h1>
+                <p className="text-center text-muted-foreground">Quiz Results</p>
+              </div>
+              <CardContent className="p-6 md:p-8">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="relative mb-4">
+                    <div className="w-36 h-36 rounded-full flex items-center justify-center border-8 border-muted">
+                      <div className="text-center">
+                        <div className="text-4xl font-bold">{percentage.toFixed(0)}%</div>
+                        <div className="text-sm text-muted-foreground">Score</div>
                       </div>
                     </div>
-                    <Progress
-                      value={score}
-                      className="h-2.5 rounded-full"
-                      indicatorClassName={`${performance.bgColor} rounded-full transition-all duration-500 ease-in-out`}
-                    />
-                    <p className="text-sm text-muted-foreground flex items-center">
-                      <span className={`h-2 w-2 rounded-full mr-2 ${performance.bgColor}`}></span>
-                      {performance.message}
-                    </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Card className="overflow-hidden border-muted/60">
-                      <CardHeader className="p-4 bg-muted/30 border-b border-muted/60">
-                        <CardTitle className="text-base flex items-center">
-                          <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                          Time Spent
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-4">
-                        <div className="text-2xl font-bold flex items-baseline">
-                          {minutes}
-                          <span className="text-lg mx-1">m</span>
-                          {seconds}
-                          <span className="text-lg ml-1">s</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {minutes < 1
-                            ? "Quick work!"
-                            : minutes > 5
-                              ? "You took your time - great for learning!"
-                              : "Good pace!"}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="overflow-hidden border-muted/60">
-                      <CardHeader className="p-4 bg-muted/30 border-b border-muted/60">
-                        <CardTitle className="text-base flex items-center">
-                          <CheckCircle className="mr-2 h-4 w-4 text-muted-foreground" />
-                          Questions
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-4">
-                        <div className="text-2xl font-bold flex items-baseline">
-                          <span className={correctAnswers === totalQuestions ? "text-green-500" : ""}>
-                            {correctAnswers}
-                          </span>
-                          <span className="text-lg mx-1">/</span>
-                          {totalQuestions}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {correctAnswers === totalQuestions
-                            ? "Perfect score!"
-                            : correctAnswers > totalQuestions * 0.7
-                              ? "Great job!"
-                              : "Keep practicing!"}
-                        </p>
-                      </CardContent>
-                    </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </QuizAuthWrapper>
+    )
+  }
+
+  // Original render code for authenticated users or when auth modal is not showing
+  return (
+    <QuizAuthWrapper>
+      <div className="container mx-auto py-6 px-4 md:px-6 max-w-4xl">
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/dashboard/quizzes")}
+            className="flex items-center gap-1.5"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Quizzes
+          </Button>
+
+          {isSaving ? (
+            <Badge variant="outline" className="flex items-center gap-1.5 bg-muted">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Saving...</span>
+            </Badge>
+          ) : hasSaved ? (
+            <Badge variant="outline" className="flex items-center gap-1.5 bg-green-50 text-green-700 border-green-200">
+              <CheckCircle className="h-3 w-3" />
+              <span>Saved</span>
+            </Badge>
+          ) : null}
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Card className="border shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b p-6 md:p-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-center mb-2">{title}</h1>
+              <p className="text-center text-muted-foreground">Quiz Results</p>
+            </div>
+
+            <CardContent className="p-6 md:p-8 space-y-8">
+              {/* Score Overview */}
+              <div className="flex flex-col items-center justify-center">
+                <div className="relative mb-4">
+                  <div className="w-36 h-36 rounded-full flex items-center justify-center border-8 border-muted">
+                    <div
+                      className="absolute inset-0 rounded-full overflow-hidden"
+                      style={{
+                        clipPath: `inset(0 ${100 - percentage}% 0 0)`,
+                      }}
+                    >
+                      <div className={`w-full h-full ${performance.bgColor} opacity-20`}></div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`text-4xl font-bold ${performance.color}`}>{percentage.toFixed(0)}%</div>
+                      <div className="text-sm text-muted-foreground">Score</div>
+                    </div>
                   </div>
-                </CardContent>
-                <CardFooter className="p-6 pt-0 flex flex-col sm:flex-row gap-3">
-                  <Button onClick={handleRestart} className="w-full sm:w-auto flex-1 sm:flex-none" disabled={isSaving}>
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                    Restart Quiz
-                  </Button>
-                  <Button
-                    onClick={() => router.push("/dashboard/quizzes")}
-                    variant="outline"
-                    className="w-full sm:w-auto flex-1 sm:flex-none"
-                  >
-                    <ListChecks className="mr-2 h-4 w-4" />
-                    Back to Quizzes
-                  </Button>
-                </CardFooter>
-                {saveError && (
-                  <div className="mt-2 p-6">
+                </div>
+
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-semibold mb-2">{performance.label}</h2>
+                  <p className="text-muted-foreground">{performance.message}</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 w-full max-w-md">
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold">{correctAnswers}</div>
+                    <div className="text-xs text-muted-foreground">Correct</div>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold">{totalQuestions - correctAnswers}</div>
+                    <div className="text-xs text-muted-foreground">Incorrect</div>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold">
+                      {minutes}:{seconds.toString().padStart(2, "0")}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Time</div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Question Results */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileQuestion className="h-5 w-5 text-primary" />
+                  Question Summary
+                </h3>
+
+                <div className="space-y-3">
+                  {answers && answers.length > 0 ? (
+                    answers.map((answer, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className={`p-4 rounded-lg border ${
+                          answer.isCorrect
+                            ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900/30"
+                            : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-900/30"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            {answer.isCorrect ? (
+                              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                            ) : (
+                              <X className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                            )}
+                            <span className="font-medium">Question {index + 1}</span>
+                          </div>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5 mr-1" />
+                            <span>
+                              {Math.floor(answer.timeSpent / 60)}:
+                              {Math.round(answer.timeSpent % 60)
+                                .toString()
+                                .padStart(2, "0")}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="text-center p-6 text-muted-foreground">No detailed results available</div>
+                  )}
+                </div>
+              </div>
+
+              {saveError && (
+                <Alert variant="destructive" className="mt-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <div className="ml-2">
+                    <div className="font-medium">Error saving results</div>
+                    <div className="text-sm">{saveError}</div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -395,72 +511,51 @@ export function QuizResultDisplay({
                         hasSavedRef.current = false
                         setSaveError(null)
                       }}
+                      className="mt-2"
                       disabled={isSaving}
                     >
-                      <RefreshCcw className="mr-2 h-3 w-3" />
+                      <RefreshCw className="mr-2 h-3 w-3" />
                       Retry
                     </Button>
                   </div>
-                )}
-              </Card>
-            </TabsContent>
-            <TabsContent value="details" className="space-y-6">
-              <Card className="overflow-hidden border-muted/60">
-                <CardHeader className="bg-muted/30 border-b border-muted/60">
-                  <CardTitle className="flex items-center">
-                    <ListChecks className="mr-2 h-5 w-5 text-primary" />
-                    Detailed Results
-                  </CardTitle>
-                  <CardDescription>See your performance on each question</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {answers && answers.length > 0 ? (
-                    <div className="space-y-4">
-                      {answers.map((answer, index) => (
-                        <Card
-                          key={index}
-                          className={`p-4 border-l-4 ${answer.isCorrect ? "border-l-green-500 bg-green-50/50 dark:bg-green-950/10" : "border-l-red-500 bg-red-50/50 dark:bg-red-950/10"}`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-medium">Question {index + 1}</p>
-                              <p className="text-sm text-muted-foreground flex items-center mt-1">
-                                <Clock className="h-3.5 w-3.5 mr-1.5" />
-                                {Math.floor(answer.timeSpent / 60)}m {Math.round(answer.timeSpent % 60)}s
-                              </p>
-                            </div>
-                            <div
-                              className={
-                                answer.isCorrect ? "text-green-500 flex items-center" : "text-red-500 flex items-center"
-                              }
-                            >
-                              {answer.isCorrect ? (
-                                <>
-                                  <CheckCircle className="h-4 w-4 mr-1.5" />
-                                  Correct
-                                </>
-                              ) : (
-                                <>
-                                  <X className="h-4 w-4 mr-1.5" />
-                                  Incorrect
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <FileQuestion className="h-12 w-12 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">No detailed results available for this quiz.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+                </Alert>
+              )}
+            </CardContent>
+
+            <CardFooter className="p-6 md:p-8 border-t flex flex-col sm:flex-row gap-3 justify-between">
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => router.push("/dashboard")} className="flex-1 sm:flex-auto">
+                  <Home className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Button>
+                <Button variant="outline" onClick={handleShare} className="flex-1 sm:flex-auto">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share
+                </Button>
+              </div>
+
+              <Button onClick={handleRestart} disabled={isSaving} className="flex-1 sm:flex-auto">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Restart Quiz
+              </Button>
+            </CardFooter>
+          </Card>
+        </motion.div>
+
+        {score >= 80 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg text-center"
+          >
+            <div className="flex justify-center mb-2">
+              <Trophy className="h-8 w-8 text-yellow-500" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">Excellent Work!</h3>
+            <p className="text-sm text-muted-foreground">You've mastered this topic. Ready for a new challenge?</p>
+          </motion.div>
+        )}
       </div>
     </QuizAuthWrapper>
   )

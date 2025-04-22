@@ -1,100 +1,51 @@
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
-import { Suspense } from "react"
-import { prisma } from "@/lib/db"
+
 import { authOptions } from "@/lib/authOptions"
+import { getQuiz } from "@/app/actions/getQuiz"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
-import { Skeleton } from "@/components/ui/skeleton"
-import McqQuiz from "../components/McqQuiz"
-import QuizDetailsPage from "../../components/QuizDetailsPage"
+import McqQuizWrapper from "../components/McqQuizWrapper"
+import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 
-export const QuizSkeleton = () => (
-  <div className="space-y-6 animate-pulse">
-    <div className="flex flex-col gap-4">
-      <Skeleton className="h-10 w-3/4 rounded-md" />
-      <Skeleton className="h-6 w-1/2 rounded-md" />
-    </div>
-
-    <div className="space-y-8">
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-full rounded-md" />
-        <div className="grid gap-3">
-          <Skeleton className="h-16 w-full rounded-md" />
-          <Skeleton className="h-16 w-full rounded-md" />
-          <Skeleton className="h-16 w-full rounded-md" />
-          <Skeleton className="h-16 w-full rounded-md" />
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center">
-        <Skeleton className="h-10 w-24 rounded-md" />
-        <Skeleton className="h-10 w-24 rounded-md" />
-      </div>
-    </div>
-  </div>
-)
-
-// SEO metadata generation
-export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await props.params
-
-  const quiz = await prisma.userQuiz.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      title: true,
-      questions: true,
-      user: { select: { name: true } },
-    },
-  })
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const quiz = await getQuiz(slug)
 
   if (!quiz) {
     return generatePageMetadata({
-      title: "Quiz Not Found | CourseAI",
-      description: "The requested quiz could not be found.",
-      path: `/quiz/${slug}`,
+      title: "Multiple Choice Quiz Not Found | CourseAI",
+      description:
+        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
+      path: `/dashboard/mcq/${slug}`,
       noIndex: true,
     })
   }
 
-  const title = `${quiz.title} Quiz | Test Your Knowledge`
-  const description = `Test your knowledge with this ${quiz.title} quiz created by ${quiz.user.name}. ${quiz.questions.length} questions to challenge yourself and learn something new!`
-  const ogImage = `/api/og?title=${encodeURIComponent(quiz.title)}`
-
   return generatePageMetadata({
-    title,
-    description,
-    path: `/quiz/${slug}`,
-    keywords: [quiz.title, "quiz", "test", "knowledge", "learning", "multiple choice"],
-    ogImage,
-    ogType: "website",
+    title: `${quiz.title} | Programming Multiple Choice Quiz`,
+    description: `Test your coding knowledge with this ${quiz.title?.toLowerCase()} multiple choice quiz. Practice programming concepts and improve your skills.`,
+    path: `/dashboard/mcq/${slug}`,
+    keywords: [
+      `${quiz.title?.toLowerCase()} quiz`,
+      "programming multiple choice",
+      "coding assessment",
+      "developer knowledge test",
+      "programming practice questions",
+    ],
+    ogType: "article",
   })
 }
 
-// Generate static paths for common quizzes
-export async function generateStaticParams() {
-  const quizzes = await prisma.userQuiz.findMany({
-    where: { isPublic: true }, // Only include published quizzes
-    select: { slug: true },
-    take: 100, // Limit to most popular/recent quizzes
-  })
-
-  return quizzes.filter((quiz) => quiz.slug).map((quiz) => ({ slug: quiz.slug }))
-}
-
-// Optimize the MCQ Quiz Page component to prevent redundant API calls
 const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
-  const { slug } = await props.params
+  const params = await props.params
+  const { slug } = params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
-  // Get current user session
   const session = await getServerSession(authOptions)
-  const currentUserId = session?.user?.id || ""
-
-  console.log(`Fetching MCQ quiz data for slug: ${slug}`)
+  const currentUserId = session?.user?.id
 
   // Fetch quiz data - this is the only API call we should make
   const result = await getMcqQuestions(slug)
@@ -107,39 +58,42 @@ const McqPage = async (props: { params: Promise<{ slug: string }> }) => {
 
   console.log(`Successfully fetched quiz: ${quizData.title} with ${questions.length} questions`)
 
+  // Estimate quiz time based on question count
+  const questionCount = questions.length
+  const estimatedTime = `PT${Math.max(5, Math.min(60, questionCount * 2))}M`
+
   // Create breadcrumb items
   const breadcrumbItems = [
+    { name: "Home", href: baseUrl },
+    { name: "Dashboard", href: `${baseUrl}/dashboard` },
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
     { name: quizData.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
 
-  // Estimate quiz time based on question count
-  const estimatedTime = `PT${Math.max(5, Math.min(60, questions.length * 2))}M`
-
   return (
-    <QuizDetailsPage
+    <QuizDetailsPageWithContext
       title={quizData.title}
-      description={`Test your knowledge on ${quizData.title}`}
+      description={`Test your coding knowledge on ${quizData.title} with multiple choice questions`}
       slug={slug}
       quizType="mcq"
-      questionCount={questions.length}
+      questionCount={questionCount}
       estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
+      quizId={quizData.id.toString()}
       authorId={quizData.userId}
-      quizId={quizData.id?.toString()}
-      isFavorite={quizData.isFavorite}
-      isPublic={quizData.isPublic}
+      isPublic={quizData.isPublic || false}
+      isFavorite={quizData.isFavorite || false}
       difficulty={quizData.difficulty || "medium"}
     >
-      <div className="flex flex-col gap-8 animate-fade-in">
-        {/* Quiz Content with Suspense */}
-        <Suspense fallback={<QuizSkeleton />}>
-          {questions && (
-            <McqQuiz questions={questions} title={quizData.title} quizId={Number(quizData.id) || 0} slug={slug} />
-          )}
-        </Suspense>
-      </div>
-    </QuizDetailsPage>
+      <McqQuizWrapper
+        quizData={{
+          ...quizData,
+          questions,
+        }}
+        slug={slug}
+        userId={currentUserId || ""}
+      />
+    </QuizDetailsPageWithContext>
   )
 }
 

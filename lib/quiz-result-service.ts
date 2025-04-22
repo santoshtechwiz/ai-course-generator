@@ -18,7 +18,7 @@ interface QuizSubmission {
   totalQuestions: number
 }
 
-// Fix the submitQuizResult function to properly handle different quiz types
+// Submit quiz result to the server
 export async function submitQuizResult(submission: QuizSubmission): Promise<any> {
   console.log("Submitting quiz result:", submission)
 
@@ -60,84 +60,82 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
 
     console.log("Sending API request to save quiz result:", payload)
 
-    // Make the API call to save the quiz result
-    const response = await fetch(`/api/quiz/${submission.quizId}/complete`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
+    // Implement retry logic for deadlock errors
+    let retries = 3
+    let lastError = null
 
-    if (!response.ok) {
-      let errorMessage = `Failed to save quiz result: ${response.status}`
-
+    while (retries > 0) {
       try {
-        const errorData = await response.json()
-        if (errorData.error) {
-          errorMessage = errorData.error
-        }
-      } catch (e) {
-        // If JSON parsing fails, try to get the text response
-        try {
-          const errorText = await response.text()
-          if (errorText) {
-            errorMessage += ` - ${errorText}`
+        // Make the API call to save the quiz result
+        const response = await fetch(`/api/quiz/${submission.quizId}/complete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) {
+          let errorMessage = `Failed to save quiz result: ${response.status}`
+
+          try {
+            const errorData = await response.json()
+            if (errorData.error) {
+              errorMessage = errorData.error
+            }
+          } catch (e) {
+            // If JSON parsing fails, try to get the text response
+            try {
+              const errorText = await response.text()
+              if (errorText) {
+                errorMessage += ` - ${errorText}`
+              }
+            } catch (textError) {
+              // If text extraction fails, just use the status code error
+            }
           }
-        } catch (textError) {
-          // If text extraction fails, just use the status code error
+
+          // Check if this is a deadlock error
+          if (errorMessage.includes("deadlock") || errorMessage.includes("write conflict")) {
+            lastError = new Error(errorMessage)
+            retries--
+            // Wait longer between each retry
+            await new Promise((resolve) => setTimeout(resolve, (4 - retries) * 1000))
+            continue
+          }
+
+          throw new Error(errorMessage)
+        }
+
+        const data = await response.json()
+        console.log("Quiz result saved successfully:", data)
+        return data
+      } catch (error) {
+        lastError = error
+
+        // Only retry on deadlock errors
+        if (
+          error instanceof Error &&
+          (error.message.includes("deadlock") || error.message.includes("write conflict"))
+        ) {
+          retries--
+          if (retries > 0) {
+            console.log(`Retrying after deadlock error. Retries left: ${retries}`)
+            // Wait longer between each retry
+            await new Promise((resolve) => setTimeout(resolve, (4 - retries) * 1000))
+            continue
+          }
+        } else {
+          // For other errors, don't retry
+          break
         }
       }
-
-      throw new Error(errorMessage)
     }
 
-    const data = await response.json()
-    console.log("Quiz result saved successfully:", data)
-    return data
+    // If we get here, all retries failed
+    throw lastError || new Error("Failed to save quiz result after multiple attempts")
   } catch (error) {
     console.error("Error submitting quiz result:", error)
     throw error
   }
-}
-
-// Helper function to calculate similarity between two strings
-export function calculateSimilarity(str1: string, str2: string): number {
-  if (!str1 && !str2) return 100
-  if (!str1 || !str2) return 0
-
-  const longer = str1.length > str2.length ? str1 : str2
-  const shorter = str1.length > str2.length ? str2 : str1
-
-  if (longer.length === 0) {
-    return 100
-  }
-
-  // Direct match
-  if (longer.toLowerCase() === shorter.toLowerCase()) {
-    return 100
-  }
-
-  // Calculate Levenshtein distance
-  const costs = new Array(shorter.length + 1)
-  for (let i = 0; i <= shorter.length; i++) {
-    costs[i] = i
-  }
-
-  for (let i = 0; i < longer.length; i++) {
-    let lastValue = i + 1
-    for (let j = 0; j < shorter.length; j++) {
-      if (longer[i].toLowerCase() === shorter[j].toLowerCase()) {
-        costs[j + 1] = lastValue
-      } else {
-        costs[j + 1] = Math.min(costs[j] + 1, costs[j + 1] + 1, lastValue + 1)
-      }
-      lastValue = costs[j + 1]
-    }
-  }
-
-  const levenshteinDistance = costs[shorter.length]
-  const similarityRatio = ((longer.length - levenshteinDistance) / longer.length) * 100
-
-  return Math.round(similarityRatio)
 }
