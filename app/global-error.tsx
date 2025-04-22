@@ -1,24 +1,31 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, Home, RefreshCw, ArrowLeft } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import Head from "next/head"
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
+interface GlobalErrorProps {
+  error: Error
   reset: () => void
-}) {
+}
+
+export default function GlobalError({ error, reset }: GlobalErrorProps) {
+  const router = useRouter()
+
+  // Ensure hooks are always called
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error("Global error occurred:", error)
   }, [error])
+
+  const handleReset = () => {
+    reset()
+    router.push("/") // Redirect to the home page or a safe fallback
+  }
 
   return (
     <div className="flex min-h-screen bg-background p-6 md:p-10 items-center justify-center">
@@ -61,7 +68,7 @@ export default function GlobalError({
         </CardContent>
 
         <CardFooter className="flex flex-col sm:flex-row gap-4 justify-center border-t pt-8 pb-6">
-          <Button onClick={() => reset()} className="w-full sm:w-auto h-11 text-base font-medium">
+          <Button onClick={handleReset} className="w-full sm:w-auto h-11 text-base font-medium">
             <RefreshCw className="mr-2 h-4 w-4" />
             Try Again
           </Button>

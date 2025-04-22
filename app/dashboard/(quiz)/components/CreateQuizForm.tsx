@@ -101,9 +101,39 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
     },
   })
 
+  // Implement consistent validation patterns
+  // Add this function near the top of the component
+  const validateQuizData = (data: QuizFormData): string | null => {
+    if (!data.title || data.title.trim().length < 3) {
+      return "Quiz title must be at least 3 characters"
+    }
+
+    if (!data.amount || data.amount < 1 || data.amount > maxQuestions) {
+      return `Number of questions must be between 1 and ${maxQuestions}`
+    }
+
+    if (!data.difficulty) {
+      return "Please select a difficulty level"
+    }
+
+    return null // No validation errors
+  }
+
+  // Modify the onSubmit function to use the validation
   const onSubmit = React.useCallback(
     (data: QuizFormData) => {
       if (isLoading) return
+
+      // Validate the form data
+      const validationError = validateQuizData(data)
+      if (validationError) {
+        toast({
+          title: "Validation Error",
+          description: validationError,
+          variant: "destructive",
+        })
+        return
+      }
 
       if (!isLoggedIn) {
         signIn("credentials", { callbackUrl: "/dashboard/mcq" })
@@ -113,7 +143,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
       setIsLoading(true)
       setIsConfirmDialogOpen(true)
     },
-    [isLoading, isLoggedIn],
+    [isLoading, isLoggedIn, maxQuestions, toast],
   )
 
   const handleConfirm = React.useCallback(async () => {
@@ -155,7 +185,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
       transition={{ duration: 0.5 }}
       className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
     >
-        <Card className="bg-background border border-border shadow-sm">
+      <Card className="bg-background border border-border shadow-sm">
         <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
             <motion.div
@@ -375,4 +405,3 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
     </motion.div>
   )
 }
-

@@ -334,10 +334,15 @@ export function QuizActions({
                     }
               }
               aria-label="Quiz actions"
+              aria-expanded={isOpen}
+              aria-haspopup="true"
             >
               {icon || <Settings className="h-5 w-5" />}
               {!hasBeenSeen && (
-                <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full animate-pulse" />
+                <span
+                  className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full animate-pulse"
+                  aria-hidden="true"
+                />
               )}
             </motion.button>
           </DropdownMenuTrigger>
