@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { QuizResultBase, getPerformanceLevel } from "../../components/QuizResultBase"
+import { calculateSimilarity } from "@/hooks/quiz-session-storage"
 
 interface BlankQuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]
@@ -273,44 +274,6 @@ export default function BlankQuizResults({
       </div>
     </QuizResultBase>
   )
-}
-
-function calculateSimilarity(str1: string, str2: string): number {
-  const normalize = (str: string) => str.replace(/\s+/g, " ").trim()?.toLowerCase()
-  const normalizedStr1 = normalize(str1)
-  const normalizedStr2 = normalize(str2)
-
-  if (normalizedStr1 === normalizedStr2) return 100
-
-  const longer = normalizedStr1.length > normalizedStr2.length ? normalizedStr1 : normalizedStr2
-  const shorter = normalizedStr1.length > normalizedStr2.length ? normalizedStr2 : normalizedStr1
-  const longerLength = longer.length
-
-  if (longerLength === 0) return 100
-
-  const editDistance = levenshteinDistance(longer, shorter)
-  return Math.round(Math.max(0, Math.min(100, (1 - editDistance / longerLength) * 100)))
-}
-
-function levenshteinDistance(str1: string, str2: string): number {
-  const m = str1.length
-  const n = str2.length
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))
-
-  for (let i = 0; i <= m; i++) dp[i][0] = i
-  for (let j = 0; j <= n; j++) dp[0][j] = j
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (str1[i - 1] === str2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1]
-      } else {
-        dp[i][j] = Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1
-      }
-    }
-  }
-
-  return dp[m][n]
 }
 
 function getAnswerClassName(similarity: number): string {

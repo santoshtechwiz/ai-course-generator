@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useEffect, type ReactNode, useState, useCallback } from "react"
+import { createContext, useContext, useReducer, useEffect, type ReactNode, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 
@@ -94,6 +94,7 @@ export interface QuizResult {
 interface QuizContextType {
   saveGuestResult: (result: QuizResult) => void
   getGuestResult: (quizId: string) => QuizResult | null
+  clearGuestResult: (quizId: string) => void
   saveQuizState: (state: Partial<QuizState>) => void
   getQuizState: () => QuizState | null
   clearQuizState: () => void
@@ -244,6 +245,7 @@ export function QuizProvider({
   const { data: session, status } = useSession()
   const [hasGuestResults, setHasGuestResults] = useState(false)
   const [showSignInPrompt, setShowSignInPrompt] = useState(false)
+  const [guestResults, setGuestResults] = useState<{ [quizId: string]: QuizResult }>({})
 
   const isAuthenticated = status === "authenticated"
   const isLoading = status === "loading"
@@ -416,6 +418,29 @@ export function QuizProvider({
     }
   }, [])
 
+  // Enhance the QuizContext to better handle guest results
+  // Add a function to clear guest results after they've been saved
+
+  // Add this function to the context provider
+  const clearGuestResult = useCallback((quizId: string) => {
+    if (typeof window === "undefined") return
+
+    // Clear from both localStorage and sessionStorage
+    localStorage.removeItem(`guestQuizResults_${quizId}`)
+    sessionStorage.removeItem(`guestQuizResults_${quizId}`)
+
+    // Also clear related quiz state
+    localStorage.removeItem(`quiz_state_${quizId}`)
+    sessionStorage.removeItem(`quiz_state_${quizId}`)
+
+    // Update the state to remove this quiz result
+    setGuestResults((prev) => {
+      const newResults = { ...prev }
+      delete newResults[quizId]
+      return newResults
+    })
+  }, [])
+
   // Helper functions
   const nextQuestion = () => {
     if (state.currentQuestionIndex < state.questionCount - 1) {
@@ -562,25 +587,43 @@ export function QuizProvider({
     }
   }, [isAuthenticated, isLoading])
 
-  const value = {
-    saveGuestResult,
-    getGuestResult,
-    saveQuizState,
-    getQuizState,
-    clearQuizState,
-    hasGuestResults,
-    isAuthenticated,
-    isLoading,
-    showSignInPrompt,
-    setShowSignInPrompt,
-    state,
-    dispatch,
-    nextQuestion,
-    prevQuestion,
-    submitAnswer,
-    completeQuiz,
-    restartQuiz,
-  }
+  // Add the function to the context value
+  const value = useMemo(
+    () => ({
+      saveGuestResult,
+      getGuestResult,
+      clearGuestResult, // Add the new function here
+      saveQuizState,
+      getQuizState,
+      clearQuizState,
+      hasGuestResults,
+      isAuthenticated,
+      isLoading,
+      showSignInPrompt,
+      setShowSignInPrompt,
+      state,
+      dispatch,
+      completeQuiz,
+      restartQuiz,
+    }),
+    [
+      saveGuestResult,
+      getGuestResult,
+      clearGuestResult,
+      saveQuizState,
+      getQuizState,
+      clearQuizState,
+      hasGuestResults,
+      isAuthenticated,
+      isLoading,
+      showSignInPrompt,
+      setShowSignInPrompt,
+      state,
+      dispatch,
+      completeQuiz,
+      restartQuiz,
+    ],
+  )
 
   return <QuizContext.Provider value={value}>{children}</QuizContext.Provider>
 }

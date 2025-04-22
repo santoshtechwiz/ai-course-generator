@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -59,6 +59,7 @@ export default function QuizAuthWrapper({
   const [isRedirecting, setIsRedirecting] = useState(false)
 
   const { saveQuizState, getQuizState, clearQuizState, isAuthenticated } = useQuiz()
+  const previousAuthState = useRef(false)
 
   // Debug the current path and redirectPath
   useEffect(() => {
@@ -131,6 +132,7 @@ export default function QuizAuthWrapper({
     // Update authentication state
     if (status !== "loading") {
       localStorage.setItem("wasAuthenticated", status === "authenticated" ? "true" : "false")
+      previousAuthState.current = status === "authenticated"
     }
   }, [status])
 
@@ -149,9 +151,7 @@ export default function QuizAuthWrapper({
 
   // Show auth modal if required
   useEffect(() => {
-    if (requireAuth && status === "unauthenticated") {
-      setShowModal(true)
-    }
+    setShowModal(requireAuth && status === "unauthenticated")
   }, [requireAuth, status])
 
   // Show auth modal based on prop
@@ -263,6 +263,34 @@ export default function QuizAuthWrapper({
       </>
     )
   }
+
+  // Enhance the QuizAuthWrapper to properly clear guest data after authentication
+  // This helps prevent the issue where guest results are still shown after sign-in
+
+  // Add this to the component after successful authentication
+  useEffect(() => {
+    // If the user is now authenticated and we had guest data, clear it
+    if (session?.user && quizState && previousAuthState.current === false) {
+      // Clear guest data from storage
+      if (typeof window !== "undefined") {
+        // Clear quiz-specific data
+        localStorage.removeItem(`guestQuizResults_${quizState.quizId}`)
+        sessionStorage.removeItem(`guestQuizResults_${quizState.quizId}`)
+
+        // Clear quiz state
+        localStorage.removeItem(`quiz_state_${quizState.quizType}_${quizState.quizId}`)
+        sessionStorage.removeItem(`quiz_state_${quizState.quizType}_${quizState.quizId}`)
+
+        // Clear answers
+        localStorage.removeItem(`quiz_answers_${quizState.quizId}`)
+
+        console.log("Cleared guest data after authentication")
+      }
+
+      // Update the previous auth state
+      previousAuthState.current = true
+    }
+  }, [session, quizState])
 
   // Otherwise, just render children
   return <>{children}</>
