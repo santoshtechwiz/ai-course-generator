@@ -33,26 +33,68 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
   const [startTime] = useState(Date.now())
   const { animationsEnabled } = useAnimation()
 
+  // Debug the question data
+  useEffect(() => {
+    if (!question) {
+      console.error("McqQuiz received null or undefined question")
+    } else {
+      console.log("McqQuiz received question:", question)
+
+      // Check if the question has all required fields
+      if (!question.id) console.warn("Question is missing id")
+      if (!question.question) console.warn("Question is missing question text")
+      if (!question.answer) console.warn("Question is missing correct answer")
+      if (!question.option1 && !question.option2 && !question.option3) {
+        console.warn("Question is missing all option fields")
+      }
+    }
+  }, [question])
+
   // Update elapsed time
   useEffect(() => {
     const timer = setInterval(() => {
       setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
     }, 1000)
-    return () => clearInterval(timer)
+
+    return () => {
+      clearInterval(timer) // Clean up the timer on component unmount
+    }
   }, [startTime])
 
-  // Memoize the options to prevent unnecessary re-renders
+  // Improve the uniqueOptions useMemo to handle edge cases better
   const uniqueOptions = useMemo(() => {
-    if (!question) return []
+    if (!question) {
+      console.error("Cannot generate options for null question")
+      return []
+    }
+
+    // Log the raw options for debugging
+    console.log("Raw options:", {
+      answer: question.answer,
+      option1: question.option1,
+      option2: question.option2,
+      option3: question.option3,
+    })
 
     const allOptions = [question.answer, question.option1, question.option2, question.option3].filter(Boolean)
+    console.log("Filtered options:", allOptions)
 
     // Check for duplicate options
     const uniqueOptionsSet = new Set(allOptions)
+    console.log("Unique options count:", uniqueOptionsSet.size)
 
     if (uniqueOptionsSet.size < 2) {
       console.warn("Question has fewer than 2 unique options:", question)
-      return []
+
+      // Add fallback options if we don't have enough
+      if (question.answer) {
+        uniqueOptionsSet.add("None of the above")
+        uniqueOptionsSet.add("All of the above")
+        uniqueOptionsSet.add("Cannot be determined")
+      } else {
+        console.error("Question has no correct answer defined")
+        return []
+      }
     }
 
     if (uniqueOptionsSet.size < 4) {
@@ -72,6 +114,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
 
     // Shuffle options consistently using a seed based on the question
     const shuffledOptions = [...uniqueOptionsSet].sort(() => Math.random() - 0.5)
+    console.log("Final shuffled options:", shuffledOptions)
     return shuffledOptions
   }, [question])
 
@@ -79,9 +122,19 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
     setSelectedOption(value)
   }
 
+  // Update the handleSubmit function to correctly determine if the answer is correct
   const handleSubmit = () => {
     if (selectedOption) {
+      // Check if the selected option is the correct answer
       const isCorrect = selectedOption === question.answer
+
+      console.log("Submitting answer:", {
+        selectedOption,
+        correctAnswer: question.answer,
+        isCorrect,
+        elapsedTime,
+      })
+
       onAnswer(selectedOption, elapsedTime, isCorrect)
       setSelectedOption(null) // Reset for next question
     }

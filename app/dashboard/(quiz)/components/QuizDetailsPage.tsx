@@ -27,11 +27,10 @@ import { Progress } from "@/components/ui/progress"
 import { ShareButton } from "@/components/ShareButton"
 
 import { Breadcrumb } from "../../../../components/breadcrumb"
-import {RandomQuiz} from "./RandomQuiz"
+import { RandomQuiz } from "./RandomQuiz"
 import RandomQuote from "@/components/RandomQuote"
 import { cn } from "@/lib/utils"
 import QuizActions from "./QuizActions"
-
 
 interface QuizDetailsPageProps {
   title: string
@@ -50,6 +49,35 @@ interface QuizDetailsPageProps {
   category?: string
   tags?: string[]
   completionRate?: number
+}
+
+// Create reusable style constants
+const DIFFICULTY_STYLES = {
+  easy: {
+    bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    text: "text-emerald-700 dark:text-emerald-300",
+    border: "border-emerald-200 dark:border-emerald-800",
+  },
+  medium: {
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    text: "text-amber-700 dark:text-amber-300",
+    border: "border-amber-200 dark:border-amber-800",
+  },
+  hard: {
+    bg: "bg-red-50 dark:bg-red-900/20",
+    text: "text-red-700 dark:text-red-300",
+    border: "border-red-200 dark:border-red-800",
+  },
+}
+
+const QUIZ_TYPE_STYLES = {
+  mcq: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800",
+  openended:
+    "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800",
+  "fill-blanks":
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800",
+  code: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800",
+  flashcard: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800",
 }
 
 export default function QuizDetailsPage({
@@ -131,16 +159,6 @@ export default function QuizDetailsPage({
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
     }
-  }
-
-  const quizTypeStyles = {
-    mcq: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800",
-    openended:
-      "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800",
-    "fill-blanks":
-      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800",
-    code: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800",
-    flashcard: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800",
   }
 
   return (
@@ -252,7 +270,7 @@ export default function QuizDetailsPage({
                 >
                   <Badge
                     variant="outline"
-                    className={cn("px-2.5 py-1 text-xs font-medium rounded-full border", quizTypeStyles[quizType])}
+                    className={cn("px-2.5 py-1 text-xs font-medium rounded-full border", QUIZ_TYPE_STYLES[quizType])}
                   >
                     {quizTypeLabels[quizType]}
                   </Badge>
@@ -277,12 +295,9 @@ export default function QuizDetailsPage({
                           variant="outline"
                           className={cn(
                             "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border",
-                            difficultyConfig[difficulty].bgLight,
-                            difficultyConfig[difficulty].bgDark,
-                            difficultyConfig[difficulty].borderLight,
-                            difficultyConfig[difficulty].borderDark,
-                            difficultyConfig[difficulty].textLight,
-                            difficultyConfig[difficulty].textDark,
+                            DIFFICULTY_STYLES[difficulty].bg,
+                            DIFFICULTY_STYLES[difficulty].text,
+                            DIFFICULTY_STYLES[difficulty].border,
                           )}
                         >
                           <div className="flex">

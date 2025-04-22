@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import { useState, useCallback, useMemo } from "react"
 import {
   Clock,
   HelpCircle,
@@ -24,7 +23,7 @@ import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { motion } from "framer-motion"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
-
+import React from "react"
 
 // SVG Background Pattern Component
 const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => {
@@ -128,6 +127,121 @@ const quizTypeIcons = {
   mcq: HelpCircle,
 }
 
+// Memoize the QuizCard component
+const MemoizedQuizCard = React.memo(({ quiz, index }: { quiz: any; index: number }) => {
+  const Icon = quizTypeIcons[quiz.quizType as keyof typeof quizTypeIcons] || HelpCircle
+  const bgColor = quiz.difficulty
+    ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
+    : difficultyColors.Medium
+  const color = "text-muted-foreground"
+
+  return (
+    <motion.div
+      key={`${quiz.id}-${index}`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ delay: index * 0.1, duration: 0.3 }}
+      className="relative group mb-4"
+    >
+      {/* Rest of the component remains the same */}
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-primary/10 rounded-lg opacity-0 group-hover:opacity-100 blur transition-all duration-300 group-hover:duration-200 animate-tilt"></div>
+
+      <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+        <QuizBackgroundPattern quizType={quiz.quizType || ""} />
+
+        <CardHeader className="space-y-2 p-4 pb-2 relative z-10">
+          <CardTitle className="flex justify-between items-center text-base sm:text-lg">
+            <span className="group-hover:text-primary/90 transition-colors duration-300 line-clamp-1 mr-2">
+              {quiz.title}
+            </span>
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 15 }}
+              whileTap={{ scale: 0.95 }}
+              className={cn(
+                "h-8 w-8 shrink-0 rounded-full flex items-center justify-center transition-colors duration-300 shadow-sm",
+                bgColor,
+              )}
+            >
+              <Icon className={cn("h-4 w-4", color)} />
+            </motion.div>
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className={cn(bgColor)}>
+              {quiz.difficulty || "Medium"}
+            </Badge>
+            <span className="text-sm text-muted-foreground">{quiz.quizType}</span>
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="relative z-10 p-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+            <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300">
+              <Clock className="h-4 w-4 mr-2 group-hover:text-primary/70" />
+              <span>{quiz.duration} minutes</span>
+            </div>
+            {quiz.bestScore !== null && (
+              <div className="flex items-center text-muted-foreground group-hover:text-foreground/80">
+                <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
+                <span>Best: {quiz.bestScore}%</span>
+              </div>
+            )}
+          </div>
+
+          {quiz.completionRate !== undefined && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-muted-foreground">Progress</span>
+                <span className="text-xs font-medium">{quiz.completionRate}%</span>
+              </div>
+              <Progress value={quiz.completionRate} className="h-1.5" />
+            </div>
+          )}
+        </CardContent>
+
+        <CardFooter className="relative z-10 p-4 pt-2">
+          <Link
+            href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}
+            className="w-full"
+          >
+            <Button
+              className={cn(
+                "w-full group relative overflow-hidden transition-all duration-300 bg-primary hover:bg-primary/90",
+                "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent",
+                "after:translate-x-[-100%] after:group-hover:translate-x-[100%] after:transition-transform after:duration-500",
+                "shadow-md hover:shadow-lg",
+              )}
+              size="sm"
+            >
+              <span className="relative z-10 mr-1">Start Quiz</span>
+              <motion.span
+                className="relative z-10 ml-1"
+                initial={{ x: 0 }}
+                whileHover={{ scale: 1.1, rotate: 15 }}
+                animate={{ x: [0, 2, 0] }}
+                transition={{
+                  x: {
+                    duration: 1.5,
+                    repeat: Number.POSITIVE_INFINITY,
+                    repeatType: "reverse",
+                  },
+                }}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </motion.span>
+            </Button>
+          </Link>
+        </CardFooter>
+      </Card>
+    </motion.div>
+  )
+})
+
+MemoizedQuizCard.displayName = "MemoizedQuizCard"
+
+// In the RandomQuiz component, optimize the filter and refresh functions
 export const RandomQuiz: React.FC = () => {
   const { quizzes, isLoading, error, refresh } = useRandomQuizzes(3)
   const [filter, setFilter] = useState<string | null>(null)
@@ -135,13 +249,18 @@ export const RandomQuiz: React.FC = () => {
 
   const quizTypes = ["openended", "fill-blanks", "flashcard", "code"]
 
-  const handleRefresh = () => {
+  // Memoize the handleRefresh function
+  const handleRefresh = useCallback(() => {
     setRefreshKey((prevKey) => prevKey + 1)
     refresh()
-  }
+  }, [refresh])
 
-  const filteredQuizzes = filter ? quizzes.filter((quiz) => quiz.quizType?.toLowerCase() === filter) : quizzes
+  // Memoize the filtered quizzes
+  const filteredQuizzes = useMemo(() => {
+    return filter ? quizzes.filter((quiz) => quiz.quizType?.toLowerCase() === filter) : quizzes
+  }, [filter, quizzes])
 
+  // In the return statement, use the memoized components
   return (
     <div className="h-full flex flex-col bg-background">
       <div className="sticky top-0 z-10 p-4 bg-background/95 backdrop-blur border-b">
@@ -157,7 +276,13 @@ export const RandomQuiz: React.FC = () => {
               <Filter className="h-4 w-4 mr-2" />
               <span>{filter ? filter.replace("-", " ") : "All"}</span>
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-8 w-8 rounded-full" title="Refresh quizzes">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              className="h-8 w-8 rounded-full"
+              title="Refresh quizzes"
+            >
               <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
@@ -215,112 +340,9 @@ export const RandomQuiz: React.FC = () => {
             </Button>
           </div>
         ) : filteredQuizzes.length > 0 ? (
-          filteredQuizzes.map((quiz, index) => {
-            const Icon = quizTypeIcons[quiz.quizType as keyof typeof quizTypeIcons] || HelpCircle
-            const bgColor = quiz.difficulty
-              ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
-              : difficultyColors.Medium
-            const color = "text-muted-foreground"
-
-            return (
-              <motion.div
-                key={`${quiz.id}-${refreshKey}-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: index * 0.1, duration: 0.3 }}
-                className="relative group mb-4"
-              >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-primary/10 rounded-lg opacity-0 group-hover:opacity-100 blur transition-all duration-300 group-hover:duration-200 animate-tilt"></div>
-
-                <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                  <QuizBackgroundPattern quizType={quiz.quizType || ""} />
-
-                  <CardHeader className="space-y-2 p-4 pb-2 relative z-10">
-                    <CardTitle className="flex justify-between items-center text-base sm:text-lg">
-                      <span className="group-hover:text-primary/90 transition-colors duration-300 line-clamp-1 mr-2">
-                        {quiz.title}
-                      </span>
-                      <motion.div
-                        whileHover={{ scale: 1.1, rotate: 15 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={cn("h-8 w-8 shrink-0 rounded-full flex items-center justify-center transition-colors duration-300 shadow-sm", bgColor)}
-                      >
-                        <Icon className={cn("h-4 w-4", color)} />
-                      </motion.div>
-                    </CardTitle>
-                    <CardDescription className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary" className={cn(bgColor)}>
-                        {quiz.difficulty || "Medium"}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">{quiz.quizType}</span>
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="relative z-10 p-4 pt-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
-                      <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300">
-                        <Clock className="h-4 w-4 mr-2 group-hover:text-primary/70" />
-                        <span>{quiz.duration} minutes</span>
-                      </div>
-                      {quiz.bestScore !== null && (
-                        <div className="flex items-center text-muted-foreground group-hover:text-foreground/80">
-                          <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
-                          <span>Best: {quiz.bestScore}%</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {quiz.completionRate !== undefined && (
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-muted-foreground">Progress</span>
-                          <span className="text-xs font-medium">{quiz.completionRate}%</span>
-                        </div>
-                        <Progress value={quiz.completionRate} className="h-1.5" />
-                      </div>
-                    )}
-                  </CardContent>
-
-                  <CardFooter className="relative z-10 p-4 pt-2">
-                    <Link
-                      href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}
-                      className="w-full"
-                    >
-                      <Button
-                        className={cn(
-                          "w-full group relative overflow-hidden transition-all duration-300 bg-primary hover:bg-primary/90",
-                          "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent",
-                          "after:translate-x-[-100%] after:group-hover:translate-x-[100%] after:transition-transform after:duration-500",
-                          "shadow-md hover:shadow-lg"
-                        )}
-                        size="sm"
-                      >
-                        <span className="relative z-10 mr-1">Start Quiz</span>
-                        <motion.span
-                          className="relative z-10 ml-1"
-                          initial={{ x: 0 }}
-                          whileHover={{ x: 5 }}
-                          animate={{ x: [0, 2, 0] }}
-                          transition={{
-                            x: {
-                              duration: 1.5,
-                              repeat: Number.POSITIVE_INFINITY,
-                              repeatType: "reverse",
-                            },
-                          }}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </motion.span>
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            )
-          })
+          filteredQuizzes.map((quiz, index) => (
+            <MemoizedQuizCard key={`${quiz.id}-${refreshKey}-${index}`} quiz={quiz} index={index} />
+          ))
         ) : (
           <div className="text-center p-8 border border-dashed rounded-lg bg-muted/30">
             <div className="flex justify-center mb-4">

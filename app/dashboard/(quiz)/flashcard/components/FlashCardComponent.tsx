@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Check, ThumbsUp, Th
 import { motion, AnimatePresence } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
 
-
 import { Card, CardContent } from "@/components/ui/card"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
 import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
@@ -15,7 +14,8 @@ import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { QuizProgress } from "../../components/QuizProgress"
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { QuizLoader } from "@/components/ui/quiz-loader"
-import useQuizState from "@/hooks/use-quiz-state"
+import { useQuiz } from "@/app/context/QuizContext"
+import { useSession } from "next-auth/react"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -36,16 +36,20 @@ export function FlashCardComponent({
   savedCardIds = [],
   onComplete,
 }: FlashCardComponentProps) {
+  // Use QuizContext instead of local state
+  const { state, dispatch, nextQuestion, prevQuestion, submitAnswer, completeQuiz, restartQuiz, isAuthenticated } =
+    useQuiz()
+
+  const { data: session } = useSession()
+
+  // Local UI state that doesn't need to be in context
   const [flipped, setFlipped] = useState(false)
   const [direction, setDirection] = useState(0)
-  const [selfRating, setSelfRating] = useState<Record<string, "correct" | "incorrect" | null>>({})
   const [showConfetti, setShowConfetti] = useState(false)
   const [exitComplete, setExitComplete] = useState(true)
   const [ratingAnimation, setRatingAnimation] = useState<"correct" | "incorrect" | null>(null)
   const [reviewMode, setReviewMode] = useState(false)
   const [reviewCards, setReviewCards] = useState<number[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isCompleted, setIsCompleted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   const cardRef = useRef<HTMLDivElement>(null)
@@ -59,38 +63,22 @@ export function FlashCardComponent({
     return () => clearTimeout(timer)
   }, [])
 
-  const calculateScore = useCallback(
-    (selectedOptions: (string | null)[], questions: FlashCard[]) => {
-      return Object.values(selfRating).filter((rating) => rating === "correct").length
-    },
-    [selfRating],
-  )
+  // Get self-ratings from the answers in context
+  const selfRating = useMemo(() => {
+    const ratings: Record<string, "correct" | "incorrect" | null> = {}
 
-  const {
-    currentQuestionIndex,
-    selectedOptions,
-    timeSpent,
-    quizCompleted,
-    quizResults,
-    showFeedbackModal,
-    isSubmitting,
-    isSuccess,
-    isError,
-    errorMessage,
-    isAuthenticated,
-    session,
-    handleSelectOption,
-    handleNextQuestion,
-    handleFeedbackContinue,
-    restartQuiz,
-  } = useQuizState({
-    quizId,
-    slug,
-    questions: cards,
-    quizType: "flashcard",
-    calculateScore,
-    onComplete,
-  })
+    state.answers.forEach((answer, index) => {
+      if (cards[index]?.id && answer) {
+        ratings[cards[index].id.toString()] = answer
+      }
+    })
+
+    return ratings
+  }, [state.answers, cards])
+
+  const calculateScore = useCallback(() => {
+    return Object.values(selfRating).filter((rating) => rating === "correct").length
+  }, [selfRating])
 
   // Get indices of cards marked as "incorrect"
   const cardsToReview = useMemo(() => {
@@ -110,24 +98,23 @@ export function FlashCardComponent({
     }
 
     setReviewCards(cardsToReview)
-    setCurrentIndex(0)
+    dispatch({ type: "SET_CURRENT_QUESTION", payload: 0 })
     setFlipped(false)
     setReviewMode(true)
-    setIsCompleted(false)
   }
 
   const handleExitReviewMode = () => {
     setReviewMode(false)
-    setCurrentIndex(0)
+    dispatch({ type: "SET_CURRENT_QUESTION", payload: 0 })
     setFlipped(false)
   }
 
   // Get the current card based on mode
   const getCurrentCard = () => {
     if (reviewMode && reviewCards.length > 0) {
-      return cards[reviewCards[currentQuestionIndex]]
+      return cards[reviewCards[state.currentQuestionIndex]]
     }
-    return cards[currentQuestionIndex]
+    return cards[state.currentQuestionIndex]
   }
 
   const currentCard = getCurrentCard()
@@ -137,8 +124,8 @@ export function FlashCardComponent({
 
   // Calculate progress
   const progress = reviewMode
-    ? ((currentQuestionIndex + 1) / reviewCards.length) * 100
-    : ((currentQuestionIndex + 1) / cards.length) * 100
+    ? ((state.currentQuestionIndex + 1) / reviewCards.length) * 100
+    : ((state.currentQuestionIndex + 1) / cards.length) * 100
 
   const toggleFlip = () => {
     setFlipped(!flipped)
@@ -151,16 +138,40 @@ export function FlashCardComponent({
   }
 
   const handleSelfRating = (cardId: string, rating: "correct" | "incorrect") => {
-    setSelfRating((prev) => ({
-      ...prev,
-      [cardId]: rating,
-    }))
+    // Submit the answer to the context
+    submitAnswer(rating)
+
     setRatingAnimation(rating)
 
     // Reset animation state after animation completes
     setTimeout(() => {
       setRatingAnimation(null)
     }, 1000)
+  }
+
+  const handleNextCard = () => {
+    if (state.currentQuestionIndex < cards.length - 1) {
+      setDirection(1)
+      setFlipped(false)
+      setExitComplete(false)
+      setTimeout(() => {
+        nextQuestion()
+      }, 300)
+    } else {
+      // Complete the quiz
+      completeQuiz()
+    }
+  }
+
+  const handlePrevCard = () => {
+    if (state.currentQuestionIndex > 0) {
+      setDirection(-1)
+      setFlipped(false)
+      setExitComplete(false)
+      setTimeout(() => {
+        prevQuestion()
+      }, 300)
+    }
   }
 
   // Enhanced card variants with more dynamic 3D effects and smoother transitions
@@ -316,12 +327,13 @@ export function FlashCardComponent({
   }
 
   const renderQuizContent = () => {
-    if (quizCompleted) {
-      const correctCount = calculateScore(selectedOptions, cards)
+    if (state.isCompleted) {
+      const correctCount = calculateScore()
       const totalQuestions = cards.length
       const percentage = (correctCount / totalQuestions) * 100
-      const totalTime = quizResults?.elapsedTime ?? timeSpent.reduce((sum, time) => sum + time, 0)
+      const totalTime = state.timeSpent.reduce((sum, time) => sum + time, 0)
 
+      // Only show results to authenticated users
       if (isAuthenticated) {
         return (
           <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.6}>
@@ -339,11 +351,12 @@ export function FlashCardComponent({
         )
       }
 
+      // Show sign-in prompt for unauthenticated users
       return (
         <MotionWrapper animate={true} variant="fade" duration={0.6}>
           <Card className="w-full max-w-2xl mx-auto">
             <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
-              {!session ? <SignInPrompt callbackUrl={`/dashboard/flashcard/${slug}`} /> : null}
+              <SignInPrompt callbackUrl={`/dashboard/flashcard/${slug}`} />
             </CardContent>
           </Card>
         </MotionWrapper>
@@ -356,9 +369,9 @@ export function FlashCardComponent({
           {/* Header Section */}
           <div className="px-6 py-4 space-y-4">
             <QuizProgress
-              currentQuestionIndex={currentQuestionIndex}
+              currentQuestionIndex={state.currentQuestionIndex}
               totalQuestions={cards.length}
-              timeSpent={timeSpent}
+              timeSpent={state.timeSpent}
               title={title}
               quizType="Flashcard"
               animate={animationsEnabled}
@@ -371,7 +384,7 @@ export function FlashCardComponent({
             <div className="relative min-h-[250px] sm:min-h-[300px] md:min-h-[350px] w-full perspective-1000">
               <AnimatePresence initial={false} custom={direction} onExitComplete={() => setExitComplete(true)}>
                 <motion.div
-                  key={reviewMode ? `review-${currentQuestionIndex}` : `card-${currentQuestionIndex}`}
+                  key={reviewMode ? `review-${state.currentQuestionIndex}` : `card-${state.currentQuestionIndex}`}
                   custom={direction}
                   variants={cardVariants}
                   initial="enter"
@@ -493,7 +506,6 @@ export function FlashCardComponent({
                                 e.stopPropagation()
                                 if (currentCard?.id) {
                                   handleSelfRating(currentCard.id.toString(), "correct")
-                                  handleSelectOption("correct")
                                 }
                               }}
                               className="flex items-center gap-1 sm:gap-2 relative overflow-hidden h-8 sm:h-10 px-2 sm:px-4 text-xs sm:text-sm"
@@ -511,7 +523,6 @@ export function FlashCardComponent({
                                 e.stopPropagation()
                                 if (currentCard?.id) {
                                   handleSelfRating(currentCard.id.toString(), "incorrect")
-                                  handleSelectOption("incorrect")
                                 }
                               }}
                               className="flex items-center gap-1 sm:gap-2 relative overflow-hidden h-8 sm:h-10 px-2 sm:px-4 text-xs sm:text-sm"
@@ -607,17 +618,8 @@ export function FlashCardComponent({
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    if (currentQuestionIndex > 0) {
-                      setDirection(-1)
-                      setFlipped(false)
-                      setExitComplete(false)
-                      setTimeout(() => {
-                        handleNextQuestion(null, currentQuestionIndex - 1)
-                      }, 300)
-                    }
-                  }}
-                  disabled={currentQuestionIndex === 0 || !exitComplete}
+                  onClick={handlePrevCard}
+                  disabled={state.currentQuestionIndex === 0 || !exitComplete}
                   className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
                 >
                   <ChevronLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -638,22 +640,11 @@ export function FlashCardComponent({
 
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
-                  onClick={() => {
-                    if (currentQuestionIndex < cards.length - 1) {
-                      setDirection(1)
-                      setFlipped(false)
-                      setExitComplete(false)
-                      setTimeout(() => {
-                        handleNextQuestion()
-                      }, 300)
-                    } else {
-                      handleNextQuestion(cards.length)
-                    }
-                  }}
+                  onClick={handleNextCard}
                   disabled={!exitComplete}
                   className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
                 >
-                  {currentQuestionIndex < cards.length - 1 ? (
+                  {state.currentQuestionIndex < cards.length - 1 ? (
                     <>
                       <span className="whitespace-nowrap">Next</span>
                       <ChevronRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -676,13 +667,13 @@ export function FlashCardComponent({
                   style={{
                     width: `${progress}%`,
                   }}
-                  initial={{ width: `${(currentQuestionIndex / cards.length) * 100}%` }}
+                  initial={{ width: `${(state.currentQuestionIndex / cards.length) * 100}%` }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
                 ></motion.div>
               </div>
               <div className="flex justify-between mt-1 sm:mt-2 text-xs text-muted-foreground">
-                <span>Card {currentQuestionIndex + 1}</span>
+                <span>Card {state.currentQuestionIndex + 1}</span>
                 <span>{cards.length} Cards</span>
               </div>
             </div>
@@ -696,15 +687,15 @@ export function FlashCardComponent({
     <>
       {renderQuizContent()}
 
-      {showFeedbackModal && (
+      {state.showFeedback && (
         <QuizFeedback
-          isSubmitting={isSubmitting}
-          isSuccess={isSuccess}
-          isError={isError}
-          score={calculateScore(selectedOptions, cards)}
+          isSubmitting={state.isSaving}
+          isSuccess={!state.error}
+          isError={!!state.error}
+          score={calculateScore()}
           totalQuestions={cards.length}
-          onContinue={handleFeedbackContinue}
-          errorMessage={errorMessage}
+          onContinue={() => dispatch({ type: "SHOW_FEEDBACK", payload: { show: false, message: "" } })}
+          errorMessage={state.error || ""}
           quizType="flashcard"
         />
       )}
