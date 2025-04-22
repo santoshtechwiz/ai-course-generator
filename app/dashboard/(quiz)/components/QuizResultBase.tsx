@@ -16,7 +16,6 @@ import { useQuiz } from "../../../context/QuizContext"
 import type { QuizType } from "@/app/types/quiz-types"
 import { GuestSignInPrompt } from "./GuestSignInPrompt"
 
-
 interface QuizResultBaseProps {
   quizId: string
   title: string
@@ -72,6 +71,22 @@ export function QuizResultBase({
       return () => clearTimeout(timer)
     }
   }, [status, clearGuestData, saveGuestResult, setShowSignInPrompt, quizId, quizType, slug, score, totalTime])
+
+  useEffect(() => {
+    // Cleanup function to run when component unmounts
+    return () => {
+      // If clearGuestData is provided, call it when component unmounts
+      if (clearGuestData) {
+        clearGuestData()
+      }
+
+      // Also clear any session storage related to this quiz
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(`quiz_result_${quizId}`)
+        sessionStorage.removeItem(`quiz_state_${quizType}_${quizId}`)
+      }
+    }
+  }, [clearGuestData, quizId, quizType])
 
   // If user is not authenticated, show sign-in prompt with results summary
   if (status === "unauthenticated") {

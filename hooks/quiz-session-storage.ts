@@ -26,6 +26,8 @@ export function clearAllQuizData() {
       sessionStorage.removeItem(key)
     }
   })
+
+  console.log("Cleared all quiz data from storage")
 }
 
 // Improve the getSavedQuizState function to better handle the quiz state
@@ -252,4 +254,28 @@ export function calculateSimilarity(str1: string, str2: string): number {
 
   const editDistance = levenshteinDistance(longer, shorter)
   return Math.round(Math.max(0, Math.min(100, (1 - editDistance / longerLength) * 100)))
+}
+
+// Add a function to clear guest quiz results specifically
+// This will help with the guest results persistence issue
+
+// Add this function to the file
+export function clearGuestQuizResults(quizId: string) {
+  if (typeof window === "undefined") return
+
+  try {
+    // Clear from both localStorage and sessionStorage to be thorough
+    localStorage.removeItem(`guestQuizResults_${quizId}`)
+    sessionStorage.removeItem(`guestQuizResults_${quizId}`)
+
+    // Also clear any related state
+    localStorage.removeItem(`quiz_state_${quizId}`)
+    sessionStorage.removeItem(`quiz_state_${quizId}`)
+    localStorage.removeItem(`quiz_answers_${quizId}`)
+    sessionStorage.removeItem(`quiz_answers_${quizId}`)
+
+    console.log(`Cleared guest quiz results for quiz ${quizId}`)
+  } catch (error) {
+    console.error("Error clearing guest quiz results:", error)
+  }
 }

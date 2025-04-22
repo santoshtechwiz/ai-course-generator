@@ -3,7 +3,8 @@
 import { useState, useRef } from "react"
 import { toast } from "./use-toast"
 import { useRouter } from "next/navigation"
-import type { QuizType } from "@/app/types/types"
+import { QuizType } from "@/app/types/quiz-types"
+
 
 interface UseQuizResultOptions {
   onSuccess?: (result: any) => void
@@ -153,7 +154,7 @@ export function useQuizResult({
           isCorrect: typeof answer === "object" ? answer.isCorrect || false : false,
           timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
         }
-      } else if (type === "fill-blanks") {
+      } else if (type === "blanks") {
         return {
           userAnswer: typeof answer === "string" ? answer : answer.answer || answer.userAnswer || "",
           timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,

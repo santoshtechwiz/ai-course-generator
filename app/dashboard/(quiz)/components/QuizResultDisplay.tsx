@@ -183,6 +183,10 @@ export function QuizResultDisplay({
     toast,
   ])
 
+  // Fix the issue with guest results still showing after sign-in redirect
+  // Add a check to clear guest results after they've been saved to the user account
+
+  // Update the useEffect that handles saving guest results
   useEffect(() => {
     // If user just logged in and we have guest results, try to save them
     if (isAuthenticated && !hasSavedRef.current && !preventAutoSave && !isSaving) {
@@ -235,6 +239,10 @@ export function QuizResultDisplay({
 
             setHasSaved(true)
             hasSavedRef.current = true
+
+            // Clear the guest result after saving to prevent it from showing again
+            localStorage.removeItem(`guestQuizResults_${quizId}`)
+            sessionStorage.removeItem(`guestQuizResults_${quizId}`)
 
             toast({
               title: "Guest results saved",
