@@ -6,9 +6,7 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 
 import { getQuiz } from "@/app/actions/getQuiz"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
-import QuizDetailsPage from "../../components/QuizDetailsPage"
-
-
+import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 
 type Params = Promise<{ slug: string }>
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -42,6 +40,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function OpenEndedQuizPage({ params }: { params: Params }) {
   const { slug } = await params
   const session = await getServerSession(authOptions)
+  const currentUserId = session?.user?.id
   const quizData = await getQuiz(slug)
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
 
@@ -55,13 +54,14 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
 
   // Create breadcrumb items
   const breadcrumbItems = [
+    { name: "Home", href: baseUrl },
+    { name: "Dashboard", href: `${baseUrl}/dashboard` },
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
     { name: quizData.title, href: `${baseUrl}/dashboard/openended/${slug}` },
   ]
 
-
   return (
-    <QuizDetailsPage
+    <QuizDetailsPageWithContext
       title={quizData.title}
       description={`Test your problem-solving skills with open-ended questions about ${quizData.title}`}
       slug={slug}
@@ -69,9 +69,12 @@ export default async function OpenEndedQuizPage({ params }: { params: Params }) 
       questionCount={questionCount}
       estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
+      quizId={quizData.id.toString()}
+      authorId={quizData.userId}
+      isPublic={false}
+      isFavorite={false}
     >
       <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
-    </QuizDetailsPage>
+    </QuizDetailsPageWithContext>
   )
 }
-

@@ -7,8 +7,7 @@ import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
-import QuizDetailsPage from "../../components/QuizDetailsPage"
-
+import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 
 type Params = Promise<{ slug: string }>
 
@@ -60,12 +59,14 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
 
   // Create breadcrumb items
   const breadcrumbItems = [
+    { name: "Home", href: baseUrl },
+    { name: "Dashboard", href: `${baseUrl}/dashboard` },
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
     { name: result.title, href: `${baseUrl}/dashboard/code/${slug}` },
   ]
 
   return (
-    <QuizDetailsPage
+    <QuizDetailsPageWithContext
       title={result.title}
       description={`Test your coding skills on ${result.title} with interactive programming challenges`}
       slug={slug}
@@ -73,12 +74,15 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
       questionCount={questionCount}
       estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
-   
+      quizId={result.id.toString()}
+      authorId={result.userId}
+      isPublic={result.isPublic || false}
+      isFavorite={result.isFavorite || false}
+      difficulty={result.difficulty || "medium"}
     >
       <CodeQuizWrapper slug={slug} userId={currentUserId || ""} />
-    </QuizDetailsPage>
+    </QuizDetailsPageWithContext>
   )
 }
 
 export default CodePage
-
