@@ -267,6 +267,8 @@ export function QuizProvider({
     if (typeof window === "undefined") return
 
     try {
+      console.log("Saving guest result:", result)
+
       // Get existing results or initialize empty array
       const existingResultsStr = localStorage.getItem("guestQuizResults")
       const existingResults = existingResultsStr ? JSON.parse(existingResultsStr) : []
@@ -319,6 +321,21 @@ export function QuizProvider({
             answers: result.answers,
           }),
         )
+
+        // Also save to sessionStorage for the auth flow
+        sessionStorage.setItem(
+          "quizState",
+          JSON.stringify({
+            quizState: {
+              quizId: result.quizId,
+              quizType: result.quizType,
+              slug: result.slug,
+              isCompleted: true,
+              redirectPath: result.redirectPath,
+            },
+            answers: result.answers,
+          }),
+        )
       }
 
       // Show sign-in prompt after saving result
@@ -333,11 +350,24 @@ export function QuizProvider({
     if (typeof window === "undefined") return null
 
     try {
+      console.log("Getting guest result for quiz ID:", quizId)
+
+      // First check in the specific quiz result storage
+      const specificResultStr = localStorage.getItem(`quiz_result_${quizId}`)
+      if (specificResultStr) {
+        const result = JSON.parse(specificResultStr)
+        console.log("Found specific result:", result)
+        return result
+      }
+
+      // If not found, check in the guestQuizResults
       const resultsStr = localStorage.getItem("guestQuizResults")
       if (!resultsStr) return null
 
       const results = JSON.parse(resultsStr)
-      return results.find((r: QuizResult) => r.quizId === quizId) || null
+      const result = results.find((r: QuizResult) => r.quizId === quizId)
+      console.log("Found result in guestQuizResults:", result)
+      return result || null
     } catch (error) {
       console.error("Error getting guest result:", error)
       return null
@@ -494,6 +524,41 @@ export function QuizProvider({
 
       // Update authentication state
       localStorage.setItem("wasAuthenticated", isAuthenticated ? "true" : "false")
+    }
+  }, [isAuthenticated, isLoading])
+
+  useEffect(() => {
+    // Track authentication state changes
+    if (typeof window !== "undefined") {
+      // If user was authenticated and is now not, they signed out
+      const wasAuthenticated = localStorage.getItem("wasAuthenticated") === "true"
+      const preserveGuestResults = localStorage.getItem("preserveGuestResults") === "true"
+
+      if (wasAuthenticated && !isAuthenticated && !isLoading && !preserveGuestResults) {
+        console.log("User signed out, clearing all quiz data")
+        // Clear all quiz data
+        if (typeof window !== "undefined") {
+          Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith("quiz_result_") || key.startsWith("quiz_state_")) {
+              localStorage.removeItem(key)
+            }
+          })
+
+          Object.keys(sessionStorage).forEach((key) => {
+            if (key.startsWith("quiz_result_") || key.startsWith("quiz_state_")) {
+              sessionStorage.removeItem(key)
+            }
+          })
+        }
+      }
+
+      // Update authentication state
+      localStorage.setItem("wasAuthenticated", isAuthenticated ? "true" : "false")
+
+      // Clear the preserve flag after authentication is complete
+      if (isAuthenticated && !isLoading && preserveGuestResults) {
+        localStorage.removeItem("preserveGuestResults")
+      }
     }
   }, [isAuthenticated, isLoading])
 

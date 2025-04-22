@@ -38,11 +38,12 @@ export function GuestSignInPrompt({
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
-  // Fix the handleSignIn function to properly handle redirection
+  // Improve the handleSignIn function to better preserve quiz state
   const handleSignIn = async () => {
     setIsLoading(true)
 
     // Ensure the callbackUrl is properly formatted and preserved
+    // Make sure we're redirecting to the specific quiz page
     let redirectUrl = callbackUrl
 
     // Fix the callback URL to ensure it uses /dashboard/ instead of /quiz/
@@ -50,7 +51,7 @@ export function GuestSignInPrompt({
 
     // If callbackUrl doesn't include the quiz type and ID, construct it
     if (quizId && quizType && !redirectUrl.includes(quizId)) {
-      redirectUrl = `/dashboard/${quizType==='fill-blanks'?"blanks":quizType}/${quizId}`
+      redirectUrl = `/dashboard/${quizType}/${quizId}`
     }
 
     // Add completed=true parameter if it's not already there
@@ -61,9 +62,18 @@ export function GuestSignInPrompt({
     console.log("Signing in with callback URL:", redirectUrl)
 
     try {
-      // Don't encode the URL - let the signIn function handle it
-      // Use the default provider instead of specifying "credentials"
-      await signIn(undefined, { callbackUrl: redirectUrl })
+      // Before redirecting, make sure we mark the current session as guest
+      // so we can detect the sign-in transition
+      sessionStorage.setItem("wasSignedIn", "false")
+
+      // Also ensure we're not clearing any guest results during the auth flow
+      localStorage.setItem("preserveGuestResults", "true")
+
+      // Use the signIn function from next-auth
+      await signIn("credentials", {
+        callbackUrl: redirectUrl,
+        redirect: true,
+      })
     } catch (error) {
       console.error("Sign in error:", error)
       setIsLoading(false)

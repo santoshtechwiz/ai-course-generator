@@ -14,6 +14,7 @@ import { submitQuizResult } from "@/lib/quiz-result-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useQuiz } from "@/app/context/QuizContext"
 
 import {
   clearSavedQuizState,
@@ -24,7 +25,6 @@ import {
   loadQuizResult,
   calculateSimilarity, // Import loadQuizResult
 } from "@/hooks/quiz-session-storage"
-import { useQuiz } from "@/app/context/QuizContext"
 
 interface BlankQuizWrapperProps {
   quizData: any
@@ -232,6 +232,43 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
           search: window.location.search,
         })
 
+        // Check if user just signed in
+        const wasSignedOut = sessionStorage.getItem("wasSignedIn") === "false"
+        const isNowSignedIn = status === "authenticated" && wasSignedOut
+
+        // If user just signed in, check for guest results to display FIRST
+        if (isNowSignedIn) {
+          console.log("User just signed in, checking for guest results")
+
+          // First check in guestQuizResults
+          const guestResultsStr = localStorage.getItem("guestQuizResults")
+          if (guestResultsStr) {
+            const guestResults = JSON.parse(guestResultsStr)
+            guestResult = guestResults.find((r: any) => r.quizId === quizData.id)
+          }
+
+          // If not found, check in quiz_result_[quizId]
+          if (!guestResult) {
+            const specificResultStr = localStorage.getItem(`quiz_result_${quizData.id}`)
+            if (specificResultStr) {
+              guestResult = JSON.parse(specificResultStr)
+            }
+          }
+
+          if (guestResult) {
+            console.log("Found guest result after sign in:", guestResult)
+            if (guestResult.answers && guestResult.answers.length > 0) {
+              setAnswers(guestResult.answers)
+              setIsCompleted(true)
+              setIsLoading(false)
+
+              // Update sessionStorage to prevent this check on subsequent loads
+              sessionStorage.setItem("wasSignedIn", "true")
+              return
+            }
+          }
+        }
+
         // First check for saved result in localStorage
         savedResult = loadQuizResult(quizData.id)
         console.log("Checking for saved result:", savedResult)
@@ -262,22 +299,6 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
 
           setIsLoading(false)
           return
-        }
-
-        // Check if user just signed in
-        const wasSignedOut = sessionStorage.getItem("wasSignedIn") === "false"
-        const isNowSignedIn = status === "authenticated" && wasSignedOut
-
-        // If user just signed in, check for guest results to display
-        if (isNowSignedIn) {
-          guestResult = getGuestResult(quizData.id)
-          if (guestResult) {
-            console.log("Found guest result after sign in:", guestResult)
-            setAnswers(guestResult.answers || [])
-            setIsCompleted(true)
-            setIsLoading(false)
-            return
-          }
         }
 
         // Update signed in state
