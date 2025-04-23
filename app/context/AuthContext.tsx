@@ -3,7 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import type { QuizState, QuizResult } from "../hooks/use-quiz-storage"
+import { QuizState, QuizResult } from "./QuizContext"
+
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -71,6 +72,79 @@ const getFromStorage = (key: string) => {
     return item.value
   } catch (error) {
     console.error(`Error getting from storage with key ${key}:`, error)
+    return null
+  }
+}
+
+// Add a function to handle the auth flow transition
+export function handleAuthFlowTransition() {
+  if (typeof window === "undefined") return
+
+  try {
+    // Check if we're in an auth flow
+    const inAuthFlow = sessionStorage.getItem("inAuthFlow") === "true"
+
+    if (inAuthFlow) {
+      console.log("Detected auth flow transition, handling pending quiz data")
+
+      // Get the pending quiz data
+      const pendingQuizDataStr = sessionStorage.getItem("pendingQuizData")
+      if (pendingQuizDataStr) {
+        const pendingQuizData = JSON.parse(pendingQuizDataStr)
+
+        // Check if we have valid quiz data
+        if (pendingQuizData && pendingQuizData.quizId && pendingQuizData.quizType) {
+          console.log("Found pending quiz data:", pendingQuizData)
+
+          // Get any saved guest results for this quiz
+          const guestResultKey = `guestQuizResults_${pendingQuizData.quizId}`
+          const guestResultStr = localStorage.getItem(guestResultKey)
+
+          if (guestResultStr) {
+            console.log("Found guest results to transfer")
+
+            // Mark these results for transfer to the user account
+            sessionStorage.setItem("transferGuestResults", guestResultStr)
+          }
+        }
+      }
+    }
+
+    // Clear the auth flow markers
+    sessionStorage.removeItem("inAuthFlow")
+    sessionStorage.removeItem("pendingQuizData")
+    localStorage.removeItem("preserveGuestResults")
+  } catch (error) {
+    console.error("Error handling auth flow transition:", error)
+  }
+}
+
+// Add a function to check if there are guest results to transfer
+export function hasGuestResultsToTransfer(): boolean {
+  if (typeof window === "undefined") return false
+
+  try {
+    return !!sessionStorage.getItem("transferGuestResults")
+  } catch (error) {
+    console.error("Error checking for guest results to transfer:", error)
+    return false
+  }
+}
+
+// Add a function to get guest results to transfer
+export function getGuestResultsToTransfer() {
+  if (typeof window === "undefined") return null
+
+  try {
+    const resultsStr = sessionStorage.getItem("transferGuestResults")
+    if (!resultsStr) return null
+
+    // Clear the transfer marker
+    sessionStorage.removeItem("transferGuestResults")
+
+    return JSON.parse(resultsStr)
+  } catch (error) {
+    console.error("Error getting guest results to transfer:", error)
     return null
   }
 }

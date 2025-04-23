@@ -1,19 +1,17 @@
 "use client"
 
-import { Alert } from "@/components/ui/alert"
-
-import { useEffect, useState, useRef } from "react"
+import { useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Alert } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
 
-import type { QuizAnswer } from "./QuizBase"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
 import QuizAuthWrapper from "./QuizAuthWrapper"
-import { getPerformanceLevel } from "./QuizResultBase"
+import { getPerformanceLevel } from "@/lib/quiz-utils"
 import {
   AlertCircle,
   CheckCircle,
@@ -26,9 +24,15 @@ import {
   X,
   ArrowLeft,
   Share2,
+  Download,
 } from "lucide-react"
 import { useQuiz } from "@/app/context/QuizContext"
 import { motion } from "framer-motion"
+import { useQuizResult } from "@/hooks/useQuizResult"
+
+import type { QuizType } from "@/app/types/quiz-types"
+import { useToast } from "@/hooks/use-toast"
+import { QuizAnswer } from "../../subscription/services/QuizResultService"
 
 interface QuizResultDisplayProps {
   quizId: string
@@ -37,12 +41,13 @@ interface QuizResultDisplayProps {
   totalQuestions: number
   totalTime: number
   correctAnswers: number
-  type: string
+  type: QuizType
   slug: string
   answers?: QuizAnswer[]
   preventAutoSave?: boolean
   onRestart?: () => void
-  showAuthModal?: boolean // Add this prop
+  showAuthModal?: boolean
+  startTime?: number
 }
 
 export function QuizResultDisplay({
@@ -54,348 +59,44 @@ export function QuizResultDisplay({
   correctAnswers,
   type,
   slug,
-  answers,
+  answers = [],
   preventAutoSave = false,
   onRestart,
-  showAuthModal = false, // Default to false
+  showAuthModal = false,
+  startTime,
 }: QuizResultDisplayProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
   const router = useRouter()
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [hasSaved, setHasSaved] = useState(preventAutoSave)
-  const hasSavedRef = useRef(preventAutoSave)
-  const saveAttemptCount = useRef(0)
-  const lastSaveAttempt = useRef(0)
-
+  const { getGuestResult, isAuthenticated } = useQuiz()
+  const percentage = Number.parseFloat(score.toFixed(1))
   const performance = getPerformanceLevel(score)
   const minutes = Math.floor(totalTime / 60)
   const seconds = Math.round(totalTime % 60)
-  const { getGuestResult, isAuthenticated } = useQuiz()
-  const percentage = Number.parseFloat(score.toFixed(1))
 
-  // Add a new ref to track if we're currently saving guest results
-  const isSavingGuestResults = useRef(false)
+  // Use the quiz result hook
+  const {
+    isLoading,
+    isSaving,
+    error: saveError,
+    saveResult,
+  } = useQuizResult({
+    quizId,
+    slug,
+    answers,
+    totalTime,
+    score,
+    quizType: type,
+    totalQuestions,
+    startTime,
+  })
 
   // Auto-save results if user is logged in and we haven't saved yet
   useEffect(() => {
-    // Prevent excessive save attempts
-    const now = Date.now()
-    if (now - lastSaveAttempt.current < 5000) {
-      // Throttle to once every 5 seconds
-      console.log("Throttling save attempt, too frequent")
-      return
+    if (session?.user && !preventAutoSave) {
+      saveResult()
     }
-
-    // Limit total save attempts to prevent infinite loops
-    if (saveAttemptCount.current > 5) {
-      console.log("Too many save attempts, stopping to prevent infinite loop")
-      return
-    }
-
-    if (session?.user && !hasSavedRef.current && !preventAutoSave && !isSavingGuestResults.current) {
-      lastSaveAttempt.current = now
-      saveAttemptCount.current += 1
-
-      const saveResults = async () => {
-        setIsSaving(true)
-        setSaveError(null)
-
-        try {
-          // Ensure answers is always an array
-          const formattedAnswers = answers || []
-
-          console.log("Saving quiz results:", {
-            quizId,
-            score,
-            totalQuestions,
-            correctAnswers,
-            totalTime,
-            type,
-            answers: formattedAnswers,
-          })
-
-          const response = await fetch(`/api/quiz/${quizId}/complete`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              quizId,
-              score,
-              totalQuestions,
-              correctAnswers,
-              totalTime,
-              type,
-              completedAt: new Date().toISOString(),
-              answers: formattedAnswers,
-            }),
-          })
-
-          if (!response.ok) {
-            const errorData = await response.text()
-            let errorMessage = `Failed to save results: ${response.status}`
-
-            try {
-              const errorJson = JSON.parse(errorData)
-              if (errorJson.error) {
-                errorMessage = errorJson.error
-              }
-            } catch (e) {
-              // If JSON parsing fails, use the raw error text if available
-              if (errorData) errorMessage += ` - ${errorData}`
-            }
-
-            throw new Error(errorMessage)
-          }
-
-          setHasSaved(true)
-          hasSavedRef.current = true
-
-          // Only show toast on first successful save
-          if (saveAttemptCount.current <= 2) {
-            toast({
-              title: "Results saved",
-              description: "Your quiz results have been saved successfully.",
-            })
-          }
-
-          // Mark this quiz as saved in localStorage to prevent duplicate saves
-          localStorage.setItem(`quiz_${quizId}_saved`, "true")
-        } catch (error) {
-          console.error("Error saving quiz results:", error)
-
-          // Check if this is a deadlock error and retry after a delay
-          const errorMessage = error instanceof Error ? error.message : "Unknown error"
-          if (errorMessage.includes("deadlock") || errorMessage.includes("write conflict")) {
-            // Only show toast on first few attempts
-            if (saveAttemptCount.current <= 2) {
-              toast({
-                title: "Database busy",
-                description: "We'll try again in a moment...",
-              })
-            }
-
-            // Retry after a short delay
-            setTimeout(() => {
-              setHasSaved(false)
-              hasSavedRef.current = false
-              setSaveError(null)
-            }, 5000) // Increased delay to 5 seconds
-          } else {
-            setSaveError(errorMessage)
-            // Only show toast on first few attempts
-            if (saveAttemptCount.current <= 2) {
-              toast({
-                title: "Error saving results",
-                description: errorMessage,
-                variant: "destructive",
-              })
-            }
-          }
-        } finally {
-          setIsSaving(false)
-        }
-      }
-
-      // Check if we've already saved this quiz (to prevent duplicate saves after page refreshes)
-      const alreadySaved = localStorage.getItem(`quiz_${quizId}_saved`) === "true"
-      if (!alreadySaved) {
-        saveResults()
-      } else {
-        console.log("Quiz results already saved, skipping save")
-        setHasSaved(true)
-        hasSavedRef.current = true
-      }
-    }
-  }, [
-    session,
-    hasSaved,
-    preventAutoSave,
-    quizId,
-    score,
-    totalQuestions,
-    correctAnswers,
-    totalTime,
-    type,
-    answers,
-    toast,
-  ])
-
-  // Fix the issue with guest results still showing after sign-in redirect
-  // Add a check to clear guest results after they've been saved to the user account
-  useEffect(() => {
-    // If user just logged in and we have guest results, try to save them
-    if (isAuthenticated && !hasSavedRef.current && !preventAutoSave && !isSaving) {
-      const guestResult = getGuestResult(quizId)
-
-      // Prevent excessive save attempts
-      const now = Date.now()
-      if (now - lastSaveAttempt.current < 5000) {
-        // Throttle to once every 5 seconds
-        console.log("Throttling guest result save attempt, too frequent")
-        return
-      }
-
-      // Limit total save attempts to prevent infinite loops
-      if (saveAttemptCount.current > 5) {
-        console.log("Too many guest save attempts, stopping to prevent infinite loop")
-        return
-      }
-
-      if (guestResult) {
-        let isMounted = true // Track if component is still mounted
-        lastSaveAttempt.current = now
-        saveAttemptCount.current += 1
-
-        // Check if we've already saved this guest result
-        const alreadySaved = localStorage.getItem(`guest_quiz_${quizId}_saved`) === "true"
-        if (alreadySaved) {
-          console.log("Guest quiz results already saved, skipping save")
-          return
-        }
-
-        const saveGuestResults = async () => {
-          if (!isMounted) return // Don't proceed if unmounted
-
-          // Set the ref to prevent the other effect from running
-          isSavingGuestResults.current = true
-          setIsSaving(true)
-          setSaveError(null)
-
-          try {
-            // Add a small delay to ensure we don't hit the database at the exact same time
-            await new Promise((resolve) => setTimeout(resolve, 500))
-
-            if (!isMounted) return // Check again after delay
-
-            const response = await fetch(`/api/quiz/${quizId}/complete`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                quizId,
-                score: guestResult.score,
-                totalQuestions,
-                correctAnswers,
-                totalTime: guestResult.totalTime,
-                type,
-                completedAt: new Date().toISOString(),
-                answers: guestResult.answers,
-              }),
-            })
-
-            if (!isMounted) return // Check again after fetch
-
-            if (!response.ok) {
-              const errorText = await response.text()
-              let errorMessage = `Failed to save results: ${response.status}`
-
-              try {
-                const errorData = JSON.parse(errorText)
-                if (errorData.error) {
-                  errorMessage = errorData.error
-                }
-              } catch (e) {
-                // If JSON parsing fails, use the raw error text if available
-                if (errorText) errorMessage += ` - ${errorText}`
-              }
-
-              throw new Error(errorMessage)
-            }
-
-            if (!isMounted) return // Check again after response processing
-
-            setHasSaved(true)
-            hasSavedRef.current = true
-
-            // Clear the guest result after saving to prevent it from showing again
-            localStorage.removeItem(`guestQuizResults_${quizId}`)
-            sessionStorage.removeItem(`guestQuizResults_${quizId}`)
-
-            // Also clear any related quiz state
-            localStorage.removeItem(`quiz_state_${type}_${quizId}`)
-            sessionStorage.removeItem(`quiz_state_${type}_${quizId}`)
-            localStorage.removeItem(`quiz_answers_${quizId}`)
-
-            // Mark this guest quiz as saved
-            localStorage.setItem(`guest_quiz_${quizId}_saved`, "true")
-            localStorage.setItem(`quiz_${quizId}_saved`, "true")
-
-            // Only show toast on first successful save
-            if (saveAttemptCount.current <= 2) {
-              toast({
-                title: "Guest results saved",
-                description: "Your previous quiz results have been saved to your account.",
-              })
-            }
-          } catch (error) {
-            if (!isMounted) return // Don't update state if unmounted
-
-            console.error("Error saving guest results:", error)
-
-            // Check if this is a deadlock error and retry after a delay
-            const errorMessage = error instanceof Error ? error.message : "Unknown error"
-            if (errorMessage.includes("deadlock") || errorMessage.includes("write conflict")) {
-              // Only show toast on first few attempts
-              if (saveAttemptCount.current <= 2) {
-                toast({
-                  title: "Database busy",
-                  description: "We'll try again in a moment...",
-                })
-              }
-
-              // Retry after a short delay
-              setTimeout(() => {
-                if (!isMounted) return // Don't update state if unmounted
-                setHasSaved(false)
-                hasSavedRef.current = false
-                setSaveError(null)
-              }, 5000) // Increased delay to 5 seconds
-            } else {
-              setSaveError(errorMessage)
-              // Only show toast on first few attempts
-              if (saveAttemptCount.current <= 2) {
-                toast({
-                  title: "Error saving results",
-                  description: errorMessage,
-                  variant: "destructive",
-                })
-              }
-            }
-          } finally {
-            if (isMounted) {
-              setIsSaving(false)
-            }
-            isSavingGuestResults.current = false
-          }
-        }
-
-        saveGuestResults()
-
-        // Cleanup function to prevent state updates if component unmounts
-        return () => {
-          isMounted = false
-        }
-      }
-    }
-  }, [
-    isAuthenticated,
-    hasSaved,
-    preventAutoSave,
-    getGuestResult,
-    quizId,
-    slug,
-    type,
-    totalQuestions,
-    toast,
-    correctAnswers,
-    totalTime,
-    score,
-    isSaving,
-  ])
+  }, [session, preventAutoSave, saveResult])
 
   const handleRestart = () => {
     if (onRestart) {
@@ -429,55 +130,68 @@ export function QuizResultDisplay({
     }
   }
 
-  // With this:
-  const renderAuthModalContent = () => (
-    <QuizAuthWrapper
-      quizState={{
-        quizId,
-        quizType: type,
-        quizSlug: slug,
-        isCompleted: true,
-      }}
-      answers={answers}
-      redirectPath={`/dashboard/${type}/${slug}?completed=true`}
-      showAuthModal={showAuthModal}
-    >
-      <div className="container mx-auto py-6 px-4 md:px-6 max-w-4xl pointer-events-none">
-        {/* Render a blurred version of the content */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 0.7, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="filter blur-[2px]"
-        >
-          <Card className="border shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b p-6 md:p-8">
-              <h1 className="text-2xl md:text-3xl font-bold text-center mb-2">{title}</h1>
-              <p className="text-center text-muted-foreground">Quiz Results</p>
-            </div>
-            <CardContent className="p-6 md:p-8">
-              <div className="flex flex-col items-center justify-center">
-                <div className="relative mb-4">
-                  <div className="w-36 h-36 rounded-full flex items-center justify-center border-8 border-muted">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold">{percentage.toFixed(0)}%</div>
-                      <div className="text-sm text-muted-foreground">Score</div>
+  const handleDownloadPDF = () => {
+    toast({
+      title: "Download started",
+      description: "Your quiz results are being prepared for download.",
+    })
+
+    // This would be implemented with a PDF generation library
+    setTimeout(() => {
+      toast({
+        title: "Feature coming soon",
+        description: "PDF download will be available in a future update.",
+      })
+    }, 1500)
+  }
+
+  // Render auth modal content if needed
+  if (showAuthModal) {
+    return (
+      <QuizAuthWrapper
+        quizState={{
+          quizId,
+          quizType: type,
+          quizSlug: slug,
+          isCompleted: true,
+        }}
+        answers={answers}
+        redirectPath={`/dashboard/${type}/${slug}?completed=true`}
+        showAuthModal={showAuthModal}
+      >
+        <div className="container mx-auto py-6 px-4 md:px-6 max-w-4xl pointer-events-none">
+          {/* Render a blurred version of the content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 0.7, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="filter blur-[2px]"
+          >
+            <Card className="border shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b p-6 md:p-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-center mb-2">{title}</h1>
+                <p className="text-center text-muted-foreground">Quiz Results</p>
+              </div>
+              <CardContent className="p-6 md:p-8">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="relative mb-4">
+                    <div className="w-36 h-36 rounded-full flex items-center justify-center border-8 border-muted">
+                      <div className="text-center">
+                        <div className="text-4xl font-bold">{percentage.toFixed(0)}%</div>
+                        <div className="text-sm text-muted-foreground">Score</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    </QuizAuthWrapper>
-  )
-
-  // Original render code for authenticated users or when auth modal is not showing
-  if (showAuthModal) {
-    return renderAuthModalContent()
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </QuizAuthWrapper>
+    )
   }
 
+  // Main result display
   return (
     <QuizAuthWrapper>
       <div className="container mx-auto py-6 px-4 md:px-6 max-w-4xl">
@@ -497,20 +211,25 @@ export function QuizResultDisplay({
               <Loader2 className="h-3 w-3 animate-spin" />
               <span>Saving...</span>
             </Badge>
-          ) : hasSaved ? (
+          ) : isLoading ? (
+            <Badge variant="outline" className="flex items-center gap-1.5 bg-muted">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Loading...</span>
+            </Badge>
+          ) : (
             <Badge variant="outline" className="flex items-center gap-1.5 bg-green-50 text-green-700 border-green-200">
               <CheckCircle className="h-3 w-3" />
-              <span>Saved</span>
+              <span>Results Ready</span>
             </Badge>
-          ) : null}
+          )}
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="border shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b p-6 md:p-8">
-              <h1 className="text-2xl md:text-3xl font-bold text-center mb-2">{title}</h1>
-              <p className="text-center text-muted-foreground">Quiz Results</p>
-            </div>
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b p-6 md:p-8">
+              <CardTitle className="text-2xl md:text-3xl font-bold text-center">{title}</CardTitle>
+              <p className="text-center text-muted-foreground mt-2">Quiz Results</p>
+            </CardHeader>
 
             <CardContent className="p-6 md:p-8 space-y-8">
               {/* Score Overview */}
@@ -597,6 +316,17 @@ export function QuizResultDisplay({
                             </span>
                           </div>
                         </div>
+
+                        {/* Show similarity for open-ended questions */}
+                        {answer.similarity !== undefined && (
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span>Similarity:</span>
+                              <Progress value={answer.similarity} className="h-2 flex-1" />
+                              <span>{answer.similarity.toFixed(0)}%</span>
+                            </div>
+                          </div>
+                        )}
                       </motion.div>
                     ))
                   ) : (
@@ -614,11 +344,7 @@ export function QuizResultDisplay({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setHasSaved(false)
-                        hasSavedRef.current = false
-                        setSaveError(null)
-                      }}
+                      onClick={() => saveResult()}
                       className="mt-2"
                       disabled={isSaving}
                     >
@@ -631,7 +357,7 @@ export function QuizResultDisplay({
             </CardContent>
 
             <CardFooter className="p-6 md:p-8 border-t flex flex-col sm:flex-row gap-3 justify-between">
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <Button variant="outline" onClick={() => router.push("/dashboard")} className="flex-1 sm:flex-auto">
                   <Home className="mr-2 h-4 w-4" />
                   Dashboard
@@ -639,6 +365,10 @@ export function QuizResultDisplay({
                 <Button variant="outline" onClick={handleShare} className="flex-1 sm:flex-auto">
                   <Share2 className="mr-2 h-4 w-4" />
                   Share
+                </Button>
+                <Button variant="outline" onClick={handleDownloadPDF} className="flex-1 sm:flex-auto">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
                 </Button>
               </div>
 

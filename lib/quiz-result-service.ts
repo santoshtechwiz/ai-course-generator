@@ -22,6 +22,22 @@ interface QuizSubmission {
 export async function submitQuizResult(submission: QuizSubmission): Promise<any> {
   console.log("Submitting quiz result:", submission)
 
+  // Validate required fields
+  if (!submission.totalTime || submission.totalTime <= 0) {
+    console.error("Missing or invalid totalTime:", submission.totalTime)
+    throw new Error("Missing required fields: totalTime")
+  }
+
+  if (!submission.quizId) {
+    console.error("Missing quizId")
+    throw new Error("Missing required fields: quizId")
+  }
+
+  if (!submission.answers || !Array.isArray(submission.answers)) {
+    console.error("Missing or invalid answers:", submission.answers)
+    throw new Error("Missing required fields: answers")
+  }
+
   // Check if we've already saved this quiz
   const alreadySaved = localStorage.getItem(`quiz_${submission.quizId}_saved`) === "true"
   if (alreadySaved) {
@@ -51,6 +67,8 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
         answer: typeof answer.answer === "string" ? answer.answer : "",
         timeSpent: answer.timeSpent || 0,
         hintsUsed: answer.hintsUsed || false,
+        similarity: answer.similarity || 0,
+        isCorrect: answer.isCorrect || false,
       }))
     }
 

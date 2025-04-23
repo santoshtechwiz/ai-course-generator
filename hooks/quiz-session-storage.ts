@@ -160,6 +160,12 @@ export function saveQuizAnswers(quizId: string, answers: any[]) {
     const storageKey = `quiz_answers_${quizId}`
     localStorage.setItem(storageKey, JSON.stringify(answers))
     console.log(`Saved ${answers.length} quiz answers to localStorage for quiz ${quizId}`)
+
+    // Also save to a backup location
+    localStorage.setItem(`quiz_answers_backup_${quizId}`, JSON.stringify(answers))
+
+    // Save to session storage as well for redundancy
+    sessionStorage.setItem(storageKey, JSON.stringify(answers))
   } catch (error) {
     console.error("Error saving quiz answers:", error)
   }
@@ -173,10 +179,13 @@ export function loadQuizAnswers(quizId: string): any[] | null {
     // Try multiple storage keys
     const storageKeys = [
       `quiz_answers_${quizId}`,
+      `quiz_answers_backup_${quizId}`,
       `quiz_state_blanks_${quizId}`,
       `quiz_state_mcq_${quizId}`,
       `quiz_state_openended_${quizId}`,
       `quiz_state_code_${quizId}`,
+      `quiz_result_${quizId}`,
+      `guestQuizResults_${quizId}`,
     ]
 
     for (const key of storageKeys) {
@@ -184,13 +193,39 @@ export function loadQuizAnswers(quizId: string): any[] | null {
       if (data) {
         try {
           const parsed = JSON.parse(data)
-          if (parsed.answers && Array.isArray(parsed.answers)) {
+          if (parsed.answers && Array.isArray(parsed.answers) && parsed.answers.length > 0) {
+            console.log(`Found answers in ${key}:`, parsed.answers)
             return parsed.answers
-          } else if (Array.isArray(parsed)) {
+          } else if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log(`Found answers array in ${key}:`, parsed)
             return parsed
           }
         } catch (e) {
           console.error(`Error parsing data from ${key}:`, e)
+        }
+      }
+    }
+
+    // Check all localStorage keys for anything that might contain answers for this quiz
+    if (typeof window !== "undefined") {
+      const allKeys = Object.keys(localStorage)
+      for (const key of allKeys) {
+        if (key.includes(quizId) && !storageKeys.includes(key)) {
+          try {
+            const data = localStorage.getItem(key)
+            if (data) {
+              const parsed = JSON.parse(data)
+              if (parsed.answers && Array.isArray(parsed.answers) && parsed.answers.length > 0) {
+                console.log(`Found answers in unexpected key ${key}:`, parsed.answers)
+                return parsed.answers
+              } else if (Array.isArray(parsed) && parsed.length > 0) {
+                console.log(`Found answers array in unexpected key ${key}:`, parsed)
+                return parsed
+              }
+            }
+          } catch (e) {
+            console.error(`Error parsing data from unexpected key ${key}:`, e)
+          }
         }
       }
     }
@@ -208,13 +243,34 @@ export function loadQuizResult(quizId: string): any | null {
     if (typeof window === "undefined") return null
 
     // Try multiple storage keys
-    const storageKeys = [`quiz_result_${quizId}`, `guestQuizResults_${quizId}`]
+    const storageKeys = [
+      `quiz_result_${quizId}`,
+      `guestQuizResults_${quizId}`,
+      `quiz_answers_${quizId}`,
+      `quiz_answers_backup_${quizId}`,
+    ]
 
     for (const key of storageKeys) {
       const data = localStorage.getItem(key) || sessionStorage.getItem(key)
       if (data) {
         try {
-          return JSON.parse(data)
+          const parsed = JSON.parse(data)
+          // If it's a result object with answers
+          if (parsed.answers && Array.isArray(parsed.answers)) {
+            console.log(`Found result in ${key}:`, parsed)
+            return parsed
+          }
+          // If it's just an array of answers, convert it to a result object
+          else if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log(`Found answers array in ${key}, converting to result:`, parsed)
+            const correctCount = parsed.filter((a) => a && a.isCorrect).length
+            const score = Math.round((correctCount / parsed.length) * 100)
+            return {
+              answers: parsed,
+              score,
+              timestamp: Date.now(),
+            }
+          }
         } catch (e) {
           console.error(`Error parsing data from ${key}:`, e)
         }
@@ -228,10 +284,34 @@ export function loadQuizResult(quizId: string): any | null {
         const guestResults = JSON.parse(guestResultsStr)
         if (Array.isArray(guestResults)) {
           const result = guestResults.find((r) => r.quizId === quizId)
-          if (result) return result
+          if (result) {
+            console.log(`Found result in guestQuizResults array:`, result)
+            return result
+          }
         }
       } catch (e) {
         console.error("Error parsing guestQuizResults:", e)
+      }
+    }
+
+    // Check all localStorage keys for anything that might contain a result for this quiz
+    if (typeof window !== "undefined") {
+      const allKeys = Object.keys(localStorage)
+      for (const key of allKeys) {
+        if (key.includes(quizId) && !storageKeys.includes(key)) {
+          try {
+            const data = localStorage.getItem(key)
+            if (data) {
+              const parsed = JSON.parse(data)
+              if (parsed.answers && Array.isArray(parsed.answers)) {
+                console.log(`Found result in unexpected key ${key}:`, parsed)
+                return parsed
+              }
+            }
+          } catch (e) {
+            console.error(`Error parsing data from unexpected key ${key}:`, e)
+          }
+        }
       }
     }
 
@@ -269,8 +349,17 @@ export function saveQuizResult(quizId: string, result: any) {
       timestamp: Date.now(),
     }
 
+    // Save to multiple locations for redundancy
     localStorage.setItem(`quiz_result_${quizId}`, JSON.stringify(resultWithTimestamp))
-    console.log(`Saved quiz result to localStorage for quiz ${quizId}:`, resultWithTimestamp)
+    localStorage.setItem(`quiz_result_backup_${quizId}`, JSON.stringify(resultWithTimestamp))
+    sessionStorage.setItem(`quiz_result_${quizId}`, JSON.stringify(resultWithTimestamp))
+
+    // Also save the answers separately
+    if (result.answers && Array.isArray(result.answers)) {
+      saveQuizAnswers(quizId, result.answers)
+    }
+
+    console.log(`Saved quiz result to storage for quiz ${quizId}:`, resultWithTimestamp)
   } catch (error) {
     console.error("Error saving quiz result:", error)
   }
@@ -570,10 +659,15 @@ export function searchAllStorageForAnswers(quizId: string) {
     // Define all possible storage keys that might contain answers
     const possibleKeys = [
       `quiz_answers_${quizId}`,
+      `quiz_answers_backup_${quizId}`,
       `quiz_result_${quizId}`,
+      `quiz_result_backup_${quizId}`,
       `guestQuizResults_${quizId}`,
       `auth_transition_answers_${quizId}`,
       `quiz_state_blanks_${quizId}`,
+      `quiz_state_mcq_${quizId}`,
+      `quiz_state_openended_${quizId}`,
+      `quiz_state_code_${quizId}`,
       `currentQuizState`,
     ]
 
@@ -588,6 +682,9 @@ export function searchAllStorageForAnswers(quizId: string) {
           if (parsed.answers && Array.isArray(parsed.answers) && parsed.answers.length > 0) {
             console.log(`Found answers in localStorage key ${key}:`, parsed.answers)
             return parsed.answers
+          } else if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log(`Found answers array in localStorage key ${key}:`, parsed)
+            return parsed
           }
         } catch (e) {
           console.error(`Error parsing localStorage data for key ${key}:`, e)
@@ -606,9 +703,36 @@ export function searchAllStorageForAnswers(quizId: string) {
           if (parsed.answers && Array.isArray(parsed.answers) && parsed.answers.length > 0) {
             console.log(`Found answers in sessionStorage key ${key}:`, parsed.answers)
             return parsed.answers
+          } else if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log(`Found answers array in sessionStorage key ${key}:`, parsed)
+            return parsed
           }
         } catch (e) {
           console.error(`Error parsing sessionStorage data for key ${key}:`, e)
+        }
+      }
+    }
+
+    // Check all localStorage keys for anything that might contain answers for this quiz
+    if (typeof window !== "undefined") {
+      const allKeys = Object.keys(localStorage)
+      for (const key of allKeys) {
+        if (key.includes(quizId) && !possibleKeys.includes(key)) {
+          try {
+            const data = localStorage.getItem(key)
+            if (data) {
+              const parsed = JSON.parse(data)
+              if (parsed.answers && Array.isArray(parsed.answers) && parsed.answers.length > 0) {
+                console.log(`Found answers in unexpected key ${key}:`, parsed.answers)
+                return parsed.answers
+              } else if (Array.isArray(parsed) && parsed.length > 0) {
+                console.log(`Found answers array in unexpected key ${key}:`, parsed)
+                return parsed
+              }
+            }
+          } catch (e) {
+            console.error(`Error parsing data from unexpected key ${key}:`, e)
+          }
         }
       }
     }
@@ -620,4 +744,107 @@ export function searchAllStorageForAnswers(quizId: string) {
     console.error("Error searching all storage for answers:", error)
     return null
   }
+}
+
+// Add a new function to create a fallback answer if none is found
+export function createFallbackAnswer(quizId: string, quizType: string) {
+  console.log(`Creating fallback answer for quiz ${quizId} of type ${quizType}`)
+
+  // Create different fallback answers based on quiz type
+  switch (quizType) {
+    case "mcq":
+      return {
+        answer: "Fallback answer",
+        timeSpent: 0,
+        isCorrect: false,
+      }
+    case "openended":
+      return {
+        answer: "Fallback answer",
+        timeSpent: 0,
+        similarity: 0,
+        isCorrect: false,
+      }
+    case "blanks":
+      return {
+        answer: "Fallback answer",
+        timeSpent: 0,
+        isCorrect: false,
+      }
+    case "code":
+      return {
+        code: "// Fallback code",
+        timeSpent: 0,
+        isCorrect: false,
+      }
+    default:
+      return {
+        answer: "Fallback answer",
+        timeSpent: 0,
+        isCorrect: false,
+      }
+  }
+}
+
+// Add a function to debug all storage for a quiz
+export function debugQuizStorage(quizId: string) {
+  if (typeof window === "undefined") return
+
+  console.log(`Debugging all storage for quiz ${quizId}`)
+
+  // Check localStorage
+  console.log("--- localStorage ---")
+  Object.keys(localStorage).forEach((key) => {
+    if (key.includes(quizId)) {
+      try {
+        const value = localStorage.getItem(key)
+        console.log(`${key}: ${value ? value.substring(0, 100) + "..." : "null"}`)
+      } catch (e) {
+        console.error(`Error reading localStorage key ${key}:`, e)
+      }
+    }
+  })
+
+  // Check sessionStorage
+  console.log("--- sessionStorage ---")
+  Object.keys(sessionStorage).forEach((key) => {
+    if (key.includes(quizId)) {
+      try {
+        const value = sessionStorage.getItem(key)
+        console.log(`${key}: ${value ? value.substring(0, 100) + "..." : "null"}`)
+      } catch (e) {
+        console.error(`Error reading sessionStorage key ${key}:`, e)
+      }
+    }
+  })
+}
+
+// Add a function to ensure we have answers for a quiz
+export function ensureQuizAnswers(quizId: string, quizType: string, questions: any[]) {
+  if (typeof window === "undefined") return null
+
+  console.log(`Ensuring answers for quiz ${quizId} of type ${quizType}`)
+
+  // First try to load existing answers
+  const existingAnswers = loadQuizAnswers(quizId)
+  if (existingAnswers && existingAnswers.length > 0) {
+    console.log(`Found ${existingAnswers.length} existing answers`)
+    return existingAnswers
+  }
+
+  // If no existing answers, search all storage
+  const recoveredAnswers = searchAllStorageForAnswers(quizId)
+  if (recoveredAnswers && recoveredAnswers.length > 0) {
+    console.log(`Recovered ${recoveredAnswers.length} answers`)
+    return recoveredAnswers
+  }
+
+  // If still no answers, create fallback answers
+  console.log(`Creating fallback answers for ${questions.length} questions`)
+  const fallbackAnswers = questions.map(() => createFallbackAnswer(quizId, quizType))
+
+  // Save these fallback answers
+  saveQuizAnswers(quizId, fallbackAnswers)
+
+  return fallbackAnswers
 }

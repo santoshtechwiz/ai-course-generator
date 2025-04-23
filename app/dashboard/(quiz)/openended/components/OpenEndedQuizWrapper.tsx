@@ -22,6 +22,8 @@ import {
   saveQuizAnswers,
   saveQuizResult,
   loadQuizResult,
+  searchAllStorageForAnswers,
+  getPreservedAnswers,
 } from "@/hooks/quiz-session-storage"
 
 interface OpenEndedQuizWrapperProps {
@@ -45,6 +47,9 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [isRecoveringAnswers, setIsRecoveringAnswers] = useState(false)
+  const [saveAttempted, setSaveAttempted] = useState(false)
+  const [hasSaved, setHasSaved] = useState(false)
 
   // Hooks
   const { data: session, status } = useSession()
@@ -54,6 +59,8 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   // Refs
   const submissionInProgress = useRef(false)
   const hasSavedToDb = useRef(false)
+  const saveAttemptsRef = useRef(0)
+  const hasSavedRef = useRef(false)
 
   // Derived state
   const isLoggedIn = status === "authenticated"
@@ -157,6 +164,21 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
       // If user is logged in, save to database
       if (isLoggedIn) {
         console.log("User is logged in, saving to database")
+
+        // Check if we've already saved this result
+        const alreadySaved = localStorage.getItem(`quiz_${quizData.id}_saved`) === "true"
+        if (alreadySaved) {
+          console.log("Results already saved, skipping submission")
+          setHasSaved(true)
+          hasSavedRef.current = true
+          return
+        }
+
+        // Mark that we've attempted to save to prevent multiple attempts
+        setSaveAttempted(true)
+        setSaveError(null)
+        saveAttemptsRef.current += 1
+
         try {
           await submitQuizResult({
             quizId: quizData.id,
@@ -174,6 +196,8 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
           })
           console.log("Database save result successful")
           hasSavedToDb.current = true
+          setHasSaved(true)
+          localStorage.setItem(`quiz_${quizData.id}_saved`, "true")
         } catch (dbError) {
           console.error("Error saving to database:", dbError)
           setSaveError(dbError instanceof Error ? dbError.message : "Failed to save results to database")
@@ -230,6 +254,8 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
 
     if (typeof window !== "undefined" && status !== "loading") {
       setIsLoading(true)
+      setIsRecoveringAnswers(true)
+
       try {
         // Check if we have a completed quiz state in the URL query params
         const urlParams = new URLSearchParams(window.location.search)
@@ -270,6 +296,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
               setAnswers(guestResult.answers)
               setIsCompleted(true)
               setIsLoading(false)
+              setIsRecoveringAnswers(false)
 
               // Update sessionStorage to prevent this check on subsequent loads
               sessionStorage.setItem("wasSignedIn", "true")
@@ -285,12 +312,34 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         // If we have a completed param or saved results, show the results immediately
         if (hasCompletedParam || savedResult) {
           console.log("Found completed quiz state or saved results", savedResult)
-          if (savedResult && savedResult.answers) {
+
+          // Try to recover answers from multiple sources
+          let recoveredAnswers = null
+
+          // First check if there are preserved answers from authentication
+          recoveredAnswers = getPreservedAnswers(quizData.id)
+
+          // If no preserved answers, check saved result
+          if (!recoveredAnswers && savedResult && savedResult.answers) {
+            recoveredAnswers = savedResult.answers
+          }
+
+          // If still no answers, try to search all storage
+          if (!recoveredAnswers || recoveredAnswers.length === 0) {
+            recoveredAnswers = searchAllStorageForAnswers(quizData.id)
+          }
+
+          if (recoveredAnswers && recoveredAnswers.length > 0) {
+            console.log("Setting answers from recovered answers:", recoveredAnswers)
+            setAnswers(recoveredAnswers)
+          } else if (savedResult && savedResult.answers) {
             console.log("Setting answers from saved result:", savedResult.answers)
             setAnswers(savedResult.answers || [])
           }
+
           setIsCompleted(true)
           setIsLoading(false)
+          setIsRecoveringAnswers(false)
           return
         }
 
@@ -307,6 +356,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
           }
 
           setIsLoading(false)
+          setIsRecoveringAnswers(false)
           return
         }
 
@@ -352,6 +402,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         console.error("Error loading saved quiz state:", err)
       } finally {
         setIsLoading(false)
+        setIsRecoveringAnswers(false)
       }
     }
   }, [quizData?.id, status, loadSavedAnswers, isLoggedIn, getGuestResult])
@@ -424,10 +475,21 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     setIsSubmitting(false)
     setIsSuccess(false)
     setError(null)
+    setSaveError(null)
+    setSaveAttempted(false)
+    setHasSaved(false)
+    hasSavedRef.current = false
+    saveAttemptsRef.current = 0
+
+    // Clear saved state
+    if (quizData?.id) {
+      clearSavedQuizState()
+      localStorage.removeItem(`quiz_${quizData.id}_saved`)
+    }
 
     // Force a refresh to ensure all components are reset
     router.refresh()
-  }, [router])
+  }, [router, quizData?.id])
 
   // Handle quiz completion
   const handleComplete = useCallback(
@@ -437,6 +499,20 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
 
       // If user is logged in, update the score in the database
       if (isLoggedIn) {
+        // Check if we've already saved this result
+        const alreadySaved = localStorage.getItem(`quiz_${quizData.id}_saved`) === "true"
+        if (alreadySaved) {
+          console.log("Results already saved, skipping submission")
+          setHasSaved(true)
+          hasSavedRef.current = true
+          return
+        }
+
+        // Mark that we've attempted to save to prevent multiple attempts
+        setSaveAttempted(true)
+        setSaveError(null)
+        saveAttemptsRef.current += 1
+
         submitQuizResult({
           quizId: quizData.id,
           slug,
@@ -450,9 +526,17 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
           score,
           type: "openended",
           totalQuestions: quizData.questions.length,
-        }).catch((err) => {
-          console.error("Error updating quiz score:", err)
         })
+          .then(() => {
+            console.log("Database save result successful")
+            hasSavedToDb.current = true
+            setHasSaved(true)
+            localStorage.setItem(`quiz_${quizData.id}_saved`, "true")
+          })
+          .catch((err) => {
+            console.error("Error updating quiz score:", err)
+            setSaveError(err instanceof Error ? err.message : "Failed to save results to database")
+          })
       }
     },
     [answers, isLoggedIn, quizData.id, quizData.questions.length, slug, startTime],
@@ -471,7 +555,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   }, [currentQuestion, quizData.questions])
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || isRecoveringAnswers) {
     return (
       <div className="w-full max-w-3xl mx-auto p-4">
         <div className="space-y-4">
