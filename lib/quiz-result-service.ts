@@ -188,3 +188,12 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
     throw error
   }
 }
+
+export async function clearAllQuizData (): Promise<void> {
+  try {
+    const keysToRemove = Object.keys(localStorage).filter((key) => key.startsWith("quiz_"))
+    keysToRemove.forEach((key) => localStorage.removeItem(key))
+  } catch (error) {
+    console.error("Error clearing quiz data:", error)
+  }
+}
