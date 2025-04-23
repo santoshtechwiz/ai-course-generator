@@ -2,7 +2,7 @@
  * Subscription types for the application
  */
 
-type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"; // Updated to match QuizDetailsPageWithContext
+export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"; // Updated to match QuizDetailsPageWithContext
 // Subscription plan types
 export type SubscriptionPlanType = "FREE" | "BASIC" | "PREMIUM" | "ENTERPRISE"
 
@@ -170,4 +170,17 @@ export interface CodingQuizProps {
     title: string
     questions: CodeChallenge[]
   }
+}
+
+export interface QuizListItem{
+  id: string
+  title: string
+  slug: string
+  ownerId?: string
+  isPublic: boolean
+  isFavorite: boolean
+  questionCount: number
+  createdAt: string
+  updatedAt: string
+  quizType: QuizType
 }

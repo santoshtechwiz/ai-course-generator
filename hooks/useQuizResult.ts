@@ -1,9 +1,21 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { toast } from "../../../../hooks/use-toast"
+import { useState, useRef, useCallback } from "react"
+import { toast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import type { QuizType } from "@/app/types/quiz-types"
+import { quizStorageService, type QuizAnswer } from "@/lib/quiz-storage-service"
+
+interface UseQuizResultProps {
+  quizId: string
+  slug: string
+  answers: QuizAnswer[]
+  totalTime: number
+  score: number
+  quizType: QuizType
+  totalQuestions: number
+  startTime?: number
+}
 
 interface UseQuizResultOptions {
   onSuccess?: (result: any) => void
@@ -12,44 +24,39 @@ interface UseQuizResultOptions {
   redirectPath?: string
 }
 
-// Implement consistent error handling with user feedback
 export function useQuizResult({
-  onSuccess,
-  onError,
-  redirectOnSuccess = false,
-  redirectPath = "/dashboard",
-}: UseQuizResultOptions = {}) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [isError, setIsError] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [result, setResult] = useState<any | null>(null)
+  quizId,
+  slug,
+  answers,
+  totalTime,
+  score,
+  quizType,
+  totalQuestions,
+  startTime,
+}: UseQuizResultProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [correctAnswers, setCorrectAnswers] = useState(0)
   const submissionInProgress = useRef(false)
   const saveAttemptCount = useRef(0)
   const lastSaveAttempt = useRef(0)
   const router = useRouter()
 
-  const resetSubmissionState = () => {
-    setIsSubmitting(false)
-    setIsSuccess(false)
-    setIsError(false)
-    setErrorMessage(null)
-    setResult(null)
-    submissionInProgress.current = false
-    saveAttemptCount.current = 0
-  }
+  // Calculate correct answers
+  const calculateCorrectAnswers = useCallback(() => {
+    return quizStorageService.countCorrectAnswers(answers, quizType)
+  }, [answers, quizType])
 
-  // Improved submission function with better error handling
-  const submitQuizResult = async (
-    quizId: string | number,
-    answers: any[],
-    totalTime: number,
-    score: number,
-    type: QuizType,
-    slug: string,
-  ) => {
+  // Update correct answers when answers change
+  useState(() => {
+    setCorrectAnswers(calculateCorrectAnswers())
+  })
+
+  // Save result to server
+  const saveResult = useCallback(async () => {
     // Prevent duplicate submissions
-    if (submissionInProgress.current || isSubmitting) {
+    if (submissionInProgress.current || isSaving) {
       console.log("Preventing duplicate submission")
       return null
     }
@@ -72,7 +79,6 @@ export function useQuizResult({
     const alreadySaved = localStorage.getItem(`quiz_${quizId}_saved`) === "true"
     if (alreadySaved) {
       console.log("Quiz results already saved, skipping save")
-      setIsSuccess(true)
       return { success: true, message: "Already saved" }
     }
 
@@ -80,28 +86,26 @@ export function useQuizResult({
       lastSaveAttempt.current = now
       saveAttemptCount.current += 1
       submissionInProgress.current = true
-      setIsSubmitting(true)
-      setIsSuccess(false)
-      setIsError(false)
-      setErrorMessage(null)
+      setIsSaving(true)
+      setError(null)
 
-      // Ensure quizId is a string
-      const quizIdString = String(quizId)
-
-      // Format answers based on quiz type
-      const formattedAnswers = formatAnswers(answers, type)
+      // Calculate correct answers
+      const correctCount = calculateCorrectAnswers()
+      setCorrectAnswers(correctCount)
 
       // Prepare submission data
       const submissionData = {
-        quizId: quizIdString,
-        answers: formattedAnswers,
+        quizId,
+        slug,
+        answers,
         totalTime,
         score,
-        type,
+        type: quizType,
+        totalQuestions,
       }
 
       console.log("Submitting quiz result:", {
-        endpoint: `/api/quiz/${quizIdString}/complete`,
+        endpoint: `/api/quiz/${quizId}/complete`,
         data: submissionData,
       })
 
@@ -109,7 +113,7 @@ export function useQuizResult({
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
 
-      const response = await fetch(`/api/quiz/${quizIdString}/complete`, {
+      const response = await fetch(`/api/quiz/${quizId}/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -144,15 +148,21 @@ export function useQuizResult({
       }
 
       const data = await response.json()
-      setResult(data)
-      setIsSuccess(true)
 
       // Mark this quiz as saved
       localStorage.setItem(`quiz_${quizId}_saved`, "true")
 
-      if (onSuccess) {
-        onSuccess(data)
-      }
+      // Save the result to our storage service
+      quizStorageService.saveQuizResult({
+        quizId,
+        slug,
+        quizType,
+        score,
+        answers,
+        totalTime,
+        timestamp: Date.now(),
+        isCompleted: true,
+      })
 
       // Only show toast on first successful save
       if (saveAttemptCount.current <= 2) {
@@ -162,19 +172,10 @@ export function useQuizResult({
         })
       }
 
-      if (redirectOnSuccess && redirectPath) {
-        router.push(redirectPath)
-      }
-
       return data
     } catch (error: any) {
       console.error("Error submitting quiz results:", error)
-      setIsError(true)
-      setErrorMessage(error.message || "An error occurred while submitting your quiz results")
-
-      if (onError) {
-        onError(error)
-      }
+      setError(error.message || "An error occurred while submitting your quiz results")
 
       // Check if this is a deadlock error and retry after a delay
       const errorMessage = error.message || "Unknown error"
@@ -190,7 +191,7 @@ export function useQuizResult({
         // Retry after a short delay
         setTimeout(() => {
           submissionInProgress.current = false
-          setIsSubmitting(false)
+          setIsSaving(false)
         }, 5000) // Increased delay to 5 seconds
       } else {
         // Only show toast on first few attempts
@@ -207,59 +208,23 @@ export function useQuizResult({
     } finally {
       // Add a small delay before allowing new submissions
       setTimeout(() => {
-        setIsSubmitting(false)
+        setIsSaving(false)
         submissionInProgress.current = false
       }, 1000)
     }
-  }
+  }, [quizId, slug, answers, totalTime, score, quizType, totalQuestions, calculateCorrectAnswers])
 
-  // Helper function to format answers based on quiz type
-  function formatAnswers(answers: any[], type: QuizType) {
-    if (!Array.isArray(answers)) {
-      console.warn("Answers is not an array:", answers)
-      return []
-    }
-
-    return answers.map((answer) => {
-      // Handle different answer formats based on quiz type
-      if (type === "mcq") {
-        return {
-          answer: typeof answer === "string" ? answer : answer.answer || "",
-          userAnswer: typeof answer === "string" ? answer : answer.userAnswer || answer.answer || "",
-          isCorrect: typeof answer === "object" ? answer.isCorrect || false : false,
-          timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
-        }
-      } else if (type === "blanks") {
-        return {
-          userAnswer: typeof answer === "string" ? answer : answer.answer || answer.userAnswer || "",
-          timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
-          hintsUsed: typeof answer === "object" ? answer.hintsUsed || false : false,
-        }
-      } else if (type === "openended") {
-        return {
-          answer: typeof answer === "string" ? answer : answer.answer || "",
-          timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
-          hintsUsed: typeof answer === "object" ? answer.hintsUsed || false : false,
-        }
-      } else if (type === "code") {
-        return {
-          answer: typeof answer === "string" ? answer : answer.answer || "",
-          userAnswer: typeof answer === "string" ? answer : answer.userAnswer || "",
-          isCorrect: typeof answer === "object" ? answer.isCorrect || false : false,
-          timeSpent: typeof answer === "object" ? answer.timeSpent || 0 : 0,
-        }
-      }
-      return answer
-    })
-  }
+  // Retry saving
+  const handleRetryFetch = useCallback(() => {
+    saveResult()
+  }, [saveResult])
 
   return {
-    submitQuizResult,
-    isSubmitting,
-    isSuccess,
-    isError,
-    errorMessage,
-    result,
-    resetSubmissionState,
+    isLoading,
+    isSaving,
+    error,
+    correctAnswers,
+    saveResult,
+    handleRetryFetch,
   }
 }

@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
-import DashboardLayoutClient from "./DashboardLayoutClient"
+
+import { RootProvider } from "@/providers/root-provider"
 
 
 
@@ -13,7 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background pt-16 transition-all duration-300">
      
-        <DashboardLayoutClient children={children} />
+        <RootProvider children={children} />
 
      
     </div>

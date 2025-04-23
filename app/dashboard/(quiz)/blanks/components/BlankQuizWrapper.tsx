@@ -10,21 +10,11 @@ import FillInTheBlanksQuiz from "./FillInTheBlanksQuiz"
 import BlankQuizResults from "./BlankQuizResults"
 
 import { QuizFeedback } from "../../components/QuizFeedback"
-import { submitQuizResult } from "@/lib/quiz-result-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
-
-import {
-  clearSavedQuizState,
-  getSavedQuizState,
-  loadQuizAnswers,
-  saveQuizAnswers,
-  saveQuizResult,
-  loadQuizResult,
-  calculateSimilarity, // Import loadQuizResult
-} from "@/app/dashboard/(quiz)/hooks/quiz-session-storage"
+import { quizStorageService } from "@/lib/quiz-storage-service"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 
 interface BlankQuizWrapperProps {
@@ -52,7 +42,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
   // Hooks
   const { data: session, status } = useSession()
   const router = useRouter()
-  const { saveQuizState, saveGuestResult, setShowSignInPrompt, getGuestResult } = useQuiz()
+  const { saveQuizState, saveGuestResult, setShowSignInPrompt } = useQuiz()
 
   // Refs
   const submissionInProgress = useRef(false)
@@ -61,27 +51,149 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
   // Derived state
   const isLoggedIn = status === "authenticated"
 
-  // Load saved answers from localStorage
-  const loadSavedAnswers = useCallback(() => {
-    return loadQuizAnswers(quizData?.id)
-  }, [quizData?.id])
+  // Initialize quiz state
+  useEffect(() => {
+    let hasCompletedParam = false
+    let savedResult = null
+    let savedAnswers = null
+    let guestResult = null
+    let savedState = null
 
-  // Save answers to localStorage
-  const saveSavedAnswers = useCallback(
-    (answersToSave: typeof answers) => {
-      if (quizData?.id) {
-        saveQuizAnswers(quizData.id, answersToSave)
+    if (typeof window !== "undefined" && status !== "loading") {
+      setIsLoading(true)
+      try {
+        // Check if we have a completed quiz state in the URL query params
+        const urlParams = new URLSearchParams(window.location.search)
+        hasCompletedParam = urlParams.get("completed") === "true"
+
+        console.log("URL params check:", {
+          hasCompletedParam,
+          completed: urlParams.get("completed"),
+          search: window.location.search,
+        })
+
+        // Check if user just signed in
+        const wasSignedOut = sessionStorage.getItem("wasSignedIn") === "false"
+        const isNowSignedIn = status === "authenticated" && wasSignedOut
+
+        // If user just signed in, check for guest results to display FIRST
+        if (isNowSignedIn) {
+          console.log("User just signed in, checking for guest results")
+          guestResult = quizStorageService.getGuestResult(quizData.id)
+
+          if (guestResult) {
+            console.log("Found guest result after sign in:", guestResult)
+            if (guestResult.answers && guestResult.answers.length > 0) {
+              setAnswers(guestResult.answers)
+              setIsCompleted(true)
+              setIsLoading(false)
+
+              // Update sessionStorage to prevent this check on subsequent loads
+              sessionStorage.setItem("wasSignedIn", "true")
+              return
+            }
+          }
+        }
+
+        // First check for saved result in storage
+        savedResult = quizStorageService.getQuizResult(quizData.id)
+        console.log("Checking for saved result:", savedResult)
+
+        // If we have a completed param or saved results, show the results immediately
+        if (hasCompletedParam || savedResult) {
+          console.log("Found completed quiz state or saved results", savedResult)
+          if (savedResult && savedResult.answers) {
+            console.log("Setting answers from saved result:", savedResult.answers)
+            setAnswers(savedResult.answers || [])
+          }
+          setIsCompleted(true)
+          setIsLoading(false)
+          return
+        }
+
+        // Try to load answers from storage
+        savedAnswers = quizStorageService.getQuizAnswers(quizData.id)
+        if (savedAnswers && savedAnswers.length > 0) {
+          console.log("Found saved answers in storage:", savedAnswers)
+          setAnswers(savedAnswers)
+
+          // If we also have a completed param, show the results
+          if (hasCompletedParam) {
+            console.log("Setting isCompleted to true based on URL param")
+            setIsCompleted(true)
+          }
+
+          setIsLoading(false)
+          return
+        }
+
+        // Update signed in state
+        sessionStorage.setItem("wasSignedIn", status === "authenticated" ? "true" : "false")
+
+        // Check for saved state in storage
+        savedState = quizStorageService.getQuizState(quizData.id, "blanks")
+        console.log("Checking saved state:", savedState)
+
+        // Check if there's a saved state for this quiz, restore it
+        if (savedState) {
+          setCurrentQuestion(savedState.currentQuestion)
+          setStartTime(savedState.startTime)
+          setIsCompleted(savedState.isCompleted)
+
+          if (savedState.answers) {
+            console.log("Setting answers from saved state:", savedState.answers)
+            setAnswers(savedState.answers)
+          }
+
+          // If quiz was completed, show results
+          if (savedState.isCompleted) {
+            setIsCompleted(true)
+          }
+        }
+      } catch (err: any) {
+        console.error("Error loading saved quiz state:", err)
+      } finally {
+        setIsLoading(false)
       }
-    },
-    [quizData?.id],
-  )
+    }
+  }, [quizData?.id, status])
+
+  // Save quiz state when navigating away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (!isCompleted && answers.length > 0) {
+        saveQuizState({
+          quizId: quizData.id,
+          quizType: "blanks",
+          slug,
+          currentQuestion,
+          totalQuestions: quizData.questions?.length || 0,
+          startTime,
+          isCompleted,
+          answers,
+        })
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [answers, currentQuestion, isCompleted, quizData.id, quizData.questions?.length, slug, startTime, saveQuizState])
+
+  // Save answers whenever they change
+  useEffect(() => {
+    if (answers.length > 0) {
+      quizStorageService.saveQuizAnswers(quizData.id, answers)
+    }
+  }, [answers, quizData.id])
 
   // Complete quiz function
   const completeQuiz = async (finalAnswers: typeof answers) => {
     console.log("Completing quiz with answers:", finalAnswers)
 
-    // Save answers to localStorage immediately
-    saveSavedAnswers(finalAnswers)
+    // Save answers to storage immediately
+    quizStorageService.saveQuizAnswers(quizData.id, finalAnswers)
 
     // Prevent multiple submissions
     if (submissionInProgress.current) {
@@ -109,7 +221,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
               // Calculate similarity if not already done
               const userAnswer = finalAnswers[i].answer?.trim().toLowerCase() || ""
               const correctAnswer = questions[i].answer?.trim().toLowerCase() || ""
-              const similarity = calculateSimilarity(correctAnswer, userAnswer)
+              const similarity = quizStorageService.calculateSimilarity(correctAnswer, userAnswer)
               finalAnswers[i].similarity = similarity
               totalSimilarity += similarity
             }
@@ -134,9 +246,9 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
         isCompleted: true,
       }
 
-      // Always save to localStorage for persistence
-      saveQuizResult(quizData.id, result)
-      console.log("Saved result to localStorage:", result)
+      // Save to storage
+      quizStorageService.saveQuizResult(result)
+      console.log("Saved result to storage:", result)
 
       // Set isCompleted to true before showing feedback
       setIsCompleted(true)
@@ -150,22 +262,29 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
       if (isLoggedIn) {
         console.log("User is logged in, saving to database")
         try {
-          await submitQuizResult({
-            quizId: quizData.id,
-            slug,
-            answers: finalAnswers.map((a) => ({
-              answer: a.answer,
-              timeSpent: a.timeSpent,
-              hintsUsed: a.hintsUsed,
-              similarity: a.similarity,
-            })),
-            totalTime: (Date.now() - startTime) / 1000,
-            score,
-            type: "blanks",
-            totalQuestions: quizData.questions.length,
+          await fetch(`/api/quiz/${slug}/complete`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              quizId: quizData.id,
+              slug,
+              answers: finalAnswers.map((a) => ({
+                answer: a.answer,
+                timeSpent: a.timeSpent,
+                hintsUsed: a.hintsUsed,
+                similarity: a.similarity,
+              })),
+              totalTime: (Date.now() - startTime) / 1000,
+              score,
+              type: "blanks",
+              totalQuestions: quizData.questions.length,
+            }),
           })
           console.log("Database save result successful")
           hasSavedToDb.current = true
+          localStorage.setItem(`quiz_${quizData.id}_saved`, "true")
         } catch (dbError) {
           console.error("Error saving to database:", dbError)
           setSaveError(dbError instanceof Error ? dbError.message : "Failed to save results to database")
@@ -212,173 +331,6 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
     }
   }
 
-  // Initialize quiz state
-  useEffect(() => {
-    let hasCompletedParam = false
-    let savedResult = null
-    let savedAnswers = null
-    let guestResult = null
-    let savedState = null
-
-    if (typeof window !== "undefined" && status !== "loading") {
-      setIsLoading(true)
-      try {
-        // Check if we have a completed quiz state in the URL query params
-        const urlParams = new URLSearchParams(window.location.search)
-        hasCompletedParam = urlParams.get("completed") === "true"
-
-        console.log("URL params check:", {
-          hasCompletedParam,
-          completed: urlParams.get("completed"),
-          search: window.location.search,
-        })
-
-        // Check if user just signed in
-        const wasSignedOut = sessionStorage.getItem("wasSignedIn") === "false"
-        const isNowSignedIn = status === "authenticated" && wasSignedOut
-
-        // If user just signed in, check for guest results to display FIRST
-        if (isNowSignedIn) {
-          console.log("User just signed in, checking for guest results")
-
-          // First check in guestQuizResults
-          const guestResultsStr = localStorage.getItem("guestQuizResults")
-          if (guestResultsStr) {
-            const guestResults = JSON.parse(guestResultsStr)
-            guestResult = guestResults.find((r: any) => r.quizId === quizData.id)
-          }
-
-          // If not found, check in quiz_result_[quizId]
-          if (!guestResult) {
-            const specificResultStr = localStorage.getItem(`quiz_result_${quizData.id}`)
-            if (specificResultStr) {
-              guestResult = JSON.parse(specificResultStr)
-            }
-          }
-
-          if (guestResult) {
-            console.log("Found guest result after sign in:", guestResult)
-            if (guestResult.answers && guestResult.answers.length > 0) {
-              setAnswers(guestResult.answers)
-              setIsCompleted(true)
-              setIsLoading(false)
-
-              // Update sessionStorage to prevent this check on subsequent loads
-              sessionStorage.setItem("wasSignedIn", "true")
-              return
-            }
-          }
-        }
-
-        // First check for saved result in localStorage
-        savedResult = loadQuizResult(quizData.id)
-        console.log("Checking for saved result:", savedResult)
-
-        // If we have a completed param or saved results, show the results immediately
-        if (hasCompletedParam || savedResult) {
-          console.log("Found completed quiz state or saved results", savedResult)
-          if (savedResult && savedResult.answers) {
-            console.log("Setting answers from saved result:", savedResult.answers)
-            setAnswers(savedResult.answers || [])
-          }
-          setIsCompleted(true)
-          setIsLoading(false)
-          return
-        }
-
-        // Try to load answers from localStorage
-        savedAnswers = loadSavedAnswers()
-        if (savedAnswers && savedAnswers.length > 0) {
-          console.log("Found saved answers in localStorage:", savedAnswers)
-          setAnswers(savedAnswers)
-
-          // If we also have a completed param, show the results
-          if (hasCompletedParam) {
-            console.log("Setting isCompleted to true based on URL param")
-            setIsCompleted(true)
-          }
-
-          setIsLoading(false)
-          return
-        }
-
-        // Update signed in state
-        sessionStorage.setItem("wasSignedIn", status === "authenticated" ? "true" : "false")
-
-        // Check for saved state in session storage
-        savedState = getSavedQuizState()
-        console.log("Checking saved state:", savedState)
-
-        // Check if there's a saved state for this quiz, restore it
-        if (savedState) {
-          const { quizState, answers: savedStateAnswers } = savedState
-
-          // If there's a saved state for this quiz, restore it
-          if (quizState && quizState.quizId === quizData.id && quizState.quizType === "blanks") {
-            setCurrentQuestion(quizState.currentQuestion)
-            setStartTime(quizState.startTime)
-            setIsCompleted(quizState.isCompleted)
-
-            if (savedStateAnswers) {
-              console.log("Setting answers from saved state:", savedStateAnswers)
-              setAnswers(
-                savedStateAnswers as {
-                  answer: string
-                  timeSpent: number
-                  hintsUsed: boolean
-                  similarity?: number
-                }[],
-              )
-            }
-
-            // Clear saved state
-            clearSavedQuizState()
-
-            // If quiz was completed, show results
-            if (quizState.isCompleted) {
-              setIsCompleted(true)
-            }
-          }
-        }
-      } catch (err: any) {
-        console.error("Error loading saved quiz state:", err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-  }, [quizData?.id, status, loadSavedAnswers, isLoggedIn, getGuestResult])
-
-  // Save quiz state when navigating away
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (!isCompleted && answers.length > 0) {
-        saveQuizState({
-          quizId: quizData.id,
-          quizType: "blanks",
-          slug,
-          timeSpent: [(Date.now() - startTime) / 1000],
-          currentQuestion,
-          totalQuestions: quizData.questions?.length || 0,
-          startTime,
-          isCompleted,
-          answers,
-        })
-      }
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-    }
-  }, [answers, currentQuestion, isCompleted, quizData.id, quizData.questions?.length, slug, startTime, saveQuizState])
-
-  // Save answers whenever they change
-  useEffect(() => {
-    if (answers.length > 0) {
-      saveSavedAnswers(answers)
-    }
-  }, [answers, saveSavedAnswers])
-
   // Handle answer submission
   const handleAnswer = useCallback(
     (answer: string, timeSpent: number, hintsUsed: boolean, similarity?: number) => {
@@ -413,9 +365,12 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
     setIsSuccess(false)
     setError(null)
 
+    // Clear saved state
+    quizStorageService.clearQuizState(quizData.id, "blanks")
+
     // Force a refresh to ensure all components are reset
     router.refresh()
-  }, [router])
+  }, [router, quizData.id])
 
   // Handle quiz completion
   const handleComplete = useCallback(
@@ -425,19 +380,25 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
 
       // If user is logged in, update the score in the database
       if (isLoggedIn) {
-        submitQuizResult({
-          quizId: quizData.id,
-          slug,
-          answers: answers.map((a) => ({
-            answer: a.answer,
-            timeSpent: a.timeSpent,
-            hintsUsed: a.hintsUsed,
-            similarity: a.similarity,
-          })),
-          totalTime: (Date.now() - startTime) / 1000,
-          score,
-          type: "blanks",
-          totalQuestions: quizData.questions.length,
+        fetch(`/api/quiz/${slug}/complete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            quizId: quizData.id,
+            slug,
+            answers: answers.map((a) => ({
+              answer: a.answer,
+              timeSpent: a.timeSpent,
+              hintsUsed: a.hintsUsed,
+              similarity: a.similarity,
+            })),
+            totalTime: (Date.now() - startTime) / 1000,
+            score,
+            type: "blanks",
+            totalQuestions: quizData.questions.length,
+          }),
         }).catch((err) => {
           console.error("Error updating quiz score:", err)
         })
@@ -449,7 +410,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
   // Handle feedback modal continue button
   const handleFeedbackContinue = useCallback(() => {
     setShowFeedbackModal(false)
-    // Ensure isCompleted is set to true when feedback modal is closed
+    // Ensure isCompleted is set to true when feedback modal is closedeedback modal is closed
     setIsCompleted(true)
   }, [])
 
@@ -457,17 +418,6 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
   const currentQuestionData = useMemo(() => {
     return quizData.questions?.[currentQuestion] || null
   }, [currentQuestion, quizData.questions])
-
-  // Debug logging
-  useEffect(() => {
-    console.log("Quiz state:", {
-      isCompleted,
-      showFeedbackModal,
-      quizResults,
-      currentQuestion,
-      totalQuestions: quizData?.questions?.length,
-    })
-  }, [isCompleted, showFeedbackModal, quizResults, currentQuestion, quizData?.questions?.length])
 
   // Loading state
   if (isLoading) {
@@ -541,7 +491,8 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
               quizId={quizData.id}
               title={quizData.title}
               slug={slug}
-              clearGuestData={clearSavedQuizState}
+              clearGuestData={() => quizStorageService.clearQuizState(quizData.id, "blanks")}
+              startTime={startTime}
             />
           </motion.div>
         ) : (
@@ -573,7 +524,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
           totalQuestions={100} // Use 100 for percentage display
           onContinue={handleFeedbackContinue}
           errorMessage={error || undefined}
-          quizType="fill-blanks"
+          quizType="blanks"
           waitForSave={true}
           autoClose={false}
         />

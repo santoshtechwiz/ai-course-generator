@@ -6,9 +6,8 @@ import { useEffect, useState, useRef } from "react"
 import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useQuiz } from "../context/QuizContext"
-// Add this to the imports
-import { clearAllQuizData } from "@/app/dashboard/(quiz)/hooks/quiz-session-storage"
+import { useQuiz } from "@/app/context/QuizContext"
+import { clearAllQuizData } from "@/lib/quiz-result-service"
 
 interface QuizAuthWrapperProps {
   children: React.ReactNode

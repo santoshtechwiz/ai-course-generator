@@ -1,9 +1,10 @@
 "use client"
 
+import { QuizProvider } from "@/app/context/QuizContext"
 import type React from "react"
+import QuizDetailsPage from "./QuizDetailsPage"
 
-import QuizDetailsPage from "@/app/dashboard/(quiz)/components/QuizDetailsPage"
-import { QuizProvider } from "@/app/dashboard/(quiz)/context/QuizContext"
+
 
 interface QuizDetailsPageWithContextProps {
   title: string

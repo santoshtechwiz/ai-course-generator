@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress"
 
 import { useRouter } from "next/navigation"
 import QuizAuthWrapper from "./QuizAuthWrapper"
-import { getPerformanceLevel } from "@/app/dashboard/(quiz)/utils/quiz-utils"
+
 import {
   AlertCircle,
   CheckCircle,
@@ -26,13 +26,15 @@ import {
   Share2,
   Download,
 } from "lucide-react"
-import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
-import { motion } from "framer-motion"
-import { useQuizResult } from "@/app/dashboard/(quiz)/hooks/useQuizResult"
+
 
 import type { QuizType } from "@/app/types/quiz-types"
 import { useToast } from "@/hooks/use-toast"
 import { QuizAnswer } from "../services/QuizResultService"
+import { useQuiz } from "@/app/context/QuizContext"
+import { useQuizResult } from "@/hooks/useQuizResult"
+import { getPerformanceLevel } from "@/utils/quiz-utils"
+import { motion } from "framer-motion"
 
 interface QuizResultDisplayProps {
   quizId: string
