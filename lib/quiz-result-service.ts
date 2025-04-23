@@ -22,6 +22,13 @@ interface QuizSubmission {
 export async function submitQuizResult(submission: QuizSubmission): Promise<any> {
   console.log("Submitting quiz result:", submission)
 
+  // Check if we've already saved this quiz
+  const alreadySaved = localStorage.getItem(`quiz_${submission.quizId}_saved`) === "true"
+  if (alreadySaved) {
+    console.log("Quiz results already saved, skipping save")
+    return { success: true, message: "Already saved" }
+  }
+
   try {
     // Format the answers based on quiz type
     let formattedAnswers = submission.answers
@@ -63,9 +70,29 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
     // Implement retry logic for deadlock errors
     let retries = 3
     let lastError = null
+    let saveAttemptCount = 0
+    let lastSaveAttempt = 0
 
     while (retries > 0) {
       try {
+        // Prevent excessive save attempts
+        const now = Date.now()
+        if (now - lastSaveAttempt < 5000) {
+          // Throttle to once every 5 seconds
+          console.log("Throttling save attempt, too frequent")
+          await new Promise((resolve) => setTimeout(resolve, 5000))
+          continue
+        }
+
+        // Limit total save attempts to prevent infinite loops
+        if (saveAttemptCount > 5) {
+          console.log("Too many save attempts, stopping to prevent infinite loop")
+          break
+        }
+
+        lastSaveAttempt = now
+        saveAttemptCount += 1
+
         // Make the API call to save the quiz result
         const response = await fetch(`/api/quiz/${submission.quizId}/complete`, {
           method: "POST",
@@ -100,7 +127,7 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
             lastError = new Error(errorMessage)
             retries--
             // Wait longer between each retry
-            await new Promise((resolve) => setTimeout(resolve, (4 - retries) * 1000))
+            await new Promise((resolve) => setTimeout(resolve, (4 - retries) * 2000))
             continue
           }
 
@@ -109,6 +136,10 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
 
         const data = await response.json()
         console.log("Quiz result saved successfully:", data)
+
+        // Mark this quiz as saved
+        localStorage.setItem(`quiz_${submission.quizId}_saved`, "true")
+
         return data
       } catch (error) {
         lastError = error
@@ -122,7 +153,7 @@ export async function submitQuizResult(submission: QuizSubmission): Promise<any>
           if (retries > 0) {
             console.log(`Retrying after deadlock error. Retries left: ${retries}`)
             // Wait longer between each retry
-            await new Promise((resolve) => setTimeout(resolve, (4 - retries) * 1000))
+            await new Promise((resolve) => setTimeout(resolve, (4 - retries) * 2000))
             continue
           }
         } else {

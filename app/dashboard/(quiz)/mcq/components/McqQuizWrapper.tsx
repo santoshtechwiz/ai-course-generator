@@ -49,16 +49,18 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [hasCleared, setHasCleared] = useState(false)
 
   // Refs
   const submissionInProgress = useRef(false)
+  const hasInitialized = useRef(false)
 
   // Derived state
   const isLoggedIn = status === "authenticated"
   const quizId = quizData?.id || ""
   const questions = quizData?.questions || []
   const currentQuestionData = questions[currentQuestion] || null
-  const totalQuestions = questions.length || 0
+  const totalQuestions = questions?.length || 0
 
   // Debug the quiz data structure
   useEffect(() => {
@@ -72,9 +74,10 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
   // Initialize quiz state
   useEffect(() => {
     const initializeQuiz = async () => {
-      if (status === "loading") return
+      if (status === "loading" || hasInitialized.current) return
 
       setIsLoading(true)
+      hasInitialized.current = true
 
       try {
         // Check if quiz data is valid
@@ -379,6 +382,41 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
     setShowAuthModal(false)
   }, [])
 
+  // Clear guest data after results are displayed
+  const clearGuestData = useCallback(() => {
+    if (hasCleared) return
+
+    console.log("Clearing guest data after results displayed")
+    setHasCleared(true)
+
+    // Don't clear immediately - wait a bit to ensure results are displayed
+    setTimeout(() => {
+      if (typeof window !== "undefined") {
+        // Don't clear if we're logged in
+        if (status === "authenticated") return
+
+        // Don't clear if we're in the middle of authentication
+        if (localStorage.getItem("preserveGuestResults") === "true") return
+
+        // Clear all storage related to this quiz
+        const keysToPreserve = [`quiz_result_${quizId}`, `quiz_answers_${quizId}`]
+
+        // Keep the result but clear other data
+        Object.keys(localStorage).forEach((key) => {
+          if (key.includes(quizId) && !keysToPreserve.includes(key)) {
+            localStorage.removeItem(key)
+          }
+        })
+
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key.includes(quizId) && !keysToPreserve.includes(key)) {
+            sessionStorage.removeItem(key)
+          }
+        })
+      }
+    }, 5000) // Wait 5 seconds before clearing
+  }, [quizId, status, hasCleared])
+
   // Render content based on state
   let content
 
@@ -441,6 +479,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
         score={quizScore}
         onRestart={handleRestart}
         onSignIn={handleOpenAuthModal}
+        questions={questions} // Pass the questions array to the result component
       />
     )
   } else {

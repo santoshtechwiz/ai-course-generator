@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { QuizResultBase, getPerformanceLevel } from "../../components/QuizResultBase"
-import { calculateSimilarity } from "@/hooks/quiz-session-storage"
+import { calculateSimilarity, loadQuizAnswers, loadQuizResult } from "@/hooks/quiz-session-storage"
 
 interface BlankQuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]
@@ -23,7 +23,7 @@ interface BlankQuizResultsProps {
 }
 
 export default function BlankQuizResults({
-  answers,
+  answers: initialAnswers,
   questions,
   onRestart,
   onComplete,
@@ -37,15 +37,67 @@ export default function BlankQuizResults({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveCompleted, setSaveCompleted] = useState(false)
   const router = useRouter()
+  const [answers, setAnswers] = useState(initialAnswers || [])
+  const [isRecovering, setIsRecovering] = useState(false)
 
   // Add this debugging log at the beginning of the component to see what data we're receiving
   console.log("BlankQuizResults received:", {
+    initialAnswersLength: initialAnswers?.length,
+    initialAnswers,
     answersLength: answers?.length,
     answers,
     questionsLength: questions?.length,
     quizId,
     slug,
   })
+
+  // Try to recover answers from storage if none were provided
+  useEffect(() => {
+    if ((!initialAnswers || initialAnswers.length === 0) && questions && questions.length > 0) {
+      setIsRecovering(true)
+      console.log("Attempting to recover answers from storage for quiz:", quizId)
+
+      // Try to load from quiz_result first (most likely to have complete data)
+      const savedResult = loadQuizResult(quizId)
+      if (savedResult && savedResult.answers && savedResult.answers.length > 0) {
+        console.log("Recovered answers from quiz result:", savedResult.answers)
+        setAnswers(savedResult.answers)
+        setIsRecovering(false)
+        return
+      }
+
+      // Try to load from quiz_answers as fallback
+      const savedAnswers = loadQuizAnswers(quizId)
+      if (savedAnswers && savedAnswers.length > 0) {
+        console.log("Recovered answers from saved answers:", savedAnswers)
+        setAnswers(savedAnswers)
+        setIsRecovering(false)
+        return
+      }
+
+      // Check localStorage directly as a last resort
+      try {
+        const keys = Object.keys(localStorage)
+        for (const key of keys) {
+          if (key.includes(quizId) && key.includes("answer")) {
+            const data = JSON.parse(localStorage.getItem(key) || "[]")
+            if (Array.isArray(data) && data.length > 0) {
+              console.log(`Recovered answers from ${key}:`, data)
+              setAnswers(data)
+              setIsRecovering(false)
+              return
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error checking localStorage for answers:", e)
+      }
+
+      // If we get here, we couldn't recover any answers
+      console.warn("Could not recover any answers from storage")
+      setIsRecovering(false)
+    }
+  }, [initialAnswers, questions, quizId])
 
   // Modify the useMemo calculation to handle empty answers better
   const { score, results } = useMemo(() => {
@@ -96,8 +148,10 @@ export default function BlankQuizResults({
       const similarity = calculateSimilarity(correctAnswer, userAnswer)
 
       // Store the similarity in the answers array for future reference
-      if (answers[index]) {
-        answers[index].similarity = similarity
+      const updatedAnswers = [...answers]
+      if (updatedAnswers[index]) {
+        updatedAnswers[index].similarity = similarity
+        setAnswers(updatedAnswers)
       }
 
       return {
@@ -120,7 +174,7 @@ export default function BlankQuizResults({
   const totalTime = useMemo(() => answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0), [answers])
 
   useEffect(() => {
-    if (!hasCalledComplete.current) {
+    if (!hasCalledComplete.current && !isRecovering) {
       hasCalledComplete.current = true
       onComplete(Math.round(score))
 
@@ -137,7 +191,7 @@ export default function BlankQuizResults({
 
       return () => clearTimeout(timer)
     }
-  }, [score, onComplete, session, clearGuestData, answers])
+  }, [score, onComplete, session, clearGuestData, answers, isRecovering])
 
   const performance = getPerformanceLevel(score)
 
@@ -168,6 +222,23 @@ export default function BlankQuizResults({
 
     // Navigate back to the quiz page
     router.push(`/dashboard/blanks/${slug}`)
+  }
+
+  // Show a loading state while recovering answers
+  if (isRecovering) {
+    return (
+      <div className="max-w-4xl mx-auto p-4">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Loading Quiz Results...</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+            <p className="text-muted-foreground">Recovering your quiz answers...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -202,6 +273,14 @@ export default function BlankQuizResults({
               <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
                 <p className="text-amber-800 font-medium">No answers found to display.</p>
                 <p className="text-sm text-amber-700">This may happen if you signed out and back in.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => router.push(`/dashboard/blanks/${slug}`)}
+                >
+                  Return to Quiz
+                </Button>
               </div>
             )}
 

@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { submitQuizResult } from "@/lib/quiz-result-service"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
+import {
+  searchAllStorageForAnswers,
+  saveQuizResult,
+  loadQuizResult,
+  loadQuizAnswers,
+} from "@/hooks/quiz-session-storage"
 
 interface McqQuizResultProps {
   quizId: number
@@ -21,18 +27,20 @@ interface McqQuizResultProps {
   score: number
   onRestart: () => void
   onSignIn: () => void
+  questions?: { id: number; question: string; options: string[]; answer: string }[]
 }
 
 export default function McqQuizResult({
   quizId,
   slug,
   title,
-  answers,
+  answers: initialAnswersProp,
   totalQuestions,
   startTime,
-  score,
+  score: initialScore,
   onRestart,
   onSignIn,
+  questions = [],
 }: McqQuizResultProps) {
   // State
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -42,9 +50,16 @@ export default function McqQuizResult({
   const [saveAttempted, setSaveAttempted] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [hasSaved, setHasSaved] = useState(false)
+  const [answers, setAnswers] = useState<{ answer: string; timeSpent: number; isCorrect: boolean }[]>(
+    initialAnswersProp || [],
+  )
+  const [score, setScore] = useState(initialScore || 0)
+  const [isRecovering, setIsRecovering] = useState(false)
 
   // Refs
   const hasSavedRef = useRef(false)
+  const saveAttemptsRef = useRef(0)
+  const lastSaveAttemptRef = useRef(0)
 
   // Hooks
   const { data: session, status } = useSession()
@@ -54,8 +69,73 @@ export default function McqQuizResult({
   // Derived state
   const isLoggedIn = status === "authenticated"
 
+  // Debug logging
+  useEffect(() => {
+    console.log("McqQuizResult mounted with props:", {
+      quizId,
+      slug,
+      title,
+      initialAnswersLength: initialAnswersProp?.length,
+      totalQuestions,
+      startTime,
+      initialScore,
+      isLoggedIn,
+      questionsLength: questions?.length,
+    })
+  }, [quizId, slug, title, initialAnswersProp, totalQuestions, startTime, initialScore, isLoggedIn, questions])
+
+  // Try to recover answers if they're missing
+  useEffect(() => {
+    const recoverAnswers = async () => {
+      if ((!initialAnswersProp || initialAnswersProp.length === 0) && !isRecovering) {
+        console.log("Attempting to recover answers for quiz:", quizId)
+        setIsRecovering(true)
+
+        try {
+          // Try to find answers in storage using the utility function
+          const recoveredAnswers = await searchAllStorageForAnswers(String(quizId))
+
+          if (recoveredAnswers && Array.isArray(recoveredAnswers) && recoveredAnswers.length > 0) {
+            console.log("Recovered answers:", recoveredAnswers)
+            setAnswers(recoveredAnswers)
+
+            // Recalculate score if needed
+            if (initialScore === 0 || initialScore === undefined) {
+              const correctCount = recoveredAnswers.filter((a) => a && a.isCorrect).length
+              const calculatedScore = Math.round((correctCount / recoveredAnswers.length) * 100)
+              console.log("Recalculated score:", calculatedScore)
+              setScore(calculatedScore)
+            }
+          } else {
+            // Try to load answers using the loadQuizAnswers utility
+            const loadedAnswers = loadQuizAnswers(String(quizId))
+            if (loadedAnswers && Array.isArray(loadedAnswers) && loadedAnswers.length > 0) {
+              console.log("Loaded answers from storage:", loadedAnswers)
+              setAnswers(loadedAnswers)
+
+              // Recalculate score if needed
+              if (initialScore === 0 || initialScore === undefined) {
+                const correctCount = loadedAnswers.filter((a) => a && a.isCorrect).length
+                const calculatedScore = Math.round((correctCount / loadedAnswers.length) * 100)
+                console.log("Recalculated score:", calculatedScore)
+                setScore(calculatedScore)
+              }
+            } else {
+              console.warn("No answers could be recovered")
+            }
+          }
+        } catch (err) {
+          console.error("Error recovering answers:", err)
+        } finally {
+          setIsRecovering(false)
+        }
+      }
+    }
+
+    recoverAnswers()
+  }, [initialAnswersProp, quizId, initialScore])
+
   // Update the component to correctly display the score and answers
-  // Add this near the top of the component
   useEffect(() => {
     // Validate the answers array
     if (answers && answers.length > 0) {
@@ -69,6 +149,7 @@ export default function McqQuizResult({
       const calculatedScore = Math.round((correctCount / answers.length) * 100)
       if (calculatedScore !== score) {
         console.warn(`Score mismatch: Provided ${score}%, calculated ${calculatedScore}%`)
+        setScore(calculatedScore)
       }
     } else {
       console.warn("McqQuizResult received empty or invalid answers array")
@@ -78,39 +159,50 @@ export default function McqQuizResult({
   // Save results to database if user is logged in
   useEffect(() => {
     const saveResultsToDb = async () => {
-      // Skip if we've already attempted to save or if we're not logged in
+      // Skip if we've already attempted to save too many times
+      if (saveAttemptsRef.current >= 5) {
+        console.log("Maximum save attempts reached, skipping")
+        return
+      }
+
+      // Throttle save attempts to prevent infinite loops
+      const now = Date.now()
+      if (now - lastSaveAttemptRef.current < 5000) {
+        // 5 second throttle
+        console.log("Throttling save attempt")
+        return
+      }
+      lastSaveAttemptRef.current = now
+
+      // Skip if we've already saved or if we're not logged in
       if (saveAttempted || !isLoggedIn || hasSavedRef.current) return
+
+      // Check if we've already saved this result using the utility function
+      const quizResult = loadQuizResult(String(quizId))
+      const alreadySaved = quizResult && quizResult.saved === true
+
+      if (alreadySaved) {
+        console.log("Results already saved, skipping submission")
+        setHasSaved(true)
+        hasSavedRef.current = true
+        return
+      }
 
       // Mark that we've attempted to save to prevent multiple attempts
       setSaveAttempted(true)
       setIsSubmitting(true)
       setSaveError(null)
+      saveAttemptsRef.current += 1
 
       try {
         // Check if we're on a completed page (URL has completed=true)
         const isCompletedPage = typeof window !== "undefined" && window.location.search.includes("completed=true")
         console.log("Saving results to database, isCompletedPage:", isCompletedPage)
 
-        // If we're on a completed page, we might need to get the answers from localStorage
-        let answersToSubmit = answers
-        if (isCompletedPage && (!answers || answers.length === 0)) {
-          // Try to get answers from localStorage
-          const savedResult = localStorage.getItem(`quiz_result_${quizId}`)
-          if (savedResult) {
-            const parsedResult = JSON.parse(savedResult)
-            if (parsedResult.answers && parsedResult.answers.length > 0) {
-              answersToSubmit = parsedResult.answers
-              console.log("Using answers from saved result:", answersToSubmit)
-            }
-          }
-        }
-
-        // Check if we've already saved this result
-        const alreadySaved = localStorage.getItem(`quiz_result_${quizId}_saved`) === "true"
-        if (alreadySaved) {
-          console.log("Results already saved, skipping submission")
-          setHasSaved(true)
-          hasSavedRef.current = true
+        // If we don't have valid answers, don't try to save
+        if (!answers || answers.length === 0) {
+          console.warn("No answers to save, skipping submission")
+          setIsSubmitting(false)
           return
         }
 
@@ -118,7 +210,7 @@ export default function McqQuizResult({
         await submitQuizResult({
           quizId,
           slug,
-          answers: answersToSubmit.map((a) => ({
+          answers: answers.map((a) => ({
             answer: a.answer,
             timeSpent: a.timeSpent,
             isCorrect: a.isCorrect,
@@ -129,26 +221,39 @@ export default function McqQuizResult({
           totalQuestions,
         })
 
-        // Mark as saved
+        // Mark as saved using the utility function
         setHasSaved(true)
         hasSavedRef.current = true
-        localStorage.setItem(`quiz_result_${quizId}_saved`, "true")
 
-        toast({
-          title: "Results saved",
-          description: "Your quiz results have been saved successfully.",
+        // Save the result with a saved flag
+        saveQuizResult(String(quizId), {
+          answers,
+          score,
+          totalTime: (Date.now() - startTime) / 1000,
+          saved: true,
+          timestamp: Date.now(),
         })
+
+        // Only show toast for the first save attempt
+        if (saveAttemptsRef.current <= 2) {
+          toast({
+            title: "Results saved",
+            description: "Your quiz results have been saved successfully.",
+          })
+        }
       } catch (err) {
         console.error("Error saving to database:", err)
-        setError(err instanceof Error ? err.message : "Failed to save results to database")
+        setSaveError(err instanceof Error ? err.message : "Failed to save results to database")
       } finally {
         setIsSubmitting(false)
       }
     }
 
     // Only run this effect once when the component mounts
-    saveResultsToDb()
-  }, [isLoggedIn, quizId, slug, answers, startTime, score, totalQuestions, toast, hasSavedRef, saveAttempted])
+    if (isLoggedIn && !hasSavedRef.current) {
+      saveResultsToDb()
+    }
+  }, [isLoggedIn, quizId, slug, answers, startTime, score, totalQuestions, toast])
 
   // Handle navigation to dashboard
   const handleGoToDashboard = useCallback(() => {
@@ -157,6 +262,18 @@ export default function McqQuizResult({
 
   // Render content based on authentication status
   const renderContent = () => {
+    // Show loading state while recovering answers
+    if (isRecovering) {
+      return (
+        <div className="w-full max-w-3xl mx-auto p-4 text-center">
+          <div className="flex flex-col items-center justify-center p-8 gap-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p>Recovering your quiz results...</p>
+          </div>
+        </div>
+      )
+    }
+
     if (!isLoggedIn) {
       return (
         <div className="w-full max-w-3xl mx-auto p-4 text-center">
@@ -176,26 +293,30 @@ export default function McqQuizResult({
       )
     }
 
+    // Safety check for answers array
+    const safeAnswers = answers || []
+    const safeTotalQuestions = totalQuestions || safeAnswers.length || 1
+
     return (
       <>
         <QuizResultDisplay
           quizId={String(quizId)}
-          title={title}
-          score={score}
-          totalQuestions={totalQuestions}
+          title={title || "Quiz"}
+          score={score || 0}
+          totalQuestions={safeTotalQuestions}
           totalTime={(Date.now() - startTime) / 1000}
-          correctAnswers={answers.filter((a) => a.isCorrect).length}
+          correctAnswers={safeAnswers.filter((a) => a && a.isCorrect).length}
           type="mcq"
           slug={slug}
-          answers={answers}
+          answers={safeAnswers}
           onRestart={onRestart}
           showAuthModal={false}
         />
 
-        {error && (
+        {saveError && (
           <Alert variant="destructive" className="mt-4">
             <AlertTitle>Error saving results</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{saveError}</AlertDescription>
           </Alert>
         )}
 

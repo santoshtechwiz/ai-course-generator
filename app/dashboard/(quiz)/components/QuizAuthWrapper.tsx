@@ -166,103 +166,106 @@ export default function QuizAuthWrapper({
     }
   }
 
-  // If still loading auth state or redirecting, show loading state
-  if (status === "loading" || isRedirecting) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[200px] gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p className="text-sm text-muted-foreground">
-          {isRedirecting ? "Redirecting to your saved quiz..." : "Checking authentication..."}
-        </p>
+  // Fix the early return issue that's causing the "Rendered fewer hooks than expected" error
+  // by ensuring all hooks are called unconditionally before any conditional returns
+
+  // In the QuizAuthWrapper component, modify the loading state check:
+  // Replace this:
+  // With this:
+  const renderLoadingState = () => (
+    <div className="flex flex-col items-center justify-center min-h-[200px] gap-3">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <p className="text-sm text-muted-foreground">
+        {isRedirecting ? "Redirecting to your saved quiz..." : "Checking authentication..."}
+      </p>
+    </div>
+  )
+
+  // Similarly, modify the requireAuth check:
+  // Replace this:
+  // With this:
+  const renderAuthRequiredModal = () => (
+    <>
+      {children}
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
+          <h2 className="text-xl font-bold mb-4">Sign in to continue</h2>
+          <p className="mb-4">Please sign in to save your quiz results and track your progress.</p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleCloseModal}>
+              Continue as Guest
+            </Button>
+            <Button
+              onClick={() => {
+                // Ensure we're using the correct path format for the callback URL
+                let callbackUrl = redirectPath || `/dashboard/${quizState?.quizType}/${quizState?.quizSlug}`
+
+                // Always ensure we're using /dashboard/ not /quiz/
+                callbackUrl = fixCallbackUrl(callbackUrl)
+
+                // Add completed=true parameter if the quiz is completed
+                if (quizState?.isCompleted && !callbackUrl.includes("completed=true")) {
+                  callbackUrl += `${callbackUrl.includes("?") ? "&" : "?"}completed=true`
+                }
+
+                signIn("credentials", { callbackUrl })
+              }}
+            >
+              Sign In
+            </Button>
+          </div>
+        </div>
       </div>
-    )
-  }
+    </>
+  )
 
-  // If auth is required and user is not authenticated, show a simple login button
-  if (requireAuth && status === "unauthenticated") {
-    return (
-      <>
-        {children}
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Sign in to continue</h2>
-            <p className="mb-4">Please sign in to save your quiz results and track your progress.</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleCloseModal}>
-                Continue as Guest
-              </Button>
-              <Button
-                onClick={() => {
-                  // Ensure we're using the correct path format for the callback URL
-                  let callbackUrl = redirectPath || `/dashboard/${quizState?.quizType}/${quizState?.quizSlug}`
+  // Similarly for the showModal check:
+  // Replace this:
+  // With this:
+  const renderSaveProgressModal = () => (
+    <>
+      {children}
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
+          <h2 className="text-xl font-bold mb-4">Save Your Progress</h2>
+          <p className="mb-4">Sign in to save your quiz results and track your progress over time.</p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleCloseModal}>
+              Continue as Guest
+            </Button>
+            <Button
+              onClick={() => {
+                // Ensure we're using the correct path format for the callback URL
+                let callbackUrl = redirectPath || `/dashboard/${quizState?.quizType}/${quizState?.quizSlug}`
 
-                  // Always ensure we're using /dashboard/ not /quiz/
-                  callbackUrl = fixCallbackUrl(callbackUrl)
+                // Always ensure we're using /dashboard/ not /quiz/
+                callbackUrl = fixCallbackUrl(callbackUrl)
 
-                  // Add completed=true parameter if the quiz is completed
-                  if (quizState?.isCompleted && !callbackUrl.includes("completed=true")) {
-                    callbackUrl += `${callbackUrl.includes("?") ? "&" : "?"}completed=true`
-                  }
+                // Save the current state before redirecting
+                if (quizState && answers) {
+                  saveQuizState({
+                    quizId: quizState.quizId,
+                    quizType: quizState.quizType,
+                    slug: quizState.quizSlug,
+                    currentQuestion: quizState.currentQuestion,
+                    totalQuestions: quizState.totalQuestions,
+                    startTime: quizState.startTime,
+                    isCompleted: quizState.isCompleted, // This flag is enough
+                    answers: answers,
+                    redirectPath: callbackUrl, // Use the fixed URL
+                  })
+                }
 
-                  signIn("credentials", { callbackUrl })
-                }}
-              >
-                Sign In
-              </Button>
-            </div>
+                signIn("credentials", { callbackUrl })
+              }}
+            >
+              Sign In
+            </Button>
           </div>
         </div>
-      </>
-    )
-  }
-
-  // Fix the modal display logic for better UX
-  if (quizState && quizState.quizType && showModal) {
-    return (
-      <>
-        {children}
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Save Your Progress</h2>
-            <p className="mb-4">Sign in to save your quiz results and track your progress over time.</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleCloseModal}>
-                Continue as Guest
-              </Button>
-              <Button
-                onClick={() => {
-                  // Ensure we're using the correct path format for the callback URL
-                  let callbackUrl = redirectPath || `/dashboard/${quizState?.quizType}/${quizState?.quizSlug}`
-
-                  // Always ensure we're using /dashboard/ not /quiz/
-                  callbackUrl = fixCallbackUrl(callbackUrl)
-
-                  // Save the current state before redirecting
-                  if (quizState && answers) {
-                    saveQuizState({
-                      quizId: quizState.quizId,
-                      quizType: quizState.quizType,
-                      slug: quizState.quizSlug,
-                      currentQuestion: quizState.currentQuestion,
-                      totalQuestions: quizState.totalQuestions,
-                      startTime: quizState.startTime,
-                      isCompleted: quizState.isCompleted, // This flag is enough
-                      answers: answers,
-                      redirectPath: callbackUrl, // Use the fixed URL
-                    })
-                  }
-
-                  signIn("credentials", { callbackUrl })
-                }}
-              >
-                Sign In
-              </Button>
-            </div>
-          </div>
-        </div>
-      </>
-    )
-  }
+      </div>
+    </>
+  )
 
   // Enhance the QuizAuthWrapper to properly clear guest data after authentication
   // This helps prevent the issue where guest results are still shown after sign-in
@@ -291,6 +294,19 @@ export default function QuizAuthWrapper({
       previousAuthState.current = true
     }
   }, [session, quizState])
+
+  if (requireAuth && status === "unauthenticated") {
+    return renderAuthRequiredModal()
+  }
+
+  if (quizState && quizState.quizType && showModal) {
+    return renderSaveProgressModal()
+  }
+
+  // And at the end of the component, replace the return statement with:
+  if (status === "loading" || isRedirecting) {
+    return renderLoadingState()
+  }
 
   // Otherwise, just render children
   return <>{children}</>
