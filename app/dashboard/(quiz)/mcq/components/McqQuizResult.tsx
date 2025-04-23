@@ -8,8 +8,8 @@ import { motion } from "framer-motion"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
-import { useQuizResult } from "@/hooks/useQuizResult"
-import { calculateScore } from "@/lib/quiz-utils"
+import { useQuizResult } from "@/app/dashboard/(quiz)/hooks/useQuizResult"
+import { calculateScore } from "@/app/dashboard/(quiz)/utils/quiz-utils"
 
 interface McqQuizResultProps {
   quizId: number

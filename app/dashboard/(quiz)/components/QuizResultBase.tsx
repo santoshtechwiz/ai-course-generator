@@ -11,11 +11,11 @@ import { Separator } from "@/components/ui/separator"
 import { motion } from "framer-motion"
 
 import QuizAuthWrapper from "./QuizAuthWrapper"
-import { useQuiz } from "../../../context/QuizContext"
+import { useQuiz } from "../context/QuizContext"
 import type { QuizType } from "@/app/types/quiz-types"
 import { GuestSignInPrompt } from "./GuestSignInPrompt"
 import { Loader2 } from "lucide-react"
-import { formatTime, getPerformanceLevel } from "@/lib/quiz-utils"
+import { formatTime, getPerformanceLevel } from "@/app/dashboard/(quiz)/utils/quiz-utils"
 
 interface QuizResultBaseProps {
   quizId: string

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { toast } from "./use-toast"
+import { toast } from "../../../../hooks/use-toast"
 import { useRouter } from "next/navigation"
 import type { QuizType } from "@/app/types/quiz-types"
 

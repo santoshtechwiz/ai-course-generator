@@ -14,8 +14,8 @@ import QuizActions from "../../components/QuizActions"
 import CodingQuiz from "./CodingQuiz"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { QuizFeedback } from "../../components/QuizFeedback"
-import { useQuiz } from "@/app/context/QuizContext"
-import { useQuizResult } from "@/hooks/useQuizResult"
+import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
+import { useQuizResult } from "@/app/dashboard/(quiz)/hooks/useQuizResult"
 
 // Improved error handling for API requests
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
