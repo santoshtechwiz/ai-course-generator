@@ -25,6 +25,7 @@ import {
   loadQuizResult,
   calculateSimilarity, // Import loadQuizResult
 } from "@/app/dashboard/(quiz)/hooks/quiz-session-storage"
+import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 
 interface BlankQuizWrapperProps {
   quizData: any
