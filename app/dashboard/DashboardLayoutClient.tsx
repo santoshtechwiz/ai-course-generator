@@ -10,7 +10,7 @@ import { Chatbot } from "@/components/Chatbot"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { NavigationEvents } from "./NavigationEvents"
 import MainNavbar from "@/components/Navbar/MainNavbar"
-import { QuizProvider } from "../context/QuizContext"
+import { QuizProvider } from "./(quiz)/context/QuizContext"
 
 
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {

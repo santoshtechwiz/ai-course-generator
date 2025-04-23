@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react"
 import type { QuizResult, QuizType } from "@/app/types/quiz-types"
-import { useToast } from "./use-toast"
-import { QuizAnswer, quizResultService } from "@/app/dashboard/subscription/services/QuizResultService"
+import { useToast } from "../../../../hooks/use-toast"
+import { QuizAnswer, quizResultService } from "@/app/dashboard/(quiz)/services/QuizResultService"
 
 interface UseQuizResultProps {
   quizId: string

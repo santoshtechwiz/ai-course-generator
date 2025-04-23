@@ -1,5 +1,5 @@
 
-import { QuizAnswer } from "@/app/dashboard/subscription/services/QuizResultService"
+import { QuizAnswer } from "@/app/dashboard/(quiz)/services/QuizResultService"
 import type { QuizType } from "@/app/types/quiz-types"
 
 /**

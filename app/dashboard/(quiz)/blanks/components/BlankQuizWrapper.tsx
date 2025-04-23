@@ -8,13 +8,13 @@ import { AlertCircle } from "lucide-react"
 
 import FillInTheBlanksQuiz from "./FillInTheBlanksQuiz"
 import BlankQuizResults from "./BlankQuizResults"
-import QuizAuthWrapper from "../../components/QuizAuthWrapper"
+
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { submitQuizResult } from "@/lib/quiz-result-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useQuiz } from "@/app/context/QuizContext"
+import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
 
 import {
   clearSavedQuizState,
@@ -24,7 +24,7 @@ import {
   saveQuizResult,
   loadQuizResult,
   calculateSimilarity, // Import loadQuizResult
-} from "@/hooks/quiz-session-storage"
+} from "@/app/dashboard/(quiz)/hooks/quiz-session-storage"
 
 interface BlankQuizWrapperProps {
   quizData: any

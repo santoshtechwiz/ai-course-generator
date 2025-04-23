@@ -9,8 +9,8 @@ import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { QuizResultBase } from "../../components/QuizResultBase"
-import { getPerformanceLevel, getAnswerClassName, calculateSimilarity } from "@/lib/quiz-utils"
-import { useQuizResult } from "@/hooks/useQuizResult"
+import { getPerformanceLevel, getAnswerClassName, calculateSimilarity } from "@/app/dashboard/(quiz)/utils/quiz-utils"
+import { useQuizResult } from "@/app/dashboard/(quiz)/hooks/useQuizResult"
 
 interface BlankQuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]

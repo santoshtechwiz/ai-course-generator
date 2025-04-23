@@ -9,7 +9,7 @@ import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { useQuiz } from "@/app/context/QuizContext"
+import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
 import {
   clearSavedQuizState,
   getSavedQuizState,
@@ -17,7 +17,7 @@ import {
   saveQuizAnswers,
   saveQuizResult,
   loadQuizResult,
-} from "@/hooks/quiz-session-storage"
+} from "@/app/dashboard/(quiz)/hooks/quiz-session-storage"
 
 import McqQuiz from "./McqQuiz"
 

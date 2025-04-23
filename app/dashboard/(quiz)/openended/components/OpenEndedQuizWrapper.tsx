@@ -14,7 +14,7 @@ import { submitQuizResult } from "@/lib/quiz-result-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useQuiz } from "@/app/context/QuizContext"
+import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
 import {
   clearSavedQuizState,
   getSavedQuizState,
@@ -24,7 +24,7 @@ import {
   loadQuizResult,
   searchAllStorageForAnswers,
   getPreservedAnswers,
-} from "@/hooks/quiz-session-storage"
+} from "@/app/dashboard/(quiz)/hooks/quiz-session-storage"
 
 interface OpenEndedQuizWrapperProps {
   quizData: any

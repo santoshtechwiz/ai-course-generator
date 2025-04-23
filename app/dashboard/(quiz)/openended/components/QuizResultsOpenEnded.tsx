@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { QuizResultBase } from "../../components/QuizResultBase"
-import { useQuizResult } from "@/hooks/useQuizResult"
-import { calculateSimilarity, getAnswerClassName, getPerformanceLevel } from "@/lib/quiz-utils"
+import { useQuizResult } from "@/app/dashboard/(quiz)/hooks/useQuizResult"
+import { calculateSimilarity, getAnswerClassName, getPerformanceLevel } from "@/app/dashboard/(quiz)/utils/quiz-utils"
 
 interface QuizResultsOpenEndedProps {
   quizId: string
