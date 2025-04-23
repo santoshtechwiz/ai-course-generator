@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import React from "react"
 import { useRouter } from "next/navigation"
 
@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { useSession } from "next-auth/react"
-import { QuizResultBase, getPerformanceLevel } from "../../components/QuizResultBase"
-import { calculateSimilarity, loadQuizAnswers, loadQuizResult } from "@/hooks/quiz-session-storage"
+import { QuizResultBase } from "../../components/QuizResultBase"
+import { getPerformanceLevel, getAnswerClassName, calculateSimilarity } from "@/lib/quiz-utils"
+import { useQuizResult } from "@/hooks/useQuizResult"
 
 interface BlankQuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]
@@ -20,6 +21,7 @@ interface BlankQuizResultsProps {
   title: string
   slug: string
   clearGuestData?: () => void
+  startTime?: number
 }
 
 export default function BlankQuizResults({
@@ -31,75 +33,34 @@ export default function BlankQuizResults({
   title,
   slug,
   clearGuestData,
+  startTime,
 }: BlankQuizResultsProps) {
   const { data: session } = useSession()
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saveCompleted, setSaveCompleted] = useState(false)
   const router = useRouter()
   const [answers, setAnswers] = useState(initialAnswers || [])
   const [isRecovering, setIsRecovering] = useState(false)
+  const [totalTime, setTotalTime] = useState<number>(0)
+  const [hasCalledComplete, setHasCalledComplete] = useState(false)
 
-  // Add this debugging log at the beginning of the component to see what data we're receiving
-  console.log("BlankQuizResults received:", {
-    initialAnswersLength: initialAnswers?.length,
-    initialAnswers,
-    answersLength: answers?.length,
-    answers,
-    questionsLength: questions?.length,
+  // Calculate total time on mount
+  useEffect(() => {
+    const calculatedTotalTime = startTime ? (Date.now() - startTime) / 1000 : 0
+    setTotalTime(calculatedTotalTime > 0 ? calculatedTotalTime : 300) // Default to 5 minutes if invalid
+  }, [startTime])
+
+  // Use the quiz result hook
+  const { isLoading, isSaving, error, correctAnswers, handleRetryFetch } = useQuizResult({
     quizId,
     slug,
+    answers,
+    totalTime,
+    score: 0, // Will be calculated in the useMemo below
+    quizType: "blanks",
+    totalQuestions: questions.length,
+    startTime,
   })
 
-  // Try to recover answers from storage if none were provided
-  useEffect(() => {
-    if ((!initialAnswers || initialAnswers.length === 0) && questions && questions.length > 0) {
-      setIsRecovering(true)
-      console.log("Attempting to recover answers from storage for quiz:", quizId)
-
-      // Try to load from quiz_result first (most likely to have complete data)
-      const savedResult = loadQuizResult(quizId)
-      if (savedResult && savedResult.answers && savedResult.answers.length > 0) {
-        console.log("Recovered answers from quiz result:", savedResult.answers)
-        setAnswers(savedResult.answers)
-        setIsRecovering(false)
-        return
-      }
-
-      // Try to load from quiz_answers as fallback
-      const savedAnswers = loadQuizAnswers(quizId)
-      if (savedAnswers && savedAnswers.length > 0) {
-        console.log("Recovered answers from saved answers:", savedAnswers)
-        setAnswers(savedAnswers)
-        setIsRecovering(false)
-        return
-      }
-
-      // Check localStorage directly as a last resort
-      try {
-        const keys = Object.keys(localStorage)
-        for (const key of keys) {
-          if (key.includes(quizId) && key.includes("answer")) {
-            const data = JSON.parse(localStorage.getItem(key) || "[]")
-            if (Array.isArray(data) && data.length > 0) {
-              console.log(`Recovered answers from ${key}:`, data)
-              setAnswers(data)
-              setIsRecovering(false)
-              return
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Error checking localStorage for answers:", e)
-      }
-
-      // If we get here, we couldn't recover any answers
-      console.warn("Could not recover any answers from storage")
-      setIsRecovering(false)
-    }
-  }, [initialAnswers, questions, quizId])
-
-  // Modify the useMemo calculation to handle empty answers better
+  // Process answers and calculate score
   const { score, results } = useMemo(() => {
     // Add defensive check for empty answers
     if (!answers || answers.length === 0) {
@@ -170,49 +131,18 @@ export default function BlankQuizResults({
     return { score: averageScore, results: calculatedResults }
   }, [answers, questions])
 
-  const hasCalledComplete = useRef(false)
-  const totalTime = useMemo(() => answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0), [answers])
-
+  // Call onComplete when score is calculated
   useEffect(() => {
-    if (!hasCalledComplete.current && !isRecovering) {
-      hasCalledComplete.current = true
+    if (!hasCalledComplete && !isRecovering && score > 0) {
+      setHasCalledComplete(true)
       onComplete(Math.round(score))
-
-      // Log the answers for debugging
-      console.log("Displaying quiz results with answers:", answers)
     }
+  }, [score, onComplete, hasCalledComplete, isRecovering])
 
-    // If user is not logged in and clearGuestData is provided, call it
-    if (!session?.user && clearGuestData) {
-      // Don't clear immediately - give user time to see results
-      const timer = setTimeout(() => {
-        clearGuestData()
-      }, 300000) // 5 minutes
-
-      return () => clearTimeout(timer)
-    }
-  }, [score, onComplete, session, clearGuestData, answers, isRecovering])
-
-  const performance = getPerformanceLevel(score)
-
+  // Handle restart
   const handleRestart = () => {
-    // Clear session storage for this quiz
-    if (typeof window !== "undefined") {
-      // Clear all storage related to this quiz
-      sessionStorage.removeItem(`quiz_result_${quizId}`)
-      localStorage.removeItem(`quiz_result_${quizId}`)
-      sessionStorage.removeItem(`quiz_state_blanks_${quizId}`)
-      localStorage.removeItem(`quiz_answers_${quizId}`)
-
-      // Also clear any other related storage
-      const storageKey = `quiz_${slug}_fill-blanks`
-      sessionStorage.removeItem(storageKey)
-    }
-
     // Reset all state before restarting
-    hasCalledComplete.current = false
-    setSaveCompleted(false)
-    setSaveError(null)
+    setHasCalledComplete(false)
 
     // Call the provided onRestart function
     onRestart()
@@ -225,7 +155,7 @@ export default function BlankQuizResults({
   }
 
   // Show a loading state while recovering answers
-  if (isRecovering) {
+  if (isRecovering || isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-4">
         <Card className="mb-8">
@@ -241,6 +171,8 @@ export default function BlankQuizResults({
     )
   }
 
+  const performance = getPerformanceLevel(score)
+
   return (
     <QuizResultBase
       quizId={quizId}
@@ -249,9 +181,12 @@ export default function BlankQuizResults({
       totalQuestions={questions.length}
       totalTime={totalTime}
       slug={slug}
-      quizType="fill-blanks"
+      quizType="blanks"
       clearGuestData={clearGuestData}
       isSaving={isSaving}
+      correctAnswers={correctAnswers}
+      onRestart={handleRestart}
+      isLoading={isLoading}
     >
       <div className="max-w-4xl mx-auto p-4">
         <Card className="mb-8">
@@ -268,84 +203,95 @@ export default function BlankQuizResults({
               <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
             </div>
 
-            {/* Debug info - can be removed in production */}
-            {answers.length === 0 && (
+            {/* No answers warning */}
+            {answers.length === 0 ? (
               <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
                 <p className="text-amber-800 font-medium">No answers found to display.</p>
-                <p className="text-sm text-amber-700">This may happen if you signed out and back in.</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => router.push(`/dashboard/blanks/${slug}`)}
-                >
-                  Return to Quiz
-                </Button>
+                <p className="text-sm text-amber-700">
+                  This may happen if you signed out and back in, or if there was an issue loading your answers.
+                </p>
+                <div className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => router.push(`/dashboard/blanks/${slug}`)}
+                  >
+                    Return to Quiz
+                  </Button>
+                  <Button variant="outline" size="sm" className="mt-2" onClick={handleRetryFetch}>
+                    Retry Loading Results
+                  </Button>
+                </div>
               </div>
-            )}
-
-            {results.map((result, index) => (
-              <Card key={result.id || index} className="mb-4">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-2">
-                    {result.question.split("_____").map((part, i, arr) => (
-                      <React.Fragment key={i}>
-                        {part}
-                        {i < arr.length - 1 && (
-                          <span className={getAnswerClassName(result.similarity)}>{result.userAnswer || "_____"}</span>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                  <div className="flex flex-col gap-2 mb-4">
+            ) : (
+              results.map((result, index) => (
+                <Card key={result.id || index} className="mb-4">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-2">
+                      {result.question.split("_____").map((part, i, arr) => (
+                        <React.Fragment key={i}>
+                          {part}
+                          {i < arr.length - 1 && (
+                            <span className={getAnswerClassName(result.similarity)}>
+                              {result.userAnswer || "_____"}
+                            </span>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-2 mb-4">
+                      <div className="flex items-center gap-2">
+                        <strong className="min-w-[120px]">Your Answer:</strong>
+                        <span className={getAnswerClassName(result.similarity)}>
+                          {result.userAnswer || "(No answer provided)"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <strong className="min-w-[120px]">Correct Answer:</strong>
+                        <span className="font-bold text-green-600 dark:text-green-400">{result.correctAnswer}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <strong className="min-w-[120px]">Accuracy:</strong>
+                        <span>{result.similarity.toFixed(1)}%</span>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <strong className="min-w-[120px]">Your Answer:</strong>
-                      <span className={getAnswerClassName(result.similarity)}>
-                        {result.userAnswer || "(No answer provided)"}
+                      {result.similarity === 100 ? (
+                        <CheckCircle className="text-green-500" />
+                      ) : result.similarity > 80 ? (
+                        <AlertTriangle className="text-yellow-500" />
+                      ) : (
+                        <XCircle className="text-red-500" />
+                      )}
+                      <span>
+                        {result.similarity === 100
+                          ? "Perfect match!"
+                          : result.similarity > 80
+                            ? "Close enough!"
+                            : "Needs improvement"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <strong className="min-w-[120px]">Correct Answer:</strong>
-                      <span className="font-bold text-green-600 dark:text-green-400">{result.correctAnswer}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <strong className="min-w-[120px]">Accuracy:</strong>
-                      <span>{result.similarity.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {result.similarity === 100 ? (
-                      <CheckCircle className="text-green-500" />
-                    ) : result.similarity > 80 ? (
-                      <AlertTriangle className="text-yellow-500" />
-                    ) : (
-                      <XCircle className="text-red-500" />
-                    )}
-                    <span>
-                      {result.similarity === 100
-                        ? "Perfect match!"
-                        : result.similarity > 80
-                          ? "Close enough!"
-                          : "Needs improvement"}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Time spent: {Math.floor(result.timeSpent / 60)}m {Math.round(result.timeSpent % 60)}s
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+                    <p className="text-sm text-gray-500 mt-2">
+                      Time spent: {Math.floor(result.timeSpent / 60)}m {Math.round(result.timeSpent % 60)}s
+                    </p>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+
             <div className="flex justify-center mt-6">
               <Button onClick={handleRestart} disabled={isSaving}>
                 Restart Quiz
               </Button>
             </div>
-            {saveError && (
+
+            {error && (
               <p className="text-red-500 text-center mt-4">
-                Error saving results: {saveError}. Your progress is still displayed here.
+                Error saving results: {error}. Your progress is still displayed here.
               </p>
             )}
           </CardContent>
@@ -353,10 +299,4 @@ export default function BlankQuizResults({
       </div>
     </QuizResultBase>
   )
-}
-
-function getAnswerClassName(similarity: number): string {
-  if (similarity === 100) return "font-bold text-green-600 dark:text-green-400"
-  if (similarity > 80) return "font-bold text-yellow-600 dark:text-yellow-400"
-  return "font-bold text-red-600 dark:text-red-400"
 }

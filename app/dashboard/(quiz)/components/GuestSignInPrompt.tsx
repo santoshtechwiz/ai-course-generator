@@ -16,16 +16,30 @@ interface GuestSignInPromptProps {
   onSkip?: () => void
 }
 
-// Add the missing fixCallbackUrl function
+// Update the GuestSignInPrompt component to improve the authentication flow
+// and ensure better state preservation during sign-in
+
+// Fix the fixCallbackUrl function to properly handle URL paths
 function fixCallbackUrl(url: string): string {
   if (!url) return "/dashboard"
 
-  // Replace /quiz/ with /dashboard/ in the URL path
-  if (url.includes("/quiz/")) {
-    return url.replace("/quiz/", "/dashboard/")
+  // Parse the URL to handle parameters properly
+  let baseUrl = url
+  let queryParams = ""
+
+  if (url.includes("?")) {
+    const parts = url.split("?")
+    baseUrl = parts[0]
+    queryParams = parts[1]
   }
 
-  return url
+  // Replace /quiz/ with /dashboard/ in the URL path
+  if (baseUrl.includes("/quiz/")) {
+    baseUrl = baseUrl.replace("/quiz/", "/dashboard/")
+  }
+
+  // Return the fixed URL with query parameters if any
+  return queryParams ? `${baseUrl}?${queryParams}` : baseUrl
 }
 
 export function GuestSignInPrompt({

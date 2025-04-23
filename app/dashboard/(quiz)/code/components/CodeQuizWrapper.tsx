@@ -15,8 +15,7 @@ import CodingQuiz from "./CodingQuiz"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { useQuiz } from "@/app/context/QuizContext"
-import { saveQuizResult, loadQuizResult, clearSavedQuizState } from "@/hooks/quiz-session-storage"
-import { submitQuizResult } from "@/lib/quiz-result-service"
+import { useQuizResult } from "@/hooks/useQuizResult"
 
 // Improved error handling for API requests
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
@@ -45,14 +44,12 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
   const [answers, setAnswers] = useState<any[]>([])
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const [quizResults, setQuizResults] = useState<any>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const [isRecoveringAnswers, setIsRecoveringAnswers] = useState(false)
+  const [totalTime, setTotalTime] = useState(0)
+  const [score, setScore] = useState(100) // Default score for code quizzes
 
   // Refs
   const submissionInProgress = useRef(false)
-  const hasSavedToDb = useRef(false)
 
   // Hooks
   const { data: session, status } = useSession()
@@ -72,21 +69,48 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
   })
 
-  // Check for completed state in URL or localStorage
+  // Use the quiz result hook
+  const {
+    isLoading: isSavingResult,
+    isSaving,
+    error: saveError,
+    saveResult,
+  } = useQuizResult({
+    quizId: quizData?.quizId?.toString() || "",
+    slug,
+    answers,
+    totalTime,
+    score,
+    quizType: "code",
+    totalQuestions: quizData?.quizData?.questions?.length || 1,
+    startTime,
+  })
+
+  // Calculate total time whenever needed
+  useEffect(() => {
+    if (startTime) {
+      const calculatedTotalTime = (Date.now() - startTime) / 1000
+      setTotalTime(calculatedTotalTime > 0 ? calculatedTotalTime : 300) // Default to 5 minutes if invalid
+    }
+  }, [startTime, isCompleted])
+
+  // Check for completed state in URL
   useEffect(() => {
     if (typeof window !== "undefined" && quizData?.quizId) {
-      // Check URL for completed parameter
-      const urlParams = new URLSearchParams(window.location.search)
-      const hasCompletedParam = urlParams.get("completed") === "true"
+      setIsRecoveringAnswers(true)
 
-      // Check localStorage for saved result
-      const savedResult = loadQuizResult(quizData.quizId.toString())
+      try {
+        // Check URL for completed parameter
+        const urlParams = new URLSearchParams(window.location.search)
+        const hasCompletedParam = urlParams.get("completed") === "true"
 
-      if (hasCompletedParam || (savedResult && savedResult.isCompleted)) {
-        setIsCompleted(true)
-        if (savedResult && savedResult.answers) {
-          setAnswers(savedResult.answers)
+        if (hasCompletedParam) {
+          setIsCompleted(true)
         }
+      } catch (error) {
+        console.error("Error checking URL parameters:", error)
+      } finally {
+        setIsRecoveringAnswers(false)
       }
     }
   }, [quizData?.quizId])
@@ -102,13 +126,14 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     }
 
     submissionInProgress.current = true
-    setIsSubmitting(true)
-    setError(null)
-    hasSavedToDb.current = false
 
     try {
-      // For code quizzes, we use a fixed score or calculate based on test cases
-      const score = 100 // Or calculate based on test cases if available
+      // Update answers state
+      setAnswers(finalAnswers)
+
+      // Calculate total time
+      const calculatedTotalTime = (Date.now() - startTime) / 1000
+      setTotalTime(calculatedTotalTime)
 
       // Create the result object
       const result = {
@@ -117,52 +142,29 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
         quizType: "code",
         score,
         answers: finalAnswers,
-        totalTime: (Date.now() - startTime) / 1000,
+        totalTime: calculatedTotalTime,
         timestamp: Date.now(),
         isCompleted: true,
       }
-
-      // Always save to localStorage for persistence
-      if (quizData?.quizId) {
-        saveQuizResult(quizData.quizId.toString(), result)
-      }
-      console.log("Saved result to localStorage:", result)
 
       // Set isCompleted to true before showing feedback
       setIsCompleted(true)
 
       // Show feedback modal
       setQuizResults({ score })
-      setIsSuccess(true)
       setShowFeedbackModal(true)
 
       // If user is logged in, save to database
       if (isLoggedIn) {
         console.log("User is logged in, saving to database")
-        try {
-          await submitQuizResult({
-            quizId: quizData?.quizId.toString() || "",
-            slug,
-            answers: finalAnswers,
-            totalTime: (Date.now() - startTime) / 1000,
-            score,
-            type: "code",
-            totalQuestions: quizData?.quizData?.questions?.length || 1,
-          })
-          console.log("Database save result successful")
-          hasSavedToDb.current = true
-        } catch (dbError) {
-          console.error("Error saving to database:", dbError)
-          setSaveError(dbError instanceof Error ? dbError.message : "Failed to save results to database")
-          // Still show results even if DB save fails
-        }
+        await saveResult()
       } else {
         console.log("User is not logged in, saving to guest storage")
         // Save result for guest user with the correct dashboard path and completed parameter
         const dashboardPath = `/dashboard/code/${slug}?completed=true`
         saveGuestResult({
           ...result,
-          redirectPath: dashboardPath, // Include the completed parameter directly in the path
+          redirectPath: dashboardPath,
           isCompleted: true,
         })
 
@@ -180,18 +182,15 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
         })
 
         // Show auth modal with a slight delay to ensure results are displayed first
-        setIsCompleted(true)
-        setShowAuthModal(true)
+        setTimeout(() => {
+          setShowAuthModal(true)
+        }, 1000)
       }
     } catch (err: any) {
       console.error("Error completing quiz:", err)
-      setError(err instanceof Error ? err.message : "An error occurred")
-      setIsSuccess(false)
-      setShowFeedbackModal(true)
       // Even on error, we should show results with what we have
       setIsCompleted(true)
     } finally {
-      setIsSubmitting(false)
       submissionInProgress.current = false
     }
   }
@@ -221,20 +220,12 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     setStartTime(Date.now())
     setShowFeedbackModal(false)
     setQuizResults(null)
-    setIsSubmitting(false)
-    setIsSuccess(false)
-    setError(null)
-
-    // Clear saved state
-    if (quizData?.quizId) {
-      clearSavedQuizState()
-    }
 
     // Force a refresh to ensure all components are reset
     router.refresh()
-  }, [router, quizData?.quizId])
+  }, [router])
 
-  if (isLoading) {
+  if (isLoading || isRecoveringAnswers) {
     return <Loader />
   }
 
@@ -286,13 +277,13 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
 
         {showFeedbackModal && (
           <QuizFeedback
-            isSubmitting={isSubmitting}
-            isSuccess={isSuccess}
-            isError={!!error}
+            isSubmitting={isSaving}
+            isSuccess={!saveError}
+            isError={!!saveError}
             score={quizResults?.score || 0}
             totalQuestions={100} // Use 100 for percentage display
             onContinue={handleFeedbackContinue}
-            errorMessage={error || undefined}
+            errorMessage={saveError || undefined}
             quizType="code"
             waitForSave={true}
             autoClose={false}

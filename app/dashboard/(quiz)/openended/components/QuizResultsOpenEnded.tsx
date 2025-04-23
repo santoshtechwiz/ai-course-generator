@@ -1,338 +1,285 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { diffChars } from "diff"
-import { CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, RotateCw } from "lucide-react"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { getPerformanceLevel, QuizResultBase } from "../../components/QuizResultBase"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { QuizResultBase } from "../../components/QuizResultBase"
+import { useQuizResult } from "@/hooks/useQuizResult"
+import { calculateSimilarity, getAnswerClassName, getPerformanceLevel } from "@/lib/quiz-utils"
 
-interface QuizResultsProps {
-  answers: { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]
-  questions: { id: number; question: string; answer: string }[]
-  onRestart: () => void
-  onComplete: (score: number) => void
+interface QuizResultsOpenEndedProps {
   quizId: string
-  title: string
   slug: string
-  clearGuestData?: () => void
+  title: string
+  answers: { answer: string; timeSpent: number; similarity?: number; isCorrect?: boolean }[]
+  questions: { id: string; question: string; answer: string }[]
+  totalQuestions: number
+  startTime: number
+  score: number
+  onRestart: () => void
+  onSignIn: () => void
 }
 
 export default function QuizResultsOpenEnded({
-  answers,
-  questions,
-  onRestart,
-  onComplete,
   quizId,
-  title,
   slug,
-  clearGuestData,
-}: QuizResultsProps) {
-  const [expandedQuestions, setExpandedQuestions] = useState<number[]>([])
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saveCompleted, setSaveCompleted] = useState(false)
-  const router = useRouter()
-  const { data: session } = useSession()
+  title,
+  answers: initialAnswers,
+  questions,
+  totalQuestions,
+  startTime,
+  score: initialScore,
+  onRestart,
+  onSignIn,
+}: QuizResultsOpenEndedProps) {
+  // State
+  const [answers, setAnswers] = useState<
+    { answer: string; timeSpent: number; similarity: number; isCorrect: boolean }[]
+  >([])
+  const [score, setScore] = useState(initialScore || 0)
+  const [isRecovering, setIsRecovering] = useState(false)
+  const [totalTime, setTotalTime] = useState<number>(0)
 
-  // Add this debugging log at the beginning of the component to see what data we're receiving
-  console.log("QuizResultsOpenEnded received:", {
-    answersLength: answers?.length,
-    answers,
-    questionsLength: questions?.length,
+  // Hooks
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const isLoggedIn = status === "authenticated"
+
+  // Use the quiz result hook
+  const { isLoading, isSaving, error, saveResult, correctAnswers } = useQuizResult({
     quizId,
     slug,
+    answers,
+    totalTime,
+    score,
+    quizType: "openended",
+    totalQuestions,
+    startTime,
   })
 
-  // Calculate score and total time
-  const { score, results } = useMemo(() => {
-    // Add defensive check for empty answers
-    if (!answers || answers.length === 0) {
-      console.warn("No answers provided to QuizResultsOpenEnded")
-      // Create empty results with default values
-      const emptyResults = questions.map((question) => ({
-        ...question,
-        userAnswer: "",
-        correctAnswer: question.answer,
-        similarity: 0,
-        timeSpent: 0,
-        isCorrect: false,
-      }))
-      return { score: 0, results: emptyResults }
-    }
-
-    const calculatedResults = questions.map((question, index) => {
-      // If we don't have an answer for this question, provide a default
-      if (!answers[index]) {
-        console.warn(`No answer found for question ${index}`)
-        return {
-          ...question,
-          userAnswer: "",
-          correctAnswer: question.answer,
-          similarity: 0,
-          timeSpent: 0,
-          isCorrect: false,
-        }
-      }
-
-      // Calculate similarity if not already provided
-      const userAnswer = answers[index]?.answer?.trim() || ""
-      const correctAnswer = question.answer?.trim() || ""
-      const similarity =
-        answers[index]?.similarity !== undefined
-          ? answers[index].similarity!
-          : calculateSimilarity(correctAnswer, userAnswer)
-
-      return {
-        ...question,
-        userAnswer: answers[index]?.answer?.trim() || "",
-        correctAnswer: question.answer,
-        similarity,
-        timeSpent: answers[index]?.timeSpent || 0,
-        isCorrect: similarity > 80,
-      }
-    })
-
-    const totalScore = calculatedResults.reduce((acc, result) => acc + result.similarity, 0)
-    const averageScore = Math.min(100, totalScore / Math.max(1, calculatedResults.length))
-
-    return { score: averageScore, results: calculatedResults }
-  }, [answers, questions])
-
-  const hasCalledComplete = useRef(false)
-  const totalTime = useMemo(() => answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0), [answers])
-
+  // Calculate total time on mount
   useEffect(() => {
-    if (!hasCalledComplete.current) {
-      hasCalledComplete.current = true
-      onComplete(Math.round(score))
+    const calculatedTotalTime = startTime ? (Date.now() - startTime) / 1000 : 0
+    setTotalTime(calculatedTotalTime > 0 ? calculatedTotalTime : 300) // Default to 5 minutes if invalid
+  }, [startTime])
 
-      // Log the answers for debugging
-      console.log("Displaying quiz results with answers:", answers)
+  // Process and format answers
+  useEffect(() => {
+    if (initialAnswers && initialAnswers.length > 0) {
+      // Format and process the answers
+      const processedAnswers = initialAnswers.map((answer, index) => {
+        // If similarity is already calculated, use it
+        if (answer.similarity !== undefined) {
+          return {
+            ...answer,
+            similarity: answer.similarity,
+            isCorrect: answer.isCorrect !== undefined ? answer.isCorrect : answer.similarity > 70,
+          }
+        }
+
+        // Otherwise calculate it
+        const question = questions[index]
+        const similarity = question ? calculateSimilarity(answer.answer || "", question.answer || "") : 0
+
+        return {
+          ...answer,
+          similarity,
+          isCorrect: similarity > 70,
+        }
+      })
+
+      setAnswers(processedAnswers)
+
+      // Recalculate score if needed
+      if (initialScore === 0 || initialScore === undefined) {
+        const totalSimilarity = processedAnswers.reduce((sum, a) => sum + a.similarity, 0)
+        const calculatedScore = Math.round(totalSimilarity / processedAnswers.length)
+        setScore(calculatedScore)
+      }
+    } else {
+      // Create empty answers if none provided
+      if (questions && questions.length > 0) {
+        const emptyAnswers = questions.map(() => ({
+          answer: "",
+          timeSpent: 0,
+          similarity: 0,
+          isCorrect: false,
+        }))
+        setAnswers(emptyAnswers)
+      }
     }
+  }, [initialAnswers, questions, initialScore])
 
-    // If user is not logged in and clearGuestData is provided, call it
-    if (!session?.user && clearGuestData) {
-      // Don't clear immediately - give user time to see results
-      const timer = setTimeout(() => {
-        clearGuestData()
-      }, 300000) // 5 minutes
-
-      return () => clearTimeout(timer)
+  // Auto-save results if user is logged in
+  useEffect(() => {
+    if (isLoggedIn && answers.length > 0 && !isSaving && !isLoading) {
+      saveResult()
     }
-  }, [score, onComplete, session, clearGuestData, answers])
+  }, [isLoggedIn, answers, saveResult, isSaving, isLoading])
 
-  const performance = getPerformanceLevel(score)
-
-  const toggleExpanded = (index: number) => {
-    setExpandedQuestions((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]))
+  // Handle navigation to dashboard
+  const handleGoToDashboard = () => {
+    router.push("/dashboard/openended")
   }
 
-  const handleRestart = () => {
-    // Clear session storage for this quiz
-    if (typeof window !== "undefined") {
-      // Clear all storage related to this quiz
-      sessionStorage.removeItem(`quiz_result_${quizId}`)
-      localStorage.removeItem(`quiz_result_${quizId}`)
-      sessionStorage.removeItem(`quiz_state_openended_${quizId}`)
-      localStorage.removeItem(`quiz_answers_${quizId}`)
-
-      // Also clear any other related storage
-      const storageKey = `quiz_${slug}_openended`
-      sessionStorage.removeItem(storageKey)
+  // Render content based on authentication status
+  const renderContent = () => {
+    // Show loading state while recovering answers
+    if (isRecovering) {
+      return (
+        <div className="w-full max-w-3xl mx-auto p-4 text-center">
+          <div className="flex flex-col items-center justify-center p-8 gap-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p>Recovering your quiz results...</p>
+          </div>
+        </div>
+      )
     }
 
-    // Reset all state before restarting
-    hasCalledComplete.current = false
-    setSaveCompleted(false)
-    setSaveError(null)
+    if (!isLoggedIn) {
+      return (
+        <div className="w-full max-w-3xl mx-auto p-4 text-center">
+          <Alert>
+            <AlertTitle className="text-xl">Sign in to view your results</AlertTitle>
+            <AlertDescription className="mt-4">
+              <p className="mb-4">Your quiz has been completed! Sign in to view your results and save your progress.</p>
+              <Button onClick={onSignIn} className="mr-2">
+                Sign In
+              </Button>
+              <Button variant="outline" onClick={handleGoToDashboard}>
+                Return to Dashboard
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )
+    }
 
-    // Call the provided onRestart function
-    onRestart()
+    // Safety check for answers array
+    const safeAnswers = answers || []
+    const safeTotalQuestions = totalQuestions || safeAnswers.length || 1
+    const performance = getPerformanceLevel(score)
 
-    // Force a page refresh to ensure all state is reset
-    router.refresh()
-
-    // Navigate back to the quiz page
-    router.push(`/dashboard/openended/${slug}`)
-  }
-
-  return (
-    <QuizResultBase
-      quizId={quizId}
-      title={title}
-      score={score}
-      totalQuestions={questions.length}
-      totalTime={totalTime}
-      slug={slug}
-      quizType="openended"
-      clearGuestData={clearGuestData}
-      isSaving={isSaving}
-    >
-      <div className="max-w-4xl mx-auto p-4">
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              Quiz Results
-              {isSaving && <span className="text-sm text-muted-foreground">(Saving...)</span>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center mb-6">
-              <p className="text-3xl font-bold mb-2">{score.toFixed(1)}%</p>
-              <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
-              <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
-            </div>
-
-            {/* Debug info - can be removed in production */}
-            {answers.length === 0 && (
-              <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
-                <p className="text-amber-800 font-medium">No answers found to display.</p>
-                <p className="text-sm text-amber-700">This may happen if you signed out and back in.</p>
+    return (
+      <QuizResultBase
+        quizId={quizId}
+        title={title || "Quiz"}
+        score={score || 0}
+        totalQuestions={safeTotalQuestions}
+        totalTime={totalTime}
+        slug={slug}
+        quizType="openended"
+        correctAnswers={correctAnswers}
+        showAuthModal={false}
+        onRestart={onRestart}
+        isSaving={isSaving}
+        isLoading={isLoading}
+      >
+        <div className="max-w-4xl mx-auto p-4">
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                Quiz Results
+                {isSaving && <span className="text-sm text-muted-foreground">(Saving...)</span>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center mb-6">
+                <p className="text-3xl font-bold mb-2">{score}%</p>
+                <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
+                <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
               </div>
-            )}
 
-            {results.map((result, index) => (
-              <Collapsible
-                key={result.id || index}
-                open={expandedQuestions.includes(index)}
-                onOpenChange={() => toggleExpanded(index)}
-              >
-                <Card className="mb-4">
+              {/* No answers warning */}
+              {answers.length === 0 && (
+                <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
+                  <p className="text-amber-800 font-medium">No answers found to display.</p>
+                  <p className="text-sm text-amber-700">This may happen if you signed out and back in.</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => router.push(`/dashboard/openended/${slug}`)}
+                  >
+                    Return to Quiz
+                  </Button>
+                </div>
+              )}
+
+              {/* Question results */}
+              {answers.map((answer, index) => (
+                <Card key={index} className="mb-4">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex justify-between items-center">
-                      <span>Question {index + 1}</span>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                          {expandedQuestions.includes(index) ? "Hide Details" : "Show Details"}
-                          {expandedQuestions.includes(index) ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </CollapsibleTrigger>
-                    </CardTitle>
+                    <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="mb-2">{result.question}</div>
-                    <div className="flex items-center gap-2 mb-4">
-                      {result.similarity === 100 ? (
-                        <CheckCircle className="text-green-500" />
-                      ) : result.similarity > 80 ? (
-                        <AlertTriangle className="text-yellow-500" />
-                      ) : (
-                        <XCircle className="text-red-500" />
-                      )}
-                      <span>
-                        {result.similarity === 100
-                          ? "Perfect match!"
-                          : result.similarity > 80
-                            ? "Close enough!"
-                            : "Needs improvement"}
-                      </span>
+                    <div className="mb-2">{questions[index]?.question || "Question not available"}</div>
+                    <div className="grid gap-2 mb-4">
+                      <div className="p-3 rounded-md border bg-muted/30">
+                        <p className="font-medium">Your Answer:</p>
+                        <p className="mt-1 whitespace-pre-wrap">{answer.answer || "(No answer provided)"}</p>
+                      </div>
+                      <div className="p-3 rounded-md border bg-green-50 dark:bg-green-900/20">
+                        <p className="font-medium">Model Answer:</p>
+                        <p className="mt-1 whitespace-pre-wrap">{questions[index]?.answer || "Answer not available"}</p>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-2 mb-4">
-                      <div className="flex items-center gap-2">
-                        <strong className="min-w-[120px]">Your Answer:</strong>
-                        <span>{result.userAnswer || "(No answer provided)"}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <strong className="min-w-[120px]">Model Answer:</strong>
-                        <span className="font-bold text-green-600 dark:text-green-400">{result.correctAnswer}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <strong className="min-w-[120px]">Accuracy:</strong>
-                        <span>{result.similarity.toFixed(1)}%</span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <span>Similarity: </span>
+                      <Progress
+                        value={answer.similarity}
+                        className="w-full h-2"
+                        indicatorClassName={
+                          answer.similarity > 80
+                            ? "bg-green-500"
+                            : answer.similarity > 50
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
+                        }
+                      />
+                      <span className={getAnswerClassName(answer.similarity)}>{answer.similarity}%</span>
                     </div>
                     <p className="text-sm text-gray-500 mt-2">
-                      Time spent: {Math.floor(result.timeSpent / 60)}m {Math.round(result.timeSpent % 60)}s
+                      Time spent: {Math.floor(answer.timeSpent / 60)}m {Math.round(answer.timeSpent % 60)}s
                     </p>
-                    <CollapsibleContent>
-                      <div className="mt-4">
-                        <h4 className="font-semibold mb-1">Comparison:</h4>
-                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded whitespace-pre-wrap">
-                          {renderDiff(result.correctAnswer, result.userAnswer)}
-                        </div>
-                      </div>
-                    </CollapsibleContent>
                   </CardContent>
                 </Card>
-              </Collapsible>
-            ))}
-            <div className="flex justify-center mt-6">
-              <Button onClick={handleRestart} disabled={isSaving}>
-                <RotateCw className="mr-2 h-4 w-4" />
-                Restart Quiz
-              </Button>
-            </div>
-            {saveError && (
-              <p className="text-red-500 text-center mt-4">
-                Error saving results: {saveError}. Your progress is still displayed here.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </QuizResultBase>
-  )
-}
+              ))}
 
-function calculateSimilarity(str1: string, str2: string): number {
-  if (!str1 || !str2) return 0
+              <div className="flex justify-center mt-6">
+                <Button onClick={onRestart} disabled={isSaving}>
+                  Restart Quiz
+                </Button>
+              </div>
 
-  const longer = str1.length > str2.length ? str1 : str2
-  const shorter = str1.length > str2.length ? str2 : str1
-  const longerLength = longer.length
-
-  if (longerLength === 0) return 100
-
-  const editDistance = levenshteinDistance(longer, shorter)
-  return Math.max(0, Math.min(100, (1 - editDistance / longerLength) * 100))
-}
-
-function levenshteinDistance(str1: string, str2: string): number {
-  const m = str1.length
-  const n = str2.length
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))
-
-  for (let i = 0; i <= m; i++) dp[i][0] = i
-  for (let j = 0; j <= n; j++) dp[0][j] = j
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (str1[i - 1] === str2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1]
-      } else {
-        dp[i][j] = Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1
-      }
-    }
+              {error && (
+                <Alert variant="destructive" className="mt-4">
+                  <AlertTitle>Error saving results</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </QuizResultBase>
+    )
   }
 
-  return dp[m][n]
-}
-
-function renderDiff(correct: string, user: string) {
-  if (!correct || !user) return null
-
-  const diff = diffChars(correct?.toLowerCase(), user?.toLowerCase())
-  return diff.map((part, index) => (
-    <span
-      key={index}
-      className={
-        part.added
-          ? "bg-red-200 dark:bg-red-800"
-          : part.removed
-            ? "bg-green-200 dark:bg-green-800"
-            : "bg-gray-100 dark:bg-gray-700"
-      }
+  // Always return a motion.div wrapper to ensure consistent hook execution
+  return (
+    <motion.div
+      key={isLoggedIn ? "results" : "auth-prompt"}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
     >
-      {part.value}
-    </span>
-  ))
+      {renderContent()}
+    </motion.div>
+  )
 }

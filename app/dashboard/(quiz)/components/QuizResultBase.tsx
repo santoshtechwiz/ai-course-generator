@@ -1,20 +1,21 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { formatTime } from "@/lib/utils"
+
 import { motion } from "framer-motion"
 
 import QuizAuthWrapper from "./QuizAuthWrapper"
 import { useQuiz } from "../../../context/QuizContext"
 import type { QuizType } from "@/app/types/quiz-types"
 import { GuestSignInPrompt } from "./GuestSignInPrompt"
+import { Loader2 } from "lucide-react"
+import { formatTime, getPerformanceLevel } from "@/lib/quiz-utils"
 
 interface QuizResultBaseProps {
   quizId: string
@@ -27,6 +28,10 @@ interface QuizResultBaseProps {
   children: React.ReactNode
   clearGuestData?: () => void
   isSaving?: boolean
+  correctAnswers?: number
+  showAuthModal?: boolean
+  onRestart?: () => void
+  isLoading?: boolean
 }
 
 export function QuizResultBase({
@@ -40,6 +45,10 @@ export function QuizResultBase({
   children,
   clearGuestData,
   isSaving = false,
+  correctAnswers = 0,
+  showAuthModal = true,
+  onRestart,
+  isLoading = false,
 }: QuizResultBaseProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -48,7 +57,7 @@ export function QuizResultBase({
 
   // Clear guest data after showing results if user is not authenticated
   useEffect(() => {
-    if (status === "unauthenticated" && clearGuestData) {
+    if (status === "unauthenticated" && clearGuestData && showAuthModal) {
       // Save result for guest user if not already saved
       saveGuestResult({
         quizId,
@@ -70,7 +79,18 @@ export function QuizResultBase({
 
       return () => clearTimeout(timer)
     }
-  }, [status, clearGuestData, saveGuestResult, setShowSignInPrompt, quizId, quizType, slug, score, totalTime])
+  }, [
+    status,
+    clearGuestData,
+    saveGuestResult,
+    setShowSignInPrompt,
+    quizId,
+    quizType,
+    slug,
+    score,
+    totalTime,
+    showAuthModal,
+  ])
 
   useEffect(() => {
     // Cleanup function to run when component unmounts
@@ -79,19 +99,23 @@ export function QuizResultBase({
       if (clearGuestData) {
         clearGuestData()
       }
-
-      // Also clear any session storage related to this quiz
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem(`quiz_result_${quizId}`)
-        sessionStorage.removeItem(`quiz_state_${quizType}_${quizId}`)
-      }
     }
-  }, [clearGuestData, quizId, quizType])
+  }, [clearGuestData])
+
+  // If loading, show a loading state
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-8 flex flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading quiz results...</p>
+      </div>
+    )
+  }
 
   // If user is not authenticated, show sign-in prompt with results summary
-  if (status === "unauthenticated") {
+  if (status === "unauthenticated" && showAuthModal) {
     const percentage = Math.round(score)
-    const performance = getPerformanceLevel(percentage)
+    const performance = getPerformanceLevel(score)
     const formattedTime = formatTime(totalTime)
 
     return (
@@ -122,7 +146,7 @@ export function QuizResultBase({
               </div>
               <div className="text-center space-y-2">
                 <p className="text-lg font-medium">
-                  You scored {Math.round((percentage / 100) * totalQuestions)} out of {totalQuestions} questions
+                  You scored {correctAnswers} out of {totalQuestions} questions
                 </p>
                 <p className="text-sm text-muted-foreground">Completed in {formattedTime}</p>
               </div>
@@ -146,39 +170,4 @@ export function QuizResultBase({
 
   // For authenticated users, render the children
   return <QuizAuthWrapper>{children}</QuizAuthWrapper>
-}
-
-export function getPerformanceLevel(score: number) {
-  const levels = [
-    {
-      threshold: 90,
-      color: "text-green-500",
-      bgColor: "bg-green-500",
-      label: "Master",
-      message: "Mastery achieved! You're crushing it!",
-    },
-    {
-      threshold: 70,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500",
-      label: "Proficient",
-      message: "Great job! You have a strong understanding.",
-    },
-    {
-      threshold: 50,
-      color: "text-yellow-500",
-      bgColor: "bg-yellow-500",
-      label: "Developing",
-      message: "Good effort! Review these areas to improve.",
-    },
-    {
-      threshold: 0,
-      color: "text-red-500",
-      bgColor: "bg-red-500",
-      label: "Needs Practice",
-      message: "Keep learning! Let's strengthen these concepts.",
-    },
-  ]
-
-  return levels.find((level) => score >= level.threshold) || levels[levels.length - 1]
 }

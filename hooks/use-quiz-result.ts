@@ -3,8 +3,7 @@
 import { useState, useRef } from "react"
 import { toast } from "./use-toast"
 import { useRouter } from "next/navigation"
-import { QuizType } from "@/app/types/quiz-types"
-
+import type { QuizType } from "@/app/types/quiz-types"
 
 interface UseQuizResultOptions {
   onSuccess?: (result: any) => void
@@ -13,6 +12,7 @@ interface UseQuizResultOptions {
   redirectPath?: string
 }
 
+// Implement consistent error handling with user feedback
 export function useQuizResult({
   onSuccess,
   onError,
@@ -25,6 +25,8 @@ export function useQuizResult({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [result, setResult] = useState<any | null>(null)
   const submissionInProgress = useRef(false)
+  const saveAttemptCount = useRef(0)
+  const lastSaveAttempt = useRef(0)
   const router = useRouter()
 
   const resetSubmissionState = () => {
@@ -34,9 +36,10 @@ export function useQuizResult({
     setErrorMessage(null)
     setResult(null)
     submissionInProgress.current = false
+    saveAttemptCount.current = 0
   }
 
-  // Improved submission function with better error handling and duplicate submission prevention
+  // Improved submission function with better error handling
   const submitQuizResult = async (
     quizId: string | number,
     answers: any[],
@@ -51,7 +54,31 @@ export function useQuizResult({
       return null
     }
 
+    // Prevent excessive save attempts
+    const now = Date.now()
+    if (now - lastSaveAttempt.current < 5000) {
+      // Throttle to once every 5 seconds
+      console.log("Throttling save attempt, too frequent")
+      return null
+    }
+
+    // Limit total save attempts to prevent infinite loops
+    if (saveAttemptCount.current > 5) {
+      console.log("Too many save attempts, stopping to prevent infinite loop")
+      return null
+    }
+
+    // Check if we've already saved this quiz
+    const alreadySaved = localStorage.getItem(`quiz_${quizId}_saved`) === "true"
+    if (alreadySaved) {
+      console.log("Quiz results already saved, skipping save")
+      setIsSuccess(true)
+      return { success: true, message: "Already saved" }
+    }
+
     try {
+      lastSaveAttempt.current = now
+      saveAttemptCount.current += 1
       submissionInProgress.current = true
       setIsSubmitting(true)
       setIsSuccess(false)
@@ -94,22 +121,46 @@ export function useQuizResult({
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
-        throw new Error(errorData.error || `Failed to submit quiz results: ${response.status}`)
+        let errorMessage = `Failed to submit quiz results: ${response.status}`
+
+        try {
+          const errorData = await response.json()
+          if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch (jsonError) {
+          // If JSON parsing fails, try to get the text response
+          try {
+            const errorText = await response.text()
+            if (errorText) {
+              errorMessage += ` - ${errorText}`
+            }
+          } catch (textError) {
+            // If text extraction fails, just use the status code error
+          }
+        }
+
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
       setResult(data)
       setIsSuccess(true)
 
+      // Mark this quiz as saved
+      localStorage.setItem(`quiz_${quizId}_saved`, "true")
+
       if (onSuccess) {
         onSuccess(data)
       }
 
-      toast({
-        title: "Quiz completed!",
-        description: "Your results have been saved successfully.",
-      })
+      // Only show toast on first successful save
+      if (saveAttemptCount.current <= 2) {
+        toast({
+          title: "Quiz completed!",
+          description: "Your results have been saved successfully.",
+        })
+      }
 
       if (redirectOnSuccess && redirectPath) {
         router.push(redirectPath)
@@ -125,16 +176,40 @@ export function useQuizResult({
         onError(error)
       }
 
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save quiz results. Please try again.",
-        variant: "destructive",
-      })
+      // Check if this is a deadlock error and retry after a delay
+      const errorMessage = error.message || "Unknown error"
+      if (errorMessage.includes("deadlock") || errorMessage.includes("write conflict")) {
+        // Only show toast on first few attempts
+        if (saveAttemptCount.current <= 2) {
+          toast({
+            title: "Database busy",
+            description: "We'll try again in a moment...",
+          })
+        }
+
+        // Retry after a short delay
+        setTimeout(() => {
+          submissionInProgress.current = false
+          setIsSubmitting(false)
+        }, 5000) // Increased delay to 5 seconds
+      } else {
+        // Only show toast on first few attempts
+        if (saveAttemptCount.current <= 2) {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to save quiz results. Please try again.",
+            variant: "destructive",
+          })
+        }
+      }
 
       return null
     } finally {
-      setIsSubmitting(false)
-      submissionInProgress.current = false
+      // Add a small delay before allowing new submissions
+      setTimeout(() => {
+        setIsSubmitting(false)
+        submissionInProgress.current = false
+      }, 1000)
     }
   }
 
