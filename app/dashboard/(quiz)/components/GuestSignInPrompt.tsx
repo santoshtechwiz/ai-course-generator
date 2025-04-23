@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Loader2, LogIn, Save, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,32 +42,45 @@ export function GuestSignInPrompt({
   const handleSignIn = async () => {
     setIsLoading(true)
 
-    // Ensure the callbackUrl is properly formatted and preserved
-    // Make sure we're redirecting to the specific quiz page
-    let redirectUrl = callbackUrl
-
-    // Fix the callback URL to ensure it uses /dashboard/ instead of /quiz/
-    redirectUrl = fixCallbackUrl(redirectUrl)
-
-    // If callbackUrl doesn't include the quiz type and ID, construct it
-    if (quizId && quizType && !redirectUrl.includes(quizId)) {
-      redirectUrl = `/dashboard/${quizType}/${quizId}`
-    }
-
-    // Add completed=true parameter if it's not already there
-    if (!redirectUrl.includes("completed=true")) {
-      redirectUrl += `${redirectUrl.includes("?") ? "&" : "?"}completed=true`
-    }
-
-    console.log("Signing in with callback URL:", redirectUrl)
-
     try {
-      // Before redirecting, make sure we mark the current session as guest
-      // so we can detect the sign-in transition
-      sessionStorage.setItem("wasSignedIn", "false")
+      // Ensure the callbackUrl is properly formatted and preserved
+      let redirectUrl = callbackUrl
 
-      // Also ensure we're not clearing any guest results during the auth flow
-      localStorage.setItem("preserveGuestResults", "true")
+      // Fix the callback URL to ensure it uses /dashboard/ instead of /quiz/
+      redirectUrl = fixCallbackUrl(redirectUrl)
+
+      // If callbackUrl doesn't include the quiz type and ID, construct it
+      if (quizId && quizType && !redirectUrl.includes(quizId)) {
+        redirectUrl = `/dashboard/${quizType}/${quizId}`
+      }
+
+      // Add completed=true parameter if it's not already there
+      if (!redirectUrl.includes("completed=true")) {
+        redirectUrl += `${redirectUrl.includes("?") ? "&" : "?"}completed=true`
+      }
+
+      console.log("Signing in with callback URL:", redirectUrl)
+
+      // Store quiz information in sessionStorage for retrieval after auth
+      if (quizId && quizType) {
+        const quizData = {
+          quizId,
+          quizType,
+          score,
+          completed: true,
+          timestamp: Date.now(),
+        }
+
+        // Use sessionStorage to persist through the auth redirect
+        sessionStorage.setItem("pendingQuizData", JSON.stringify(quizData))
+
+        // Mark that we're in the auth flow to prevent clearing guest results
+        sessionStorage.setItem("inAuthFlow", "true")
+        localStorage.setItem("preserveGuestResults", "true")
+      }
+
+      // Before redirecting, make sure we mark the current session as guest
+      sessionStorage.setItem("wasSignedIn", "false")
 
       // Use the signIn function from next-auth
       await signIn("credentials", {
@@ -77,8 +90,27 @@ export function GuestSignInPrompt({
     } catch (error) {
       console.error("Sign in error:", error)
       setIsLoading(false)
+
+      // Clear auth flow markers on error
+      sessionStorage.removeItem("inAuthFlow")
+      localStorage.removeItem("preserveGuestResults")
     }
   }
+
+  useEffect(() => {
+    // Cleanup function to handle component unmounting during auth flow
+    return () => {
+      // If we're in the middle of signing in, don't clear the auth flow markers
+      if (isLoading) {
+        console.log("Component unmounting during auth flow, preserving guest results")
+      } else {
+        // If we're not in the auth flow, it's safe to clear these
+        if (!sessionStorage.getItem("inAuthFlow")) {
+          localStorage.removeItem("preserveGuestResults")
+        }
+      }
+    }
+  }, [isLoading])
 
   return (
     <motion.div

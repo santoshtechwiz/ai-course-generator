@@ -264,53 +264,62 @@ export function QuizProvider({
     }
   }, [isAuthenticated])
 
-  // Save quiz result for guest users
-  const saveGuestResult = useCallback((result: QuizResult & { redirectPath?: string }) => {
-    if (typeof window === "undefined") return
+  // Improve the saveGuestResult function to better handle the auth flow
+  const saveGuestResult = useCallback(
+    (result: QuizResult & { redirectPath?: string }) => {
+      if (typeof window === "undefined") return
 
-    try {
-      console.log("Saving guest result:", result)
+      try {
+        console.log("Saving guest result:", result)
 
-      // Get existing results or initialize empty array
-      const existingResultsStr = localStorage.getItem("guestQuizResults")
-      const existingResults = existingResultsStr ? JSON.parse(existingResultsStr) : []
+        // If user is already authenticated, don't save as guest result
+        if (isAuthenticated) {
+          console.log("User is authenticated, not saving as guest result")
+          return
+        }
 
-      // Ensure we have a redirectPath for this quiz
-      if (!result.redirectPath) {
-        result.redirectPath = `/dashboard/${result.quizType}/${result.slug}`
-      }
+        // Get existing results or initialize empty array
+        const existingResultsStr = localStorage.getItem("guestQuizResults")
+        const existingResults = existingResultsStr ? JSON.parse(existingResultsStr) : []
 
-      // Make sure the redirectPath doesn't already have a completed parameter
-      if (!result.redirectPath.includes("completed=true")) {
-        result.redirectPath += `${result.redirectPath.includes("?") ? "&" : "?"}completed=true`
-      }
+        // Ensure we have a redirectPath for this quiz
+        if (!result.redirectPath) {
+          result.redirectPath = `/dashboard/${result.quizType}/${result.slug}`
+        }
 
-      // Check if we already have a result for this quiz
-      const existingIndex = existingResults.findIndex((r: QuizResult) => r.quizId === result.quizId)
+        // Make sure the redirectPath doesn't already have a completed parameter
+        if (!result.redirectPath.includes("completed=true")) {
+          result.redirectPath += `${result.redirectPath.includes("?") ? "&" : "?"}completed=true`
+        }
 
-      // Either update existing or add new result
-      if (existingIndex >= 0) {
-        existingResults[existingIndex] = result
-      } else {
-        existingResults.push(result)
-      }
-
-      // Save back to localStorage with a longer expiration (7 days)
-      localStorage.setItem("guestQuizResults", JSON.stringify(existingResults))
-
-      // Also save specifically for this quiz ID for easier retrieval
-      localStorage.setItem(
-        `quiz_result_${result.quizId}`,
-        JSON.stringify({
+        // Add timestamp to the result
+        const resultWithTimestamp = {
           ...result,
           timestamp: Date.now(),
-        }),
-      )
+        }
 
-      setHasGuestResults(true)
+        // Check if we already have a result for this quiz
+        const existingIndex = existingResults.findIndex((r: QuizResult) => r.quizId === result.quizId)
 
-      // Also save the current quiz state with the redirect path
-      if (typeof window !== "undefined") {
+        // Either update existing or add new result
+        if (existingIndex >= 0) {
+          existingResults[existingIndex] = resultWithTimestamp
+        } else {
+          existingResults.push(resultWithTimestamp)
+        }
+
+        // Save back to localStorage with a longer expiration (7 days)
+        localStorage.setItem("guestQuizResults", JSON.stringify(existingResults))
+
+        // Also save specifically for this quiz ID for easier retrieval
+        localStorage.setItem(`guestQuizResults_${result.quizId}`, JSON.stringify(resultWithTimestamp))
+
+        // Also save to the quiz_result key for compatibility
+        localStorage.setItem(`quiz_result_${result.quizId}`, JSON.stringify(resultWithTimestamp))
+
+        setHasGuestResults(true)
+
+        // Also save the current quiz state with the redirect path
         localStorage.setItem(
           "currentQuizState",
           JSON.stringify({
@@ -338,38 +347,66 @@ export function QuizProvider({
             answers: result.answers,
           }),
         )
+
+        // Show sign-in prompt after saving result
+        setShowSignInPrompt(true)
+      } catch (error) {
+        console.error("Error saving guest result:", error)
       }
+    },
+    [isAuthenticated],
+  )
 
-      // Show sign-in prompt after saving result
-      setShowSignInPrompt(true)
-    } catch (error) {
-      console.error("Error saving guest result:", error)
-    }
-  }, [])
-
-  // Get guest result by quiz ID
+  // Improve the getGuestResult function to be more robust
   const getGuestResult = useCallback((quizId: string): QuizResult | null => {
     if (typeof window === "undefined") return null
 
     try {
       console.log("Getting guest result for quiz ID:", quizId)
 
-      // First check in the specific quiz result storage
-      const specificResultStr = localStorage.getItem(`quiz_result_${quizId}`)
-      if (specificResultStr) {
-        const result = JSON.parse(specificResultStr)
-        console.log("Found specific result:", result)
-        return result
+      // First check in the specific guest result storage
+      const guestResultStr = localStorage.getItem(`guestQuizResults_${quizId}`)
+      if (guestResultStr) {
+        try {
+          const result = JSON.parse(guestResultStr)
+          console.log("Found specific guest result:", result)
+          return result
+        } catch (e) {
+          console.error("Error parsing specific guest result:", e)
+        }
       }
 
-      // If not found, check in the guestQuizResults
-      const resultsStr = localStorage.getItem("guestQuizResults")
-      if (!resultsStr) return null
+      // Then check in the specific quiz result storage
+      const specificResultStr = localStorage.getItem(`quiz_result_${quizId}`)
+      if (specificResultStr) {
+        try {
+          const result = JSON.parse(specificResultStr)
+          console.log("Found specific quiz result:", result)
+          return result
+        } catch (e) {
+          console.error("Error parsing specific quiz result:", e)
+        }
+      }
 
-      const results = JSON.parse(resultsStr)
-      const result = results.find((r: QuizResult) => r.quizId === quizId)
-      console.log("Found result in guestQuizResults:", result)
-      return result || null
+      // If not found, check in the guestQuizResults array
+      const resultsStr = localStorage.getItem("guestQuizResults")
+      if (resultsStr) {
+        try {
+          const results = JSON.parse(resultsStr)
+          if (Array.isArray(results)) {
+            const result = results.find((r: QuizResult) => r.quizId === quizId)
+            if (result) {
+              console.log("Found result in guestQuizResults array:", result)
+              return result
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing guestQuizResults:", e)
+        }
+      }
+
+      console.log("No guest result found for quiz ID:", quizId)
+      return null
     } catch (error) {
       console.error("Error getting guest result:", error)
       return null
@@ -440,6 +477,46 @@ export function QuizProvider({
       return newResults
     })
   }, [])
+
+  // Improve the authentication state handling in QuizContext
+  // Add a function to check for and handle auth state transitions
+
+  // Add this function after the clearGuestResult function:
+  const handleAuthStateTransition = useCallback(() => {
+    if (typeof window === "undefined") return
+
+    try {
+      // Check if we just transitioned from guest to authenticated
+      const wasGuest = sessionStorage.getItem("wasSignedIn") === "false"
+
+      if (wasGuest && isAuthenticated) {
+        console.log("Detected transition from guest to authenticated user")
+
+        // Check if we have any guest results that need to be saved
+        const guestResultsStr = localStorage.getItem("guestQuizResults")
+        if (guestResultsStr) {
+          try {
+            const guestResults = JSON.parse(guestResultsStr)
+
+            if (Array.isArray(guestResults) && guestResults.length > 0) {
+              console.log(`Found ${guestResults.length} guest results to save`)
+
+              // We'll handle the actual saving in the components that need it
+              // Just mark that we have guest results to save
+              setHasGuestResults(true)
+            }
+          } catch (e) {
+            console.error("Error parsing guest results:", e)
+          }
+        }
+
+        // Update the auth state
+        sessionStorage.setItem("wasSignedIn", "true")
+      }
+    } catch (error) {
+      console.error("Error handling auth state transition:", error)
+    }
+  }, [isAuthenticated])
 
   // Helper functions
   const nextQuestion = () => {
@@ -587,6 +664,13 @@ export function QuizProvider({
     }
   }, [isAuthenticated, isLoading])
 
+  // Add a useEffect to call this function when auth state changes
+  useEffect(() => {
+    if (!isLoading) {
+      handleAuthStateTransition()
+    }
+  }, [isAuthenticated, isLoading, handleAuthStateTransition])
+
   // Add the function to the context value
   const value = useMemo(
     () => ({
@@ -603,6 +687,9 @@ export function QuizProvider({
       setShowSignInPrompt,
       state,
       dispatch,
+      nextQuestion, // Include nextQuestion
+      prevQuestion, // Include prevQuestion
+      submitAnswer, // Include submitAnswer
       completeQuiz,
       restartQuiz,
     }),
@@ -622,6 +709,8 @@ export function QuizProvider({
       dispatch,
       completeQuiz,
       restartQuiz,
+      nextQuestion,
+      submitAnswer,
     ],
   )
 
