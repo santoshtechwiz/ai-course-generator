@@ -1,10 +1,11 @@
 import { getAuthSession } from "@/lib/authOptions"
 import { generateFlashCards } from "@/lib/chatgpt/ai-service"
 import prisma from "@/lib/db"
-import { titleToSlug } from "@/lib/slug"
+
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import type { User } from "@prisma/client"
+import { titleToSlug } from "@/lib/slug"
 
 // Input validation schema
 const createFlashcardSchema = z.object({
