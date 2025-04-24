@@ -43,7 +43,6 @@ export default function QuizResultsOpenEnded({
     { answer: string; timeSpent: number; similarity: number; isCorrect: boolean }[]
   >([])
   const [score, setScore] = useState(initialScore || 0)
-  const [isRecovering, setIsRecovering] = useState(false)
   const [totalTime, setTotalTime] = useState<number>(0)
 
   // Hooks
@@ -131,12 +130,12 @@ export default function QuizResultsOpenEnded({
   // Render content based on authentication status
   const renderContent = () => {
     // Show loading state while recovering answers
-    if (isRecovering) {
+    if (isLoading) {
       return (
         <div className="w-full max-w-3xl mx-auto p-4 text-center">
           <div className="flex flex-col items-center justify-center p-8 gap-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <p>Recovering your quiz results...</p>
+            <p>Loading your quiz results...</p>
           </div>
         </div>
       )

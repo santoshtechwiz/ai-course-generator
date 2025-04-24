@@ -7,7 +7,6 @@ import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 import type { QueryParams } from "@/app/types/types"
 import CreateQuizForm from "./CreateQuizForm"
 
-
 import { Loader2 } from "lucide-react"
 import ConsistentCard from "../../../../components/ConsistentCard"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
@@ -17,7 +16,7 @@ import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
 import OpenEndedQuizForm from "@/app/dashboard/(quiz)/openended/components/OpenEndedQuizForm"
 import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm"
 
-type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code"| "flashcard"
+type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code" | "flashcard"
 
 interface QuizCourseWrapperProps {
   type: QuizType
@@ -83,10 +82,5 @@ export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps)
     )
   }
 
-  return (
-    <>
-      {renderQuizForm()}
-    </>
-  )
+  return <>{renderQuizForm()}</>
 }
-

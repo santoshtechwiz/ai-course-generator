@@ -115,6 +115,7 @@ export function McqQuizQuestions({
                 value={selectedOptions[currentQuestionIndex] || ""}
                 onValueChange={handleSelectOption}
                 className="space-y-3 w-full mt-4"
+                aria-labelledby="question-text"
               >
                 {uniqueOptions.map((option, index) => (
                   <motion.div
@@ -132,9 +133,10 @@ export function McqQuizQuestions({
                           : "border-transparent hover:bg-muted",
                       )}
                     >
-                      <RadioGroupItem value={option} id={`option-${index}`} />
+                      <RadioGroupItem value={option} id={`option-${index}`} aria-labelledby={`option-label-${index}`} />
                       <Label
                         htmlFor={`option-${index}`}
+                        id={`option-label-${index}`}
                         className="flex-grow cursor-pointer font-medium text-sm sm:text-base"
                       >
                         {option}
@@ -155,10 +157,14 @@ export function McqQuizQuestions({
           onClick={handleNextQuestion}
           disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
           className="w-full sm:w-auto"
+          aria-busy={isSubmitting}
         >
           {isSubmitting ? (
             <div className="flex items-center gap-2">
-              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              <div
+                className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"
+                aria-hidden="true"
+              />
               <span>Submitting...</span>
             </div>
           ) : currentQuestionIndex === totalQuestions - 1 ? (
@@ -166,7 +172,7 @@ export function McqQuizQuestions({
           ) : (
             <>
               Next Question
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
             </>
           )}
         </Button>

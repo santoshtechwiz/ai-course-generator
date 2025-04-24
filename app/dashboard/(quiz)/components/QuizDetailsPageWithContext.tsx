@@ -4,8 +4,6 @@ import { QuizProvider } from "@/app/context/QuizContext"
 import type React from "react"
 import QuizDetailsPage from "./QuizDetailsPage"
 
-
-
 interface QuizDetailsPageWithContextProps {
   title: string
   description: string

@@ -3,7 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { QuizState, QuizResult } from "./QuizContext"
+import { QuizState } from "@/lib/quiz-storage-service"
+import { QuizResult } from "../types/quiz-types"
 
 
 interface AuthContextType {
@@ -76,7 +77,7 @@ const getFromStorage = (key: string) => {
   }
 }
 
-// Add a function to handle the auth flow transition
+// Handle auth flow transition
 export function handleAuthFlowTransition() {
   if (typeof window === "undefined") return
 
@@ -85,24 +86,18 @@ export function handleAuthFlowTransition() {
     const inAuthFlow = sessionStorage.getItem("inAuthFlow") === "true"
 
     if (inAuthFlow) {
-      console.log("Detected auth flow transition, handling pending quiz data")
-
       // Get the pending quiz data
       const pendingQuizDataStr = sessionStorage.getItem("pendingQuizData")
       if (pendingQuizDataStr) {
         const pendingQuizData = JSON.parse(pendingQuizDataStr)
 
         // Check if we have valid quiz data
-        if (pendingQuizData && pendingQuizData.quizId && pendingQuizData.quizType) {
-          console.log("Found pending quiz data:", pendingQuizData)
-
+        if (pendingQuizData?.quizId && pendingQuizData?.quizType) {
           // Get any saved guest results for this quiz
           const guestResultKey = `guestQuizResults_${pendingQuizData.quizId}`
           const guestResultStr = localStorage.getItem(guestResultKey)
 
           if (guestResultStr) {
-            console.log("Found guest results to transfer")
-
             // Mark these results for transfer to the user account
             sessionStorage.setItem("transferGuestResults", guestResultStr)
           }
@@ -116,36 +111,6 @@ export function handleAuthFlowTransition() {
     localStorage.removeItem("preserveGuestResults")
   } catch (error) {
     console.error("Error handling auth flow transition:", error)
-  }
-}
-
-// Add a function to check if there are guest results to transfer
-export function hasGuestResultsToTransfer(): boolean {
-  if (typeof window === "undefined") return false
-
-  try {
-    return !!sessionStorage.getItem("transferGuestResults")
-  } catch (error) {
-    console.error("Error checking for guest results to transfer:", error)
-    return false
-  }
-}
-
-// Add a function to get guest results to transfer
-export function getGuestResultsToTransfer() {
-  if (typeof window === "undefined") return null
-
-  try {
-    const resultsStr = sessionStorage.getItem("transferGuestResults")
-    if (!resultsStr) return null
-
-    // Clear the transfer marker
-    sessionStorage.removeItem("transferGuestResults")
-
-    return JSON.parse(resultsStr)
-  } catch (error) {
-    console.error("Error getting guest results to transfer:", error)
-    return null
   }
 }
 
@@ -283,30 +248,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [])
 
+  // Handle post sign-in redirect
   const handlePostSignInRedirect = useCallback(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return
 
     try {
-      const pendingResultKey = "pending_quiz_result";
-      const pendingResult = localStorage.getItem(pendingResultKey);
+      const pendingResultKey = "pending_quiz_result"
+      const pendingResult = localStorage.getItem(pendingResultKey)
 
       if (pendingResult) {
-        const result = JSON.parse(pendingResult);
-        localStorage.removeItem(pendingResultKey);
+        const result = JSON.parse(pendingResult)
+        localStorage.removeItem(pendingResultKey)
 
         // Redirect to results page with the quiz result
-        router.push(`/quiz/${result.slug}/results`);
+        router.push(`/quiz/${result.slug}/results`)
       }
     } catch (error) {
-      console.error("Error handling post-sign-in redirect:", error);
+      console.error("Error handling post-sign-in redirect:", error)
     }
-  }, [router]);
+  }, [router])
 
+  // Check for pending redirects when authentication state changes
   useEffect(() => {
     if (isAuthenticated) {
-      handlePostSignInRedirect();
+      handlePostSignInRedirect()
     }
-  }, [isAuthenticated, handlePostSignInRedirect]);
+  }, [isAuthenticated, handlePostSignInRedirect])
 
   return (
     <AuthContext.Provider

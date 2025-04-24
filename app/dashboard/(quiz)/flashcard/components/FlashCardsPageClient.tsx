@@ -4,15 +4,13 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import type { FlashCard } from "@/app/types/types"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import axios from "axios"
 
 import QuizActions from "../../components/QuizActions"
 import { FlashCardComponent } from "./FlashCardComponent"
-
 
 interface FlashCardsPageClientProps {
   slug: string
@@ -26,7 +24,6 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
   const [ownerId, setOwnerId] = useState<string>("")
   const [quizId, setQuizId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
-
 
   const { toast } = useToast()
 
@@ -118,8 +115,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
         userId={userId}
         ownerId={ownerId}
         quizType="flashcard"
-       
-       position="left-center"
+        position="left-center"
       />
       {loading ? (
         <Card className="w-full h-80 flex items-center justify-center">
@@ -141,17 +137,14 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
           </CardContent>
         </Card>
       ) : flashCards.length > 0 ? (
-
-
-        <FlashCardComponent 
-          cards={flashCards} 
-          onSaveCard={handleSaveCard} 
-          savedCardIds={savedCardIds} 
-          quizId={quizId} 
-          slug={slug} 
-          title="Flash Cards" 
+        <FlashCardComponent
+          cards={flashCards}
+          onSaveCard={handleSaveCard}
+          savedCardIds={savedCardIds}
+          quizId={quizId}
+          slug={slug}
+          title="Flash Cards"
         />
-
       ) : (
         <Card className="w-full mx-auto">
           <CardHeader>
@@ -170,8 +163,6 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
           </CardContent>
         </Card>
       )}
-
     </div>
   )
 }
-

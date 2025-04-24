@@ -205,4 +205,3 @@ export function DocumentQuizDisplay({ questions: initialQuestions, onSave, onUpd
     </div>
   )
 }
-

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { motion } from "framer-motion"
 import { HelpCircle, ArrowRight, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizProgress } from "../../components/QuizProgress"
-import { useState, useEffect, useMemo } from "react"
 
 interface McqQuizProps {
   question: {
@@ -28,118 +28,85 @@ interface McqQuizProps {
 }
 
 export default function McqQuiz({ question, onAnswer, questionNumber, totalQuestions }: McqQuizProps) {
+  // Refs to prevent unnecessary re-renders
+  const startTimeRef = useRef(Date.now())
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // State
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [startTime] = useState(Date.now())
   const { animationsEnabled } = useAnimation()
 
-  // Debug the question data
+  // Reset timer and selection when question changes
   useEffect(() => {
-    if (!question) {
-      console.error("McqQuiz received null or undefined question")
-    } else {
-      console.log("McqQuiz received question:", question)
+    startTimeRef.current = Date.now()
+    setElapsedTime(0)
+    setSelectedOption(null)
 
-      // Check if the question has all required fields
-      if (!question.id) console.warn("Question is missing id")
-      if (!question.question) console.warn("Question is missing question text")
-      if (!question.answer) console.warn("Question is missing correct answer")
-      if (!question.option1 && !question.option2 && !question.option3) {
-        console.warn("Question is missing all option fields")
-      }
+    // Clear existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
     }
-  }, [question])
 
-  // Update elapsed time
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
+    // Start new timer
+    timerRef.current = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000))
     }, 1000)
 
+    // Cleanup
     return () => {
-      clearInterval(timer) // Clean up the timer on component unmount
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
     }
-  }, [startTime])
+  }, [question?.id]) // Only reset when question ID changes
 
-  // Improve the uniqueOptions useMemo to handle edge cases better
-  const uniqueOptions = useMemo(() => {
-    if (!question) {
-      console.error("Cannot generate options for null question")
-      return []
-    }
+  // Generate options from question data - memoized to prevent recalculation
+  const options = useMemo(() => {
+    if (!question) return []
 
-    // Log the raw options for debugging
-    console.log("Raw options:", {
-      answer: question.answer,
-      option1: question.option1,
-      option2: question.option2,
-      option3: question.option3,
-    })
-
+    // Collect all valid options
     const allOptions = [question.answer, question.option1, question.option2, question.option3].filter(Boolean)
-    console.log("Filtered options:", allOptions)
 
-    // Check for duplicate options
-    const uniqueOptionsSet = new Set(allOptions)
-    console.log("Unique options count:", uniqueOptionsSet.size)
-
-    if (uniqueOptionsSet.size < 2) {
-      console.warn("Question has fewer than 2 unique options:", question)
-
-      // Add fallback options if we don't have enough
+    // If we have fewer than 2 options, add fallbacks
+    if (new Set(allOptions).size < 2) {
       if (question.answer) {
-        uniqueOptionsSet.add("None of the above")
-        uniqueOptionsSet.add("All of the above")
-        uniqueOptionsSet.add("Cannot be determined")
-      } else {
-        console.error("Question has no correct answer defined")
-        return []
+        allOptions.push("None of the above")
+        allOptions.push("All of the above")
       }
     }
 
-    if (uniqueOptionsSet.size < 4) {
-      const fallbackOptions = [
-        "None of the above",
-        "All of the above",
-        "Not enough information",
-        "Cannot be determined",
-      ]
+    // Ensure we have unique options
+    const uniqueOptions = [...new Set(allOptions)]
 
-      let i = 0
-      while (uniqueOptionsSet.size < 4 && i < fallbackOptions.length) {
-        uniqueOptionsSet.add(fallbackOptions[i])
-        i++
-      }
-    }
-
-    // Shuffle options consistently using a seed based on the question
-    const shuffledOptions = [...uniqueOptionsSet].sort(() => Math.random() - 0.5)
-    console.log("Final shuffled options:", shuffledOptions)
-    return shuffledOptions
+    // Shuffle options with a stable seed based on question ID
+    let seed = question.id || 0
+    return [...uniqueOptions].sort(() => {
+      const x = Math.sin(seed++) * 10000
+      return x - Math.floor(x) - 0.5
+    })
   }, [question])
 
-  const handleSelectOption = (value: string) => {
+  // Memoized handlers
+  const handleSelectOption = useCallback((value: string) => {
     setSelectedOption(value)
-  }
+  }, [])
 
-  // Update the handleSubmit function to correctly determine if the answer is correct
-  const handleSubmit = () => {
-    if (selectedOption) {
-      // Check if the selected option is the correct answer
-      const isCorrect = selectedOption === question.answer
+  const handleSubmit = useCallback(() => {
+    if (!selectedOption || !question) return
 
-      console.log("Submitting answer:", {
-        selectedOption,
-        correctAnswer: question.answer,
-        isCorrect,
-        elapsedTime,
-      })
+    // Determine if the selected option is correct
+    const isCorrect = selectedOption === question.answer
 
-      onAnswer(selectedOption, elapsedTime, isCorrect)
-      setSelectedOption(null) // Reset for next question
-    }
-  }
+    // Get final elapsed time
+    const finalTime = Math.floor((Date.now() - startTimeRef.current) / 1000)
 
+    // Pass the answer data to the parent component
+    onAnswer(selectedOption, finalTime, isCorrect)
+  }, [selectedOption, question, onAnswer])
+
+  // If no question is available
   if (!question) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
@@ -162,7 +129,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
         />
       </CardHeader>
       <CardContent className="p-6">
-        <MotionTransition key={question.id} motionKey={""}>
+        <MotionTransition key={question.id} motionKey={String(question.id)}>
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
@@ -174,9 +141,9 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
                 onValueChange={handleSelectOption}
                 className="space-y-3 w-full mt-4"
               >
-                {uniqueOptions.map((option, index) => (
+                {options.map((option, index) => (
                   <motion.div
-                    key={`${index}-${option}`}
+                    key={`${question.id}-${index}-${option}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1, ease: [0.25, 0.1, 0.25, 1] }}
@@ -188,9 +155,9 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
                         selectedOption === option ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted",
                       )}
                     >
-                      <RadioGroupItem value={option} id={`option-${index}`} />
+                      <RadioGroupItem value={option} id={`option-${question.id}-${index}`} />
                       <Label
-                        htmlFor={`option-${index}`}
+                        htmlFor={`option-${question.id}-${index}`}
                         className="flex-grow cursor-pointer font-medium text-sm sm:text-base"
                       >
                         {option}

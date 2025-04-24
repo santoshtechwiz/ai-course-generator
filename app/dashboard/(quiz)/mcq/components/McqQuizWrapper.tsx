@@ -1,21 +1,18 @@
 "use client"
-
-import { useState, useEffect, useCallback, useRef } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
 import { AlertCircle } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useSession } from "next-auth/react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 
 import McqQuiz from "./McqQuiz"
+import McqQuizResult from "./McqQuizResult"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { QuizFeedback } from "../../components/QuizFeedback"
-import McqQuizResult from "./McqQuizResult"
-import { quizService } from "@/lib/QuizService" // Import QuizService
-import { useQuiz } from "@/app/context/QuizContext"
+import QuizActions from "../../components/QuizActions"
+import { useQuizResult } from "@/hooks/useQuizResult"
 
 interface McqQuizWrapperProps {
   quizData: any
@@ -24,470 +21,318 @@ interface McqQuizWrapperProps {
 }
 
 export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrapperProps) {
-  // All hooks must be called unconditionally at the top level
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const { saveQuizState, saveGuestResult } = useQuiz()
+  // Refs to prevent unnecessary re-renders
+  const initializedRef = useRef(false)
+  const startTimeRef = useRef(Date.now())
+  const processingAnswerRef = useRef(false)
 
-  // State variables
-  const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState<{ answer: string; timeSpent: number; isCorrect: boolean }[]>([])
-  const [startTime, setStartTime] = useState(Date.now())
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [showFeedback, setShowFeedback] = useState(false)
+  // Router
+  const router = useRouter()
+
+  // Local state to prevent excessive re-renders
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [answers, setAnswers] = useState<any[]>([])
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const [quizScore, setQuizScore] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isCompleted, setIsCompleted] = useState(false)
-  const [hasCleared, setHasCleared] = useState(false)
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  // Refs
-  const submissionInProgress = useRef(false)
-  const hasInitialized = useRef(false)
+  const { data: session, status } = useSession()
 
-  // Derived state
-  const isLoggedIn = status === "authenticated"
-  const quizId = quizData?.id || ""
-  const questions = quizData?.questions || []
-  const currentQuestionData = questions[currentQuestion] || null
-  const totalQuestions = questions?.length || 0
-
-  // Initialize quiz state
+  // Check authentication status once on mount
   useEffect(() => {
-    const initializeQuiz = async () => {
-      if (status === "loading" || hasInitialized.current) return
+    setIsAuthenticated(status === "authenticated")
+  }, [status])
 
-      setIsLoading(true)
-      hasInitialized.current = true
+  // Initialize state from quiz data and localStorage - only run once
+  useEffect(() => {
+    if (!quizData || initializedRef.current) return
 
+    initializedRef.current = true
+    startTimeRef.current = Date.now()
+
+    // Initialize answers array
+    const totalQuestions = quizData.questions?.length || 0
+    const emptyAnswers = new Array(totalQuestions).fill(null)
+
+    // Check if we have a saved state
+    const storageKey = `mcq_quiz_${quizData.id}_state`
+    const savedState = localStorage.getItem(storageKey)
+
+    if (savedState) {
       try {
-        // Check if quiz data is valid
-        if (!quizData) {
-          console.error("Quiz data is missing entirely")
-          setError("Quiz data could not be loaded. Please try again later.")
-          setIsLoading(false)
-          return
-        }
+        const parsed = JSON.parse(savedState)
 
-        if (!questions || !Array.isArray(questions)) {
-          console.error("Quiz questions are missing or not an array:", quizData)
-          setError("This quiz has no questions. Please try another quiz or create a new one.")
-          setIsLoading(false)
-          return
-        }
+        // Only restore if it's the same quiz
+        if (parsed.quizId === quizData.id) {
+          setCurrentQuestionIndex(parsed.currentQuestionIndex || 0)
+          setAnswers(parsed.answers || emptyAnswers)
+          setIsCompleted(parsed.isCompleted || false)
 
-        if (questions.length === 0) {
-          console.error("Quiz has 0 questions")
-          setError("This quiz has no questions. Please try another quiz or create a new one.")
-          setIsLoading(false)
-          return
-        }
-
-        // Check URL parameters first - this takes precedence
-        if (typeof window !== "undefined") {
-          const urlParams = new URLSearchParams(window.location.search)
-          const hasCompletedParam = urlParams.get("completed") === "true"
-
-          console.log("URL params check - completed:", hasCompletedParam)
-
-          if (hasCompletedParam) {
-            console.log("Detected completed=true in URL, showing results")
-
-            // Check for saved result to get the score and answers
-            const savedResult = quizService.getQuizResult(quizId)
-
-            if (savedResult) {
-              console.log("Found saved result:", savedResult)
-              setAnswers(savedResult.answers || [])
-              setQuizScore(savedResult.score || 0)
-            } else {
-              console.log("No saved result found, using default score")
-              // If no saved result but completed=true, set a default score
-              const defaultScore = 70 // Default score if none found
-              setQuizScore(defaultScore)
-            }
-
-            setIsCompleted(true)
-            setIsLoading(false)
-            return
+          if (parsed.startTime) {
+            startTimeRef.current = parsed.startTime
           }
 
-          // If not completed via URL, check for saved result
-          const savedResult = quizService.getQuizResult(quizId)
-
-          if (savedResult && savedResult.isCompleted) {
-            console.log("Found completed saved result:", savedResult)
-            setAnswers(savedResult.answers || [])
-            setQuizScore(savedResult.score || 0)
-            setIsCompleted(true)
-            setIsLoading(false)
-            return
-          }
-
-          // Check for saved answers if not completed
-          const savedAnswers = quizService.getQuizState(quizId, "mcq")?.answers || []
-          if (savedAnswers && savedAnswers.length > 0) {
-            console.log("Found saved answers:", savedAnswers)
-            setAnswers(savedAnswers)
-          }
-
-          // Check for saved state in session storage
-          const savedState = quizService.getQuizState(quizId, "mcq")
-          if (savedState && savedState.quizId === quizId && savedState.quizType === "mcq") {
-            console.log("Found saved quiz state:", savedState)
-
-            if (savedState.isCompleted) {
-              console.log("Saved state indicates quiz is completed")
-              setIsCompleted(true)
-
-              if (savedState.answers) {
-                setAnswers(savedState.answers)
-              }
-
-              // Redirect to the completed URL if not already there
-              if (!hasCompletedParam) {
-                console.log("Redirecting to completed URL")
-                router.replace(`/dashboard/mcq/${slug}?completed=true`)
-                return
-              }
-            } else {
-              // Not completed, restore state
-              setCurrentQuestion(savedState.currentQuestion || 0)
-              setStartTime(savedState.startTime || Date.now())
-
-              if (savedState.answers) {
-                setAnswers(savedState.answers)
-              }
-            }
-
-            // Clear saved state
-            quizService.clearQuizState(quizId, "mcq")
+          if (parsed.isCompleted) {
+            setQuizScore(parsed.score || 0)
           }
         }
-      } catch (err) {
-        console.error("Error initializing quiz:", err)
-        setError("Failed to initialize quiz. Please try again.")
-      } finally {
-        setIsLoading(false)
+      } catch (e) {
+        console.error("Error parsing saved quiz state:", e)
+        setAnswers(emptyAnswers)
       }
+    } else {
+      setAnswers(emptyAnswers)
     }
+  }, [quizData])
 
-    initializeQuiz()
-  }, [quizId, status, quizData, questions, router, slug, saveQuizState])
-
-  // Save answers when they change
+  // Save state to localStorage when it changes - debounced to prevent excessive writes
   useEffect(() => {
-    if (answers.length > 0 && quizId) {
-      // Use the quizService instead of quizStorageService directly
-      const currentState = quizService.getQuizState(quizId, "mcq") || {
-        quizId,
-        quizType: "mcq",
-        slug,
-        currentQuestion,
-        totalQuestions,
-        startTime,
-        isCompleted,
-      }
+    if (!quizData) return
 
-      quizService.saveQuizState({
-        ...currentState,
+    const saveTimeout = setTimeout(() => {
+      const stateToSave = {
+        quizId: quizData.id,
+        currentQuestionIndex,
         answers,
-      })
-    }
-  }, [answers, quizId, currentQuestion, isCompleted, slug, startTime, totalQuestions])
-
-  // Save state before unload
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (!isCompleted && answers.length > 0 && quizId) {
-        saveQuizState({
-          quizId,
-          quizType: "mcq",
-          slug,
-          currentQuestion,
-          totalQuestions,
-          startTime,
-          isCompleted,
-          answers,
-        })
+        isCompleted,
+        startTime: startTimeRef.current,
+        score: quizScore,
       }
-    }
 
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-    }
-  }, [answers, currentQuestion, isCompleted, quizId, totalQuestions, slug, startTime, saveQuizState])
+      localStorage.setItem(`mcq_quiz_${quizData.id}_state`, JSON.stringify(stateToSave))
+    }, 500) // Debounce for 500ms
 
-  // Complete quiz function
-  const completeQuiz = useCallback(
-    (finalAnswers: typeof answers) => {
-      if (submissionInProgress.current) return
-      submissionInProgress.current = true
+    return () => clearTimeout(saveTimeout)
+  }, [currentQuestionIndex, answers, isCompleted, quizScore, quizData])
 
-      setIsSubmitting(true)
-      setError(null)
-
-      try {
-        // Calculate score based on correct answers
-        const validAnswers = finalAnswers.filter((a) => a !== null && a !== undefined)
-        const correctCount = validAnswers.filter((a) => a && a.isCorrect).length
-
-        // Calculate percentage based on valid answers
-        const score = Math.round((correctCount / Math.max(1, validAnswers.length)) * 100)
-
-        console.log("Quiz completed:", {
-          totalAnswers: validAnswers.length,
-          correctAnswers: correctCount,
-          score: score,
-        })
-
-        setQuizScore(score)
-
-        // Create result object
-        const result = {
-          quizId,
-          slug,
-          quizType: "mcq",
-          score,
-          answers: finalAnswers,
-          totalTime: (Date.now() - startTime) / 1000,
-          timestamp: Date.now(),
-          isCompleted: true,
-        }
-
-        // Check if we've already saved this result
-        const alreadySaved = typeof window !== "undefined" && localStorage.getItem(`quiz_${quizId}_saved`) === "true"
-
-        // Only save if not already saved
-        if (!alreadySaved) {
-          // Save to localStorage using quizService
-          quizService.saveQuizResult(result)
-
-          // If not logged in, save to guest storage
-          if (!isLoggedIn) {
-            // Always use the slug for the redirect path, never the numeric ID
-            const dashboardPath = `/dashboard/mcq/${slug}?completed=true`
-            console.log("Setting redirect path with slug:", dashboardPath)
-
-            saveGuestResult({
-              ...result,
-              redirectPath: dashboardPath,
-            })
-
-            saveQuizState({
-              quizId,
-              quizType: "mcq",
-              slug,
-              currentQuestion,
-              totalQuestions,
-              startTime,
-              isCompleted: true,
-              answers: finalAnswers,
-              redirectPath: dashboardPath,
-            })
-          }
-        }
-
-        setIsSuccess(true)
-        setShowFeedback(true)
-      } catch (err) {
-        console.error("Error completing quiz:", err)
-        setError("Failed to complete quiz. Please try again.")
-        setIsSuccess(false)
-      } finally {
-        setIsSubmitting(false)
-        submissionInProgress.current = false
-      }
-    },
-    [quizId, slug, startTime, isLoggedIn, saveGuestResult, saveQuizState, currentQuestion, totalQuestions],
-  )
-
-  // Handle answer submission
-  const handleAnswer = useCallback(
-    (answer: string, timeSpent: number, isCorrect: boolean) => {
-      console.log("Answer submitted:", { answer, timeSpent, isCorrect, currentQuestion, totalQuestions })
-
-      // Update the answers array with the new answer
-      setAnswers((prev) => {
-        const newAnswers = [...prev]
-        newAnswers[currentQuestion] = { answer, timeSpent, isCorrect }
-        return newAnswers
-      })
-
-      // Check if this is the last question
-      if (currentQuestion >= totalQuestions - 1) {
-        console.log("Last question answered, completing quiz")
-        // Last question, complete quiz after a small delay to ensure the answer is saved
-        setTimeout(() => {
-          // We need to include the current answer in the final submission
-          setAnswers((prev) => {
-            const finalAnswers = [...prev]
-            finalAnswers[currentQuestion] = { answer, timeSpent, isCorrect }
-            completeQuiz(finalAnswers)
-            return finalAnswers
-          })
-        }, 100)
-      } else {
-        console.log("Moving to next question:", currentQuestion + 1)
-        // Not the last question, move to the next one
-        setCurrentQuestion((prev) => prev + 1)
-        setStartTime(Date.now()) // Reset timer for the next question
-      }
-    },
-    [currentQuestion, totalQuestions, completeQuiz],
-  )
-
-  // Handle quiz restart
-  const handleRestart = useCallback(() => {
-    setCurrentQuestion(0)
-    setAnswers([])
-    setStartTime(Date.now())
-    setQuizScore(0)
-    setError(null)
-    setIsCompleted(false)
-    setShowFeedback(false)
-
-    // Clear saved state
-    quizService.clearQuizState(quizId, "mcq")
-
-    router.refresh()
-  }, [router, quizId])
-
-  // Handle feedback continue
-  const handleFeedbackContinue = useCallback((proceed: boolean) => {
-    setShowFeedback(false)
-    if (proceed) {
-      setIsCompleted(true)
-    }
-  }, [])
-
-  // Handle auth modal
-  const handleOpenAuthModal = useCallback(() => {
-    setShowAuthModal(true)
-  }, [])
-
-  const handleAuthModalClose = useCallback(() => {
-    setShowAuthModal(false)
-  }, [])
-
-  // Render content based on state
-  let content
-
-  if (isLoading) {
-    content = (
-      <div className="flex flex-col items-center justify-center min-h-[200px] gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p className="text-sm text-muted-foreground">Loading quiz data...</p>
+  // Error handling
+  if (!quizData) {
+    return (
+      <div className="w-full max-w-3xl mx-auto p-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading quiz</AlertTitle>
+          <AlertDescription>
+            We couldn't load the quiz data. Please try again later.
+            <div className="mt-4">
+              <Button onClick={() => router.push("/dashboard/mcq")}>Return to Quiz Creator</Button>
+            </div>
+          </AlertDescription>
+        </Alert>
       </div>
-    )
-  } else if (error) {
-    content = (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error loading quiz</AlertTitle>
-        <AlertDescription>
-          {error || "We couldn't load the quiz data. Please try again later."}
-          <div className="mt-4">
-            <Button onClick={() => router.push("/dashboard/mcq")}>Return to Quiz Creator</Button>
-          </div>
-        </AlertDescription>
-      </Alert>
-    )
-  } else if (!questions || questions.length === 0) {
-    content = (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground mb-4">No questions available for this quiz.</p>
-          <p className="text-sm text-muted-foreground mb-6">
-            This could be because the quiz is still being generated or there was an error during creation.
-          </p>
-          <Button onClick={() => router.push("/dashboard/mcq")} className="mt-4">
-            Return to Quiz Creator
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  } else if (!currentQuestionData && !isCompleted) {
-    content = (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground mb-4">
-            {questions.length === 0 ? "No questions available for this quiz." : "Failed to load the current question."}
-          </p>
-          <Button onClick={() => router.push("/dashboard/mcq")} className="mt-4">
-            Return to Quiz Creator
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  } else if (isCompleted) {
-    content = (
-      <McqQuizResult
-        quizId={quizId}
-        slug={slug}
-        title={quizData?.title || "Quiz"}
-        answers={answers}
-        totalQuestions={totalQuestions}
-        startTime={startTime}
-        score={quizScore}
-        onRestart={handleRestart}
-        onSignIn={handleOpenAuthModal}
-      />
-    )
-  } else {
-    content = (
-      <motion.div
-        key="quiz"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3 }}
-      >
-        <McqQuiz
-          question={currentQuestionData}
-          onAnswer={handleAnswer}
-          questionNumber={currentQuestion + 1}
-          totalQuestions={totalQuestions}
-        />
-      </motion.div>
     )
   }
 
-  // Main render - single return statement
+  // Get the current question from the quiz data
+  const question = quizData.questions?.[currentQuestionIndex]
+  const totalQuestions = quizData.questions?.length || 0
+
+  // Memoized handlers to prevent recreation on every render
+  const _handleAnswer = useCallback(
+    (answer: string, timeSpent: number, isCorrect: boolean) => {
+      // Prevent duplicate processing
+      if (processingAnswerRef.current) return
+      processingAnswerRef.current = true
+
+      // Update answers array
+      setAnswers((prev) => {
+        const newAnswers = [...prev]
+        newAnswers[currentQuestionIndex] = {
+          answer,
+          timeSpent,
+          isCorrect,
+        }
+        return newAnswers
+      })
+
+      // If this is the last question, show completion modal
+      if (currentQuestionIndex === totalQuestions - 1) {
+        // Calculate score based on the updated answers
+        setTimeout(() => {
+          const updatedAnswers = [...answers]
+          updatedAnswers[currentQuestionIndex] = { answer, timeSpent, isCorrect }
+
+          const correctAnswers = updatedAnswers.filter((a) => a && a.isCorrect).length
+          const score = Math.round((correctAnswers / totalQuestions) * 100)
+
+          setQuizScore(score)
+          setShowFeedbackModal(true)
+          processingAnswerRef.current = false
+        }, 100)
+      } else {
+        // Move to next question
+        setTimeout(() => {
+          setCurrentQuestionIndex((prev) => prev + 1)
+          processingAnswerRef.current = false
+        }, 100)
+      }
+    },
+    [currentQuestionIndex, totalQuestions, answers],
+  )
+
+  const handleAnswer = quizData ? _handleAnswer : () => {}
+
+  const {
+    saveResult,
+    isLoading: isSavingResult,
+    error: saveError,
+  } = useQuizResult({
+    quizId: quizData?.id?.toString() || "",
+    slug,
+    answers,
+    totalTime: Math.floor((Date.now() - startTimeRef.current) / 1000),
+    score: quizScore,
+    quizType: "mcq",
+    totalQuestions,
+    startTime: startTimeRef.current,
+  })
+
+  const _handleQuizComplete = async () => {
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      // Calculate score
+      const correctAnswers = answers.filter((a) => a && a.isCorrect).length
+      const score = Math.round((correctAnswers / totalQuestions) * 100)
+      setQuizScore(score)
+
+      // Save the result using the hook
+      await saveResult()
+
+      // If not authenticated, show sign-in prompt
+      if (!isAuthenticated) {
+        setShowSignInPrompt(true)
+      }
+
+      setIsCompleted(true)
+      setShowFeedbackModal(false)
+    } catch (err) {
+      console.error("Error completing quiz:", err)
+      setError(err instanceof Error ? err.message : "Failed to save quiz results")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleQuizComplete = useCallback(_handleQuizComplete, [
+    answers,
+    totalQuestions,
+    isAuthenticated,
+    saveResult,
+    setQuizScore,
+    setIsCompleted,
+    setShowFeedbackModal,
+    setShowSignInPrompt,
+  ])
+
+  const handleRestart = useCallback(() => {
+    // Reset all state
+    setCurrentQuestionIndex(0)
+    setAnswers(new Array(totalQuestions).fill(null))
+    setIsCompleted(false)
+    setShowFeedbackModal(false)
+    setQuizScore(0)
+    setError(null)
+    startTimeRef.current = Date.now()
+
+    // Clear localStorage state
+    localStorage.removeItem(`mcq_quiz_${quizData.id}_state`)
+  }, [totalQuestions, quizData])
+
+  const handleSignIn = useCallback(() => {
+    // Save current state before redirecting
+    const stateToSave = {
+      quizId: quizData.id,
+      currentQuestionIndex,
+      answers,
+      isCompleted,
+      startTime: startTimeRef.current,
+      score: quizScore,
+    }
+
+    localStorage.setItem(`mcq_quiz_${quizData.id}_state`, JSON.stringify(stateToSave))
+
+    // Redirect to sign in page
+    router.push(`/auth/signin?callbackUrl=/dashboard/mcq/${slug}?completed=true`)
+  }, [router, slug, quizData, currentQuestionIndex, answers, isCompleted, quizScore])
+
+  const handleFeedbackContinue = useCallback(() => {
+    handleQuizComplete()
+  }, [handleQuizComplete])
+
   return (
     <QuizAuthWrapper
-      quizState={{
-        quizId,
-        quizType: "mcq",
-        quizSlug: slug,
-        currentQuestion,
-        totalQuestions,
-        startTime,
-        isCompleted,
-      }}
+      quizId={quizData.id.toString()}
+      quizType="mcq"
+      slug={slug}
+      currentQuestion={currentQuestionIndex + 1} // Convert to 1-based for display
+      totalQuestions={totalQuestions}
+      isCompleted={isCompleted}
       answers={answers}
       redirectPath={`/dashboard/mcq/${slug}?completed=true`}
-      showAuthModal={showAuthModal}
-      onAuthModalClose={handleAuthModalClose}
     >
-      <div className="w-full max-w-3xl mx-auto p-4">
-        {content}
+      <div className="flex flex-col gap-4 p-4">
+        <QuizActions
+          quizId={quizData.id.toString()}
+          quizSlug={quizData.slug}
+          initialIsPublic={quizData.isPublic}
+          initialIsFavorite={quizData.isFavorite}
+          userId={userId}
+          ownerId={quizData?.userId || ""}
+          position="left-center"
+        />
 
-        {showFeedback && (
+        {!isCompleted ? (
+          <McqQuiz
+            question={question}
+            onAnswer={handleAnswer}
+            questionNumber={currentQuestionIndex + 1} // Convert to 1-based for display
+            totalQuestions={totalQuestions}
+          />
+        ) : (
+          <McqQuizResult
+            quizId={quizData.id}
+            slug={quizData.slug}
+            title={quizData.title || "Multiple Choice Quiz"}
+            answers={answers}
+            totalQuestions={totalQuestions}
+            startTime={startTimeRef.current}
+            score={quizScore}
+            onRestart={handleRestart}
+            onSignIn={handleSignIn}
+          />
+        )}
+
+        {showFeedbackModal && (
           <QuizFeedback
             isSubmitting={isSubmitting}
-            isSuccess={isSuccess}
+            isSuccess={!error}
             isError={!!error}
             score={quizScore}
-            totalQuestions={100}
+            totalQuestions={totalQuestions}
             onContinue={handleFeedbackContinue}
+            errorMessage={error || undefined}
             quizType="mcq"
-            waitForSave={true}
-            autoClose={false}
           />
+        )}
+
+        {showSignInPrompt && !isAuthenticated && (
+          <Alert className="mt-4">
+            <AlertTitle>Sign in to save your progress</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">
+                Your quiz results have been saved temporarily. Sign in to permanently save your progress.
+              </p>
+              <Button onClick={handleSignIn} size="sm">
+                Sign In
+              </Button>
+            </AlertDescription>
+          </Alert>
         )}
       </div>
     </QuizAuthWrapper>

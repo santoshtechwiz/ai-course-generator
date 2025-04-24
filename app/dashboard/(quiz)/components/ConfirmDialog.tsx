@@ -1,4 +1,4 @@
-import React from 'react'
+"use client"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,9 +22,7 @@ export function ConfirmDialog({ isOpen, onConfirm, onCancel }: ConfirmDialogProp
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure you want to create this quiz?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action will use one of your credits.
-          </AlertDialogDescription>
+          <AlertDialogDescription>This action will use one of your credits.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
@@ -34,4 +32,3 @@ export function ConfirmDialog({ isOpen, onConfirm, onCancel }: ConfirmDialogProp
     </AlertDialog>
   )
 }
-

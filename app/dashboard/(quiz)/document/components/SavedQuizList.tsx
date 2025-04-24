@@ -413,4 +413,3 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
     </>
   )
 }
-
