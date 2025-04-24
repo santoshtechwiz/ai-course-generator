@@ -1,7 +1,6 @@
-'use server'
+"use server"
 
 import prisma from "@/lib/db"
-import { revalidatePath } from "next/cache"
 import { QuizType } from "../types/types"
 
 interface QuizDetails {
@@ -19,7 +18,7 @@ export async function getSimilarQuiz(): Promise<{
   try {
     const quiz = await prisma.userQuiz.findFirst({
       orderBy: {
-        createdAt: 'desc' // Fetch the most recent quiz
+        createdAt: "desc", // Fetch the most recent quiz
       },
       select: {
         id: true,
@@ -48,25 +47,25 @@ export async function getSimilarQuiz(): Promise<{
       },
       take: 4, // Optimal number for recommendations
       orderBy: {
-        createdAt: 'desc' // Show newer quizzes first
-      }
+        createdAt: "desc", // Show newer quizzes first
+      },
     })
 
-    return { 
+    return {
       quiz: {
         id: quiz.id.toString(),
         title: quiz.title,
         slug: quiz.slug,
         quizType: quiz.quizType as QuizType,
-        difficulty: quiz.difficulty ?? ""
+        difficulty: quiz.difficulty ?? "",
       },
-      similarQuizzes: similarQuizzes.map(q => ({
+      similarQuizzes: similarQuizzes.map((q) => ({
         id: q.id.toString(),
         title: q.title,
         slug: q.slug,
         quizType: q.quizType as QuizType,
-        difficulty: q.difficulty ?? ""
-      }))
+        difficulty: q.difficulty ?? "",
+      })),
     }
   } catch (error) {
     console.error("Error fetching similar quizzes:", error)

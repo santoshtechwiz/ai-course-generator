@@ -1,19 +1,19 @@
 "use server"
 
 import { prisma } from "@/lib/db"
-import {  QuestionOpenEnded } from "../types/types"
+import { QuestionOpenEnded } from "../types/types"
 
-type Result={
+type Result = {
   id: number
   userId: string
   title: string
-  questions: QuestionOpenEnded[] 
+  questions: QuestionOpenEnded[]
 }
 
 export async function getQuiz(slug: string): Promise<Result | null> {
   try {
     if (!slug) {
-      return null as any;
+      return null
     }
 
     // Fetch quiz metadata
@@ -23,7 +23,7 @@ export async function getQuiz(slug: string): Promise<Result | null> {
     })
 
     if (!quiz) {
-      return null;
+      return null
     }
 
     // Fetch full quiz details
@@ -54,7 +54,7 @@ export async function getQuiz(slug: string): Promise<Result | null> {
     })
 
     if (!result) {
-      return null;
+      return null
     }
 
     // Transform questions
@@ -72,21 +72,14 @@ export async function getQuiz(slug: string): Promise<Result | null> {
     }))
 
     // Return structured response
-    const response= {
+    return {
       id: result.id,
-      userId: result.userId as string,
+      userId: result.userId,
       title: result.title,
       questions: transformedQuestions,
     }
-
-    const serializedResult = JSON.parse(
-      JSON.stringify(response, (key, value) =>
-        typeof value === "bigint" ? value.toString() : value instanceof Date ? value.toISOString() : value,
-      ),
-    )
-    return serializedResult as Result;
   } catch (error) {
     console.error("Error fetching quiz:", error)
-    return null;
+    return null
   }
 }
