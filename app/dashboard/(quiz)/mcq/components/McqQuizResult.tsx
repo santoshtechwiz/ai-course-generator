@@ -8,8 +8,9 @@ import { motion } from "framer-motion"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { QuizResultDisplay } from "../../components/QuizResultDisplay"
-import { useQuizResult } from "@/hooks/useQuizResult"
 
+import { quizService } from "@/lib/QuizService" // Import QuizService
+import { useQuizResult } from "@/hooks/useQuizResult"
 
 interface McqQuizResultProps {
   quizId: number
@@ -43,6 +44,7 @@ export default function McqQuizResult({
   const [score, setScore] = useState(initialScore || 0)
   const [isRecovering, setIsRecovering] = useState(false)
   const [totalTime, setTotalTime] = useState<number>(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Hooks
   const { data: session, status } = useSession()
@@ -50,7 +52,7 @@ export default function McqQuizResult({
   const isLoggedIn = status === "authenticated"
 
   // Use the quiz result hook
-  const { isLoading, isSaving, error, correctAnswers } = useQuizResult({
+  const { isLoading, isSaving, error, saveResult, correctAnswers } = useQuizResult({
     quizId: String(quizId),
     slug,
     answers,
@@ -74,7 +76,7 @@ export default function McqQuizResult({
 
       // Recalculate score if needed
       if (initialScore === 0 || initialScore === undefined) {
-        const calculatedScore = calculateScore(initialAnswersProp, "mcq")
+        const calculatedScore = quizService.calculateScore(initialAnswersProp, "mcq")
         setScore(calculatedScore)
       }
     } else {
@@ -128,35 +130,31 @@ export default function McqQuizResult({
       )
     }
 
-    // Safety check for answers array
-    const safeAnswers = answers || []
-    const safeTotalQuestions = totalQuestions || safeAnswers.length || 1
-
     return (
       <>
         <QuizResultDisplay
           quizId={String(quizId)}
-          title={title || "Quiz"}
-          score={score || 0}
-          totalQuestions={safeTotalQuestions}
+          title={title}
+          score={score}
+          totalQuestions={totalQuestions}
           totalTime={totalTime}
           correctAnswers={correctAnswers}
           type="mcq"
           slug={slug}
-          answers={safeAnswers}
+          answers={answers}
           onRestart={onRestart}
           showAuthModal={false}
           startTime={startTime}
         />
 
         {error && (
-          <Alert variant="destructive" className="mt-4 max-w-4xl mx-auto">
+          <Alert variant="destructive" className="mt-4">
             <AlertTitle>Error saving results</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        {isSaving && (
+        {isSubmitting && (
           <div className="mt-4 text-center">
             <p className="text-muted-foreground">Saving your results...</p>
           </div>

@@ -14,8 +14,9 @@ import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { QuizProgress } from "../../components/QuizProgress"
 import { QuizFeedback } from "../../components/QuizFeedback"
 import { QuizLoader } from "@/components/ui/quiz-loader"
-import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
+
 import { useSession } from "next-auth/react"
+import { useQuiz } from "@/app/context/QuizContext"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]

@@ -14,8 +14,8 @@ import QuizActions from "../../components/QuizActions"
 import CodingQuiz from "./CodingQuiz"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { QuizFeedback } from "../../components/QuizFeedback"
-import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
-import { useQuizResult } from "@/app/dashboard/(quiz)/hooks/useQuizResult"
+import { useQuizResult } from "@/hooks/useQuizResult"
+
 
 // Improved error handling for API requests
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
@@ -115,7 +115,7 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     }
   }, [quizData?.quizId])
 
-  // Complete quiz function
+  // Fix the quiz completion logic to be more robust
   const completeQuiz = async (finalAnswers: any[] = []) => {
     console.log("Completing quiz with answers:", finalAnswers)
 

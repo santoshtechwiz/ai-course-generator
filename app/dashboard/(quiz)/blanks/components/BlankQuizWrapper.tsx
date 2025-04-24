@@ -13,9 +13,11 @@ import { QuizFeedback } from "../../components/QuizFeedback"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
+
 import { quizStorageService } from "@/lib/quiz-storage-service"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
+import { quizService } from "@/lib/QuizService" // Import QuizService
+import { useQuiz } from "@/app/context/QuizContext"
 
 interface BlankQuizWrapperProps {
   quizData: any
@@ -53,116 +55,118 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
 
   // Initialize quiz state
   useEffect(() => {
-    let hasCompletedParam = false
-    let savedResult = null
-    let savedAnswers = null
-    let guestResult = null
-    let savedState = null
+    let guestResult: any
+    let savedResult: any
+    let savedAnswers: any
+    let savedState: any
 
-    if (typeof window !== "undefined" && status !== "loading") {
-      setIsLoading(true)
-      try {
-        // Check if we have a completed quiz state in the URL query params
-        const urlParams = new URLSearchParams(window.location.search)
-        hasCompletedParam = urlParams.get("completed") === "true"
+    const initializeQuiz = async () => {
+      if (typeof window !== "undefined" && status !== "loading") {
+        setIsLoading(true)
+        try {
+          // Check if we have a completed quiz state in the URL query params
+          const urlParams = new URLSearchParams(window.location.search)
+          const hasCompletedParam = urlParams.get("completed") === "true"
 
-        console.log("URL params check:", {
-          hasCompletedParam,
-          completed: urlParams.get("completed"),
-          search: window.location.search,
-        })
+          console.log("URL params check:", {
+            hasCompletedParam,
+            completed: urlParams.get("completed"),
+            search: window.location.search,
+          })
 
-        // Check if user just signed in
-        const wasSignedOut = sessionStorage.getItem("wasSignedIn") === "false"
-        const isNowSignedIn = status === "authenticated" && wasSignedOut
+          // Check if user just signed in
+          const wasSignedOut = sessionStorage.getItem("wasSignedIn") === "false"
+          const isNowSignedIn = status === "authenticated" && wasSignedOut
 
-        // If user just signed in, check for guest results to display FIRST
-        if (isNowSignedIn) {
-          console.log("User just signed in, checking for guest results")
-          guestResult = quizStorageService.getGuestResult(quizData.id)
+          // If user just signed in, check for guest results to display FIRST
+          if (isNowSignedIn) {
+            console.log("User just signed in, checking for guest results")
+            guestResult = quizService.getGuestResult(quizData.id)
 
-          if (guestResult) {
-            console.log("Found guest result after sign in:", guestResult)
-            if (guestResult.answers && guestResult.answers.length > 0) {
-              setAnswers(guestResult.answers)
-              setIsCompleted(true)
-              setIsLoading(false)
+            if (guestResult) {
+              console.log("Found guest result after sign in:", guestResult)
+              if (guestResult.answers && guestResult.answers.length > 0) {
+                setAnswers(guestResult.answers)
+                setIsCompleted(true)
+                setIsLoading(false)
 
-              // Update sessionStorage to prevent this check on subsequent loads
-              sessionStorage.setItem("wasSignedIn", "true")
-              return
+                // Update sessionStorage to prevent this check on subsequent loads
+                sessionStorage.setItem("wasSignedIn", "true")
+                return
+              }
             }
           }
-        }
 
-        // First check for saved result in storage
-        savedResult = quizStorageService.getQuizResult(quizData.id)
-        console.log("Checking for saved result:", savedResult)
+          // First check for saved result in storage
+          savedResult = quizService.getQuizResult(quizData.id)
+          console.log("Checking for saved result:", savedResult)
 
-        // If we have a completed param or saved results, show the results immediately
-        if (hasCompletedParam || savedResult) {
-          console.log("Found completed quiz state or saved results", savedResult)
-          if (savedResult && savedResult.answers) {
-            console.log("Setting answers from saved result:", savedResult.answers)
-            setAnswers(savedResult.answers || [])
-          }
-          setIsCompleted(true)
-          setIsLoading(false)
-          return
-        }
-
-        // Try to load answers from storage
-        savedAnswers = quizStorageService.getQuizAnswers(quizData.id)
-        if (savedAnswers && savedAnswers.length > 0) {
-          console.log("Found saved answers in storage:", savedAnswers)
-          setAnswers(savedAnswers)
-
-          // If we also have a completed param, show the results
-          if (hasCompletedParam) {
-            console.log("Setting isCompleted to true based on URL param")
+          // If we have a completed param or saved results, show the results immediately
+          if (hasCompletedParam || savedResult) {
+            console.log("Found completed quiz state or saved results", savedResult)
+            if (savedResult && savedResult.answers) {
+              console.log("Setting answers from saved result:", savedResult.answers)
+              setAnswers(savedResult.answers || [])
+            }
             setIsCompleted(true)
+            setIsLoading(false)
+            return
           }
 
+          // Try to load answers from storage
+          savedAnswers = quizStorageService.getQuizAnswers(quizData.id)
+          if (savedAnswers && savedAnswers.length > 0) {
+            console.log("Found saved answers in storage:", savedAnswers)
+            setAnswers(savedAnswers)
+
+            // If we also have a completed param, show the results
+            if (hasCompletedParam) {
+              console.log("Setting isCompleted to true based on URL param")
+              setIsCompleted(true)
+            }
+
+            setIsLoading(false)
+            return
+          }
+
+          // Update signed in state
+          sessionStorage.setItem("wasSignedIn", status === "authenticated" ? "true" : "false")
+
+          // Check for saved state in storage
+          savedState = quizService.getQuizState(quizData.id, "blanks")
+          console.log("Checking saved state:", savedState)
+
+          // Check if there's a saved state for this quiz, restore it
+          if (savedState) {
+            setCurrentQuestion(savedState.currentQuestion)
+            setStartTime(savedState.startTime)
+            setIsCompleted(savedState.isCompleted)
+
+            if (savedState.answers) {
+              console.log("Setting answers from saved state:", savedState.answers)
+              setAnswers(savedState.answers)
+            }
+
+            // If quiz was completed, show results
+            if (savedState.isCompleted) {
+              setIsCompleted(true)
+            }
+          }
+        } catch (err: any) {
+          console.error("Error loading saved quiz state:", err)
+        } finally {
           setIsLoading(false)
-          return
         }
-
-        // Update signed in state
-        sessionStorage.setItem("wasSignedIn", status === "authenticated" ? "true" : "false")
-
-        // Check for saved state in storage
-        savedState = quizStorageService.getQuizState(quizData.id, "blanks")
-        console.log("Checking saved state:", savedState)
-
-        // Check if there's a saved state for this quiz, restore it
-        if (savedState) {
-          setCurrentQuestion(savedState.currentQuestion)
-          setStartTime(savedState.startTime)
-          setIsCompleted(savedState.isCompleted)
-
-          if (savedState.answers) {
-            console.log("Setting answers from saved state:", savedState.answers)
-            setAnswers(savedState.answers)
-          }
-
-          // If quiz was completed, show results
-          if (savedState.isCompleted) {
-            setIsCompleted(true)
-          }
-        }
-      } catch (err: any) {
-        console.error("Error loading saved quiz state:", err)
-      } finally {
-        setIsLoading(false)
       }
     }
+    initializeQuiz()
   }, [quizData?.id, status])
 
   // Save quiz state when navigating away
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (!isCompleted && answers.length > 0) {
-        saveQuizState({
+        quizService.saveQuizState({
           quizId: quizData.id,
           quizType: "blanks",
           slug,
@@ -179,7 +183,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [answers, currentQuestion, isCompleted, quizData.id, quizData.questions?.length, slug, startTime, saveQuizState])
+  }, [answers, currentQuestion, isCompleted, quizData.id, quizData.questions?.length, slug, startTime])
 
   // Save answers whenever they change
   useEffect(() => {
@@ -247,7 +251,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
       }
 
       // Save to storage
-      quizStorageService.saveQuizResult(result)
+      quizService.saveQuizResult(result)
       console.log("Saved result to storage:", result)
 
       // Set isCompleted to true before showing feedback
@@ -366,7 +370,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
     setError(null)
 
     // Clear saved state
-    quizStorageService.clearQuizState(quizData.id, "blanks")
+    quizService.clearQuizState(quizData.id, "blanks")
 
     // Force a refresh to ensure all components are reset
     router.refresh()
@@ -491,7 +495,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
               quizId={quizData.id}
               title={quizData.title}
               slug={slug}
-              clearGuestData={() => quizStorageService.clearQuizState(quizData.id, "blanks")}
+              clearGuestData={() => quizService.clearQuizState(quizData.id, "blanks")}
               startTime={startTime}
             />
           </motion.div>

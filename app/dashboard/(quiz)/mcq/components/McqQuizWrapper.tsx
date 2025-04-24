@@ -16,6 +16,7 @@ import McqQuiz from "./McqQuiz"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { QuizFeedback } from "../../components/QuizFeedback"
 import McqQuizResult from "./McqQuizResult"
+import { quizService } from "@/lib/QuizService" // Import QuizService
 import { useQuiz } from "@/app/context/QuizContext"
 
 interface McqQuizWrapperProps {
@@ -97,7 +98,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
             console.log("Detected completed=true in URL, showing results")
 
             // Check for saved result to get the score and answers
-            const savedResult = quizId ? quizStorageService.getQuizResult(quizId) : null
+            const savedResult = quizService.getQuizResult(quizId)
 
             if (savedResult) {
               console.log("Found saved result:", savedResult)
@@ -116,7 +117,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
           }
 
           // If not completed via URL, check for saved result
-          const savedResult = quizId ? quizStorageService.getQuizResult(quizId) : null
+          const savedResult = quizService.getQuizResult(quizId)
 
           if (savedResult && savedResult.isCompleted) {
             console.log("Found completed saved result:", savedResult)
@@ -128,15 +129,15 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
           }
 
           // Check for saved answers if not completed
-          const savedAnswers = quizId ? quizStorageService.getQuizAnswers(quizId) : null
+          const savedAnswers = quizStorageService.getQuizAnswers(quizId)
           if (savedAnswers && savedAnswers.length > 0) {
             console.log("Found saved answers:", savedAnswers)
             setAnswers(savedAnswers)
           }
 
-          // Check for saved state in storage
-          const savedState = quizStorageService.getQuizState(quizId, "mcq")
-          if (savedState) {
+          // Check for saved state in session storage
+          const savedState = quizService.getQuizState(quizId, "mcq")
+          if (savedState && savedState.quizId === quizId && savedState.quizType === "mcq") {
             console.log("Found saved quiz state:", savedState)
 
             if (savedState.isCompleted) {
@@ -164,7 +165,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
             }
 
             // Clear saved state
-            quizStorageService.clearQuizState(quizId, "mcq")
+            quizService.clearQuizState(quizId, "mcq")
           }
         }
       } catch (err) {
@@ -176,7 +177,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
     }
 
     initializeQuiz()
-  }, [quizId, status, quizData, questions, router, slug])
+  }, [quizId, status, quizData, questions, router, slug, saveQuizState])
 
   // Save answers when they change
   useEffect(() => {
@@ -250,8 +251,8 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
 
         // Only save if not already saved
         if (!alreadySaved) {
-          // Save to storage
-          quizStorageService.saveQuizResult(result)
+          // Save to localStorage
+          quizService.saveQuizResult(result)
 
           // If not logged in, save to guest storage
           if (!isLoggedIn) {
@@ -289,7 +290,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
         submissionInProgress.current = false
       }
     },
-    [quizId, slug, startTime, isLoggedIn, currentQuestion, totalQuestions, saveGuestResult, saveQuizState],
+    [quizId, slug, startTime, isLoggedIn, saveGuestResult, saveQuizState],
   )
 
   // Handle answer submission
@@ -338,7 +339,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
     setShowFeedback(false)
 
     // Clear saved state
-    quizStorageService.clearQuizState(quizId, "mcq")
+    quizService.clearQuizState(quizId, "mcq")
 
     router.refresh()
   }, [router, quizId])
@@ -359,28 +360,6 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
   const handleAuthModalClose = useCallback(() => {
     setShowAuthModal(false)
   }, [])
-
-  // Clear guest data after results are displayed
-  const clearGuestData = useCallback(() => {
-    if (hasCleared) return
-
-    console.log("Clearing guest data after results displayed")
-    setHasCleared(true)
-
-    // Don't clear immediately - wait a bit to ensure results are displayed
-    setTimeout(() => {
-      if (typeof window !== "undefined") {
-        // Don't clear if we're logged in
-        if (status === "authenticated") return
-
-        // Don't clear if we're in the middle of authentication
-        if (localStorage.getItem("preserveGuestResults") === "true") return
-
-        // Clear quiz state
-        quizStorageService.clearQuizState(quizId, "mcq")
-      }
-    }, 5000) // Wait 5 seconds before clearing
-  }, [quizId, status, hasCleared])
 
   // Render content based on state
   let content
@@ -444,7 +423,6 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
         score={quizScore}
         onRestart={handleRestart}
         onSignIn={handleOpenAuthModal}
-        questions={questions} // Pass the questions array to the result component
       />
     )
   } else {

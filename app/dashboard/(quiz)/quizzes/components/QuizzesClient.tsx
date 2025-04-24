@@ -83,11 +83,12 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
           })
 
           // Transform the result to match QuizListItem type
-          const quizzes = result?.quizzes?.map((quiz: any) => ({
-            ...quiz,
-            questions: quiz.questions || [],
-            tags: quiz.tags || [],
-          })) || []
+          const quizzes =
+            result?.quizzes?.map((quiz: any) => ({
+              ...quiz,
+              questions: quiz.questions || [],
+              tags: quiz.tags || [],
+            })) || []
 
           return {
             quizzes,

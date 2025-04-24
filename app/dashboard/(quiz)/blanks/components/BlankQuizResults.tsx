@@ -9,10 +9,11 @@ import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { QuizResultBase } from "../../components/QuizResultBase"
-import { useQuizResult } from "@/app/dashboard/(quiz)/hooks/useQuizResult"
 
-import { getPerformanceLevel, getAnswerClassName } from "../../utils/quiz-utils"
-import { calculateSimilarity } from "../../hooks/quiz-session-storage"
+import { useQuizResult } from "@/hooks/useQuizResult"
+import { quizService } from "@/lib/QuizService"
+import { getPerformanceLevel, getAnswerClassName } from "@/utils/quiz-utils"
+import { calculateSimilarity } from "@/hooks/use-similarty"
 
 interface BlankQuizResultsProps {
   answers: { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]
