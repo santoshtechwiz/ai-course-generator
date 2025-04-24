@@ -36,6 +36,10 @@ class QuizResultService {
   private static instance: QuizResultService
   private resultCache: Map<string, QuizResult> = new Map()
   private pendingSaves: Map<string, Promise<any>> = new Map()
+  private saveInProgress: Set<string> = new Set()
+  private saveAttempts: Map<string, number> = new Map()
+  private MAX_SAVE_ATTEMPTS = 3
+  private saveThrottleTimeouts: Map<string, NodeJS.Timeout> = new Map()
 
   private constructor() {}
 
@@ -53,12 +57,57 @@ class QuizResultService {
     // Validate required fields
     this.validateSubmission(submission)
 
+    // Generate a unique key for this submission
+    const submissionKey = `${submission.quizId}_${submission.type}`
+
+    // Check if we've already saved this result
+    if (typeof window !== "undefined" && localStorage.getItem(`quiz_${submission.quizId}_saved`) === "true") {
+      console.log("Quiz result already saved, skipping submission")
+      return this.resultCache.get(submissionKey) || null
+    }
+
+    // Check if a save is already in progress for this quiz
+    if (this.saveInProgress.has(submissionKey)) {
+      console.log("Save already in progress for this quiz, skipping duplicate submission")
+      return null
+    }
+
+    // Check if we've exceeded the maximum number of save attempts
+    const attempts = this.saveAttempts.get(submissionKey) || 0
+    if (attempts >= this.MAX_SAVE_ATTEMPTS) {
+      console.log(`Exceeded maximum save attempts (${this.MAX_SAVE_ATTEMPTS}) for this quiz`)
+      toast({
+        title: "Error saving results",
+        description: "Maximum retry attempts reached. Please try again later.",
+        variant: "destructive",
+      })
+      return null
+    }
+
+    // Increment save attempts
+    this.saveAttempts.set(submissionKey, attempts + 1)
+
+    // Mark save as in progress
+    this.saveInProgress.add(submissionKey)
+
+    // Throttle save attempts
+    if (this.saveThrottleTimeouts.has(submissionKey)) {
+      console.log("Throttling save attempt for:", submissionKey)
+      return null
+    }
+
+    // Set throttle timeout
+    this.saveThrottleTimeouts.set(
+      submissionKey,
+      setTimeout(() => this.saveThrottleTimeouts.delete(submissionKey), 5000) // 5 seconds
+    )
+
     // Check if we already have a pending save for this quiz
-    if (this.pendingSaves.has(submission.quizId)) {
+    if (this.pendingSaves.has(submissionKey)) {
       console.log("Already saving this quiz result, waiting for completion")
       try {
-        await this.pendingSaves.get(submission.quizId)
-        return this.resultCache.get(submission.quizId) || null
+        await this.pendingSaves.get(submissionKey)
+        return this.resultCache.get(submissionKey) || null
       } catch (error) {
         console.error("Previous save attempt failed:", error)
         // Continue with a new save attempt
@@ -71,6 +120,7 @@ class QuizResultService {
     // Prepare the request payload
     const payload = {
       quizId: submission.quizId,
+      slug: submission.slug,
       answers: formattedAnswers,
       totalTime: submission.totalTime,
       score: submission.score,
@@ -82,18 +132,26 @@ class QuizResultService {
     console.log("Sending API request to save quiz result:", payload)
 
     // Create a promise for this save operation
-    const savePromise = this.executeWithRetry(() => this.saveToServer(payload))
+    const savePromise = this.executeWithRetry(() => this.saveToServer(payload, submission.slug))
 
     // Store the promise so we can track it
-    this.pendingSaves.set(submission.quizId, savePromise)
+    this.pendingSaves.set(submissionKey, savePromise)
 
     try {
       const result = await savePromise
 
       // Cache the result
       if (result) {
-        this.resultCache.set(submission.quizId, result)
+        this.resultCache.set(submissionKey, result)
+
+        // Mark as saved in localStorage to prevent duplicate submissions
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`quiz_${submission.quizId}_saved`, "true")
+        }
       }
+
+      // Reset save attempts on success
+      this.saveAttempts.set(submissionKey, 0)
 
       return result
     } catch (error) {
@@ -108,18 +166,22 @@ class QuizResultService {
 
       return null
     } finally {
-      // Remove from pending saves
-      this.pendingSaves.delete(submission.quizId)
+      // Remove from pending saves and mark as not in progress
+      this.pendingSaves.delete(submissionKey)
+      this.saveInProgress.delete(submissionKey)
     }
   }
 
   /**
    * Get quiz result from the server
    */
-  public async getQuizResult(quizId: string,slug:string): Promise<QuizResult | null> {
+  public async getQuizResult(quizId: string, slug: string): Promise<QuizResult | null> {
+    // Generate a unique key for this quiz
+    const cacheKey = `${quizId}_${slug}`
+
     // Check cache first
-    if (this.resultCache.has(quizId)) {
-      return this.resultCache.get(quizId) || null
+    if (this.resultCache.has(cacheKey)) {
+      return this.resultCache.get(cacheKey) || null
     }
 
     try {
@@ -132,7 +194,7 @@ class QuizResultService {
       const result = await response.json()
 
       // Cache the result
-      this.resultCache.set(quizId, result)
+      this.resultCache.set(cacheKey, result)
 
       return result
     } catch (error) {
@@ -146,9 +208,38 @@ class QuizResultService {
    */
   public clearCache(quizId?: string) {
     if (quizId) {
-      this.resultCache.delete(quizId)
+      // Clear all cache entries for this quiz ID
+      for (const key of this.resultCache.keys()) {
+        if (key.startsWith(`${quizId}_`)) {
+          this.resultCache.delete(key)
+        }
+      }
+
+      // Clear pending saves for this quiz ID
+      for (const key of this.pendingSaves.keys()) {
+        if (key.startsWith(`${quizId}_`)) {
+          this.pendingSaves.delete(key)
+        }
+      }
+
+      // Clear save in progress flags for this quiz ID
+      for (const key of this.saveInProgress) {
+        if (key.startsWith(`${quizId}_`)) {
+          this.saveInProgress.delete(key)
+        }
+      }
+
+      // Clear save attempts for this quiz ID
+      for (const key of this.saveAttempts.keys()) {
+        if (key.startsWith(`${quizId}_`)) {
+          this.saveAttempts.delete(key)
+        }
+      }
     } else {
       this.resultCache.clear()
+      this.pendingSaves.clear()
+      this.saveInProgress.clear()
+      this.saveAttempts.clear()
     }
   }
 
@@ -183,6 +274,11 @@ class QuizResultService {
     if (!submission.quizId) {
       console.error("Missing quizId")
       throw new Error("Missing required field: quizId")
+    }
+
+    if (!submission.slug) {
+      console.error("Missing slug")
+      throw new Error("Missing required field: slug")
     }
 
     if (!submission.answers || !Array.isArray(submission.answers)) {
@@ -225,8 +321,8 @@ class QuizResultService {
     return formattedAnswers
   }
 
-  private async saveToServer(payload: any): Promise<QuizResult | null> {
-    const response = await fetch(`/api/quiz/${payload.slug}/complete`, {
+  private async saveToServer(payload: any, slug: string): Promise<QuizResult | null> {
+    const response = await fetch(`/api/quiz/${slug}/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -275,7 +371,10 @@ class QuizResultService {
           lastError.message.includes("deadlock") ||
           lastError.message.includes("write conflict") ||
           lastError.message.includes("network") ||
-          lastError.message.includes("timeout")
+          lastError.message.includes("timeout") ||
+          lastError.message.includes("failed to fetch") ||
+          lastError.message.includes("500") ||
+          lastError.message.includes("503")
         ) {
           retries++
           if (retries < maxRetries) {

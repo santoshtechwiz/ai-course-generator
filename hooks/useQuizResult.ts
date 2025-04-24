@@ -41,6 +41,7 @@ export function useQuizResult({
   const submissionInProgress = useRef(false)
   const saveAttemptCount = useRef(0)
   const lastSaveAttempt = useRef(0)
+  const saveThrottleTimeout = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter()
 
   // Calculate correct answers
@@ -53,13 +54,23 @@ export function useQuizResult({
     setCorrectAnswers(calculateCorrectAnswers())
   })
 
-  // Save result to server
+  // Improve the saveResult function to handle race conditions better
   const saveResult = useCallback(async () => {
     // Prevent duplicate submissions
     if (submissionInProgress.current || isSaving) {
       console.log("Preventing duplicate submission")
       return null
     }
+
+    // Throttle save attempts
+    if (saveThrottleTimeout.current) {
+      console.log("Throttling save attempt")
+      return null
+    }
+
+    saveThrottleTimeout.current = setTimeout(() => {
+      saveThrottleTimeout.current = null;
+    }, 5000); // 5 seconds
 
     // Prevent excessive save attempts
     const now = Date.now()
