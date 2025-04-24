@@ -1,12 +1,12 @@
-import { ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 
-import { nanoid } from 'nanoid';
-import slugify from 'slugify';
-import { QuizType } from "@/app/types/types";
+import { nanoid } from "nanoid"
+import slugify from "slugify"
+import type { QuizType } from "@/app/types/types"
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 
 export function formatDate(date: Date | string): string {
@@ -17,13 +17,11 @@ export function formatDate(date: Date | string): string {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-  };
+  }
 
-  const parsedDate = date instanceof Date ? date : new Date(date);
-  return new Intl.DateTimeFormat("en-US", options).format(parsedDate);
+  const parsedDate = date instanceof Date ? date : new Date(date)
+  return new Intl.DateTimeFormat("en-US", options).format(parsedDate)
 }
-
-
 
 export function getBaseUrl() {
   if (typeof window !== "undefined") return "" // browser should use relative url
@@ -31,47 +29,43 @@ export function getBaseUrl() {
   return `http://localhost:${process.env.PORT ?? 3000}` // dev SSR should use localhost
 }
 
-
 export function formatTimeDelta(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds - hours * 3600) / 60);
-  const secs = Math.floor(seconds - hours * 3600 - minutes * 60);
-  const parts = [];
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds - hours * 3600) / 60)
+  const secs = Math.floor(seconds - hours * 3600 - minutes * 60)
+  const parts = []
   if (hours > 0) {
-    parts.push(`${hours}h`);
+    parts.push(`${hours}h`)
   }
   if (minutes > 0) {
-    parts.push(`${minutes}m`);
+    parts.push(`${minutes}m`)
   }
   if (secs > 0) {
-    parts.push(`${secs}s`);
+    parts.push(`${secs}s`)
   }
-  return parts.join(" ");
+  return parts.join(" ")
 }
 
 export const formatTime = (time: any): string => {
-  time = Math.round(time);
+  time = Math.round(time)
 
-  let minutes: number | string = Math.floor(time / 60);
-  let seconds: number | string = time - minutes * 60;
+  const minutes: number | string = Math.floor(time / 60)
+  let seconds: number | string = time - minutes * 60
 
-  seconds = seconds < 10 ? "0" + seconds : seconds;
+  seconds = seconds < 10 ? "0" + seconds : seconds
 
-  return `${minutes}:${seconds}`;
-};
-
-
+  return `${minutes}:${seconds}`
+}
 
 export function generateSlug(text: string): string {
   const baseSlug = slugify(text, {
     lower: true,
     strict: true,
-    trim: true
-  });
-  const uniqueId = nanoid(6); // Generate a short, unique string
-  return `${baseSlug}-${uniqueId}`;
+    trim: true,
+  })
+  const uniqueId = nanoid(6) // Generate a short, unique string
+  return `${baseSlug}-${uniqueId}`
 }
-
 
 export function getVideoQualityOptions(availableQualities: string[]): { value: string; label: string }[] {
   const defaultOptions = [
@@ -105,17 +99,16 @@ export const PLAYBACK_SPEEDS = [
 export const extractUserAnswer = (answer: Object): string | string[] => {
   if (typeof answer === "object" && answer !== null) {
     if ("userAnswer" in answer && typeof answer.userAnswer === "string") {
-      return answer.userAnswer;
+      return answer.userAnswer
     }
     if ("answer" in answer && typeof answer.answer === "string") {
-      return answer.answer;
+      return answer.answer
     }
   }
-  return "";
-};
+  return ""
+}
 
 export const buildQuizUrl = (slug: string, type: QuizType) => {
-
   switch (type) {
     case "mcq":
       return `/dashboard/mcq/${slug}`
@@ -132,13 +125,12 @@ export const buildQuizUrl = (slug: string, type: QuizType) => {
   }
 }
 
-export const  formatQuizTime = (time: number): string => {
+export const formatQuizTime = (time: number): string => {
+  const hours = Math.floor(time / 3600)
+  const minutes = Math.floor((time % 3600) / 60)
+  const seconds = time % 60
 
-  const hours = Math.floor(time / 3600);
-  const minutes = Math.floor((time % 3600) / 60);
-  const seconds = time % 60;
-
-  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`;
+  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
 }
 
 export async function markdownToHtml(markdown: string): Promise<string> {
