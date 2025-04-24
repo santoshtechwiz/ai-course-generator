@@ -55,37 +55,41 @@ export function getAnswerClassName(similarity: number) {
   }
 }
 
-// Calculate score based on answers
-export function calculateScore(answers: any[], quizType: string): number {
-  if (!answers || !Array.isArray(answers) || answers.length === 0) {
-    return 0
-  }
+// Format time for display
+export function formatQuizTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.round(seconds % 60)
+  return `${minutes}m ${remainingSeconds}s`
+}
 
-  switch (quizType) {
-    case "mcq":
-      // For MCQ, count correct answers
-      const correctCount = answers.filter((a) => a && a.isCorrect).length
-      return Math.round((correctCount / answers.length) * 100)
-
-    case "blanks":
-      // For fill-in-the-blanks, average the similarity scores
-      const totalSimilarity = answers.reduce((sum, a) => sum + (a.similarity || 0), 0)
-      return Math.round(totalSimilarity / answers.length)
-
-    case "openended":
-      // For open-ended, average the similarity scores
-      const openEndedSimilarity = answers.reduce((sum, a) => sum + (a.similarity || 0), 0)
-      return Math.round(openEndedSimilarity / answers.length)
-
-    case "code":
-      // For code quizzes, count correct answers
-      const codeCorrectCount = answers.filter((a) => a && a.isCorrect).length
-      return Math.round((codeCorrectCount / answers.length) * 100)
-
-    default:
-      // Default scoring method
-      const defaultCorrectCount = answers.filter((a) => a && a.isCorrect).length
-      return Math.round((defaultCorrectCount / answers.length) * 100)
+// Create a standardized quiz result object
+export function createQuizResult(
+  quizId: string,
+  slug: string,
+  quizType: string,
+  score: number,
+  answers: any[],
+  totalTime: number,
+) {
+  return {
+    quizId,
+    slug,
+    quizType,
+    score,
+    answers,
+    totalTime,
+    timestamp: Date.now(),
+    isCompleted: true,
   }
 }
 
+// Safely parse URL parameters
+export function getUrlParams(): URLSearchParams {
+  if (typeof window === "undefined") return new URLSearchParams()
+  return new URLSearchParams(window.location.search)
+}
+
+// Check if a quiz is completed from URL
+export function isQuizCompletedFromUrl(): boolean {
+  return getUrlParams().get("completed") === "true"
+}

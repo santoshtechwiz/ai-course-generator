@@ -151,4 +151,3 @@ export function QuizResults({ totalCards, knownCards, reviewCards, savedCards, t
     </div>
   )
 }
-

@@ -75,7 +75,10 @@ export function QuizResultBase({
 
       // Set a timeout to clear data after the user has had time to view results
       const timer = setTimeout(() => {
-        clearGuestData()
+        // Only clear if we're still on the results page
+        if (document.visibilityState === "visible") {
+          clearGuestData()
+        }
       }, 300000) // Clear after 5 minutes
 
       return () => clearTimeout(timer)
@@ -93,11 +96,12 @@ export function QuizResultBase({
     showAuthModal,
   ])
 
+  // Cleanup function to run when component unmounts
   useEffect(() => {
-    // Cleanup function to run when component unmounts
     return () => {
       // If clearGuestData is provided, call it when component unmounts
-      if (clearGuestData) {
+      // but only if we're not in the middle of an auth flow
+      if (clearGuestData && !localStorage.getItem("preserveGuestResults")) {
         clearGuestData()
       }
     }
@@ -170,5 +174,9 @@ export function QuizResultBase({
   }
 
   // For authenticated users, render the children
-  return <QuizAuthWrapper>{children}</QuizAuthWrapper>
+  return (
+    <QuizAuthWrapper quizId={quizId} quizType={quizType} slug={slug}>
+      {children}
+    </QuizAuthWrapper>
+  )
 }

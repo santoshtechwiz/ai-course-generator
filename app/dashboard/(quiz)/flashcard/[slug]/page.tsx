@@ -52,8 +52,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     ],
     ogType: "article",
     ogImage: `/api/og?title=${encodeURIComponent(quiz.title)}&description=${encodeURIComponent("Interactive Programming Flashcards")}`,
-  });
-  
+  })
 }
 
 interface FlashCardsPageProps {
@@ -132,4 +131,3 @@ function FlashcardSkeleton() {
     </div>
   )
 }
-

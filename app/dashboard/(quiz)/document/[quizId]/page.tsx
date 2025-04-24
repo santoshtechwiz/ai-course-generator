@@ -9,7 +9,6 @@ import { Home, ArrowLeft } from "lucide-react"
 import { quizStore } from "@/lib/quiz-store"
 import { QuizPlayer } from "../components/QuizPlay"
 
-
 export default function PlayQuizPage() {
   const params = useParams()
   const quizId = params.quizId as string
@@ -67,4 +66,3 @@ export default function PlayQuizPage() {
     </div>
   )
 }
-

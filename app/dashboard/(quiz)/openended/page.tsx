@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import QuizCreationPage from "../components/QuizCreationPage"
 
-
 export const metadata: Metadata = {
   title: "Free Open-Ended Quizzes Generator",
   description:
@@ -87,4 +86,3 @@ const Page = async () => {
 }
 
 export default Page
-

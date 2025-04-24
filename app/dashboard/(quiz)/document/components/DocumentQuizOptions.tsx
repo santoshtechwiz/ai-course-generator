@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
@@ -35,9 +34,8 @@ export function DocumentQuizOptions({ onOptionsChange }: DocumentQuizOptionsProp
           value={options.numberOfQuestions}
           onValueChange={(value) => handleChange("numberOfQuestions", value)}
         />
-     </div>
-     
-  
+      </div>
+
       <div>
         <Label>Difficulty</Label>
         <Slider
@@ -56,4 +54,3 @@ export function DocumentQuizOptions({ onOptionsChange }: DocumentQuizOptionsProp
     </div>
   )
 }
-

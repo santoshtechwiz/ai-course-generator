@@ -1,3 +1,5 @@
+"use client"
+
 import type React from "react"
 import Editor from "@monaco-editor/react"
 
@@ -29,4 +31,3 @@ const CodeQuizEditor: React.FC<CodeQuizEditorProps> = ({ value, language, readOn
 }
 
 export default CodeQuizEditor
-

@@ -4,7 +4,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-export interface SliderProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'defaultValue'> {
+export interface SliderProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, "defaultValue"> {
   defaultValue?: number[]
   value?: number[]
   onValueChange?: (value: number[]) => void
@@ -70,4 +70,3 @@ const Slider = React.forwardRef<HTMLSpanElement, SliderProps>(
 Slider.displayName = "Slider"
 
 export { Slider }
-

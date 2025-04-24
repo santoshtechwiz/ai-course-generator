@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
-import { toast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
+import { useState, useRef, useCallback, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { useSession } from "next-auth/react"
 import type { QuizType } from "@/app/types/quiz-types"
 import { quizStorageService, type QuizAnswer } from "@/lib/quiz-storage-service"
 
@@ -14,7 +14,7 @@ interface UseQuizResultProps {
   score: number
   quizType: QuizType
   totalQuestions: number
-  isAuthenticated: boolean
+  startTime?: number
 }
 
 export function useQuizResult({
@@ -25,47 +25,112 @@ export function useQuizResult({
   score,
   quizType,
   totalQuestions,
-  isAuthenticated,
+  startTime,
 }: UseQuizResultProps) {
+  const { data: session, status } = useSession()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [correctAnswers, setCorrectAnswers] = useState(0)
   const submissionInProgress = useRef(false)
-  const router = useRouter()
+  const hasSavedRef = useRef(false)
+  const storageKey = `quiz_${quizId}_saved`
 
-  const saveResult = useCallback(() => {
-    if (submissionInProgress.current || isSaving) return
-
-    if (!quizType || !slug) {
-      setError("Invalid quiz type or slug.")
-      return
+  // Calculate correct answers when answers change
+  useEffect(() => {
+    if (answers && answers.length > 0) {
+      const count = quizStorageService.countCorrectAnswers(answers, quizType)
+      setCorrectAnswers(count)
     }
+    setIsLoading(false)
+
+    // Check if already saved
+    if (typeof window !== "undefined") {
+      const alreadySaved = localStorage.getItem(storageKey) === "true"
+      if (alreadySaved) {
+        hasSavedRef.current = true
+      }
+    }
+  }, [answers, quizType, storageKey])
+
+  // Save result function
+  const saveResult = useCallback(async () => {
+    // Skip if already in progress or already saved
+    if (submissionInProgress.current || isSaving || hasSavedRef.current) return
 
     try {
       submissionInProgress.current = true
       setIsSaving(true)
       setError(null)
 
+      // Check if already saved in localStorage
+      if (typeof window !== "undefined") {
+        const alreadySaved = localStorage.getItem(storageKey) === "true"
+        if (alreadySaved) {
+          hasSavedRef.current = true
+          return
+        }
+      }
+
+      // Create the result object
       const result = {
         quizId,
+        quizType,
         slug,
+        score,
         answers,
         totalTime,
-        score,
-        type: quizType,
-        totalQuestions,
         timestamp: Date.now(),
         isCompleted: true,
       }
 
-      if (isAuthenticated) {
-        quizStorageService.saveQuizResult(result)
-        toast({ title: "Quiz completed!", description: "Your results have been saved successfully." })
-      } else {
-        quizStorageService.savePendingQuizResult(result)
-      }
+      // For authenticated users, save to server
+      if (status === "authenticated") {
+        try {
+          const response = await fetch(`/api/quiz/${slug}/complete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              quizId,
+              slug,
+              answers,
+              totalTime,
+              score,
+              type: quizType,
+              totalQuestions,
+            }),
+          })
 
-      // Redirect to the same page to render the result
-      router.push(`/dashboard/${quizType}/${slug}`)
+          if (!response.ok) {
+            throw new Error("Failed to save quiz results to server")
+          }
+
+          // Also save to local storage as backup
+          quizStorageService.saveQuizResult(result)
+
+          // Mark as saved
+          if (typeof window !== "undefined") {
+            localStorage.setItem(storageKey, "true")
+          }
+          hasSavedRef.current = true
+
+          toast({
+            title: "Quiz completed!",
+            description: "Your results have been saved successfully.",
+          })
+        } catch (err) {
+          console.error("Error saving to server:", err)
+
+          // Save to local storage as fallback
+          quizStorageService.saveQuizResult(result)
+
+          setError("Failed to save to server, but results are saved locally.")
+        }
+      } else {
+        // For unauthenticated users, save to local storage
+        quizStorageService.saveGuestResult(result)
+      }
     } catch (error: any) {
       console.error("Error saving quiz results:", error)
       setError("Failed to save quiz results. Please try again.")
@@ -73,11 +138,26 @@ export function useQuizResult({
       setIsSaving(false)
       submissionInProgress.current = false
     }
-  }, [quizId, slug, answers, totalTime, score, quizType, totalQuestions, isAuthenticated, router])
+  }, [quizId, slug, answers, totalTime, score, quizType, totalQuestions, status, toast, storageKey])
+
+  // Retry fetching results
+  const handleRetryFetch = useCallback(() => {
+    setIsLoading(true)
+    // Try to load from storage
+    const savedResult = quizStorageService.getQuizResult(quizId)
+    if (savedResult && savedResult.answers && savedResult.answers.length > 0) {
+      const count = quizStorageService.countCorrectAnswers(savedResult.answers, quizType)
+      setCorrectAnswers(count)
+    }
+    setIsLoading(false)
+  }, [quizId, quizType])
 
   return {
+    isLoading,
     isSaving,
     error,
+    correctAnswers,
     saveResult,
+    handleRetryFetch,
   }
 }

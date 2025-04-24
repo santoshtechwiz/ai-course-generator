@@ -2,7 +2,6 @@ import QuizCreationPage from "../components/QuizCreationPage"
 
 import type { Metadata } from "next"
 
-
 export const metadata: Metadata = {
   title: "Free Multiple Choice Quiz Generator",
   description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
@@ -84,4 +83,3 @@ const Page = async () => {
 }
 
 export default Page
-

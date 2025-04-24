@@ -16,9 +16,6 @@ interface GuestSignInPromptProps {
   onSkip?: () => void
 }
 
-// Update the GuestSignInPrompt component to improve the authentication flow
-// and ensure better state preservation during sign-in
-
 // Fix the fixCallbackUrl function to properly handle URL paths
 function fixCallbackUrl(url: string): string {
   if (!url) return "/dashboard"

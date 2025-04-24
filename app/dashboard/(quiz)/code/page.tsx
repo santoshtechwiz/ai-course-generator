@@ -8,8 +8,6 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import QuizDetailsPageWithContext from "../components/QuizDetailsPageWithContext"
 import CodeQuizWrapper from "./components/CodeQuizWrapper"
 
-
-
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const quiz = await getQuiz(slug)

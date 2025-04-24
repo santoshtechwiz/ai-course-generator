@@ -214,4 +214,3 @@ export function QuizPlayer({ quizId }: QuizPlayerProps) {
     </Card>
   )
 }
-

@@ -105,4 +105,3 @@ export function FileUpload({ onFileSelect, maxSizeInMB = 0.5 }: FileUploadProps)
     </div>
   )
 }
-

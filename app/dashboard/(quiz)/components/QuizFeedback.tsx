@@ -44,21 +44,6 @@ export function QuizFeedback({
   const minDisplayTimeRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownMinTime = useRef<boolean>(false)
 
-  // Debug logging
-  useEffect(() => {
-    console.log("QuizFeedback rendered with:", {
-      isSubmitting,
-      isSuccess,
-      isError,
-      score,
-      totalQuestions,
-      quizType,
-      waitForSave,
-      autoClose,
-      open,
-    })
-  }, [isSubmitting, isSuccess, isError, score, totalQuestions, quizType, waitForSave, autoClose, open])
-
   // Format the score display based on quiz type
   const scoreDisplay = () => {
     // Always display as a percentage for consistency with results page
@@ -139,7 +124,6 @@ export function QuizFeedback({
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
-        console.log("Dialog open change:", isOpen)
         // Only allow closing via the buttons, not by clicking outside
         if (!isOpen) {
           handleClose(false)
@@ -149,7 +133,6 @@ export function QuizFeedback({
       <DialogContent className="sm:max-w-md rounded-xl overflow-hidden">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-xl font-bold">Quiz Submitted!</DialogTitle>
-          {/* Fix: Remove DialogDescription wrapper to avoid p > div nesting */}
           {isError ? (
             <span className="text-red-500 flex items-center pt-2">
               <AlertCircle className="h-4 w-4 mr-2" />

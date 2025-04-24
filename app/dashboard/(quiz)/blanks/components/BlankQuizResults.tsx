@@ -11,7 +11,6 @@ import { useSession } from "next-auth/react"
 import { QuizResultBase } from "../../components/QuizResultBase"
 
 import { useQuizResult } from "@/hooks/useQuizResult"
-import { quizService } from "@/lib/QuizService"
 import { getPerformanceLevel, getAnswerClassName } from "@/utils/quiz-utils"
 import { calculateSimilarity } from "@/hooks/use-similarty"
 
