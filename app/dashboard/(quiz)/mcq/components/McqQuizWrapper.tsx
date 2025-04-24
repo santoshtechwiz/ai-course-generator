@@ -10,8 +10,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
-import { quizStorageService } from "@/lib/quiz-storage-service"
-
 import McqQuiz from "./McqQuiz"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { QuizFeedback } from "../../components/QuizFeedback"
@@ -129,7 +127,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
           }
 
           // Check for saved answers if not completed
-          const savedAnswers = quizStorageService.getQuizAnswers(quizId)
+          const savedAnswers = quizService.getQuizState(quizId, "mcq")?.answers || []
           if (savedAnswers && savedAnswers.length > 0) {
             console.log("Found saved answers:", savedAnswers)
             setAnswers(savedAnswers)
@@ -182,9 +180,23 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
   // Save answers when they change
   useEffect(() => {
     if (answers.length > 0 && quizId) {
-      quizStorageService.saveQuizAnswers(quizId, answers)
+      // Use the quizService instead of quizStorageService directly
+      const currentState = quizService.getQuizState(quizId, "mcq") || {
+        quizId,
+        quizType: "mcq",
+        slug,
+        currentQuestion,
+        totalQuestions,
+        startTime,
+        isCompleted,
+      }
+
+      quizService.saveQuizState({
+        ...currentState,
+        answers,
+      })
     }
-  }, [answers, quizId])
+  }, [answers, quizId, currentQuestion, isCompleted, slug, startTime, totalQuestions])
 
   // Save state before unload
   useEffect(() => {
@@ -251,7 +263,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
 
         // Only save if not already saved
         if (!alreadySaved) {
-          // Save to localStorage
+          // Save to localStorage using quizService
           quizService.saveQuizResult(result)
 
           // If not logged in, save to guest storage
@@ -290,7 +302,7 @@ export default function McqQuizWrapper({ quizData, slug, userId }: McqQuizWrappe
         submissionInProgress.current = false
       }
     },
-    [quizId, slug, startTime, isLoggedIn, saveGuestResult, saveQuizState],
+    [quizId, slug, startTime, isLoggedIn, saveGuestResult, saveQuizState, currentQuestion, totalQuestions],
   )
 
   // Handle answer submission

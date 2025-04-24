@@ -32,19 +32,29 @@ class QuizService {
           return quizData
       }
     } catch (error) {
-      console.error("Error fetching quiz data:", error)
-      throw error
+      console.error(`Error fetching quiz data for slug: ${slug}, type: ${quizType}`, error)
+      throw new Error("Failed to fetch quiz data. Please try again later.")
     }
   }
 
   async isAuthenticated(): Promise<boolean> {
-    const session = await getServerSession(authOptions)
-    return !!session?.user
+    try {
+      const session = await getServerSession(authOptions)
+      return !!session?.user
+    } catch (error) {
+      console.error("Error checking authentication status:", error)
+      return false
+    }
   }
 
   async getCurrentUserId(): Promise<string | undefined> {
-    const session = await getServerSession(authOptions)
-    return session?.user?.id
+    try {
+      const session = await getServerSession(authOptions)
+      return session?.user?.id
+    } catch (error) {
+      console.error("Error fetching current user ID:", error)
+      return undefined
+    }
   }
 
   saveQuizState(state: QuizState): void {
@@ -97,6 +107,10 @@ class QuizService {
 
   countCorrectAnswers(answers: QuizAnswer[], quizType: QuizType): number {
     return quizStorageService.countCorrectAnswers(answers, quizType)
+  }
+
+  getAllQuizResults(): QuizResult[] {
+    return quizStorageService.getGuestResults();
   }
 }
 

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { quizStorageService } from "@/lib/quiz-storage-service"
-import { quizService } from "@/lib/QuizService" // Import QuizService
+import { quizService } from "@/lib/QuizService"
 import { useQuiz } from "@/app/context/QuizContext"
 
 interface OpenEndedQuizWrapperProps {
@@ -40,8 +40,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   const [isLoading, setIsLoading] = useState(true)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isRecoveringAnswers, setIsRecoveringAnswers] = useState(false)
-  const [saveAttempted, setSaveAttempted] = useState(false)
-  const [hasSaved, setHasSaved] = useState(false)
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   // Hooks
   const { data: session, status } = useSession()
@@ -51,11 +50,10 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   // Refs
   const submissionInProgress = useRef(false)
   const hasSavedToDb = useRef(false)
-  const saveAttemptsRef = useRef(0)
-  const hasSavedRef = useRef(false)
 
   // Derived state
   const isLoggedIn = status === "authenticated"
+  const quizId = quizData?.id || ""
 
   // Calculate a score for open-ended questions based on answer quality
   const calculateOpenEndedScore = useCallback(
@@ -93,20 +91,26 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
 
   // Initialize quiz state
   useEffect(() => {
-    let hasCompletedParam = false
-    let savedResult = null
-    let savedAnswers = null
-    let guestResult = null
-    let savedState = null
+    if (status === "loading" || hasInitialized) return
 
-    if (typeof window !== "undefined" && status !== "loading") {
+    const initializeQuiz = async () => {
       setIsLoading(true)
       setIsRecoveringAnswers(true)
+      setHasInitialized(true)
 
       try {
+        // Check if quiz data is valid
+        if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+          console.error("Invalid quiz data:", quizData)
+          setError("Quiz data could not be loaded. Please try again later.")
+          setIsLoading(false)
+          setIsRecoveringAnswers(false)
+          return
+        }
+
         // Check if we have a completed quiz state in the URL query params
         const urlParams = new URLSearchParams(window.location.search)
-        hasCompletedParam = urlParams.get("completed") === "true"
+        const hasCompletedParam = urlParams.get("completed") === "true"
 
         console.log("URL params check:", {
           hasCompletedParam,
@@ -121,34 +125,42 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         // If user just signed in, check for guest results to display FIRST
         if (isNowSignedIn) {
           console.log("User just signed in, checking for guest results")
-          guestResult = quizService.getGuestResult(quizData.id)
+          const guestResult = quizService.getGuestResult(quizId)
 
           if (guestResult) {
             console.log("Found guest result after sign in:", guestResult)
             if (guestResult.answers && guestResult.answers.length > 0) {
               setAnswers(guestResult.answers)
+              setQuizResults({ score: guestResult.score || 0 })
               setIsCompleted(true)
               setIsLoading(false)
               setIsRecoveringAnswers(false)
 
               // Update sessionStorage to prevent this check on subsequent loads
               sessionStorage.setItem("wasSignedIn", "true")
+
+              // Clear guest result after using it
+              setTimeout(() => {
+                quizService.clearGuestResult(quizId)
+              }, 1000)
+
               return
             }
           }
         }
 
         // First check for saved result in storage
-        savedResult = quizService.getQuizResult(quizData.id)
+        const savedResult = quizService.getQuizResult(quizId)
         console.log("Checking for saved result:", savedResult)
 
         // If we have a completed param or saved results, show the results immediately
-        if (hasCompletedParam || savedResult) {
+        if (hasCompletedParam || (savedResult && savedResult.isCompleted)) {
           console.log("Found completed quiz state or saved results", savedResult)
 
           if (savedResult && savedResult.answers) {
             console.log("Setting answers from saved result:", savedResult.answers)
             setAnswers(savedResult.answers || [])
+            setQuizResults({ score: savedResult.score || 0 })
           }
 
           setIsCompleted(true)
@@ -158,7 +170,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         }
 
         // Try to load answers from storage
-        savedAnswers = quizStorageService.getQuizAnswers(quizData.id)
+        const savedAnswers = quizStorageService.getQuizAnswers(quizId)
         if (savedAnswers && savedAnswers.length > 0) {
           console.log("Found saved answers in storage:", savedAnswers)
           setAnswers(savedAnswers)
@@ -178,14 +190,14 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         sessionStorage.setItem("wasSignedIn", status === "authenticated" ? "true" : "false")
 
         // Check for saved state in storage
-        savedState = quizService.getQuizState(quizData.id, "openended")
+        const savedState = quizService.getQuizState(quizId, "openended")
         console.log("Checking saved state:", savedState)
 
         // Check if there's a saved state for this quiz, restore it
         if (savedState) {
-          setCurrentQuestion(savedState.currentQuestion)
-          setStartTime(savedState.startTime)
-          setIsCompleted(savedState.isCompleted)
+          setCurrentQuestion(savedState.currentQuestion || 0)
+          setStartTime(savedState.startTime || Date.now())
+          setIsCompleted(savedState.isCompleted || false)
 
           if (savedState.answers) {
             console.log("Setting answers from saved state:", savedState.answers)
@@ -195,27 +207,36 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
           // If quiz was completed, show results
           if (savedState.isCompleted) {
             setIsCompleted(true)
+
+            // Calculate score if not available
+            if (!quizResults) {
+              const score = calculateOpenEndedScore(savedState.answers || [])
+              setQuizResults({ score })
+            }
           }
         }
       } catch (err: any) {
         console.error("Error loading saved quiz state:", err)
+        setError("Failed to load quiz state. Please try again.")
       } finally {
         setIsLoading(false)
         setIsRecoveringAnswers(false)
       }
     }
-  }, [quizData?.id, status])
+
+    initializeQuiz()
+  }, [quizId, status, quizData, calculateOpenEndedScore, quizResults])
 
   // Save quiz state when navigating away
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (!isCompleted && answers.length > 0) {
-        saveQuizState({
-          quizId: quizData.id,
+        quizService.saveQuizState({
+          quizId,
           quizType: "openended",
           slug,
           currentQuestion,
-          totalQuestions: quizData.questions?.length || 0,
+          totalQuestions: quizData?.questions?.length || 0,
           startTime,
           isCompleted,
           answers,
@@ -227,21 +248,21 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [answers, currentQuestion, isCompleted, quizData.id, quizData.questions?.length, slug, startTime, saveQuizState])
+  }, [answers, currentQuestion, isCompleted, quizId, quizData?.questions?.length, slug, startTime])
 
   // Save answers whenever they change
   useEffect(() => {
     if (answers.length > 0) {
-      quizStorageService.saveQuizAnswers(quizData.id, answers)
+      quizStorageService.saveQuizAnswers(quizId, answers)
     }
-  }, [answers, quizData.id])
+  }, [answers, quizId])
 
   // Complete quiz function
   const completeQuiz = async (finalAnswers: typeof answers) => {
     console.log("Completing quiz with answers:", finalAnswers)
 
     // Save answers to storage immediately
-    quizStorageService.saveQuizAnswers(quizData.id, finalAnswers)
+    quizStorageService.saveQuizAnswers(quizId, finalAnswers)
 
     // Prevent multiple submissions
     if (submissionInProgress.current) {
@@ -252,6 +273,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     submissionInProgress.current = true
     setIsSubmitting(true)
     setError(null)
+    setSaveError(null)
     hasSavedToDb.current = false
 
     try {
@@ -261,7 +283,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
 
       // Create the result object
       const result = {
-        quizId: quizData.id,
+        quizId,
         slug,
         quizType: "openended",
         score,
@@ -272,7 +294,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
       }
 
       // Save to storage
-      quizStorageService.saveQuizResult(result)
+      quizService.saveQuizResult(result)
       console.log("Saved result to storage:", result)
 
       // Set isCompleted to true before showing feedback
@@ -288,27 +310,21 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         console.log("User is logged in, saving to database")
 
         // Check if we've already saved this result
-        const alreadySaved = localStorage.getItem(`quiz_${quizData.id}_saved`) === "true"
+        const alreadySaved = localStorage.getItem(`quiz_${quizId}_saved`) === "true"
         if (alreadySaved) {
           console.log("Results already saved, skipping submission")
-          setHasSaved(true)
-          hasSavedRef.current = true
+          hasSavedToDb.current = true
           return
         }
 
-        // Mark that we've attempted to save to prevent multiple attempts
-        setSaveAttempted(true)
-        setSaveError(null)
-        saveAttemptsRef.current += 1
-
         try {
-          await fetch(`/api/quiz/${slug}/complete`, {
+          const response = await fetch(`/api/quiz/${slug}/complete`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              quizId: quizData.id,
+              quizId,
               slug,
               answers: finalAnswers.map((a) => ({
                 answer: a.answer,
@@ -322,10 +338,14 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
               totalQuestions: quizData.questions.length,
             }),
           })
+
+          if (!response.ok) {
+            throw new Error(`Failed to save results: ${response.status}`)
+          }
+
           console.log("Database save result successful")
           hasSavedToDb.current = true
-          setHasSaved(true)
-          localStorage.setItem(`quiz_${quizData.id}_saved`, "true")
+          localStorage.setItem(`quiz_${quizId}_saved`, "true")
         } catch (dbError) {
           console.error("Error saving to database:", dbError)
           setSaveError(dbError instanceof Error ? dbError.message : "Failed to save results to database")
@@ -343,7 +363,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
 
         // Also save to quiz state for authentication flow
         saveQuizState({
-          quizId: quizData.id,
+          quizId,
           quizType: "openended",
           slug,
           currentQuestion,
@@ -410,18 +430,14 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     setIsSuccess(false)
     setError(null)
     setSaveError(null)
-    setSaveAttempted(false)
-    setHasSaved(false)
-    hasSavedRef.current = false
-    saveAttemptsRef.current = 0
 
     // Clear saved state
-    quizService.clearQuizState(quizData.id, "openended")
-    localStorage.removeItem(`quiz_${quizData.id}_saved`)
+    quizService.clearQuizState(quizId, "openended")
+    localStorage.removeItem(`quiz_${quizId}_saved`)
 
     // Force a refresh to ensure all components are reset
     router.refresh()
-  }, [router, quizData.id])
+  }, [router, quizId])
 
   // Handle quiz completion
   const handleComplete = useCallback(
@@ -432,18 +448,11 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
       // If user is logged in, update the score in the database
       if (isLoggedIn) {
         // Check if we've already saved this result
-        const alreadySaved = localStorage.getItem(`quiz_${quizData.id}_saved`) === "true"
+        const alreadySaved = localStorage.getItem(`quiz_${quizId}_saved`) === "true"
         if (alreadySaved) {
           console.log("Results already saved, skipping submission")
-          setHasSaved(true)
-          hasSavedRef.current = true
           return
         }
-
-        // Mark that we've attempted to save to prevent multiple attempts
-        setSaveAttempted(true)
-        setSaveError(null)
-        saveAttemptsRef.current += 1
 
         fetch(`/api/quiz/${slug}/complete`, {
           method: "POST",
@@ -451,7 +460,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            quizId: quizData.id,
+            quizId,
             slug,
             answers: answers.map((a) => ({
               answer: a.answer,
@@ -465,19 +474,20 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
             totalQuestions: quizData.questions.length,
           }),
         })
-          .then(() => {
-            console.log("Database save result successful")
-            hasSavedToDb.current = true
-            setHasSaved(true)
-            localStorage.setItem(`quiz_${quizData.id}_saved`, "true")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Failed to update score: ${response.status}`)
+            }
+            localStorage.setItem(`quiz_${quizId}_saved`, "true")
+            console.log("Score updated successfully")
           })
           .catch((err) => {
             console.error("Error updating quiz score:", err)
-            setSaveError(err instanceof Error ? err.message : "Failed to save results to database")
+            setSaveError(err instanceof Error ? err.message : "Failed to update score")
           })
       }
     },
-    [answers, isLoggedIn, quizData.id, quizData.questions.length, slug, startTime],
+    [answers, isLoggedIn, quizId, quizData.questions.length, slug, startTime],
   )
 
   // Handle feedback modal continue button
@@ -489,8 +499,8 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
 
   // Memoize the current question to prevent unnecessary re-renders
   const currentQuestionData = useMemo(() => {
-    return quizData.questions?.[currentQuestion] || null
-  }, [currentQuestion, quizData.questions])
+    return quizData?.questions?.[currentQuestion] || null
+  }, [currentQuestion, quizData?.questions])
 
   // Loading state
   if (isLoading || isRecoveringAnswers) {
@@ -513,14 +523,14 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   }
 
   // Error state
-  if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+  if (error || !quizData || !quizData.questions || quizData.questions.length === 0) {
     return (
       <div className="w-full max-w-3xl mx-auto p-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error loading quiz</AlertTitle>
           <AlertDescription>
-            We couldn't load the quiz data. Please try again later.
+            {error || "We couldn't load the quiz data. Please try again later."}
             <div className="mt-4">
               <Button onClick={() => router.push("/dashboard/openended")}>Return to Quiz Creator</Button>
             </div>
@@ -534,7 +544,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   return (
     <QuizAuthWrapper
       quizState={{
-        quizId: quizData?.id,
+        quizId,
         quizType: "openended",
         quizSlug: slug,
         currentQuestion,
@@ -561,10 +571,10 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
               questions={quizData.questions}
               onRestart={handleRestart}
               onComplete={handleComplete}
-              quizId={quizData.id}
+              quizId={quizId}
               title={quizData.title}
               slug={slug}
-              clearGuestData={() => quizService.clearQuizState(quizData.id, "openended")}
+              clearGuestData={() => quizService.clearQuizState(quizId, "openended")}
               startTime={startTime}
               totalQuestions={quizData.questions.length}
               score={quizResults?.score || 0}
@@ -595,11 +605,11 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         <QuizFeedback
           isSubmitting={isSubmitting}
           isSuccess={isSuccess}
-          isError={!!error}
+          isError={!!error || !!saveError}
           score={quizResults?.score || 0}
           totalQuestions={100} // Use 100 for percentage display
           onContinue={handleFeedbackContinue}
-          errorMessage={error || undefined}
+          errorMessage={error || saveError || undefined}
           quizType="openended"
           waitForSave={true}
           autoClose={false}

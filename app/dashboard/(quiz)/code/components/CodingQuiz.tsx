@@ -51,29 +51,19 @@ export default function CodingQuiz({
 
   // Initialize with saved answers if available
   useEffect(() => {
-    if (savedAnswers && savedAnswers.length > 0) {
-      setSelectedOptions(savedAnswers.map((a) => a.answer || null))
-      setQuizCompleted(isCompleted)
+    if (savedAnswers.length > 0 && !isCompleted) {
+      setSelectedOptions(savedAnswers)
     }
   }, [savedAnswers, isCompleted])
 
   // Update elapsed time
   useEffect(() => {
-    if (quizCompleted) return
-
-    const timer = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
-
-      // Update time spent for current question
-      setTimeSpent((prev) => {
-        const updated = [...prev]
-        updated[currentQuestionIndex] = Math.floor((Date.now() - startTime) / 1000)
-        return updated
-      })
+    const interval = setInterval(() => {
+      setElapsedTime((prev) => prev + 1)
     }, 1000)
 
-    return () => clearInterval(timer)
-  }, [startTime, currentQuestionIndex, quizCompleted])
+    return () => clearInterval(interval)
+  }, [])
 
   const currentQuestion = useMemo(() => {
     return quizData.questions[currentQuestionIndex]

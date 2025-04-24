@@ -96,6 +96,7 @@ class QuizStorageService {
       console.log(`Saved quiz state for ${state.quizId}:`, state)
     } catch (error) {
       console.error("Error saving quiz state:", error)
+      alert("Failed to save quiz state. Please try again.")
     }
   }
 
@@ -338,6 +339,7 @@ class QuizStorageService {
       return null
     } catch (error) {
       console.error("Error loading quiz result:", error)
+      alert("Failed to load quiz result. Please refresh the page.")
       return null
     }
   }
@@ -417,15 +419,23 @@ class QuizStorageService {
    * Get all guest results
    */
   public getGuestResults(): QuizResult[] {
-    if (typeof window === "undefined") return []
+    if (typeof window === "undefined") return [];
 
     try {
-      const guestResultsKey = `${this.storagePrefix}guest_results`
-      const resultsStr = localStorage.getItem(guestResultsKey)
-      return resultsStr ? JSON.parse(resultsStr) : []
+      const guestResultsKey = `${this.storagePrefix}guest_results`;
+      const resultsStr = localStorage.getItem(guestResultsKey);
+      const pendingResultStr = localStorage.getItem("pending_quiz_result");
+
+      const results = resultsStr ? JSON.parse(resultsStr) : [];
+      if (pendingResultStr) {
+        const pendingResult = JSON.parse(pendingResultStr);
+        results.push(pendingResult);
+      }
+
+      return results;
     } catch (error) {
-      console.error("Error getting guest results:", error)
-      return []
+      console.error("Error getting guest results:", error);
+      return [];
     }
   }
 
@@ -485,6 +495,39 @@ class QuizStorageService {
       console.log("Cleared all guest results")
     } catch (error) {
       console.error("Error clearing all guest results:", error)
+    }
+  }
+
+  /**
+   * Save a pending quiz result for non-authenticated users
+   */
+  public savePendingQuizResult(result: QuizResult): void {
+    if (typeof window === "undefined") return
+
+    try {
+      localStorage.setItem("pending_quiz_result", JSON.stringify(result))
+      console.log("Saved pending quiz result:", result)
+    } catch (error) {
+      console.error("Error saving pending quiz result:", error)
+    }
+  }
+
+  /**
+   * Retrieve and clear the pending quiz result
+   */
+  public getPendingQuizResult(): QuizResult | null {
+    if (typeof window === "undefined") return null
+
+    try {
+      const resultStr = localStorage.getItem("pending_quiz_result")
+      if (resultStr) {
+        localStorage.removeItem("pending_quiz_result")
+        return JSON.parse(resultStr)
+      }
+      return null
+    } catch (error) {
+      console.error("Error retrieving pending quiz result:", error)
+      return null
     }
   }
 

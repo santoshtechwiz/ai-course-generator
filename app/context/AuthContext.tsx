@@ -283,6 +283,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [])
 
+  const handlePostSignInRedirect = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const pendingResultKey = "pending_quiz_result";
+      const pendingResult = localStorage.getItem(pendingResultKey);
+
+      if (pendingResult) {
+        const result = JSON.parse(pendingResult);
+        localStorage.removeItem(pendingResultKey);
+
+        // Redirect to results page with the quiz result
+        router.push(`/quiz/${result.slug}/results`);
+      }
+    } catch (error) {
+      console.error("Error handling post-sign-in redirect:", error);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      handlePostSignInRedirect();
+    }
+  }, [isAuthenticated, handlePostSignInRedirect]);
+
   return (
     <AuthContext.Provider
       value={{

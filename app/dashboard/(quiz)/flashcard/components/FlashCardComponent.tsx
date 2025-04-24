@@ -703,29 +703,29 @@ export function FlashCardComponent({
 
       {/* Add custom scrollbar styles */}
       <style jsx global>{`
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 4px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background-color: rgba(var(--primary), 0.2);
-          border-radius: 9999px;
-        }
-        .scrollbar-thumb-rounded::-webkit-scrollbar-thumb {
-          border-radius: 9999px;
-        }
-        .scrollbar-thumb-primary::-webkit-scrollbar-thumb {
-          background-color: rgba(var(--primary), 0.2);
-        }
-        .scrollbar-track-transparent::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .perspective-1000 {
-          perspective: 1000px;
-        }
-      `}</style>
+       .scrollbar-thin::-webkit-scrollbar {
+         width: 4px;
+       }
+       .scrollbar-thin::-webkit-scrollbar-track {
+         background: transparent;
+       }
+       .scrollbar-thin::-webkit-scrollbar-thumb {
+         background-color: rgba(var(--primary), 0.2);
+         border-radius: 9999px;
+       }
+       .scrollbar-thumb-rounded::-webkit-scrollbar-thumb {
+         border-radius: 9999px;
+       }
+       .scrollbar-thumb-primary::-webkit-scrollbar-thumb {
+         background-color: rgba(var(--primary), 0.2);
+       }
+       .scrollbar-track-transparent::-webkit-scrollbar-track {
+         background: transparent;
+       }
+       .perspective-1000 {
+         perspective: 1000px;
+       }
+     `}</style>
     </>
   )
 }
