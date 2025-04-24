@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { QuizResultBase } from "../../components/QuizResultBase"
-import { useQuizResult } from "@/app/dashboard/(quiz)/hooks/useQuizResult"
-import { calculateSimilarity, getAnswerClassName, getPerformanceLevel } from "@/app/dashboard/(quiz)/utils/quiz-utils"
+import { useQuizResult } from "@/hooks/useQuizResult"
+import { quizService } from "@/lib/QuizService"
+import { getPerformanceLevel, getAnswerClassName } from "@/utils/quiz-utils"
 
 interface QuizResultsOpenEndedProps {
   quizId: string
@@ -84,7 +85,7 @@ export default function QuizResultsOpenEnded({
 
         // Otherwise calculate it
         const question = questions[index]
-        const similarity = question ? calculateSimilarity(answer.answer || "", question.answer || "") : 0
+        const similarity = question ? quizService.calculateSimilarity(answer.answer || "", question.answer || "") : 0
 
         return {
           ...answer,
@@ -256,13 +257,6 @@ export default function QuizResultsOpenEnded({
                   Restart Quiz
                 </Button>
               </div>
-
-              {error && (
-                <Alert variant="destructive" className="mt-4">
-                  <AlertTitle>Error saving results</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
             </CardContent>
           </Card>
         </div>

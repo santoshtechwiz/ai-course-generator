@@ -6,14 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Alert } from "@/components/ui/alert"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 
 import { useRouter } from "next/navigation"
 import QuizAuthWrapper from "./QuizAuthWrapper"
 
 import {
-  AlertCircle,
   CheckCircle,
   Clock,
   FileQuestion,
@@ -27,14 +26,13 @@ import {
   Download,
 } from "lucide-react"
 
-
 import type { QuizType } from "@/app/types/quiz-types"
 import { useToast } from "@/hooks/use-toast"
-import { QuizAnswer } from "../services/QuizResultService"
-import { useQuiz } from "@/app/context/QuizContext"
-import { useQuizResult } from "@/hooks/useQuizResult"
-import { getPerformanceLevel } from "@/utils/quiz-utils"
+import type { QuizAnswer } from "../services/QuizResultService"
+
 import { motion } from "framer-motion"
+import { getPerformanceLevel } from "@/utils/quiz-utils"
+import { useQuizResult } from "@/hooks/useQuizResult"
 
 interface QuizResultDisplayProps {
   quizId: string
@@ -70,7 +68,6 @@ export function QuizResultDisplay({
   const { data: session } = useSession()
   const { toast } = useToast()
   const router = useRouter()
-  const { getGuestResult, isAuthenticated } = useQuiz()
   const percentage = Number.parseFloat(score.toFixed(1))
   const performance = getPerformanceLevel(score)
   const minutes = Math.floor(totalTime / 60)
@@ -339,22 +336,15 @@ export function QuizResultDisplay({
 
               {saveError && (
                 <Alert variant="destructive" className="mt-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <div className="ml-2">
-                    <div className="font-medium">Error saving results</div>
-                    <div className="text-sm">{saveError}</div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => saveResult()}
-                      className="mt-2"
-                      disabled={isSaving}
-                    >
-                      <RefreshCw className="mr-2 h-3 w-3" />
-                      Retry
-                    </Button>
-                  </div>
+                  <AlertTitle>Error saving results</AlertTitle>
+                  <AlertDescription>{saveError}</AlertDescription>
                 </Alert>
+              )}
+
+              {isSaving && (
+                <div className="mt-4 text-center">
+                  <p className="text-muted-foreground">Saving your results...</p>
+                </div>
               )}
             </CardContent>
 

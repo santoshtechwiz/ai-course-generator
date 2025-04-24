@@ -13,8 +13,10 @@ import { QuizFeedback } from "../../components/QuizFeedback"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useQuiz } from "@/app/dashboard/(quiz)/context/QuizContext"
+
 import { quizStorageService } from "@/lib/quiz-storage-service"
+import { quizService } from "@/lib/QuizService" // Import QuizService
+import { useQuiz } from "@/app/context/QuizContext"
 
 interface OpenEndedQuizWrapperProps {
   quizData: any
@@ -119,7 +121,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         // If user just signed in, check for guest results to display FIRST
         if (isNowSignedIn) {
           console.log("User just signed in, checking for guest results")
-          guestResult = quizStorageService.getGuestResult(quizData.id)
+          guestResult = quizService.getGuestResult(quizData.id)
 
           if (guestResult) {
             console.log("Found guest result after sign in:", guestResult)
@@ -137,7 +139,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         }
 
         // First check for saved result in storage
-        savedResult = quizStorageService.getQuizResult(quizData.id)
+        savedResult = quizService.getQuizResult(quizData.id)
         console.log("Checking for saved result:", savedResult)
 
         // If we have a completed param or saved results, show the results immediately
@@ -176,7 +178,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         sessionStorage.setItem("wasSignedIn", status === "authenticated" ? "true" : "false")
 
         // Check for saved state in storage
-        savedState = quizStorageService.getQuizState(quizData.id, "openended")
+        savedState = quizService.getQuizState(quizData.id, "openended")
         console.log("Checking saved state:", savedState)
 
         // Check if there's a saved state for this quiz, restore it
@@ -414,7 +416,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     saveAttemptsRef.current = 0
 
     // Clear saved state
-    quizStorageService.clearQuizState(quizData.id, "openended")
+    quizService.clearQuizState(quizData.id, "openended")
     localStorage.removeItem(`quiz_${quizData.id}_saved`)
 
     // Force a refresh to ensure all components are reset
@@ -562,7 +564,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
               quizId={quizData.id}
               title={quizData.title}
               slug={slug}
-              clearGuestData={() => quizStorageService.clearQuizState(quizData.id, "openended")}
+              clearGuestData={() => quizService.clearQuizState(quizData.id, "openended")}
               startTime={startTime}
               totalQuestions={quizData.questions.length}
               score={quizResults?.score || 0}

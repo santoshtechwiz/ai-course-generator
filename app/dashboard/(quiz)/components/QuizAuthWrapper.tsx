@@ -1,13 +1,11 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState, useRef } from "react"
 import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useQuiz } from "@/app/context/QuizContext"
-import { clearAllQuizData } from "@/lib/quiz-result-service"
+import { quizService } from "@/lib/QuizService" // Import the QuizService
 
 interface QuizAuthWrapperProps {
   children: React.ReactNode
@@ -57,7 +55,6 @@ export default function QuizAuthWrapper({
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
 
-  const { saveQuizState, getQuizState, clearQuizState, isAuthenticated } = useQuiz()
   const previousAuthState = useRef(false)
 
   // Debug the current path and redirectPath
@@ -76,7 +73,7 @@ export default function QuizAuthWrapper({
 
       // If user is authenticated and there's a saved quiz state, redirect to the saved path
       if (status === "authenticated") {
-        const savedState = getQuizState()
+        const savedState = quizService.getQuizState(quizState?.quizId, quizState?.quizType)
         if (savedState && savedState.redirectPath) {
           // Check if we're already on the target page to prevent redirect loops
           const currentPath = window.location.pathname
@@ -105,18 +102,12 @@ export default function QuizAuthWrapper({
 
               console.log("Redirecting to:", redirectUrl)
               router.push(redirectUrl)
-
-              // Clear the state after redirecting
-              clearQuizState()
             }, 100)
-          } else {
-            // We're already on the target page, just clear the state
-            clearQuizState()
           }
         }
       }
     }
-  }, [status, router, hasCheckedStorage, isRedirecting, getQuizState, clearQuizState])
+  }, [status, router, hasCheckedStorage, isRedirecting, quizState?.quizId, quizState?.quizType])
 
   // Fix the useEffect that handles authentication state changes
   useEffect(() => {
@@ -125,7 +116,7 @@ export default function QuizAuthWrapper({
 
     if (wasAuthenticated && status === "unauthenticated") {
       console.log("User signed out, clearing all quiz data")
-      clearAllQuizData()
+      quizService.clearAllQuizData()
     }
 
     // Update authentication state
@@ -242,7 +233,7 @@ export default function QuizAuthWrapper({
 
                 // Save the current state before redirecting
                 if (quizState && answers) {
-                  saveQuizState({
+                  quizService.saveQuizState({
                     quizId: quizState.quizId,
                     quizType: quizState.quizType,
                     slug: quizState.quizSlug,
@@ -276,15 +267,8 @@ export default function QuizAuthWrapper({
       // Clear guest data from storage
       if (typeof window !== "undefined") {
         // Clear quiz-specific data
-        localStorage.removeItem(`guestQuizResults_${quizState.quizId}`)
-        sessionStorage.removeItem(`guestQuizResults_${quizState.quizId}`)
-
-        // Clear quiz state
-        localStorage.removeItem(`quiz_state_${quizState.quizType}_${quizState.quizId}`)
-        sessionStorage.removeItem(`quiz_state_${quizState.quizType}_${quizState.quizId}`)
-
-        // Clear answers
-        localStorage.removeItem(`quiz_answers_${quizState.quizId}`)
+        quizService.clearGuestResult(quizState.quizId)
+        quizService.clearQuizState(quizState.quizId, quizState.quizType)
 
         console.log("Cleared guest data after authentication")
       }
