@@ -184,3 +184,10 @@ export interface QuizListItem{
   updatedAt: string
   quizType: QuizType
 }
+export type QueryParams = {
+  page?: number
+  limit?: number
+  search?: string
+  sortBy?: string
+  orderBy?: "asc" | "desc"
+}
