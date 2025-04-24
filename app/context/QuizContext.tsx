@@ -365,63 +365,61 @@ export function QuizProvider({
   )
 
   const completeQuiz = useCallback(async () => {
-    dispatch({ type: "SET_SAVING", payload: true })
+    dispatch({ type: "SET_SAVING", payload: true });
 
     try {
-      // Calculate score using our storage service
-      const score = quizStorageService.calculateScore(state.answers, quizType as QuizType)
-      dispatch({ type: "SET_SCORE", payload: score })
+      const score = quizStorageService.calculateScore(state.answers, quizType as QuizType);
+      dispatch({ type: "SET_SCORE", payload: score });
 
-      // If user is logged in, save to database
-      if (session?.user) {
-        // Example API call to save results
+      const result = {
+        quizId,
+        slug,
+        quizType,
+        score,
+        answers: state.answers,
+        totalTime: state.timeSpent.reduce((a, b) => a + b, 0),
+        timestamp: Date.now(),
+        isCompleted: true,
+      };
+
+      if (isAuthenticated) {
+        // Save results to the server for authenticated users
         const response = await fetch(`/api/quiz/${slug}/complete`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            quizId,
-            answers: state.answers,
-            timeSpent: state.timeSpent,
-            score,
-            type: quizType,
-            totalQuestions: questionCount,
-          }),
-        })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(result),
+        });
 
-        if (!response.ok) {
-          throw new Error("Failed to save quiz results")
-        }
+        if (!response.ok) throw new Error("Failed to save quiz results");
+
+        dispatch({ type: "SET_COMPLETED", payload: true });
+        dispatch({
+          type: "SHOW_FEEDBACK",
+          payload: { show: true, message: `Quiz completed! Your score: ${score}%` },
+        });
+      } else {
+        // Save results temporarily in localStorage for non-authenticated users
+        quizStorageService.saveGuestResult(result);
+        setShowSignInPrompt(true);
       }
-
-      dispatch({ type: "SET_COMPLETED", payload: true })
-      dispatch({
-        type: "SHOW_FEEDBACK",
-        payload: {
-          show: true,
-          message: `Quiz completed! Your score: ${score}%`,
-        },
-      })
     } catch (error) {
       dispatch({
         type: "SET_ERROR",
         payload: error instanceof Error ? error.message : "An error occurred",
-      })
+      });
     } finally {
-      dispatch({ type: "SET_SAVING", payload: false })
+      dispatch({ type: "SET_SAVING", payload: false });
     }
   }, [
     dispatch,
     quizStorageService,
     state.answers,
     quizType,
-    session?.user,
+    isAuthenticated,
     slug,
     quizId,
     state.timeSpent,
-    questionCount,
-  ])
+  ]);
 
   const restartQuiz = useCallback(() => {
     dispatch({ type: "RESET_QUIZ" })

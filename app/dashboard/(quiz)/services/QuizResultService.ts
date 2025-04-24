@@ -322,38 +322,58 @@ class QuizResultService {
   }
 
   private async saveToServer(payload: any, slug: string): Promise<QuizResult | null> {
-    const response = await fetch(`/api/quiz/${slug}/complete`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
+    // Add retry logic for transient errors
+    const maxRetries = 3
+    let retries = 0
 
-    if (!response.ok) {
-      let errorMessage = `Failed to save quiz result: ${response.status}`
-
+    while (retries < maxRetries) {
       try {
-        const errorData = await response.json()
-        if (errorData.error) {
-          errorMessage = errorData.error
-        }
-      } catch (e) {
-        // If JSON parsing fails, try to get the text response
-        try {
-          const errorText = await response.text()
-          if (errorText) {
-            errorMessage += ` - ${errorText}`
+        const response = await fetch(`/api/quiz/${slug}/complete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) {
+          let errorMessage = `Failed to save quiz result: ${response.status}`
+
+          try {
+            const errorData = await response.json()
+            if (errorData.error) {
+              errorMessage = errorData.error
+            }
+          } catch (e) {
+            // If JSON parsing fails, try to get the text response
+            try {
+              const errorText = await response.text()
+              if (errorText) {
+                errorMessage += ` - ${errorText}`
+              }
+            } catch (textError) {
+              // If text extraction fails, just use the status code error
+            }
           }
-        } catch (textError) {
-          // If text extraction fails, just use the status code error
+
+          throw new Error(errorMessage)
+        }
+
+        return await response.json()
+      } catch (error) {
+        const isTransientError = ["network", "timeout", "500", "503"].some((e) =>
+          error.message.includes(e)
+        )
+        if (isTransientError) {
+          retries++
+          await new Promise((resolve) => setTimeout(resolve, 1000 * retries))
+        } else {
+          throw error
         }
       }
-
-      throw new Error(errorMessage)
     }
 
-    return await response.json()
+    return null
   }
 
   private async executeWithRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 1000): Promise<T> {

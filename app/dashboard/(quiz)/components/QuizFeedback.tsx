@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2, CheckCircle, AlertCircle, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { QuizType } from "@/app/types/quiz-types"
-
+import type { QuizType } from "@/app/types/quiz-types"
 
 interface QuizFeedbackProps {
   isSubmitting: boolean
@@ -33,9 +34,15 @@ export function QuizFeedback({
   waitForSave = true,
   autoClose = false,
 }: QuizFeedbackProps) {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+
   const [open, setOpen] = useState(true)
   const [showIcon, setShowIcon] = useState(false)
   const [buttonEnabled, setButtonEnabled] = useState(!waitForSave)
+  const autoCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const minDisplayTimeRef = useRef<NodeJS.Timeout | null>(null)
+  const hasShownMinTime = useRef<boolean>(false)
 
   // Debug logging
   useEffect(() => {
@@ -64,35 +71,68 @@ export function QuizFeedback({
       setShowIcon(true)
     }, 1500)
 
-    // Enable the button after loading is complete
-    const buttonTimer = setTimeout(
-      () => {
+    // Ensure the modal is shown for at least 2 seconds
+    if (!hasShownMinTime.current) {
+      minDisplayTimeRef.current = setTimeout(() => {
+        hasShownMinTime.current = true
+        // Enable the button after minimum display time
         setButtonEnabled(true)
-      },
-      waitForSave ? 2000 : 0,
-    )
+      }, 2000)
+    }
 
-    // Auto-close the dialog after 3 seconds if autoClose is true and there's no error
-    let closeTimer: NodeJS.Timeout | null = null
-    if (autoClose && !isSubmitting && !isError) {
-      closeTimer = setTimeout(() => {
+    // Auto-close the dialog after 5 seconds if autoClose is true and there's no error
+    if (autoClose && !isSubmitting && !isError && hasShownMinTime.current) {
+      autoCloseTimeoutRef.current = setTimeout(() => {
         setOpen(false)
         onContinue(true)
-      }, 3000)
+      }, 5000) // Increased from 3s to 5s to give users more time
     }
 
     return () => {
       clearTimeout(iconTimer)
-      clearTimeout(buttonTimer)
-      if (closeTimer) clearTimeout(closeTimer)
+      if (minDisplayTimeRef.current) clearTimeout(minDisplayTimeRef.current)
+      if (autoCloseTimeoutRef.current) clearTimeout(autoCloseTimeoutRef.current)
     }
-  }, [isSubmitting, isError, waitForSave, autoClose, onContinue])
+  }, [isSubmitting, isError, autoClose, onContinue])
+
+  // Reset the auto-close timer when submission state changes
+  useEffect(() => {
+    // Clear any existing auto-close timer
+    if (autoCloseTimeoutRef.current) {
+      clearTimeout(autoCloseTimeoutRef.current)
+      autoCloseTimeoutRef.current = null
+    }
+
+    // If we're no longer submitting and auto-close is enabled, start a new timer
+    if (!isSubmitting && autoClose && !isError && hasShownMinTime.current) {
+      autoCloseTimeoutRef.current = setTimeout(() => {
+        setOpen(false)
+        onContinue(true)
+      }, 5000)
+    }
+
+    // Enable the button when submission completes
+    if (!isSubmitting && hasShownMinTime.current) {
+      setButtonEnabled(true)
+    }
+
+    return () => {
+      if (autoCloseTimeoutRef.current) clearTimeout(autoCloseTimeoutRef.current)
+    }
+  }, [isSubmitting, autoClose, isError, onContinue])
+
+  const handleSignIn = () => {
+    router.push("/auth/signin")
+  }
 
   // Handle dialog close
   const handleClose = (proceed: boolean) => {
-    console.log("Dialog close triggered, proceed:", proceed)
-    setOpen(false)
-    onContinue(proceed)
+    if (status !== "authenticated") {
+      handleSignIn()
+    } else {
+      setOpen(false)
+      onContinue(proceed)
+    }
   }
 
   return (

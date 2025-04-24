@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
-import { notFound } from "next/navigation"
 import { useState, useCallback, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -10,12 +9,16 @@ import { useRouter } from "next/navigation"
 import type { CodingQuizProps } from "@/app/types/types"
 
 import { Loader } from "@/components/ui/loader"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
 import QuizActions from "../../components/QuizActions"
 import CodingQuiz from "./CodingQuiz"
 import QuizAuthWrapper from "../../components/QuizAuthWrapper"
 import { QuizFeedback } from "../../components/QuizFeedback"
-import { useQuizResult } from "@/hooks/useQuizResult"
-
+import { quizService } from "@/lib/QuizService"
+import { useQuiz } from "@/app/context/QuizContext"
 
 // Improved error handling for API requests
 async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
@@ -47,9 +50,13 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
   const [isRecoveringAnswers, setIsRecoveringAnswers] = useState(false)
   const [totalTime, setTotalTime] = useState(0)
   const [score, setScore] = useState(100) // Default score for code quizzes
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   // Refs
   const submissionInProgress = useRef(false)
+  const hasSavedToDb = useRef(false)
 
   // Hooks
   const { data: session, status } = useSession()
@@ -59,31 +66,15 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
 
   const {
     data: quizData,
-    isLoading,
-    isError,
+    isLoading: isLoadingQuizData,
+    isError: isErrorQuizData,
     error: queryError,
   } = useQuery({
     queryKey: ["quizData", slug],
     queryFn: () => getQuizData(slug),
+    enabled: !!slug, // Ensure the query only runs when slug is available
     retry: 1, // Limit retries to avoid excessive API calls
     staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
-  })
-
-  // Use the quiz result hook
-  const {
-    isLoading: isSavingResult,
-    isSaving,
-    error: saveError,
-    saveResult,
-  } = useQuizResult({
-    quizId: quizData?.quizId?.toString() || "",
-    slug,
-    answers,
-    totalTime,
-    score,
-    quizType: "code",
-    totalQuestions: quizData?.quizData?.questions?.length || 1,
-    startTime,
   })
 
   // Calculate total time whenever needed
@@ -94,106 +85,192 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     }
   }, [startTime, isCompleted])
 
-  // Check for completed state in URL
+  // Initialize quiz state
   useEffect(() => {
-    if (typeof window !== "undefined" && quizData?.quizId) {
+    if (status === "loading" || !quizData || hasInitialized) return
+
+    const initializeQuiz = async () => {
       setIsRecoveringAnswers(true)
+      setHasInitialized(true)
 
       try {
         // Check URL for completed parameter
         const urlParams = new URLSearchParams(window.location.search)
         const hasCompletedParam = urlParams.get("completed") === "true"
 
-        if (hasCompletedParam) {
-          setIsCompleted(true)
+        // Check if user just signed in
+        const wasSignedOut = sessionStorage.getItem("wasSignedIn") === "false"
+        const isNowSignedIn = status === "authenticated" && wasSignedOut
+
+        // If user just signed in, check for guest results to display FIRST
+        if (isNowSignedIn) {
+          console.log("User just signed in, checking for guest results")
+          const guestResult = quizService.getGuestResult(quizData.quizId.toString())
+
+          if (guestResult) {
+            console.log("Found guest result after sign in:", guestResult)
+            if (guestResult.answers && guestResult.answers.length > 0) {
+              setAnswers(guestResult.answers)
+              setScore(guestResult.score || 100)
+              setIsCompleted(true)
+              setIsRecoveringAnswers(false)
+
+              // Update sessionStorage to prevent this check on subsequent loads
+              sessionStorage.setItem("wasSignedIn", "true")
+
+              // Clear guest result after using it
+              setTimeout(() => {
+                quizService.clearGuestResult(quizData.quizId.toString())
+              }, 1000)
+
+              return
+            }
+          }
         }
+
+        // Check for saved result in storage
+        const savedResult = quizService.getQuizResult(quizData.quizId.toString())
+        console.log("Checking for saved result:", savedResult)
+
+        // If we have a completed param or saved results, show the results immediately
+        if (hasCompletedParam || (savedResult && savedResult.isCompleted)) {
+          console.log("Found completed quiz state or saved results", savedResult)
+          if (savedResult && savedResult.answers) {
+            console.log("Setting answers from saved result:", savedResult.answers)
+            setAnswers(savedResult.answers || [])
+            setScore(savedResult.score || 100)
+          }
+          setIsCompleted(true)
+          setIsRecoveringAnswers(false)
+          return
+        }
+
+        // Check for saved state in storage
+        const savedState = quizService.getQuizState(quizData.quizId.toString(), "code")
+        console.log("Checking saved state:", savedState)
+
+        // Check if there's a saved state for this quiz, restore it
+        if (savedState) {
+          setStartTime(savedState.startTime || Date.now())
+          setIsCompleted(savedState.isCompleted || false)
+
+          if (savedState.answers) {
+            console.log("Setting answers from saved state:", savedState.answers)
+            setAnswers(savedState.answers)
+          }
+
+          // If quiz was completed, show results
+          if (savedState.isCompleted) {
+            setIsCompleted(true)
+          }
+        }
+
+        // Update signed in state
+        sessionStorage.setItem("wasSignedIn", status === "authenticated" ? "true" : "false")
       } catch (error) {
         console.error("Error checking URL parameters:", error)
+        setError("Failed to load quiz state. Please try again.")
       } finally {
         setIsRecoveringAnswers(false)
       }
     }
-  }, [quizData?.quizId])
 
-  // Fix the quiz completion logic to be more robust
-  const completeQuiz = async (finalAnswers: any[] = []) => {
-    console.log("Completing quiz with answers:", finalAnswers)
+    initializeQuiz()
+  }, [quizData, status])
 
-    // Prevent multiple submissions
-    if (submissionInProgress.current) {
-      console.log("Submission already in progress, ignoring duplicate call")
-      return
-    }
-
-    submissionInProgress.current = true
-
-    try {
-      // Update answers state
-      setAnswers(finalAnswers)
-
-      // Calculate total time
-      const calculatedTotalTime = (Date.now() - startTime) / 1000
-      setTotalTime(calculatedTotalTime)
-
-      // Create the result object
-      const result = {
-        quizId: quizData?.quizId.toString() || "",
-        slug,
-        quizType: "code",
-        score,
-        answers: finalAnswers,
-        totalTime: calculatedTotalTime,
-        timestamp: Date.now(),
-        isCompleted: true,
-      }
-
-      // Set isCompleted to true before showing feedback
-      setIsCompleted(true)
-
-      // Show feedback modal
-      setQuizResults({ score })
-      setShowFeedbackModal(true)
-
-      // If user is logged in, save to database
-      if (isLoggedIn) {
-        console.log("User is logged in, saving to database")
-        await saveResult()
-      } else {
-        console.log("User is not logged in, saving to guest storage")
-        // Save result for guest user with the correct dashboard path and completed parameter
-        const dashboardPath = `/dashboard/code/${slug}?completed=true`
-        saveGuestResult({
-          ...result,
-          redirectPath: dashboardPath,
-          isCompleted: true,
-        })
-
-        // Also save to quiz state for authentication flow
-        saveQuizState({
-          quizId: quizData?.quizId.toString() || "",
+  // Save quiz state when navigating away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (quizData && !isCompleted) {
+        quizService.saveQuizState({
+          quizId: quizData.quizId.toString(),
           quizType: "code",
           slug,
           currentQuestion: 0,
-          totalQuestions: quizData?.quizData?.questions?.length || 1,
+          totalQuestions: quizData.quizData?.questions?.length || 1,
           startTime,
-          isCompleted: true,
-          answers: finalAnswers,
-          redirectPath: dashboardPath,
+          isCompleted,
+          answers,
         })
-
-        // Show auth modal with a slight delay to ensure results are displayed first
-        setTimeout(() => {
-          setShowAuthModal(true)
-        }, 1000)
       }
-    } catch (err: any) {
-      console.error("Error completing quiz:", err)
-      // Even on error, we should show results with what we have
-      setIsCompleted(true)
-    } finally {
-      submissionInProgress.current = false
     }
-  }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [answers, isCompleted, quizData, slug, startTime])
+
+  // Fix the quiz completion logic to be more robust
+  const completeQuiz = useCallback(
+    async (finalAnswers: typeof answers) => {
+      if (submissionInProgress.current) return
+
+      submissionInProgress.current = true
+      setIsSubmitting(true)
+      setError(null)
+
+      try {
+        const validAnswers = finalAnswers.filter((a) => a !== null && a !== undefined)
+        const score = Math.round(
+          (validAnswers.reduce((sum, a) => sum + (a.similarity || 0), 0) / Math.max(1, validAnswers.length)) * 100,
+        )
+
+        setQuizResults({ score })
+
+        const result = {
+          quizId,
+          slug,
+          quizType: "code",
+          score,
+          answers: finalAnswers,
+          totalTime: (Date.now() - startTime) / 1000,
+          timestamp: Date.now(),
+          isCompleted: true,
+        }
+
+        quizService.saveQuizResult(result)
+
+        if (isLoggedIn) {
+          const response = await fetch(`/api/quiz/${slug}/complete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(result),
+          })
+
+          if (!response.ok) {
+            throw new Error(`Failed to save results: ${response.status}`)
+          }
+        }
+
+        setIsCompleted(true)
+      } catch (err) {
+        setError("Failed to complete quiz. Please try again.")
+      } finally {
+        setIsSubmitting(false)
+        submissionInProgress.current = false
+      }
+    },
+    [quizId, slug, startTime, isLoggedIn],
+  )
+
+  const handleAnswer = useCallback(
+    (answer: string, timeSpent: number, hintsUsed: boolean, similarity?: number) => {
+      setAnswers((prev) => {
+        const newAnswers = [...prev]
+        newAnswers[currentQuestion] = { answer, timeSpent, hintsUsed, similarity }
+        return newAnswers
+      })
+
+      if (currentQuestion >= totalQuestions - 1) {
+        completeQuiz([...answers, { answer, timeSpent, hintsUsed, similarity }])
+      } else {
+        setCurrentQuestion((prev) => prev + 1)
+        setStartTime(Date.now())
+      }
+    },
+    [currentQuestion, totalQuestions, completeQuiz, answers],
+  )
 
   const handleQuizComplete = useCallback(
     (quizAnswers: any[] = []) => {
@@ -220,18 +297,39 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
     setStartTime(Date.now())
     setShowFeedbackModal(false)
     setQuizResults(null)
+    setIsSubmitting(false)
+    setError(null)
+
+    // Clear saved state
+    if (quizData) {
+      quizService.clearQuizState(quizData.quizId.toString(), "code")
+      localStorage.removeItem(`quiz_${quizData.quizId}_saved`)
+    }
 
     // Force a refresh to ensure all components are reset
     router.refresh()
-  }, [router])
+  }, [router, quizData])
 
-  if (isLoading || isRecoveringAnswers) {
+  if (isLoadingQuizData || isRecoveringAnswers) {
     return <Loader />
   }
 
-  if (isError || !quizData) {
+  if (isErrorQuizData || !quizData) {
     console.error("Error loading quiz:", queryError)
-    return notFound()
+    return (
+      <div className="w-full max-w-3xl mx-auto p-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading quiz</AlertTitle>
+          <AlertDescription>
+            We couldn't load the quiz data. Please try again later.
+            <div className="mt-4">
+              <Button onClick={() => router.push("/dashboard/code")}>Return to Quiz Creator</Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
   }
 
   return (
@@ -277,13 +375,13 @@ export default function CodeQuizWrapper({ slug, userId }: CodingQuizWrapperProps
 
         {showFeedbackModal && (
           <QuizFeedback
-            isSubmitting={isSaving}
-            isSuccess={!saveError}
-            isError={!!saveError}
+            isSubmitting={isSubmitting}
+            isSuccess={!error}
+            isError={!!error}
             score={quizResults?.score || 0}
             totalQuestions={100} // Use 100 for percentage display
             onContinue={handleFeedbackContinue}
-            errorMessage={saveError || undefined}
+            errorMessage={error || undefined}
             quizType="code"
             waitForSave={true}
             autoClose={false}
