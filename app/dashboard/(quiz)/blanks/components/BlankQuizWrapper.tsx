@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
+import { GuestPrompt } from "../../components/GuestSignInPrompt"
 
 interface BlankQuizWrapperProps {
   quizData: any
@@ -30,37 +31,52 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   const router = useRouter()
   const { state, submitAnswer, completeQuiz, restartQuiz } = useQuiz()
 
-  const { quizId, title, questionCount, currentQuestionIndex, answers, isCompleted, isLoading, error, score } = state
+  const {
+    quizId,
+    title,
+    questionCount,
+    currentQuestionIndex,
+    answers,
+    isCompleted,
+    isLoading,
+    error,
+    score,
+    showAuthPrompt,
+  } = state
 
   // Get current question data
   const currentQuestionData = quizData?.questions?.[currentQuestionIndex] || null
 
   // Handle answer submission
   const handleAnswer = (answer: string, timeSpent: number, hintsUsed: boolean, similarity?: number) => {
+    // Calculate if the answer is correct based on similarity
     const isCorrect = similarity ? similarity > 80 : false
 
-    // Create answer object
+    // Create answer object with all required properties
     const answerObj = {
       answer,
       timeSpent,
       isCorrect,
       hintsUsed,
-      similarity,
+      similarity: similarity || 0,
     }
 
-    // Submit answer
+    // Submit answer to the context
     submitAnswer(answer, timeSpent, isCorrect)
 
     // If this is the last question, complete the quiz
     if (currentQuestionIndex >= questionCount - 1) {
-      const finalAnswers = [
-        ...answers.slice(0, currentQuestionIndex).map((ans) => ({
-          ...ans,
-          hintsUsed: ans.hintsUsed ?? false, // Ensure hintsUsed is always a boolean
-        })),
-        answerObj,
-      ]
-      completeQuiz(finalAnswers)
+      // Create a complete array of answers including the current one
+      const finalAnswers = [...answers]
+      finalAnswers[currentQuestionIndex] = answerObj
+
+      // Filter out any null answers before completing
+      const validAnswers = finalAnswers.filter((a) => a !== null)
+
+      // Add a small delay before completing the quiz
+      setTimeout(() => {
+        completeQuiz(validAnswers)
+      }, 800)
     }
   }
 
@@ -111,28 +127,31 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <BlankQuizResults
-              answers={answers}
-              questions={quizData.questions}
-              onRestart={restartQuiz}
-              quizId={quizId}
-              title={title || ""}
-              slug={slug}
-              onComplete={(score) => {
-                // This will be implemented later
-                console.log("Quiz completed with score:", score)
-              }}
-            />
+            {showAuthPrompt && !state.isAuthenticated ? (
+              <GuestPrompt />
+            ) : (
+              <BlankQuizResults
+                answers={answers}
+                questions={quizData.questions}
+                onRestart={restartQuiz}
+                quizId={quizId}
+                title={title || ""}
+                slug={slug}
+                onComplete={(score) => {
+                  console.log("Quiz completed with score:", score)
+                }}
+              />
+            )}
           </motion.div>
         ) : (
           <motion.div
             key="quiz"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
             {currentQuestionData && (
               <FillInTheBlanksQuiz

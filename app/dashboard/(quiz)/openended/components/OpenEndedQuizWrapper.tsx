@@ -6,6 +6,7 @@ import { AlertCircle } from "lucide-react"
 
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
+import { GuestPrompt } from "../../components/GuestSignInPrompt"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -31,7 +32,18 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
   const router = useRouter()
   const { state, submitAnswer, completeQuiz, restartQuiz } = useQuiz()
 
-  const { quizId, title, questionCount, currentQuestionIndex, answers, isCompleted, isLoading, error, score } = state
+  const {
+    quizId,
+    title,
+    questionCount,
+    currentQuestionIndex,
+    answers,
+    isCompleted,
+    isLoading,
+    error,
+    score,
+    showAuthPrompt,
+  } = state
 
   // Get current question data
   const currentQuestionData = quizData?.questions?.[currentQuestionIndex] || null
@@ -98,6 +110,9 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
     )
   }
 
+  // Update the OpenEndedQuizContent component to handle the authentication flow consistently
+
+  // In the return statement, update the content rendering logic
   return (
     <div className="w-full max-w-4xl mx-auto">
       <AnimatePresence mode="wait">
@@ -107,31 +122,34 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <QuizResultsOpenEnded
-              quizId={quizId}
-              slug={slug}
-              title={title || quizData.title || ""}
-              answers={answers}
-              questions={quizData.questions}
-              totalQuestions={questionCount}
-              startTime={state.startTime}
-              score={score}
-              onRestart={restartQuiz}
-              onSignIn={() => {
-                // This will be implemented later
-                console.log("Sign in clicked")
-              }}
-            />
+            {showAuthPrompt ? (
+              <GuestPrompt />
+            ) : (
+              <QuizResultsOpenEnded
+                quizId={quizId}
+                slug={slug}
+                title={title || quizData.title || ""}
+                answers={answers}
+                questions={quizData.questions}
+                totalQuestions={questionCount}
+                startTime={state.startTime}
+                score={score}
+                onRestart={restartQuiz}
+                onSignIn={() => {
+                  console.log("Sign in clicked")
+                }}
+              />
+            )}
           </motion.div>
         ) : (
           <motion.div
             key="quiz"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
             {currentQuestionData && (
               <OpenEndedQuizQuestion

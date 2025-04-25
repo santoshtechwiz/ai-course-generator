@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizProgress } from "../../components/QuizProgress"
+import { useQuiz } from "@/app/context/QuizContext"
 
 interface McqQuizProps {
   question: {
@@ -37,6 +38,8 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { animationsEnabled } = useAnimation()
+  const { state } = useQuiz()
+  const isCompleting = state.animationState === "completing"
 
   // Reset timer and selection when question changes
   useEffect(() => {
@@ -163,22 +166,37 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
                       ease: [0.25, 0.1, 0.25, 1],
                     }}
                   >
-                    <div
-                      className={cn(
-                        "flex items-center space-x-2 p-4 rounded-lg transition-all w-full",
-                        "border-2",
-                        selectedOption === option ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted",
-                      )}
-                      onClick={() => handleSelectOption(option)}
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      animate={
+                        isCompleting && selectedOption === option
+                          ? {
+                              scale: [1, 1.05, 1],
+                              transition: { duration: 0.5 },
+                            }
+                          : {}
+                      }
                     >
-                      <RadioGroupItem value={option} id={`option-${question.id}-${index}`} />
-                      <Label
-                        htmlFor={`option-${question.id}-${index}`}
-                        className="flex-grow cursor-pointer font-medium text-sm sm:text-base"
+                      <div
+                        className={cn(
+                          "flex items-center space-x-2 p-4 rounded-lg transition-all w-full",
+                          "border-2",
+                          selectedOption === option
+                            ? "border-primary bg-primary/5"
+                            : "border-transparent hover:bg-muted",
+                        )}
+                        onClick={() => handleSelectOption(option)}
                       >
-                        {option}
-                      </Label>
-                    </div>
+                        <RadioGroupItem value={option} id={`option-${question.id}-${index}`} />
+                        <Label
+                          htmlFor={`option-${question.id}-${index}`}
+                          className="flex-grow cursor-pointer font-medium text-sm sm:text-base"
+                        >
+                          {option}
+                        </Label>
+                      </div>
+                    </motion.div>
                   </motion.div>
                 ))}
               </RadioGroup>

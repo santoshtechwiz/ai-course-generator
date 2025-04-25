@@ -1,4 +1,5 @@
 "use client"
+
 import { useEffect, useMemo, useState } from "react"
 import React from "react"
 import { useRouter } from "next/navigation"
@@ -8,12 +9,14 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { useSession } from "next-auth/react"
+import { motion } from "framer-motion"
+import { useQuiz } from "@/app/context/QuizContext"
 
 import { getPerformanceLevel, getAnswerClassName } from "@/utils/quiz-utils"
 import { calculateSimilarity } from "@/hooks/use-similarty"
 
 interface BlankQuizResultsProps {
-  answers: { answer: string; timeSpent: number; hintsUsed: boolean; similarity?: number }[]
+  answers: { answer: string; timeSpent: number; hintsUsed?: boolean; similarity?: number }[]
   questions: { id: number; question: string; answer: string }[]
   onRestart: () => void
   onComplete: (score: number) => void
@@ -44,6 +47,9 @@ export default function BlankQuizResults({
   const [totalTime, setTotalTime] = useState<number>(0)
   const [hasCalledComplete, setHasCalledComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { state } = useQuiz()
+  const isRedirecting = state.animationState === "redirecting"
 
   // Calculate total time on mount
   useEffect(() => {
@@ -91,6 +97,7 @@ export default function BlankQuizResults({
           similarity: answers[index].similarity!,
           timeSpent: answers[index]?.timeSpent || 0,
           isCorrect: (answers[index].similarity || 0) > 80,
+          hintsUsed: answers[index]?.hintsUsed || false, // Provide a default value for hintsUsed
         }
       }
 
@@ -99,13 +106,6 @@ export default function BlankQuizResults({
       const correctAnswer = question.answer?.trim()?.toLowerCase() || ""
       const similarity = calculateSimilarity(correctAnswer, userAnswer)
 
-      // Store the similarity in the answers array for future reference
-      const updatedAnswers = [...answers]
-      if (updatedAnswers[index]) {
-        updatedAnswers[index].similarity = similarity
-        setAnswers(updatedAnswers)
-      }
-
       return {
         ...question,
         userAnswer: answers[index]?.answer?.trim() || "",
@@ -113,6 +113,7 @@ export default function BlankQuizResults({
         similarity,
         timeSpent: answers[index]?.timeSpent || 0,
         isCorrect: similarity > 80,
+        hintsUsed: answers[index]?.hintsUsed || false, // Provide a default value for hintsUsed
       }
     })
 
@@ -171,7 +172,14 @@ export default function BlankQuizResults({
   const performance = getPerformanceLevel(score)
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{
+        opacity: isRedirecting ? 0 : 1,
+        y: isRedirecting ? -20 : 0,
+      }}
+      transition={{ duration: 0.5 }}
+    >
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
@@ -181,13 +189,19 @@ export default function BlankQuizResults({
         </CardHeader>
         <CardContent>
           <div className="text-center mb-6">
-            <p className="text-3xl font-bold mb-2">{score.toFixed(1)}%</p>
-            <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
-            <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <p className="text-3xl font-bold mb-2">{score.toFixed(1)}%</p>
+              <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
+              <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
+            </motion.div>
           </div>
 
           {/* No answers warning */}
-          {answers.length === 0 ? (
+          {answers.length === 0 && (
             <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
               <p className="text-amber-800 font-medium">No answers found to display.</p>
               <p className="text-sm text-amber-700">
@@ -207,67 +221,78 @@ export default function BlankQuizResults({
                 </Button>
               </div>
             </div>
-          ) : (
-            results.map((result, index) => (
-              <Card key={result.id || index} className="mb-4">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-2">
-                    {result.question.split("_____").map((part, i, arr) => (
-                      <React.Fragment key={i}>
-                        {part}
-                        {i < arr.length - 1 && (
-                          <span className={getAnswerClassName(result.similarity)}>{result.userAnswer || "_____"}</span>
-                        )}
-                      </React.Fragment>
-                    ))}
+          )}
+
+          {/* Question results */}
+          {results.map((result, index) => (
+            <Card key={result.id || index} className="mb-4">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4 p-3 bg-muted/30 rounded-lg border border-border/50">
+                  <p className="font-medium mb-2">Question:</p>
+                  {result.question.split("_____").map((part, i, arr) => (
+                    <React.Fragment key={i}>
+                      {part}
+                      {i < arr.length - 1 && (
+                        <span className={getAnswerClassName(result.similarity)}>{result.userAnswer || "_____"}</span>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-2 mb-4">
+                  <div className="flex items-center gap-2">
+                    <strong className="min-w-[120px]">Your Answer:</strong>
+                    <span className={getAnswerClassName(result.similarity)}>
+                      {result.userAnswer || "(No answer provided)"}
+                    </span>
                   </div>
-                  <div className="flex flex-col gap-2 mb-4">
-                    <div className="flex items-center gap-2">
-                      <strong className="min-w-[120px]">Your Answer:</strong>
-                      <span className={getAnswerClassName(result.similarity)}>
-                        {result.userAnswer || "(No answer provided)"}
-                      </span>
-                    </div>
+                  {session?.user && (
                     <div className="flex items-center gap-2">
                       <strong className="min-w-[120px]">Correct Answer:</strong>
                       <span className="font-bold text-green-600 dark:text-green-400">{result.correctAnswer}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <strong className="min-w-[120px]">Accuracy:</strong>
-                      <span>{result.similarity.toFixed(1)}%</span>
-                    </div>
-                  </div>
+                  )}
                   <div className="flex items-center gap-2">
-                    {result.similarity === 100 ? (
-                      <CheckCircle className="text-green-500" />
-                    ) : result.similarity > 80 ? (
-                      <AlertTriangle className="text-yellow-500" />
-                    ) : (
-                      <XCircle className="text-red-500" />
-                    )}
-                    <span>
-                      {result.similarity === 100
-                        ? "Perfect match!"
-                        : result.similarity > 80
-                          ? "Close enough!"
-                          : "Needs improvement"}
-                    </span>
+                    <strong className="min-w-[120px]">Accuracy:</strong>
+                    <span>{result.similarity.toFixed(1)}%</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Time spent: {Math.floor(result.timeSpent / 60)}m {Math.round(result.timeSpent % 60)}s
-                  </p>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {result.similarity === 100 ? (
+                    <CheckCircle className="text-green-500" />
+                  ) : result.similarity > 80 ? (
+                    <AlertTriangle className="text-yellow-500" />
+                  ) : (
+                    <XCircle className="text-red-500" />
+                  )}
+                  <span>
+                    {result.similarity === 100
+                      ? "Perfect match!"
+                      : result.similarity > 80
+                        ? "Close enough!"
+                        : "Needs improvement"}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Time spent: {Math.floor(result.timeSpent / 60)}m {Math.round(result.timeSpent % 60)}s
+                </p>
+              </CardContent>
+            </Card>
+          ))}
 
           <div className="flex justify-center mt-6">
-            <Button onClick={handleRestart} disabled={isSaving}>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+              onClick={handleRestart}
+            >
               Restart Quiz
-            </Button>
+            </motion.button>
           </div>
 
           {error && (
@@ -277,6 +302,6 @@ export default function BlankQuizResults({
           )}
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   )
 }
