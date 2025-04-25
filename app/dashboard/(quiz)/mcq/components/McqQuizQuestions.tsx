@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useCallback } from "react"
 import { motion } from "framer-motion"
-import { HelpCircle, ArrowRight } from "lucide-react"
+import { HelpCircle, ArrowRight, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -75,9 +75,25 @@ export function McqQuizQuestions({
       }
     }
 
-    const shuffledOptions = [...uniqueOptionsSet].sort(() => Math.random() - 0.5)
+    // Use a stable seed for consistent shuffling
+    const seed = currentQuestion.id || currentQuestionIndex
+    const shuffledOptions = [...uniqueOptionsSet].sort(() => {
+      const x = Math.sin(seed * 9999) * 10000
+      return x - Math.floor(x) - 0.5
+    })
+
     return [shuffledOptions, false]
-  }, [currentQuestion])
+  }, [currentQuestion, currentQuestionIndex])
+
+  // Memoized option selection handler
+  const onOptionSelect = useCallback(
+    (option: string) => {
+      if (!isSubmitting) {
+        handleSelectOption(option)
+      }
+    },
+    [handleSelectOption, isSubmitting],
+  )
 
   // Handle error state when question has insufficient options
   if (hasError) {
@@ -104,34 +120,44 @@ export function McqQuizQuestions({
         />
       </CardHeader>
       <CardContent className="p-6">
-        <MotionTransition key={currentQuestionIndex} motionKey={""}>
+        <MotionTransition
+          key={currentQuestionIndex}
+          motionKey={currentQuestion?.id?.toString() || String(currentQuestionIndex)}
+        >
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                <h2 className="text-lg sm:text-xl font-semibold">{currentQuestion?.question}</h2>
+                <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" aria-hidden="true" />
+                <h2 className="text-lg sm:text-xl font-semibold" id="question-text">
+                  {currentQuestion?.question}
+                </h2>
               </div>
               <RadioGroup
                 value={selectedOptions[currentQuestionIndex] || ""}
-                onValueChange={handleSelectOption}
+                onValueChange={onOptionSelect}
                 className="space-y-3 w-full mt-4"
                 aria-labelledby="question-text"
               >
                 {uniqueOptions.map((option, index) => (
                   <motion.div
-                    key={`${index}-${option}`}
+                    key={`${currentQuestionIndex}-${index}-${option}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1, ease: [0.25, 0.1, 0.25, 1] }}
+                    transition={{
+                      delay: index * 0.1,
+                      duration: 0.3,
+                      ease: [0.25, 0.1, 0.25, 1],
+                    }}
                   >
                     <div
                       className={cn(
-                        "flex items-center space-x-2 p-4 rounded-lg transition-all w-full",
+                        "flex items-center space-x-3 p-4 rounded-lg transition-all w-full",
                         "border-2",
                         selectedOptions[currentQuestionIndex] === option
                           ? "border-primary bg-primary/5"
                           : "border-transparent hover:bg-muted",
                       )}
+                      onClick={() => onOptionSelect(option)}
                     >
                       <RadioGroupItem value={option} id={`option-${index}`} aria-labelledby={`option-label-${index}`} />
                       <Label
@@ -150,13 +176,14 @@ export function McqQuizQuestions({
         </MotionTransition>
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
-        <p className="text-sm text-muted-foreground">
-          Question time: {formatQuizTime(timeSpent[currentQuestionIndex] || 0)}
+        <p className="text-sm text-muted-foreground flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5 inline" aria-hidden="true" />
+          <span className="font-mono">{formatQuizTime(timeSpent[currentQuestionIndex] || 0)}</span>
         </p>
         <Button
           onClick={handleNextQuestion}
           disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
-          className="w-full sm:w-auto"
+          className="w-full sm:w-auto transition-all"
           aria-busy={isSubmitting}
         >
           {isSubmitting ? (

@@ -160,17 +160,17 @@ export interface CodeChallenge {
   explanation?: string
 }
 
-export interface CodingQuizProps {
-  quizId: string | number
-  slug: string
-  isFavorite: boolean
-  isPublic: boolean
-  ownerId?: string
-  quizData: {
-    title: string
-    questions: CodeChallenge[]
-  }
-}
+// export interface CodingQuizProps {
+//   quizId: string | number
+//   slug: string
+//   isFavorite: boolean
+//   isPublic: boolean
+//   ownerId?: string
+//   quizData: {
+//     title: string
+//     questions: CodeChallenge[]
+//   }
+// }
 
 export interface QuizListItem{
   id: string
@@ -190,4 +190,108 @@ export type QueryParams = {
   search?: string
   sortBy?: string
   orderBy?: "asc" | "desc"
+}
+
+import type React from "react"
+
+// Quiz types
+export interface Question {
+  id: string
+  question: string
+  code?: string
+  options: string[]
+  answer: string
+  explanation?: string
+  difficulty: string
+  timeLimit?: number
+}
+
+export interface QuizData {
+  id?: string
+  title: string
+  description?: string
+  questions: Question[]
+  type: "code" | "mcq" | "openended"
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface UserQuiz {
+  id: string
+  title: string
+  slug: string
+  type: "code" | "mcq" | "openended"
+  userId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CodingQuizProps {
+  quizData: QuizData
+  quizId: string
+  ownerId: string
+  isPublic: boolean
+  isFavorite: boolean
+}
+
+export interface QuizAnswer {
+  answer: string
+  timeSpent: number
+  isCorrect: boolean
+}
+
+// Quiz context types
+export interface QuizState {
+  currentQuestionIndex: number
+  questionCount: number
+  isLoading: boolean
+  error: string | null
+  isCompleted: boolean
+  showAuthPrompt: boolean
+  answers: (QuizAnswer | null)[]
+  score: number
+  timeSpent: number
+}
+
+export interface QuizContextType {
+  state: QuizState
+  submitAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
+  completeQuiz: (answers: QuizAnswer[]) => void
+  restartQuiz: () => void
+}
+
+// API response types
+export interface CreateQuizResponse {
+  userQuizId: string
+  slug: string
+}
+
+export interface BreadcrumbItem {
+  name: string
+  href: string
+}
+
+export interface QuizDetailsPageProps {
+  title: string
+  description: string
+  slug: string
+  quizType: string
+  questionCount: number
+  estimatedTime: string
+  breadcrumbItems: BreadcrumbItem[]
+  quizId: string
+  authorId: string
+  isPublic: boolean
+  isFavorite: boolean
+  children: React.ReactNode
+}
+
+export interface FlashCard {
+  
+  id: string
+  question: string
+  answer: string
+  isSaved: boolean
+  createdAt: Date
+  updatedAt: Date
 }

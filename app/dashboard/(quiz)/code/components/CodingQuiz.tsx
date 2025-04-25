@@ -1,120 +1,79 @@
 "use client"
 
-import React, { useCallback, useMemo, useState, useEffect } from "react"
+import React, { useCallback, useMemo, useState } from "react"
 import { ArrowRight, ArrowLeft, Code, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import QuizOptions from "./CodeQuizOptions"
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
-import type { CodeChallenge } from "@/app/types/types"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
-import { QuizResultDisplay } from "../../components/QuizResultDisplay"
 import { formatQuizTime } from "@/lib/utils"
+import CodeQuizOptions from "./CodeQuizOptions"
 
-interface CodeQuizProps {
-  quizId: string
-  slug: string
-  isFavorite: boolean
-  isPublic: boolean
-  userId: string
-  ownerId: string
-  quizData: {
-    title: string
-    questions: CodeChallenge[]
-  }
-  onComplete?: (answers: any[]) => void
-  isCompleted?: boolean
-  savedAnswers?: any[]
+// Define proper TypeScript interfaces
+interface Question {
+  id: string
+  question: string
+  code?: string
+  codeSnippet?: string
+  language?: string
+  options: string[]
+  answer: string
+  explanation?: string
+  difficulty: string
+  timeLimit?: number
 }
 
-export default function CodingQuiz({
-  quizId,
-  slug,
-  quizData,
-  userId,
-  onComplete,
-  isCompleted = false,
-  savedAnswers = [],
-}: CodeQuizProps) {
+interface CodingQuizProps {
+  question: Question
+  onAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
+  questionNumber: number
+  totalQuestions: number
+}
+
+export default function CodingQuiz({ question, onAnswer, questionNumber, totalQuestions }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>(Array(quizData.questions.length).fill(null))
+  const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [timeSpent, setTimeSpent] = useState<number[]>(Array(quizData.questions.length).fill(0))
-  const [startTime] = useState(Date.now())
-  const [quizCompleted, setQuizCompleted] = useState(isCompleted)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  console.log("CodingQuiz question", question)
 
-  // Initialize with saved answers if available
-  useEffect(() => {
-    if (savedAnswers.length > 0 && !isCompleted) {
-      setSelectedOptions(savedAnswers)
-    }
-  }, [savedAnswers, isCompleted])
-
-  // Update elapsed time
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1)
+  // Start timer when component mounts
+  React.useEffect(() => {
+    const startTime = Date.now()
+    const timer = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
     }, 1000)
 
-    return () => clearInterval(interval)
-  }, [])
-
-  const currentQuestion = useMemo(() => {
-    return quizData.questions[currentQuestionIndex]
-  }, [quizData.questions, currentQuestionIndex])
+    return () => clearInterval(timer)
+  }, [question?.id]) // Reset timer when question changes
 
   const options = useMemo(() => {
-    return Array.isArray(currentQuestion?.options) ? currentQuestion.options : []
-  }, [currentQuestion?.options])
+    return Array.isArray(question?.options) ? question.options : []
+  }, [question?.options])
 
-  // Calculate score function
-  const calculateScore = useCallback((selectedOpts: (string | null)[], questions: CodeChallenge[]) => {
-    return selectedOpts.reduce((score, selected, index) => {
-      const correctAnswer = questions[index]?.correctAnswer
-      return score + (selected === correctAnswer ? 1 : 0)
-    }, 0)
+  const handleSelectOption = useCallback((option: string) => {
+    setSelectedOption(option)
   }, [])
 
-  const handleSelectOption = useCallback(
-    (option: string) => {
-      setSelectedOptions((prev) => {
-        const updated = [...prev]
-        updated[currentQuestionIndex] = option
-        return updated
-      })
-    },
-    [currentQuestionIndex],
-  )
+  const handleSubmit = useCallback(() => {
+    if (!selectedOption || isSubmitting) return
 
-  const handleNextQuestion = useCallback(() => {
-    if (currentQuestionIndex === quizData.questions.length - 1) {
-      // This is the last question, complete the quiz
-      const formattedAnswers = selectedOptions.map((answer, index) => ({
-        answer,
-        timeSpent: timeSpent[index] || 0,
-        isCorrect: answer === quizData.questions[index]?.correctAnswer,
-      }))
+    setIsSubmitting(true)
 
-      setQuizCompleted(true)
-      if (onComplete) onComplete(formattedAnswers)
-    } else {
-      // Move to next question
-      setCurrentQuestionIndex((prev) => prev + 1)
-    }
-  }, [currentQuestionIndex, quizData.questions.length, selectedOptions, timeSpent, onComplete])
+    // Determine if the selected option is correct
+    const isCorrect = selectedOption === question.answer
 
-  const handleRestart = useCallback(() => {
-    setCurrentQuestionIndex(0)
-    setSelectedOptions(Array(quizData.questions.length).fill(null))
-    setTimeSpent(Array(quizData.questions.length).fill(0))
-    setQuizCompleted(false)
-  }, [quizData.questions.length])
+    // Submit the answer
+    setTimeout(() => {
+      onAnswer(selectedOption, elapsedTime, isCorrect)
+      setIsSubmitting(false)
+    }, 300) // Small delay for better UX
+  }, [selectedOption, question, onAnswer, elapsedTime, isSubmitting])
 
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null
@@ -180,56 +139,21 @@ export default function CodingQuiz({
           {parts.map((part, index) => (
             <React.Fragment key={index}>
               {part && <span className="block mb-2">{part.trim()}</span>}
-              {codes[index] && <div className="my-2">{renderCode(codes[index], currentQuestion?.language)}</div>}
+              {codes[index] && <div className="my-2">{renderCode(codes[index], question?.language)}</div>}
             </React.Fragment>
           ))}
         </div>
       )
     },
-    [currentQuestion?.language, renderCode],
+    [question?.language, renderCode],
   )
 
-  if (quizCompleted) {
-    const correctCount = calculateScore(selectedOptions, quizData.questions)
-    const totalQuestions = quizData.questions.length
-    const percentage = (correctCount / totalQuestions) * 100
-    const totalTime = timeSpent.reduce((sum, time) => sum + time, 0)
-
-    // Create formatted answers for the QuizResultDisplay
-    const formattedAnswers = quizData.questions.map((question, index) => {
-      const userAnswer = selectedOptions[index] || ""
-      return {
-        isCorrect: userAnswer === question.correctAnswer,
-        timeSpent: timeSpent[index] || 0,
-        answer: question.correctAnswer,
-        userAnswer: userAnswer,
-      }
-    })
-
-    return (
-      <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.6}>
-        <QuizResultDisplay
-          quizId={quizId}
-          title={quizData.title}
-          score={percentage}
-          totalQuestions={totalQuestions}
-          totalTime={totalTime}
-          correctAnswers={correctCount}
-          type="code"
-          slug={slug}
-          answers={formattedAnswers}
-          onRestart={handleRestart}
-          preventAutoSave={true}
-        />
-      </MotionWrapper>
-    )
-  }
-
-  if (!quizData.questions || quizData.questions.length === 0) {
+  // If no question is available
+  if (!question) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="pt-6 text-center">
-          <p className="text-muted-foreground mb-4">No questions available for this quiz.</p>
+          <p className="text-muted-foreground mb-4">This question is not available.</p>
         </CardContent>
       </Card>
     )
@@ -239,10 +163,9 @@ export default function CodingQuiz({
     <Card className="w-full">
       <CardHeader className="space-y-4">
         <div className="flex flex-col space-y-1.5">
-          <h2 className="text-xl font-semibold">{quizData.title}</h2>
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Question {currentQuestionIndex + 1} of {quizData.questions.length}
+              Question {questionNumber} of {totalQuestions}
             </p>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
@@ -253,12 +176,12 @@ export default function CodingQuiz({
         <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-300 ease-in-out"
-            style={{ width: `${((currentQuestionIndex + 1) / quizData.questions.length) * 100}%` }}
+            style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
           />
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        <MotionTransition key={currentQuestionIndex}>
+        <MotionTransition key={question.id} motionKey={String(question.id)}>
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
@@ -269,26 +192,24 @@ export default function CodingQuiz({
                   <Code className="h-3.5 w-3.5" />
                   Code Challenge
                 </Badge>
-                <h2 className="text-lg sm:text-xl font-semibold">
-                  {renderQuestionText(currentQuestion?.question || "")}
-                </h2>
+                <h2 className="text-lg sm:text-xl font-semibold">{renderQuestionText(question?.question || "")}</h2>
               </div>
 
-              {currentQuestion?.codeSnippet && (
+              {question?.codeSnippet && (
                 <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
-                  <div className="my-4 overflow-x-auto">
-                    {renderCode(currentQuestion.codeSnippet, currentQuestion.language)}
-                  </div>
+                  <div className="my-4 overflow-x-auto">{renderCode(question.codeSnippet, question.language)}</div>
                 </MotionWrapper>
               )}
 
-              <QuizOptions
-                options={options}
-                selectedOption={selectedOptions[currentQuestionIndex]}
-                onSelect={handleSelectOption}
-                disabled={false}
-                renderOptionContent={renderOptionContent}
-              />
+              {options.length > 0 && (
+                <CodeQuizOptions
+                  options={options}
+                  selectedOption={selectedOption}
+                  onSelect={handleSelectOption}
+                  disabled={isSubmitting}
+                  renderOptionContent={renderOptionContent}
+                />
+              )}
             </div>
           </div>
         </MotionTransition>
@@ -300,7 +221,7 @@ export default function CodingQuiz({
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
                   <Clock className="h-3.5 w-3.5" />
-                  <span className="font-mono">{formatQuizTime(timeSpent[currentQuestionIndex] || 0)}</span>
+                  <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -309,11 +230,13 @@ export default function CodingQuiz({
             </Tooltip>
           </TooltipProvider>
 
-          {currentQuestionIndex > 0 && (
+          {questionNumber > 1 && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
+              onClick={() => {
+                /* Previous handled by parent */
+              }}
               className="gap-1"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -322,16 +245,18 @@ export default function CodingQuiz({
           )}
         </div>
 
-        <Button
-          onClick={handleNextQuestion}
-          disabled={selectedOptions[currentQuestionIndex] === null}
-          className="w-full sm:w-auto"
-        >
-          {currentQuestionIndex === quizData.questions.length - 1 ? (
-            "Finish Quiz"
+        <Button onClick={handleSubmit} disabled={!selectedOption || isSubmitting} className="w-full sm:w-auto">
+          {isSubmitting ? (
+            <div className="flex items-center gap-2">
+              <div
+                className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"
+                aria-hidden="true"
+              />
+              <span>Submitting...</span>
+            </div>
           ) : (
             <>
-              Next Question
+              {questionNumber === totalQuestions ? "Finish Quiz" : "Next Question"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </>
           )}

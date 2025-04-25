@@ -4,19 +4,20 @@ import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { memo } from "react"
 
 import McqQuiz from "./McqQuiz"
 import McqQuizResult from "./McqQuizResult"
 import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
 import { GuestPrompt } from "../../components/GuestSignInPrompt"
 
-
 interface McqQuizContentProps {
   quizData: any
   slug: string
 }
 
-function McqQuizContent({ quizData, slug }: McqQuizContentProps) {
+// Memoize the content component to prevent unnecessary re-renders
+const McqQuizContent = memo(function McqQuizContent({ quizData, slug }: McqQuizContentProps) {
   const { state, submitAnswer, completeQuiz, restartQuiz } = useQuiz()
   const router = useRouter()
 
@@ -38,7 +39,7 @@ function McqQuizContent({ quizData, slug }: McqQuizContentProps) {
       // Complete the quiz
       setTimeout(() => {
         completeQuiz(updatedAnswers.filter((a) => a !== null))
-      }, 1500) // Delay to show the answer feedback
+      }, 1000) // Slightly reduced delay for better UX
     }
   }
 
@@ -47,15 +48,15 @@ function McqQuizContent({ quizData, slug }: McqQuizContentProps) {
 
   if (isLoading) {
     content = (
-      <div className="flex flex-col items-center justify-center min-h-[200px] gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center min-h-[200px] gap-3" aria-live="polite">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
         <p className="text-sm text-muted-foreground">Loading quiz data...</p>
       </div>
     )
   } else if (error) {
     content = (
       <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertCircle className="h-4 w-4" aria-hidden="true" />
         <AlertTitle>Error loading quiz</AlertTitle>
         <AlertDescription>
           {error || "We couldn't load the quiz data. Please try again later."}
@@ -95,7 +96,7 @@ function McqQuizContent({ quizData, slug }: McqQuizContentProps) {
   }
 
   return <div className="w-full max-w-3xl mx-auto p-4">{content}</div>
-}
+})
 
 interface McqQuizWrapperProps {
   quizData: any

@@ -1,4 +1,6 @@
 "use client"
+
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 import { AlertCircle } from "lucide-react"
@@ -9,31 +11,32 @@ import BlankQuizResults from "./BlankQuizResults"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
+import { useQuiz } from "@/app/context/QuizContext"
 
-interface BlankQuizWrapperProps {
-  quizData: any
-  slug: string
-}
-
-// This is the main wrapper that uses the provider
-export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperProps) {
-  return (
-    <QuizProvider quizData={quizData} slug={slug}>
-      <BlankQuizContent quizData={quizData} slug={slug} />
-    </QuizProvider>
-  )
-}
-
-// This component consumes the context
-function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
+export default function BlankQuizContent() {
   const router = useRouter()
   const { state, submitAnswer, completeQuiz, restartQuiz } = useQuiz()
 
-  const { quizId, title, questionCount, currentQuestionIndex, answers, isCompleted, isLoading, error, score } = state
+  const {
+    quizId,
+    slug,
+    title,
+    questionCount,
+    currentQuestionIndex,
+    answers,
+    isCompleted,
+    isLoading,
+    error,
+    score,
+    showAuthPrompt,
+  } = state
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   // Get current question data
-  const currentQuestionData = quizData?.questions?.[currentQuestionIndex] || null
+  const currentQuestionData = state.quizData?.questions?.[currentQuestionIndex] || null
 
   // Handle answer submission
   const handleAnswer = (answer: string, timeSpent: number, hintsUsed: boolean, similarity?: number) => {
@@ -53,13 +56,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
 
     // If this is the last question, complete the quiz
     if (currentQuestionIndex >= questionCount - 1) {
-      const finalAnswers = [
-        ...answers.slice(0, currentQuestionIndex).map((ans) => ({
-          ...ans,
-          hintsUsed: ans.hintsUsed ?? false, // Ensure hintsUsed is always a boolean
-        })),
-        answerObj,
-      ]
+      const finalAnswers = [...answers.slice(0, currentQuestionIndex), answerObj]
       completeQuiz(finalAnswers)
     }
   }
@@ -85,7 +82,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   }
 
   // Error state
-  if (error || !quizData || !quizData.questions || quizData.questions.length === 0) {
+  if (error || !state.quizData || !state.quizData.questions || state.quizData.questions.length === 0) {
     return (
       <div className="w-full max-w-3xl mx-auto p-4">
         <Alert variant="destructive">
@@ -113,18 +110,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <BlankQuizResults
-              answers={answers}
-              questions={quizData.questions}
-              onRestart={restartQuiz}
-              quizId={quizId}
-              title={title || ""}
-              slug={slug}
-              onComplete={(score) => {
-                // This will be implemented later
-                console.log("Quiz completed with score:", score)
-              }}
-            />
+            <BlankQuizResults />
           </motion.div>
         ) : (
           <motion.div
