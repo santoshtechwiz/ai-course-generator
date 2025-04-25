@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { useMemo, useCallback } from "react"
 import { motion } from "framer-motion"
 import { HelpCircle, ArrowRight, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizProgress } from "../../components/QuizProgress"
+import { useEffect, useState, useRef } from "react"
 
 interface McqQuizProps {
   question: {
@@ -124,6 +125,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
           currentQuestionIndex={questionNumber - 1}
           totalQuestions={totalQuestions}
           timeSpent={[elapsedTime]}
+          title=""
           quizType="Multiple Choice"
           animate={animationsEnabled}
         />
@@ -185,14 +187,8 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
           </Tooltip>
         </TooltipProvider>
         <Button onClick={handleSubmit} disabled={!selectedOption} className="w-full sm:w-auto">
-          {questionNumber === totalQuestions ? (
-            "Finish Quiz"
-          ) : (
-            <>
-              Next Question
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </>
-          )}
+          {questionNumber === totalQuestions ? "Finish Quiz" : "Next Question"}
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>
