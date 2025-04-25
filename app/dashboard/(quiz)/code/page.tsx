@@ -7,6 +7,20 @@ import { getQuiz } from "@/app/actions/getQuiz"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import QuizDetailsPageWithContext from "../components/QuizDetailsPageWithContext"
 import CodeQuizWrapper from "./components/CodeQuizWrapper"
+import { CodingQuizProps } from "@/app/types/types"
+import axios from "axios"
+async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
+  try {
+    const response = await axios.get<CodingQuizProps>(`/api/code-quiz/${slug}`)
+    if (response.status !== 200) {
+      throw new Error(`Failed to fetch quiz data: ${response.statusText}`)
+    }
+    return response.data
+  } catch (error) {
+    console.error("Error fetching quiz data:", error)
+    return null
+  }
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -45,13 +59,13 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
 
-  const result = await getQuiz(slug)
+  const result = await getQuizData(slug)
   if (!result) {
     notFound()
   }
 
   // Calculate estimated time based on question count and complexity
-  const questionCount = result.questions?.length || 3
+  const questionCount = result.quizData.questions?.length || 3
   const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M` // 10 minutes per coding question, minimum 15 minutes
 
   // Create breadcrumb items
@@ -59,25 +73,25 @@ const CodePage = async (props: { params: Promise<{ slug: string }> }) => {
     { name: "Home", href: baseUrl },
     { name: "Dashboard", href: `${baseUrl}/dashboard` },
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
-    { name: result.title, href: `${baseUrl}/dashboard/code/${slug}` },
+    { name: result.quizData.title, href: `${baseUrl}/dashboard/code/${slug}` },
   ]
 
   return (
     <QuizDetailsPageWithContext
-      title={result.title}
-      description={`Test your coding skills on ${result.title} with interactive programming challenges`}
+      title={result.quizData.title}
+      description={`Test your coding skills on ${result.quizData.title} with interactive programming challenges`}
       slug={slug}
       quizType="code"
       questionCount={questionCount}
       estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
-      quizId={result.id.toString()}
-      authorId={result.userId}
+      quizId={result.quizId.toString()}
+      authorId={result.ownerId}
       isPublic={result.isPublic || false}
       isFavorite={result.isFavorite || false}
-      difficulty={result.difficulty || "medium"}
+     
     >
-      <CodeQuizWrapper quizData={result} slug={slug} userId={currentUserId || ""} />
+      <CodeQuizWrapper quizData={result.quizData} slug={slug} userId={""} />
     </QuizDetailsPageWithContext>
   )
 }

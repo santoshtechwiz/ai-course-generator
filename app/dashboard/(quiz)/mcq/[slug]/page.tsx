@@ -3,18 +3,17 @@ import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 
 import { authOptions } from "@/lib/authOptions"
-import { getQuiz } from "@/app/actions/getQuiz"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
 import McqQuizWrapper from "../components/McqQuizWrapper"
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const { slug } = params
-  const quiz = await getQuiz(slug)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const quiz = await getMcqQuestions(slug)
 
-  if (!quiz) {
+  if (!quiz || !quiz.result) {
     return generatePageMetadata({
       title: "Multiple Choice Quiz Not Found | CourseAI",
       description:
@@ -24,12 +23,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     })
   }
 
+  const quizData = quiz.result
+
   return generatePageMetadata({
-    title: `${quiz.title} | Programming Multiple Choice Quiz`,
-    description: `Test your coding knowledge with this ${quiz.title?.toLowerCase()} multiple choice quiz. Practice programming concepts and improve your skills.`,
+    title: `${quizData.title} | Programming Multiple Choice Quiz`,
+    description: `Test your coding knowledge with this ${quizData.title?.toLowerCase()} multiple choice quiz. Practice programming concepts and improve your skills.`,
     path: `/dashboard/mcq/${slug}`,
     keywords: [
-      `${quiz.title?.toLowerCase()} quiz`,
+      `${quizData.title?.toLowerCase()} quiz`,
       "programming multiple choice",
       "coding assessment",
       "developer knowledge test",
@@ -39,8 +40,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   })
 }
 
-const McqPage = async ({ params }: { params: { slug: string } }) => {
-  const { slug } = params
+const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
+  const { slug } = await params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   const session = await getServerSession(authOptions)
@@ -68,6 +69,7 @@ const McqPage = async ({ params }: { params: { slug: string } }) => {
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
     { name: quizData.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
+  console.log(quizData);
 
   return (
     <QuizDetailsPageWithContext
@@ -85,12 +87,9 @@ const McqPage = async ({ params }: { params: { slug: string } }) => {
       difficulty={quizData.difficulty || "medium"}
     >
       <McqQuizWrapper
-        quizData={{
-          ...quizData,
-          questions,
-        }}
+       quizData={quizData}
         slug={slug}
-        userId={currentUserId || ""}
+      
       />
     </QuizDetailsPageWithContext>
   )

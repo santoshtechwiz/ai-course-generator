@@ -1,19 +1,20 @@
 "use client"
+
 import { useMemo } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle, XCircle, Clock, RotateCcw, Loader2, FileText, ArrowLeft } from "lucide-react"
+import { CheckCircle, XCircle, Clock, RotateCcw, Loader2, FileText, ArrowLeft, Code } from "lucide-react"
 import { useQuiz } from "@/app/context/QuizContext"
 import { useRouter } from "next/navigation"
 
-interface McqQuizResultProps {
+interface CodeQuizResultProps {
   title: string
   onRestart: () => void
 }
 
-export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) {
+export default function CodeQuizResult({ title, onRestart }: CodeQuizResultProps) {
   const { state } = useQuiz()
   const { answers, score, isLoading } = state
   const router = useRouter()
@@ -30,12 +31,16 @@ export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) 
   )
 
   // Calculate stats - memoized to avoid recalculation on each render
-  const { totalQuestions, correctAnswers, totalTime, averageTime, performanceColor, performanceMessage } =
+  const { totalQuestions, correctAnswers, totalTime, averageSimilarity, performanceColor, performanceMessage } =
     useMemo(() => {
       const totalQuestions = answers.length
       const correctAnswers = answers.filter((a) => a && a.isCorrect).length
       const totalTime = answers.reduce((total, a) => total + (a ? a.timeSpent : 0), 0)
-      const averageTime = totalQuestions > 0 ? totalTime / totalQuestions : 0
+
+      // Calculate average similarity for code quizzes
+      const similarities = answers.map((a) => a?.similarity || 0)
+      const averageSimilarity =
+        similarities.length > 0 ? similarities.reduce((sum, val) => sum + val, 0) / similarities.length : 0
 
       // Get performance level
       let performanceColor = ""
@@ -43,20 +48,20 @@ export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) 
 
       if (score >= 80) {
         performanceColor = "text-green-500 bg-green-50 dark:bg-green-900/20"
-        performanceMessage = "Excellent! You've mastered this topic."
+        performanceMessage = "Excellent! Your code solutions are outstanding."
       } else if (score >= 60) {
         performanceColor = "text-amber-500 bg-amber-50 dark:bg-amber-900/20"
-        performanceMessage = "Good job! You have a solid understanding."
+        performanceMessage = "Good job! You have a solid understanding of coding concepts."
       } else {
         performanceColor = "text-red-500 bg-red-50 dark:bg-red-900/20"
-        performanceMessage = "Keep practicing! You'll improve with more study."
+        performanceMessage = "Keep practicing! Your coding skills will improve with more practice."
       }
 
       return {
         totalQuestions,
         correctAnswers,
         totalTime,
-        averageTime,
+        averageSimilarity,
         performanceColor,
         performanceMessage,
       }
@@ -148,11 +153,33 @@ export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) 
             </motion.div>
           </div>
 
+          {/* Code similarity */}
+          <div className="p-4 bg-muted/30 rounded-lg border border-border">
+            <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Code className="h-4 w-4 text-primary" />
+              Code Similarity Analysis
+            </h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Average Similarity</span>
+                <span className="font-medium">{Math.round(averageSimilarity * 100)}%</span>
+              </div>
+              <Progress
+                value={averageSimilarity * 100}
+                className="h-2"
+                aria-label={`Average similarity: ${Math.round(averageSimilarity * 100)}%`}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                This measures how closely your code solutions matched the expected answers.
+              </p>
+            </div>
+          </div>
+
           {/* Answer breakdown */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
-              Answer Breakdown
+              Code Submission Breakdown
             </h3>
             <div className="space-y-3">
               {answers.map((answer, index) => (
@@ -179,9 +206,17 @@ export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) 
                   </div>
                   <div className="flex-grow">
                     <p className="text-sm font-medium">Question {index + 1}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {answer?.answer || "No answer"} • {formatTime(answer?.timeSpent || 0)}
-                    </p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Similarity: {Math.round((answer?.similarity || 0) * 100)}%</span>
+                      <span>•</span>
+                      <span>Time: {formatTime(answer?.timeSpent || 0)}</span>
+                      {answer?.hintsUsed && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">Hint used</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -190,7 +225,7 @@ export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) 
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row gap-3 border-t p-6">
           <Button
-            onClick={() => router.push("/dashboard/explore/")}
+            onClick={() => router.push("/dashboard/code/")}
             variant="outline"
             className="w-full sm:w-auto transition-all"
           >

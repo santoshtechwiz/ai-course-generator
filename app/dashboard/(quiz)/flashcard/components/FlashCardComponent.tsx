@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown } from "lucide-react"
@@ -7,16 +6,18 @@ import { motion, AnimatePresence } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { QuizResultDisplay } from "../../components/QuizResultDisplay"
+
 import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
 import { useAnimation } from "@/providers/animation-provider"
 import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { QuizProgress } from "../../components/QuizProgress"
-import { QuizFeedback } from "../../components/QuizFeedback"
+
+
 import { QuizLoader } from "@/components/ui/quiz-loader"
 
 import { useSession } from "next-auth/react"
-import { useQuiz } from "@/app/context/QuizContext"
+import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
+import FlashCardResults from "./FlashCardQuizResults"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -25,22 +26,33 @@ interface FlashCardComponentProps {
   title: string
   onSaveCard?: (card: FlashCard) => void
   savedCardIds?: string[]
-  onComplete?: () => void
 }
 
-export function FlashCardComponent({
+export function FlashCardWrapper({
   cards,
   quizId,
   slug,
   title,
   onSaveCard,
   savedCardIds = [],
-  onComplete,
 }: FlashCardComponentProps) {
-  // Use QuizContext instead of local state
-  const { state, dispatch, nextQuestion, prevQuestion, submitAnswer, completeQuiz, restartQuiz, isAuthenticated } =
-    useQuiz()
+  return (
+    <QuizProvider quizData={{ questions: cards, id: quizId, title }} slug={slug}>
+      <FlashCardContent
+        cards={cards}
+        quizId={quizId}
+        slug={slug}
+        title={title}
+        onSaveCard={onSaveCard}
+        savedCardIds={savedCardIds}
+      />
+    </QuizProvider>
+  )
+}
 
+function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds = [] }: FlashCardComponentProps) {
+  // Use QuizContext
+  const { state,dispatch, submitAnswer, completeQuiz, restartQuiz,getTimeSpentOnCurrentQuestion } = useQuiz()
   const { data: session } = useSession()
 
   // Local UI state that doesn't need to be in context
@@ -70,7 +82,7 @@ export function FlashCardComponent({
 
     state.answers.forEach((answer, index) => {
       if (cards[index]?.id && answer) {
-        ratings[cards[index].id.toString()] = answer
+        ratings[cards[index].id.toString()] = answer.answer as "correct" | "incorrect"
       }
     })
 
@@ -99,6 +111,7 @@ export function FlashCardComponent({
     }
 
     setReviewCards(cardsToReview)
+    // Use dispatch to update current question index
     dispatch({ type: "SET_CURRENT_QUESTION", payload: 0 })
     setFlipped(false)
     setReviewMode(true)
@@ -140,7 +153,7 @@ export function FlashCardComponent({
 
   const handleSelfRating = (cardId: string, rating: "correct" | "incorrect") => {
     // Submit the answer to the context
-    submitAnswer(rating)
+    submitAnswer(rating, 0, rating === "correct")
 
     setRatingAnimation(rating)
 
@@ -156,11 +169,11 @@ export function FlashCardComponent({
       setFlipped(false)
       setExitComplete(false)
       setTimeout(() => {
-        nextQuestion()
+        state.nextQuestion()
       }, 300)
     } else {
       // Complete the quiz
-      completeQuiz()
+      completeQuiz(state.answers)
     }
   }
 
@@ -170,7 +183,7 @@ export function FlashCardComponent({
       setFlipped(false)
       setExitComplete(false)
       setTimeout(() => {
-        prevQuestion()
+        state.prevQuestion()
       }, 300)
     }
   }
@@ -332,21 +345,21 @@ export function FlashCardComponent({
       const correctCount = calculateScore()
       const totalQuestions = cards.length
       const percentage = (correctCount / totalQuestions) * 100
-      const totalTime = state.timeSpent.reduce((sum, time) => sum + time, 0)
+      const totalTime = state.lastQuestionChangeTime;
 
       // Only show results to authenticated users
-      if (isAuthenticated) {
+      if (state.isAuthenticated) {
         return (
           <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.6}>
-            <QuizResultDisplay
+            <FlashCardResults
               quizId={quizId.toString()}
               title={title}
               score={percentage}
               totalQuestions={totalQuestions}
               totalTime={totalTime}
               correctAnswers={correctCount}
-              type="flashcard"
               slug={slug}
+              onRestart={restartQuiz}
             />
           </MotionWrapper>
         )
@@ -372,7 +385,7 @@ export function FlashCardComponent({
             <QuizProgress
               currentQuestionIndex={state.currentQuestionIndex}
               totalQuestions={cards.length}
-              timeSpent={state.timeSpent}
+              timeSpent={[]}
               title={title}
               quizType="Flashcard"
               animate={animationsEnabled}
@@ -687,19 +700,6 @@ export function FlashCardComponent({
   return (
     <>
       {renderQuizContent()}
-
-      {state.showFeedback && (
-        <QuizFeedback
-          isSubmitting={state.isSaving}
-          isSuccess={!state.error}
-          isError={!!state.error}
-          score={calculateScore()}
-          totalQuestions={cards.length}
-          onContinue={() => dispatch({ type: "SHOW_FEEDBACK", payload: { show: false, message: "" } })}
-          errorMessage={state.error || ""}
-          quizType="flashcard"
-        />
-      )}
 
       {/* Add custom scrollbar styles */}
       <style jsx global>{`

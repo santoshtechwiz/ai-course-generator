@@ -10,7 +10,8 @@ import { Sparkles } from "lucide-react"
 import axios from "axios"
 
 import QuizActions from "../../components/QuizActions"
-import { FlashCardComponent } from "./FlashCardComponent"
+import { FlashCardWrapper } from "./FlashCardComponent"
+
 
 interface FlashCardsPageClientProps {
   slug: string
@@ -137,7 +138,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
           </CardContent>
         </Card>
       ) : flashCards.length > 0 ? (
-        <FlashCardComponent
+        <FlashCardWrapper
           cards={flashCards}
           onSaveCard={handleSaveCard}
           savedCardIds={savedCardIds}

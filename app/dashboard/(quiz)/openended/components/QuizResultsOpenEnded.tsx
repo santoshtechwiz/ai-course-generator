@@ -8,10 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { QuizResultBase } from "../../components/QuizResultBase"
-import { useQuizResult } from "@/hooks/useQuizResult"
-import { quizService } from "@/lib/QuizService"
 import { getPerformanceLevel, getAnswerClassName } from "@/utils/quiz-utils"
+import { quizService } from "@/lib/QuizService"
 
 interface QuizResultsOpenEndedProps {
   quizId: string
@@ -44,23 +42,14 @@ export default function QuizResultsOpenEnded({
   >([])
   const [score, setScore] = useState(initialScore || 0)
   const [totalTime, setTotalTime] = useState<number>(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Hooks
   const { data: session, status } = useSession()
   const router = useRouter()
   const isLoggedIn = status === "authenticated"
-
-  // Use the quiz result hook
-  const { isLoading, isSaving, error, saveResult, correctAnswers } = useQuizResult({
-    quizId,
-    slug,
-    answers,
-    totalTime,
-    score,
-    quizType: "openended",
-    totalQuestions,
-    startTime,
-  })
 
   // Calculate total time on mount
   useEffect(() => {
@@ -70,6 +59,8 @@ export default function QuizResultsOpenEnded({
 
   // Process and format answers
   useEffect(() => {
+    setIsLoading(true)
+
     if (initialAnswers && initialAnswers.length > 0) {
       // Format and process the answers
       const processedAnswers = initialAnswers.map((answer, index) => {
@@ -113,14 +104,9 @@ export default function QuizResultsOpenEnded({
         setAnswers(emptyAnswers)
       }
     }
-  }, [initialAnswers, questions, initialScore])
 
-  // Auto-save results if user is logged in
-  useEffect(() => {
-    if (isLoggedIn && answers.length > 0 && !isSaving && !isLoading) {
-      saveResult()
-    }
-  }, [isLoggedIn, answers, saveResult, isSaving, isLoading])
+    setIsLoading(false)
+  }, [initialAnswers, questions, initialScore])
 
   // Handle navigation to dashboard
   const handleGoToDashboard = () => {
@@ -166,100 +152,85 @@ export default function QuizResultsOpenEnded({
     const performance = getPerformanceLevel(score)
 
     return (
-      <QuizResultBase
-        quizId={quizId}
-        title={title || "Quiz"}
-        score={score || 0}
-        totalQuestions={safeTotalQuestions}
-        totalTime={totalTime}
-        slug={slug}
-        quizType="openended"
-        correctAnswers={correctAnswers}
-        showAuthModal={false}
-        onRestart={onRestart}
-        isSaving={isSaving}
-        isLoading={isLoading}
-      >
-        <div className="max-w-4xl mx-auto p-4">
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                Quiz Results
-                {isSaving && <span className="text-sm text-muted-foreground">(Saving...)</span>}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center mb-6">
-                <p className="text-3xl font-bold mb-2">{score}%</p>
-                <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
-                <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
-              </div>
+      <div className="max-w-4xl mx-auto p-4">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              Quiz Results
+              {isSaving && <span className="text-sm text-muted-foreground">(Saving...)</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center mb-6">
+              <p className="text-3xl font-bold mb-2">{score}%</p>
+              <Progress value={score} className="w-full h-2" indicatorClassName={performance.bgColor} />
+              <p className="mt-2 text-sm text-muted-foreground">{performance.message}</p>
+            </div>
 
-              {/* No answers warning */}
-              {answers.length === 0 && (
-                <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
-                  <p className="text-amber-800 font-medium">No answers found to display.</p>
-                  <p className="text-sm text-amber-700">This may happen if you signed out and back in.</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => router.push(`/dashboard/openended/${slug}`)}
-                  >
-                    Return to Quiz
-                  </Button>
-                </div>
-              )}
-
-              {/* Question results */}
-              {answers.map((answer, index) => (
-                <Card key={index} className="mb-4">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-2">{questions[index]?.question || "Question not available"}</div>
-                    <div className="grid gap-2 mb-4">
-                      <div className="p-3 rounded-md border bg-muted/30">
-                        <p className="font-medium">Your Answer:</p>
-                        <p className="mt-1 whitespace-pre-wrap">{answer.answer || "(No answer provided)"}</p>
-                      </div>
-                      <div className="p-3 rounded-md border bg-green-50 dark:bg-green-900/20">
-                        <p className="font-medium">Model Answer:</p>
-                        <p className="mt-1 whitespace-pre-wrap">{questions[index]?.answer || "Answer not available"}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span>Similarity: </span>
-                      <Progress
-                        value={answer.similarity}
-                        className="w-full h-2"
-                        indicatorClassName={
-                          answer.similarity > 80
-                            ? "bg-green-500"
-                            : answer.similarity > 50
-                              ? "bg-yellow-500"
-                              : "bg-red-500"
-                        }
-                      />
-                      <span className={getAnswerClassName(answer.similarity)}>{answer.similarity}%</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Time spent: {Math.floor(answer.timeSpent / 60)}m {Math.round(answer.timeSpent % 60)}s
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-
-              <div className="flex justify-center mt-6">
-                <Button onClick={onRestart} disabled={isSaving}>
-                  Restart Quiz
+            {/* No answers warning */}
+            {answers.length === 0 && (
+              <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-amber-800 font-medium">No answers found to display.</p>
+                <p className="text-sm text-amber-700">This may happen if you signed out and back in.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => router.push(`/dashboard/openended/${slug}`)}
+                >
+                  Return to Quiz
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </QuizResultBase>
+            )}
+
+            {/* Question results */}
+            {answers.map((answer, index) => (
+              <Card key={index} className="mb-4">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold">Question {index + 1}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-2">{questions[index]?.question || "Question not available"}</div>
+                  <div className="grid gap-2 mb-4">
+                    <div className="p-3 rounded-md border bg-muted/30">
+                      <p className="font-medium">Your Answer:</p>
+                      <p className="mt-1 whitespace-pre-wrap">{answer.answer || "(No answer provided)"}</p>
+                    </div>
+                    <div className="p-3 rounded-md border bg-green-50 dark:bg-green-900/20">
+                      <p className="font-medium">Model Answer:</p>
+                      <p className="mt-1 whitespace-pre-wrap">{questions[index]?.answer || "Answer not available"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>Similarity: </span>
+                    <Progress
+                      value={answer.similarity}
+                      className="w-full h-2"
+                      indicatorClassName={
+                        answer.similarity > 80
+                          ? "bg-green-500"
+                          : answer.similarity > 50
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                      }
+                    />
+                    <span className={getAnswerClassName(answer.similarity)}>{answer.similarity}%</span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Time spent: {Math.floor(answer.timeSpent / 60)}m {Math.round(answer.timeSpent % 60)}s
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+
+            <div className="flex justify-center mt-6">
+              <Button onClick={onRestart} disabled={isSaving}>
+                Restart Quiz
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 

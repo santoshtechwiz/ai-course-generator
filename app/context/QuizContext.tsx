@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useEffect, useState, useCallback } from "react"
+import { createContext, useContext, useReducer, useEffect, useState, useCallback } 
+from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signIn } from "next-auth/react"
 
@@ -27,6 +28,7 @@ export interface QuizState {
   isCompleted: boolean
   score?: number
   redirectPath?: string
+  timeSpentPerQuestion: number[] // Track time spent per question
 }
 
 export interface QuizResult {
@@ -39,6 +41,7 @@ export interface QuizResult {
   timestamp: number
   isCompleted: boolean
   redirectPath?: string
+  timeSpentPerQuestion: number[] // Include in results
 }
 
 // Define action types
@@ -53,6 +56,7 @@ type QuizAction =
   | { type: "RESET_QUIZ" }
   | { type: "INITIALIZE_QUIZ"; payload: Partial<QuizState> }
   | { type: "COMPLETE_QUIZ"; payload: { score: number; answers: QuizAnswer[] } }
+  | { type: "UPDATE_TIME_SPENT"; payload: { questionIndex: number; time: number } }
 
 // Define context state
 interface QuizContextState {
@@ -70,6 +74,9 @@ interface QuizContextState {
   score: number
   showAuthPrompt: boolean
   isSaving: boolean
+  isAuthenticated: boolean
+  timeSpentPerQuestion: number[] // Track time spent per question
+  lastQuestionChangeTime: number // Track when question was last changed
 }
 
 // Define context type
@@ -83,6 +90,7 @@ interface QuizContextType {
   restartQuiz: () => void
   handleSignIn: () => void
   closeAuthPrompt: () => void
+  getTimeSpentOnCurrentQuestion: () => number // Helper to get time spent on current question
 }
 
 // Initial state
@@ -101,6 +109,9 @@ const initialState: QuizContextState = {
   score: 0,
   showAuthPrompt: false,
   isSaving: false,
+  isAuthenticated: false,
+  timeSpentPerQuestion: [],
+  lastQuestionChangeTime: Date.now(),
 }
 
 // Create context
@@ -110,7 +121,18 @@ const QuizContext = createContext<QuizContextType | undefined>(undefined)
 const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextState => {
   switch (action.type) {
     case "SET_CURRENT_QUESTION":
-      return { ...state, currentQuestionIndex: action.payload }
+      // Update time spent on previous question before changing
+      const timeSpentOnPrevQuestion = Date.now() - state.lastQuestionChangeTime
+      const updatedTimeSpent = [...state.timeSpentPerQuestion]
+      updatedTimeSpent[state.currentQuestionIndex] = 
+        (updatedTimeSpent[state.currentQuestionIndex] || 0) + timeSpentOnPrevQuestion
+      
+      return { 
+        ...state, 
+        currentQuestionIndex: action.payload,
+        timeSpentPerQuestion: updatedTimeSpent,
+        lastQuestionChangeTime: Date.now()
+      }
     case "SET_ANSWERS":
       return { ...state, answers: action.payload }
     case "SET_ANSWER":
@@ -130,6 +152,7 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
         ...state,
         ...action.payload,
         answers: action.payload.answers || new Array(state.questionCount).fill(null),
+        timeSpentPerQuestion: action.payload.timeSpentPerQuestion || new Array(state.questionCount).fill(0),
       }
     case "COMPLETE_QUIZ":
       return {
@@ -138,7 +161,25 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
         score: action.payload.score,
         answers: action.payload.answers,
       }
+    case "UPDATE_TIME_SPENT":
+      const newTimeSpent = [...state.timeSpentPerQuestion]
+      newTimeSpent[action.payload.questionIndex] = 
+        (newTimeSpent[action.payload.questionIndex] || 0) + action.payload.time
+      return {
+        ...state,
+        timeSpentPerQuestion: newTimeSpent
+      }
     case "RESET_QUIZ":
+      // Clear localStorage
+      localStorage.removeItem(`quiz_state_${state.quizId}`)
+
+      // Remove "completed=true" from the URL
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href)
+        url.searchParams.delete("completed")
+        window.history.replaceState({}, document.title, url.toString())
+      }
+
       return {
         ...state,
         currentQuestionIndex: 0,
@@ -146,13 +187,15 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
         isCompleted: false,
         score: 0,
         error: null,
+        timeSpentPerQuestion: new Array(state.questionCount).fill(0),
+        lastQuestionChangeTime: Date.now(),
       }
     default:
       return state
   }
 }
 
-// Storage helpers
+// Storage helpers (remain the same as before)
 const saveToStorage = (key: string, data: any, expirationHours = 24) => {
   if (typeof window === "undefined") return
 
@@ -206,6 +249,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     description: quizData?.description || "",
     questionCount: quizData?.questions?.length || 0,
     answers: new Array(quizData?.questions?.length || 0).fill(null),
+    timeSpentPerQuestion: new Array(quizData?.questions?.length || 0).fill(0),
   })
 
   const { data: session, status } = useSession()
@@ -216,7 +260,43 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
 
   const isAuthenticated = status === "authenticated"
 
-  // Initialize quiz state
+  // Update isAuthenticated in state when auth status changes
+  useEffect(() => {
+    dispatch({ 
+      type: "INITIALIZE_QUIZ", 
+      payload: { 
+        isAuthenticated: isAuthenticated 
+      } 
+    })
+  }, [isAuthenticated])
+
+  // Track time spent on questions
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!state.isCompleted && !state.isLoading) {
+        const currentTime = Date.now()
+        const timeSpent = currentTime - state.lastQuestionChangeTime
+        dispatch({
+          type: "UPDATE_TIME_SPENT",
+          payload: {
+            questionIndex: state.currentQuestionIndex,
+            time: timeSpent
+          }
+        })
+        // Reset the timer after recording
+        dispatch({ 
+          type: "INITIALIZE_QUIZ", 
+          payload: { 
+            lastQuestionChangeTime: currentTime 
+          } 
+        })
+      }
+    }, 1000) // Update every second
+
+    return () => clearInterval(interval)
+  }, [state.currentQuestionIndex, state.isCompleted, state.isLoading, state.lastQuestionChangeTime])
+
+  // Initialize quiz state (same as before with timeSpentPerQuestion added)
   useEffect(() => {
     const initializeQuiz = async () => {
       if (status === "loading") return
@@ -297,12 +377,15 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
                   answers: savedState.answers || [],
                   isCompleted: savedState.isCompleted || false,
                   score: savedState.score || 0,
+                  timeSpentPerQuestion: savedState.timeSpentPerQuestion || new Array(state.questionCount).fill(0),
                 },
               })
 
               // If completed, redirect to results page
               if (savedState.isCompleted && !hasCompletedParam) {
-                router.replace(`/dashboard/mcq/${slug}?completed=true`)
+                setTimeout(() => {
+                  router.replace(`/dashboard/mcq/${slug}?completed=true`)
+                }, 0)
                 return
               }
             }
@@ -317,16 +400,16 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
 
     initializeQuiz()
-  }, [quizData, slug, status, router, state.quizId, isAuthenticated])
+  }, [quizData, slug, status, router, state.quizId, isAuthenticated, state.questionCount])
 
-  // Save quiz state when answers change
+  // Save quiz state when answers change (same as before)
   useEffect(() => {
     if (state.answers.length > 0 && state.quizId && !state.isLoading) {
       saveQuizState()
     }
-  }, [state.answers, state.currentQuestionIndex])
+  }, [state.answers, state.currentQuestionIndex, state.timeSpentPerQuestion])
 
-  // Save state before unload
+  // Save state before unload (same as before)
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (!state.isCompleted && state.answers.some((a) => a !== null) && state.quizId) {
@@ -338,9 +421,9 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [state.answers, state.currentQuestionIndex, state.isCompleted, state.quizId])
+  }, [state.answers, state.currentQuestionIndex, state.isCompleted, state.quizId, state.timeSpentPerQuestion])
 
-  // Helper functions
+  // Helper functions (same as before with timeSpentPerQuestion added)
   const saveQuizState = () => {
     const quizState: QuizState = {
       quizId: state.quizId,
@@ -352,6 +435,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       answers: state.answers.filter((a) => a !== null),
       isCompleted: state.isCompleted,
       score: state.score,
+      timeSpentPerQuestion: state.timeSpentPerQuestion,
     }
 
     saveToStorage(`quiz_state_${state.quizId}`, quizState, 24)
@@ -380,6 +464,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
             type: result.quizType,
             totalQuestions: result.answers.length,
             completedAt: new Date().toISOString(),
+            timeSpentPerQuestion: result.timeSpentPerQuestion,
           }),
         })
 
@@ -415,7 +500,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     return Math.round((correctCount / validAnswers.length) * 100)
   }
 
-  // Action handlers
+  // Action handlers with enhanced navigation
   const nextQuestion = useCallback(() => {
     if (state.currentQuestionIndex < state.questionCount - 1) {
       dispatch({ type: "SET_CURRENT_QUESTION", payload: state.currentQuestionIndex + 1 })
@@ -464,6 +549,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         timestamp: Date.now(),
         isCompleted: true,
         redirectPath: `/dashboard/mcq/${state.slug}?completed=true`,
+        timeSpentPerQuestion: state.timeSpentPerQuestion,
       }
 
       // Update state
@@ -485,7 +571,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       // Save state as completed
       saveQuizState()
     },
-    [state.quizId, state.slug, state.quizType, isAuthenticated, startTime],
+    [state.quizId, state.slug, state.quizType, isAuthenticated, startTime, state.timeSpentPerQuestion],
   )
 
   const restartQuiz = useCallback(() => {
@@ -525,7 +611,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     setShowAuthPrompt(false)
   }, [])
 
-  // Check for auth flow completion
+  // Check for auth flow completion (same as before)
   useEffect(() => {
     if (isAuthenticated && typeof window !== "undefined") {
       const inAuthFlow = sessionStorage.getItem("quizAuthFlow") === "true"
@@ -558,10 +644,16 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
   }, [isAuthenticated])
 
+  // Helper to get time spent on current question
+  const getTimeSpentOnCurrentQuestion = useCallback(() => {
+    return state.timeSpentPerQuestion[state.currentQuestionIndex] || 0
+  }, [state.currentQuestionIndex, state.timeSpentPerQuestion])
+
   const contextValue = {
     state: {
       ...state,
       showAuthPrompt,
+      isAuthenticated,
     },
     dispatch,
     nextQuestion,
@@ -571,6 +663,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     restartQuiz,
     handleSignIn,
     closeAuthPrompt,
+    getTimeSpentOnCurrentQuestion,
   }
 
   return <QuizContext.Provider value={contextValue}>{children}</QuizContext.Provider>

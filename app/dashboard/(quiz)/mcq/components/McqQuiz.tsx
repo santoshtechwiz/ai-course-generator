@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useCallback } from "react"
+import { useMemo, useCallback, useEffect, useState, useRef } from "react"
 import { motion } from "framer-motion"
 import { HelpCircle, ArrowRight, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizProgress } from "../../components/QuizProgress"
-import { useEffect, useState, useRef } from "react"
 
 interface McqQuizProps {
   question: {
@@ -36,6 +35,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
   // State
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { animationsEnabled } = useAnimation()
 
   // Reset timer and selection when question changes
@@ -43,6 +43,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
     startTimeRef.current = Date.now()
     setElapsedTime(0)
     setSelectedOption(null)
+    setIsSubmitting(false)
 
     // Clear existing timer
     if (timerRef.current) {
@@ -95,7 +96,9 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
   }, [])
 
   const handleSubmit = useCallback(() => {
-    if (!selectedOption || !question) return
+    if (!selectedOption || !question || isSubmitting) return
+
+    setIsSubmitting(true)
 
     // Determine if the selected option is correct
     const isCorrect = selectedOption === question.answer
@@ -104,8 +107,11 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
     const finalTime = Math.floor((Date.now() - startTimeRef.current) / 1000)
 
     // Pass the answer data to the parent component
-    onAnswer(selectedOption, finalTime, isCorrect)
-  }, [selectedOption, question, onAnswer])
+    setTimeout(() => {
+      onAnswer(selectedOption, finalTime, isCorrect)
+      setIsSubmitting(false)
+    }, 300) // Small delay for better UX
+  }, [selectedOption, question, onAnswer, isSubmitting])
 
   // If no question is available
   if (!question) {
@@ -135,20 +141,27 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                <h2 className="text-lg sm:text-xl font-semibold">{question.question}</h2>
+                <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" aria-hidden="true" />
+                <h2 className="text-lg sm:text-xl font-semibold" id="question-text">
+                  {question.question}
+                </h2>
               </div>
               <RadioGroup
                 value={selectedOption || ""}
                 onValueChange={handleSelectOption}
                 className="space-y-3 w-full mt-4"
+                aria-labelledby="question-text"
               >
                 {options.map((option, index) => (
                   <motion.div
                     key={`${question.id}-${index}-${option}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1, ease: [0.25, 0.1, 0.25, 1] }}
+                    transition={{
+                      delay: index * 0.1,
+                      duration: 0.3,
+                      ease: [0.25, 0.1, 0.25, 1],
+                    }}
                   >
                     <div
                       className={cn(
@@ -156,6 +169,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
                         "border-2",
                         selectedOption === option ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted",
                       )}
+                      onClick={() => handleSelectOption(option)}
                     >
                       <RadioGroupItem value={option} id={`option-${question.id}-${index}`} />
                       <Label
@@ -177,7 +191,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                <Clock className="h-3.5 w-3.5" />
+                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
               </div>
             </TooltipTrigger>
@@ -186,9 +200,26 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <Button onClick={handleSubmit} disabled={!selectedOption} className="w-full sm:w-auto">
-          {questionNumber === totalQuestions ? "Finish Quiz" : "Next Question"}
-          <ArrowRight className="ml-2 h-4 w-4" />
+        <Button
+          onClick={handleSubmit}
+          disabled={!selectedOption || isSubmitting}
+          className="w-full sm:w-auto"
+          aria-busy={isSubmitting}
+        >
+          {isSubmitting ? (
+            <div className="flex items-center gap-2">
+              <div
+                className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"
+                aria-hidden="true"
+              />
+              <span>Submitting...</span>
+            </div>
+          ) : (
+            <>
+              {questionNumber === totalQuestions ? "Finish Quiz" : "Next Question"}
+              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>
