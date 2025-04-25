@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle, XCircle, Clock, RotateCcw, Loader2, FileText, ArrowLeft, Code } from "lucide-react"
+import { CheckCircle, XCircle, Clock, RotateCw, Loader2, FileText, ArrowLeft } from "lucide-react"
 import { useQuiz } from "@/app/context/QuizContext"
 import { useRouter } from "next/navigation"
 
@@ -18,6 +18,7 @@ export default function CodeQuizResult({ title, onRestart }: CodeQuizResultProps
   const { state } = useQuiz()
   const { answers, score, isLoading } = state
   const router = useRouter()
+  const isRedirecting = state.animationState === "redirecting"
 
   // Format time - memoized to avoid recalculation
   const formatTime = useMemo(
@@ -31,41 +32,34 @@ export default function CodeQuizResult({ title, onRestart }: CodeQuizResultProps
   )
 
   // Calculate stats - memoized to avoid recalculation on each render
-  const { totalQuestions, correctAnswers, totalTime, averageSimilarity, performanceColor, performanceMessage } =
-    useMemo(() => {
-      const totalQuestions = answers.length
-      const correctAnswers = answers.filter((a) => a && a.isCorrect).length
-      const totalTime = answers.reduce((total, a) => total + (a ? a.timeSpent : 0), 0)
+  const { totalQuestions, correctAnswers, totalTime, performanceColor, performanceMessage } = useMemo(() => {
+    const totalQuestions = answers.length
+    const correctAnswers = answers.filter((a) => a && a.isCorrect).length
+    const totalTime = answers.reduce((total, a) => total + (a ? a.timeSpent : 0), 0)
 
-      // Calculate average similarity for code quizzes
-      const similarities = answers.map((a) => a?.similarity || 0)
-      const averageSimilarity =
-        similarities.length > 0 ? similarities.reduce((sum, val) => sum + val, 0) / similarities.length : 0
+    // Get performance level
+    let performanceColor = ""
+    let performanceMessage = ""
 
-      // Get performance level
-      let performanceColor = ""
-      let performanceMessage = ""
+    if (score >= 80) {
+      performanceColor = "text-green-500 bg-green-50 dark:bg-green-900/20"
+      performanceMessage = "Excellent! Your code solutions are outstanding."
+    } else if (score >= 60) {
+      performanceColor = "text-amber-500 bg-amber-50 dark:bg-amber-900/20"
+      performanceMessage = "Good job! You have a solid understanding of coding concepts."
+    } else {
+      performanceColor = "text-red-500 bg-red-50 dark:bg-red-900/20"
+      performanceMessage = "Keep practicing! Your coding skills will improve with more practice."
+    }
 
-      if (score >= 80) {
-        performanceColor = "text-green-500 bg-green-50 dark:bg-green-900/20"
-        performanceMessage = "Excellent! Your code solutions are outstanding."
-      } else if (score >= 60) {
-        performanceColor = "text-amber-500 bg-amber-50 dark:bg-amber-900/20"
-        performanceMessage = "Good job! You have a solid understanding of coding concepts."
-      } else {
-        performanceColor = "text-red-500 bg-red-50 dark:bg-red-900/20"
-        performanceMessage = "Keep practicing! Your coding skills will improve with more practice."
-      }
-
-      return {
-        totalQuestions,
-        correctAnswers,
-        totalTime,
-        averageSimilarity,
-        performanceColor,
-        performanceMessage,
-      }
-    }, [answers, score])
+    return {
+      totalQuestions,
+      correctAnswers,
+      totalTime,
+      performanceColor,
+      performanceMessage,
+    }
+  }, [answers, score])
 
   // Loading state
   if (isLoading) {
@@ -81,10 +75,12 @@ export default function CodeQuizResult({ title, onRestart }: CodeQuizResultProps
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.4 }}
+      initial={{ opacity: 0 }}
+      animate={{
+        opacity: isRedirecting ? 0 : 1,
+        y: isRedirecting ? -20 : 0,
+      }}
+      transition={{ duration: 0.5 }}
     >
       <Card className="w-full">
         <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
@@ -105,12 +101,18 @@ export default function CodeQuizResult({ title, onRestart }: CodeQuizResultProps
               <span>Score</span>
               <span className="font-medium">{score}%</span>
             </div>
-            <Progress
-              value={score}
-              className="h-2"
-              indicatorClassName={score >= 80 ? "bg-green-500" : score >= 60 ? "bg-amber-500" : "bg-red-500"}
-              aria-label={`Score: ${score}%`}
-            />
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <Progress
+                value={score}
+                className="h-2"
+                indicatorClassName={score >= 80 ? "bg-green-500" : score >= 60 ? "bg-amber-500" : "bg-red-500"}
+                aria-label={`Score: ${score}%`}
+              />
+            </motion.div>
           </div>
 
           {/* Stats */}
@@ -153,33 +155,11 @@ export default function CodeQuizResult({ title, onRestart }: CodeQuizResultProps
             </motion.div>
           </div>
 
-          {/* Code similarity */}
-          <div className="p-4 bg-muted/30 rounded-lg border border-border">
-            <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
-              <Code className="h-4 w-4 text-primary" />
-              Code Similarity Analysis
-            </h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Average Similarity</span>
-                <span className="font-medium">{Math.round(averageSimilarity * 100)}%</span>
-              </div>
-              <Progress
-                value={averageSimilarity * 100}
-                className="h-2"
-                aria-label={`Average similarity: ${Math.round(averageSimilarity * 100)}%`}
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                This measures how closely your code solutions matched the expected answers.
-              </p>
-            </div>
-          </div>
-
           {/* Answer breakdown */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
-              Code Submission Breakdown
+              Answer Breakdown
             </h3>
             <div className="space-y-3">
               {answers.map((answer, index) => (
@@ -188,35 +168,46 @@ export default function CodeQuizResult({ title, onRestart }: CodeQuizResultProps
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + index * 0.05, duration: 0.3 }}
-                  className={`flex items-center space-x-3 p-3 rounded-lg border ${
+                  className={`flex flex-col space-y-3 p-3 rounded-lg border ${
                     answer?.isCorrect
                       ? "border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-900/30"
                       : "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/30"
                   }`}
                 >
-                  <div
-                    className={`flex-shrink-0 rounded-full p-1 ${
-                      answer?.isCorrect
-                        ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                    }`}
-                    aria-hidden="true"
-                  >
-                    {answer?.isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                  </div>
-                  <div className="flex-grow">
-                    <p className="text-sm font-medium">Question {index + 1}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>Similarity: {Math.round((answer?.similarity || 0) * 100)}%</span>
-                      <span>•</span>
-                      <span>Time: {formatTime(answer?.timeSpent || 0)}</span>
-                      {answer?.hintsUsed && (
-                        <>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">Hint used</span>
-                        </>
-                      )}
+                  <div className="flex items-center">
+                    <div
+                      className={`flex-shrink-0 rounded-full p-1 ${
+                        answer?.isCorrect
+                          ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      {answer?.isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                     </div>
+                    <div className="ml-3 flex-grow">
+                      <p className="text-sm font-medium">Question {index + 1}</p>
+                    </div>
+                  </div>
+
+                  {/* Add question content display */}
+                  <div className="text-sm ml-8 mt-1 text-muted-foreground">
+                    <p className="mb-2 font-medium">Question:</p>
+                    <p className="bg-muted/50 p-2 rounded-md mb-2">
+                      {state.quizData?.questions?.[index]?.question || "Question not available"}
+                    </p>
+                    <p className="mb-1 font-medium">Your answer:</p>
+                    <p className={answer?.isCorrect ? "text-green-600" : "text-red-600"}>
+                      {answer?.answer || "No answer"}
+                    </p>
+                    <p className="mt-2 mb-1 font-medium">Correct answer:</p>
+                    <p className="text-green-600">
+                      {state.quizData?.questions?.[index]?.answer || "Answer not available"}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground ml-8">
+                    <span>Time: {formatTime(answer?.timeSpent || 0)}</span>
                   </div>
                 </motion.div>
               ))}
@@ -232,10 +223,18 @@ export default function CodeQuizResult({ title, onRestart }: CodeQuizResultProps
             <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
             Create New Quiz
           </Button>
-          <Button onClick={onRestart} className="w-full sm:w-auto transition-all">
-            <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.3 }}
+            onClick={onRestart}
+            className="w-full sm:w-auto transition-all"
+          >
+            <RotateCw className="mr-2 h-4 w-4" aria-hidden="true" />
             Restart Quiz
-          </Button>
+          </motion.button>
         </CardFooter>
       </Card>
     </motion.div>

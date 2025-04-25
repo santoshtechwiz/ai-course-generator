@@ -4,20 +4,15 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
-
-import { Card, CardContent } from "@/components/ui/card"
-
-import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
 import { useAnimation } from "@/providers/animation-provider"
-import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
 import { QuizProgress } from "../../components/QuizProgress"
-
 
 import { QuizLoader } from "@/components/ui/quiz-loader"
 
 import { useSession } from "next-auth/react"
 import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
 import FlashCardResults from "./FlashCardQuizResults"
+import { GuestPrompt } from "../../components/GuestSignInPrompt"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -52,7 +47,7 @@ export function FlashCardWrapper({
 
 function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds = [] }: FlashCardComponentProps) {
   // Use QuizContext
-  const { state,dispatch, submitAnswer, completeQuiz, restartQuiz,getTimeSpentOnCurrentQuestion } = useQuiz()
+  const { state, dispatch, submitAnswer, completeQuiz, restartQuiz, getTimeSpentOnCurrentQuestion } = useQuiz()
   const { data: session } = useSession()
 
   // Local UI state that doesn't need to be in context
@@ -345,35 +340,41 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
       const correctCount = calculateScore()
       const totalQuestions = cards.length
       const percentage = (correctCount / totalQuestions) * 100
-      const totalTime = state.lastQuestionChangeTime;
+      const totalTime = state.lastQuestionChangeTime
 
-      // Only show results to authenticated users
-      if (state.isAuthenticated) {
+      // Show auth prompt if needed and user is not authenticated
+      if (state.showAuthPrompt && !state.isAuthenticated) {
         return (
-          <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.6}>
-            <FlashCardResults
-              quizId={quizId.toString()}
-              title={title}
-              score={percentage}
-              totalQuestions={totalQuestions}
-              totalTime={totalTime}
-              correctAnswers={correctCount}
-              slug={slug}
-              onRestart={restartQuiz}
-            />
-          </MotionWrapper>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
+            <GuestPrompt />
+          </motion.div>
         )
       }
 
-      // Show sign-in prompt for unauthenticated users
+      // Show results
       return (
-        <MotionWrapper animate={true} variant="fade" duration={0.6}>
-          <Card className="w-full max-w-2xl mx-auto">
-            <CardContent className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center space-y-6">
-              <SignInPrompt callbackUrl={`/dashboard/flashcard/${slug}`} />
-            </CardContent>
-          </Card>
-        </MotionWrapper>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        >
+          <FlashCardResults
+            quizId={quizId.toString()}
+            title={title}
+            score={percentage}
+            totalQuestions={totalQuestions}
+            totalTime={totalTime}
+            correctAnswers={correctCount}
+            slug={slug}
+            onRestart={restartQuiz}
+          />
+        </motion.div>
       )
     }
 

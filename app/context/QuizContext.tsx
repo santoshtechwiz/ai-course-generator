@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useEffect, useState, useCallback } 
-from "react"
+import { createContext, useContext, useReducer, useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signIn } from "next-auth/react"
 
@@ -57,6 +56,8 @@ type QuizAction =
   | { type: "INITIALIZE_QUIZ"; payload: Partial<QuizState> }
   | { type: "COMPLETE_QUIZ"; payload: { score: number; answers: QuizAnswer[] } }
   | { type: "UPDATE_TIME_SPENT"; payload: { questionIndex: number; time: number } }
+  | { type: "SET_ANIMATION_STATE"; payload: "idle" | "completing" | "showing-results" | "redirecting" }
+  | { type: "UPDATE_GUEST_TIMER"; payload: number }
 
 // Define context state
 interface QuizContextState {
@@ -77,6 +78,9 @@ interface QuizContextState {
   isAuthenticated: boolean
   timeSpentPerQuestion: number[] // Track time spent per question
   lastQuestionChangeTime: number // Track when question was last changed
+  guestResult: boolean
+  animationState: "idle" | "completing" | "showing-results" | "redirecting"
+  guestResultTimer: number
 }
 
 // Define context type
@@ -112,6 +116,9 @@ const initialState: QuizContextState = {
   isAuthenticated: false,
   timeSpentPerQuestion: [],
   lastQuestionChangeTime: Date.now(),
+  guestResult: false,
+  animationState: "idle",
+  guestResultTimer: 30,
 }
 
 // Create context
@@ -124,14 +131,14 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
       // Update time spent on previous question before changing
       const timeSpentOnPrevQuestion = Date.now() - state.lastQuestionChangeTime
       const updatedTimeSpent = [...state.timeSpentPerQuestion]
-      updatedTimeSpent[state.currentQuestionIndex] = 
+      updatedTimeSpent[state.currentQuestionIndex] =
         (updatedTimeSpent[state.currentQuestionIndex] || 0) + timeSpentOnPrevQuestion
-      
-      return { 
-        ...state, 
+
+      return {
+        ...state,
         currentQuestionIndex: action.payload,
         timeSpentPerQuestion: updatedTimeSpent,
-        lastQuestionChangeTime: Date.now()
+        lastQuestionChangeTime: Date.now(),
       }
     case "SET_ANSWERS":
       return { ...state, answers: action.payload }
@@ -163,11 +170,11 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
       }
     case "UPDATE_TIME_SPENT":
       const newTimeSpent = [...state.timeSpentPerQuestion]
-      newTimeSpent[action.payload.questionIndex] = 
+      newTimeSpent[action.payload.questionIndex] =
         (newTimeSpent[action.payload.questionIndex] || 0) + action.payload.time
       return {
         ...state,
-        timeSpentPerQuestion: newTimeSpent
+        timeSpentPerQuestion: newTimeSpent,
       }
     case "RESET_QUIZ":
       // Clear localStorage
@@ -190,6 +197,10 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
         timeSpentPerQuestion: new Array(state.questionCount).fill(0),
         lastQuestionChangeTime: Date.now(),
       }
+    case "SET_ANIMATION_STATE":
+      return { ...state, animationState: action.payload }
+    case "UPDATE_GUEST_TIMER":
+      return { ...state, guestResultTimer: action.payload }
     default:
       return state
   }
@@ -250,6 +261,9 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     questionCount: quizData?.questions?.length || 0,
     answers: new Array(quizData?.questions?.length || 0).fill(null),
     timeSpentPerQuestion: new Array(quizData?.questions?.length || 0).fill(0),
+    guestResult: false,
+    animationState: "idle",
+    guestResultTimer: 30,
   })
 
   const { data: session, status } = useSession()
@@ -257,16 +271,18 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const [authFlowInProgress, setAuthFlowInProgress] = useState(false)
   const [startTime] = useState(Date.now())
+  // In the QuizProvider component, add a new state for tracking guest results
+  const [guestResult, setGuestResult] = useState(false)
 
   const isAuthenticated = status === "authenticated"
 
   // Update isAuthenticated in state when auth status changes
   useEffect(() => {
-    dispatch({ 
-      type: "INITIALIZE_QUIZ", 
-      payload: { 
-        isAuthenticated: isAuthenticated 
-      } 
+    dispatch({
+      type: "INITIALIZE_QUIZ",
+      payload: {
+        isAuthenticated: isAuthenticated,
+      },
     })
   }, [isAuthenticated])
 
@@ -280,15 +296,15 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
           type: "UPDATE_TIME_SPENT",
           payload: {
             questionIndex: state.currentQuestionIndex,
-            time: timeSpent
-          }
+            time: timeSpent,
+          },
         })
         // Reset the timer after recording
-        dispatch({ 
-          type: "INITIALIZE_QUIZ", 
-          payload: { 
-            lastQuestionChangeTime: currentTime 
-          } 
+        dispatch({
+          type: "INITIALIZE_QUIZ",
+          payload: {
+            lastQuestionChangeTime: currentTime,
+          },
         })
       }
     }, 1000) // Update every second
@@ -533,10 +549,21 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     [state.currentQuestionIndex, state.questionCount, nextQuestion],
   )
 
+  // Modify the completeQuiz function to handle guest vs authenticated users consistently
   const completeQuiz = useCallback(
     async (finalAnswers: QuizAnswer[]) => {
+      // Set animation state to completing
+      dispatch({ type: "SET_ANIMATION_STATE", payload: "completing" })
+
       // Calculate score
       const score = calculateScore(finalAnswers)
+
+      // Make sure we have all answers
+      const completeAnswers = [...finalAnswers]
+      // Fill in any missing answers with null
+      while (completeAnswers.length < state.questionCount) {
+        completeAnswers.push(null)
+      }
 
       // Create result object
       const result: QuizResult = {
@@ -544,35 +571,93 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         slug: state.slug,
         quizType: state.quizType,
         score,
-        answers: finalAnswers,
+        answers: completeAnswers,
         totalTime: (Date.now() - startTime) / 1000,
         timestamp: Date.now(),
         isCompleted: true,
-        redirectPath: `/dashboard/mcq/${state.slug}?completed=true`,
+        redirectPath: `/dashboard/${state.quizType}/${state.slug}?completed=true`,
         timeSpentPerQuestion: state.timeSpentPerQuestion,
       }
 
-      // Update state
-      dispatch({
-        type: "COMPLETE_QUIZ",
-        payload: { score, answers: finalAnswers },
-      })
+      // Add a slight delay for the completion animation
+      setTimeout(() => {
+        // Update state
+        dispatch({
+          type: "COMPLETE_QUIZ",
+          payload: { score, answers: completeAnswers },
+        })
 
-      // If authenticated, save result
-      if (isAuthenticated) {
-        await saveQuizResult(result)
-      } else {
-        // Save as guest result
-        saveGuestResult(result)
-        // Show auth prompt
-        setShowAuthPrompt(true)
-      }
+        dispatch({ type: "SET_ANIMATION_STATE", payload: "showing-results" })
 
-      // Save state as completed
-      saveQuizState()
+        // If authenticated, save result and don't show auth prompt
+        if (isAuthenticated) {
+          saveQuizResult(result)
+          // Make sure auth prompt is not shown for authenticated users
+          setShowAuthPrompt(false)
+          setGuestResult(false)
+        } else {
+          // Save as guest result
+          saveGuestResult(result)
+          // Show auth prompt
+          setShowAuthPrompt(true)
+          setGuestResult(true)
+        }
+
+        // Save state as completed
+        saveQuizState()
+      }, 800) // Short delay for animation
     },
-    [state.quizId, state.slug, state.quizType, isAuthenticated, startTime, state.timeSpentPerQuestion],
+    [
+      state.quizId,
+      state.slug,
+      state.quizType,
+      isAuthenticated,
+      startTime,
+      state.timeSpentPerQuestion,
+      state.questionCount,
+    ],
   )
+
+  // Update the closeAuthPrompt function to handle guest result flow
+  const closeAuthPrompt = useCallback(() => {
+    setShowAuthPrompt(false)
+
+    // If user chose to continue as guest, show results temporarily
+    if (guestResult) {
+      // Initialize the countdown timer
+      dispatch({ type: "UPDATE_GUEST_TIMER", payload: 30 })
+
+      // Start countdown timer
+      const timerInterval = setInterval(() => {
+        dispatch({
+          type: "UPDATE_GUEST_TIMER",
+          payload: (prevTimer) => {
+            if (prevTimer <= 1) {
+              clearInterval(timerInterval)
+              // Set animation state to redirecting
+              dispatch({ type: "SET_ANIMATION_STATE", payload: "redirecting" })
+
+              // Add a short delay for the redirect animation
+              setTimeout(() => {
+                // Clear guest result
+                setGuestResult(false)
+                // Redirect to dashboard
+                if (typeof window !== "undefined") {
+                  window.location.href = "/dashboard"
+                }
+              }, 1000)
+
+              return 0
+            }
+            return prevTimer - 1
+          },
+        })
+      }, 1000)
+
+      // Clean up interval if component unmounts
+      return () => clearInterval(timerInterval)
+    }
+  }, [guestResult, dispatch])
 
   const restartQuiz = useCallback(() => {
     dispatch({ type: "RESET_QUIZ" })
@@ -606,10 +691,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       setAuthFlowInProgress(false)
     })
   }, [state.quizId, state.slug, state.quizType, authFlowInProgress])
-
-  const closeAuthPrompt = useCallback(() => {
-    setShowAuthPrompt(false)
-  }, [])
 
   // Check for auth flow completion (same as before)
   useEffect(() => {
@@ -649,11 +730,15 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     return state.timeSpentPerQuestion[state.currentQuestionIndex] || 0
   }, [state.currentQuestionIndex, state.timeSpentPerQuestion])
 
+  // Update the contextValue to include the new state
   const contextValue = {
     state: {
       ...state,
       showAuthPrompt,
       isAuthenticated,
+      guestResult,
+      animationState: state.animationState,
+      guestResultTimer: state.guestResultTimer,
     },
     dispatch,
     nextQuestion,

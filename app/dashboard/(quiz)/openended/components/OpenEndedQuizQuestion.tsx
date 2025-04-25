@@ -17,6 +17,7 @@ import {
   Clock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useQuiz } from "@/app/context/QuizContext"
 
 interface QuizQuestionProps {
   question: {
@@ -146,6 +147,9 @@ export default function OpenEndedQuizQuestion({
     const remainingSeconds = seconds % 60
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
   }
+
+  const { state } = useQuiz()
+  const isCompleting = state.animationState === "completing"
 
   return (
     <motion.div
@@ -283,10 +287,20 @@ export default function OpenEndedQuizQuestion({
         </CardContent>
 
         <CardFooter>
-          <Button
+          <motion.button
             onClick={handleSubmit}
             disabled={!isAnswerValid()}
             className="w-full sm:w-auto ml-auto bg-primary hover:bg-primary/90 text-primary-foreground"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            animate={
+              isCompleting
+                ? {
+                    scale: [1, 1.1, 1],
+                    transition: { duration: 0.5 },
+                  }
+                : {}
+            }
           >
             {isSubmitting ? (
               <>
@@ -299,7 +313,7 @@ export default function OpenEndedQuizQuestion({
                 Submit Answer
               </>
             )}
-          </Button>
+          </motion.button>
         </CardFooter>
       </Card>
     </motion.div>
