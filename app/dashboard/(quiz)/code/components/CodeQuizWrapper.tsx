@@ -1,18 +1,19 @@
 "use client"
-
 import { useRouter } from "next/navigation"
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { memo } from "react"
+import { memo, useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
 import CodingQuiz from "./CodingQuiz"
 import CodeQuizResult from "./CodeQuizResult"
-import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
+import { useQuiz, QuizProvider } from "@/app/context/QuizContext"
 import { GuestPrompt } from "../../components/GuestSignInPrompt"
+import { quizService } from "@/lib/QuizService"
+import { useAuth } from "@/providers/unified-auth-provider"
 
-// Define proper types for the quiz data
 interface Question {
   id: string
   question: string
@@ -45,47 +46,27 @@ interface CodeQuizContentProps {
   slug: string
 }
 
-// Memoize the content component to prevent unnecessary re-renders
 const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug }: CodeQuizContentProps) {
-  const { state, submitAnswer, completeQuiz, restartQuiz } = useQuiz()
+  const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated } = useQuiz()
   const router = useRouter()
-  const { currentQuestionIndex, questionCount, isLoading, error,
-    isCompleted, showAuthPrompt, answers } = state
-  
-  // Ensure questions is always an array
-  const questions = quizData?.questions || []
-  const currentQuestion = questions[currentQuestionIndex]
+  const { isAuthenticated: authState } = useAuth()
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
-  // Handle answer submission
-  const handleAnswer = (answer: string, timeSpent: number, isCorrect: boolean) => {
-    submitAnswer(answer, timeSpent, isCorrect)
+  const { currentQuestionIndex, questionCount, isLoading, error, isCompleted, answers, isProcessingAuth } = state
 
-    // Check if this is the last question
-    if (currentQuestionIndex >= questionCount - 1) {
-      // Get all answers including the current one
-      const updatedAnswers = [...answers]
-      updatedAnswers[currentQuestionIndex] = { answer, timeSpent, isCorrect }
-
-      // Complete the quiz
-      setTimeout(() => {
-        // Use type guard to ensure non-null answers
-        completeQuiz(updatedAnswers.filter((a): a is QuizAnswer => a !== null))
-      }, 1000) // Slightly reduced delay for better UX
+  // Only show auth prompt after quiz completion for non-authenticated users
+  useEffect(() => {
+    if (isCompleted && !authState && !isProcessingAuth) {
+      console.log("Quiz completed and user is not authenticated, showing auth prompt")
+      setShowAuthPrompt(true)
+    } else if (authState || isProcessingAuth) {
+      // If user is authenticated or we're processing auth, don't show the prompt
+      setShowAuthPrompt(false)
     }
-  }
+  }, [authState, isCompleted, isProcessingAuth])
 
-  // Render content based on state
-  let content
-
-  if (isLoading) {
-    content = (
-      <div className="flex flex-col items-center justify-center min-h-[200px] gap-3" aria-live="polite">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
-        <p className="text-sm text-muted-foreground">Loading quiz data...</p>
-      </div>
-    )
-  } else if (error) {
-    content = (
+  if (error) {
+    return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" aria-hidden="true" />
         <AlertTitle>Error loading quiz</AlertTitle>
@@ -97,8 +78,10 @@ const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug }: CodeQu
         </AlertDescription>
       </Alert>
     )
-  } else if (!quizData || !quizData.questions || quizData.questions.length === 0) {
-    content = (
+  }
+
+  if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+    return (
       <Card>
         <CardContent className="p-6 text-center">
           <p className="text-muted-foreground mb-4">No questions available for this quiz.</p>
@@ -111,39 +94,100 @@ const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug }: CodeQu
         </CardContent>
       </Card>
     )
-  } else if (showAuthPrompt) {
-    content = <GuestPrompt />
-  } else if (isCompleted) {
-    content = <CodeQuizResult title={quizData?.title || "Code Quiz"} onRestart={restartQuiz} />
-  } else {
-    // Ensure currentQuestion has options before rendering CodingQuiz
-    if (currentQuestion && Array.isArray(currentQuestion.options)) {
-      content = (
-        <CodingQuiz
-          question={currentQuestion}
-          onAnswer={handleAnswer}
-          questionNumber={currentQuestionIndex + 1}
-          totalQuestions={questionCount}
-        />
-      )
+  }
+
+  const currentQuestion = quizData.questions[currentQuestionIndex]
+
+  if (!currentQuestion) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">Question not found.</p>
+          <p className="text-sm text-muted-foreground mb-6">There was an error loading the current question.</p>
+          <Button onClick={() => router.push("/dashboard/code")} className="mt-4">
+            Return to Quiz Creator
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const handleAnswer = (answer: string, timeSpent: number, isCorrect: boolean) => {
+    submitAnswer(answer, timeSpent, isCorrect)
+
+    // Check if this is the last question
+    if (currentQuestionIndex >= questionCount - 1) {
+      // Get all answers including the current one
+      const updatedAnswers = [...answers]
+      updatedAnswers[currentQuestionIndex] = { answer, timeSpent, isCorrect }
+
+      // Complete the quiz
+      setTimeout(() => {
+        completeQuiz(updatedAnswers.filter((a) => a !== null))
+      }, 1000) // Slightly reduced delay for better UX
     } else {
-      // Handle case where options are missing
-      content = (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Question Error</AlertTitle>
-          <AlertDescription>
-            This question appears to be missing options. Please try reloading or contact support.
-            <div className="mt-4">
-              <Button onClick={() => router.push("/dashboard/code")}>Return to Quiz Creator</Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )
+      // Move to the next question
+      state.currentQuestionIndex += 1 // Ensure the index is incremented
     }
   }
 
-  return <div className="w-full max-w-3xl mx-auto p-4">{content}</div>
+  return (
+    <div className="w-full max-w-3xl mx-auto p-4">
+      <AnimatePresence mode="wait">
+        {isLoading || isProcessingAuth ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center min-h-[200px] gap-3"
+            aria-live="polite"
+          >
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
+            <p className="text-sm text-muted-foreground">
+              {isProcessingAuth ? "Processing your results..." : "Loading quiz data..."}
+            </p>
+          </motion.div>
+        ) : isCompleted ? (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
+            {showAuthPrompt ? (
+              <GuestPrompt quizId={quizData.id?.toString()} forceShow={true} />
+            ) : (
+              <CodeQuizResult
+                title={quizData?.title || "Code Quiz"}
+                onRestart={restartQuiz}
+                quizId={quizData.id?.toString()}
+                questions={quizData.questions}
+                answers={state.answers}
+                score={state.score}
+              />
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="quiz"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
+            <CodingQuiz
+              question={currentQuestion}
+              onAnswer={handleAnswer}
+              questionNumber={currentQuestionIndex + 1}
+              totalQuestions={questionCount}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
 })
 
 interface CodeQuizWrapperProps {
@@ -153,24 +197,127 @@ interface CodeQuizWrapperProps {
 }
 
 export default function CodeQuizWrapper({ quizData, slug, userId }: CodeQuizWrapperProps) {
-  // Log the quiz data to debug options issue
-  console.log("Quiz data:", quizData);
-  
-  // Ensure quizData has the expected structure
-  const validatedQuizData: QuizData = {
+  const [isInitializing, setIsInitializing] = useState(true)
+  const router = useRouter()
+  const { state } = useQuiz()
+
+  useEffect(() => {
+    return () => {
+      // Clean up when component unmounts if the quiz is completed
+      if (state.isCompleted && state.quizId) {
+        console.log("CodeQuizWrapper unmounting, cleaning up quiz data")
+        quizService.cleanupAfterQuizCompletion(state.quizId, state.quizType)
+      }
+    }
+  }, [state.isCompleted, state.quizId, state.quizType])
+
+  useEffect(() => {
+    // Short delay to allow state to initialize
+    const timer = setTimeout(() => {
+      setIsInitializing(false)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Check for returning from auth flow
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isReturningFromAuth = quizService.isReturningFromAuth()
+      if (isReturningFromAuth) {
+        console.log("[CodeQuizWrapper] Detected return from auth flow, processing pending data")
+        quizService.processPendingQuizData().catch(console.error)
+      }
+    }
+  }, [])
+
+  // Clean up when component unmounts
+  useEffect(() => {
+    return () => {
+      if (quizData?.id) {
+        console.log("Component unmounting, triggering cleanup")
+        quizService.cleanupAfterQuizCompletion(quizData.id.toString(), "code")
+      }
+    }
+  }, [quizData?.id])
+
+  // Show loading state during initialization
+  if (isInitializing) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
+        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Loading quiz...</h3>
+        <p className="text-muted-foreground text-center max-w-md">Please wait while we load your quiz.</p>
+      </div>
+    )
+  }
+
+  // Early return for empty questions
+  if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="text-xl font-semibold mb-2">No Questions Available</h3>
+        <p className="text-muted-foreground text-center max-w-md">
+          We couldn't find any questions for this quiz. This could be because the quiz is still being generated or there
+          was an error.
+        </p>
+        <Button onClick={() => router.push("/dashboard/quizzes")} className="mt-6">
+          Return to Quizzes
+        </Button>
+      </div>
+    )
+  }
+
+  // Process options to ensure no duplicates and include the correct answer
+  const processedQuizData = {
     ...quizData,
-    questions: Array.isArray(quizData?.questions) 
-      ? quizData.questions.map((q: Question) => ({
-          ...q,
-          // Ensure options is always an array
-          options: Array.isArray(q.options) ? q.options : []
-        }))
-      : []
-  };
-  
+    questions: quizData.questions.map((q) => {
+      // Create a set of unique options
+      const uniqueOptions = new Set<string>()
+
+      // Always include the correct answer
+      if (q.answer) {
+        uniqueOptions.add(q.answer)
+      }
+
+      // Add other options
+      if (Array.isArray(q.options)) {
+        q.options.forEach((option) => {
+          if (option && option.trim()) {
+            uniqueOptions.add(option)
+          }
+        })
+      }
+
+      return {
+        ...q,
+        options: Array.from(uniqueOptions),
+      }
+    }),
+  }
+
   return (
-    <QuizProvider quizData={validatedQuizData} slug={slug}>
-      <CodeQuizContent quizData={validatedQuizData} slug={slug} />
+    <QuizProvider
+      quizData={processedQuizData}
+      slug={slug}
+      onAuthRequired={(redirectUrl) => {
+        // Save auth redirect info
+        quizService.saveAuthRedirect(redirectUrl)
+
+        // Save current quiz state before redirecting
+        quizService.savePendingQuizData()
+
+        // Add fromAuth parameter to the callback URL
+        const callbackUrl = new URL(redirectUrl, window.location.origin)
+        callbackUrl.searchParams.set("fromAuth", "true")
+
+        // Redirect to sign in page
+        if (typeof window !== "undefined") {
+          window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl.toString())}`
+        }
+      }}
+    >
+      <CodeQuizContent quizData={processedQuizData} slug={slug} />
     </QuizProvider>
   )
 }

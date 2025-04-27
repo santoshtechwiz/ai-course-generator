@@ -8,6 +8,7 @@ interface QuizQuestion {
   question: string
   options: string // JSON string in the database
   answer: string
+  correctAnswer?: string // Some questions might use this field instead
 }
 
 interface QuizUser {
@@ -36,13 +37,13 @@ export interface ProcessedQuestion {
   option1: string
   option2: string
   option3: string
-  options?: string[] // For flexibility
+  options: string[] // For flexibility
 }
 
 // Define the response type
 export interface McqQuestionsResponse {
   result: {
-    id: string
+    id: string | number
     title: string
     slug: string
     isPublic: boolean
@@ -58,7 +59,9 @@ export interface McqQuestionsResponse {
  * @param slug The unique slug identifier for the quiz
  * @returns The quiz data and processed questions
  */
-const getMcqQuestions = async (slug: string): Promise<McqQuestionsResponse> => {
+export default async function getMcqQuestions(slug: string): Promise<McqQuestionsResponse> {
+  console.log(`[getMcqQuestions] Fetching quiz data for slug: ${slug}`)
+
   try {
     const result = await prisma.userQuiz.findUnique({
       where: { slug },
@@ -76,6 +79,7 @@ const getMcqQuestions = async (slug: string): Promise<McqQuestionsResponse> => {
             question: true,
             options: true,
             answer: true,
+            
           },
         },
         user: {
@@ -93,8 +97,32 @@ const getMcqQuestions = async (slug: string): Promise<McqQuestionsResponse> => {
       return { result: null, questions: [] }
     }
 
+    console.log(`[getMcqQuestions] Found quiz: ${result.title} with ${result.questions.length} questions`)
+
+    // Define a set of fallback options we can use if needed
+    const fallbackOptions = [
+      "True",
+      "False",
+      "All of the above",
+      "None of the above",
+      "It depends on the context",
+      "This is not determinable from the information given",
+      "Both A and B",
+      "Neither A nor B",
+      "Sometimes",
+      "Always",
+      "Never",
+      "Rarely",
+      "Often",
+      "Possibly",
+      "Definitely not",
+    ]
+
     // Process and convert questions
-    const questions: ProcessedQuestion[] = result.questions.map((question) => {
+    const questions: ProcessedQuestion[] = result.questions.map((question, index) => {
+      // Use correctAnswer if available, otherwise fall back to answer
+      const correctAnswer = question.answer || question.answer || ""
+
       // Parse options with error handling
       let parsedOptions: string[] = []
 
@@ -109,49 +137,87 @@ const getMcqQuestions = async (slug: string): Promise<McqQuestionsResponse> => {
         } catch (error) {
           console.error(`Error parsing options for question ${question.id}:`, error)
           // Create fallback options that include the answer
-          parsedOptions = [question.answer, "Option 1", "Option 2", "Option 3"].filter(
-            (opt, index, self) =>
-              // Remove duplicates and ensure answer is included
-              opt && self.indexOf(opt) === index,
-          )
+          parsedOptions = []
         }
       }
 
-      // Ensure we have at least the answer in the options
-      if (!parsedOptions.includes(question.answer) && question.answer) {
-        parsedOptions.unshift(question.answer)
+      // Create a Set to remove duplicates
+      const uniqueOptions = new Set<string>()
+
+      // Ensure the correct answer is included
+      if (correctAnswer) {
+        uniqueOptions.add(correctAnswer)
       }
 
+      // Add other options if they're not duplicates
+      parsedOptions.forEach((option) => {
+        if (option && option !== correctAnswer) {
+          uniqueOptions.add(option)
+        }
+      })
+
+      // If we have fewer than 4 unique options, add fallbacks
+      let fallbackIndex = 0
+      while (uniqueOptions.size < 4 && fallbackIndex < fallbackOptions.length) {
+        if (!uniqueOptions.has(fallbackOptions[fallbackIndex]) && fallbackOptions[fallbackIndex] !== correctAnswer) {
+          uniqueOptions.add(fallbackOptions[fallbackIndex])
+        }
+        fallbackIndex++
+      }
+
+      // Convert back to array
+      const finalOptions = Array.from(uniqueOptions)
+
+      // Shuffle options with a stable seed based on question ID
+      const seed = Number.parseInt(question.id) || index
+      const shuffledOptions = [...finalOptions].sort(() => {
+        const x = Math.sin(seed + 1) * 10000
+        return x - Math.floor(x) - 0.5
+      })
+
       // Extract individual options for backward compatibility
-      const [option1 = "", option2 = "", option3 = ""] = parsedOptions
+      const [option1 = "", option2 = "", option3 = ""] = shuffledOptions.filter((opt) => opt !== correctAnswer)
+
+      // Log the processed question for debugging
+      if (index === 0) {
+        console.log(`[getMcqQuestions] First question processed:`, {
+          id: question.id,
+          question: question.question,
+          correctAnswer,
+          optionsCount: shuffledOptions.length,
+        })
+      }
 
       return {
         id: question.id,
-        question: question.question,
+        question: question.question || `Question ${index + 1}`,
         title: result.title, // Include the quiz title for context
-        answer: question.answer,
+        answer: correctAnswer,
         option1,
         option2,
         option3,
-        options: parsedOptions, // Include the full array for flexibility
+        options: shuffledOptions, // Include the full array for flexibility
       }
     })
 
+    // Log the result for debugging
+    console.log(`[getMcqQuestions] Successfully processed ${questions.length} questions`)
+
     return {
       result: {
-        id: Number(result.id),
+        id: result.id,
         title: result.title,
         slug: result.slug,
         isPublic: result.isPublic,
         isFavorite: result.isFavorite,
         userId: result.userId,
-        difficulty: result.difficulty|| "medium", // Default to medium if not provided
+        difficulty: result.difficulty || "medium", // Default to medium if not provided
       },
       questions,
     }
   } catch (error) {
-    console.error("Error fetching MCQ questions:", error)
-    return { result: null, questions: [] }
+    console.error("[getMcqQuestions] Error fetching MCQ questions:", error)
+    throw new Error(`Failed to fetch quiz: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -221,5 +287,3 @@ export async function generateMetadata(props: { params: { slug: string } }): Pro
     }
   }
 }
-
-export default getMcqQuestions

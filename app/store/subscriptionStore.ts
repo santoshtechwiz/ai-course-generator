@@ -79,7 +79,15 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
             if (!response.ok) {
               if (response.status === 401) {
-                throw new Error("Unauthorized")
+                console.warn("Unauthorized access. Please log in again.")
+                set({
+                  status: "failed",
+                  error: "Unauthorized access. Please log in again.",
+                  isRefreshing: false,
+                  isLoading: false,
+                  isError: true,
+                })
+                return
               }
               throw new Error(`Failed to fetch subscription status: ${response.statusText}`)
             }
@@ -334,7 +342,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
         // Derived state
         canDownloadPDF: () => {
           const state = get()
-          return state.data?.isSubscribed || state.data?.subscriptionPlan !== "FREE"
+          return !!state.data?.isSubscribed || state.data?.subscriptionPlan !== "FREE"
         },
       }),
       {

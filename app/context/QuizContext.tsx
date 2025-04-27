@@ -291,6 +291,8 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
   }, [isAuthenticated, state.quizId, state.isCompleted, state.answers, state.score])
 
+  // Modify the initialization logic to ensure it works for unauthenticated users:
+
   // Initialize quiz state
   useEffect(() => {
     if (initializationDone.current) return
@@ -341,6 +343,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   useEffect(() => {
     if (!state.isCompleted && !state.isProcessingAuth) {
       quizService.saveQuizState({
+        quizId: state.quizId, // Add this line to include the quizId
         currentQuestionIndex: state.currentQuestionIndex,
         answers: state.answers,
         isCompleted: state.isCompleted,
@@ -395,6 +398,8 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     [state.currentQuestionIndex, state.questionCount, nextQuestion],
   )
 
+  // Also modify the completeQuiz function to handle unauthenticated users better:
+
   // Complete quiz
   const completeQuiz = useCallback(
     (finalAnswers: (QuizAnswer | null)[]) => {
@@ -430,59 +435,18 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
           slug: state.slug,
           type: state.quizType,
           score,
-          answers: filled,
+          answers: filled.filter((a) => a !== null), // Filter out null answers
           totalTime: (Date.now() - startTime) / 1000,
           totalQuestions: state.questionCount,
         })
 
-        // Handle authentication if needed
-        if (!isAuthenticated) {
-          const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
-
-          // Save the quiz result to local storage before redirecting
-          quizService.saveGuestResult({
-            quizId: state.quizId,
-            slug: state.slug,
-            type: state.quizType,
-            score,
-            answers: filled,
-            totalTime: (Date.now() - startTime) / 1000,
-            timestamp: Date.now(),
-            isCompleted: true,
-            redirectPath: redirectUrl,
-            timeSpentPerQuestion: state.timeSpentPerQuestion,
-          })
-
-          // Save current quiz state for retrieval after auth
-          quizService.savePendingQuizData({
-            quizId: state.quizId,
-            slug: state.slug,
-            type: state.quizType,
-            score,
-            totalTime: (Date.now() - startTime) / 1000,
-            totalQuestions: state.questionCount,
-            answers: filled,
-          })
-
-          // Add fromAuth parameter to the callback URL
-          const callbackUrl = `${redirectUrl}&fromAuth=true`
-
-          if (onAuthRequired) {
-            onAuthRequired(callbackUrl)
-          } else {
-            signIn({ callbackUrl })
-          }
-        } else {
-          // For authenticated users, save directly to server
-          quizService.saveCompleteQuizResult({
-            quizId: state.quizId,
-            slug: state.slug,
-            type: state.quizType,
-            score,
-            answers: filled,
-            totalTime: (Date.now() - startTime) / 1000,
-            totalQuestions: state.questionCount,
-          })
+        // For authenticated users, save directly to server and clean up
+        if (isAuthenticated) {
+          // Clean up all quiz data after completion for authenticated users
+          // But delay the cleanup to ensure the result is saved first
+          setTimeout(() => {
+            quizService.cleanupAfterQuizCompletion(state.quizId, state.quizType)
+          }, 1000)
         }
 
         // Update URL to include completed=true
@@ -500,7 +464,8 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   )
 
   const restartQuiz = useCallback(() => {
-    quizService.clearQuizState(state.quizId, state.quizType)
+    // First clean up all quiz data
+    quizService.cleanupAfterQuizCompletion(state.quizId, state.quizType)
 
     // Update URL to remove completed parameter
     if (typeof window !== "undefined") {
@@ -528,14 +493,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     const fromAuth = urlParams.get("fromAuth") === "true"
 
     // If returning from auth, process once and clean up
-    if (isCompleted && fromAuth && !authProcessingDone.current) {
+    if (isCompleted && fromAuth && !authProcessingDone.current && isAuthenticated) {
       authProcessingDone.current = true
       dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
       dispatch({ type: "SET_LOADING", payload: true })
-
-      // Generate a unique browser fingerprint to track this processing
-      const browserFingerprint = `${navigator.userAgent}-${Date.now()}`
-      sessionStorage.setItem("auth_processing_fingerprint", browserFingerprint)
 
       console.log("Processing authentication return...")
 
@@ -583,11 +544,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
           url.searchParams.delete("fromAuth")
           url.searchParams.delete("auth")
           url.searchParams.delete("session")
-          url.searchParams.delete("quizId")
-          url.searchParams.delete("slug")
-          url.searchParams.delete("type")
-          url.searchParams.delete("score")
-          url.searchParams.delete("browser")
           // Keep only completed=true
           url.searchParams.set("completed", "true")
           window.history.replaceState({}, document.title, url.toString())
@@ -633,6 +589,16 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       }
     }
   }, [isAuthenticated, state.quizId, state.isCompleted])
+
+  // Add a cleanup effect when the component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up when component unmounts if the quiz is completed
+      if (state.isCompleted && state.quizId) {
+        quizService.cleanupAfterQuizCompletion(state.quizId, state.quizType)
+      }
+    }
+  }, [state.isCompleted, state.quizId, state.quizType])
 
   return (
     <QuizContext.Provider
