@@ -194,17 +194,7 @@ export type QueryParams = {
 
 import type React from "react"
 
-// Quiz types
-export interface Question {
-  id: string
-  question: string
-  code?: string
-  options: string[]
-  answer: string
-  explanation?: string
-  difficulty: string
-  timeLimit?: number
-}
+
 
 export interface QuizData {
   id?: string
@@ -294,4 +284,32 @@ export interface FlashCard {
   isSaved: boolean
   createdAt: Date
   updatedAt: Date
+}
+
+export interface Question {
+  id: string
+  question: string
+  answer: string
+  option1: string
+  option2: string
+  option3: string
+  options?: string[] // Added for flexibility
+  title?: string
+}
+
+export interface McqQuizProps {
+  quizId: string
+  slug: string
+  title: string
+  questions: Question[]
+  isPublic: boolean
+  isFavorite: boolean
+  ownerId?: string
+  difficulty?: string
+}
+
+export interface QuizAnswer {
+  answer: string
+  timeSpent: number
+  isCorrect: boolean
 }

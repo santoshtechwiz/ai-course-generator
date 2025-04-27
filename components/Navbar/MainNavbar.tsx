@@ -25,7 +25,7 @@ import { UserMenu } from "./UserMenu"
 import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 const NavItems = memo(() => {
-  const pathname = usePathname()
+  const pathname = typeof window !== "undefined" ? usePathname() : ""
 
   return (
     <nav className="mx-6 hidden items-center space-x-8 md:flex">
@@ -65,13 +65,12 @@ export default function MainNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
-  // Use the correct function from the subscription store
   const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
   const subscriptionStatus = useSubscriptionStore((state) => state.data)
   const isLoadingSubscription = useSubscriptionStore((state) => state.isLoading)
   const isError = useSubscriptionStore((state) => state.isError)
 
-  const pathname = usePathname()
+  const pathname = typeof window !== "undefined" ? usePathname() : ""
   const [creditScore, setCreditScore] = useState(0)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
@@ -91,9 +90,11 @@ export default function MainNavbar() {
   }, [])
 
   useEffect(() => {
-    const scrollListener = handleScroll()
-    window.addEventListener("scroll", scrollListener, { passive: true })
-    return () => window.removeEventListener("scroll", scrollListener)
+    if (typeof window !== "undefined") {
+      const scrollListener = handleScroll()
+      window.addEventListener("scroll", scrollListener, { passive: true })
+      return () => window.removeEventListener("scroll", scrollListener)
+    }
   }, [handleScroll])
 
   useEffect(() => {
@@ -102,7 +103,6 @@ export default function MainNavbar() {
         setIsInitialLoad(false)
       }, 3000)
 
-      // Use fetchSubscriptionStatus instead of refreshSubscription
       fetchSubscriptionStatus(true)
 
       const quickInitialRefresh = setTimeout(() => {
@@ -142,18 +142,20 @@ export default function MainNavbar() {
   }, [subscriptionStatus, session?.user?.credits, credits])
 
   useEffect(() => {
-    const handleUserActivity = () => {
-      if (userAuthenticated && !isLoadingSubscription) {
-        fetchSubscriptionStatus()
+    if (typeof window !== "undefined") {
+      const handleUserActivity = () => {
+        if (userAuthenticated && !isLoadingSubscription) {
+          fetchSubscriptionStatus()
+        }
       }
-    }
 
-    window.addEventListener("mousemove", handleUserActivity, { passive: true, once: true })
-    window.addEventListener("touchstart", handleUserActivity, { passive: true, once: true })
+      window.addEventListener("mousemove", handleUserActivity, { passive: true, once: true })
+      window.addEventListener("touchstart", handleUserActivity, { passive: true, once: true })
 
-    return () => {
-      window.removeEventListener("mousemove", handleUserActivity)
-      window.removeEventListener("touchstart", handleUserActivity)
+      return () => {
+        window.removeEventListener("mousemove", handleUserActivity)
+        window.removeEventListener("touchstart", handleUserActivity)
+      }
     }
   }, [userAuthenticated, isLoadingSubscription, fetchSubscriptionStatus])
 

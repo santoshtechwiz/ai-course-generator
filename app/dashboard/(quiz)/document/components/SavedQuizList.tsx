@@ -20,7 +20,7 @@ import {
   LayoutDashboard,
   Filter,
 } from "lucide-react"
-import { type Quiz, quizStore } from "@/lib/quiz-store"
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +42,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Quiz } from "@/hooks/useRandomQuizzes"
 
 interface SavedQuizListProps {
   quizzes: Quiz[]

@@ -1,12 +1,17 @@
 "use client"
-import { useMemo } from "react"
+
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { CheckCircle2, XCircle, Clock, BarChart3, RefreshCw, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle, XCircle, Clock, RotateCcw, Loader2, FileText, ArrowLeft } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { cn, formatQuizTime } from "@/lib/utils"
 import { useQuiz } from "@/app/context/QuizContext"
-import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { quizService } from "@/lib/QuizService"
+import type { Question } from "./types"
 
 interface McqQuizResultProps {
   title: string
@@ -15,234 +20,196 @@ interface McqQuizResultProps {
 
 export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) {
   const { state } = useQuiz()
-  const { answers, score, isLoading } = state
-  const router = useRouter()
-  const isRedirecting = state.animationState === "redirecting"
+  const { data: session } = useSession()
+  const [showAnimation, setShowAnimation] = useState(true)
 
-  // Format time - memoized to avoid recalculation
-  const formatTime = useMemo(
-    () =>
-      (seconds: number): string => {
-        const mins = Math.floor(seconds / 60)
-        const secs = Math.floor(seconds % 60)
-        return `${mins}:${secs < 10 ? "0" : ""}${secs}`
-      },
-    [],
-  )
+  const { answers, quizData } = state
+  const questions = quizData?.questions || []
 
-  // Calculate stats - memoized to avoid recalculation on each render
-  const { totalQuestions, correctAnswers, totalTime, averageTime, performanceColor, performanceMessage } =
-    useMemo(() => {
-      const totalQuestions = answers.length
-      const correctAnswers = answers.filter((a) => a && a.isCorrect).length
-      const totalTime = answers.reduce((total, a) => total + (a ? a.timeSpent : 0), 0)
-      const averageTime = totalQuestions > 0 ? totalTime / totalQuestions : 0
+  // Calculate statistics
+  const totalQuestions = questions.length
+  const correctAnswers = answers.filter((a) => a?.isCorrect).length
+  const incorrectAnswers = answers.filter((a) => a && !a.isCorrect).length
+  const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100)
+  const totalTime = answers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
+  const averageTime = Math.round(totalTime / totalQuestions)
 
-      // Get performance level
-      let performanceColor = ""
-      let performanceMessage = ""
+  // Determine performance level
+  let performanceLevel = "Needs Improvement"
+  let performanceColor = "text-red-500"
 
-      if (score >= 80) {
-        performanceColor = "text-green-500 bg-green-50 dark:bg-green-900/20"
-        performanceMessage = "Excellent! You've mastered this topic."
-      } else if (score >= 60) {
-        performanceColor = "text-amber-500 bg-amber-50 dark:bg-amber-900/20"
-        performanceMessage = "Good job! You have a solid understanding."
-      } else {
-        performanceColor = "text-red-500 bg-red-50 dark:bg-red-900/20"
-        performanceMessage = "Keep practicing! You'll improve with more study."
-      }
-
-      return {
-        totalQuestions,
-        correctAnswers,
-        totalTime,
-        averageTime,
-        performanceColor,
-        performanceMessage,
-      }
-    }, [answers, score])
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <Card className="w-full">
-        <CardContent className="p-6 flex flex-col justify-center items-center min-h-[300px] gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-          <p className="text-muted-foreground">Loading results...</p>
-        </CardContent>
-      </Card>
-    )
+  if (scorePercentage >= 90) {
+    performanceLevel = "Excellent"
+    performanceColor = "text-green-500"
+  } else if (scorePercentage >= 75) {
+    performanceLevel = "Good"
+    performanceColor = "text-blue-500"
+  } else if (scorePercentage >= 60) {
+    performanceLevel = "Satisfactory"
+    performanceColor = "text-yellow-500"
   }
 
+  // Disable animation after initial render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowAnimation(false)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Save results to server if authenticated
+  useEffect(() => {
+    if (session?.user && state.quizId) {
+      // Save to server if authenticated
+      quizService.saveCompleteQuizResult({
+        quizId: state.quizId,
+        slug: state.slug,
+        type: state.quizType,
+        score: scorePercentage,
+        answers: answers.filter((a) => a !== null),
+        totalTime: totalTime,
+        totalQuestions: totalQuestions,
+      })
+
+      // Clear all storage after saving to database
+      quizService.clearAllStorage()
+    }
+  }, [session, state.quizId, state.slug, state.quizType, answers, scorePercentage, totalTime, totalQuestions])
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{
-        opacity: isRedirecting ? 0 : 1,
-        y: isRedirecting ? -20 : 0,
-      }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card className="w-full">
-        <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
-          <CardTitle className="text-2xl">{title} - Results</CardTitle>
-          <CardDescription>
-            You scored {score}% ({correctAnswers} out of {totalQuestions} correct)
-          </CardDescription>
+    <div className="space-y-8 w-full max-w-3xl mx-auto">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-2xl font-bold">{title} Results</CardTitle>
+          <CardDescription>You've completed the quiz. Here's how you did.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6 p-6">
-          {/* Performance summary */}
-          <div className={`p-4 rounded-lg ${performanceColor} text-center`} role="status" aria-live="polite">
-            <p className="font-medium">{performanceMessage}</p>
+        <CardContent className="space-y-6">
+          {/* Score Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+              <div className="text-4xl font-bold mb-2">{scorePercentage}%</div>
+              <div className="text-sm text-muted-foreground">Overall Score</div>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+              <div className="text-4xl font-bold mb-2 text-green-500">{correctAnswers}</div>
+              <div className="text-sm text-muted-foreground">Correct Answers</div>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+              <div className="text-4xl font-bold mb-2 text-red-500">{incorrectAnswers}</div>
+              <div className="text-sm text-muted-foreground">Incorrect Answers</div>
+            </div>
           </div>
 
-          {/* Score visualization */}
+          {/* Performance Level */}
+          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <div className="flex items-center gap-3">
+              <Award className="h-6 w-6 text-primary" />
+              <div>
+                <div className="text-sm font-medium">Performance Level</div>
+                <div className={cn("text-lg font-bold", performanceColor)}>{performanceLevel}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Clock className="h-6 w-6 text-primary" />
+              <div>
+                <div className="text-sm font-medium">Total Time</div>
+                <div className="text-lg font-bold">{formatQuizTime(totalTime)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Score</span>
-              <span className="font-medium">{score}%</span>
+              <span>
+                Score: {correctAnswers}/{totalQuestions}
+              </span>
+              <span
+                className={cn(
+                  scorePercentage >= 75 ? "text-green-500" : scorePercentage >= 60 ? "text-yellow-500" : "text-red-500",
+                )}
+              >
+                {scorePercentage}%
+              </span>
             </div>
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-            >
-              <Progress
-                value={score}
-                className="h-2"
-                indicatorClassName={score >= 80 ? "bg-green-500" : score >= 60 ? "bg-amber-500" : "bg-red-500"}
-                aria-label={`Score: ${score}%`}
-              />
-            </motion.div>
+            <Progress
+              value={scorePercentage}
+              className={cn(
+                "h-2",
+                scorePercentage >= 75 ? "bg-green-200" : scorePercentage >= 60 ? "bg-yellow-200" : "bg-red-200",
+              )}
+              indicatorClassName={cn(
+                scorePercentage >= 75 ? "bg-green-500" : scorePercentage >= 60 ? "bg-yellow-500" : "bg-red-500",
+              )}
+            />
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.3 }}
-              className="bg-muted rounded-lg p-4 flex items-center space-x-3"
-            >
-              <CheckCircle className="h-5 w-5 text-green-500" aria-hidden="true" />
-              <div>
-                <p className="text-sm text-muted-foreground">Correct</p>
-                <p className="font-medium">{correctAnswers}</p>
-              </div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-              className="bg-muted rounded-lg p-4 flex items-center space-x-3"
-            >
-              <XCircle className="h-5 w-5 text-red-500" aria-hidden="true" />
-              <div>
-                <p className="text-sm text-muted-foreground">Incorrect</p>
-                <p className="font-medium">{totalQuestions - correctAnswers}</p>
-              </div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.3 }}
-              className="bg-muted rounded-lg p-4 flex items-center space-x-3"
-            >
-              <Clock className="h-5 w-5 text-blue-500" aria-hidden="true" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Time</p>
-                <p className="font-medium">{formatTime(totalTime)}</p>
-              </div>
-            </motion.div>
-          </div>
+          <Separator />
 
-          {/* Answer breakdown */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
-              Answer Breakdown
-            </h3>
-            <div className="space-y-3">
-              {answers.map((answer, index) => (
+          {/* Question Review */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold">Question Review</h3>
+            {questions.map((question: Question, index: number) => {
+              const answer = answers[index]
+              const isCorrect = answer?.isCorrect
+
+              return (
                 <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.05, duration: 0.3 }}
-                  className={`flex flex-col space-y-3 p-3 rounded-lg border ${
-                    answer?.isCorrect
-                      ? "border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-900/30"
-                      : "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/30"
-                  }`}
+                  key={question.id}
+                  initial={showAnimation ? { opacity: 0, y: 20 } : false}
+                  animate={showAnimation ? { opacity: 1, y: 0 } : false}
+                  transition={{ delay: index * 0.1 }}
+                  className="border rounded-lg p-4 space-y-3"
                 >
-                  <div className="flex items-center">
-                    <div
-                      className={`flex-shrink-0 rounded-full p-1 ${
-                        answer?.isCorrect
-                          ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                      }`}
-                      aria-hidden="true"
-                    >
-                      {answer?.isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                    </div>
-                    <div className="ml-3 flex-grow">
-                      <p className="text-sm font-medium">Question {index + 1}</p>
-                    </div>
-                  </div>
-
-                  {/* Add question content display */}
-                  <div className="text-sm ml-8 mt-1 text-muted-foreground">
-                    <p className="mb-2 font-medium">Question:</p>
-                    <p className="bg-muted/50 p-2 rounded-md mb-2">
-                      {state.quizData?.questions?.[index]?.question || "Question not available"}
-                    </p>
-                    <p className="mb-1 font-medium">Your answer:</p>
-                    <p className={answer?.isCorrect ? "text-green-600" : "text-red-600"}>
-                      {answer?.answer || "No answer"}
-                    </p>
-                    {!answer?.isCorrect && (
-                      <>
-                        <p className="mt-2 mb-1 font-medium">Correct answer:</p>
-                        <p className="text-green-600">
-                          {state.quizData?.questions?.[index]?.answer || "Answer not available"}
-                        </p>
-                      </>
+                  <div className="flex items-start gap-3">
+                    {isCorrect ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                     )}
-                  </div>
+                    <div className="space-y-2 flex-1">
+                      <p className="font-medium">
+                        {index + 1}. {question.question}
+                      </p>
 
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground ml-8">
-                    <span>Time: {formatTime(answer?.timeSpent || 0)}</span>
+                      <div className="text-sm space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Your answer:</span>
+                          <span className={isCorrect ? "text-green-600" : "text-red-600"}>
+                            {answer?.answer || "No answer provided"}
+                          </span>
+                        </div>
+
+                        {!isCorrect && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">Correct answer:</span>
+                            <span className="text-green-600">{question.answer}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{formatQuizTime(answer?.timeSpent || 0)}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
-              ))}
-            </div>
+              )
+            })}
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row gap-3 border-t p-6">
-          <Button
-            onClick={() => router.push("/dashboard/explore/")}
-            variant="outline"
-            className="w-full sm:w-auto transition-all"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
-            Create New Quiz
-          </Button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.3 }}
-            onClick={onRestart}
-            className="w-full sm:w-auto transition-all"
-          >
-            <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
+        <CardFooter className="flex justify-between pt-6 flex-wrap gap-4">
+          <Button variant="outline" onClick={onRestart} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
             Restart Quiz
-          </motion.button>
+          </Button>
+          <Button className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            View Detailed Analysis
+          </Button>
         </CardFooter>
       </Card>
-    </motion.div>
+    </div>
   )
 }
