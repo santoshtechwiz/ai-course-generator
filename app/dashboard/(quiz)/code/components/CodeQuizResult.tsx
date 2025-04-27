@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn, formatQuizTime } from "@/lib/utils"
 import { useQuiz } from "@/app/context/QuizContext"
 import { useSession } from "next-auth/react"
-import { quizService } from "@/lib/QuizService"
+import { quizService } from "@/lib/quiz-service"
 
 interface CodeQuizResultProps {
   title: string
@@ -94,20 +94,40 @@ export default function CodeQuizResult({ title, onRestart, quizId, questions, an
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Score Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg"
+            >
               <div className="text-4xl font-bold mb-2">{scorePercentage}%</div>
               <div className="text-sm text-muted-foreground">Overall Score</div>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+            </motion.div>
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg"
+            >
               <div className="text-4xl font-bold mb-2 text-green-500">{correctAnswers}</div>
               <div className="text-sm text-muted-foreground">Correct Answers</div>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+            </motion.div>
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg"
+            >
               <div className="text-4xl font-bold mb-2 text-red-500">{incorrectAnswers}</div>
               <div className="text-sm text-muted-foreground">Incorrect Answers</div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* Performance Level */}
           <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
@@ -166,9 +186,9 @@ export default function CodeQuizResult({ title, onRestart, quizId, questions, an
                 return (
                   <motion.div
                     key={question?.id || index}
-                    initial={showAnimation ? { opacity: 0, y: 20 } : false}
-                    animate={showAnimation ? { opacity: 1, y: 0 } : false}
-                    transition={{ delay: index * 0.1 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.4 }}
                     className="border rounded-lg p-4 space-y-3"
                   >
                     <div className="flex items-start gap-3">

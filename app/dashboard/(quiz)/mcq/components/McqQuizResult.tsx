@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn, formatQuizTime } from "@/lib/utils"
 import { useQuiz } from "@/app/context/QuizContext"
 import { useSession } from "next-auth/react"
-import { quizService } from "@/lib/QuizService"
+import { quizService } from "@/lib/quiz-service"
 import type { Question } from "./types"
 
 interface McqQuizResultProps {
@@ -71,7 +71,7 @@ export default function McqQuizResult({ title, onRestart, quizId, questions, ans
   useEffect(() => {
     if (session?.user && quizId_) {
       // Save to server if authenticated
-      quizService.saveCompleteQuizResult({
+      quizService.submitQuizResult({
         quizId: quizId_,
         slug: state.slug,
         type: state.quizType,
@@ -82,7 +82,7 @@ export default function McqQuizResult({ title, onRestart, quizId, questions, ans
       })
 
       // Clear all storage after saving to database
-      quizService.clearAllStorage()
+      quizService.clearAllQuizData();
     }
   }, [session, quizId_, state.slug, state.quizType, quizAnswers, scorePercentage, totalTime, totalQuestions])
 

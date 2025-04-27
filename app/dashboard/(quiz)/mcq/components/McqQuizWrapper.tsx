@@ -4,13 +4,13 @@ import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { memo, useState, useEffect } from "react"
+import { memo, useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import McqQuiz from "./McqQuiz"
 import McqQuizResult from "./McqQuizResult"
 import { useQuiz, QuizProvider } from "@/app/context/QuizContext"
-import { quizService } from "@/lib/QuizService"
+import { quizService } from "@/lib/quiz-service"
 import type { Question } from "./types"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { GuestPrompt } from "../../components/GuestSignInPrompt"
@@ -33,31 +33,73 @@ interface McqQuizContentProps {
 const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug }: McqQuizContentProps) {
   const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated } = useQuiz()
   const router = useRouter()
-  const { isAuthenticated: authState } = useAuth()
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
-
+  const { isAuthenticated: authState, user } = useAuth()
   const { currentQuestionIndex, questionCount, isLoading, error, isCompleted, answers, isProcessingAuth } = state
+
+  const [displayState, setDisplayState] = useState<"quiz" | "results" | "auth" | "loading">(
+    isLoading || isProcessingAuth ? "loading" : "quiz",
+  )
 
   // Check if we should show the auth prompt for non-authenticated users
   useEffect(() => {
-    if (!authState && isCompleted && !isLoading && !isProcessingAuth) {
-      console.log("User is not authenticated and quiz is completed, showing auth prompt")
-      setShowAuthPrompt(true)
-    } else {
-      setShowAuthPrompt(false)
-    }
-  }, [authState, isCompleted, isLoading, isProcessingAuth])
+    let timer: NodeJS.Timeout
 
-  // Early return for error states
+    // Enhanced authentication check
+    const userIsAuthenticated = authState || !!user || isAuthenticated
+
+    // Check URL parameters for completed=true
+    const urlParams = new URLSearchParams(window.location.search)
+    const isCompletedFromUrl = urlParams.get("completed") === "true"
+
+    // If URL has completed=true but user is not authenticated, show auth prompt
+    if (isCompletedFromUrl && !userIsAuthenticated && displayState === "results" && !isLoading && !isProcessingAuth) {
+      timer = setTimeout(() => {
+        console.log("URL has completed=true but user is not authenticated, showing auth prompt")
+        setDisplayState("auth")
+      }, 2000) // 2 seconds delay
+    }
+    // Only transition from results to auth prompt if:
+    // 1. User is not authenticated
+    // 2. Quiz is completed
+    // 3. Currently showing results
+    else if (!userIsAuthenticated && isCompleted && displayState === "results" && !isLoading && !isProcessingAuth) {
+      // Add a delay before showing the auth prompt
+      timer = setTimeout(() => {
+        console.log("Transitioning from results to auth prompt")
+        setDisplayState("auth")
+      }, 3000) // 3 seconds to ensure results are seen
+    }
+
+    // Update display state based on quiz state
+    if (isLoading || isProcessingAuth) {
+      setDisplayState("loading")
+    } else if (isCompleted && displayState !== "auth") {
+      // Only set to results if not already showing auth
+      if (displayState !== "results") {
+        setDisplayState("results")
+      }
+    } else if (!isCompleted && displayState !== "quiz") {
+      setDisplayState("quiz")
+    }
+
+    return () => clearTimeout(timer)
+  }, [authState, user, isAuthenticated, isCompleted, isLoading, isProcessingAuth, displayState])
+
+  // Early return for error states with retry button
   if (error) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" aria-hidden="true" />
         <AlertTitle>Error loading quiz</AlertTitle>
         <AlertDescription>
-          {error || "We couldn't load the quiz data. Please try again later."}
-          <div className="mt-4">
-            <Button onClick={() => router.push("/dashboard/mcq")}>Return to Quiz Creator</Button>
+          <p className="mb-4">{error || "We couldn't load the quiz data. Please try again later."}</p>
+          <div className="mt-4 flex flex-col sm:flex-row gap-2">
+            <Button onClick={() => window.location.reload()} className="w-full sm:w-auto">
+              Retry Loading Quiz
+            </Button>
+            <Button onClick={() => router.push("/dashboard/mcq")} variant="outline" className="w-full sm:w-auto">
+              Return to Quiz Creator
+            </Button>
           </div>
         </AlertDescription>
       </Alert>
@@ -98,6 +140,9 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
     )
   }
 
+  // Enhanced authentication check
+  const userIsAuthenticated = authState || !!user || isAuthenticated
+
   // Handle answer submission
   const handleAnswer = (answer: string, timeSpent: number, isCorrect: boolean) => {
     submitAnswer(answer, timeSpent, isCorrect)
@@ -118,7 +163,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
   return (
     <div className="w-full max-w-3xl mx-auto p-4">
       <AnimatePresence mode="wait">
-        {isLoading || isProcessingAuth ? (
+        {displayState === "loading" ? (
           <motion.div
             key="loading"
             initial={{ opacity: 0 }}
@@ -127,12 +172,12 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
             className="flex flex-col items-center justify-center min-h-[200px] gap-3"
             aria-live="polite"
           >
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" aria-hidden="true"></div>
             <p className="text-sm text-muted-foreground">
               {isProcessingAuth ? "Processing your results..." : "Loading quiz data..."}
             </p>
           </motion.div>
-        ) : showAuthPrompt && !isAuthenticated && isCompleted ? (
+        ) : displayState === "auth" && !userIsAuthenticated ? (
           <motion.div
             key="auth-prompt"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -140,9 +185,13 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <GuestPrompt quizId={quizData.id} forceShow={true} />
+            <GuestPrompt
+              quizId={quizData?.id || "unknown"}
+              forceShow={true}
+              onContinueAsGuest={() => setDisplayState("results")}
+            />
           </motion.div>
-        ) : isCompleted ? (
+        ) : displayState === "results" ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 20 }}
@@ -153,7 +202,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
             <McqQuizResult
               title={quizData?.title || "Quiz"}
               onRestart={restartQuiz}
-              quizId={quizData.id}
+              quizId={quizData?.id || "unknown"}
               questions={questions}
               answers={state.answers}
               score={state.score}
@@ -196,10 +245,28 @@ interface McqQuizWrapperProps {
 
 export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWrapperProps) {
   const [isInitializing, setIsInitializing] = useState(true)
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const router = useRouter()
+  const hasInitialized = useRef(false)
+
+  // Validate quiz data and slug
+  const validQuizId = quizData?.id && quizData.id !== "unknown" ? quizData.id : null
+  const validSlug = slug && slug !== "unknown" ? slug : null
+
+  // Log quiz data for debugging
+  useEffect(() => {
+    console.log("McqQuizWrapper initialized with:", {
+      quizId: validQuizId || "missing",
+      slug: validSlug || "missing",
+      hasQuestions: questions?.length > 0,
+    })
+  }, [validQuizId, validSlug, questions])
 
   useEffect(() => {
+    // Prevent double initialization
+    if (hasInitialized.current) return
+    hasInitialized.current = true
+
     // Short delay to allow state to initialize
     const timer = setTimeout(() => {
       setIsInitializing(false)
@@ -214,6 +281,22 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
         <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
         <h3 className="text-xl font-semibold mb-2">Loading quiz...</h3>
         <p className="text-muted-foreground text-center max-w-md">Please wait while we load your quiz.</p>
+      </div>
+    )
+  }
+
+  // Error state if quiz data is invalid
+  if (!validQuizId || !validSlug) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Quiz Not Found</h3>
+        <p className="text-muted-foreground text-center max-w-md">
+          We couldn't find the quiz you're looking for. This could be because the quiz ID or slug is invalid.
+        </p>
+        <Button onClick={() => router.push("/dashboard/quizzes")} className="mt-6">
+          Return to Quizzes
+        </Button>
       </div>
     )
   }
@@ -235,31 +318,45 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
     )
   }
 
+  // Add a safety check for quizData
+  const safeQuizData = {
+    id: validQuizId,
+    title: quizData?.title || "Quiz",
+    slug: validSlug,
+    isPublic: quizData?.isPublic || false,
+    isFavorite: quizData?.isFavorite || false,
+    userId: quizData?.userId || "",
+    difficulty: quizData?.difficulty || "medium",
+  }
+
+  // Enhanced authentication check
+  const userIsAuthenticated = isAuthenticated || !!user
+
   return (
     <QuizProvider
       quizData={{
-        ...quizData,
+        ...safeQuizData,
         questions,
       }}
-      slug={slug}
+      slug={validSlug}
       onAuthRequired={(redirectUrl) => {
+        // If user is already authenticated, don't show auth prompt
+        if (userIsAuthenticated) {
+          console.log("User is already authenticated, skipping auth prompt")
+          return
+        }
+
         // Save auth redirect info
         quizService.saveAuthRedirect(redirectUrl)
 
         // Save current quiz state before redirecting
         quizService.savePendingQuizData()
 
-        // Add fromAuth parameter to the callback URL
-        const callbackUrl = new URL(redirectUrl, window.location.origin)
-        callbackUrl.searchParams.set("fromAuth", "true")
-
-        // Redirect to sign in page
-        if (typeof window !== "undefined") {
-          window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl.toString())}`
-        }
+        // Handle auth redirect using the service method
+        quizService.handleAuthRedirect(redirectUrl)
       }}
     >
-      <McqQuizContent quizData={quizData} questions={questions} slug={slug} />
+      <McqQuizContent quizData={safeQuizData} questions={questions} slug={validSlug} />
     </QuizProvider>
   )
 }

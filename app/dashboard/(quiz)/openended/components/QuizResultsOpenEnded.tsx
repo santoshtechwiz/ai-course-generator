@@ -1,167 +1,196 @@
 "use client"
 
+import { useState } from "react"
+import { motion } from "framer-motion"
+import { CheckCircle, Clock, XCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { AnimatePresence, motion } from "framer-motion"
-import { AlertCircle } from "lucide-react"
 
-import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
-import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
-import { GuestPrompt } from "../../components/GuestSignInPrompt"
-
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/use-toast"
 
-interface OpenEndedQuizWrapperProps {
-  quizData: any
-  slug: string
+
+interface QuizResultsOpenEndedProps {
+  quizId?: string
+  slug?: string
+  title?: string
+  answers?: any[]
+  questions?: any[]
+  totalQuestions?: number
+  startTime?: number
+  score?: number
+  onRestart?: () => void
+  onSignIn?: () => void
 }
 
-// This is the main wrapper that uses the provider
-export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWrapperProps) {
-  return (
-    <QuizProvider quizData={quizData} slug={slug}>
-      <OpenEndedQuizContent quizData={quizData} slug={slug} />
-    </QuizProvider>
-  )
-}
-
-// This component consumes the context
-function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
+export default function QuizResultsOpenEnded({
+  quizId,
+  slug,
+  title,
+  answers = [],
+  questions = [],
+  totalQuestions = 0,
+  startTime = 0,
+  score = 0,
+  onRestart,
+  onSignIn,
+}: QuizResultsOpenEndedProps) {
   const router = useRouter()
-  const { state, submitAnswer, completeQuiz, restartQuiz } = useQuiz()
+  const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState("summary")
 
-  const {
-    quizId,
-    title,
-    questionCount,
-    currentQuestionIndex,
-    answers,
-    isCompleted,
-    isLoading,
-    error,
-    score,
-    showAuthPrompt,
-  } = state
+  // Calculate total time spent
+  const totalTimeSpent = answers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
+  const formattedTime = formatTime(totalTimeSpent)
 
-  // Get current question data
-  const currentQuestionData = quizData?.questions?.[currentQuestionIndex] || null
+  // Calculate accuracy
+  const correctAnswers = answers.filter((answer) => answer?.isCorrect).length
+  const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0
 
-  // Handle answer submission
-  const handleAnswer = (answer: string) => {
-    // Calculate time spent on this question
-    const timeSpent = (Date.now() - state.startTime) / 1000
-    const hintsUsed = false // You can implement hint tracking if needed
-
-    // Create answer object
-    const answerObj = {
-      answer,
-      timeSpent,
-      isCorrect: true, // For open-ended questions, we don't have a strict correct/incorrect
-      hintsUsed,
-    }
-
-    // Submit answer
-    submitAnswer(answer, timeSpent, true)
-
-    // If this is the last question, complete the quiz
-    if (currentQuestionIndex >= questionCount - 1) {
-      const finalAnswers = [...answers.slice(0, currentQuestionIndex), answerObj]
-      completeQuiz(finalAnswers)
+  // Handle restart
+  const handleRestart = () => {
+    if (onRestart) {
+      onRestart()
     }
   }
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="w-full max-w-3xl mx-auto p-4">
-        <div className="space-y-4">
-          <div className="flex justify-between">
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-8 w-24" />
-          </div>
-          <Skeleton className="h-2 w-full" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-          <div className="flex justify-between">
-            <Skeleton className="h-10 w-32" />
-            <Skeleton className="h-10 w-32" />
-          </div>
-        </div>
-      </div>
-    )
+  // Handle create new quiz
+  const handleCreateNew = () => {
+    router.push("/dashboard/openended")
   }
 
-  // Error state
-  if (error || !quizData || !quizData.questions || quizData.questions.length === 0) {
-    return (
-      <div className="w-full max-w-3xl mx-auto p-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error loading quiz</AlertTitle>
-          <AlertDescription>
-            {error || "We couldn't load the quiz data. Please try again later."}
-            <div className="mt-4">
-              <Button onClick={() => router.push("/dashboard/openended")}>Return to Quiz Creator</Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
-
-  // Update the OpenEndedQuizContent component to handle the authentication flow consistently
-
-  // In the return statement, update the content rendering logic
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <AnimatePresence mode="wait">
-        {isCompleted ? (
-          <motion.div
-            key="results"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          >
-            {showAuthPrompt && !state.isAuthenticated ? (
-              <GuestPrompt />
-            ) : (
-              <QuizResultsOpenEnded
-                quizId={quizId}
-                slug={slug}
-                title={title || quizData.title || ""}
-                answers={answers}
-                questions={quizData.questions}
-                totalQuestions={questionCount}
-                startTime={state.startTime}
-                score={score}
-                onRestart={restartQuiz}
-                onSignIn={() => {
-                  console.log("Sign in clicked")
-                }}
-              />
-            )}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="quiz"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          >
-            {currentQuestionData && (
-              <OpenEndedQuizQuestion
-                question={currentQuestionData}
-                onAnswer={handleAnswer}
-                questionNumber={currentQuestionIndex + 1}
-                totalQuestions={questionCount}
-              />
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="w-full max-w-4xl mx-auto p-4"
+    >
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">{title || "Quiz Results"}</CardTitle>
+          <CardDescription>
+            You've completed the open-ended quiz with {correctAnswers} out of {totalQuestions} correct answers.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="answers">Your Answers</TabsTrigger>
+            </TabsList>
+            <TabsContent value="summary" className="space-y-4 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-medium">Score</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.5 }}
+                      className="text-2xl font-bold"
+                    >
+                      {Math.round(accuracy)}%
+                    </motion.div>
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ delay: 0.4, duration: 0.5 }}
+                      style={{ transformOrigin: "left" }}
+                    >
+                      <Progress value={accuracy} className="h-2 mt-2" />
+                    </motion.div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-medium">Time</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="flex items-center">
+                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="text-2xl font-bold">{formattedTime}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-medium">Questions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-bold">
+                      {correctAnswers}/{totalQuestions}
+                    </div>
+                    <div className="text-sm text-muted-foreground">correct answers</div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent value="answers" className="space-y-4 pt-4">
+              {questions.map((question, index) => {
+                const answer = answers[index]
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index, duration: 0.3 }}
+                  >
+                    <Card key={index} className="overflow-hidden">
+                      <CardHeader className="p-4 pb-2 bg-muted/50">
+                        <CardTitle className="text-sm font-medium flex items-center">
+                          <span className="mr-2">Question {index + 1}</span>
+                          {answer?.isCorrect ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="text-sm font-medium mb-2">{question.question}</div>
+                        <Separator className="my-2" />
+                        <div className="space-y-2">
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground">Your Answer:</div>
+                            <div className="text-sm mt-1 p-2 bg-muted rounded-md">
+                              {answer?.answer || "No answer provided"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground">Time Spent:</div>
+                            <div className="text-sm">{formatTime(answer?.timeSpent || 0)}</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )
+              })}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+        <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between">
+          <Button variant="outline" onClick={handleRestart} className="w-full sm:w-auto">
+            Restart Quiz
+          </Button>
+          <Button onClick={handleCreateNew} className="w-full sm:w-auto">
+            Create New Quiz
+          </Button>
+        </CardFooter>
+      </Card>
+    </motion.div>
   )
+}
+
+// Helper function to format time
+function formatTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
 }
