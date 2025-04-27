@@ -16,22 +16,32 @@ import type { Question } from "./types"
 interface McqQuizResultProps {
   title: string
   onRestart: () => void
+  quizId?: string
+  questions?: Question[]
+  answers?: Array<{
+    answer: string
+    timeSpent: number
+    isCorrect: boolean
+  } | null>
+  score?: number
 }
 
-export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) {
+export default function McqQuizResult({ title, onRestart, quizId, questions, answers, score }: McqQuizResultProps) {
   const { state } = useQuiz()
   const { data: session } = useSession()
   const [showAnimation, setShowAnimation] = useState(true)
 
-  const { answers, quizData } = state
-  const questions = quizData?.questions || []
+  // Use props if provided, otherwise fall back to state
+  const quizQuestions = questions || state.quizData?.questions || []
+  const quizAnswers = answers || state.answers
+  const quizId_ = quizId || state.quizId
 
   // Calculate statistics
-  const totalQuestions = questions.length
-  const correctAnswers = answers.filter((a) => a?.isCorrect).length
-  const incorrectAnswers = answers.filter((a) => a && !a.isCorrect).length
-  const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100)
-  const totalTime = answers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
+  const totalQuestions = quizQuestions.length
+  const correctAnswers = quizAnswers.filter((a) => a?.isCorrect).length
+  const incorrectAnswers = quizAnswers.filter((a) => a && !a.isCorrect).length
+  const scorePercentage = score !== undefined ? score : Math.round((correctAnswers / totalQuestions) * 100)
+  const totalTime = quizAnswers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
   const averageTime = Math.round(totalTime / totalQuestions)
 
   // Determine performance level
@@ -59,14 +69,14 @@ export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) 
 
   // Save results to server if authenticated
   useEffect(() => {
-    if (session?.user && state.quizId) {
+    if (session?.user && quizId_) {
       // Save to server if authenticated
       quizService.saveCompleteQuizResult({
-        quizId: state.quizId,
+        quizId: quizId_,
         slug: state.slug,
         type: state.quizType,
         score: scorePercentage,
-        answers: answers.filter((a) => a !== null),
+        answers: quizAnswers.filter((a) => a !== null),
         totalTime: totalTime,
         totalQuestions: totalQuestions,
       })
@@ -74,7 +84,7 @@ export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) 
       // Clear all storage after saving to database
       quizService.clearAllStorage()
     }
-  }, [session, state.quizId, state.slug, state.quizType, answers, scorePercentage, totalTime, totalQuestions])
+  }, [session, quizId_, state.slug, state.quizType, quizAnswers, scorePercentage, totalTime, totalQuestions])
 
   return (
     <div className="space-y-8 w-full max-w-3xl mx-auto">
@@ -149,8 +159,8 @@ export default function McqQuizResult({ title, onRestart }: McqQuizResultProps) 
           {/* Question Review */}
           <div className="space-y-6">
             <h3 className="text-lg font-semibold">Question Review</h3>
-            {questions.map((question: Question, index: number) => {
-              const answer = answers[index]
+            {quizQuestions.map((question: Question, index: number) => {
+              const answer = quizAnswers[index]
               const isCorrect = answer?.isCorrect
 
               return (

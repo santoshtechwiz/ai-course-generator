@@ -87,7 +87,7 @@ export function GuestPrompt(props: { quizId?: string; forceShow?: boolean }) {
       score: state.score,
       totalTime: state.timeSpentPerQuestion.reduce((a, b) => a + b, 0),
       totalQuestions: state.questionCount,
-      answers: currentAnswers,
+      answers: currentAnswers.filter((a) => a !== null),
       isCompleted: true,
       timestamp: Date.now(),
     })

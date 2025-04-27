@@ -1,18 +1,19 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { memo, useState } from "react"
+import { memo, useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import McqQuiz from "./McqQuiz"
 import McqQuizResult from "./McqQuizResult"
 import { useQuiz, QuizProvider } from "@/app/context/QuizContext"
-import { GuestPrompt } from "../../components/GuestSignInPrompt"
 import { quizService } from "@/lib/QuizService"
 import type { Question } from "./types"
+import { useAuth } from "@/providers/unified-auth-provider"
+import { GuestPrompt } from "../../components/GuestSignInPrompt"
 
 interface McqQuizContentProps {
   quizData: {
@@ -32,11 +33,70 @@ interface McqQuizContentProps {
 const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug }: McqQuizContentProps) {
   const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated } = useQuiz()
   const router = useRouter()
-
-  const { currentQuestionIndex, questionCount, isLoading, error, isCompleted, answers, isProcessingAuth } = state
+  const { isAuthenticated: authState } = useAuth()
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
+  const { currentQuestionIndex, questionCount, isLoading, error, isCompleted, answers, isProcessingAuth } = state
+
+  // Check if we should show the auth prompt for non-authenticated users
+  useEffect(() => {
+    if (!authState && isCompleted && !isLoading && !isProcessingAuth) {
+      console.log("User is not authenticated and quiz is completed, showing auth prompt")
+      setShowAuthPrompt(true)
+    } else {
+      setShowAuthPrompt(false)
+    }
+  }, [authState, isCompleted, isLoading, isProcessingAuth])
+
+  // Early return for error states
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" aria-hidden="true" />
+        <AlertTitle>Error loading quiz</AlertTitle>
+        <AlertDescription>
+          {error || "We couldn't load the quiz data. Please try again later."}
+          <div className="mt-4">
+            <Button onClick={() => router.push("/dashboard/mcq")}>Return to Quiz Creator</Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  // Early return for empty questions
+  if (!questions || questions.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">No questions available for this quiz.</p>
+          <p className="text-sm text-muted-foreground mb-6">
+            This could be because the quiz is still being generated or there was an error during creation.
+          </p>
+          <Button onClick={() => router.push("/dashboard/mcq")} className="mt-4">
+            Return to Quiz Creator
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const currentQuestion = questions[currentQuestionIndex]
+
+  // Early return for missing current question
+  if (!currentQuestion) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">Question not found.</p>
+          <p className="text-sm text-muted-foreground mb-6">There was an error loading the current question.</p>
+          <Button onClick={() => router.push("/dashboard/mcq")} className="mt-4">
+            Return to Quiz Creator
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
 
   // Handle answer submission
   const handleAnswer = (answer: string, timeSpent: number, isCorrect: boolean) => {
@@ -48,26 +108,10 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
       const updatedAnswers = [...answers]
       updatedAnswers[currentQuestionIndex] = { answer, timeSpent, isCorrect }
 
-      // If not authenticated and this is the last question, show auth prompt
-      if (!isAuthenticated && currentQuestionIndex === questionCount - 1) {
-        // Check if we should show auth prompt based on URL
-        const urlParams = new URLSearchParams(window.location.search)
-        const isCompleted = urlParams.get("completed") === "true"
-
-        if (!isCompleted) {
-          setShowAuthPrompt(true)
-        } else {
-          // Complete the quiz without showing auth prompt
-          setTimeout(() => {
-            completeQuiz(updatedAnswers.filter((a) => a !== null))
-          }, 1000)
-        }
-      } else {
-        // Complete the quiz
-        setTimeout(() => {
-          completeQuiz(updatedAnswers.filter((a) => a !== null))
-        }, 1000) // Slightly reduced delay for better UX
-      }
+      // Complete the quiz
+      setTimeout(() => {
+        completeQuiz(updatedAnswers.filter((a) => a !== null))
+      }, 1000) // Slightly reduced delay for better UX
     }
   }
 
@@ -88,44 +132,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
               {isProcessingAuth ? "Processing your results..." : "Loading quiz data..."}
             </p>
           </motion.div>
-        ) : error ? (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" aria-hidden="true" />
-              <AlertTitle>Error loading quiz</AlertTitle>
-              <AlertDescription>
-                {error || "We couldn't load the quiz data. Please try again later."}
-                <div className="mt-4">
-                  <Button onClick={() => router.push("/dashboard/mcq")}>Return to Quiz Creator</Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          </motion.div>
-        ) : !questions || questions.length === 0 ? (
-          <motion.div
-            key="no-questions"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground mb-4">No questions available for this quiz.</p>
-                <p className="text-sm text-muted-foreground mb-6">
-                  This could be because the quiz is still being generated or there was an error during creation.
-                </p>
-                <Button onClick={() => router.push("/dashboard/mcq")} className="mt-4">
-                  Return to Quiz Creator
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ) : showAuthPrompt && !isAuthenticated && !isCompleted ? (
+        ) : showAuthPrompt && !isAuthenticated && isCompleted ? (
           <motion.div
             key="auth-prompt"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -133,7 +140,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <GuestPrompt quizId={quizData.id} />
+            <GuestPrompt quizId={quizData.id} forceShow={true} />
           </motion.div>
         ) : isCompleted ? (
           <motion.div
@@ -143,7 +150,14 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
             exit={{ opacity: 0, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <McqQuizResult title={quizData?.title || "Quiz"} onRestart={restartQuiz} />
+            <McqQuizResult
+              title={quizData?.title || "Quiz"}
+              onRestart={restartQuiz}
+              quizId={quizData.id}
+              questions={questions}
+              answers={state.answers}
+              score={state.score}
+            />
           </motion.div>
         ) : (
           <motion.div
@@ -181,6 +195,46 @@ interface McqQuizWrapperProps {
 }
 
 export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWrapperProps) {
+  const [isInitializing, setIsInitializing] = useState(true)
+  const { isAuthenticated } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    // Short delay to allow state to initialize
+    const timer = setTimeout(() => {
+      setIsInitializing(false)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Show loading state during initialization
+  if (isInitializing) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
+        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Loading quiz...</h3>
+        <p className="text-muted-foreground text-center max-w-md">Please wait while we load your quiz.</p>
+      </div>
+    )
+  }
+
+  // Early return for empty questions
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="text-xl font-semibold mb-2">No Questions Available</h3>
+        <p className="text-muted-foreground text-center max-w-md">
+          We couldn't find any questions for this quiz. This could be because the quiz is still being generated or there
+          was an error.
+        </p>
+        <Button onClick={() => router.push("/dashboard/quizzes")} className="mt-6">
+          Return to Quizzes
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <QuizProvider
       quizData={{

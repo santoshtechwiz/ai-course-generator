@@ -57,52 +57,82 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
 
   // Reset timer and selection when question changes
   useEffect(() => {
-    startTimeRef.current = Date.now()
-    setElapsedTime(0)
-    setSelectedOption(null)
-    setIsSubmitting(false)
+    let intervalId: NodeJS.Timeout | null = null
 
-    // Clear existing timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
+    const startTimer = () => {
+      startTimeRef.current = Date.now()
+      setElapsedTime(0)
+
+      intervalId = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000))
+      }, 1000)
+      timerRef.current = intervalId
     }
 
-    // Start new timer
-    timerRef.current = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000))
-    }, 1000)
-
-    // Cleanup
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
+    const clearTimer = () => {
+      if (intervalId) {
+        clearInterval(intervalId)
+        intervalId = null
         timerRef.current = null
       }
     }
-  }, [question?.id]) // Only reset when question ID changes
+
+    setSelectedOption(null)
+    setIsSubmitting(false)
+    clearTimer()
+
+    startTimer()
+
+    return () => {
+      clearTimer()
+    }
+  }, [question?.id])
 
   // Generate options from question data - memoized to prevent recalculation
   const options = useMemo(() => {
     if (!question) return []
 
+    // Define a set of fallback options we can use if needed
+    const fallbackOptions = [
+      "True",
+      "False",
+      "All of the above",
+      "None of the above",
+      "It depends on the context",
+      "This is not determinable from the information given",
+      "Both A and B",
+      "Neither A nor B",
+      "Sometimes",
+      "Always",
+      "Never",
+      "Rarely",
+      "Often",
+      "Possibly",
+      "Definitely not",
+    ]
+
     // Use pre-processed options array if available
     const allOptions = [question.answer, question.option1, question.option2, question.option3].filter(Boolean)
-    if (allOptions.length >= 2) {
-      return allOptions
+
+    // Create a Set to remove duplicates
+    const uniqueOptions = [...new Set(allOptions)]
+
+    // Ensure the answer is included
+    if (question.answer && !uniqueOptions.includes(question.answer)) {
+      uniqueOptions.unshift(question.answer)
     }
 
-    // Collect all valid option
-
-    // If we have fewer than 2 options, add fallbacks
-    if (new Set(allOptions).size < 2) {
-      if (question.answer) {
-        allOptions.push("None of the above")
-        allOptions.push("All of the above")
+    // If we have fewer than 2 unique options, add fallbacks
+    if (uniqueOptions.length < 2) {
+      // Add fallback options that are different from existing options
+      let i = 0
+      while (uniqueOptions.length < 4 && i < fallbackOptions.length) {
+        if (!uniqueOptions.includes(fallbackOptions[i])) {
+          uniqueOptions.push(fallbackOptions[i])
+        }
+        i++
       }
     }
-
-    // Ensure we have unique options
-    const uniqueOptions = [...new Set(allOptions)]
 
     // Shuffle options with a stable seed based on question ID
     let seed = Number.parseInt(question.id) || 0

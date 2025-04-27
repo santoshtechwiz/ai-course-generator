@@ -128,13 +128,6 @@ class QuizService {
     }
   }
 
-  saveQuizState(state: QuizState): void {
-    // Only save state for guest users
-    if (this.isAuthenticated()) return
-
-    quizStorageService.saveQuizState(state)
-  }
-
   getQuizState(quizId: string, quizType: QuizType): QuizState | null {
     // For authenticated users, try to get state from server first
     if (this.isAuthenticated()) {
@@ -143,7 +136,39 @@ class QuizService {
       return null
     }
 
-    return quizStorageService.getQuizState(quizId, quizType)
+    // For unauthenticated users, try to get from storage
+    const state = quizStorageService.getQuizState(quizId, quizType)
+
+    // If no state found in storage service, try direct localStorage access
+    if (!state && typeof window !== "undefined") {
+      try {
+        const stateKey = `quiz_state_${quizId}`
+        const rawState = localStorage.getItem(stateKey)
+        if (rawState) {
+          return JSON.parse(rawState)
+        }
+      } catch (e) {
+        console.error("Error getting quiz state from localStorage:", e)
+      }
+    }
+
+    return state
+  }
+
+  saveQuizState(state: QuizState): void {
+    // Save state for all users to ensure it's available
+    quizStorageService.saveQuizState(state)
+
+    // Also save directly to localStorage for redundancy
+    if (typeof window !== "undefined" && state.quizId) {
+      try {
+        const stateKey = `quiz_state_${state.quizId}`
+        localStorage.setItem(stateKey, JSON.stringify(state))
+        localStorage.setItem("quiz_current_state", JSON.stringify(state))
+      } catch (e) {
+        console.error("Error saving quiz state to localStorage:", e)
+      }
+    }
   }
 
   clearQuizState(quizId: string, quizType: QuizType): void {
@@ -154,6 +179,9 @@ class QuizService {
       localStorage.removeItem(`quiz_state_${quizId}`)
       localStorage.removeItem(`guest_quiz_${quizId}`)
       localStorage.removeItem(`quiz_${quizId}_saved`)
+      localStorage.removeItem(`quiz_${quizId}_completed`)
+      localStorage.removeItem(`quiz_result_${quizId}`)
+      localStorage.removeItem(`quiz_current_state`)
 
       // Clear session storage items
       sessionStorage.removeItem(`quiz_result_${quizId}_pending`)
@@ -205,9 +233,12 @@ class QuizService {
     // Also clear from localStorage directly to ensure it's gone
     if (typeof window !== "undefined") {
       localStorage.removeItem(`guest_quiz_${quizId}`)
+      localStorage.removeItem(`quiz_guest_results`)
 
       // Clear any related state
       localStorage.removeItem(`quiz_state_${quizId}`)
+      localStorage.removeItem(`quiz_${quizId}_completed`)
+      localStorage.removeItem(`quiz_result_${quizId}`)
 
       // Remove URL parameters if present
       if (window.location.search.includes("completed=true")) {
@@ -220,25 +251,61 @@ class QuizService {
 
   clearAllQuizData(): void {
     if (typeof window !== "undefined") {
+      console.log("Clearing all quiz data")
+
       // Clear all quiz-related localStorage items
+      const localStorageKeys = []
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
-        if (key && (key.startsWith("quiz_") || key.startsWith("guest_quiz_") || key.includes("_quiz_"))) {
-          localStorage.removeItem(key)
+        if (
+          key &&
+          (key.startsWith("quiz_") ||
+            key.startsWith("guest_quiz_") ||
+            key.includes("_quiz_") ||
+            key === "pendingQuizData" ||
+            key === "inAuthFlow" ||
+            key === "quizAuthRedirect" ||
+            key === "quiz_current_state" ||
+            key === "quiz_guest_results")
+        ) {
+          localStorageKeys.push(key)
         }
       }
 
+      // Remove all identified keys
+      localStorageKeys.forEach((key) => localStorage.removeItem(key))
+
       // Clear all quiz-related sessionStorage items
+      const sessionStorageKeys = []
       for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i)
-        if (key && (key.startsWith("quiz_") || key.includes("Quiz") || key.includes("Auth"))) {
-          sessionStorage.removeItem(key)
+        if (
+          key &&
+          (key.startsWith("quiz_") ||
+            key.includes("Quiz") ||
+            key.includes("Auth") ||
+            key === "pendingQuizData" ||
+            key === "inAuthFlow" ||
+            key === "showQuizResults" ||
+            key === "quizRedirectPath")
+        ) {
+          sessionStorageKeys.push(key)
         }
       }
+
+      // Remove all identified session storage keys
+      sessionStorageKeys.forEach((key) => sessionStorage.removeItem(key))
     }
 
     // Call the storage service method after our own cleanup
     quizStorageService.clearAllQuizData()
+
+    // Clear our internal caches
+    this.resultCache.clear()
+    this.quizResultCache.clear()
+    this.pendingSaves.clear()
+    this.saveInProgress.clear()
+    this.saveAttempts.clear()
   }
 
   calculateScore(answers: QuizAnswer[], quizType: QuizType): number {
@@ -593,6 +660,15 @@ class QuizService {
       }))
     }
 
+    // For code quizzes
+    if (submission.type === "code") {
+      formattedAnswers = formattedAnswers.map((answer) => ({
+        answer: typeof answer.answer === "string" ? answer.answer : "",
+        timeSpent: answer.timeSpent || 0,
+        isCorrect: answer.isCorrect || false,
+      }))
+    }
+
     return formattedAnswers
   }
 
@@ -724,13 +800,15 @@ class QuizService {
     if (this.processingPendingData) return
 
     // Ensure we have valid answers before saving
-    const validAnswers = result.answers.map((answer) => {
-      // If answer is null, create a default answer object
-      if (!answer) {
-        return { answer: "", timeSpent: 0, isCorrect: false }
-      }
-      return answer
-    })
+    const validAnswers = result.answers
+      .filter((answer) => answer !== null)
+      .map((answer) => {
+        // If answer is null, create a default answer object
+        if (!answer) {
+          return { answer: "", timeSpent: 0, isCorrect: false }
+        }
+        return answer
+      })
 
     // Create a complete result with valid answers
     const completeResult = {
@@ -772,18 +850,9 @@ class QuizService {
           throw new Error(`Failed to save quiz result: ${response.status}`)
         }
 
-        // Mark as saved to server and clear local storage
+        // Mark as saved to server
         if (typeof window !== "undefined") {
           localStorage.setItem(`quiz_${result.quizId}_saved`, "true")
-
-          // Clear guest result since it's now saved to server
-          this.clearGuestResult(result.quizId, result.type as QuizType)
-
-          // Clear quiz state after successful save to server
-          this.clearQuizState(result.quizId, result.type as QuizType)
-
-          // Clear any auth flow markers
-          this.clearAllStorage()
         }
 
         // Show success toast
@@ -941,39 +1010,25 @@ class QuizService {
     try {
       // Never show guest sign-in if authenticated
       if (this.isAuthenticated()) {
-        console.log("User is authenticated, not showing guest sign-in")
         return false
       }
 
       // Never show guest sign-in if returning from auth
       if (this.isReturningFromAuth()) {
-        console.log("Returning from auth, not showing guest sign-in")
         return false
       }
 
       // Never show guest sign-in if URL has completed=true
       const isCompleted = new URLSearchParams(window.location.search).get("completed") === "true"
       if (isCompleted) {
-        console.log("URL has completed=true, not showing guest sign-in")
         return false
       }
 
-      // Check if quiz is completed or in progress
+      // Check if quiz is completed
       const isQuizCompleted = this.isQuizCompleted(quizId)
-      const hasQuizState = localStorage.getItem(`quiz_state_${quizId}`) !== null
 
-      // For debugging
-      console.log("Guest sign-in check:", {
-        quizId,
-        isQuizCompleted,
-        hasQuizState,
-        isAuthenticated: this.isAuthenticated(),
-      })
-
-      // Show guest sign-in if:
-      // 1. Quiz is completed but user is not authenticated, OR
-      // 2. Quiz has state (in progress) but user is not authenticated
-      return (isQuizCompleted || hasQuizState) && !this.isAuthenticated()
+      // Only show guest sign-in if quiz is completed but user is not authenticated
+      return isQuizCompleted && !this.isAuthenticated()
     } catch (error) {
       console.error("Error checking if should show guest sign-in:", error)
       return false
@@ -1016,27 +1071,6 @@ class QuizService {
 
     try {
       console.log("Processing pending quiz data")
-
-      // Check if we've already processed this auth session
-      const browserFingerprint = sessionStorage.getItem("auth_processing_fingerprint")
-      const processedFingerprints = sessionStorage.getItem("processed_fingerprints")
-
-      if (browserFingerprint && processedFingerprints && processedFingerprints.includes(browserFingerprint)) {
-        console.log("Already processed this authentication session")
-        this.processingPendingData = false
-        return
-      }
-
-      // Mark that we've processed auth
-      sessionStorage.setItem("auth_processed", "true")
-      sessionStorage.setItem("auth_processed_time", Date.now().toString())
-
-      // Add this fingerprint to processed list
-      if (browserFingerprint) {
-        const fingerprints = processedFingerprints ? JSON.parse(processedFingerprints) : []
-        fingerprints.push(browserFingerprint)
-        sessionStorage.setItem("processed_fingerprints", JSON.stringify(fingerprints))
-      }
 
       // Try to get pending data from multiple sources
       let pendingData
@@ -1118,6 +1152,12 @@ class QuizService {
             totalTime: pendingData.totalTime || 0,
             totalQuestions: pendingData.totalQuestions || pendingData.answers.length,
           })
+
+          // Don't clear storage immediately to ensure data is available for the UI
+          setTimeout(() => {
+            // Clear all storage after saving to database for authenticated users
+            this.clearAllStorage()
+          }, 2000)
         } else {
           // For guest users, make sure the result is available in localStorage
           quizStorageService.saveGuestResult({
@@ -1133,88 +1173,6 @@ class QuizService {
             redirectPath: `/dashboard/${pendingData.type}/${pendingData.slug}?completed=true`,
           })
         }
-      } else {
-        console.log("No answers in pending data, trying to get quiz state")
-
-        // Try to get the saved quiz state
-        let quizState = null
-
-        // Try localStorage first
-        try {
-          const stateKey = `quiz_state_${pendingData.quizId}`
-          const rawState = localStorage.getItem(stateKey)
-          if (rawState) {
-            quizState = JSON.parse(rawState)
-            console.log("Found quiz state in localStorage:", quizState)
-          }
-        } catch (e) {
-          console.error("Error getting quiz state from localStorage:", e)
-        }
-
-        // If no state in localStorage, try sessionStorage
-        if (!quizState) {
-          try {
-            const stateKey = `quiz_state_${pendingData.quizId}`
-            const rawState = sessionStorage.getItem(stateKey)
-            if (rawState) {
-              quizState = JSON.parse(rawState)
-              console.log("Found quiz state in sessionStorage:", quizState)
-            }
-          } catch (e) {
-            console.error("Error getting quiz state from sessionStorage:", e)
-          }
-        }
-
-        if (quizState && quizState.answers) {
-          console.log("Using answers from quiz state")
-
-          // Cache the result
-          this.quizResultCache.set(pendingData.quizId, {
-            quizId: pendingData.quizId,
-            slug: pendingData.slug,
-            type: pendingData.type as QuizType,
-            score: pendingData.score || quizState.score || 0,
-            answers: quizState.answers,
-            totalTime: pendingData.totalTime || 0,
-            totalQuestions: pendingData.totalQuestions || quizState.answers.length,
-            isCompleted: true,
-          })
-
-          // Save to server if authenticated
-          if (this.isAuthenticated()) {
-            await this.saveCompleteQuizResult({
-              quizId: pendingData.quizId,
-              slug: pendingData.slug,
-              type: pendingData.type as QuizType,
-              score: pendingData.score || quizState.score || 0,
-              answers: quizState.answers,
-              totalTime: pendingData.totalTime || 0,
-              totalQuestions: pendingData.totalQuestions || quizState.answers.length,
-            })
-          } else {
-            // For guest users, make sure the result is available in localStorage
-            quizStorageService.saveGuestResult({
-              quizId: pendingData.quizId,
-              slug: pendingData.slug,
-              type: pendingData.type as QuizType,
-              score: pendingData.score || quizState.score || 0,
-              answers: quizState.answers,
-              totalTime: pendingData.totalTime || 0,
-              totalQuestions: pendingData.totalQuestions || quizState.answers.length,
-              timestamp: Date.now(),
-              isCompleted: true,
-              redirectPath: `/dashboard/${pendingData.type}/${pendingData.slug}?completed=true`,
-            })
-          }
-        } else {
-          console.log("No quiz state found for pending data")
-        }
-      }
-
-      // Don't clear storage immediately for guest users to ensure data is available
-      if (this.isAuthenticated()) {
-        // Clear all storage after saving to database for authenticated users
-        this.clearAllStorage()
       }
     } catch (error) {
       console.error("Error processing pending quiz data:", error)
@@ -1247,36 +1205,207 @@ class QuizService {
     }
   }
 
-  // Complete reset after authentication
-  completeAuthReset(): void {
+  /**
+   * Comprehensive cleanup after quiz completion
+   * This centralizes all cleanup logic in the service layer
+   */
+  cleanupAfterQuizCompletion(quizId: string, quizType: QuizType): void {
     if (typeof window === "undefined") return
 
-    try {
-      // Clear all storage
-      this.clearAllStorage()
+    console.log(`Cleaning up after quiz completion: ${quizId}, type: ${quizType}`)
 
-      // Clean up URL parameters
-      if (window.history && window.history.replaceState) {
-        const url = new URL(window.location.href)
-        // Remove all auth-related parameters
-        url.searchParams.delete("fromAuth")
-        url.searchParams.delete("auth")
-        url.searchParams.delete("session")
-        url.searchParams.delete("quizId")
-        url.searchParams.delete("slug")
-        url.searchParams.delete("type")
-        url.searchParams.delete("score")
-        url.searchParams.delete("browser")
-        // Keep only completed=true
-        url.searchParams.set("completed", "true")
-        window.history.replaceState({}, document.title, url.toString())
+    try {
+      // First, clear all quiz-specific data from quiz-storage-service
+      quizStorageService.clearQuizState(quizId, quizType)
+
+      // Clear the result from storage service
+      const resultKey = `quiz_result_${quizId}`
+      localStorage.removeItem(resultKey)
+      sessionStorage.removeItem(resultKey)
+
+      // Clear the completed flag
+      localStorage.removeItem(`quiz_${quizId}_completed`)
+
+      // Clear guest result if user is authenticated
+      if (this.isAuthenticated()) {
+        this.clearGuestResult(quizId, quizType)
       }
 
-      // Set a flag to prevent further processing
-      sessionStorage.setItem("auth_reset_complete", "true")
-      sessionStorage.setItem("auth_reset_time", Date.now().toString())
+      // Clear quiz cache
+      this.clearCache(quizId)
+
+      // Clear auth flow data
+      this.clearAuthFlow()
+
+      // Clear specific items from localStorage with proper prefixes matching quiz-storage-service
+      if (typeof window !== "undefined") {
+        // Quiz-specific items with proper prefixes
+        localStorage.removeItem(`quiz_state_${quizType}_${quizId}`)
+        localStorage.removeItem(`quiz_answers_${quizId}`)
+        localStorage.removeItem(`quiz_result_${quizId}`)
+        localStorage.removeItem(`quiz_${quizId}_saved`)
+        localStorage.removeItem(`guest_quiz_${quizId}`)
+
+        // General quiz items
+        localStorage.removeItem("pendingQuizData")
+        localStorage.removeItem("inAuthFlow")
+        localStorage.removeItem("quizAuthRedirect")
+
+        // Check if this is the current quiz state and clear if it matches
+        const currentStateData = localStorage.getItem("quiz_current_state")
+        if (currentStateData) {
+          try {
+            const currentState = JSON.parse(currentStateData)
+            if (currentState.quizId === quizId) {
+              localStorage.removeItem("quiz_current_state")
+            }
+          } catch (e) {
+            console.error("Error parsing current state:", e)
+          }
+        }
+
+        // Clear from sessionStorage too
+        sessionStorage.removeItem(`quiz_state_${quizType}_${quizId}`)
+        sessionStorage.removeItem(`quiz_answers_${quizId}`)
+        sessionStorage.removeItem(`quiz_result_${quizId}`)
+        sessionStorage.removeItem("pendingQuizData")
+        sessionStorage.removeItem("inAuthFlow")
+        sessionStorage.removeItem("quizAuthData")
+        sessionStorage.removeItem("quizReturnUrl")
+        sessionStorage.removeItem("showQuizResults")
+        sessionStorage.removeItem("quizRedirectPath")
+
+        // Clean up URL parameters if needed
+        if (window.history && window.history.replaceState) {
+          const url = new URL(window.location.href)
+          // Keep only completed=true if it exists
+          const hasCompleted = url.searchParams.has("completed")
+          url.searchParams.delete("fromAuth")
+          url.searchParams.delete("auth")
+          url.searchParams.delete("session")
+
+          if (hasCompleted) {
+            url.searchParams.set("completed", "true")
+          }
+
+          window.history.replaceState({}, document.title, url.toString())
+        }
+      }
+
+      // For authenticated users, we can be more aggressive with cleanup
+      if (this.isAuthenticated()) {
+        // Update guest results collection to remove this quiz
+        const guestResultsKey = "quiz_guest_results"
+        const existingResultsStr = localStorage.getItem(guestResultsKey)
+        if (existingResultsStr) {
+          try {
+            const existingResults = JSON.parse(existingResultsStr)
+            const filteredResults = existingResults.filter((r: any) => r.quizId !== quizId)
+            localStorage.setItem(guestResultsKey, JSON.stringify(filteredResults))
+          } catch (e) {
+            console.error("Error updating guest results:", e)
+          }
+        }
+      }
+
+      // Clear our internal caches for this quiz
+      this.resultCache.delete(`${quizId}_${quizType}`)
+      this.quizResultCache.delete(quizId)
+
+      // Remove any pending saves for this quiz
+      for (const key of this.pendingSaves.keys()) {
+        if (key.startsWith(`${quizId}_`)) {
+          this.pendingSaves.delete(key)
+        }
+      }
+
+      // Clear save in progress flags for this quiz
+      for (const key of this.saveInProgress) {
+        if (key.startsWith(`${quizId}_`)) {
+          this.saveInProgress.delete(key)
+        }
+      }
+
+      console.log(`Successfully cleaned up quiz data for ${quizId}`)
     } catch (error) {
-      console.error("Error during complete auth reset:", error)
+      console.error("Error during quiz cleanup:", error)
+    }
+  }
+
+  // Comprehensive method to clear all quiz data
+  clearAllQuizData(): void {
+    if (typeof window === "undefined") return
+
+    console.log("Clearing all quiz data")
+
+    try {
+      // First, call the storage service's clearAllQuizData method
+      quizStorageService.clearAllQuizData()
+
+      // Then clear all quiz-related localStorage items with any possible prefix
+      const prefixesToCheck = ["quiz_", "guest_quiz_", "quiz", "guest_"]
+      const localStorageKeys = []
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key) {
+          const shouldRemove =
+            prefixesToCheck.some((prefix) => key.startsWith(prefix)) ||
+            key === "pendingQuizData" ||
+            key === "inAuthFlow" ||
+            key === "quizAuthRedirect" ||
+            key === "quiz_current_state" ||
+            key === "quiz_guest_results" ||
+            key.includes("_quiz_")
+
+          if (shouldRemove) {
+            localStorageKeys.push(key)
+          }
+        }
+      }
+
+      // Remove all identified keys
+      localStorageKeys.forEach((key) => {
+        console.log(`Removing localStorage key: ${key}`)
+        localStorage.removeItem(key)
+      })
+
+      // Clear all quiz-related sessionStorage items
+      const sessionStorageKeys = []
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
+        if (key) {
+          const shouldRemove =
+            prefixesToCheck.some((prefix) => key.startsWith(prefix)) ||
+            key.includes("Quiz") ||
+            key.includes("Auth") ||
+            key === "pendingQuizData" ||
+            key === "inAuthFlow" ||
+            key === "showQuizResults" ||
+            key === "quizRedirectPath"
+
+          if (shouldRemove) {
+            sessionStorageKeys.push(key)
+          }
+        }
+      }
+
+      // Remove all identified session storage keys
+      sessionStorageKeys.forEach((key) => {
+        console.log(`Removing sessionStorage key: ${key}`)
+        sessionStorage.removeItem(key)
+      })
+
+      // Clear our internal caches
+      this.resultCache.clear()
+      this.quizResultCache.clear()
+      this.pendingSaves.clear()
+      this.saveInProgress.clear()
+      this.saveAttempts.clear()
+
+      console.log("Successfully cleared all quiz data")
+    } catch (error) {
+      console.error("Error clearing all quiz data:", error)
     }
   }
 }

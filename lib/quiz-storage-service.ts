@@ -57,43 +57,28 @@ class QuizStorageService {
     return QuizStorageService.instance
   }
 
+  private saveToStorage(key: string, data: any): void {
+    const serializedData = JSON.stringify({ ...data, timestamp: Date.now() });
+    localStorage.setItem(key, serializedData);
+    sessionStorage.setItem(key, serializedData);
+  }
+
   /**
    * Save quiz state to storage
    */
   public saveQuizState(state: QuizState): void {
-    if (typeof window === "undefined") return
+    if (typeof window === "undefined") return;
 
     try {
-      const stateKey = `${this.storagePrefix}state_${state.quizType}_${state.quizId}`
-      localStorage.setItem(
-        stateKey,
-        JSON.stringify({
-          ...state,
-          timestamp: Date.now(),
-        }),
-      )
-
-      // Also save to sessionStorage for redundancy
-      sessionStorage.setItem(
-        stateKey,
-        JSON.stringify({
-          ...state,
-          timestamp: Date.now(),
-        }),
-      )
+      const stateKey = `${this.storagePrefix}state_${state.quizType}_${state.quizId}`;
+      this.saveToStorage(stateKey, state);
 
       // Save current quiz state for navigation
-      localStorage.setItem(
-        `${this.storagePrefix}current_state`,
-        JSON.stringify({
-          ...state,
-          timestamp: Date.now(),
-        }),
-      )
+      this.saveToStorage(`${this.storagePrefix}current_state`, state);
 
-      console.log(`Saved quiz state for ${state.quizId}:`, state)
+      console.log(`Saved quiz state for ${state.quizId}:`, state);
     } catch (error) {
-      console.error("Error saving quiz state:", error)
+      console.error(`Error saving quiz state for ${state.quizId}:`, error);
     }
   }
 
@@ -452,7 +437,7 @@ class QuizStorageService {
   /**
    * Clear guest result
    */
-  public clearGuestResult(quizId: string): void {
+  public clearGuestResult(quizId: string, quizType: string): void {
     if (typeof window === "undefined") return
 
     try {
