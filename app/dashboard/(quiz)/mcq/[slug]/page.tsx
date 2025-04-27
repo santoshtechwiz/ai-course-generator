@@ -6,8 +6,9 @@ import { authOptions } from "@/lib/authOptions"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
 
-import McqQuizWrapper from "../components/McqQuizWrapper"
+
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
+import McqQuizWrapper from "../components/McqQuizWrapper"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 }
 
-const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
+const McqPage = async ({ params }: { params: Promise< { slug: string }> }) => {
   const { slug } = await params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
@@ -69,7 +70,6 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
     { name: quizData.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
-  console.log(quizData);
 
   return (
     <QuizDetailsPageWithContext
@@ -84,12 +84,12 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
       authorId={quizData.userId}
       isPublic={quizData.isPublic || false}
       isFavorite={quizData.isFavorite || false}
-      difficulty={quizData.difficulty || "medium"}
+      difficulty={["easy", "medium", "hard"].includes(quizData.difficulty || "") ? (quizData.difficulty as "easy" | "medium" | "hard") : "medium"}
     >
       <McqQuizWrapper
-       quizData={quizData}
+        quizData={quizData}
+        questions={questions.map((q) => ({ ...q, id: Number(q.id) }))}
         slug={slug}
-      
       />
     </QuizDetailsPageWithContext>
   )

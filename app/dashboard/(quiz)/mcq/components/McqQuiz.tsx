@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useEffect, useState, useRef } from "react"
 import { motion } from "framer-motion"
-import { HelpCircle, ArrowRight, Clock } from "lucide-react"
+import { HelpCircle, ArrowRight, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -13,16 +13,10 @@ import { useAnimation } from "@/providers/animation-provider"
 import { MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { QuizProgress } from "../../components/QuizProgress"
 import { useQuiz } from "@/app/context/QuizContext"
+import type { Question } from "./types"
 
 interface McqQuizProps {
-  question: {
-    id: number
-    question: string
-    answer: string
-    option1: string
-    option2: string
-    option3: string
-  }
+  question: Question
   onAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
   questionNumber: number
   totalQuestions: number
@@ -40,6 +34,26 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
   const { animationsEnabled } = useAnimation()
   const { state } = useQuiz()
   const isCompleting = state.animationState === "completing"
+  const [questionAvailable, setQuestionAvailable] = useState(!!question)
+
+  useEffect(() => {
+    setQuestionAvailable(!!question)
+  }, [question])
+
+  // Add this check at the beginning of the component
+  if (!questionAvailable) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="pt-6 text-center">
+          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-4" />
+          <p className="text-muted-foreground mb-4">This question is not available.</p>
+          <p className="text-sm text-muted-foreground">
+            Please try refreshing the page or contact support if the issue persists.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   // Reset timer and selection when question changes
   useEffect(() => {
@@ -71,8 +85,13 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
   const options = useMemo(() => {
     if (!question) return []
 
-    // Collect all valid options
+    // Use pre-processed options array if available
     const allOptions = [question.answer, question.option1, question.option2, question.option3].filter(Boolean)
+    if (allOptions.length >= 2) {
+      return allOptions
+    }
+
+    // Collect all valid option
 
     // If we have fewer than 2 options, add fallbacks
     if (new Set(allOptions).size < 2) {
@@ -86,7 +105,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
     const uniqueOptions = [...new Set(allOptions)]
 
     // Shuffle options with a stable seed based on question ID
-    let seed = question.id || 0
+    let seed = Number.parseInt(question.id) || 0
     return [...uniqueOptions].sort(() => {
       const x = Math.sin(seed++) * 10000
       return x - Math.floor(x) - 0.5
@@ -117,15 +136,6 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
   }, [selectedOption, question, onAnswer, isSubmitting])
 
   // If no question is available
-  if (!question) {
-    return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="pt-6 text-center">
-          <p className="text-muted-foreground mb-4">This question is not available.</p>
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <Card className="w-full">
