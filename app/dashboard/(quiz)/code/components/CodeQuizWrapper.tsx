@@ -4,14 +4,14 @@ import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { memo, useState, useEffect } from "react"
+import { memo, useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import CodingQuiz from "./CodingQuiz"
 import CodeQuizResult from "./CodeQuizResult"
 import { useQuiz, QuizProvider } from "@/app/context/QuizContext"
 import { GuestPrompt } from "../../components/GuestSignInPrompt"
-import { quizService } from "@/lib/QuizService"
+import { quizService } from "@/lib/quiz-service"
 import { useAuth } from "@/providers/unified-auth-provider"
 
 interface Question {
@@ -47,7 +47,7 @@ interface CodeQuizContentProps {
 }
 
 const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug }: CodeQuizContentProps) {
-  const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated } = useQuiz()
+  const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated, nextQuestion, prevQuestion } = useQuiz()
   const router = useRouter()
   const { isAuthenticated: authState } = useAuth()
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
@@ -56,14 +56,42 @@ const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug }: CodeQu
 
   // Only show auth prompt after quiz completion for non-authenticated users
   useEffect(() => {
+    let timer: NodeJS.Timeout
     if (isCompleted && !authState && !isProcessingAuth) {
-      console.log("Quiz completed and user is not authenticated, showing auth prompt")
-      setShowAuthPrompt(true)
+      // Add a delay before showing the auth prompt to ensure results are calculated
+      timer = setTimeout(() => {
+        console.log("Quiz completed and user is not authenticated, showing auth prompt")
+        setShowAuthPrompt(true)
+      }, 1200) // Delay showing auth prompt to allow results to load first
     } else if (authState || isProcessingAuth) {
       // If user is authenticated or we're processing auth, don't show the prompt
       setShowAuthPrompt(false)
     }
+    return () => clearTimeout(timer)
   }, [authState, isCompleted, isProcessingAuth])
+
+  // Handle answer submission with proper state updates
+  const handleAnswer = useCallback(
+    (answer: string, timeSpent: number, isCorrect: boolean) => {
+      console.log("Answer submitted:", { answer, timeSpent, isCorrect, currentQuestionIndex, questionCount })
+
+      submitAnswer(answer, timeSpent, isCorrect)
+
+      // Check if this is the last question
+      if (currentQuestionIndex >= questionCount - 1) {
+        // Get all answers including the current one
+        const updatedAnswers = [...answers]
+        updatedAnswers[currentQuestionIndex] = { answer, timeSpent, isCorrect }
+
+        // Complete the quiz
+        setTimeout(() => {
+          completeQuiz(updatedAnswers.filter((a) => a !== null))
+        }, 1000) // Slightly reduced delay for better UX
+      }
+      // Note: nextQuestion is now handled in the submitAnswer function in QuizContext
+    },
+    [submitAnswer, completeQuiz, currentQuestionIndex, questionCount, answers],
+  )
 
   if (error) {
     return (
@@ -112,25 +140,6 @@ const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug }: CodeQu
     )
   }
 
-  const handleAnswer = (answer: string, timeSpent: number, isCorrect: boolean) => {
-    submitAnswer(answer, timeSpent, isCorrect)
-
-    // Check if this is the last question
-    if (currentQuestionIndex >= questionCount - 1) {
-      // Get all answers including the current one
-      const updatedAnswers = [...answers]
-      updatedAnswers[currentQuestionIndex] = { answer, timeSpent, isCorrect }
-
-      // Complete the quiz
-      setTimeout(() => {
-        completeQuiz(updatedAnswers.filter((a) => a !== null))
-      }, 1000) // Slightly reduced delay for better UX
-    } else {
-      // Move to the next question
-      state.currentQuestionIndex += 1 // Ensure the index is incremented
-    }
-  }
-
   return (
     <div className="w-full max-w-3xl mx-auto p-4">
       <AnimatePresence mode="wait">
@@ -143,10 +152,20 @@ const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug }: CodeQu
             className="flex flex-col items-center justify-center min-h-[200px] gap-3"
             aria-live="polite"
           >
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" aria-hidden="true"></div>
             <p className="text-sm text-muted-foreground">
               {isProcessingAuth ? "Processing your results..." : "Loading quiz data..."}
             </p>
+          </motion.div>
+        ) : showAuthPrompt ? (
+          <motion.div
+            key="auth-prompt"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
+          >
+            <GuestPrompt quizId={quizData.id?.toString()} forceShow={true} />
           </motion.div>
         ) : isCompleted ? (
           <motion.div
@@ -156,18 +175,14 @@ const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug }: CodeQu
             exit={{ opacity: 0, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            {showAuthPrompt ? (
-              <GuestPrompt quizId={quizData.id?.toString()} forceShow={true} />
-            ) : (
-              <CodeQuizResult
-                title={quizData?.title || "Code Quiz"}
-                onRestart={restartQuiz}
-                quizId={quizData.id?.toString()}
-                questions={quizData.questions}
-                answers={state.answers}
-                score={state.score}
-              />
-            )}
+            <CodeQuizResult
+              title={quizData?.title || "Code Quiz"}
+              onRestart={restartQuiz}
+              quizId={quizData.id?.toString()}
+              questions={quizData.questions}
+              answers={state.answers}
+              score={state.score}
+            />
           </motion.div>
         ) : (
           <motion.div

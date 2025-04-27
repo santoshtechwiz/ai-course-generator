@@ -12,6 +12,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
+import { quizService } from "@/lib/quiz-service"
+import { useEffect, useState } from "react"
+import { useAuth } from "@/providers/unified-auth-provider"
 
 interface OpenEndedQuizWrapperProps {
   quizData: any
@@ -21,7 +24,26 @@ interface OpenEndedQuizWrapperProps {
 // This is the main wrapper that uses the provider
 export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWrapperProps) {
   return (
-    <QuizProvider quizData={quizData} slug={slug}>
+    <QuizProvider
+      quizData={quizData}
+      slug={slug}
+      onAuthRequired={(redirectUrl) => {
+        // Handle authentication prompt here
+        quizService.saveAuthRedirect(redirectUrl)
+
+        // Save current quiz state before redirecting
+        quizService.savePendingQuizData()
+
+        // Add fromAuth parameter to the callback URL
+        const callbackUrl = new URL(redirectUrl, window.location.origin)
+        callbackUrl.searchParams.set("fromAuth", "true")
+
+        // Redirect to sign in page
+        if (typeof window !== "undefined") {
+          window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl.toString())}`
+        }
+      }}
+    >
       <OpenEndedQuizContent quizData={quizData} slug={slug} />
     </QuizProvider>
   )
@@ -30,7 +52,10 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
 // This component consumes the context
 function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   const router = useRouter()
-  const { state, submitAnswer, completeQuiz, restartQuiz } = useQuiz()
+  const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated } = useQuiz()
+
+  const { isAuthenticated: authState } = useAuth()
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
   const {
     quizId,
@@ -42,8 +67,23 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
     isLoading,
     error,
     score,
-    showAuthPrompt,
+    isProcessingAuth,
   } = state
+
+  // Check if we should show the auth prompt for non-authenticated users
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (!authState && isCompleted && !isLoading && !isProcessingAuth) {
+      // Add a delay before showing the auth prompt to ensure results are calculated
+      timer = setTimeout(() => {
+        console.log("User is not authenticated and quiz is completed, showing auth prompt")
+        setShowAuthPrompt(true)
+      }, 1200) // Delay showing auth prompt to allow results to load first
+    } else {
+      setShowAuthPrompt(false)
+    }
+    return () => clearTimeout(timer)
+  }, [authState, isCompleted, isLoading, isProcessingAuth])
 
   // Get current question data
   const currentQuestionData = quizData?.questions?.[currentQuestionIndex] || null
@@ -110,13 +150,33 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
     )
   }
 
-  // Update the OpenEndedQuizContent component to handle the authentication flow consistently
-
-  // In the return statement, update the content rendering logic
   return (
     <div className="w-full max-w-4xl mx-auto">
       <AnimatePresence mode="wait">
-        {isCompleted ? (
+        {isLoading || isProcessingAuth ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center min-h-[200px] gap-3 py-8"
+          >
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+            <p className="text-sm text-muted-foreground">
+              {isProcessingAuth ? "Processing your results..." : "Loading quiz data..."}
+            </p>
+          </motion.div>
+        ) : isCompleted && showAuthPrompt && !isAuthenticated ? (
+          <motion.div
+            key="auth-prompt"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
+          >
+            <GuestPrompt quizId={quizData.id} forceShow={true} />
+          </motion.div>
+        ) : isCompleted ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 20 }}
@@ -124,24 +184,20 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
             exit={{ opacity: 0, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            {showAuthPrompt ? (
-              <GuestPrompt />
-            ) : (
-              <QuizResultsOpenEnded
-                quizId={quizId}
-                slug={slug}
-                title={title || quizData.title || ""}
-                answers={answers}
-                questions={quizData.questions}
-                totalQuestions={questionCount}
-                startTime={state.startTime}
-                score={score}
-                onRestart={restartQuiz}
-                onSignIn={() => {
-                  console.log("Sign in clicked")
-                }}
-              />
-            )}
+            <QuizResultsOpenEnded
+              quizId={quizId}
+              slug={slug}
+              title={title || quizData.title || ""}
+              answers={answers}
+              questions={quizData.questions}
+              totalQuestions={questionCount}
+              startTime={state.startTime}
+              score={score}
+              onRestart={restartQuiz}
+              onSignIn={() => {
+                console.log("Sign in clicked")
+              }}
+            />
           </motion.div>
         ) : (
           <motion.div

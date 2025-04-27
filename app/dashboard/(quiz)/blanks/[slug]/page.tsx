@@ -8,8 +8,8 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import BlankQuizWrapper from "../components/BlankQuizWrapper"
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const { slug } = params
+export async function generateMetadata({ params }: { params: Promise< { slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
   const quiz = await getQuiz(slug)
 
   if (!quiz) {
@@ -37,8 +37,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   })
 }
 
-const BlanksPage = async ({ params }: { params: { slug: string } }) => {
-  const { slug } = params
+const BlanksPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
+  const { slug } = await params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   const session = await getServerSession(authOptions)

@@ -57,9 +57,16 @@ const STORAGE_KEYS = {
   IN_AUTH_FLOW: "inAuthFlow",
 }
 
+// Make storage keys accessible externally
+const get = {
+  STORAGE_KEYS() {
+    return STORAGE_KEYS
+  },
+}
+
 /**
  * Simplified Quiz Service
- * Handles quiz state management, storage, and API interactions
+ * Handles quiz state management, storage,age, and API interactions
  */
 class QuizService {
   private static instance: QuizService
@@ -304,11 +311,14 @@ class QuizService {
         return true
       }
 
-      // Check URL for completed parameter
+      // Check URL for completed parameter - only count if authenticated or has guest result
       if (typeof window !== "undefined") {
         const urlParams = new URLSearchParams(window.location.search)
         if (urlParams.get("completed") === "true") {
-          return true
+          // If authenticated or has guest result, consider completed
+          if (this.isAuthenticated() || this.getGuestResult(quizId)) {
+            return true
+          }
         }
       }
 
@@ -732,6 +742,30 @@ class QuizService {
     } catch (error) {
       console.error("Error checking if returning from auth:", error)
       return false
+    }
+  }
+
+  /**
+   * Manually save current quiz state as pending data
+   */
+  savePendingQuizData(): void {
+    if (typeof window === "undefined") return
+
+    try {
+      console.log("Manually saving current quiz state as pending data")
+
+      // Try to get current state
+      const currentStateData = localStorage.getItem(STORAGE_KEYS.CURRENT_STATE)
+      if (currentStateData) {
+        // Save to pending data
+        localStorage.setItem(STORAGE_KEYS.PENDING_DATA, currentStateData)
+        sessionStorage.setItem(STORAGE_KEYS.PENDING_DATA, currentStateData)
+        console.log("Current quiz state saved as pending data")
+      } else {
+        console.log("No current quiz state found to save")
+      }
+    } catch (error) {
+      console.error("Error saving pending quiz data:", error)
     }
   }
 

@@ -14,6 +14,7 @@ import BlankQuizResults from "./BlankQuizResults"
 import FillInTheBlanksQuiz from "./FillInTheBlanksQuiz"
 
 
+
 interface BlankQuizWrapperProps {
   quizData: any
   slug: string
@@ -21,19 +22,41 @@ interface BlankQuizWrapperProps {
 
 // This is the main wrapper that uses the provider
 export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperProps) {
+  const { isAuthenticated, user } = useAuth()
+
+  // Enhanced authentication check
+  const userIsAuthenticated = isAuthenticated || !!user
+
+  // Add a safety check for quizData
+  const safeQuizData = quizData || {
+    id: "unknown",
+    title: "Quiz",
+    slug: slug || "unknown",
+    questions: [],
+  }
+
   return (
     <QuizProvider
-      quizData={quizData}
-      slug={slug}
+      quizData={safeQuizData}
+      slug={slug || "unknown"}
       onAuthRequired={(redirectUrl) => {
+        // If user is already authenticated, don't show auth prompt
+        if (userIsAuthenticated) {
+          console.log("User is already authenticated, skipping auth prompt")
+          return
+        }
+
         // Use QuizService API methods instead of direct localStorage access
         quizService.saveAuthRedirect(redirectUrl)
+
+        // Save current quiz state before redirecting
+        quizService.savePendingQuizData()
 
         // Handle auth redirect using the service method
         quizService.handleAuthRedirect(redirectUrl)
       }}
     >
-      <BlankQuizContent quizData={quizData} slug={slug} />
+      <BlankQuizContent quizData={safeQuizData} slug={slug || "unknown"} />
     </QuizProvider>
   )
 }
@@ -42,7 +65,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
 function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   const router = useRouter()
   const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated, retryLoadingResults } = useQuiz()
-  const { isAuthenticated: authState } = useAuth()
+  const { isAuthenticated: authState, user } = useAuth()
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const [loadingState, setLoadingState] = useState<"initial" | "processing" | "saving" | "none">("initial")
   const [resultsShown, setResultsShown] = useState(false)
@@ -62,6 +85,9 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     score,
   } = state
 
+  // Enhanced authentication check
+  const userIsAuthenticated = authState || !!user || isAuthenticated
+
   // Enhanced loading state management
   useEffect(() => {
     if (isProcessingAuth) {
@@ -79,13 +105,27 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   useEffect(() => {
     let timer: NodeJS.Timeout
 
+    // Check URL parameters for completed=true
+    const urlParams = new URLSearchParams(window.location.search)
+    const isCompletedFromUrl = urlParams.get("completed")?.toLowerCase() === "true"
+
+    // If URL has completed=true but user is not authenticated, show auth prompt after a delay
+    if (isCompletedFromUrl && !isAuthenticated && !isLoading && !isProcessingAuth ) {
+      // Add a delay before showing the auth prompt to ensure results are calculated
+      timer = setTimeout(() => {
+        console.log("URL has completed=true but user is not authenticated, showing auth prompt")
+        setShowAuthPrompt(true)
+      }, 2000) // Delay to ensure results are fully displayed first
+      return () => clearTimeout(timer)
+    }
+
     // Only show auth prompt if:
     // 1. User is not authenticated
     // 2. Quiz is completed
     // 3. We have valid results (answers exist and score > 0)
     // 4. Not currently loading or processing
     if (
-      !authState &&
+      !userIsAuthenticated &&
       isCompleted &&
       !isLoading &&
       !isProcessingAuth &&
@@ -102,7 +142,18 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     }
 
     return () => clearTimeout(timer)
-  }, [authState, isCompleted, isLoading, isProcessingAuth, answers, score])
+  }, [
+    authState,
+    user,
+    isAuthenticated,
+    isCompleted,
+    isLoading,
+    isProcessingAuth,
+    answers,
+    score,
+    showAuthPrompt,
+    userIsAuthenticated,
+  ])
 
   // Get current question data
   const currentQuestionData = quizData?.questions?.[currentQuestionIndex] || null
@@ -250,7 +301,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <AnimatePresence mode="wait">
-        {isCompleted && showAuthPrompt && !isAuthenticated ? (
+        {isCompleted && showAuthPrompt && !userIsAuthenticated ? (
           <motion.div
             key="auth-prompt"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -258,7 +309,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
           >
-            <GuestPrompt quizId={quizData.id} forceShow={true} />
+            <GuestPrompt quizId={quizData?.id || "unknown"} forceShow={true} />
           </motion.div>
         ) : isCompleted && (answers.filter((a) => a !== null).length > 0 || resultsShown) ? (
           <motion.div
@@ -274,11 +325,11 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
           >
             <BlankQuizResults
               answers={answers.filter((a) => a !== null)}
-              questions={quizData.questions}
+              questions={quizData?.questions || []}
               onRestart={restartQuiz}
-              quizId={quizId}
+              quizId={quizId || "unknown"}
               title={title || ""}
-              slug={slug}
+              slug={slug || "unknown"}
               onComplete={(score) => {
                 console.log("Quiz completed with score:", score)
               }}

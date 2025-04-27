@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
-import { quizService } from "@/lib/QuizService"
+import { quizService } from "@/lib/quiz-service"
 import * as QuizContext from "@/app/context/QuizContext"
 import McqQuizWrapper from "../dashboard/(quiz)/mcq/components/McqQuizWrapper"
 
