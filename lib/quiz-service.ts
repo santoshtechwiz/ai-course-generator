@@ -532,25 +532,30 @@ class QuizService {
       return this.resultCache.get(submissionKey) || null
     }
 
-    // Check if save is in progress
+    // Check if save is in progress - use a more robust approach
     if (this.saveInProgress.has(submissionKey)) {
       console.log("Save already in progress for this quiz, preventing duplicate API call")
 
       // Return a promise that resolves when the existing save completes
       return new Promise((resolve) => {
+        const startTime = Date.now()
+        const maxWaitTime = 8000 // 8 seconds max wait
+
         // Check every 100ms if the save is complete
         const checkInterval = setInterval(() => {
           if (!this.saveInProgress.has(submissionKey)) {
             clearInterval(checkInterval)
             resolve(this.resultCache.get(submissionKey) || null)
           }
-        }, 100)
 
-        // Set a timeout to prevent hanging indefinitely
-        setTimeout(() => {
-          clearInterval(checkInterval)
-          resolve(this.resultCache.get(submissionKey) || null)
-        }, 5000)
+          // Also check if we've waited too long
+          if (Date.now() - startTime > maxWaitTime) {
+            clearInterval(checkInterval)
+            console.warn("Waited too long for save to complete, continuing anyway")
+            this.saveInProgress.delete(submissionKey) // Force clear the flag
+            resolve(this.resultCache.get(submissionKey) || null)
+          }
+        }, 100)
       })
     }
 
@@ -571,6 +576,15 @@ class QuizService {
     }, 30000)
 
     try {
+      // Check if we already have a cached result to avoid unnecessary API calls
+      const existingResult = this.resultCache.get(submissionKey)
+      if (existingResult && localStorage.getItem(STORAGE_KEYS.SAVED(submission.quizId)) === "true") {
+        console.log("Result already cached and saved, skipping API call")
+        clearTimeout(saveTimeout)
+        this.saveInProgress.delete(submissionKey)
+        return existingResult
+      }
+
       // Prepare the request payload
       const payload = {
         quizId: submission.quizId,
@@ -611,7 +625,6 @@ class QuizService {
             errorMessage += ` - ${errorText}`
           }
         }
-
         throw new Error(errorMessage)
       }
 

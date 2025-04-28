@@ -33,6 +33,10 @@ interface SubscriptionState {
   canDownloadPDF: () => boolean
 }
 
+// Utility to debounce API calls
+let fetchStatusTimeout: NodeJS.Timeout | null = null
+let fetchDetailsTimeout: NodeJS.Timeout | null = null
+
 export const useSubscriptionStore = create<SubscriptionState>()(
   devtools(
     persist(
@@ -53,149 +57,154 @@ export const useSubscriptionStore = create<SubscriptionState>()(
           const state = get()
           const now = Date.now()
 
-          // Throttle requests - don't fetch if last fetch was less than 30 seconds ago
-          // unless force refresh is needed
-          if (!forceRefresh && state.lastFetched > 0 && now - state.lastFetched < 30000 && state.data) {
-            return
-          }
-
-          // Don't change status to loading if we already have data and are just refreshing
-          set({
-            status: state.data && state.status === "succeeded" ? "succeeded" : "loading",
-            isRefreshing: true,
-            isLoading: true,
-            isError: false,
-            error: null,
-          })
-
-          try {
-            const response = await fetch("/api/subscriptions/status", {
-              credentials: "include",
-              headers: {
-                "x-force-refresh": forceRefresh ? "true" : "false",
-                "Cache-Control": "no-cache",
-              },
-            })
-
-            if (!response.ok) {
-              if (response.status === 401) {
-                console.warn("Unauthorized access. Please log in again.")
-                set({
-                  status: "failed",
-                  error: "Unauthorized access. Please log in again.",
-                  isRefreshing: false,
-                  isLoading: false,
-                  isError: true,
-                })
-                return
-              }
-              throw new Error(`Failed to fetch subscription status: ${response.statusText}`)
+          // Debounce API calls
+          if (fetchStatusTimeout) clearTimeout(fetchStatusTimeout)
+          fetchStatusTimeout = setTimeout(async () => {
+            if (!forceRefresh && state.lastFetched > 0 && now - state.lastFetched < 30000 && state.data) {
+              return
             }
 
-            const rawData = await response.json()
-
-            // Validate and transform the API response to match expected types
-            const validatedData = validateSubscriptionResponse(rawData)
-
+            // Don't change status to loading if we already have data and are just refreshing
             set({
-              status: "succeeded",
-              data: validatedData,
-              lastFetched: Date.now(),
-              error: null,
-              isRefreshing: false,
-              isLoading: false,
+              status: state.data && state.status === "succeeded" ? "succeeded" : "loading",
+              isRefreshing: true,
+              isLoading: true,
               isError: false,
+              error: null,
             })
-          } catch (error) {
-            console.error("Error fetching subscription status:", error)
 
-            // Keep existing data if available, just update status and error
-            set((state) => ({
-              status: "failed",
-              error: error instanceof Error ? error.message : "Unknown error",
-              isRefreshing: false,
-              isLoading: false,
-              isError: true,
-              // Keep existing data if we have it
-              data: state.data,
-            }))
-          }
+            try {
+              const response = await fetch("/api/subscriptions/status", {
+                credentials: "include",
+                headers: {
+                  "x-force-refresh": forceRefresh ? "true" : "false",
+                  "Cache-Control": "no-cache",
+                },
+              })
+
+              if (!response.ok) {
+                if (response.status === 401) {
+                  console.warn("Unauthorized access. Please log in again.")
+                  set({
+                    status: "failed",
+                    error: "Unauthorized access. Please log in again.",
+                    isRefreshing: false,
+                    isLoading: false,
+                    isError: true,
+                  })
+                  return
+                }
+                throw new Error(`Failed to fetch subscription status: ${response.statusText}`)
+              }
+
+              const rawData = await response.json()
+
+              // Validate and transform the API response to match expected types
+              const validatedData = validateSubscriptionResponse(rawData)
+
+              set({
+                status: "succeeded",
+                data: validatedData,
+                lastFetched: Date.now(),
+                error: null,
+                isRefreshing: false,
+                isLoading: false,
+                isError: false,
+              })
+            } catch (error) {
+              console.error("Error fetching subscription status:", error)
+
+              // Keep existing data if available, just update status and error
+              set((state) => ({
+                status: "failed",
+                error: error instanceof Error ? error.message : "Unknown error",
+                isRefreshing: false,
+                isLoading: false,
+                isError: true,
+                // Keep existing data if we have it
+                data: state.data,
+              }))
+            }
+          }, 300) // Debounce delay
         },
 
         fetchSubscriptionDetails: async (forceRefresh = false) => {
           const state = get()
           const now = Date.now()
 
-          // Throttle requests - don't fetch if last fetch was less than 2 minutes ago
-          if (
-            !forceRefresh &&
-            state.lastDetailsFetched > 0 &&
-            now - state.lastDetailsFetched < 120000 &&
-            state.detailsData
-          ) {
-            return
-          }
-
-          set({ isRefreshing: true, isLoading: true, isError: false })
-
-          try {
-            const response = await fetch("/api/subscriptions", {
-              credentials: "include",
-              headers: {
-                "x-data-type": "details",
-                "Cache-Control": "no-cache",
-              },
-            })
-
-            if (!response.ok) {
-              if (response.status === 401) {
-                throw new Error("Unauthorized")
-              }
-              throw new Error(`Failed to fetch subscription details: ${response.statusText}`)
+          // Debounce API calls
+          if (fetchDetailsTimeout) clearTimeout(fetchDetailsTimeout)
+          fetchDetailsTimeout = setTimeout(async () => {
+            if (
+              !forceRefresh &&
+              state.lastDetailsFetched > 0 &&
+              now - state.lastDetailsFetched < 120000 &&
+              state.detailsData
+            ) {
+              return
             }
 
-            const detailsData = await response.json()
+            set({ isRefreshing: true, isLoading: true, isError: false })
 
-            // Validate token usage data if it exists
-            const tokenUsage = detailsData?.tokenUsage
-              ? {
-                  used: typeof detailsData.tokenUsage.used === "number" ? detailsData.tokenUsage.used : 0,
-                  total: typeof detailsData.tokenUsage.total === "number" ? detailsData.tokenUsage.total : 0,
+            try {
+              const response = await fetch("/api/subscriptions", {
+                credentials: "include",
+                headers: {
+                  "x-data-type": "details",
+                  "Cache-Control": "no-cache",
+                },
+              })
+
+              if (!response.ok) {
+                if (response.status === 401) {
+                  throw new Error("Unauthorized")
                 }
-              : null
+                throw new Error(`Failed to fetch subscription details: ${response.statusText}`)
+              }
 
-            set((state) => {
-              // Update tokensUsed if available in details
-              const updatedData =
-                state.data && tokenUsage
-                  ? {
-                      ...state.data,
-                      tokensUsed: tokenUsage.used,
-                      credits: tokenUsage.total,
-                    }
-                  : state.data
+              const detailsData = await response.json()
 
-              return {
-                detailsData,
-                lastDetailsFetched: Date.now(),
+              // Validate token usage data if it exists
+              const tokenUsage = detailsData?.tokenUsage
+                ? {
+                    used: typeof detailsData.tokenUsage.used === "number" ? detailsData.tokenUsage.used : 0,
+                    total: typeof detailsData.tokenUsage.total === "number" ? detailsData.tokenUsage.total : 0,
+                  }
+                : null
+
+              set((state) => {
+                // Update tokensUsed if available in details
+                const updatedData =
+                  state.data && tokenUsage
+                    ? {
+                        ...state.data,
+                        tokensUsed: tokenUsage.used,
+                        credits: tokenUsage.total,
+                      }
+                    : state.data
+
+                return {
+                  detailsData,
+                  lastDetailsFetched: Date.now(),
+                  isRefreshing: false,
+                  isLoading: false,
+                  isError: false,
+                  data: updatedData,
+                }
+              })
+            } catch (error) {
+              console.error("Error fetching subscription details:", error)
+
+              // Keep existing details data if available
+              set((state) => ({
                 isRefreshing: false,
                 isLoading: false,
-                isError: false,
-                data: updatedData,
-              }
-            })
-          } catch (error) {
-            console.error("Error fetching subscription details:", error)
-
-            // Keep existing details data if available
-            set((state) => ({
-              isRefreshing: false,
-              isLoading: false,
-              isError: true,
-              // Don't clear existing details data on error
-              detailsData: state.detailsData,
-            }))
-          }
+                isError: true,
+                // Don't clear existing details data on error
+                detailsData: state.detailsData,
+              }))
+            }
+          }, 300) // Debounce delay
         },
 
         cancelSubscription: async (reason: string) => {
@@ -342,7 +351,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
         // Derived state
         canDownloadPDF: () => {
           const state = get()
-          return !!state.data?.isSubscribed || state.data?.subscriptionPlan !== "FREE"
+          return !!state.data?.isSubscribed && state.data.subscriptionPlan !== "FREE"
         },
       }),
       {

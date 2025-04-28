@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useEffect, useState, useRef } from "react"
 import { motion } from "framer-motion"
-import { HelpCircle, ArrowRight, Clock, AlertCircle } from "lucide-react"
+import { HelpCircle, ArrowRight, Clock, AlertCircle, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -11,7 +11,6 @@ import { cn, formatQuizTime } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionTransition } from "@/components/ui/animations/motion-wrapper"
-import { QuizProgress } from "../../components/QuizProgress"
 import { useQuiz } from "@/app/context/QuizContext"
 import type { Question } from "./types"
 
@@ -170,14 +169,23 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
   return (
     <Card className="w-full">
       <CardHeader className="space-y-4">
-        <QuizProgress
-          currentQuestionIndex={questionNumber - 1}
-          totalQuestions={totalQuestions}
-          timeSpent={[elapsedTime]}
-          title=""
-          quizType="Multiple Choice"
-          animate={animationsEnabled}
-        />
+        <div className="flex flex-col space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Question {questionNumber} of {totalQuestions}
+            </p>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{formatQuizTime(elapsedTime)}</span>
+            </div>
+          </div>
+        </div>
+        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all duration-300 ease-in-out"
+            style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
+          />
+        </div>
       </CardHeader>
       <CardContent className="p-6">
         <MotionTransition key={question.id} motionKey={String(question.id)}>
@@ -198,8 +206,8 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
                 {options.map((option, index) => (
                   <motion.div
                     key={`${question.id}-${index}-${option}`}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{
                       delay: index * 0.1,
                       duration: 0.3,
@@ -207,7 +215,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
                     }}
                   >
                     <motion.div
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.98 }}
                       animate={
                         isCompleting && selectedOption === option
@@ -224,7 +232,7 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
                           "border-2",
                           selectedOption === option
                             ? "border-primary bg-primary/5"
-                            : "border-transparent hover:bg-muted",
+                            : "border-transparent hover:bg-muted/80",
                         )}
                         onClick={() => handleSelectOption(option)}
                       >
@@ -245,19 +253,36 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
         </MotionTransition>
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Time spent on this question</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="flex items-center gap-3">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                  <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Time spent on this question</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {questionNumber > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                /* Previous handled by parent */
+              }}
+              className="gap-1"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Previous
+            </Button>
+          )}
+        </div>
+
         <Button
           onClick={handleSubmit}
           disabled={!selectedOption || isSubmitting}

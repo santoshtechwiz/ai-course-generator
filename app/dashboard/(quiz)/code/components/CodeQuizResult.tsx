@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { CheckCircle2, XCircle, Clock, BarChart3, RefreshCw, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -67,22 +67,30 @@ export default function CodeQuizResult({ title, onRestart, quizId, questions, an
   }, [])
 
   // Save results to server if authenticated
-  useEffect(() => {
-    if (session?.user && quizId_) {
-      // Save to server if authenticated
-      quizService.saveCompleteQuizResult({
-        quizId: quizId_,
-        slug: state.slug,
-        type: "code",
-        score: scorePercentage,
-        answers: quizAnswers.filter((a) => a !== null),
-        totalTime: totalTime,
-        totalQuestions: totalQuestions,
-      })
+  const hasSavedRef = useRef(false)
 
-      // Clear all storage after saving to database
-      quizService.clearAllStorage()
+  useEffect(() => {
+    if (session?.user && quizId_ && !hasSavedRef.current.current) {
+      hasSavedRef.current.current = true
+
+      // Use a small timeout to ensure we don't block rendering
+      setTimeout(() => {
+        // Save to server if authenticated
+        quizService.saveCompleteQuizResult({
+          quizId: quizId_,
+          slug: state.slug,
+          type: "code",
+          score: scorePercentage,
+          answers: quizAnswers.filter((a) => a !== null),
+          totalTime: totalTime,
+          totalQuestions: totalQuestions,
+        })
+
+        // Clear all storage after saving to database
+        quizService.clearAllStorage()
+      }, 100)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, quizId_, state.slug, quizAnswers, scorePercentage, totalTime, totalQuestions])
 
   return (

@@ -1,5 +1,6 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
+import type React from "react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -62,9 +63,9 @@ const Timer = ({ elapsedTime }: { elapsedTime: number }) => {
         <TooltipContent>
           <p>Time spent on this question</p>
         </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-  );
+      </Tooltip>
+    </TooltipProvider>
+  )
 }
 
 const BadgeGroup = ({ tags, difficulty }: { tags: string[]; difficulty: string }) => {
@@ -139,7 +140,7 @@ export default function FillInTheBlanksQuiz({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const { state } = useQuiz()
-  const isCompleting = state.animationState === 'completing'
+  const isCompleting = state.animationState === "completing"
 
   const similarityThreshold = 3
   const minimumPrefixLength = 2
@@ -270,21 +271,21 @@ export default function FillInTheBlanksQuiz({
       return
     }
 
-    const userAnswer = answer.trim().toLowerCase();
-    const correctAnswer = question.answer.trim().toLowerCase();
-    const distance = levenshtein(userAnswer, correctAnswer);
-    const maxLength = Math.max(userAnswer.length, correctAnswer.length);
-    const similarity = maxLength > 0 ? Math.max(0, 100 - (distance / maxLength) * 100) : 0;
-    
-    const isAnswerCorrect = distance <= similarityThreshold;
-    setIsCorrect(isAnswerCorrect);
-    setSubmitted(true);
+    const userAnswer = answer.trim().toLowerCase()
+    const correctAnswer = question.answer.trim().toLowerCase()
+    const distance = levenshtein(userAnswer, correctAnswer)
+    const maxLength = Math.max(userAnswer.length, correctAnswer.length)
+    const similarity = maxLength > 0 ? Math.max(0, 100 - (distance / maxLength) * 100) : 0
+
+    const isAnswerCorrect = distance <= similarityThreshold
+    setIsCorrect(isAnswerCorrect)
+    setSubmitted(true)
 
     // Add a small delay to show the submission state
     setTimeout(() => {
-      setIsSubmitting(false);
-      onAnswer(answer, Math.round(timeSpent), hintLevel > 0, similarity);
-    }, 500);
+      setIsSubmitting(false)
+      onAnswer(answer, Math.round(timeSpent), hintLevel > 0, similarity)
+    }, 500)
   }, [
     answer,
     checkForGarbage,
@@ -294,7 +295,7 @@ export default function FillInTheBlanksQuiz({
     question.answer,
     similarityThreshold,
     startTime,
-  ]);
+  ])
 
   const handleProgressiveHint = useCallback(() => {
     if (hintLevel < progressiveHints.length) {
@@ -525,7 +526,11 @@ export default function FillInTheBlanksQuiz({
           </Button>
 
           <Button
-            onClick={submitted ? () => onAnswer(answer, Math.round((Date.now() - startTime) / 1000), hintLevel > 0, similarity) : handleSubmit}
+            onClick={
+              submitted
+                ? () => onAnswer(answer, Math.round((Date.now() - startTime) / 1000), hintLevel > 0, similarity)
+                : handleSubmit
+            }
             disabled={(!isValidInput && !submitted) || isSubmitting}
             className="w-full sm:w-auto transition-colors duration-300 relative"
             size="lg"
@@ -558,32 +563,34 @@ export default function FillInTheBlanksQuiz({
 
 // Levenshtein distance calculation function
 function levenshtein(a: string, b: string): number {
-  if (a.length === 0) return b.length;
-  if (b.length === 0) return a.length;
+  if (a.length === 0) return b.length
+  if (b.length === 0) return a.length
 
-  const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(0));
+  const matrix = Array(b.length + 1)
+    .fill(null)
+    .map(() => Array(a.length + 1).fill(0))
 
   for (let i = 0; i <= a.length; i++) {
-    matrix[0][i] = i;
+    matrix[0][i] = i
   }
 
   for (let j = 0; j <= b.length; j++) {
-    matrix[j][0] = j;
+    matrix[j][0] = j
   }
 
   for (let j = 1; j <= b.length; j++) {
     for (let i = 1; i <= a.length; i++) {
       if (b[j - 1] === a[i - 1]) {
-        matrix[j][i] = matrix[j - 1][i - 1];
+        matrix[j][i] = matrix[j - 1][i - 1]
       } else {
         matrix[j][i] = Math.min(
           matrix[j - 1][i - 1] + 1, // substitution
           matrix[j][i - 1] + 1, // insertion
-          matrix[j - 1][i] + 1  // deletion
-        );
+          matrix[j - 1][i] + 1, // deletion
+        )
       }
     }
   }
 
-  return matrix[b.length][a.length];
+  return matrix[b.length][a.length]
 }
