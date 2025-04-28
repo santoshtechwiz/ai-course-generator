@@ -396,7 +396,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
 
   // Fetch quiz results using QuizService
   const fetchQuizResults = useCallback(async () => {
-    if (!state.quizId || !state.slug) return false
+    if (!state.quizId || !state.slug || state.isLoadingResults) return false
 
     dispatch({ type: "SET_LOADING_RESULTS", payload: true })
     dispatch({ type: "SET_ERROR", payload: null })
@@ -500,11 +500,11 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       dispatch({ type: "SET_LOADING_RESULTS", payload: false })
       return false
     }
-  }, [state.quizId, state.slug, state.quizType, authIsAuthenticated])
+  }, [state.quizId, state.slug, state.quizType, state.isLoadingResults, authIsAuthenticated])
 
   // Check storage for completed state
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (typeof window === "undefined" || resultsCheckDone.current) return
 
     const isCompletedInStorage =
       localStorage.getItem(`quiz_${state.quizId}_completed`) === "true" ||
@@ -514,7 +514,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     const fromAuth = urlParams.get("fromAuth") === "true"
 
     // If storage indicates completion, mark quiz as completed
-    if (isCompletedInStorage && !state.isCompleted && !resultsCheckDone.current) {
+    if (isCompletedInStorage && !state.isCompleted) {
       resultsCheckDone.current = true
       dispatch({ type: "SET_LOADING", payload: true })
 
@@ -524,9 +524,13 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
 
         // Process pending data first
-        quizService.processPendingQuizData().then(() => {
-          // Then fetch quiz results
-          fetchQuizResults().then((success) => {
+        quizService
+          .processPendingQuizData()
+          .then(() => {
+            // Then fetch quiz results
+            return fetchQuizResults()
+          })
+          .then((success) => {
             if (!success) {
               // If no result, just mark as completed with current state
               dispatch({
@@ -543,27 +547,36 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
             // Clean up URL after processing
             cleanupUrlIfNeeded()
           })
-        })
+          .catch((error) => {
+            console.error("Error processing auth data:", error)
+            dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
+            dispatch({ type: "SET_LOADING", payload: false })
+          })
       } else {
         // If not from auth, fetch results or mark as completed
-        fetchQuizResults().then((success) => {
-          if (!success && !state.requiresAuth) {
-            // Only mark as completed if authenticated or we have guest results for non-restricted quiz types
-            if (
-              authIsAuthenticated ||
-              (quizService.getGuestResult(state.quizId) && state.quizType !== "mcq" && state.quizType !== "blanks")
-            ) {
-              dispatch({
-                type: "COMPLETE_QUIZ",
-                payload: {
-                  score: state.score || 0,
-                  answers: state.answers,
-                },
-              })
+        fetchQuizResults()
+          .then((success) => {
+            if (!success && !state.requiresAuth) {
+              // Only mark as completed if authenticated or we have guest results for non-restricted quiz types
+              if (
+                authIsAuthenticated ||
+                (quizService.getGuestResult(state.quizId) && state.quizType !== "mcq" && state.quizType !== "blanks")
+              ) {
+                dispatch({
+                  type: "COMPLETE_QUIZ",
+                  payload: {
+                    score: state.score || 0,
+                    answers: state.answers,
+                  },
+                })
+              }
             }
-          }
-          dispatch({ type: "SET_LOADING", payload: false })
-        })
+            dispatch({ type: "SET_LOADING", payload: false })
+          })
+          .catch((error) => {
+            console.error("Error fetching quiz results:", error)
+            dispatch({ type: "SET_LOADING", payload: false })
+          })
       }
     }
   }, [
@@ -571,6 +584,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.quizId,
     state.answers,
     state.score,
+    state.isCompleted,
     state.slug,
     state.quizType,
     state.requiresAuth,
@@ -809,8 +823,11 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
 
         animationTimeout = setTimeout(() => {
           try {
-            dispatch({ type: "COMPLETE_QUIZ", payload: { score, answers: filled } })
-            dispatch({ type: "SET_ANIMATION_STATE", payload: "showing-results" })
+            // Batch state updates to reduce renders
+            dispatch({
+              type: "COMPLETE_QUIZ",
+              payload: { score, answers: filled },
+            })
 
             // Save the result using QuizService
             const validAnswers = filled.filter((a) => a !== null) as QuizAnswer[]
@@ -947,7 +964,18 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         completionInProgress.current = false
       }
     },
-    [state, startTime, authIsAuthenticated, onAuthRequired, calculateScore],
+    [
+      state.quizId,
+      state.slug,
+      state.quizType,
+      state.questionCount,
+      state.isCompleted,
+      state.savingResults,
+      authIsAuthenticated,
+      onAuthRequired,
+      calculateScore,
+      startTime,
+    ],
   )
 
   // Clear quiz data using QuizService
@@ -1079,20 +1107,24 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         console.log("Processing pending data after authentication")
         dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
 
-        quizService.processPendingQuizData().then(() => {
-          // Clean up URL after processing
-          cleanupUrlIfNeeded()
-          dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
-        })
+        // Use Promise to handle async operations
+        quizService
+          .processPendingQuizData()
+          .then(() => {
+            // Clean up URL after processing
+            cleanupUrlIfNeeded()
+            dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
+          })
+          .catch((error) => {
+            console.error("Error processing pending data:", error)
+            dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
+          })
       }
     }
 
     // Check if there's a guest result for this quiz
     const hasGuestResult = !!quizService.getGuestResult(state.quizId)
     dispatch({ type: "SET_HAS_GUEST_RESULT", payload: hasGuestResult })
-
-    // Mark auth check as complete to avoid flashing
-    dispatch({ type: "SET_AUTH_CHECK_COMPLETE", payload: true })
   }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId])
 
   // Add a safety timeout to ensure initialization completes

@@ -25,29 +25,29 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ children }: UserMenuProps) {
-  const { user, isLoading: isLoadingAuth, isAuthenticated, signOutUser } = useAuth()
-  const { data, isLoading: isLoadingSubscription, setRefreshing } = useSubscriptionStore()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { user, isLoading: isLoadingAuth, isAuthenticated, signOutUser } = useAuth();
+  const { data, isLoading: isLoadingSubscription, setRefreshing } = useSubscriptionStore();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Refresh subscription data when menu is opened
   const handleMenuOpen = (open: boolean) => {
-    setIsMenuOpen(open)
-    if (open && isAuthenticated) {
-      setRefreshing(true) // Force refresh when menu opens
+    setIsMenuOpen(open);
+    if (open && isAuthenticated && !isLoadingSubscription) {
+      setRefreshing(true); // Refresh only if not already loading
     }
-  }
+  };
 
   // Refresh subscription data on mount and when session changes
   useEffect(() => {
-    if (isAuthenticated) {
-      setRefreshing(true) // Force refresh on mount
+    if (isAuthenticated && !isLoadingSubscription) {
+      setRefreshing(true); // Refresh only if not already loading
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, isLoadingSubscription]);
 
   const handleSignOut = async () => {
-    const currentUrl = window.location.pathname
-    await signOutUser(currentUrl)
-  }
+    const currentUrl = window.location.pathname;
+    await signOutUser(currentUrl);
+  };
 
   // Improved subscription badge display with loading state
   const getSubscriptionBadge = () => {
@@ -56,38 +56,34 @@ export function UserMenu({ children }: UserMenuProps) {
         <Badge variant="outline" className="ml-auto">
           <Skeleton className="h-4 w-16" />
         </Badge>
-      )
+      );
     }
 
-    // Default to FREE if no subscription data
-    const plan = data?.subscriptionPlan || "FREE"
+    const plan = data?.subscriptionPlan || "FREE";
 
     const variants = {
       PRO: "default",
       BASIC: "secondary",
       ULTIMATE: "success",
       FREE: "outline",
-    } as const
-
-    // Handle potential state where plan is not in our variants
-    const variant = plan in variants ? variants[plan as keyof typeof variants] : "outline"
+    } as const;
 
     return (
-      <Badge variant={variant} className="ml-auto">
+      <Badge variant={variants[plan as keyof typeof variants] || "outline"} className="ml-auto">
         {plan}
       </Badge>
-    )
-  }
+    );
+  };
 
   // Display credits badge with loading state
   const getCreditsDisplay = () => {
     if (isLoadingSubscription) {
-      return <Skeleton className="h-4 w-12 ml-1" />
+      return <Skeleton className="h-4 w-12 ml-1" />;
     }
 
-    const credits = data?.credits ?? 0
-    return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
-  }
+    const credits = data?.credits ?? 0;
+    return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>;
+  };
 
   // Show loading state when auth is loading
   if (isLoadingAuth) {
@@ -95,10 +91,10 @@ export function UserMenu({ children }: UserMenuProps) {
       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
         <Loader2 className="h-5 w-5 animate-spin" />
       </Button>
-    )
+    );
   }
 
-  if (!isAuthenticated || !user) return null
+  if (!isAuthenticated || !user) return null;
 
   return (
     <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>
@@ -120,7 +116,6 @@ export function UserMenu({ children }: UserMenuProps) {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 {user?.name ? <p className="font-medium text-sm">{user.name}</p> : <Skeleton className="h-4 w-24" />}
-
                 {user?.email ? (
                   <p className="w-full truncate text-xs text-muted-foreground">{user.email}</p>
                 ) : (
@@ -163,5 +158,5 @@ export function UserMenu({ children }: UserMenuProps) {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

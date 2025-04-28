@@ -40,6 +40,7 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   console.log("CodingQuiz question", question)
 
   // Start timer when component mounts
@@ -159,6 +160,19 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
     )
   }
 
+  if (isLoading) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="pt-6 text-center">
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+            <p className="text-muted-foreground">Loading code challenge...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="w-full">
       <CardHeader className="space-y-4">
@@ -202,13 +216,15 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
               )}
 
               {options.length > 0 && (
-                <CodeQuizOptions
-                  options={options}
-                  selectedOption={selectedOption}
-                  onSelect={handleSelectOption}
-                  disabled={isSubmitting}
-                  renderOptionContent={renderOptionContent}
-                />
+                <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
+                  <CodeQuizOptions
+                    options={options}
+                    selectedOption={selectedOption}
+                    onSelect={handleSelectOption}
+                    disabled={isSubmitting}
+                    renderOptionContent={renderOptionContent}
+                  />
+                </MotionWrapper>
               )}
             </div>
           </div>

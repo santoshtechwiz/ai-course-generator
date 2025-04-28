@@ -15,7 +15,6 @@ import { cn, formatQuizTime } from "@/lib/utils"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 
-
 interface McqQuizResultProps {
   title?: string
   onRestart?: () => void
@@ -36,6 +35,7 @@ export default function McqQuizResult({ title, onRestart, quizId, questions, ans
   const [showAuthPrompt, setShowAuthPrompt] = useState(false) // Start with auth prompt hidden
   const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
   const forceShowResultsRef = useRef(false)
+  const hasSavedRef = useRef(false) // Move useRef here
 
   // Use props if provided, otherwise fall back to state
   const quizQuestions = questions || state.quizData?.questions || []
@@ -95,20 +95,25 @@ export default function McqQuizResult({ title, onRestart, quizId, questions, ans
 
   // Save results to server if authenticated
   useEffect(() => {
-    if (session?.user && quizId_) {
-      // Save to server if authenticated
-      quizService.saveCompleteQuizResult({
-        quizId: quizId_,
-        slug: state.slug,
-        type: "mcq",
-        score: scorePercentage,
-        answers: quizAnswers.filter((a) => a !== null),
-        totalTime: totalTime,
-        totalQuestions: totalQuestions,
-      })
+    if (session?.user && quizId_ && !hasSavedRef.current) {
+      hasSavedRef.current = true
 
-      // Clear all storage after saving to database
-      quizService.clearAllStorage()
+      // Use a small timeout to ensure we don't block rendering
+      setTimeout(() => {
+        // Save to server if authenticated
+        quizService.saveCompleteQuizResult({
+          quizId: quizId_,
+          slug: state.slug,
+          type: "mcq",
+          score: scorePercentage,
+          answers: quizAnswers.filter((a) => a !== null),
+          totalTime: totalTime,
+          totalQuestions: totalQuestions,
+        })
+
+        // Clear all storage after saving to database
+        quizService.clearAllStorage()
+      }, 100)
     }
   }, [session, quizId_, state.slug, quizAnswers, scorePercentage, totalTime, totalQuestions])
 
@@ -135,12 +140,7 @@ export default function McqQuizResult({ title, onRestart, quizId, questions, ans
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
       >
-        <GuestSignInPrompt
-          title="Authentication Required"
-         
-        
-          
-        />
+        <GuestSignInPrompt title="Authentication Required" />
       </motion.div>
     )
   }
