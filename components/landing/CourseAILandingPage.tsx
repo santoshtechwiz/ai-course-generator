@@ -1,12 +1,10 @@
 "use client"
 import { useState, useEffect, useRef, useCallback } from "react"
-import type React from "react"
-
-import { motion, useScroll, useTransform, AnimatePresence, useInView, useSpring } from "framer-motion"
+import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "framer-motion"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { ArrowRight, Menu, X, ArrowUpRight, Check, ArrowUp } from "lucide-react"
+import { ArrowRight, Menu, X, ArrowUp } from "lucide-react"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import AboutSection from "./sections/AboutSection"
 import FaqAccordion from "./sections/FaqAccordion"
@@ -15,29 +13,11 @@ import HowItWorksSection from "./sections/HowItWorksSection"
 import ProductGallery from "./sections/ShowCase"
 import TestimonialsSlider from "./sections/TestimonialsSlider"
 import HeroSection from "./sections/HeroSection"
-
 import { useMobile } from "@/hooks/use-mobile"
 import { useRouter } from "next/navigation"
-import AnimatedSVGPath from "../animations/AnimatedSVGPath"
-import RevealAnimation from "../shared/RevealAnimation"
 
-// Optimize the APPLE_EASING constant to use the more performant cubic-bezier function
-const APPLE_EASING = [0.22, 0.61, 0.36, 1]
-
-// Optimize the debounce function to use requestAnimationFrame for better performance
-const debounce = (func: (...args: any[]) => void, wait: number) => {
-  let timeout: ReturnType<typeof setTimeout> | null = null
-
-  return function executedFunction(...args: any[]) {
-    const later = () => {
-      if (timeout !== null) clearTimeout(timeout)
-      func(...args)
-    }
-
-    if (timeout !== null) clearTimeout(timeout)
-    timeout = setTimeout(later, wait)
-  }
-}
+// Apple-inspired easing function for smoother animations
+const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
 const CourseAILandingPage = () => {
   const { theme } = useTheme()
@@ -46,19 +26,6 @@ const CourseAILandingPage = () => {
   const [activeSection, setActiveSection] = useState("hero")
   const [showScrollTop, setShowScrollTop] = useState(false)
   const router = useRouter()
-
-  // Add this at the top of the component, after the router declaration
-  const scrollVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6, // Reduced from 0.8 for better performance
-        ease: APPLE_EASING,
-      },
-    },
-  }
 
   // Refs for sections
   const heroRef = useRef<HTMLDivElement>(null)
@@ -79,20 +46,19 @@ const CourseAILandingPage = () => {
     { id: "how-it-works", label: "How It Works", ref: howItWorksRef },
     { id: "testimonials", label: "Testimonials", ref: testimonialsRef },
     { id: "faq", label: "FAQ", ref: faqRef },
-   
   ]
 
   // Apple-style scroll animations
   const { scrollY } = useScroll()
   const smoothScrollY = useSpring(scrollY, {
-    stiffness: 300,
-    damping: 40,
+    stiffness: 100,
+    damping: 30,
     mass: 0.5,
   })
 
-  // Optimize the headerBg transform to be more performant
+  // Header background effects
   const headerBg = useTransform(smoothScrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.8)"], {
-    clamp: true, // Add clamp for better performance
+    clamp: true,
   })
   const headerBgDark = useTransform(smoothScrollY, [0, 100], ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.8)"], {
     clamp: true,
@@ -104,11 +70,46 @@ const CourseAILandingPage = () => {
     clamp: true,
   })
 
-  // Enhance the logo animation
-  const logoScale = useTransform(smoothScrollY, [0, 100], [1, 0.92])
-  const logoOpacity = useTransform(smoothScrollY, [0, 100], [1, 0.95])
+  // Logo animation
+  const logoScale = useTransform(smoothScrollY, [0, 100], [1, 0.95])
+  const logoOpacity = useTransform(smoothScrollY, [0, 100], [1, 0.98])
 
-  // Handle scroll events
+  // Optimized scroll handling with IntersectionObserver
+  useEffect(() => {
+    const sectionElements = sections.map((section) => section.ref.current).filter(Boolean) as HTMLDivElement[]
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id
+            if (id && id !== activeSection) {
+              setActiveSection(id)
+            }
+          }
+        })
+      },
+      { threshold: 0.3, rootMargin: "-20% 0px -20% 0px" },
+    )
+
+    sectionElements.forEach((el) => observer.observe(el))
+
+    return () => {
+      sectionElements.forEach((el) => observer.unobserve(el))
+    }
+  }, [activeSection])
+
+  // Handle scroll events for scroll-to-top button
+  const handleScroll = useCallback(() => {
+    setShowScrollTop(window.scrollY > 500)
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [handleScroll])
+
+  // Sections for scroll handling
   const sections = [
     { id: "hero", ref: heroRef },
     { id: "features", ref: featuresRef },
@@ -120,78 +121,17 @@ const CourseAILandingPage = () => {
     { id: "cta", ref: ctaRef },
   ]
 
-  // Optimize scroll handling to prevent freezing
-  // Replace the existing handleScroll function in useEffect with this optimized version
-  const handleScroll = useCallback(() => {
-    // Use requestAnimationFrame to optimize scroll performance
-    if (!window.requestAnimationFrame) {
-      setShowScrollTop(window.scrollY > 500)
-
-      // Use a more efficient way to determine active section
-      let currentSection = "hero"
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const section = sections[i]
-        if (section.ref.current) {
-          const rect = section.ref.current.getBoundingClientRect()
-          if (rect.top <= window.innerHeight / 3) {
-            currentSection = section.id
-            break
-          }
-        }
-      }
-
-      if (currentSection !== activeSection) {
-        setActiveSection(currentSection)
-      }
-      return
-    }
-
-    let ticking = false
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        setShowScrollTop(window.scrollY > 500)
-
-        // Use a more efficient way to determine active section
-        let currentSection = "hero"
-        for (let i = sections.length - 1; i >= 0; i--) {
-          const section = sections[i]
-          if (section.ref.current) {
-            const rect = section.ref.current.getBoundingClientRect()
-            if (rect.top <= window.innerHeight / 3) {
-              currentSection = section.id
-              break
-            }
-          }
-        }
-
-        if (currentSection !== activeSection) {
-          setActiveSection(currentSection)
-        }
-        ticking = false
+  // Smooth scroll to section
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId)
+    if (section) {
+      window.scrollTo({
+        top: section.offsetTop - 80,
+        behavior: "smooth",
       })
-      ticking = true
     }
-  }, [activeSection, sections])
-
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [handleScroll])
-
-
-
-  // Fix the navigation links to point to correct destinations
- // Fix the navigation links to point to correct destinations
- const scrollToSection = (sectionId: string) => {
-  const section = document.getElementById(sectionId)
-  if (section) {
-    window.scrollTo({
-      top: section.offsetTop - 80,
-      behavior: "smooth",
-    })
+    setIsMenuOpen(false)
   }
-  setIsMenuOpen(false)
-}
 
   // Scroll to top function
   const scrollToTop = () => {
@@ -219,25 +159,25 @@ const CourseAILandingPage = () => {
       <motion.header
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 transition-all duration-300"
         style={{
-          backgroundColor: theme === "dark" ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.8)",
+          backgroundColor: theme === "dark" ? headerBgDark : headerBg,
           borderBottom: `1px solid ${theme === "dark" ? headerBorderDark : headerBorder}`,
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
         }}
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: APPLE_EASING, delay: 0.2 }}
+        transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.2 }}
         role="banner"
       >
         {/* Logo with improved animation and accessibility */}
         <motion.div
           style={{ scale: logoScale, opacity: logoOpacity }}
           className="flex items-center"
-          whileHover={{ scale: 1.03 }}
+          whileHover={{ scale: 1.02 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
           <Link href="/" className="text-xl font-semibold" aria-label="CourseAI Home">
-            <span className="text-white font-bold">CourseAI</span>
+            <span className="text-primary font-bold">CourseAI</span>
           </Link>
         </motion.div>
 
@@ -257,10 +197,10 @@ const CourseAILandingPage = () => {
               )}
               aria-current={activeSection === item.id ? "page" : undefined}
               whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.3, ease: APPLE_EASING },
+                scale: 1.03,
+                transition: { duration: 0.2, ease: APPLE_EASING },
               }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.98 }}
             >
               {item.label}
               {activeSection === item.id && (
@@ -286,8 +226,13 @@ const CourseAILandingPage = () => {
             }}
           >
             Get Started
-            <motion.span className="inline-block ml-2">
-              <ArrowUpRight className="h-4 w-4" />
+            <motion.span
+              className="inline-block ml-2"
+              initial={{ x: 0 }}
+              whileHover={{ x: 3 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              <ArrowRight className="h-4 w-4" />
             </motion.span>
           </FeedbackButton>
         </div>
@@ -299,8 +244,8 @@ const CourseAILandingPage = () => {
           aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={isMenuOpen}
           aria-controls="mobile-menu"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
           <Menu className="h-6 w-6" />
@@ -340,8 +285,8 @@ const CourseAILandingPage = () => {
                   onClick={() => setIsMenuOpen(false)}
                   className="p-2 rounded-full hover:bg-muted/50 transition-colors"
                   aria-label="Close menu"
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.05, rotate: 90 }}
+                  whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
                   <X className="h-6 w-6" />
@@ -360,13 +305,13 @@ const CourseAILandingPage = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{
-                      duration: 0.4,
+                      duration: 0.3,
                       delay: 0.05 * index,
                       ease: APPLE_EASING,
                     }}
                     whileHover={{
                       x: 5,
-                      transition: { duration: 0.3, ease: APPLE_EASING },
+                      transition: { duration: 0.2, ease: APPLE_EASING },
                     }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -377,14 +322,13 @@ const CourseAILandingPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
-                    duration: 0.4,
+                    duration: 0.3,
                     delay: 0.4,
                     ease: APPLE_EASING,
                   }}
                 >
                   <FeedbackButton
                     className="mt-4 w-full rounded-full"
-                  
                     loadingText="Redirecting..."
                     successText="Redirecting..."
                     onClickAsync={async () => {
@@ -396,8 +340,8 @@ const CourseAILandingPage = () => {
                     <motion.span
                       className="inline-block ml-2"
                       initial={{ x: 0 }}
-                      whileHover={{ x: 5 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                      whileHover={{ x: 3 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
                       <ArrowRight className="h-4 w-4" />
                     </motion.span>
@@ -455,20 +399,35 @@ const CourseAILandingPage = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />
 
               <div className="relative p-8 md:p-16 text-center">
-                <RevealAnimation>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: APPLE_EASING }}
+                  viewport={{ once: true, amount: 0.2 }}
+                >
                   <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
                     Ready to create something extraordinary?
                   </h2>
-                </RevealAnimation>
+                </motion.div>
 
-                <RevealAnimation delay={0.1}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1, ease: APPLE_EASING }}
+                  viewport={{ once: true, amount: 0.2 }}
+                >
                   <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
                     Whether you're passionate about design, technology, or storytelling—CourseAI helps you build
                     engaging content on any topic imaginable. Intuitive, powerful, and designed for everyone.
                   </p>
-                </RevealAnimation>
+                </motion.div>
 
-                <RevealAnimation delay={0.2}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2, ease: APPLE_EASING }}
+                  viewport={{ once: true, amount: 0.2 }}
+                >
                   <FeedbackButton
                     size="lg"
                     className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
@@ -485,34 +444,56 @@ const CourseAILandingPage = () => {
                     <motion.span
                       className="inline-block ml-2"
                       initial={{ x: 0 }}
-                      whileHover={{ x: 5 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                      whileHover={{ x: 3 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 15 }}
                     >
                       <ArrowRight className="h-5 w-5" />
                     </motion.span>
                   </FeedbackButton>
-                </RevealAnimation>
+                </motion.div>
 
-                <RevealAnimation delay={0.3}>
-                  <div className="mt-10 flex flex-wrap items-center justify-center gap-4 md:gap-8">
-                    <motion.div
-                      className="flex items-center"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.3, ease: APPLE_EASING }}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3, ease: APPLE_EASING }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  className="mt-10 flex flex-wrap items-center justify-center gap-4 md:gap-8"
+                >
+                  <div className="flex items-center">
+                    <svg
+                      className="h-5 w-5 text-primary mr-2"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <Check className="h-5 w-5 text-primary mr-2" />
-                      <span className="text-sm">No experience required</span>
-                    </motion.div>
-                    <motion.div
-                      className="flex items-center"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.3, ease: APPLE_EASING }}
-                    >
-                      <Check className="h-5 w-5 text-primary mr-2" />
-                      <span className="text-sm">1-month free trial</span>
-                    </motion.div>
+                      <path
+                        d="M20 6L9 17L4 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span className="text-sm">No experience required</span>
                   </div>
-                </RevealAnimation>
+                  <div className="flex items-center">
+                    <svg
+                      className="h-5 w-5 text-primary mr-2"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M20 6L9 17L4 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span className="text-sm">1-month free trial</span>
+                  </div>
+                </motion.div>
               </div>
             </div>
           </div>
@@ -540,7 +521,3 @@ const CourseAILandingPage = () => {
 }
 
 export default CourseAILandingPage
-
-
-export { RevealAnimation }
-export { AnimatedSVGPath }

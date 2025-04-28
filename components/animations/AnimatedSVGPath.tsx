@@ -1,8 +1,6 @@
-// Optimize AnimatedSVGPath component for better performance
 "use client"
 
 import { motion } from "framer-motion"
-import { useEffect, useState } from "react"
 
 interface AnimatedSVGPathProps {
   d: string
@@ -11,6 +9,7 @@ interface AnimatedSVGPathProps {
   fill?: string
   delay?: number
   duration?: number
+  repeat?: number | "loop" | "mirror"
   className?: string
 }
 
@@ -20,44 +19,10 @@ const AnimatedSVGPath = ({
   strokeWidth = 2,
   fill = "none",
   delay = 0,
-  duration = 1.5,
+  duration = 2,
+  repeat = 0,
   className = "",
 }: AnimatedSVGPathProps) => {
-  const [isClient, setIsClient] = useState(false)
-
-  // Only run animations on client-side to avoid hydration issues
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  // Optimize the path animation for better performance
-  const pathVariants = {
-    hidden: { pathLength: 0, opacity: 0 },
-    visible: {
-      pathLength: 1,
-      opacity: 1,
-      transition: {
-        pathLength: {
-          duration,
-          delay,
-          ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-        },
-        opacity: {
-          duration: Math.min(duration * 0.5, 0.5), // Reduced opacity animation duration
-          delay,
-          ease: "easeIn",
-        },
-      },
-    },
-  }
-
-  // Don't render animations during SSR to avoid hydration issues
-  if (!isClient) {
-    return (
-      <path d={d} stroke={stroke} strokeWidth={strokeWidth} fill={fill} className={className} style={{ opacity: 0 }} />
-    )
-  }
-
   return (
     <motion.path
       d={d}
@@ -65,12 +30,18 @@ const AnimatedSVGPath = ({
       strokeWidth={strokeWidth}
       fill={fill}
       className={className}
-      variants={pathVariants}
-      initial="hidden"
-      animate="visible"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ willChange: "stroke-dashoffset, opacity" }}
+      initial={{ pathLength: 0, opacity: 0 }}
+      animate={{ pathLength: 1, opacity: 1 }}
+      transition={{
+        pathLength: {
+          delay,
+          type: "spring",
+          duration,
+          bounce: 0,
+        },
+        opacity: { delay, duration: duration * 0.5 },
+      }}
+      style={{ willChange: "opacity, stroke-dashoffset" }}
     />
   )
 }
