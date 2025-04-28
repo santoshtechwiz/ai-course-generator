@@ -1,15 +1,38 @@
 import type { NextRequest } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
-import { formatApiResponse, formatApiError } from "@/lib/api-utils"
+
 import { prisma } from "@/lib/db" // Adjust the path based on your project structure
 
+const formatApiError = (message:string,statusCode?:number) => {
+  
+  return new Response(JSON.stringify({ message }), {
+    status: statusCode,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  })
+}
+const formatApiResponse = (data:any,statusCode?:number) => {
+  return new Response(JSON.stringify(data), {
+    status: statusCode,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  })
+}
 // GET /api/admin/email/sample-data
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || session.user.isAdmin !== true) {
-      return formatApiError("Unauthorized", 401)
+      return formatApiResponse("Unauthorized", 401)
     }
 
     const [courses, quizzes] = await Promise.all([

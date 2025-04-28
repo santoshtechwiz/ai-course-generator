@@ -132,6 +132,13 @@ class QuizApi {
       throw error
     }
   }
+
+  formatApiError(message: string, statusCode: number = 500) {
+    return new Response(JSON.stringify({ error: message }), {
+      status: statusCode,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
 }
 
 // Export singleton instance

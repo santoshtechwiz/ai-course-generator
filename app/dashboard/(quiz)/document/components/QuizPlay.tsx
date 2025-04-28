@@ -6,9 +6,12 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { type Quiz, quizStore } from "@/lib/quiz-store"
+
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Home, RotateCcw } from "lucide-react"
+
+import { quizStore } from "@/lib/quiz-store"
+import { Quiz } from "@/lib/indexed-db-store"
 
 interface QuizPlayerProps {
   quizId: string
