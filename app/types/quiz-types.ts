@@ -137,3 +137,58 @@ export interface QuizWrapperProps {
   onAuthModalClose: () => void
   children: ReactNode
 }
+// types.ts
+export type QuizType = "mcq" | "blanks" | "flashcards" | "survey"
+export type QuizAnimationState = "idle" | "completing" | "showing-results" | "redirecting"
+
+export interface QuizAnswer {
+  answer: string
+  timeSpent: number
+  isCorrect: boolean
+}
+
+export interface QuizQuestion {
+  id: string
+  question: string
+  options?: string[]
+  correctAnswer?: string
+  explanation?: string
+}
+
+export interface QuizResult {
+  quizId: string
+  score: number
+  answers: QuizAnswer[]
+  completedAt: string
+  timeSpent: number
+}
+
+export interface QuizProgress {
+  currentQuestionIndex: number
+  answers: (QuizAnswer | null)[]
+  timeSpentPerQuestion: number[]
+  lastQuestionChangeTime: number
+}
+
+export interface QuizMetadata {
+  quizId: string
+  slug: string
+  title: string
+  description: string
+  quizType: QuizType
+  questionCount: number
+  requiresAuth: boolean
+}
+
+export interface QuizContextState extends QuizMetadata, QuizProgress {
+  isCompleted: boolean
+  isLoading: boolean
+  isLoadingResults: boolean
+  resultsReady: boolean
+  error: string | null
+  score: number
+  animationState: QuizAnimationState
+  isProcessingAuth: boolean
+  hasGuestResult: boolean
+  quizData?: any
+}

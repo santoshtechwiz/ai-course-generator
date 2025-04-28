@@ -1,10 +1,12 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { AlertCircle, Loader2 } from "lucide-react"
+import { useRef } from "react"
+
+import { AlertCircle, Loader2, CheckCircle, Clock, RotateCcw } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { memo, useState, useEffect, useRef } from "react"
+import { memo, useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import McqQuiz from "./McqQuiz"
@@ -13,7 +15,7 @@ import { useQuiz, QuizProvider } from "@/app/context/QuizContext"
 import { quizService } from "@/lib/quiz-service"
 import type { Question } from "./types"
 import { useAuth } from "@/providers/unified-auth-provider"
-import { GuestPrompt } from "../../components/GuestSignInPrompt"
+import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 
 interface McqQuizContentProps {
   quizData: {
@@ -31,59 +33,167 @@ interface McqQuizContentProps {
 
 // Memoize the content component to prevent unnecessary re-renders
 const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug }: McqQuizContentProps) {
-  const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated } = useQuiz()
+  const {
+    state,
+    submitAnswer,
+    completeQuiz,
+    restartQuiz,
+    isAuthenticated,
+    handleAuthenticationRequired,
+    fetchQuizResults,
+  } = useQuiz()
   const router = useRouter()
   const { isAuthenticated: authState, user } = useAuth()
-  const { currentQuestionIndex, questionCount, isLoading, error, isCompleted, answers, isProcessingAuth } = state
 
-  const [displayState, setDisplayState] = useState<"quiz" | "results" | "auth" | "loading">(
-    isLoading || isProcessingAuth ? "loading" : "quiz",
-  )
+  const {
+    currentQuestionIndex,
+    questionCount,
+    isLoading,
+    error,
+    isCompleted,
+    answers,
+    isProcessingAuth,
+    authCheckComplete,
+    pendingAuthRequired,
+    savingResults,
+    resultsReady,
+    isLoadingResults,
+    requiresAuth,
+    hasGuestResult,
+  } = state
 
-  // Check if we should show the auth prompt for non-authenticated users
+  const [displayState, setDisplayState] = useState<
+    "quiz" | "results" | "auth" | "loading" | "checking" | "saving" | "preparing"
+  >("checking")
+
+  // Enhanced authentication check
+  const userIsAuthenticated = authState || !!user || isAuthenticated
+
+  // Check URL parameters for auth return
+  const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
+  const preparingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const processingAttempted = useRef(false)
+
   useEffect(() => {
-    let timer: NodeJS.Timeout
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromAuth = urlParams.get("fromAuth") === "true"
+      setIsReturningFromAuth(fromAuth)
 
-    // Enhanced authentication check
-    const userIsAuthenticated = authState || !!user || isAuthenticated
-
-    // Check URL parameters for completed=true
-    const urlParams = new URLSearchParams(window.location.search)
-    const isCompletedFromUrl = urlParams.get("completed") === "true"
-
-    // If URL has completed=true but user is not authenticated, show auth prompt
-    if (isCompletedFromUrl && !userIsAuthenticated && displayState === "results" && !isLoading && !isProcessingAuth) {
-      timer = setTimeout(() => {
-        console.log("URL has completed=true but user is not authenticated, showing auth prompt")
-        setDisplayState("auth")
-      }, 2000) // 2 seconds delay
-    }
-    // Only transition from results to auth prompt if:
-    // 1. User is not authenticated
-    // 2. Quiz is completed
-    // 3. Currently showing results
-    else if (!userIsAuthenticated && isCompleted && displayState === "results" && !isLoading && !isProcessingAuth) {
-      // Add a delay before showing the auth prompt
-      timer = setTimeout(() => {
-        console.log("Transitioning from results to auth prompt")
-        setDisplayState("auth")
-      }, 3000) // 3 seconds to ensure results are seen
-    }
-
-    // Update display state based on quiz state
-    if (isLoading || isProcessingAuth) {
-      setDisplayState("loading")
-    } else if (isCompleted && displayState !== "auth") {
-      // Only set to results if not already showing auth
-      if (displayState !== "results") {
-        setDisplayState("results")
+      // If returning from auth, try to process results immediately
+      if (fromAuth && !processingAttempted.current) {
+        processingAttempted.current = true
+        console.log("Detected return from auth, attempting to fetch results immediately")
+        fetchQuizResults().catch((err) => {
+          console.error("Error fetching results on auth return:", err)
+        })
       }
-    } else if (!isCompleted && displayState !== "quiz") {
-      setDisplayState("quiz")
+    }
+  }, [fetchQuizResults])
+
+  // Add a timeout to prevent getting stuck in the initialization phase (in McqQuizContent)
+  useEffect(() => {
+    // Force exit from checking state after 3 seconds if still stuck
+    if (displayState === "checking") {
+      const timeoutId = setTimeout(() => {
+        console.log("Forcing exit from checking state after timeout")
+        setDisplayState("quiz")
+      }, 3000)
+
+      return () => clearTimeout(timeoutId)
     }
 
-    return () => clearTimeout(timer)
-  }, [authState, user, isAuthenticated, isCompleted, isLoading, isProcessingAuth, displayState])
+    // Force exit from preparing state after 5 seconds if still stuck
+    if (displayState === "preparing") {
+      preparingTimeoutRef.current = setTimeout(() => {
+        console.log("Forcing exit from preparing state after timeout")
+        // Try to fetch results one more time
+        fetchQuizResults()
+          .catch(() => {
+            console.log("Final attempt to fetch results failed, proceeding to quiz")
+          })
+          .finally(() => {
+            // Move to results if completed, otherwise to quiz
+            if (isCompleted && (resultsReady || answers.some((a) => a !== null))) {
+              setDisplayState("results")
+            } else {
+              setDisplayState("quiz")
+            }
+          })
+      }, 5000)
+
+      return () => {
+        if (preparingTimeoutRef.current) {
+          clearTimeout(preparingTimeoutRef.current)
+        }
+      }
+    }
+  }, [displayState, isCompleted, resultsReady, answers, fetchQuizResults])
+
+  // Update display state based on all the available state information
+  useEffect(() => {
+    // Initial checking state
+    if (!authCheckComplete) {
+      console.log("Auth check not complete, waiting...")
+      // Only stay in checking state for a maximum of 2 seconds
+      const timeoutId = setTimeout(() => {
+        console.log("Auth check timeout, proceeding anyway")
+        setDisplayState("quiz")
+      }, 2000)
+
+      return () => clearTimeout(timeoutId)
+    }
+
+    // Processing auth return
+    if (isProcessingAuth || isReturningFromAuth) {
+      console.log("Processing auth or returning from auth, setting state to preparing")
+      setDisplayState("preparing")
+      return
+    }
+
+    // Loading state
+    if (isLoading || isLoadingResults) {
+      setDisplayState("loading")
+      return
+    }
+
+    // Saving results
+    if (savingResults) {
+      setDisplayState("saving")
+      return
+    }
+
+    // Completed quiz states
+    if (isCompleted) {
+      // Auth required
+      if (requiresAuth && !userIsAuthenticated) {
+        setDisplayState("auth")
+        return
+      }
+
+      // Results ready
+      if (resultsReady || answers.some((a) => a !== null)) {
+        console.log("Results ready or answers found, showing results")
+        setDisplayState("results")
+        return
+      }
+    }
+
+    // Default to quiz
+    setDisplayState("quiz")
+  }, [
+    authCheckComplete,
+    isProcessingAuth,
+    isReturningFromAuth,
+    isLoading,
+    isLoadingResults,
+    savingResults,
+    isCompleted,
+    requiresAuth,
+    userIsAuthenticated,
+    resultsReady,
+    answers,
+  ])
 
   // Early return for error states with retry button
   if (error) {
@@ -140,9 +250,6 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
     )
   }
 
-  // Enhanced authentication check
-  const userIsAuthenticated = authState || !!user || isAuthenticated
-
   // Handle answer submission
   const handleAnswer = (answer: string, timeSpent: number, isCorrect: boolean) => {
     submitAnswer(answer, timeSpent, isCorrect)
@@ -160,6 +267,28 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
     }
   }
 
+  // Show loading state during initial auth check
+  if (displayState === "checking") {
+    return (
+      <motion.div
+        key="auth-checking"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-[200px] gap-3"
+      >
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-2 w-2 rounded-full bg-primary"></div>
+          </div>
+        </div>
+        <p className="text-lg font-medium mt-2">Initializing quiz...</p>
+        <p className="text-sm text-muted-foreground">Please wait while we prepare your quiz experience.</p>
+      </motion.div>
+    )
+  }
+
   return (
     <div className="w-full max-w-3xl mx-auto p-4">
       <AnimatePresence mode="wait">
@@ -172,12 +301,99 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
             className="flex flex-col items-center justify-center min-h-[200px] gap-3"
             aria-live="polite"
           >
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" aria-hidden="true"></div>
+            <div className="relative">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-primary"></div>
+              </div>
+            </div>
+            <p className="text-lg font-medium mt-2">
+              {isLoadingResults ? "Loading your results..." : "Loading quiz data..."}
+            </p>
             <p className="text-sm text-muted-foreground">
-              {isProcessingAuth ? "Processing your results..." : "Loading quiz data..."}
+              {isLoadingResults ? "We're retrieving your quiz results..." : "Preparing your quiz experience..."}
             </p>
           </motion.div>
-        ) : displayState === "auth" && !userIsAuthenticated ? (
+        ) : displayState === "preparing" ? (
+          <motion.div
+            key="preparing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center min-h-[200px] gap-3"
+            aria-live="polite"
+          >
+            <div className="relative">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-primary"></div>
+              </div>
+            </div>
+            <p className="text-lg font-medium mt-2">Preparing your results</p>
+            <p className="text-sm text-muted-foreground">We're retrieving your quiz results after sign-in...</p>
+
+            <div className="w-full max-w-md mt-4 bg-muted/50 rounded-lg p-4">
+              <div className="flex items-center space-x-2 text-sm">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span>Authentication successful</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm mt-2">
+                <Clock className="h-4 w-4 text-amber-500 animate-pulse" />
+                <span>Processing quiz data...</span>
+              </div>
+
+              {/* Add a manual retry button that appears after 3 seconds */}
+              <div className="mt-4 text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    fetchQuizResults().then(() => {
+                      if (isCompleted) {
+                        setDisplayState("results")
+                      } else {
+                        setDisplayState("quiz")
+                      }
+                    })
+                  }}
+                  className="mt-2"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Retry Loading Results
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        ) : displayState === "saving" ? (
+          <motion.div
+            key="saving"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center min-h-[200px] gap-3"
+            aria-live="polite"
+          >
+            <div className="relative">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-primary"></div>
+              </div>
+            </div>
+            <p className="text-lg font-medium mt-2">Saving your results</p>
+            <p className="text-sm text-muted-foreground">Please wait while we save your quiz results...</p>
+
+            <div className="w-full max-w-md mt-4 bg-muted/50 rounded-lg p-4">
+              <div className="flex items-center space-x-2 text-sm">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span>Quiz completed successfully</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm mt-2">
+                <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                <span>Saving to your account...</span>
+              </div>
+            </div>
+          </motion.div>
+        ) : displayState === "auth" ? (
           <motion.div
             key="auth-prompt"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -185,9 +401,11 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <GuestPrompt
-              quizId={quizData?.id || "unknown"}
-              forceShow={true}
+            <GuestSignInPrompt
+              title="Sign in to view your results"
+              description="Your quiz has been completed! Sign in to view your detailed results and save your progress."
+              ctaText="Sign in to view results"
+              allowContinue={false}
               onContinueAsGuest={() => setDisplayState("results")}
             />
           </motion.div>
@@ -352,8 +570,8 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
         // Save current quiz state before redirecting
         quizService.savePendingQuizData()
 
-        // Handle auth redirect using the service method
-        quizService.handleAuthRedirect(redirectUrl)
+        // Handle auth redirect using the service method with force=true to bypass loop detection
+        quizService.handleAuthRedirect(redirectUrl, true)
       }}
     >
       <McqQuizContent quizData={safeQuizData} questions={questions} slug={validSlug} />
