@@ -2,132 +2,134 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { LogIn, ArrowRight, Shield, Clock, Save } from "lucide-react"
+import { useAuth } from "@/providers/unified-auth-provider"
 import { quizService } from "@/lib/quiz-service"
 
-interface GuestPromptProps {
-  quizId: string
+interface AuthPromptProps {
+  quizId?: string
   forceShow?: boolean
-  onContinueAsGuest?: () => void
+  onContinueWithoutAccount?: () => void
+  onSignInClick?: () => void
+  allowContinue?: boolean
+  title?: string
+  description?: string
+  ctaText?: string
 }
 
-export function GuestPrompt({ quizId, forceShow = false, onContinueAsGuest }: GuestPromptProps) {
-  const [isRedirecting, setIsRedirecting] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+export function GuestSignInPrompt({
+  quizId,
+  forceShow = false,
+  onContinueWithoutAccount,
+  onSignInClick,
+  allowContinue = true,
+  title = "Save your progress",
+  description = "Sign in to save your quiz progress and access your results anytime.",
+  ctaText = "Sign in",
+}: AuthPromptProps) {
+  const { isAuthenticated, user } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Don't show if already dismissed
-  if (dismissed && !forceShow) {
+  // If user is authenticated and this isn't forced, don't show
+  if (isAuthenticated && !forceShow) {
     return null
   }
 
   const handleSignIn = () => {
-    setIsRedirecting(true)
-
-    // Get the current URL to redirect back after sign in
-    const currentUrl = window.location.href
-
-    // Use QuizService to handle auth redirect
-    quizService.handleAuthRedirect(currentUrl)
-  }
-
-  const handleContinueAsGuest = () => {
-    // Mark as dismissed
-    setDismissed(true)
-
-    // Call the callback if provided
-    if (onContinueAsGuest) {
-      onContinueAsGuest()
+    if (onSignInClick) {
+      onSignInClick()
+      return
     }
 
-    // Just close the prompt
-    window.history.replaceState({}, document.title, window.location.pathname)
+    setIsLoading(true)
+
+    // Default behavior if no custom handler
+    try {
+      // Create redirect URL
+      const redirectUrl = quizId ? `/dashboard/quiz/${quizId}?fromAuth=true` : "/dashboard"
+
+      // Save current state before redirecting
+      quizService.savePendingQuizData()
+
+      // Handle auth redirect
+      quizService.handleAuthRedirect(redirectUrl, true)
+    } catch (error) {
+      console.error("Error during sign in:", error)
+      setIsLoading(false)
+    }
+  }
+
+  const handleContinueWithoutAccount = () => {
+    if (onContinueWithoutAccount) {
+      onContinueWithoutAccount()
+    }
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="w-full max-w-md mx-auto my-8"
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+      className="w-full max-w-md mx-auto"
     >
       <Card className="border-primary/20 shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">Save Your Progress</CardTitle>
-          <CardDescription>Sign in to save your quiz results and track your progress over time.</CardDescription>
+          <CardTitle className="text-2xl">{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-primary"
-              >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-              <span>Track your progress across all quizzes</span>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <Save className="h-5 w-5 text-primary flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">Save your progress</p>
+                <p className="text-muted-foreground">Access your results from any device</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-primary"
-              >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-              <span>Access your quiz history anytime</span>
+
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <Clock className="h-5 w-5 text-primary flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">Track your improvement</p>
+                <p className="text-muted-foreground">See your progress over time</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-primary"
-              >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-              <span>Get personalized learning recommendations</span>
+
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <Shield className="h-5 w-5 text-primary flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">Secure your data</p>
+                <p className="text-muted-foreground">Your quiz history is safely stored</p>
+              </div>
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-2">
-          <Button className="w-full" onClick={handleSignIn} disabled={isRedirecting}>
-            {isRedirecting ? (
-              <>
-                <span className="animate-spin mr-2 h-4 w-4 border-2 border-background border-t-transparent rounded-full" />
-                Redirecting...
-              </>
+        <CardFooter className="flex flex-col gap-3">
+          <Button onClick={handleSignIn} className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Signing in...
+              </span>
             ) : (
-              "Sign In to Save Results"
+              <span className="flex items-center gap-2">
+                <LogIn className="h-4 w-4" />
+                {ctaText}
+              </span>
             )}
           </Button>
-          <Button variant="outline" className="w-full" onClick={handleContinueAsGuest}>
-            Continue as Guest
-          </Button>
+
+          {allowContinue && (
+            <Button variant="outline" onClick={handleContinueWithoutAccount} className="w-full" disabled={isLoading}>
+              <span className="flex items-center gap-2">
+                <ArrowRight className="h-4 w-4" />
+                Continue without account
+              </span>
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </motion.div>

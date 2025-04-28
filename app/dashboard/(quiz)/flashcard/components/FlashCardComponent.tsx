@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react"
 import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
 import FlashCardResults from "./FlashCardQuizResults"
 import { GuestPrompt } from "../../components/GuestSignInPrompt"
+import { quizService } from "@/lib/quiz-service"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -183,6 +184,21 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
     }
   }
 
+  // Handle authentication required
+  const handleAuthRequired = () => {
+    // Get the current URL to redirect back after sign in
+    const redirectUrl = `${window.location.origin}/dashboard/flashcard/${slug}?completed=true`
+
+    // Save auth redirect info
+    quizService.saveAuthRedirect(redirectUrl)
+
+    // Save current quiz state before redirecting
+    quizService.savePendingQuizData()
+
+    // Handle auth redirect using the service method
+    quizService.handleAuthRedirect(redirectUrl)
+  }
+
   // Enhanced card variants with more dynamic 3D effects and smoother transitions
   const cardVariants = {
     enter: (direction: number) => ({
@@ -346,12 +362,13 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
       if (state.showAuthPrompt && !state.isAuthenticated) {
         return (
           <motion.div
+            key="auth-prompt"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
           >
-            <GuestPrompt />
+            <GuestPrompt forceShow={true} onSignInClick={handleAuthRequired} />
           </motion.div>
         )
       }

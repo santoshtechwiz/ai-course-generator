@@ -7,25 +7,33 @@ import { signIn, signOut, useSession } from "next-auth/react"
 import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown, X, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-
 import { navItems } from "@/constants/navItems"
-
 import SearchModal from "./SearchModal"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
-
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
-
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/providers/unified-auth-provider"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import { ThemeToggle } from "./ThemeToggle"
-import { UserMenu } from "./UserMenu"
 import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
+// Fix 1: Remove window reference in component definition
 const NavItems = memo(() => {
-  const pathname = typeof window !== "undefined" ? usePathname() : ""
+  // Fix 2: Use useState + useEffect pattern instead of direct window check
+  const [currentPath, setCurrentPath] = useState("")
+  const pathname = usePathname()
+
+  useEffect(() => {
+    setCurrentPath(pathname || "")
+  }, [pathname])
 
   return (
     <nav className="mx-6 hidden items-center space-x-8 md:flex">
@@ -33,14 +41,14 @@ const NavItems = memo(() => {
         <Link href={item.href} passHref key={item.name}>
           <motion.div
             className={`relative py-2 text-sm font-medium transition-colors ${
-              pathname === item.href ? "text-primary font-semibold" : "text-foreground hover:text-primary/80"
+              currentPath === item.href ? "text-primary font-semibold" : "text-foreground hover:text-primary/80"
             }`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             {item.name}
-            {pathname === item.href && (
+            {currentPath === item.href && (
               <motion.div
                 layoutId="nav-underline"
                 className="absolute bottom-0 left-0 h-0.5 w-full bg-primary"
@@ -70,7 +78,10 @@ export default function MainNavbar() {
   const isLoadingSubscription = useSubscriptionStore((state) => state.isLoading)
   const isError = useSubscriptionStore((state) => state.isError)
 
-  const pathname = typeof window !== "undefined" ? usePathname() : ""
+  // Fix 3: Use useState + useEffect pattern for pathname
+  const [currentPath, setCurrentPath] = useState("")
+  const pathname = usePathname()
+
   const [creditScore, setCreditScore] = useState(0)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
@@ -79,21 +90,28 @@ export default function MainNavbar() {
   const userEmail = session?.user?.email || user?.email || ""
   const userAuthenticated = status === "authenticated" || isAuthenticated
 
+  // Fix 4: Simplify scroll handler to avoid closure issues
   const handleScroll = useCallback(() => {
-    let timer: NodeJS.Timeout
-    return () => {
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(() => {
-        setScrolled(window.scrollY > 20)
-      }, 10)
-    }
+    setScrolled(window.scrollY > 20)
   }, [])
+
+  // Fix 5: Update pathname in useEffect
+  useEffect(() => {
+    setCurrentPath(pathname || "")
+  }, [pathname])
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const scrollListener = handleScroll()
-      window.addEventListener("scroll", scrollListener, { passive: true })
-      return () => window.removeEventListener("scroll", scrollListener)
+      // Fix 6: Use debounced scroll handler
+      const scrollListener = () => {
+        const debounced = setTimeout(() => {
+          setScrolled(window.scrollY > 20)
+        }, 10)
+        return () => clearTimeout(debounced)
+      }
+
+      window.addEventListener("scroll", handleScroll, { passive: true })
+      return () => window.removeEventListener("scroll", handleScroll)
     }
   }, [handleScroll])
 
@@ -236,7 +254,13 @@ export default function MainNavbar() {
               </Button>
             ) : (
               <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
-                <UserMenu>
+                {/* Fix 7: Properly structure DropdownMenu components */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56 rounded-xl p-2 shadow-lg">
                     <div className="p-2 space-y-1">
                       {isLoadingSubscription ? (
@@ -285,7 +309,7 @@ export default function MainNavbar() {
                       Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </UserMenu>
+                </DropdownMenu>
               </motion.div>
             )
           ) : (
@@ -323,7 +347,7 @@ export default function MainNavbar() {
           <SearchModal
             isOpen={isSearchModalOpen}
             setIsOpen={setIsSearchModalOpen}
-            onResultClick={(url) => {
+            onResultClick={() => {
               setIsSearchModalOpen(false)
             }}
           />
@@ -354,7 +378,9 @@ export default function MainNavbar() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05, duration: 0.3 }}
                       className={`py-2 text-sm font-medium ${
-                        pathname === item.href ? "text-primary font-semibold" : "text-foreground hover:text-primary/80"
+                        currentPath === item.href
+                          ? "text-primary font-semibold"
+                          : "text-foreground hover:text-primary/80"
                       }`}
                     >
                       {item.name}

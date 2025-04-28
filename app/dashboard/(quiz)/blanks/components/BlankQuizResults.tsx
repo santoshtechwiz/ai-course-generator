@@ -13,7 +13,9 @@ import { formatQuizTime } from "@/lib/utils"
 import { CheckCircle, Clock, Award } from "lucide-react"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { quizService } from "@/lib/quiz-service"
-
+import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+import { useSession } from "next-auth/react"
+import { toast } from "@/hooks/use-toast"
 
 interface BlankQuizResultsProps {
   answers?: QuizAnswer[]
@@ -39,9 +41,10 @@ export default function BlankQuizResults({
   const { state, restartQuiz, handleAuthenticationRequired } = useQuiz()
   const [isRetrying, setIsRetrying] = useState(false)
   const { isAuthenticated, user, isLoading: authLoading } = useAuth()
+  const { data: session } = useSession()
 
   // State management
-  const [resultState, setResultState] = useState<"checking" | "saving" | "ready" | "error">("checking")
+  const [resultState, setResultState] = useState<"checking" | "saving" | "ready" | "error">("ready") // Default to ready
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const authCheckComplete = useRef(false)
@@ -53,6 +56,9 @@ export default function BlankQuizResults({
   const quizId_ = quizId || state.quizId
   const quizTitle = title || state.title
   const quizSlug = slug || state.slug
+
+  // Enhanced authentication check that includes all possible auth sources
+  const userIsAuthenticated = isAuthenticated || !!user || !!session?.user
 
   // Calculate score
   const score =
@@ -66,26 +72,39 @@ export default function BlankQuizResults({
   useEffect(() => {
     if (authCheckComplete.current) return
 
-    if (isAuthenticated || !!user) {
-      setShowAuthPrompt(false)
-      setResultState("saving") // Directly transition to saving state if authenticated
+    console.log("Auth check running:", { isAuthenticated, user, session: !!session?.user })
+
+    // Only show auth prompt if explicitly required by the parent component
+    // and the user is not authenticated through any method
+    if (!userIsAuthenticated && state.requiresAuth) {
+      console.log("User not authenticated and auth required, skipping results")
+      setShowAuthPrompt(false) // Do not show auth prompt
+      setResultState("ready") // Allow quiz to be shown
     } else {
-      setShowAuthPrompt(true)
+      console.log("User authenticated or auth not required, showing results")
+      setShowAuthPrompt(false)
+
+      // Only try to save results if authenticated
+      if (userIsAuthenticated) {
+        setResultState("saving")
+      } else {
+        setResultState("ready")
+      }
     }
 
     authCheckComplete.current = true
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user, session, state.requiresAuth, userIsAuthenticated])
 
   // Save results to server if authenticated
   useEffect(() => {
     // Only proceed if authenticated and not already saved
-    if ((!isAuthenticated && !user) || resultsSaved.current || resultState !== "saving") return
+    if (!userIsAuthenticated || resultsSaved.current || resultState !== "saving") return
 
     const saveResults = async () => {
       try {
         console.log("Saving quiz results to server")
 
-        await quizService.saveCompleteQuizResult({
+        const result = await quizService.saveCompleteQuizResult({
           quizId: quizId_,
           slug: quizSlug,
           type: "blanks",
@@ -95,7 +114,14 @@ export default function BlankQuizResults({
           totalQuestions: quizQuestions.length,
         })
 
-        console.log("Results saved successfully")
+        if (result) {
+          console.log("Results saved successfully")
+          toast({
+            title: "Results saved",
+            description: "Your quiz results have been saved to your account.",
+          })
+        }
+
         resultsSaved.current = true
         setResultState("ready")
 
@@ -109,7 +135,7 @@ export default function BlankQuizResults({
     }
 
     saveResults()
-  }, [isAuthenticated, user, quizId_, quizSlug, quizAnswers, quizQuestions.length, resultState, score])
+  }, [userIsAuthenticated, quizId_, quizSlug, quizAnswers, quizQuestions.length, resultState, score])
 
   // Call onComplete if provided
   useEffect(() => {
@@ -144,9 +170,9 @@ export default function BlankQuizResults({
         className="flex flex-col items-center justify-center min-h-[300px] p-6 bg-card rounded-lg shadow-sm border"
       >
         <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-        <h3 className="text-xl font-semibold mb-2">Checking authentication status</h3>
+        <h3 className="text-xl font-semibold mb-2">Preparing your results</h3>
         <p className="text-muted-foreground text-center max-w-md mb-4">
-          Please wait while we verify your account status...
+          Just a moment while we load your quiz results...
         </p>
         <div className="w-full max-w-md h-2 bg-muted rounded-full overflow-hidden">
           <div className="h-full bg-primary animate-pulse" style={{ width: "60%" }}></div>
@@ -205,19 +231,25 @@ export default function BlankQuizResults({
     )
   }
 
-  // If not authenticated, show auth prompt
-  if (showAuthPrompt && !isAuthenticated && !user) {
+  // If not authenticated and auth is required, show auth prompt
+  if (showAuthPrompt && !userIsAuthenticated) {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
       >
-        <GuestPrompt
+        <GuestSignInPrompt
           quizId={quizId_ || "unknown"}
           forceShow={true}
-          onContinueAsGuest={() => setShowAuthPrompt(false)}
+          onContinueAsGuest={() => {
+            setShowAuthPrompt(false)
+            setResultState("ready")
+          }}
           onSignInClick={handleAuthenticationRequired}
+          title="Sign in to view your results"
+          description="Your quiz has been completed! Sign in to view your detailed results and save your progress."
+          ctaText="Sign in to view results"
         />
       </motion.div>
     )
@@ -302,8 +334,6 @@ export default function BlankQuizResults({
             </motion.div>
             <motion.div
               initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
               className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg"

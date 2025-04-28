@@ -534,12 +534,32 @@ class QuizService {
 
     // Check if save is in progress
     if (this.saveInProgress.has(submissionKey)) {
-      console.log("Save already in progress for this quiz")
-      return null
+      console.log("Save already in progress for this quiz, preventing duplicate API call")
+
+      // Return a promise that resolves when the existing save completes
+      return new Promise((resolve) => {
+        // Check every 100ms if the save is complete
+        const checkInterval = setInterval(() => {
+          if (!this.saveInProgress.has(submissionKey)) {
+            clearInterval(checkInterval)
+            resolve(this.resultCache.get(submissionKey) || null)
+          }
+        }, 100)
+
+        // Set a timeout to prevent hanging indefinitely
+        setTimeout(() => {
+          clearInterval(checkInterval)
+          resolve(this.resultCache.get(submissionKey) || null)
+        }, 5000)
+      })
     }
 
     // Mark save as in progress
     this.saveInProgress.add(submissionKey)
+    console.log(
+      `[QuizService] Starting save for quiz ${submissionKey}, saveInProgress:`,
+      Array.from(this.saveInProgress),
+    )
 
     // Set a timeout to clear the in-progress flag after 30 seconds
     // This prevents the app from getting stuck if the API call hangs
@@ -564,7 +584,7 @@ class QuizService {
         userId: this.getCurrentUserId(),
       }
 
-      console.log("Sending API request to save quiz result:", payload)
+      console.log("[QuizService] Sending API request to save quiz result:", payload)
 
       // Send to server
       const response = await fetch(`/api/quiz/${submission.slug}/complete`, {
@@ -609,21 +629,36 @@ class QuizService {
         this.clearQuizState(submission.quizId, submission.type)
       }
 
+      console.log(`[QuizService] Successfully saved quiz ${submissionKey}`)
       return result
     } catch (error) {
-      console.error("Error submitting quiz result:", error)
+      console.error("[QuizService] Error submitting quiz result:", error)
 
-      toast({
-        title: "Error saving results",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      })
+      // Only show toast once per error
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+      const errorKey = `error_${submissionKey}_${Date.now()}`
+
+      if (!localStorage.getItem(errorKey)) {
+        localStorage.setItem(errorKey, "true")
+        // Set expiration for error key (5 minutes)
+        setTimeout(() => localStorage.removeItem(errorKey), 5 * 60 * 1000)
+
+        toast({
+          title: "Error saving results",
+          description: errorMessage,
+          variant: "destructive",
+        })
+      }
 
       return null
     } finally {
       // Clear the timeout and mark save as no longer in progress
       clearTimeout(saveTimeout)
       this.saveInProgress.delete(submissionKey)
+      console.log(
+        `[QuizService] Completed save process for quiz ${submissionKey}, saveInProgress:`,
+        Array.from(this.saveInProgress),
+      )
     }
   }
 
@@ -861,6 +896,29 @@ class QuizService {
         }
       }
 
+      // Extract quiz type from the URL if possible
+      let quizType = "mcq" // Default fallback
+      try {
+        // Try to extract quiz type from the URL path
+        const urlPath = redirectUrl.split("?")[0] // Get path without query params
+        const pathParts = urlPath.split("/")
+
+        // Look for known quiz types in the path
+        const knownTypes = ["mcq", "blanks", "openended", "code"]
+        for (const part of pathParts) {
+          if (knownTypes.includes(part)) {
+            quizType = part
+            console.log(`Detected quiz type from URL: ${quizType}`)
+            break
+          }
+        }
+
+        // Save the detected quiz type to localStorage for later use
+        localStorage.setItem("quiz_type_for_auth", quizType)
+      } catch (error) {
+        console.error("Error extracting quiz type from URL:", error)
+      }
+
       // Add fromAuth parameter to the callback URL
       let callbackUrl: URL
       try {
@@ -876,6 +934,9 @@ class QuizService {
 
         callbackUrl.searchParams.set("fromAuth", "true")
         callbackUrl.searchParams.set("authTimestamp", Date.now().toString())
+
+        // Add quiz type to the callback URL to ensure we return to the correct quiz type
+        callbackUrl.searchParams.set("quizType", quizType)
       } catch (error) {
         console.error("Error creating callback URL:", error)
         // Fallback to a safe URL
@@ -926,30 +987,17 @@ class QuizService {
   isReturningFromAuth(): boolean {
     if (typeof window === "undefined") return false
 
-    try {
-      const urlParams = new URLSearchParams(window.location.search)
-      const isCompleted = urlParams.get("completed") === "true"
-      const fromAuth = urlParams.get("fromAuth") === "true"
+    // Check URL parameters first
+    const urlParams = new URLSearchParams(window.location.search)
+    const fromAuth = urlParams.get("fromAuth")
 
-      // If URL explicitly has fromAuth=true
-      if (fromAuth) return true
+    // Check localStorage as fallback
+    const authRedirect = localStorage.getItem("quizAuthRedirect")
 
-      // Check for other indicators
-      const hasAuthParam = urlParams.has("auth") || urlParams.has("session")
-      const hasPendingData =
-        sessionStorage.getItem(STORAGE_KEYS.PENDING_DATA) !== null ||
-        localStorage.getItem(STORAGE_KEYS.PENDING_DATA) !== null ||
-        localStorage.getItem(STORAGE_KEYS.AUTH_REDIRECT) !== null
+    const isReturning = fromAuth === "true" || !!authRedirect
+    console.log("[QuizService] isReturningFromAuth check:", isReturning, { fromAuth, authRedirect })
 
-      const inAuthFlow = localStorage.getItem(STORAGE_KEYS.IN_AUTH_FLOW) === "true"
-
-      return (
-        (isCompleted && (hasAuthParam || hasPendingData || inAuthFlow)) || (this.isAuthenticated() && hasPendingData)
-      )
-    } catch (error) {
-      console.error("Error checking if returning from auth:", error)
-      return false
-    }
+    return isReturning
   }
 
   /**
@@ -964,10 +1012,26 @@ class QuizService {
       // Try to get current state
       const currentStateData = localStorage.getItem(STORAGE_KEYS.CURRENT_STATE)
       if (currentStateData) {
-        // Save to pending data
-        localStorage.setItem(STORAGE_KEYS.PENDING_DATA, currentStateData)
-        sessionStorage.setItem(STORAGE_KEYS.PENDING_DATA, currentStateData)
-        console.log("Current quiz state saved as pending data")
+        // Parse the current state to extract the quiz type
+        try {
+          const currentState = JSON.parse(currentStateData)
+
+          // Save the quiz type separately to ensure it's available during auth flow
+          if (currentState.type) {
+            localStorage.setItem("quiz_type_for_auth", currentState.type)
+            console.log(`Saved quiz type for auth: ${currentState.type}`)
+          }
+
+          // Save to pending data
+          localStorage.setItem(STORAGE_KEYS.PENDING_DATA, currentStateData)
+          sessionStorage.setItem(STORAGE_KEYS.PENDING_DATA, currentStateData)
+          console.log("Current quiz state saved as pending data")
+        } catch (e) {
+          console.error("Error parsing current state:", e)
+          // Still save the raw data
+          localStorage.setItem(STORAGE_KEYS.PENDING_DATA, currentStateData)
+          sessionStorage.setItem(STORAGE_KEYS.PENDING_DATA, currentStateData)
+        }
       } else {
         console.log("No current quiz state found to save")
       }
@@ -976,119 +1040,159 @@ class QuizService {
     }
   }
 
-  /**
-   * Process pending quiz data after authentication
-   */
+  // Update the processPendingQuizData method to use the saved quiz type
   async processPendingQuizData(): Promise<void> {
-    if (typeof window === "undefined") return
+    console.log("[QuizService] Processing pending quiz data")
+
+    // Add a timeout promise to prevent hanging indefinitely
+    const timeoutPromise = new Promise<void>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Processing pending quiz data timed out"))
+      }, 8000) // 8 second timeout
+    })
 
     try {
-      console.log("Processing pending quiz data")
+      // Race the actual processing with the timeout
+      await Promise.race([this._processPendingQuizDataInternal(), timeoutPromise])
+    } catch (error) {
+      console.error("[QuizService] Error processing pending quiz data:", error)
+      // Clear pending data to prevent future issues
+      this.clearPendingQuizData()
+      // We don't rethrow to allow the UI to continue
+    }
+  }
 
-      // Try to get pending data
-      let pendingData = null
+  // Private method to do the actual processing
+  private async _processPendingQuizDataInternal(): Promise<void> {
+    // Get the pending quiz data from localStorage
+    const pendingQuizData = this.getPendingQuizData()
+    if (!pendingQuizData) {
+      console.log("[QuizService] No pending quiz data found")
+      return
+    }
 
-      // Try sessionStorage first
-      const sessionData = sessionStorage.getItem(STORAGE_KEYS.PENDING_DATA)
-      if (sessionData) {
-        pendingData = JSON.parse(sessionData)
+    console.log("[QuizService] Found pending quiz data:", pendingQuizData)
+
+    // Clear the pending quiz data to prevent processing it multiple times
+    this.clearPendingQuizData()
+
+    // Try to get pending data
+    let pendingData = null
+
+    // Try sessionStorage first
+    const sessionData = sessionStorage.getItem(STORAGE_KEYS.PENDING_DATA)
+    if (sessionData) {
+      pendingData = JSON.parse(sessionData)
+    }
+
+    // Try localStorage if not in sessionStorage
+    if (!pendingData) {
+      const localData = localStorage.getItem(STORAGE_KEYS.PENDING_DATA)
+      if (localData) {
+        pendingData = JSON.parse(localData)
       }
+    }
 
-      // Try localStorage if not in sessionStorage
-      if (!pendingData) {
-        const localData = localStorage.getItem(STORAGE_KEYS.PENDING_DATA)
-        if (localData) {
-          pendingData = JSON.parse(localData)
-        }
-      }
+    // If we don't have valid pending data, check for the saved quiz type
+    if (!pendingData || !pendingData.quizId) {
+      console.log("No valid pending quiz data found, checking for saved quiz type")
 
-      if (!pendingData || !pendingData.quizId) {
-        console.log("No pending quiz data found")
+      // Try to get the saved quiz type
+      const savedQuizType = localStorage.getItem("quiz_type_for_auth")
+      if (savedQuizType) {
+        console.log(`Found saved quiz type: ${savedQuizType}`)
 
-        // Check if we have a guest result that needs to be migrated
-        if (this.isAuthenticated()) {
-          const guestResults = this.getGuestResults()
-          if (guestResults.length > 0) {
-            console.log("Found guest results to migrate:", guestResults)
-
-            // Submit each guest result to the server
-            for (const result of guestResults) {
-              await this.submitQuizResult({
-                quizId: result.quizId,
-                slug: result.slug,
-                type: result.type as QuizType,
-                score: result.score,
-                answers: result.answers,
-                totalTime: result.totalTime,
-                totalQuestions: result.totalQuestions,
-              })
-            }
-
-            // Clear guest results after migration
-            localStorage.removeItem(STORAGE_KEYS.GUEST_RESULTS)
+        // If we have a quiz type but no pending data, create minimal pending data
+        if (!pendingData) {
+          pendingData = {
+            type: savedQuizType,
+            // Other fields will be filled in later if needed
           }
+        } else if (!pendingData.type) {
+          // If we have pending data but no type, add the saved type
+          pendingData.type = savedQuizType
         }
+      }
 
+      // Check if we have a guest result that needs to be migrated
+      if (this.isAuthenticated()) {
+        const guestResults = this.getGuestResults()
+        if (guestResults.length > 0) {
+          console.log("Found guest results to migrate:", guestResults)
+
+          // Submit each guest result to the server
+          for (const result of guestResults) {
+            await this.submitQuizResult({
+              quizId: result.quizId,
+              slug: result.slug,
+              type: result.type as QuizType,
+              score: result.score,
+              answers: result.answers,
+              totalTime: result.totalTime,
+              totalQuestions: result.totalQuestions,
+            })
+          }
+
+          // Clear guest results after migration
+          localStorage.removeItem(STORAGE_KEYS.GUEST_RESULTS)
+        }
+      }
+
+      return
+    }
+
+    console.log("Found pending data:", pendingData)
+
+    // If we have answers, save the result
+    if (pendingData.answers && Array.isArray(pendingData.answers)) {
+      const validAnswers = pendingData.answers.filter((a) => a !== null)
+
+      if (validAnswers.length === 0) {
+        console.log("No valid answers in pending data")
+        this.clearPendingData()
         return
       }
 
-      console.log("Found pending data:", pendingData)
-
-      // If we have answers, save the result
-      if (pendingData.answers && Array.isArray(pendingData.answers)) {
-        const validAnswers = pendingData.answers.filter((a) => a !== null)
-
-        if (validAnswers.length === 0) {
-          console.log("No valid answers in pending data")
-          this.clearPendingData()
-          return
-        }
-
-        const result: QuizResult = {
-          quizId: pendingData.quizId,
-          slug: pendingData.slug,
-          type: pendingData.type,
-          score: pendingData.score || 0,
-          answers: validAnswers,
-          totalTime: pendingData.totalTime || 0,
-          totalQuestions: pendingData.totalQuestions || pendingData.answers.length,
-          completedAt: new Date().toISOString(),
-        }
-
-        // Cache the result
-        this.resultCache.set(pendingData.quizId, result)
-
-        // Mark as completed in storage
-        this.markQuizCompleted(pendingData.quizId)
-
-        // For authenticated users, save to server
-        if (this.isAuthenticated()) {
-          await this.submitQuizResult({
-            quizId: result.quizId,
-            slug: result.slug,
-            type: result.type,
-            score: result.score,
-            answers: result.answers,
-            totalTime: result.totalTime,
-            totalQuestions: result.totalQuestions,
-          })
-
-          // Clear storage after saving
-          this.clearPendingData()
-
-          // Also clear any guest result for this quiz
-          this.clearGuestResult(result.quizId)
-        } else {
-          // For guest users, save to localStorage
-          this.saveGuestResult(result)
-        }
-      } else {
-        // Clear invalid pending data
-        this.clearPendingData()
+      const result: QuizResult = {
+        quizId: pendingData.quizId,
+        slug: pendingData.slug,
+        type: pendingData.type,
+        score: pendingData.score || 0,
+        answers: validAnswers,
+        totalTime: pendingData.totalTime || 0,
+        totalQuestions: pendingData.totalQuestions || pendingData.answers.length,
+        completedAt: new Date().toISOString(),
       }
-    } catch (error) {
-      console.error("Error processing pending quiz data:", error)
-      // Clear pending data on error to prevent getting stuck
+
+      // Cache the result
+      this.resultCache.set(pendingData.quizId, result)
+
+      // Mark as completed in storage
+      this.markQuizCompleted(pendingData.quizId)
+
+      // For authenticated users, save to server
+      if (this.isAuthenticated()) {
+        await this.submitQuizResult({
+          quizId: result.quizId,
+          slug: result.slug,
+          type: result.type,
+          score: result.score,
+          answers: result.answers,
+          totalTime: result.totalTime,
+          totalQuestions: result.totalQuestions,
+        })
+
+        // Clear storage after saving
+        this.clearPendingData()
+
+        // Also clear any guest result for this quiz
+        this.clearGuestResult(result.quizId)
+      } else {
+        // For guest users, save to localStorage
+        this.saveGuestResult(result)
+      }
+    } else {
+      // Clear invalid pending data
       this.clearPendingData()
     }
   }
@@ -1210,6 +1314,36 @@ class QuizService {
     }
   }
 
+  /**
+   * Get pending quiz data
+   */
+  getPendingQuizData(): any {
+    if (typeof window === "undefined") return null
+
+    try {
+      const pendingData =
+        localStorage.getItem(STORAGE_KEYS.PENDING_DATA) || sessionStorage.getItem(STORAGE_KEYS.PENDING_DATA)
+      return pendingData ? JSON.parse(pendingData) : null
+    } catch (error) {
+      console.error("Error getting pending quiz data:", error)
+      return null
+    }
+  }
+
+  /**
+   * Clear pending quiz data
+   */
+  clearPendingQuizData(): void {
+    if (typeof window === "undefined") return
+
+    try {
+      localStorage.removeItem(STORAGE_KEYS.PENDING_DATA)
+      sessionStorage.removeItem(STORAGE_KEYS.PENDING_DATA)
+      console.log("[QuizService] Pending quiz data cleared")
+    } catch (error) {
+      console.error("Error clearing pending quiz data:", error)
+    }
+  }
 }
 
 // Export singleton instance
