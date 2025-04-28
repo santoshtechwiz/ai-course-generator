@@ -4,10 +4,11 @@ import type React from "react"
 import { createContext, useContext, useReducer, useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/unified-auth-provider"
-import { quizService, type QuizType, type QuizAnswer } from "@/lib/quiz-service"
+import { quizService,  type QuizAnswer } from "@/lib/quiz-service"
 import { quizApi } from "@/lib/quiz-api"
 import { quizUtils } from "@/lib/quiz-utils"
 import { toast } from "@/hooks/use-toast"
+import { QuizType } from "../types/quiz-types"
 
 // -- Context State & Actions ----------------------------------
 interface QuizContextState {
@@ -234,6 +235,7 @@ interface QuizProviderProps {
   children: React.ReactNode
   quizData: any
   slug: string
+  quizType:QuizType
   /**
    * Optional callback invoked instead of default signIn when auth is required.
    */
@@ -243,14 +245,14 @@ interface QuizProviderProps {
 const QuizContext = createContext<QuizContextType | undefined>(undefined)
 
 // Update QuizProvider to use useAuth instead of any useSession references
-export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, slug, onAuthRequired }) => {
+export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, slug,quizType, onAuthRequired }) => {
   const [state, dispatch] = useReducer(quizReducer, {
     ...initialState,
     quizId: quizData?.id || "",
     slug,
     title: quizData?.title || "",
     description: quizData?.description || "",
-    quizType: quizData?.type || "mcq",
+    quizType: quizData?.quizType || quizType,
     questionCount: quizData?.questions?.length || 0,
     answers: new Array(quizData?.questions?.length || 0).fill(null),
     timeSpentPerQuestion: new Array(quizData?.questions?.length || 0).fill(0),

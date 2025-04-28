@@ -3,8 +3,6 @@
 import AnimatedSVGPath from "@/components/animations/AnimatedSVGPath"
 import { motion } from "framer-motion"
 
-
-
 const HowItWorksSVG = () => {
   return (
     <svg
@@ -20,7 +18,6 @@ const HowItWorksSVG = () => {
         d="M150,150 C150,150 250,100 400,100 C550,100 650,150 650,150 C650,150 700,200 700,300 C700,400 650,450 650,450 C650,450 550,500 400,500 C250,500 150,450 150,450 C150,450 100,400 100,300 C100,200 150,150 150,150 Z"
         stroke="url(#pathGradient)"
         strokeWidth={3}
-       
         delay={0.5}
         duration={3}
       />
@@ -184,8 +181,8 @@ const HowItWorksSVG = () => {
         />
       </motion.g>
 
-      {/* Floating particles */}
-      {[...Array(15)].map((_, i) => (
+      {/* Floating particles - reduced count for better performance */}
+      {[...Array(8)].map((_, i) => (
         <motion.circle
           key={`how-particle-${i}`}
           cx={200 + Math.random() * 400}

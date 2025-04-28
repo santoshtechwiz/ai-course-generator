@@ -2,87 +2,132 @@
 
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
-import { Zap, FileText, HelpCircle, Layers, Users, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
-// Update the features array to be more engaging and clear
+// SVG icons for features
+const FeatureIcon = ({ type }: { type: string }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-8 w-8"
+    >
+      {type === "create" && (
+        <>
+          <path d="M12 2v20" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </>
+      )}
+      {type === "quiz" && (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </>
+      )}
+      {type === "custom" && (
+        <>
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </>
+      )}
+      {type === "track" && (
+        <>
+          <path d="M2 12h10" />
+          <path d="M9 4v16" />
+          <path d="M14 9l3 3-3 3" />
+          <path d="M12 12h8" />
+        </>
+      )}
+      {type === "private" && (
+        <>
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </>
+      )}
+    </svg>
+  )
+}
+
+// Features data
 const features = [
   {
-    icon: Zap,
+    icon: "create",
     title: "Create Courses Instantly",
     description: "Enter a topic—CourseAI auto-generates a full course with structured lessons and quizzes using AI.",
     gradient: "from-yellow-500 to-orange-500",
-    color: "from-yellow-500 to-orange-500",
   },
   {
-    icon: FileText,
+    icon: "quiz",
     title: "AI Quiz Generation",
     description: "Automatically generate quizzes from your course content. No manual question writing needed.",
     gradient: "from-blue-500 to-cyan-500",
-    color: "from-blue-500 to-cyan-500",
   },
   {
-    icon: HelpCircle,
+    icon: "custom",
     title: "Create Your Own Quizzes",
     description: "Build custom quizzes with MCQs, coding tasks, fill-in-the-blanks, and open-ended questions.",
     gradient: "from-green-500 to-emerald-500",
-    color: "from-green-500 to-emerald-500",
   },
   {
-    icon: Users,
+    icon: "track",
     title: "Progress Tracking",
     description: "Monitor learner activity—track quiz scores, completion status, and engagement easily.",
     gradient: "from-indigo-500 to-blue-500",
-    color: "from-indigo-500 to-blue-500",
   },
   {
-    icon: Layers,
+    icon: "private",
     title: "Private Course Creation",
     description: "Keep your courses private and secure. Only you and the people you allow can access them.",
     gradient: "from-purple-500 to-violet-500",
-    color: "from-purple-500 to-violet-500",
   },
 ]
 
-// Optimize feature showcase animations
+// Apple-style easing function
+const APPLE_EASING = [0.25, 0.1, 0.25, 1]
+
 const FeatureShowcase = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.2 })
 
-  // Optimize text animation variants
+  // Optimized text animation variants
   const textVariants = {
-    hidden: { opacity: 0, y: 15 }, // Reduced from 20
+    hidden: { opacity: 0, y: 15 },
     visible: (delay: number) => ({
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.7, // Reduced from 0.8
+        duration: 0.6,
         delay,
-        ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
+        ease: APPLE_EASING,
       },
     }),
   }
 
-  // Optimize the feature card animations to reduce rendering load
-  // Update the cardVariants object
+  // Optimized card animation variants
   const cardVariants = {
-    hidden: { opacity: 0, y: 15, scale: 0.98 }, // Further reduced y-offset for better performance
-    visible: (delay) => ({
+    hidden: { opacity: 0, y: 15, scale: 0.98 },
+    visible: (delay: number) => ({
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.5, // Reduced from 0.6 for better performance
+        duration: 0.5,
         delay,
-        ease: [0.25, 0.1, 0.25, 1],
+        ease: APPLE_EASING,
       },
     }),
     hover: {
-      y: -4, // Reduced from -5 for better performance
-      scale: 1.01, // Reduced from 1.02 for better performance
-      boxShadow: "0 10px 20px -8px rgba(0, 0, 0, 0.1)", // Reduced shadow for better performance
+      y: -4,
+      scale: 1.01,
+      boxShadow: "0 10px 20px -8px rgba(0, 0, 0, 0.1)",
       transition: {
-        duration: 0.2, // Reduced from 0.3 for better performance
-        ease: [0.25, 0.1, 0.25, 1],
+        duration: 0.2,
+        ease: APPLE_EASING,
       },
     },
   }
@@ -130,45 +175,45 @@ const FeatureShowcase = () => {
             animate={isInView ? "visible" : "hidden"}
             whileHover="hover"
             variants={cardVariants}
-            custom={0.3 + index * 0.05} // Reduced delay increment from 0.1 to 0.05
+            custom={0.3 + index * 0.05}
             style={{
               willChange: "transform, opacity",
-              perspective: "800px", // Reduced from 1000px
+              perspective: "800px",
             }}
           >
             <div className="h-full bg-card/30 backdrop-blur-sm rounded-2xl p-8 border border-border/10 transition-all duration-300 relative overflow-hidden group">
-              {/* Optimize background gradient animation */}
+              {/* Background gradient */}
               <motion.div
-                className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
+                className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0 }}
-                whileHover={{ opacity: 0.06 }} // Reduced from 0.08
-                transition={{ duration: 0.3, ease: [0.22, 0.61, 0.36, 1] }} // Reduced from 0.4
+                whileHover={{ opacity: 0.06 }}
+                transition={{ duration: 0.3, ease: APPLE_EASING }}
               />
 
-              {/* Optimize icon animation */}
+              {/* Icon */}
               <motion.div
-                className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-lg`}
+                className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-lg text-white`}
                 whileHover={{
-                  scale: 1.05, // Reduced from 1.1
-                  rotate: [0, 2, -2, 0], // Reduced from [0, 3, -3, 0]
+                  scale: 1.05,
+                  rotate: [0, 2, -2, 0],
                   transition: {
-                    duration: 0.5, // Reduced from 0.6
-                    ease: [0.22, 0.61, 0.36, 1],
+                    duration: 0.5,
+                    ease: APPLE_EASING,
                   },
                 }}
               >
-                <feature.icon className="h-8 w-8 text-white" />
+                <FeatureIcon type={feature.icon} />
               </motion.div>
 
               {/* Content */}
               <h3 className="text-xl font-semibold mb-3 tracking-tight">{feature.title}</h3>
               <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
 
-              {/* Optimize arrow indicator animation */}
+              {/* Arrow indicator */}
               <motion.div
                 className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                initial={{ x: -3, opacity: 0 }} // Reduced from -5
+                initial={{ x: -3, opacity: 0 }}
                 whileHover={{ x: 0, opacity: 1 }}
               >
                 <ArrowRight className="h-5 w-5 text-primary/70" />

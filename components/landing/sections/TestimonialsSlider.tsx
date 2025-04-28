@@ -2,11 +2,14 @@
 
 import { useRef, useState, useCallback, useEffect } from "react"
 import { motion, useInView, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight, Quote } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-// Enhanced testimonials with Apple-style animations
+// Apple-style easing function
+const APPLE_EASING = [0.25, 0.1, 0.25, 1]
+
+// Testimonial data
 const testimonials = [
   {
     quote:
@@ -42,14 +45,12 @@ const testimonials = [
   },
 ]
 
-// Optimize the testimonials component for better performance and accessibility
 const TestimonialsSlider = () => {
   const [activeIndex, setActiveIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.2 })
-  const APPLE_EASING = [0.22, 0.61, 0.36, 1]
 
-  // Use useCallback for navigation functions to prevent unnecessary re-renders
+  // Navigation functions
   const nextTestimonial = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % testimonials.length)
   }, [])
@@ -58,7 +59,7 @@ const TestimonialsSlider = () => {
     setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
   }, [])
 
-  // Add keyboard navigation and accessibility
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") {
@@ -207,7 +208,7 @@ const TestimonialsSlider = () => {
                         animate={{ scale: 1, opacity: 0.3 }}
                         transition={{ duration: 0.7, delay: 0.2, ease: APPLE_EASING }}
                       >
-                        <Quote className="h-14 w-14 text-primary/30 mx-auto mb-6" aria-hidden="true" />
+                        {/* <Quote className="h-14 w-14 text-primary/30 mx-auto mb-6" aria-hidden="true" /> */}
                       </motion.div>
 
                       <motion.p
@@ -230,7 +231,7 @@ const TestimonialsSlider = () => {
                           transition={{ duration: 0.3, ease: APPLE_EASING }}
                         >
                           <Avatar className="h-16 w-16 mr-4 border-2 border-primary/10 shadow-lg">
-                            <AvatarImage src={testimonial.avatar} alt={testimonial.author} />
+                            <AvatarImage src={testimonial.avatar || "/placeholder.svg"} alt={testimonial.author} />
                             <AvatarFallback>
                               {testimonial.author
                                 .split(" ")

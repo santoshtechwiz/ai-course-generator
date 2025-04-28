@@ -1,7 +1,7 @@
+import { QuizType } from "@/app/types/quiz-types"
 import { toast } from "@/hooks/use-toast"
 
-// Define core types
-export type QuizType = "mcq" | "blanks" | "openended" | "code"
+
 
 export interface QuizAnswer {
   answer: string

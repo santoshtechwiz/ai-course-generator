@@ -2,13 +2,15 @@
 
 import type React from "react"
 
-import { useRef, useState, useEffect, useCallback, useMemo } from "react"
+import { useEffect } from "react"
+
+import { useRef, useState, useCallback, useMemo } from "react"
 import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Plus, Minus, Search, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 
-// Update the FAQ questions to reflect the new questions and answers provided by the user
+// FAQ data
 const faqs = [
   {
     id: "faq-1",
@@ -72,19 +74,37 @@ const faqs = [
   },
 ]
 
-// Optimize the FAQ component for better accessibility and performance
+// Apple-style easing function
+const APPLE_EASING = [0.25, 0.1, 0.25, 1]
+
+// Custom hook for debouncing
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
+
 const FaqAccordion = () => {
   const [openItem, setOpenItem] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.2 })
-  const APPLE_EASING = [0.22, 0.61, 0.36, 1]
 
-  // Debounce search input to improve performance
+  // Debounce search input
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
-  // Memoize filtered FAQs to prevent unnecessary re-renders
+  // Memoize filtered FAQs
   const filteredFaqs = useMemo(() => {
     if (!debouncedSearchQuery) return faqs
 
@@ -96,7 +116,6 @@ const FaqAccordion = () => {
   }, [debouncedSearchQuery])
 
   const toggleItem = useCallback(async (id: string) => {
-    // Simulate a slight delay for the toggle action
     setIsSearching(true)
     await new Promise((resolve) => setTimeout(resolve, 300))
     setOpenItem((prevOpenItem) => (prevOpenItem === id ? null : id))
@@ -107,26 +126,8 @@ const FaqAccordion = () => {
   const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setIsSearching(true)
     setSearchQuery(e.target.value)
-    // The search will be debounced, but we want to show the loading state immediately
     setTimeout(() => setIsSearching(false), 500)
   }, [])
-
-  // Custom hook for debouncing
-  function useDebounce<T>(value: T, delay: number): T {
-    const [debouncedValue, setDebouncedValue] = useState<T>(value)
-
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setDebouncedValue(value)
-      }, delay)
-
-      return () => {
-        clearTimeout(handler)
-      }
-    }, [value, delay])
-
-    return debouncedValue
-  }
 
   return (
     <div className="container max-w-4xl mx-auto px-4 md:px-6" ref={containerRef}>
@@ -159,7 +160,7 @@ const FaqAccordion = () => {
         </motion.p>
       </div>
 
-      {/* Search with improved accessibility and Apple-style animations */}
+      {/* Search with improved accessibility */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
@@ -191,7 +192,7 @@ const FaqAccordion = () => {
         </div>
       </motion.div>
 
-      {/* FAQ items with Apple-style animations */}
+      {/* FAQ items */}
       <motion.div
         className="space-y-4"
         role="region"
@@ -271,7 +272,7 @@ const FaqAccordion = () => {
         )}
       </motion.div>
 
-      {/* Additional help section with Apple-style animations */}
+      {/* Additional help section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}

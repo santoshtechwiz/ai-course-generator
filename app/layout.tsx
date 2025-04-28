@@ -10,7 +10,7 @@ import { Suspense } from "react"
 // Update the layout to use the unified auth provider
 import { UnifiedAuthProvider } from "@/providers/unified-auth-provider"
 
-const inter = Inter({ subsets: ["latin"] })
+// const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
