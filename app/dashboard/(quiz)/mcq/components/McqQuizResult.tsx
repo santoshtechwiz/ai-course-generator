@@ -138,8 +138,8 @@ export default function McqQuizResult({ title, onRestart, quizId, questions, ans
         <GuestSignInPrompt
           title="Authentication Required"
          
-          onContinueAsGuest={() => setShowAuthPrompt(false)}
-         
+        
+          
         />
       </motion.div>
     )

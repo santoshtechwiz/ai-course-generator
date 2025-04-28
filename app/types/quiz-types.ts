@@ -137,15 +137,10 @@ export interface QuizWrapperProps {
   onAuthModalClose: () => void
   children: ReactNode
 }
-// types.ts
-export type QuizType = "mcq" | "blanks" | "flashcards" | "survey"
+
 export type QuizAnimationState = "idle" | "completing" | "showing-results" | "redirecting"
 
-export interface QuizAnswer {
-  answer: string
-  timeSpent: number
-  isCorrect: boolean
-}
+
 
 export interface QuizQuestion {
   id: string

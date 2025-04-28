@@ -30,6 +30,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
     id: "unknown",
     title: "Quiz",
     slug: slug || "unknown",
+    quizType: "blanks",
     questions: [],
   }
 
@@ -37,10 +38,10 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
     <QuizProvider
       quizData={safeQuizData}
       slug={slug || "unknown"}
+      quizType="blanks"
       onAuthRequired={(redirectUrl) => {
         // If user is already authenticated, don't show auth prompt
         if (userIsAuthenticated) {
-          console.log("User is already authenticated, skipping auth prompt")
           return
         }
 
@@ -73,9 +74,10 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     fetchQuizResults,
   } = useQuiz()
   const { isAuthenticated: authState, user } = useAuth()
-  const [displayState, setDisplayState] = useState<
-    "quiz" | "results" | "auth" | "loading" | "checking" | "saving" | "preparing"
-  >("checking")
+  // Start directly in quiz state instead of checking
+  const [displayState, setDisplayState] = useState<"quiz" | "results" | "auth" | "loading" | "saving" | "preparing">(
+    "quiz",
+  )
 
   const {
     quizId,
@@ -104,7 +106,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
 
   // Check URL parameters for auth return
   const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
-  const preparingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const preparingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const processingAttempted = useRef(false)
 
   useEffect(() => {
@@ -116,34 +118,20 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
       // If returning from auth, try to process results immediately
       if (fromAuth && !processingAttempted.current) {
         processingAttempted.current = true
-        console.log("Detected return from auth, attempting to fetch results immediately")
-        fetchQuizResults().catch((err) => {
-          console.error("Error fetching results on auth return:", err)
+        fetchQuizResults().catch(() => {
+          // Handle errors silently
         })
       }
     }
   }, [fetchQuizResults])
 
-  // Add a timeout to prevent getting stuck in the initialization phase
+  // Force exit from preparing state after 5 seconds if still stuck
   useEffect(() => {
-    // Force exit from checking state after 3 seconds if still stuck
-    if (displayState === "checking") {
-      const timeoutId = setTimeout(() => {
-        console.log("Forcing exit from checking state after timeout")
-        setDisplayState("quiz")
-      }, 3000)
-
-      return () => clearTimeout(timeoutId)
-    }
-
-    // Force exit from preparing state after 5 seconds if still stuck
     if (displayState === "preparing") {
       preparingTimeoutRef.current = setTimeout(() => {
-        console.log("Forcing exit from preparing state after timeout")
         // Try to fetch results one more time
         fetchQuizResults()
           .catch(() => {
-            console.log("Final attempt to fetch results failed, proceeding to quiz")
           })
           .finally(() => {
             // Move to results if completed, otherwise to quiz
@@ -165,21 +153,8 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
 
   // Update display state based on all the available state information
   useEffect(() => {
-    // Initial checking state
-    if (!authCheckComplete) {
-      console.log("Auth check not complete, waiting...")
-      // Only stay in checking state for a maximum of 2 seconds
-      const timeoutId = setTimeout(() => {
-        console.log("Auth check timeout, proceeding anyway")
-        setDisplayState("quiz")
-      }, 2000)
-
-      return () => clearTimeout(timeoutId)
-    }
-
     // Processing auth return
     if (isProcessingAuth || isReturningFromAuth) {
-      console.log("Processing auth or returning from auth, setting state to preparing")
       setDisplayState("preparing")
       return
     }
@@ -200,13 +175,12 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     if (isCompleted) {
       // Auth required
       if (requiresAuth && !userIsAuthenticated) {
-        setDisplayState("auth")
+        setDisplayState("quiz") // Show quiz instead of auth prompt
         return
       }
 
       // Results ready
       if (resultsReady || answers.some((a) => a !== null)) {
-        console.log("Results ready or answers found, showing results")
         setDisplayState("results")
         return
       }
@@ -215,7 +189,6 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     // Default to quiz
     setDisplayState("quiz")
   }, [
-    authCheckComplete,
     isProcessingAuth,
     isReturningFromAuth,
     isLoading,
@@ -262,39 +235,6 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
         completeQuiz(validAnswers)
       }, 800)
     }
-  }
-
-  // Show loading state during initial auth check
-  if (displayState === "checking") {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center min-h-[300px] gap-4 py-8"
-      >
-        <div className="relative">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-2 w-2 rounded-full bg-primary"></div>
-          </div>
-        </div>
-
-        <div className="text-center">
-          <p className="text-lg font-medium mb-1">Initializing quiz...</p>
-          <p className="text-sm text-muted-foreground">Please wait while we prepare your quiz experience.</p>
-        </div>
-
-        {/* Skeleton loading UI for better visual feedback */}
-        <div className="w-full max-w-md mt-4">
-          <Skeleton className="h-8 w-3/4 mb-4" />
-          <Skeleton className="h-32 w-full mb-4" />
-          <div className="flex gap-2 mt-2">
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-      </motion.div>
-    )
   }
 
   // Preparing results after authentication
@@ -521,7 +461,6 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
               title={title || ""}
               slug={slug || "unknown"}
               onComplete={(score) => {
-                console.log("Quiz completed with score:", score)
               }}
               onRetryLoading={retryLoadingResults}
             />

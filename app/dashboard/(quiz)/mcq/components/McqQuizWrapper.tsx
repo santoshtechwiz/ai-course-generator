@@ -556,6 +556,7 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
         ...safeQuizData,
         questions,
       }}
+      quizType="mcq"
       slug={validSlug}
       onAuthRequired={(redirectUrl) => {
         // If user is already authenticated, don't show auth prompt

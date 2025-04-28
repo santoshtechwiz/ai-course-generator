@@ -282,13 +282,13 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
   }, [])
 
-  // Handle authentication required
+  // Update the handleAuthenticationRequired method to use the correct quiz type
   const handleAuthenticationRequired = useCallback(() => {
     if (!onAuthRequired) {
       console.log("No onAuthRequired handler provided")
       // Fallback to direct sign-in if available
       if (typeof signIn === "function") {
-        // Create redirect URL
+        // Create redirect URL with the correct quiz type
         const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
 
         // Save current state before redirecting
@@ -315,7 +315,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     // Save current state before redirecting
     quizService.savePendingQuizData()
 
-    // Create redirect URL
+    // Create redirect URL with the correct quiz type
     const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
 
     // Call the provided auth handler
@@ -579,62 +579,81 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   ])
 
   // Initialize quiz state and handle refresh
-  useEffect(() => {
-    if (initializationDone.current) return
+  const initializeQuiz = useCallback(async () => {
+    try {
+      dispatch({ type: "SET_LOADING", payload: true })
 
-    dispatch({ type: "SET_LOADING", payload: true })
-
-    if (!quizData?.questions?.length) {
-      dispatch({ type: "SET_ERROR", payload: "No questions available." })
-      dispatch({ type: "SET_LOADING", payload: false }) // Ensure loading is stopped
-      initializationDone.current = true
-      return
-    }
-
-    const isQuizCompleted = quizService.isQuizCompleted(state.quizId)
-
-    if (state.isRefreshed && isQuizCompleted) {
-      fetchQuizResults().then((success) => {
-        if (!success && !state.requiresAuth) {
-          dispatch({ type: "RESET_QUIZ" })
-        }
-        dispatch({ type: "SET_LOADING", payload: false }) // Ensure loading is stopped
-        initializationDone.current = true
+      // Set a timeout to prevent getting stuck in loading state
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Quiz initialization timed out"))
+        }, 10000) // 10 second timeout
       })
-    } else if (state.isRefreshed) {
-      const savedState = quizService.getQuizState(state.quizId, state.quizType)
 
-      if (savedState && !savedState.isCompleted) {
-        dispatch({
-          type: "INITIALIZE_QUIZ",
-          payload: {
-            currentQuestionIndex: savedState.currentQuestion,
-            answers: savedState.answers || new Array(state.questionCount).fill(null),
-            timeSpentPerQuestion: savedState.timeSpentPerQuestion || new Array(state.questionCount).fill(0),
-            lastQuestionChangeTime: Date.now(),
-          },
-        })
-      } else {
-        const isCompletedInStorage =
-          localStorage.getItem(`quiz_${state.quizId}_completed`) === "true" ||
-          sessionStorage.getItem(`quiz_${state.quizId}_completed`) === "true"
+      // Race the actual initialization with the timeout
+      await Promise.race([
+        (async () => {
+          // Original initialization code here
+          if (!quizData?.questions?.length) {
+            dispatch({ type: "SET_ERROR", payload: "No questions available." })
+            dispatch({ type: "SET_LOADING", payload: false }) // Ensure loading is stopped
+            initializationDone.current = true
+            return
+          }
 
-        if (isCompletedInStorage) {
-          fetchQuizResults()
-        }
-      }
-    } else {
-      const isCompletedInStorage =
-        localStorage.getItem(`quiz_${state.quizId}_completed`) === "true" ||
-        sessionStorage.getItem(`quiz_${state.quizId}_completed`) === "true"
+          const isQuizCompleted = quizService.isQuizCompleted(state.quizId)
 
-      if (isCompletedInStorage) {
-        fetchQuizResults()
-      }
+          if (state.isRefreshed && isQuizCompleted) {
+            fetchQuizResults().then((success) => {
+              if (!success && !state.requiresAuth) {
+                dispatch({ type: "RESET_QUIZ" })
+              }
+              dispatch({ type: "SET_LOADING", payload: false }) // Ensure loading is stopped
+              initializationDone.current = true
+            })
+          } else if (state.isRefreshed) {
+            const savedState = quizService.getQuizState(state.quizId, state.quizType)
+
+            if (savedState && !savedState.isCompleted) {
+              dispatch({
+                type: "INITIALIZE_QUIZ",
+                payload: {
+                  currentQuestionIndex: savedState.currentQuestion,
+                  answers: savedState.answers || new Array(state.questionCount).fill(null),
+                  timeSpentPerQuestion: savedState.timeSpentPerQuestion || new Array(state.questionCount).fill(0),
+                  lastQuestionChangeTime: Date.now(),
+                },
+              })
+            } else {
+              const isCompletedInStorage =
+                localStorage.getItem(`quiz_${state.quizId}_completed`) === "true" ||
+                sessionStorage.getItem(`quiz_${state.quizId}_completed`) === "true"
+
+              if (isCompletedInStorage) {
+                fetchQuizResults()
+              }
+            }
+          } else {
+            const isCompletedInStorage =
+              localStorage.getItem(`quiz_${state.quizId}_completed`) === "true" ||
+              sessionStorage.getItem(`quiz_${state.quizId}_completed`) === "true"
+
+            if (isCompletedInStorage) {
+              fetchQuizResults()
+            }
+          }
+        })(),
+        timeoutPromise,
+      ])
+    } catch (error) {
+      console.error("[QuizContext] Error initializing quiz:", error)
+      dispatch({
+        type: "SET_ERROR",
+        payload: error instanceof Error ? error.message : "Failed to initialize quiz",
+      })
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false })
     }
-
-    dispatch({ type: "SET_LOADING", payload: false }) // Ensure loading is stopped
-    initializationDone.current = true
   }, [
     quizData,
     slug,
@@ -770,8 +789,13 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   const handleCompleteQuiz = useCallback(
     (finalAnswers: (QuizAnswer | null)[], finalScore?: number) => {
       // Prevent multiple completions
-      if (completionInProgress.current || state.isCompleted) return
+      if (completionInProgress.current || state.isCompleted) {
+        console.log("[QuizContext] Quiz completion already in progress or completed, ignoring duplicate call")
+        return
+      }
+
       completionInProgress.current = true
+      console.log("[QuizContext] Starting quiz completion process")
 
       // Create a local reference to track the timeout
       let animationTimeout: NodeJS.Timeout | null = null
@@ -804,32 +828,52 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
 
             // Submit to server if authenticated, otherwise save locally
             if (authIsAuthenticated) {
-              dispatch({ type: "SET_SAVING_RESULTS", payload: true })
+              // Set saving state only once
+              if (!state.savingResults) {
+                dispatch({ type: "SET_SAVING_RESULTS", payload: true })
+              }
+
+              // Use a local flag to track if this specific save operation is still relevant
+              let isSaving = true
 
               quizService
                 .submitQuizResult(submission)
                 .then(() => {
-                  toast({
-                    title: "Quiz completed!",
-                    description: "Your results have been saved.",
-                  })
+                  // Only show toast if this save operation is still relevant
+                  if (isSaving) {
+                    toast({
+                      title: "Quiz completed!",
+                      description: "Your results have been saved.",
+                    })
+                  }
 
                   // Clear in-progress state but keep the result
                   quizService.clearQuizState(state.quizId, state.quizType)
-                  dispatch({ type: "SET_SAVING_RESULTS", payload: false })
+
+                  // Only update state if this save operation is still relevant
+                  if (isSaving) {
+                    dispatch({ type: "SET_SAVING_RESULTS", payload: false })
+                  }
                 })
                 .catch((error) => {
-                  console.error("Error submitting quiz result:", error)
-                  toast({
-                    title: "Error saving results",
-                    description: "There was a problem saving your results. Please try again.",
-                    variant: "destructive",
-                  })
-                  dispatch({ type: "SET_SAVING_RESULTS", payload: false })
+                  console.error("[QuizContext] Error submitting quiz result:", error)
+
+                  // Only show toast if this save operation is still relevant
+                  if (isSaving) {
+                    toast({
+                      title: "Error saving results",
+                      description: error instanceof Error ? error.message : "An unexpected error occurred",
+                      variant: "destructive",
+                    })
+                    dispatch({ type: "SET_SAVING_RESULTS", payload: false })
+                  }
                 })
                 .finally(() => {
                   // Always reset the completion flag when the promise resolves or rejects
                   completionInProgress.current = false
+
+                  // Mark this save operation as no longer relevant
+                  isSaving = false
                 })
             } else {
               // Save locally for guest users
@@ -871,7 +915,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
               sessionStorage.setItem(`quiz_${state.quizId}_completed`, "true")
             }
           } catch (innerError) {
-            console.error("Error in quiz completion process:", innerError)
+            console.error("[QuizContext] Error in quiz completion process:", innerError)
             // Reset the completion flag on error
             completionInProgress.current = false
 
@@ -884,7 +928,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
           }
         }, 800)
       } catch (outerError) {
-        console.error("Error initiating quiz completion:", outerError)
+        console.error("[QuizContext] Error initiating quiz completion:", outerError)
         // Reset the completion flag on error
         completionInProgress.current = false
 
@@ -1064,6 +1108,23 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
 
     return () => clearTimeout(safetyTimeout)
   }, [isLoading])
+
+  // Add a timeout to prevent getting stuck in auth processing state
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+
+    if (state.isProcessingAuth) {
+      console.log("[QuizContext] Auth processing started, setting safety timeout")
+      timeoutId = setTimeout(() => {
+        console.log("[QuizContext] Auth processing timeout reached, forcing state update")
+        dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
+      }, 12000) // 12 second timeout (slightly longer than component timeouts)
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }, [state.isProcessingAuth])
 
   return (
     <QuizContext.Provider
