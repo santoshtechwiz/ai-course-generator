@@ -222,6 +222,7 @@ export interface CodingQuizProps {
   ownerId: string
   isPublic: boolean
   isFavorite: boolean
+  title:string
 }
 
 export interface QuizAnswer {

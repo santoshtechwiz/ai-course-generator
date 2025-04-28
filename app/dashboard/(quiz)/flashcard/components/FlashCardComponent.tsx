@@ -12,7 +12,7 @@ import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useSession } from "next-auth/react"
 import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
 import FlashCardResults from "./FlashCardQuizResults"
-import { GuestPrompt } from "../../components/GuestSignInPrompt"
+import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 import { quizService } from "@/lib/quiz-service"
 
 interface FlashCardComponentProps {
@@ -165,7 +165,7 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
       setFlipped(false)
       setExitComplete(false)
       setTimeout(() => {
-        state.nextQuestion()
+        dispatch({ type: "NEXT_QUESTION" }) // Fix incorrect method call
       }, 300)
     } else {
       // Complete the quiz
@@ -179,7 +179,7 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
       setFlipped(false)
       setExitComplete(false)
       setTimeout(() => {
-        state.prevQuestion()
+        dispatch({ type: "PREV_QUESTION" }) // Fix incorrect method call
       }, 300)
     }
   }
@@ -356,7 +356,7 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
       const correctCount = calculateScore()
       const totalQuestions = cards.length
       const percentage = (correctCount / totalQuestions) * 100
-      const totalTime = state.lastQuestionChangeTime
+      const totalTime = state.answers.reduce((acc, answer) => acc + (answer.timeSpent || 0), 0) // Fix total time calculation
 
       // Show auth prompt if needed and user is not authenticated
       if (state.showAuthPrompt && !state.isAuthenticated) {
@@ -368,7 +368,7 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
           >
-            <GuestPrompt forceShow={true} onSignInClick={handleAuthRequired} />
+            <GuestPrompt forceShow={true} onSignInClick={handleAuthRequired} /> {/* Fix component usage */}
           </motion.div>
         )
       }

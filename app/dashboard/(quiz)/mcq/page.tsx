@@ -1,85 +1,129 @@
-import QuizCreationPage from "../components/QuizCreationPage"
-
+import { notFound } from "next/navigation"
+import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Free Multiple Choice Quiz Generator",
-  description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-  keywords: [
-    "multiple choice quiz",
-    "programming quiz",
-    "coding questions",
-    "tech assessment",
-    "developer quiz",
-    "interactive test",
-  ],
-  openGraph: {
-    title: "Free Multiple Choice Quiz Generator",
-    description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-    url: "https://courseai.io/dashboard/mcq",
-    type: "website",
-    images: [{ url: "/og-image-mcq.jpg" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Free Multiple Choice Quiz Generator",
-    description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-    images: ["/twitter-image-mcq.jpg"],
-  },
+import { authOptions } from "@/lib/authOptions"
+import getMcqQuestions from "@/app/actions/getMcqQuestions"
+import { generateBreadcrumbStructuredData, generatePageMetadata, generateQuizStructuredData } from "@/lib/seo-utils"
+import { JsonLd } from "@/components/json-ld"
+import QuizDetailsPageWithContext from "../components/QuizDetailsPageWithContext"
+import McqQuizWrapper from "./components/McqQuizWrapper"
+
+
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const quiz = await getMcqQuestions(slug)
+
+  if (!quiz || !quiz.result) {
+    return generatePageMetadata({
+      title: "Multiple Choice Quiz Not Found | CourseAI",
+      description:
+        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
+      path: `/dashboard/mcq/${slug}`,
+      noIndex: true,
+    })
+  }
+
+  const quizData = quiz.result
+  const titleWords = quizData.title?.toLowerCase().split(" ") || []
+  const keyTerms = titleWords.filter((word) => word.length > 3)
+
+  return generatePageMetadata({
+    title: `${quizData.title} | Interactive Programming Multiple Choice Quiz`,
+    description: `Test your coding knowledge with this ${quizData.title?.toLowerCase()} multiple choice quiz. Practice programming concepts, improve your skills, and track your progress with instant feedback. Perfect for developers of all levels.`,
+    path: `/dashboard/mcq/${slug}`,
+    keywords: [
+      `${quizData.title?.toLowerCase()} quiz`,
+      `${quizData.title?.toLowerCase()} test`,
+      `${quizData.title?.toLowerCase()} assessment`,
+      `${quizData.title?.toLowerCase()} practice`,
+      "programming multiple choice",
+      "coding assessment",
+      "developer knowledge test",
+      "programming practice questions",
+      "interactive coding quiz",
+      "tech skills assessment",
+      ...keyTerms.map((term) => `${term} programming quiz`),
+    ],
+    ogType: "article",
+    ogImage: `/api/og?title=${encodeURIComponent(quizData.title)}&description=${encodeURIComponent("Multiple Choice Programming Quiz")}`,
+  })
 }
 
-const Page = async () => {
+const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
+  const { slug } = await params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
-  // CreativeWork schema
-  const creativeWorkSchema = {
-    "@context": "https://schema.org",
-    "@type": "CreativeWork",
-    name: "Multiple Choice Quiz Creator",
-    description: "Create interactive multiple choice quizzes to test knowledge on any programming topic.",
-    creator: {
-      "@type": "Organization",
-      name: "Course AI",
-    },
-    url: `${baseUrl}/dashboard/mcq`,
+  const session = await getServerSession(authOptions)
+  const currentUserId = session?.user?.id
+
+  // Fetch quiz data - this is the only API call we should make
+  const result = await getMcqQuestions(slug)
+  if (!result || !result.result) {
+    console.error(`Quiz not found for slug: ${slug}`)
+    notFound()
   }
 
-  // Breadcrumb schema
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: baseUrl,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Dashboard",
-        item: `${baseUrl}/dashboard`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: "Multiple Choice Quiz",
-        item: `${baseUrl}/dashboard/mcq`,
-      },
-    ],
-  }
+  const { result: quizData, questions } = result
+
+  // Estimate quiz time based on question count
+  const questionCount = questions.length
+  const estimatedTime = `PT${Math.max(5, Math.min(60, questionCount * 2))}M`
+
+  // Create breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", href: baseUrl },
+    { name: "Dashboard", href: `${baseUrl}/dashboard` },
+    { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
+    { name: quizData.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
+  ]
+
+  // Generate structured data for SEO
+  const quizStructuredData = generateQuizStructuredData({
+    title: quizData.title,
+    description: `Test your coding knowledge on ${quizData.title} with multiple choice questions`,
+    url: `${baseUrl}/dashboard/mcq/${slug}`,
+    questionCount,
+    timeRequired: estimatedTime,
+    author: "CourseAI",
+    // datePublished: quizData.createdAt,
+    // dateModified: quizData.updatedAt,
+    quizType: "mcq",
+  })
+
+  const breadcrumbStructuredData = generateBreadcrumbStructuredData(breadcrumbItems)
 
   return (
-    <QuizCreationPage
-      type="mcq"
-      title="Multiple Choice Quiz"
-      metadata={{
-        creativeWorkSchema,
-        breadcrumbSchema,
-      }}
-    />
+    <>
+      <JsonLd type="quiz" data={quizStructuredData} />
+      <JsonLd type="breadcrumb" data={breadcrumbStructuredData} />
+      <QuizDetailsPageWithContext
+        title={quizData.title}
+        description={`Test your coding knowledge on ${quizData.title} with multiple choice questions`}
+        slug={slug}
+        quizType="mcq"
+        questionCount={questionCount}
+        estimatedTime={estimatedTime}
+        breadcrumbItems={breadcrumbItems}
+        quizId={quizData.id.toString()}
+        authorId={quizData.userId}
+        isPublic={quizData.isPublic || false}
+        isFavorite={quizData.isFavorite || false}
+        difficulty={
+          ["easy", "medium", "hard"].includes(quizData.difficulty || "")
+            ? (quizData.difficulty as "easy" | "medium" | "hard")
+            : "medium"
+        }
+      >
+        <McqQuizWrapper
+          quizData={{ ...quizData, id: String(quizData.id) }}
+          questions={questions.map((q) => ({ ...q, id: Number(q.id) }))}
+          slug={slug}
+        />
+      </QuizDetailsPageWithContext>
+    </>
   )
 }
 
-export default Page
+export default McqPage

@@ -13,35 +13,33 @@ import { UnifiedAuthProvider } from "@/providers/unified-auth-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
   title: {
-    default: "Learning Platform",
-    template: "%s | Learning Platform",
+    default: "CourseAI - Interactive Programming Quizzes and Learning",
+    template: "%s | CourseAI",
   },
-  description: "An AI-powered learning platform for courses and quizzes",
-  keywords: ["education", "learning", "courses", "quizzes", "AI"],
-  authors: [{ name: "Learning Platform Team" }],
-  creator: "Learning Platform",
-  publisher: "Learning Platform",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://learning-platform.com",
-    title: "Learning Platform",
-    description: "An AI-powered learning platform for courses and quizzes",
-    siteName: "Learning Platform",
+  description:
+    "Enhance your programming skills with interactive quizzes, coding challenges, and learning resources designed for developers of all levels.",
+  keywords: [
+    "programming quizzes",
+    "coding challenges",
+    "developer learning",
+    "interactive coding",
+    "tech education",
+    "programming practice",
+  ],
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Learning Platform",
-    description: "An AI-powered learning platform for courses and quizzes",
-    creator: "@learningplatform",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#111827" },
+  ],
+  alternates: {
+    canonical: "/",
   },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
-  },
-  manifest: "/site.webmanifest",
 }
 
 export default async function RootLayout({

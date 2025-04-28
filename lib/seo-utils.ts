@@ -17,6 +17,199 @@ interface SeoProps {
   additionalMetaTags?: Array<{ name: string; content: string }>
 }
 
+
+interface PageMetadataProps {
+  title: string
+  description: string
+  path: string
+  keywords?: string[]
+  noIndex?: boolean
+  ogType?: "website" | "article"
+  ogImage?: string
+  twitterCard?: "summary" | "summary_large_image"
+}
+
+/**
+ * Generates standardized metadata for pages with SEO best practices
+ */
+export function generatePageMetadata({
+  title,
+  description,
+  path,
+  keywords = [],
+  noIndex = false,
+  ogType = "website",
+  ogImage,
+  twitterCard = "summary_large_image",
+}: PageMetadataProps): Metadata {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+  const url = `${baseUrl}${path}`
+  const defaultImage = `${baseUrl}/api/og?title=${encodeURIComponent(title)}`
+  const imageUrl = ogImage || defaultImage
+
+  // Default keywords for the site
+  const defaultKeywords = [
+    "programming quiz",
+    "coding challenge",
+    "developer assessment",
+    "tech learning",
+    "programming practice",
+    "coding skills",
+    "interactive learning",
+  ]
+
+  // Combine default and page-specific keywords, remove duplicates
+  const allKeywords = [...new Set([...defaultKeywords, ...keywords])]
+
+  return {
+    title: {
+      default: title,
+      template: `%s | CourseAI`,
+    },
+    description,
+    keywords: allKeywords,
+    authors: [{ name: "CourseAI Team" }],
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: url,
+    },
+    robots: {
+      index: !noIndex,
+      follow: !noIndex,
+      googleBot: {
+        index: !noIndex,
+        follow: !noIndex,
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "CourseAI",
+      locale: "en_US",
+      type: ogType,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: twitterCard,
+      title,
+      description,
+      images: [imageUrl],
+      creator: "@courseai",
+      site: "@courseai",
+    },
+    verification: {
+      google: "google-site-verification-code", // Replace with your actual verification code
+    },
+  }
+}
+
+/**
+ * Generates structured data for quiz pages
+ */
+export function generateQuizStructuredData({
+  title,
+  description,
+  url,
+  questionCount,
+  timeRequired,
+  author = "CourseAI",
+  datePublished,
+  dateModified,
+  quizType,
+}: {
+  title: string
+  description: string
+  url: string
+  questionCount: number
+  timeRequired: string
+  author?: string
+  datePublished?: string
+  dateModified?: string
+  quizType: "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"
+}) {
+  const quizTypeLabels = {
+    mcq: "Multiple Choice",
+    openended: "Open-Ended",
+    "fill-blanks": "Fill in the Blanks",
+    code: "Code Challenge",
+    flashcard: "Flashcards",
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Quiz",
+    name: title,
+    description: description,
+    educationalAlignment: {
+      "@type": "AlignmentObject",
+      alignmentType: "educationalSubject",
+      targetName: "Computer Science",
+    },
+    learningResourceType: quizTypeLabels[quizType],
+    timeRequired,
+    numberOfQuestions: questionCount,
+    author: {
+      "@type": "Organization",
+      name: author,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "CourseAI",
+      logo: {
+        "@type": "ImageObject",
+        url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/logo.png`,
+      },
+    },
+    url,
+    datePublished: datePublished || new Date().toISOString(),
+    dateModified: dateModified || new Date().toISOString(),
+    isAccessibleForFree: true,
+    educationalUse: "quiz",
+  }
+}
+
+/**
+ * Generates breadcrumb structured data
+ */
+export function generateBreadcrumbStructuredData(breadcrumbItems: { name: string; href: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.href,
+    })),
+  }
+}
+
+/**
+ * Generates FAQ structured data
+ */
+export function generateFAQStructuredData(faqs: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  }
+}
+
 export const defaultSEO = {
   title: "CourseAI: AI-Powered Coding Question Generator & Learning Platform",
   description:
@@ -40,124 +233,6 @@ export const defaultSEO = {
   ],
 }
 
-export function generatePageMetadata({
-  title,
-  description,
-  path,
-  keywords = [],
-  ogImage,
-  ogType = "website",
-  noIndex = false,
-  canonical,
-  alternateLanguages,
-  publishedTime,
-  modifiedTime,
-  authors,
-  twitterCard = "summary_large_image",
-  additionalMetaTags = [],
-}: SeoProps): Metadata {
-  const url = `${defaultSEO.baseUrl}${path}`
-  const canonicalUrl = canonical || url
-  const imageUrl = ogImage || `${defaultSEO.baseUrl}/og-image.jpg`
-
-  // Combine default keywords with page-specific keywords and remove duplicates
-  const combinedKeywords = [...new Set([...defaultSEO.keywords, ...keywords])]
-
-  // Default authors if not provided
-  const defaultAuthors = [
-    {
-      name: process.env.NEXT_PUBLIC_AUTHOR_NAME || "CourseAI Team",
-      url: process.env.NEXT_PUBLIC_AUTHOR_URL,
-    },
-  ]
-
-  const metadataAuthors = authors || defaultAuthors
-
-  // Build alternate languages object for metadata
-  const alternates: Record<string, any> = {
-    canonical: canonicalUrl,
-  }
-
-  if (alternateLanguages && Object.keys(alternateLanguages).length > 0) {
-    alternates.languages = alternateLanguages
-  }
-
-  // Build OpenGraph object
-  const openGraph = {
-    type: ogType,
-    locale: defaultSEO.locale,
-    url: canonicalUrl,
-    title,
-    description,
-    siteName: defaultSEO.siteName,
-    images: [
-      {
-        url: imageUrl,
-        width: 1200,
-        height: 630,
-        alt: title,
-      },
-    ],
-  }
-
-  // Add article-specific OpenGraph properties if applicable
-  if (ogType === "article" && (publishedTime || modifiedTime)) {
-    Object.assign(openGraph, {
-      publishedTime: publishedTime,
-      modifiedTime: modifiedTime || publishedTime,
-      authors: metadataAuthors.map((author) => author.name),
-    })
-  }
-
-  // Build Twitter object
-  const twitter = {
-    card: twitterCard,
-    title,
-    description,
-    creator: defaultSEO.twitterHandle,
-    images: [imageUrl],
-  }
-
-  // Build robots object
-  const robots = {
-    index: !noIndex,
-    follow: !noIndex,
-    googleBot: {
-      index: !noIndex,
-      follow: !noIndex,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  }
-
-  // Construct the final metadata object
-  const metadata: Metadata = {
-    title,
-    description,
-    keywords: combinedKeywords,
-    authors: metadataAuthors,
-    creator: process.env.NEXT_PUBLIC_CREATOR || "CourseAI",
-    openGraph,
-    twitter,
-    robots,
-    alternates,
-    metadataBase: new URL(defaultSEO.baseUrl),
-  }
-
-  // Add additional meta tags if provided
-  if (additionalMetaTags.length > 0) {
-    metadata.other = additionalMetaTags.reduce(
-      (acc, tag) => {
-        acc[tag.name] = tag.content
-        return acc
-      },
-      {} as Record<string, string>,
-    )
-  }
-
-  return metadata
-}
 
 // Helper function to generate structured data markup for pages
 export function generateStructuredData(type: string, data: any): string {
