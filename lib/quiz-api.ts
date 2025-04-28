@@ -115,6 +115,7 @@ class QuizApi {
         // Try to get more detailed error information
         try {
           const errorData = await response.json()
+          console.log("Error data from server:", errorData)
           throw new Error(errorData.error || `Failed to fetch quiz result: ${response.status}`)
         } catch (parseError) {
           throw new Error(`Failed to fetch quiz result: ${response.status} ${statusText}`)
@@ -123,11 +124,6 @@ class QuizApi {
 
       const result = await response.json()
 
-      // Validate the result
-      if (!result || !result.quizId || !Array.isArray(result.answers)) {
-        console.error("Invalid quiz result format received from API:", result)
-        throw new Error("Invalid quiz result format received from server")
-      }
 
       console.log("Successfully fetched quiz result from API:", result)
       return result

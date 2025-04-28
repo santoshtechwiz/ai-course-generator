@@ -1,19 +1,17 @@
 "use client"
 import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
-import { AlertCircle, RotateCcw } from "lucide-react"
+import { AlertCircle, RotateCcw, Loader2, Clock, CheckCircle } from "lucide-react"
 import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { quizService } from "@/lib/quiz-service"
 import { useAuth } from "@/providers/unified-auth-provider"
-import { useState, useEffect } from "react"
-import { GuestPrompt } from "../../components/GuestSignInPrompt"
+import { useState, useEffect, useRef } from "react"
+import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 import BlankQuizResults from "./BlankQuizResults"
 import FillInTheBlanksQuiz from "./FillInTheBlanksQuiz"
-
-
 
 interface BlankQuizWrapperProps {
   quizData: any
@@ -52,8 +50,8 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
         // Save current quiz state before redirecting
         quizService.savePendingQuizData()
 
-        // Handle auth redirect using the service method
-        quizService.handleAuthRedirect(redirectUrl)
+        // Handle auth redirect using the service method with force=true to bypass loop detection
+        quizService.handleAuthRedirect(redirectUrl, true)
       }}
     >
       <BlankQuizContent quizData={safeQuizData} slug={slug || "unknown"} />
@@ -64,11 +62,20 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
 // This component consumes the context
 function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   const router = useRouter()
-  const { state, submitAnswer, completeQuiz, restartQuiz, isAuthenticated, retryLoadingResults } = useQuiz()
+  const {
+    state,
+    submitAnswer,
+    completeQuiz,
+    restartQuiz,
+    isAuthenticated,
+    retryLoadingResults,
+    handleAuthenticationRequired,
+    fetchQuizResults,
+  } = useQuiz()
   const { isAuthenticated: authState, user } = useAuth()
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
-  const [loadingState, setLoadingState] = useState<"initial" | "processing" | "saving" | "none">("initial")
-  const [resultsShown, setResultsShown] = useState(false)
+  const [displayState, setDisplayState] = useState<
+    "quiz" | "results" | "auth" | "loading" | "checking" | "saving" | "preparing"
+  >("checking")
 
   const {
     quizId,
@@ -83,76 +90,142 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     animationState,
     isRefreshed,
     score,
+    authCheckComplete,
+    pendingAuthRequired,
+    savingResults,
+    resultsReady,
+    isLoadingResults,
+    requiresAuth,
+    hasGuestResult,
   } = state
 
   // Enhanced authentication check
   const userIsAuthenticated = authState || !!user || isAuthenticated
 
-  // Enhanced loading state management
+  // Check URL parameters for auth return
+  const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
+  const preparingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const processingAttempted = useRef(false)
+
   useEffect(() => {
-    if (isProcessingAuth) {
-      setLoadingState("processing")
-    } else if (isLoading) {
-      setLoadingState("initial")
-    } else if (animationState === "completing") {
-      setLoadingState("saving")
-    } else {
-      setLoadingState("none")
-    }
-  }, [isProcessingAuth, isLoading, animationState])
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromAuth = urlParams.get("fromAuth") === "true"
+      setIsReturningFromAuth(fromAuth)
 
-  // Check if we should show the auth prompt for non-authenticated users
+      // If returning from auth, try to process results immediately
+      if (fromAuth && !processingAttempted.current) {
+        processingAttempted.current = true
+        console.log("Detected return from auth, attempting to fetch results immediately")
+        fetchQuizResults().catch((err) => {
+          console.error("Error fetching results on auth return:", err)
+        })
+      }
+    }
+  }, [fetchQuizResults])
+
+  // Add a timeout to prevent getting stuck in the initialization phase
   useEffect(() => {
-    let timer: NodeJS.Timeout
+    // Force exit from checking state after 3 seconds if still stuck
+    if (displayState === "checking") {
+      const timeoutId = setTimeout(() => {
+        console.log("Forcing exit from checking state after timeout")
+        setDisplayState("quiz")
+      }, 3000)
 
-    // Check URL parameters for completed=true
-    const urlParams = new URLSearchParams(window.location.search)
-    const isCompletedFromUrl = urlParams.get("completed")?.toLowerCase() === "true"
-
-    // If URL has completed=true but user is not authenticated, show auth prompt after a delay
-    if (isCompletedFromUrl && !isAuthenticated && !isLoading && !isProcessingAuth ) {
-      // Add a delay before showing the auth prompt to ensure results are calculated
-      timer = setTimeout(() => {
-        console.log("URL has completed=true but user is not authenticated, showing auth prompt")
-        setShowAuthPrompt(true)
-      }, 2000) // Delay to ensure results are fully displayed first
-      return () => clearTimeout(timer)
+      return () => clearTimeout(timeoutId)
     }
 
-    // Only show auth prompt if:
-    // 1. User is not authenticated
-    // 2. Quiz is completed
-    // 3. We have valid results (answers exist and score > 0)
-    // 4. Not currently loading or processing
-    if (
-      !userIsAuthenticated &&
-      isCompleted &&
-      !isLoading &&
-      !isProcessingAuth &&
-      answers.filter((a) => a !== null).length > 0 &&
-      score > 0
-    ) {
-      // Add a delay before showing the auth prompt to ensure results are calculated
-      timer = setTimeout(() => {
-        console.log("User is not authenticated and quiz is completed, showing auth prompt")
-        setShowAuthPrompt(true)
-      }, 2000) // Longer delay to ensure results are fully displayed first
-    } else {
-      setShowAuthPrompt(false)
+    // Force exit from preparing state after 5 seconds if still stuck
+    if (displayState === "preparing") {
+      preparingTimeoutRef.current = setTimeout(() => {
+        console.log("Forcing exit from preparing state after timeout")
+        // Try to fetch results one more time
+        fetchQuizResults()
+          .catch(() => {
+            console.log("Final attempt to fetch results failed, proceeding to quiz")
+          })
+          .finally(() => {
+            // Move to results if completed, otherwise to quiz
+            if (isCompleted && (resultsReady || answers.some((a) => a !== null))) {
+              setDisplayState("results")
+            } else {
+              setDisplayState("quiz")
+            }
+          })
+      }, 5000)
+
+      return () => {
+        if (preparingTimeoutRef.current) {
+          clearTimeout(preparingTimeoutRef.current)
+        }
+      }
+    }
+  }, [displayState, isCompleted, resultsReady, answers, fetchQuizResults])
+
+  // Update display state based on all the available state information
+  useEffect(() => {
+    // Initial checking state
+    if (!authCheckComplete) {
+      console.log("Auth check not complete, waiting...")
+      // Only stay in checking state for a maximum of 2 seconds
+      const timeoutId = setTimeout(() => {
+        console.log("Auth check timeout, proceeding anyway")
+        setDisplayState("quiz")
+      }, 2000)
+
+      return () => clearTimeout(timeoutId)
     }
 
-    return () => clearTimeout(timer)
+    // Processing auth return
+    if (isProcessingAuth || isReturningFromAuth) {
+      console.log("Processing auth or returning from auth, setting state to preparing")
+      setDisplayState("preparing")
+      return
+    }
+
+    // Loading state
+    if (isLoading || isLoadingResults) {
+      setDisplayState("loading")
+      return
+    }
+
+    // Saving results
+    if (savingResults) {
+      setDisplayState("saving")
+      return
+    }
+
+    // Completed quiz states
+    if (isCompleted) {
+      // Auth required
+      if (requiresAuth && !userIsAuthenticated) {
+        setDisplayState("auth")
+        return
+      }
+
+      // Results ready
+      if (resultsReady || answers.some((a) => a !== null)) {
+        console.log("Results ready or answers found, showing results")
+        setDisplayState("results")
+        return
+      }
+    }
+
+    // Default to quiz
+    setDisplayState("quiz")
   }, [
-    authState,
-    user,
-    isAuthenticated,
-    isCompleted,
-    isLoading,
+    authCheckComplete,
     isProcessingAuth,
-    answers,
-    score,
-    showAuthPrompt,
+    isReturningFromAuth,
+    isLoading,
+    isLoadingResults,
+    savingResults,
+    isCompleted,
+    requiresAuth,
     userIsAuthenticated,
+    resultsReady,
+    answers,
   ])
 
   // Get current question data
@@ -191,8 +264,8 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     }
   }
 
-  // Loading and processing state with enhanced visuals
-  if (loadingState !== "none") {
+  // Show loading state during initial auth check
+  if (displayState === "checking") {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -208,19 +281,98 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
         </div>
 
         <div className="text-center">
-          <p className="text-lg font-medium mb-1">
-            {loadingState === "processing"
-              ? "Processing your results"
-              : loadingState === "saving"
-                ? "Saving your progress"
-                : "Loading quiz"}
-          </p>
+          <p className="text-lg font-medium mb-1">Initializing quiz...</p>
+          <p className="text-sm text-muted-foreground">Please wait while we prepare your quiz experience.</p>
+        </div>
+
+        {/* Skeleton loading UI for better visual feedback */}
+        <div className="w-full max-w-md mt-4">
+          <Skeleton className="h-8 w-3/4 mb-4" />
+          <Skeleton className="h-32 w-full mb-4" />
+          <div className="flex gap-2 mt-2">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Preparing results after authentication
+  if (displayState === "preparing") {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-[300px] gap-4 py-8"
+      >
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-2 w-2 rounded-full bg-primary"></div>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-lg font-medium mb-1">Preparing your results</p>
+          <p className="text-sm text-muted-foreground">We're retrieving your quiz results after sign-in...</p>
+        </div>
+
+        <div className="w-full max-w-md mt-4 bg-muted/50 rounded-lg p-4">
+          <div className="flex items-center space-x-2 text-sm">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <span>Authentication successful</span>
+          </div>
+          <div className="flex items-center space-x-2 text-sm mt-2">
+            <Clock className="h-4 w-4 text-amber-500 animate-pulse" />
+            <span>Processing quiz data...</span>
+          </div>
+
+          {/* Add a manual retry button that appears after 3 seconds */}
+          <div className="mt-4 text-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                fetchQuizResults().then(() => {
+                  if (isCompleted) {
+                    setDisplayState("results")
+                  } else {
+                    setDisplayState("quiz")
+                  }
+                })
+              }}
+              className="mt-2"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Retry Loading Results
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Loading and processing state with enhanced visuals
+  if (displayState === "loading") {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-[300px] gap-4 py-8"
+      >
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-2 w-2 rounded-full bg-primary"></div>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-lg font-medium mb-1">{isLoadingResults ? "Loading your results" : "Loading quiz"}</p>
           <p className="text-sm text-muted-foreground">
-            {loadingState === "processing"
-              ? "We're retrieving your quiz results..."
-              : loadingState === "saving"
-                ? "Saving your answers..."
-                : "Preparing your quiz experience..."}
+            {isLoadingResults ? "Retrieving your previous answers..." : "Preparing your quiz experience..."}
           </p>
         </div>
 
@@ -230,6 +382,41 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
           <Skeleton className="h-32 w-full mb-4" />
           <div className="flex gap-2 mt-2">
             <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Saving results state
+  if (displayState === "saving") {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-[300px] gap-4 py-8"
+      >
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-2 w-2 rounded-full bg-primary"></div>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-lg font-medium mb-1">Saving your results</p>
+          <p className="text-sm text-muted-foreground">Please wait while we save your quiz results...</p>
+        </div>
+
+        <div className="w-full max-w-md mt-4 bg-muted/50 rounded-lg p-4">
+          <div className="flex items-center space-x-2 text-sm">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <span>Quiz completed successfully</span>
+          </div>
+          <div className="flex items-center space-x-2 text-sm mt-2">
+            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            <span>Saving to your account...</span>
           </div>
         </div>
       </motion.div>
@@ -301,17 +488,23 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <AnimatePresence mode="wait">
-        {isCompleted && showAuthPrompt && !userIsAuthenticated ? (
+        {displayState === "auth" ? (
           <motion.div
             key="auth-prompt"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <GuestPrompt quizId={quizData?.id || "unknown"} forceShow={true} />
+            <GuestSignInPrompt
+              title="Sign in to view your results"
+              description="Your quiz has been completed! Sign in to view your detailed results and save your progress."
+              ctaText="Sign in to view results"
+              allowContinue={false}
+              onContinueAsGuest={() => setDisplayState("results")}
+            />
           </motion.div>
-        ) : isCompleted && (answers.filter((a) => a !== null).length > 0 || resultsShown) ? (
+        ) : displayState === "results" ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 20 }}
@@ -319,9 +512,6 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
             exit={{ opacity: 0, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="p-4 bg-card rounded-lg shadow-sm border"
-            onAnimationComplete={() => {
-              setResultsShown(true)
-            }}
           >
             <BlankQuizResults
               answers={answers.filter((a) => a !== null)}

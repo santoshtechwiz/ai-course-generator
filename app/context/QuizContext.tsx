@@ -31,6 +31,13 @@ interface QuizContextState {
   resultsReady: boolean
   quizData?: any
   isRefreshed: boolean
+  requiresAuth: boolean
+  hasGuestResult: boolean
+  // New state properties for better feedback
+  authCheckComplete: boolean
+  pendingAuthRequired: boolean
+  savingResults: boolean
+  resultLoadError: string | null
 }
 
 type QuizAction =
@@ -48,6 +55,13 @@ type QuizAction =
   | { type: "SET_PROCESSING_AUTH"; payload: boolean }
   | { type: "SET_QUIZ_DATA"; payload: any }
   | { type: "SET_REFRESHED"; payload: boolean }
+  | { type: "SET_REQUIRES_AUTH"; payload: boolean }
+  | { type: "SET_HAS_GUEST_RESULT"; payload: boolean }
+  // New actions for better state management
+  | { type: "SET_AUTH_CHECK_COMPLETE"; payload: boolean }
+  | { type: "SET_PENDING_AUTH_REQUIRED"; payload: boolean }
+  | { type: "SET_SAVING_RESULTS"; payload: boolean }
+  | { type: "SET_RESULT_LOAD_ERROR"; payload: string | null }
 
 interface QuizContextType {
   state: QuizContextState
@@ -67,6 +81,7 @@ interface QuizContextType {
    * Otherwise, defaults to internal signIn flow.
    */
   onAuthRequired?: (redirectUrl: string) => void
+  handleAuthenticationRequired: () => void
 }
 
 // -- Initial State --------------------------------------------
@@ -91,6 +106,13 @@ const initialState: QuizContextState = {
   isProcessingAuth: false,
   quizData: null,
   isRefreshed: false,
+  requiresAuth: false,
+  hasGuestResult: false,
+  // New state properties with initial values
+  authCheckComplete: false,
+  pendingAuthRequired: false,
+  savingResults: false,
+  resultLoadError: null,
 }
 
 // -- Reducer --------------------------------------------------
@@ -166,6 +188,8 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
         animationState: "idle",
         resultsReady: false,
         isRefreshed: false,
+        requiresAuth: false,
+        hasGuestResult: false,
       }
 
     case "SET_ANIMATION_STATE":
@@ -179,6 +203,26 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
 
     case "SET_REFRESHED":
       return { ...state, isRefreshed: action.payload }
+
+    case "SET_REQUIRES_AUTH":
+      return { ...state, requiresAuth: action.payload }
+
+    case "SET_HAS_GUEST_RESULT":
+      return { ...state, hasGuestResult: action.payload }
+
+    // ...existing cases...
+
+    case "SET_AUTH_CHECK_COMPLETE":
+      return { ...state, authCheckComplete: action.payload }
+
+    case "SET_PENDING_AUTH_REQUIRED":
+      return { ...state, pendingAuthRequired: action.payload }
+
+    case "SET_SAVING_RESULTS":
+      return { ...state, savingResults: action.payload }
+
+    case "SET_RESULT_LOAD_ERROR":
+      return { ...state, resultLoadError: action.payload }
 
     default:
       return state
@@ -198,6 +242,7 @@ interface QuizProviderProps {
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined)
 
+// Update QuizProvider to use useAuth instead of any useSession references
 export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, slug, onAuthRequired }) => {
   const [state, dispatch] = useReducer(quizReducer, {
     ...initialState,
@@ -212,7 +257,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     quizData: quizData,
   })
 
-  const { isAuthenticated, signIn } = useAuth()
+  const { signIn, isAuthenticated: authIsAuthenticated } = useAuth()
   const router = useRouter()
   const [startTime] = useState(Date.now())
   const initializationDone = useRef(false)
@@ -220,18 +265,80 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   const authProcessingDone = useRef(false)
   const resultsCheckDone = useRef(false)
   const refreshDetected = useRef(false)
+  const authCheckDone = useRef(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Helper function to clean up URL parameters
+  const cleanupUrlIfNeeded = useCallback(() => {
+    if (typeof window === "undefined") return
+
+    // Clean up all URL parameters if we have any
+    if (window.location.search && window.history && window.history.replaceState) {
+      // Remove all URL parameters for a cleaner experience
+      const url = new URL(window.location.href)
+      url.search = ""
+      window.history.replaceState({}, document.title, url.toString())
+      console.log("URL cleaned up - removed all parameters")
+    }
+  }, [])
+
+  // Handle authentication required
+  const handleAuthenticationRequired = useCallback(() => {
+    if (!onAuthRequired) {
+      console.log("No onAuthRequired handler provided")
+      // Fallback to direct sign-in if available
+      if (typeof signIn === "function") {
+        // Create redirect URL
+        const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
+
+        // Save current state before redirecting
+        quizService.savePendingQuizData()
+
+        // Call signIn directly
+        signIn("credentials", { callbackUrl: redirectUrl })
+        return
+      }
+
+      // If no signIn function is available, try using quizService with force=true
+      try {
+        const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
+        quizService.savePendingQuizData()
+        quizService.handleAuthRedirect(redirectUrl, true)
+        return
+      } catch (error) {
+        console.error("Error during fallback auth redirect:", error)
+      }
+
+      return
+    }
+
+    // Save current state before redirecting
+    quizService.savePendingQuizData()
+
+    // Create redirect URL
+    const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
+
+    // Call the provided auth handler
+    onAuthRequired(redirectUrl)
+  }, [onAuthRequired, state.quizType, state.slug, signIn])
 
   // Detect page refresh
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    // Check if this is a page refresh
-    const isRefresh = performance.navigation ? performance.navigation.type === 1 : false
+    // Check if this is a page refresh - use a more reliable method
+    const isRefresh =
+      window.performance &&
+      (window.performance.navigation?.type === 1 ||
+        window.performance.getEntriesByType("navigation").some((nav) => (nav as any).type === "reload"))
 
     if (isRefresh && !refreshDetected.current) {
       refreshDetected.current = true
       dispatch({ type: "SET_REFRESHED", payload: true })
       console.log("Page refresh detected")
+
+      // Clean up URL if needed on refresh
+      cleanupUrlIfNeeded()
     }
 
     // Add event listener for beforeunload to detect refresh
@@ -244,26 +351,175 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
 
     window.addEventListener("beforeunload", handleBeforeUnload)
+
+    // Proper cleanup function
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
+      // Additional cleanup if component unmounts
+      if (state.isCompleted && state.quizId) {
+        quizService.clearQuizState(state.quizId, state.quizType)
+      }
     }
-  }, [state.isCompleted, state.quizId, state.quizType])
+  }, [state.isCompleted, state.quizId, state.quizType, cleanupUrlIfNeeded])
 
-  // Check URL parameters for completed state
+  // Initial auth check effect - runs once on mount
+  useEffect(() => {
+    if (typeof window === "undefined" || authCheckDone.current) return
+
+    // Mark as done to prevent multiple runs
+    authCheckDone.current = true
+
+    // Always mark auth check as complete to avoid getting stuck
+    dispatch({ type: "SET_AUTH_CHECK_COMPLETE", payload: true })
+
+    // If we're authenticated, clean up the URL
+    if (authIsAuthenticated) {
+      cleanupUrlIfNeeded()
+
+      // Check if we need to process any pending data
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromAuth = urlParams.get("fromAuth") === "true"
+
+      if (fromAuth) {
+        console.log("Processing pending data after authentication")
+        quizService.processPendingQuizData().then(() => {
+          // Clean up URL after processing
+          cleanupUrlIfNeeded()
+        })
+      }
+    }
+
+    // Check if there's a guest result for this quiz
+    const hasGuestResult = !!quizService.getGuestResult(state.quizId)
+    dispatch({ type: "SET_HAS_GUEST_RESULT", payload: hasGuestResult })
+  }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId])
+
+  // Fetch quiz results using QuizService
+  const fetchQuizResults = useCallback(async () => {
+    if (!state.quizId || !state.slug) return false
+
+    dispatch({ type: "SET_LOADING_RESULTS", payload: true })
+    dispatch({ type: "SET_ERROR", payload: null })
+
+    try {
+      console.log("Fetching quiz results for:", state.quizId)
+
+      // Use QuizService to fetch results
+      const result = quizService.getQuizResult(state.quizId)
+
+      if (result && result.answers && result.answers.length > 0) {
+        console.log("Found quiz result in local storage:", result)
+
+        // Update state with the result
+        dispatch({
+          type: "COMPLETE_QUIZ",
+          payload: {
+            score: result.score,
+            answers: result.answers || [],
+          },
+        })
+
+        dispatch({ type: "SET_RESULTS_READY", payload: true })
+        dispatch({ type: "SET_LOADING_RESULTS", payload: false })
+        return true
+      }
+
+      // If authenticated, try to fetch from API
+      if (authIsAuthenticated) {
+        try {
+          console.log("User is authenticated, fetching results from API for:", state.quizId)
+          const apiResult = await quizApi.fetchQuizResult(state.quizId, state.slug)
+
+          if (apiResult && apiResult.answers && apiResult.answers.length > 0) {
+            console.log("Found results from API:", apiResult)
+
+            // Save the result to local storage for future use
+            quizService.saveQuizResult({
+              ...apiResult,
+              completedAt: apiResult.completedAt || new Date().toISOString(),
+            })
+
+            dispatch({
+              type: "COMPLETE_QUIZ",
+              payload: {
+                score: apiResult.score,
+                answers: apiResult.answers,
+              },
+            })
+
+            dispatch({ type: "SET_RESULTS_READY", payload: true })
+            dispatch({ type: "SET_LOADING_RESULTS", payload: false })
+            return true
+          } else {
+            console.log("No results found in API")
+            dispatch({ type: "SET_ERROR", payload: "No saved results found." })
+          }
+        } catch (apiError) {
+          console.error("Error fetching results from API:", apiError)
+          dispatch({ type: "SET_ERROR", payload: "Failed to fetch results from server." })
+        }
+      } else {
+        console.log("User is not authenticated, checking for guest results")
+        // For guest users, check guest results
+        const guestResult = quizService.getGuestResult(state.quizId)
+        if (guestResult && guestResult.answers && guestResult.answers.length > 0) {
+          console.log("Found guest result:", guestResult)
+
+          // Mark that we have a guest result
+          dispatch({ type: "SET_HAS_GUEST_RESULT", payload: true })
+
+          // For MCQ and blanks quizzes, require authentication to see results
+          if (state.quizType === "mcq" || state.quizType === "blanks") {
+            console.log("Authentication required to view results for this quiz type")
+            dispatch({ type: "SET_REQUIRES_AUTH", payload: true })
+            dispatch({ type: "SET_LOADING_RESULTS", payload: false })
+            return false
+          }
+
+          // For other quiz types, show guest results
+          dispatch({
+            type: "COMPLETE_QUIZ",
+            payload: {
+              score: guestResult.score,
+              answers: guestResult.answers,
+            },
+          })
+
+          dispatch({ type: "SET_RESULTS_READY", payload: true })
+          dispatch({ type: "SET_LOADING_RESULTS", payload: false })
+          return true
+        }
+      }
+
+      console.log("No saved results found")
+      dispatch({ type: "SET_LOADING_RESULTS", payload: false })
+      return false
+    } catch (error) {
+      console.error("Error fetching quiz results:", error)
+      dispatch({ type: "SET_ERROR", payload: "Failed to fetch quiz results. Please try again." })
+      dispatch({ type: "SET_LOADING_RESULTS", payload: false })
+      return false
+    }
+  }, [state.quizId, state.slug, state.quizType, authIsAuthenticated])
+
+  // Check storage for completed state
   useEffect(() => {
     if (typeof window === "undefined") return
 
+    const isCompletedInStorage =
+      localStorage.getItem(`quiz_${state.quizId}_completed`) === "true" ||
+      sessionStorage.getItem(`quiz_${state.quizId}_completed`) === "true"
+
     const urlParams = new URLSearchParams(window.location.search)
-    const isCompleted = urlParams.get("completed") === "true"
     const fromAuth = urlParams.get("fromAuth") === "true"
 
-    // If URL has completed=true, mark quiz as completed
-    if (isCompleted && !state.isCompleted && !resultsCheckDone.current) {
+    // If storage indicates completion, mark quiz as completed
+    if (isCompletedInStorage && !state.isCompleted && !resultsCheckDone.current) {
       resultsCheckDone.current = true
       dispatch({ type: "SET_LOADING", payload: true })
 
       // If returning from auth, process pending data
-      if (fromAuth && isAuthenticated && !authProcessingDone.current) {
+      if (fromAuth && authIsAuthenticated && !authProcessingDone.current) {
         authProcessingDone.current = true
         dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
 
@@ -283,25 +539,44 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
             }
             dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
             dispatch({ type: "SET_LOADING", payload: false })
+
+            // Clean up URL after processing
+            cleanupUrlIfNeeded()
           })
         })
       } else {
         // If not from auth, fetch results or mark as completed
         fetchQuizResults().then((success) => {
-          if (!success) {
-            dispatch({
-              type: "COMPLETE_QUIZ",
-              payload: {
-                score: state.score || 0,
-                answers: state.answers,
-              },
-            })
+          if (!success && !state.requiresAuth) {
+            // Only mark as completed if authenticated or we have guest results for non-restricted quiz types
+            if (
+              authIsAuthenticated ||
+              (quizService.getGuestResult(state.quizId) && state.quizType !== "mcq" && state.quizType !== "blanks")
+            ) {
+              dispatch({
+                type: "COMPLETE_QUIZ",
+                payload: {
+                  score: state.score || 0,
+                  answers: state.answers,
+                },
+              })
+            }
           }
           dispatch({ type: "SET_LOADING", payload: false })
         })
       }
     }
-  }, [isAuthenticated, state.quizId, state.isCompleted, state.answers, state.score, state.slug])
+  }, [
+    authIsAuthenticated,
+    state.quizId,
+    state.answers,
+    state.score,
+    state.slug,
+    state.quizType,
+    state.requiresAuth,
+    cleanupUrlIfNeeded,
+    fetchQuizResults,
+  ])
 
   // Initialize quiz state and handle refresh
   useEffect(() => {
@@ -311,35 +586,25 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
 
     if (!quizData?.questions?.length) {
       dispatch({ type: "SET_ERROR", payload: "No questions available." })
-      dispatch({ type: "SET_LOADING", payload: false })
+      dispatch({ type: "SET_LOADING", payload: false }) // Ensure loading is stopped
       initializationDone.current = true
       return
     }
 
-    // Check if this is a refresh and if we have a completed quiz
     const isQuizCompleted = quizService.isQuizCompleted(state.quizId)
 
     if (state.isRefreshed && isQuizCompleted) {
-      console.log("Refresh detected with completed quiz, loading results...")
-
-      // Try to fetch results immediately on refresh
       fetchQuizResults().then((success) => {
-        if (!success) {
-          console.log("Failed to load results, showing fresh quiz")
-          // If we can't load results, reset to fresh quiz
+        if (!success && !state.requiresAuth) {
           dispatch({ type: "RESET_QUIZ" })
         }
-        dispatch({ type: "SET_LOADING", payload: false })
+        dispatch({ type: "SET_LOADING", payload: false }) // Ensure loading is stopped
         initializationDone.current = true
       })
     } else if (state.isRefreshed) {
-      // Check if we have a saved state for this quiz
       const savedState = quizService.getQuizState(state.quizId, state.quizType)
 
       if (savedState && !savedState.isCompleted) {
-        console.log("Restoring in-progress quiz state:", savedState)
-
-        // Restore the saved state
         dispatch({
           type: "INITIALIZE_QUIZ",
           payload: {
@@ -350,32 +615,36 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
           },
         })
       } else {
-        // Check URL parameters for completed=true
-        const urlParams = new URLSearchParams(window.location.search)
-        const isCompleted = urlParams.get("completed") === "true"
+        const isCompletedInStorage =
+          localStorage.getItem(`quiz_${state.quizId}_completed`) === "true" ||
+          sessionStorage.getItem(`quiz_${state.quizId}_completed`) === "true"
 
-        if (isCompleted) {
-          // If URL has completed=true, try to fetch results
+        if (isCompletedInStorage) {
           fetchQuizResults()
         }
       }
     } else {
-      // Normal initialization (not a refresh)
-      // Check URL parameters
-      if (typeof window !== "undefined") {
-        const urlParams = new URLSearchParams(window.location.search)
-        const isCompleted = urlParams.get("completed") === "true"
+      const isCompletedInStorage =
+        localStorage.getItem(`quiz_${state.quizId}_completed`) === "true" ||
+        sessionStorage.getItem(`quiz_${state.quizId}_completed`) === "true"
 
-        if (isCompleted) {
-          // If URL has completed=true, try to fetch results
-          fetchQuizResults()
-        }
+      if (isCompletedInStorage) {
+        fetchQuizResults()
       }
     }
 
-    dispatch({ type: "SET_LOADING", payload: false })
+    dispatch({ type: "SET_LOADING", payload: false }) // Ensure loading is stopped
     initializationDone.current = true
-  }, [quizData, slug, state.isRefreshed, state.quizId, state.quizType, state.questionCount])
+  }, [
+    quizData,
+    slug,
+    state.isRefreshed,
+    state.quizId,
+    state.quizType,
+    state.questionCount,
+    state.requiresAuth,
+    fetchQuizResults,
+  ])
 
   // Calculate score
   const calculateScore = useCallback(
@@ -491,157 +760,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     ],
   )
 
-  // Fetch quiz results using QuizService
-  const fetchQuizResults = useCallback(async () => {
-    if (!state.quizId || !state.slug) return false
-
-    dispatch({ type: "SET_LOADING_RESULTS", payload: true })
-    dispatch({ type: "SET_ERROR", payload: null })
-
-    try {
-      console.log("Fetching quiz results for:", state.quizId)
-
-      // Use QuizService to fetch results
-      const result = quizService.getQuizResult(state.quizId)
-
-      if (result && result.answers && result.answers.length > 0) {
-        console.log("Found quiz result in local storage:", result)
-
-        // Update state with the result
-        dispatch({
-          type: "COMPLETE_QUIZ",
-          payload: {
-            score: result.score,
-            answers: result.answers || [],
-          },
-        })
-
-        dispatch({ type: "SET_RESULTS_READY", payload: true })
-        dispatch({ type: "SET_LOADING_RESULTS", payload: false })
-        return true
-      }
-
-      // If authenticated, try to fetch from API
-      if (isAuthenticated) {
-        try {
-          console.log("Fetching results from API for:", state.quizId)
-          const apiResult = await quizApi.fetchQuizResult(state.quizId, state.slug)
-
-          if (apiResult && apiResult.answers && apiResult.answers.length > 0) {
-            console.log("Found results from API:", apiResult)
-
-            // Save the result to local storage for future use
-            quizService.saveQuizResult({
-              ...apiResult,
-              completedAt: apiResult.completedAt || new Date().toISOString(),
-            })
-
-            dispatch({
-              type: "COMPLETE_QUIZ",
-              payload: {
-                score: apiResult.score,
-                answers: apiResult.answers,
-              },
-            })
-
-            dispatch({ type: "SET_RESULTS_READY", payload: true })
-            dispatch({ type: "SET_LOADING_RESULTS", payload: false })
-            return true
-          } else {
-            console.log("No results found in API")
-            dispatch({ type: "SET_ERROR", payload: "No saved results found." })
-          }
-        } catch (apiError) {
-          console.error("Error fetching results from API:", apiError)
-          dispatch({ type: "SET_ERROR", payload: "Failed to fetch results from server." })
-        }
-      } else {
-        // For guest users, check guest results
-        const guestResult = quizService.getGuestResult(state.quizId)
-        if (guestResult && guestResult.answers && guestResult.answers.length > 0) {
-          console.log("Found guest result:", guestResult)
-
-          dispatch({
-            type: "COMPLETE_QUIZ",
-            payload: {
-              score: guestResult.score,
-              answers: guestResult.answers,
-            },
-          })
-
-          dispatch({ type: "SET_RESULTS_READY", payload: true })
-          dispatch({ type: "SET_LOADING_RESULTS", payload: false })
-          return true
-        }
-      }
-
-      console.log("No saved results found")
-      dispatch({ type: "SET_LOADING_RESULTS", payload: false })
-      return false
-    } catch (error) {
-      console.error("Error fetching quiz results:", error)
-      dispatch({ type: "SET_ERROR", payload: "Failed to fetch quiz results. Please try again." })
-      dispatch({ type: "SET_LOADING_RESULTS", payload: false })
-      return false
-    }
-  }, [state.quizId, state.slug, isAuthenticated])
-
-  // Add a new effect to handle the completed URL parameter more consistently
-  useEffect(() => {
-    if (typeof window === "undefined") return
-
-    // Only run this once
-    const urlParams = new URLSearchParams(window.location.search)
-    const isCompleted = urlParams.get("completed") === "true"
-
-    if (isCompleted && !state.isCompleted && !state.isLoading) {
-      // Set a loading state to prevent flicker
-      dispatch({ type: "SET_LOADING", payload: true })
-
-      // Attempt to fetch results with a small delay to ensure auth state is ready
-      setTimeout(() => {
-        fetchQuizResults().then((success) => {
-          if (!success && isAuthenticated) {
-            // If authenticated but no results, try API again
-            console.log("Retrying API fetch after delay...")
-            quizApi
-              .fetchQuizResult(state.quizId, state.slug)
-              .then((apiResult) => {
-                if (apiResult && apiResult.answers && apiResult.answers.length > 0) {
-                  dispatch({
-                    type: "COMPLETE_QUIZ",
-                    payload: {
-                      score: apiResult.score,
-                      answers: apiResult.answers,
-                    },
-                  })
-                  quizService.saveQuizResult({
-                    ...apiResult,
-                    completedAt: apiResult.completedAt || new Date().toISOString(),
-                  })
-                } else {
-                  // If still no results, just mark as completed with empty state
-                  dispatch({
-                    type: "COMPLETE_QUIZ",
-                    payload: {
-                      score: 0,
-                      answers: [],
-                    },
-                  })
-                }
-                dispatch({ type: "SET_LOADING", payload: false })
-              })
-              .catch(() => {
-                dispatch({ type: "SET_LOADING", payload: false })
-              })
-          } else {
-            dispatch({ type: "SET_LOADING", payload: false })
-          }
-        })
-      }, 500)
-    }
-  }, [state.isCompleted, state.isLoading, state.quizId, state.slug, fetchQuizResults, isAuthenticated])
-
   // Retry loading results
   const retryLoadingResults = useCallback(async () => {
     dispatch({ type: "SET_ERROR", payload: null })
@@ -649,90 +767,143 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   }, [fetchQuizResults])
 
   // Complete quiz
-  const completeQuiz = useCallback(
+  const handleCompleteQuiz = useCallback(
     (finalAnswers: (QuizAnswer | null)[], finalScore?: number) => {
       // Prevent multiple completions
       if (completionInProgress.current || state.isCompleted) return
       completionInProgress.current = true
 
-      dispatch({ type: "SET_ANIMATION_STATE", payload: "completing" })
-      const score = finalScore !== undefined ? finalScore : calculateScore(finalAnswers)
-      const filled = [...finalAnswers]
-      while (filled.length < state.questionCount) filled.push(null)
+      // Create a local reference to track the timeout
+      let animationTimeout: NodeJS.Timeout | null = null
+      let authRedirectTimeout: NodeJS.Timeout | null = null
 
-      setTimeout(() => {
-        dispatch({ type: "COMPLETE_QUIZ", payload: { score, answers: filled } })
-        dispatch({ type: "SET_ANIMATION_STATE", payload: "showing-results" })
+      try {
+        dispatch({ type: "SET_ANIMATION_STATE", payload: "completing" })
+        const score = finalScore !== undefined ? finalScore : calculateScore(finalAnswers)
+        const filled = [...finalAnswers]
+        while (filled.length < state.questionCount) filled.push(null)
 
-        // Save the result using QuizService
-        const validAnswers = filled.filter((a) => a !== null) as QuizAnswer[]
+        animationTimeout = setTimeout(() => {
+          try {
+            dispatch({ type: "COMPLETE_QUIZ", payload: { score, answers: filled } })
+            dispatch({ type: "SET_ANIMATION_STATE", payload: "showing-results" })
 
-        // Create submission object
-        const submission = {
-          quizId: state.quizId,
-          slug: state.slug,
-          type: state.quizType,
-          score,
-          answers: validAnswers,
-          totalTime: (Date.now() - startTime) / 1000,
-          totalQuestions: state.questionCount,
-        }
+            // Save the result using QuizService
+            const validAnswers = filled.filter((a) => a !== null) as QuizAnswer[]
 
-        // Submit to server if authenticated, otherwise save locally
-        if (isAuthenticated) {
-          quizService
-            .submitQuizResult(submission)
-            .then(() => {
-              toast({
-                title: "Quiz completed!",
-                description: "Your results have been saved.",
+            // Create submission object
+            const submission = {
+              quizId: state.quizId,
+              slug: state.slug,
+              type: state.quizType,
+              score,
+              answers: validAnswers,
+              totalTime: (Date.now() - startTime) / 1000,
+              totalQuestions: state.questionCount,
+            }
+
+            // Submit to server if authenticated, otherwise save locally
+            if (authIsAuthenticated) {
+              dispatch({ type: "SET_SAVING_RESULTS", payload: true })
+
+              quizService
+                .submitQuizResult(submission)
+                .then(() => {
+                  toast({
+                    title: "Quiz completed!",
+                    description: "Your results have been saved.",
+                  })
+
+                  // Clear in-progress state but keep the result
+                  quizService.clearQuizState(state.quizId, state.quizType)
+                  dispatch({ type: "SET_SAVING_RESULTS", payload: false })
+                })
+                .catch((error) => {
+                  console.error("Error submitting quiz result:", error)
+                  toast({
+                    title: "Error saving results",
+                    description: "There was a problem saving your results. Please try again.",
+                    variant: "destructive",
+                  })
+                  dispatch({ type: "SET_SAVING_RESULTS", payload: false })
+                })
+                .finally(() => {
+                  // Always reset the completion flag when the promise resolves or rejects
+                  completionInProgress.current = false
+                })
+            } else {
+              // Save locally for guest users
+              quizService.saveQuizResult({
+                ...submission,
+                completedAt: new Date().toISOString(),
               })
 
-              // Clear in-progress state but keep the result
-              quizService.clearQuizState(state.quizId, state.quizType)
-            })
-            .catch((error) => {
-              console.error("Error submitting quiz result:", error)
-              toast({
-                title: "Error saving results",
-                description: "There was a problem saving your results. Please try again.",
-                variant: "destructive",
+              // Also save as guest result
+              quizService.saveGuestResult({
+                ...submission,
+                completedAt: new Date().toISOString(),
               })
+
+              // Mark that we have a guest result
+              dispatch({ type: "SET_HAS_GUEST_RESULT", payload: true })
+
+              // For MCQ and blanks quizzes, require authentication to see results
+              if (state.quizType === "mcq" || state.quizType === "blanks") {
+                dispatch({ type: "SET_REQUIRES_AUTH", payload: true })
+                dispatch({ type: "SET_PENDING_AUTH_REQUIRED", payload: true })
+
+                // Prompt to sign in if onAuthRequired is provided
+                if (onAuthRequired) {
+                  authRedirectTimeout = setTimeout(() => {
+                    const redirectUrl = `/dashboard/${state.quizType}/${state.slug}`
+                    onAuthRequired(redirectUrl)
+                  }, 1500)
+                }
+              }
+
+              // Reset the completion flag for guest users
+              completionInProgress.current = false
+            }
+
+            // Mark quiz as completed in storage instead of URL
+            if (typeof window !== "undefined") {
+              localStorage.setItem(`quiz_${state.quizId}_completed`, "true")
+              sessionStorage.setItem(`quiz_${state.quizId}_completed`, "true")
+            }
+          } catch (innerError) {
+            console.error("Error in quiz completion process:", innerError)
+            // Reset the completion flag on error
+            completionInProgress.current = false
+
+            // Show error toast
+            toast({
+              title: "Error completing quiz",
+              description: "There was a problem completing your quiz. Please try again.",
+              variant: "destructive",
             })
-        } else {
-          // Save locally for guest users
-          quizService.saveQuizResult({
-            ...submission,
-            completedAt: new Date().toISOString(),
-          })
-
-          // Also save as guest result
-          quizService.saveGuestResult({
-            ...submission,
-            completedAt: new Date().toISOString(),
-          })
-
-          // Prompt to sign in if onAuthRequired is provided
-          if (onAuthRequired) {
-            setTimeout(() => {
-              const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
-              onAuthRequired(redirectUrl)
-            }, 1500)
           }
-        }
-
-        // Update URL to include completed=true
-        if (typeof window !== "undefined") {
-          const url = new URL(window.location.href)
-          url.searchParams.set("completed", "true")
-          window.history.replaceState({}, document.title, url.toString())
-        }
-
-        // Reset the completion flag
+        }, 800)
+      } catch (outerError) {
+        console.error("Error initiating quiz completion:", outerError)
+        // Reset the completion flag on error
         completionInProgress.current = false
-      }, 800)
+
+        // Show error toast
+        toast({
+          title: "Error completing quiz",
+          description: "There was a problem completing your quiz. Please try again.",
+          variant: "destructive",
+        })
+      }
+
+      // Return a cleanup function that can be called if the component unmounts
+      return () => {
+        if (animationTimeout) clearTimeout(animationTimeout)
+        if (authRedirectTimeout) clearTimeout(authRedirectTimeout)
+        completionInProgress.current = false
+      }
     },
-    [state, startTime, isAuthenticated, onAuthRequired, calculateScore],
+    [state, startTime, authIsAuthenticated, onAuthRequired, calculateScore],
   )
 
   // Clear quiz data using QuizService
@@ -745,28 +916,26 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       // Use QuizService to clean up in-progress state
       // but keep the result for future reference
       quizService.clearQuizState(state.quizId, state.quizType)
-
-      // If authenticated, also clear on server
-     
     } catch (error) {
       console.error("Error clearing quiz data:", error)
     }
-  }, [state.quizId, state.quizType, state.slug, isAuthenticated])
+  }, [state.quizId, state.quizType])
 
   const restartQuiz = useCallback(() => {
     // First clean up all quiz data
     clearQuizData()
 
-    // Update URL to remove completed parameter
+    // Clear completion state from storage
     if (typeof window !== "undefined") {
-      const url = new URL(window.location.href)
-      url.searchParams.delete("completed")
-      url.searchParams.delete("fromAuth")
-      window.history.replaceState({}, document.title, url.toString())
+      localStorage.removeItem(`quiz_${state.quizId}_completed`)
+      sessionStorage.removeItem(`quiz_${state.quizId}_completed`)
+
+      // Clean up URL if needed
+      cleanupUrlIfNeeded()
     }
 
     dispatch({ type: "RESET_QUIZ" })
-  }, [clearQuizData])
+  }, [clearQuizData, state.quizId, cleanupUrlIfNeeded])
 
   const getTimeSpentOnCurrentQuestion = useCallback(
     () => state.timeSpentPerQuestion[state.currentQuestionIndex] || 0,
@@ -783,7 +952,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     const fromAuth = urlParams.get("fromAuth") === "true"
 
     // If returning from auth, process once and clean up
-    if (isCompleted && fromAuth && !authProcessingDone.current && isAuthenticated) {
+    if (fromAuth && !authProcessingDone.current && authIsAuthenticated) {
       authProcessingDone.current = true
       dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
       dispatch({ type: "SET_LOADING", payload: true })
@@ -794,7 +963,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       quizService.processPendingQuizData().then(() => {
         // Fetch quiz results
         fetchQuizResults().then((success) => {
-          if (!success) {
+          if (!success && !state.requiresAuth) {
             console.log("No quiz result found, using current state")
             // If no result found, use current state
             dispatch({
@@ -807,22 +976,23 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
           }
 
           // Clean up URL parameters to prevent redirect loops
-          if (window.history && window.history.replaceState) {
-            const url = new URL(window.location.href)
-            url.searchParams.delete("fromAuth")
-            url.searchParams.delete("auth")
-            url.searchParams.delete("session")
-            // Keep only completed=true
-            url.searchParams.set("completed", "true")
-            window.history.replaceState({}, document.title, url.toString())
-          }
+          cleanupUrlIfNeeded()
 
           dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
           dispatch({ type: "SET_LOADING", payload: false })
         })
       })
     }
-  }, [isAuthenticated, state.quizId, state.slug, state.isCompleted, state.answers, state.score, fetchQuizResults])
+  }, [
+    authIsAuthenticated,
+    state.quizId,
+    state.slug,
+    state.answers,
+    state.score,
+    state.requiresAuth,
+    fetchQuizResults,
+    cleanupUrlIfNeeded,
+  ])
 
   // Add a cleanup effect when the component unmounts
   useEffect(() => {
@@ -835,21 +1005,82 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
   }, [state.isCompleted, state.quizId, state.quizType])
 
+  // Remove the isAuthenticated function entirely and just use authIsAuthenticated directly
+  // This removes an unnecessary layer of indirection
+
+  // Fetch quiz results using QuizService - with improved error handling and state
+  // Removed duplicate declaration of fetchQuizResults
+
+  // Complete quiz with improved state management
+
+  // Initial auth check effect - runs once on mount with improved flow
+  useEffect(() => {
+    if (typeof window === "undefined" || authCheckDone.current) return
+
+    // Mark as done to prevent multiple runs
+    authCheckDone.current = true
+
+    // Always mark auth check as complete to avoid getting stuck
+    dispatch({ type: "SET_AUTH_CHECK_COMPLETE", payload: true })
+
+    // If we're authenticated, clean up the URL
+    if (authIsAuthenticated) {
+      cleanupUrlIfNeeded()
+
+      // Check if we need to process any pending data
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromAuth = urlParams.get("fromAuth") === "true"
+
+      if (fromAuth) {
+        console.log("Processing pending data after authentication")
+        dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
+
+        quizService.processPendingQuizData().then(() => {
+          // Clean up URL after processing
+          cleanupUrlIfNeeded()
+          dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
+        })
+      }
+    }
+
+    // Check if there's a guest result for this quiz
+    const hasGuestResult = !!quizService.getGuestResult(state.quizId)
+    dispatch({ type: "SET_HAS_GUEST_RESULT", payload: hasGuestResult })
+
+    // Mark auth check as complete to avoid flashing
+    dispatch({ type: "SET_AUTH_CHECK_COMPLETE", payload: true })
+  }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId])
+
+  // Add a safety timeout to ensure initialization completes
+  useEffect(() => {
+    // Safety timeout to ensure we don't get stuck in loading state
+    const safetyTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log("Safety timeout triggered - forcing loading to complete")
+        dispatch({ type: "SET_LOADING", payload: false })
+        dispatch({ type: "SET_AUTH_CHECK_COMPLETE", payload: true })
+      }
+    }, 5000)
+
+    return () => clearTimeout(safetyTimeout)
+  }, [isLoading])
+
   return (
     <QuizContext.Provider
       value={{
         state,
-        isAuthenticated,
+        isAuthenticated: authIsAuthenticated,
         nextQuestion,
         prevQuestion,
         submitAnswer,
-        completeQuiz,
+        completeQuiz: handleCompleteQuiz,
         restartQuiz,
         getTimeSpentOnCurrentQuestion,
         fetchQuizResults,
         clearQuizData,
         retryLoadingResults,
         onAuthRequired,
+        handleAuthenticationRequired,
       }}
     >
       {children}
@@ -862,4 +1093,3 @@ export const useQuiz = (): QuizContextType => {
   if (!context) throw new Error("useQuiz must be used within a QuizProvider")
   return context
 }
-
