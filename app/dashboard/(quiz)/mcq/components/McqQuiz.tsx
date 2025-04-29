@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
-import { cn, formatQuizTime } from "@/lib/utils"
+import {  formatQuizTime } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { useQuiz } from "@/app/context/QuizContext"
 import type { Question } from "./types"
+import { cn } from "@/lib/tailwindUtils"
 
 interface McqQuizProps {
   question: Question

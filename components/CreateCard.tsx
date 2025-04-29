@@ -6,8 +6,9 @@ import Link from "next/link"
 import { Sparkles, Rocket, Brain, PlusCircle, ArrowRight, Zap, Lightbulb } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+
 import { useTheme } from "next-themes"
+import { cn } from "@/lib/tailwindUtils"
 
 interface CreateCardProps {
   compact?: boolean

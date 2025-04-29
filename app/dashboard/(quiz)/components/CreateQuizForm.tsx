@@ -24,7 +24,7 @@ import { ConfirmDialog } from "./ConfirmDialog"
 import { quizSchema } from "@/schema/schema"
 import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"

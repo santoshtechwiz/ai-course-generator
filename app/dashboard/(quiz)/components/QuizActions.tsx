@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import { Eye, EyeOff, Star, Trash2, Settings, Share2 } from "lucide-react"
 import {
   AlertDialog,

@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { BookIcon, UsersIcon, FileQuestionIcon, StarIcon, EyeIcon, Clock, BookOpen, Loader2 } from "lucide-react"
 import { Code, Globe, Database, Cloud, Paintbrush, Smartphone, Shield, Brain } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import { motion } from "framer-motion"
 
 export interface CourseCardProps {

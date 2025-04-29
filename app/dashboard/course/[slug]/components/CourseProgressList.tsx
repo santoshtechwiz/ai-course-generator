@@ -3,7 +3,7 @@ import Image from "next/image"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Clock, Book, ArrowRight } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import type { CourseProgress as CourseProgressType } from "@/app/types/types"
 
 interface CourseProgressListProps {

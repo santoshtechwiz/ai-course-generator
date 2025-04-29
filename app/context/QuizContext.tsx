@@ -4,11 +4,11 @@ import type React from "react"
 import { createContext, useContext, useReducer, useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/unified-auth-provider"
-import { quizService,  type QuizAnswer } from "@/lib/quiz-service"
+import { quizService, type QuizAnswer } from "@/lib/quiz-service"
 import { quizApi } from "@/lib/quiz-api"
 import { quizUtils } from "@/lib/quiz-utils"
 import { toast } from "@/hooks/use-toast"
-import { QuizType } from "../types/quiz-types"
+import type { QuizType } from "../types/quiz-types"
 
 // -- Context State & Actions ----------------------------------
 interface QuizContextState {
@@ -63,6 +63,7 @@ type QuizAction =
   | { type: "SET_PENDING_AUTH_REQUIRED"; payload: boolean }
   | { type: "SET_SAVING_RESULTS"; payload: boolean }
   | { type: "SET_RESULT_LOAD_ERROR"; payload: string | null }
+  | { type: "CLEAR_GUEST_RESULTS" }
 
 interface QuizContextType {
   state: QuizContextState
@@ -83,6 +84,7 @@ interface QuizContextType {
    */
   onAuthRequired?: (redirectUrl: string) => void
   handleAuthenticationRequired: () => void
+  clearGuestResults: () => void
 }
 
 // -- Initial State --------------------------------------------
@@ -211,8 +213,6 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
     case "SET_HAS_GUEST_RESULT":
       return { ...state, hasGuestResult: action.payload }
 
-    // ...existing cases...
-
     case "SET_AUTH_CHECK_COMPLETE":
       return { ...state, authCheckComplete: action.payload }
 
@@ -225,6 +225,19 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
     case "SET_RESULT_LOAD_ERROR":
       return { ...state, resultLoadError: action.payload }
 
+    case "CLEAR_GUEST_RESULTS":
+      return {
+        ...initialState,
+        quizId: state.quizId,
+        slug: state.slug,
+        quizType: state.quizType,
+        questionCount: state.questionCount,
+        quizData: state.quizData,
+        authCheckComplete: true,
+        answers: new Array(state.questionCount).fill(null),
+        timeSpentPerQuestion: new Array(state.questionCount).fill(0),
+      }
+
     default:
       return state
   }
@@ -235,7 +248,7 @@ interface QuizProviderProps {
   children: React.ReactNode
   quizData: any
   slug: string
-  quizType:QuizType
+  quizType: QuizType
   /**
    * Optional callback invoked instead of default signIn when auth is required.
    */
@@ -245,7 +258,7 @@ interface QuizProviderProps {
 const QuizContext = createContext<QuizContextType | undefined>(undefined)
 
 // Update QuizProvider to use useAuth instead of any useSession references
-export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, slug,quizType, onAuthRequired }) => {
+export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, slug, quizType, onAuthRequired }) => {
   const [state, dispatch] = useReducer(quizReducer, {
     ...initialState,
     quizId: quizData?.id || "",
@@ -270,6 +283,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   const authCheckDone = useRef(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Declare the missing variables
+  let animationTimeout: NodeJS.Timeout
+  let authRedirectTimeout: NodeJS.Timeout
+
   // Helper function to clean up URL parameters
   const cleanupUrlIfNeeded = useCallback(() => {
     if (typeof window === "undefined") return
@@ -284,45 +301,95 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
   }, [])
 
-  // Update the handleAuthenticationRequired method to use the correct quiz type
+  // Add a clearGuestResults function to clear guest results
+  const clearGuestResultsAction = useCallback(() => {
+    // Clear any guest results for this quiz
+    if (state.quizId) {
+      quizService.clearGuestResult(state.quizId)
+    }
+
+    // Reset the quiz state
+    dispatch({ type: "CLEAR_GUEST_RESULTS" })
+
+    console.log("Cleared guest results and reset quiz state")
+  }, [state.quizId])
+
+  // Fix the handleAuthenticationRequired method to properly save state before redirecting
   const handleAuthenticationRequired = useCallback(() => {
-    if (!onAuthRequired) {
-      console.log("No onAuthRequired handler provided")
-      // Fallback to direct sign-in if available
-      if (typeof signIn === "function") {
-        // Create redirect URL with the correct quiz type
-        const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
+    console.log("handleAuthenticationRequired called")
 
-        // Save current state before redirecting
-        quizService.savePendingQuizData()
-
-        // Call signIn directly
-        signIn("credentials", { callbackUrl: redirectUrl })
-        return
-      }
-
-      // If no signIn function is available, try using quizService with force=true
-      try {
-        const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
-        quizService.savePendingQuizData()
-        quizService.handleAuthRedirect(redirectUrl, true)
-        return
-      } catch (error) {
-        console.error("Error during fallback auth redirect:", error)
-      }
-
+    // If user is already authenticated, don't redirect to sign-in
+    if (authIsAuthenticated) {
+      console.log("User is already authenticated, no need to redirect to sign-in")
       return
     }
 
-    // Save current state before redirecting
-    quizService.savePendingQuizData()
+    // Check if we're already in an auth flow to prevent loops
+    const isInAuthFlow = quizService.isInAuthFlow()
+    console.log("isInAuthFlow:", isInAuthFlow)
+
+    if (isInAuthFlow) {
+      console.log("Already in auth flow, preventing potential redirect loop")
+      toast({
+        title: "Authentication in progress",
+        description: "Please complete the sign-in process or refresh the page to try again.",
+        variant: "default",
+      })
+      return
+    }
 
     // Create redirect URL with the correct quiz type
     const redirectUrl = `/dashboard/${state.quizType}/${state.slug}?completed=true`
+    console.log("Created redirectUrl:", redirectUrl)
 
-    // Call the provided auth handler
-    onAuthRequired(redirectUrl)
-  }, [onAuthRequired, state.quizType, state.slug, signIn])
+    try {
+      // Save current state before redirecting - do this first
+      console.log("Saving pending quiz data")
+      quizService.savePendingQuizData()
+
+      // Set auth flow state to prevent loops - ALWAYS call this before any auth action
+      console.log("Saving auth redirect to:", redirectUrl)
+      quizService.saveAuthRedirect(redirectUrl)
+
+      if (!onAuthRequired) {
+        console.log("No onAuthRequired handler provided, using fallback")
+        // Fallback to direct sign-in if available
+        if (typeof signIn === "function") {
+          // Call signIn directly
+          console.log("Calling signIn with redirectUrl:", redirectUrl)
+          signIn("credentials", { callbackUrl: redirectUrl })
+          return
+        }
+
+        // If no signIn function is available, try using quizService with force=true
+        try {
+          console.log("Using quizService.handleAuthRedirect as fallback")
+          quizService.handleAuthRedirect(redirectUrl, true) // Changed to true to bypass loop detection
+          return
+        } catch (error) {
+          console.error("Error during fallback auth redirect:", error)
+          toast({
+            title: "Authentication error",
+            description: "There was a problem signing you in. Please try again.",
+            variant: "destructive",
+          })
+        }
+
+        return
+      }
+
+      // Call the provided auth handler
+      console.log("Calling provided onAuthRequired with redirectUrl:", redirectUrl)
+      onAuthRequired(redirectUrl)
+    } catch (error) {
+      console.error("Error in handleAuthenticationRequired:", error)
+      toast({
+        title: "Authentication error",
+        description: "There was a problem with the authentication process. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }, [onAuthRequired, state.quizType, state.slug, signIn, state, authIsAuthenticated])
 
   // Detect page refresh
   useEffect(() => {
@@ -368,32 +435,73 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   useEffect(() => {
     if (typeof window === "undefined" || authCheckDone.current) return
 
-    // Mark as done to prevent multiple runs
-    authCheckDone.current = true
+    let isMounted = true
+    const performAuthCheck = async () => {
+      try {
+        // Always mark auth check as complete to avoid getting stuck
+        if (isMounted) {
+          dispatch({ type: "SET_AUTH_CHECK_COMPLETE", payload: true })
+        }
 
-    // Always mark auth check as complete to avoid getting stuck
-    dispatch({ type: "SET_AUTH_CHECK_COMPLETE", payload: true })
+        // Force a fresh check of authentication status
+        const isCurrentlyAuthenticated = quizService.isAuthenticated()
 
-    // If we're authenticated, clean up the URL
-    if (authIsAuthenticated) {
-      cleanupUrlIfNeeded()
-
-      // Check if we need to process any pending data
-      const urlParams = new URLSearchParams(window.location.search)
-      const fromAuth = urlParams.get("fromAuth") === "true"
-
-      if (fromAuth) {
-        console.log("Processing pending data after authentication")
-        quizService.processPendingQuizData().then(() => {
-          // Clean up URL after processing
-          cleanupUrlIfNeeded()
+        console.log("Auth check result:", {
+          authIsAuthenticated,
+          serviceCheck: isCurrentlyAuthenticated,
         })
+
+        // If we're authenticated, clean up the URL
+        if (authIsAuthenticated) {
+          cleanupUrlIfNeeded()
+
+          // Check if we need to process any pending data
+          const urlParams = new URLSearchParams(window.location.search)
+          const fromAuth = urlParams.get("fromAuth") === "true"
+
+          if (fromAuth) {
+            console.log("Processing pending data after authentication")
+            dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
+
+            try {
+              await quizService.processPendingQuizData()
+              // Clean up URL after processing
+              cleanupUrlIfNeeded()
+            } catch (error) {
+              console.error("Error processing pending data:", error)
+              toast({
+                title: "Error processing data",
+                description: "There was a problem loading your quiz data. Please try again.",
+                variant: "destructive",
+              })
+            } finally {
+              if (isMounted) {
+                dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
+              }
+            }
+          }
+        } else if (!authIsAuthenticated && isCurrentlyAuthenticated) {
+          // There's a mismatch between auth states - clear any stale data
+          console.warn("Auth state mismatch detected, clearing stale data")
+          quizService.clearAuthFlow()
+        }
+
+        // Check if there's a guest result for this quiz
+        const hasGuestResult = !!quizService.getGuestResult(state.quizId)
+        if (isMounted) {
+          dispatch({ type: "SET_HAS_GUEST_RESULT", payload: hasGuestResult })
+        }
+      } finally {
+        // Mark as done to prevent multiple runs
+        authCheckDone.current = true
       }
     }
 
-    // Check if there's a guest result for this quiz
-    const hasGuestResult = !!quizService.getGuestResult(state.quizId)
-    dispatch({ type: "SET_HAS_GUEST_RESULT", payload: hasGuestResult })
+    performAuthCheck()
+
+    return () => {
+      isMounted = false
+    }
   }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId])
 
   // Fetch quiz results using QuizService
@@ -440,6 +548,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
               ...apiResult,
               completedAt: apiResult.completedAt || new Date().toISOString(),
             })
+
+            // Clear guest result after successful fetch for authenticated users
+            quizService.clearGuestResult(state.quizId)
+            quizService.clearQuizState(state.quizId, state.quizType)
 
             dispatch({
               type: "COMPLETE_QUIZ",
@@ -524,6 +636,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       if (fromAuth && authIsAuthenticated && !authProcessingDone.current) {
         authProcessingDone.current = true
         dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
+        dispatch({ type: "SET_LOADING", payload: true })
 
         // Process pending data first
         quizService
@@ -801,7 +914,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     await fetchQuizResults()
   }, [fetchQuizResults])
 
-  // Complete quiz
+  // Fix the completeQuiz function to properly save guest results
   const handleCompleteQuiz = useCallback(
     (finalAnswers: (QuizAnswer | null)[], finalScore?: number) => {
       // Prevent multiple completions
@@ -810,12 +923,31 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         return
       }
 
+      // Validate input parameters
+      if (!finalAnswers || !Array.isArray(finalAnswers)) {
+        console.error("[QuizContext] Invalid finalAnswers provided:", finalAnswers)
+        toast({
+          title: "Error completing quiz",
+          description: "Invalid quiz data. Please try again.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Check if we have any non-null answers
+      const validAnswerCount = finalAnswers.filter((a) => a !== null).length
+      if (validAnswerCount === 0) {
+        console.error("[QuizContext] No valid answers to submit")
+        toast({
+          title: "Cannot complete quiz",
+          description: "No answers were provided. Please answer at least one question.",
+          variant: "destructive",
+        })
+        return
+      }
+
       completionInProgress.current = true
       console.log("[QuizContext] Starting quiz completion process")
-
-      // Create a local reference to track the timeout
-      let animationTimeout: NodeJS.Timeout | null = null
-      let authRedirectTimeout: NodeJS.Timeout | null = null
 
       try {
         dispatch({ type: "SET_ANIMATION_STATE", payload: "completing" })
@@ -836,13 +968,25 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
 
             // Create submission object
             const submission = {
-              quizId: state.quizId,
-              slug: state.slug,
+              quizId: state.quizId || "",
+              slug: state.slug || "",
               type: state.quizType,
               score,
               answers: validAnswers,
               totalTime: (Date.now() - startTime) / 1000,
               totalQuestions: state.questionCount,
+            }
+
+            // Validate submission before proceeding
+            if (!submission.quizId || !submission.slug || !submission.answers || !submission.answers.length) {
+              console.error("[QuizContext] Invalid submission data:", submission)
+              toast({
+                title: "Error completing quiz",
+                description: "Missing required quiz data. Please try again or contact support.",
+                variant: "destructive",
+              })
+              completionInProgress.current = false
+              return
             }
 
             // Submit to server if authenticated, otherwise save locally
@@ -855,6 +999,8 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
               // Use a local flag to track if this specific save operation is still relevant
               let isSaving = true
 
+              console.log("[QuizContext] User is authenticated, submitting quiz result to server")
+              // Make sure we're actually calling submitQuizResult for authenticated users
               quizService
                 .submitQuizResult(submission)
                 .then(() => {
@@ -911,7 +1057,8 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
               dispatch({ type: "SET_HAS_GUEST_RESULT", payload: true })
 
               // For MCQ and blanks quizzes, require authentication to see results
-              if (state.quizType === "mcq" || state.quizType === "blanks") {
+              // BUT ONLY if the user is not already authenticated
+              if ((state.quizType === "mcq" || state.quizType === "blanks") && !authIsAuthenticated) {
                 dispatch({ type: "SET_REQUIRES_AUTH", payload: true })
                 dispatch({ type: "SET_PENDING_AUTH_REQUIRED", payload: true })
 
@@ -922,6 +1069,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
                     onAuthRequired(redirectUrl)
                   }, 1500)
                 }
+              } else {
+                // User is already authenticated or this is a quiz type that doesn't require auth
+                // Mark results as ready to view immediately
+                dispatch({ type: "SET_RESULTS_READY", payload: true })
               }
 
               // Reset the completion flag for guest users
@@ -1079,56 +1230,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
   }, [state.isCompleted, state.quizId, state.quizType])
 
-  // Remove the isAuthenticated function entirely and just use authIsAuthenticated directly
-  // This removes an unnecessary layer of indirection
-
-  // Fetch quiz results using QuizService - with improved error handling and state
-  // Removed duplicate declaration of fetchQuizResults
-
-  // Complete quiz with improved state management
-
-  // Initial auth check effect - runs once on mount with improved flow
-  useEffect(() => {
-    if (typeof window === "undefined" || authCheckDone.current) return
-
-    // Mark as done to prevent multiple runs
-    authCheckDone.current = true
-
-    // Always mark auth check as complete to avoid getting stuck
-    dispatch({ type: "SET_AUTH_CHECK_COMPLETE", payload: true })
-
-    // If we're authenticated, clean up the URL
-    if (authIsAuthenticated) {
-      cleanupUrlIfNeeded()
-
-      // Check if we need to process any pending data
-      const urlParams = new URLSearchParams(window.location.search)
-      const fromAuth = urlParams.get("fromAuth") === "true"
-
-      if (fromAuth) {
-        console.log("Processing pending data after authentication")
-        dispatch({ type: "SET_PROCESSING_AUTH", payload: true })
-
-        // Use Promise to handle async operations
-        quizService
-          .processPendingQuizData()
-          .then(() => {
-            // Clean up URL after processing
-            cleanupUrlIfNeeded()
-            dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
-          })
-          .catch((error) => {
-            console.error("Error processing pending data:", error)
-            dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
-          })
-      }
-    }
-
-    // Check if there's a guest result for this quiz
-    const hasGuestResult = !!quizService.getGuestResult(state.quizId)
-    dispatch({ type: "SET_HAS_GUEST_RESULT", payload: hasGuestResult })
-  }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId])
-
   // Add a safety timeout to ensure initialization completes
   useEffect(() => {
     // Safety timeout to ensure we don't get stuck in loading state
@@ -1152,6 +1253,13 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       timeoutId = setTimeout(() => {
         console.log("[QuizContext] Auth processing timeout reached, forcing state update")
         dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
+
+        // Provide feedback to user
+        toast({
+          title: "Processing timed out",
+          description: "It's taking longer than expected to load your quiz data. Please refresh the page to try again.",
+          variant: "destructive",
+        })
       }, 12000) // 12 second timeout (slightly longer than component timeouts)
     }
 
@@ -1159,6 +1267,8 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       if (timeoutId) clearTimeout(timeoutId)
     }
   }, [state.isProcessingAuth])
+
+  // Add a clearGuestResults function to clear guest results
 
   return (
     <QuizContext.Provider
@@ -1176,6 +1286,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         retryLoadingResults,
         onAuthRequired,
         handleAuthenticationRequired,
+        clearGuestResults: clearGuestResultsAction,
       }}
     >
       {children}

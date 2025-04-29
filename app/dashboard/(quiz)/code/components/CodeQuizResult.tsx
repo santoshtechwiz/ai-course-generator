@@ -70,27 +70,23 @@ export default function CodeQuizResult({ title, onRestart, quizId, questions, an
   const hasSavedRef = useRef(false)
 
   useEffect(() => {
-    if (session?.user && quizId_ && !hasSavedRef.current.current) {
-      hasSavedRef.current.current = true
+    if (session?.user && quizId_ && !hasSavedRef.current) {
+      hasSavedRef.current = true;
 
-      // Use a small timeout to ensure we don't block rendering
       setTimeout(() => {
-        // Save to server if authenticated
         quizService.saveCompleteQuizResult({
           quizId: quizId_,
           slug: state.slug,
           type: "code",
           score: scorePercentage,
           answers: quizAnswers.filter((a) => a !== null),
-          totalTime: totalTime,
-          totalQuestions: totalQuestions,
-        })
+          totalTime,
+          totalQuestions,
+        });
 
-        // Clear all storage after saving to database
-        quizService.clearAllStorage()
-      }, 100)
+        quizService.clearAllStorage();
+      }, 100);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, quizId_, state.slug, quizAnswers, scorePercentage, totalTime, totalQuestions])
 
   return (

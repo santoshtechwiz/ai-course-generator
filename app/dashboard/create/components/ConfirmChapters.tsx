@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DragDropContext } from "react-beautiful-dnd"
 import type { Course, CourseUnit, Chapter } from "@prisma/client"
 import VideoPlayer from "./VideoPlayer"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import UnitCard from "./UnitCard"
 import { useCourseEditor } from "../hooks/useCourseEditor"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"

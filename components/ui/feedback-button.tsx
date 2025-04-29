@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 
 import { Loader2, CheckCircle, XCircle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 
 export type FeedbackState = "idle" | "loading" | "success" | "error"
 

@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { cn, formatQuizTime } from "@/lib/utils"
+import {  formatQuizTime } from "@/lib/utils"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+import { cn } from "@/lib/tailwindUtils"
 
 interface McqQuizResultProps {
   title?: string
