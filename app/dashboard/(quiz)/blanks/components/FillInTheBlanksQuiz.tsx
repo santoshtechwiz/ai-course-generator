@@ -21,7 +21,7 @@ import {
   AlertCircle,
   Brain,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import { useQuiz } from "@/app/context/QuizContext"
 import { useState, useRef, useMemo, useEffect, useCallback } from "react"
 

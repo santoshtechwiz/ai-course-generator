@@ -69,12 +69,24 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
     // Determine if the selected option is correct
     const isCorrect = selectedOption === question.answer
 
+    // Check if this is the last question
+    const isLastQuestion = questionNumber === totalQuestions
+
     // Submit the answer
     setTimeout(() => {
+      if (isLastQuestion) {
+        // Ensure authentication is required for restricted quiz types
+        if (!isAuthenticated && (question.quizType === "mcq" || question.quizType === "blanks")) {
+          console.log("Authentication required to complete the quiz.")
+          // Trigger authentication flow here (e.g., redirect to sign-in page)
+          return
+        }
+      }
+
       onAnswer(selectedOption, elapsedTime, isCorrect)
       setIsSubmitting(false)
     }, 300) // Small delay for better UX
-  }, [selectedOption, question, onAnswer, elapsedTime, isSubmitting])
+  }, [selectedOption, question, questionNumber, totalQuestions, onAnswer, elapsedTime, isSubmitting, isAuthenticated])
 
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null

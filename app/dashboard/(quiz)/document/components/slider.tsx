@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 
 export interface SliderProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, "defaultValue"> {
   defaultValue?: number[]

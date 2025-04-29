@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { FeedbackButton } from "@/components/ui/feedback-button"

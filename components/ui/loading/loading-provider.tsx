@@ -4,7 +4,7 @@ import type React from "react"
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 
 interface LoadingContextType {
   isLoading: boolean

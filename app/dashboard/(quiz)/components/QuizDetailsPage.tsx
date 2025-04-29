@@ -29,7 +29,7 @@ import { ShareButton } from "@/components/ShareButton"
 import { Breadcrumb } from "../../../../components/breadcrumb"
 import { RandomQuiz } from "./RandomQuiz"
 import RandomQuote from "@/components/RandomQuote"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import QuizActions from "./QuizActions"
 
 interface QuizDetailsPageProps {

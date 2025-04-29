@@ -4,31 +4,37 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { LogIn, ArrowRight, Shield, Clock, Save } from "lucide-react"
+import { LogIn, ArrowLeft, Shield, Clock, Save } from "lucide-react"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { quizService } from "@/lib/quiz-service"
 
-interface AuthPromptProps {
-  quizId?: string
-  forceShow?: boolean
-  onContinueWithoutAccount?: () => void
-  onSignInClick?: () => void
-  allowContinue?: boolean
+interface GuestSignInPromptProps {
   title?: string
   description?: string
   ctaText?: string
+  allowContinue?: boolean
+  onContinueAsGuest?: () => void
+  onSignIn: () => void
+  onClearData?: () => void
+  showClearDataButton?: boolean
+  forceShow?: boolean
+  quizId?: string
+  redirectUrl?: string
 }
 
 export function GuestSignInPrompt({
-  quizId,
+  title = "Sign in to continue",
+  description = "Sign in to save your progress and access all features.",
+  ctaText = "Sign in to continue",
+  allowContinue = false,
+  onContinueAsGuest,
+  onSignIn,
+  onClearData,
+  showClearDataButton = false,
   forceShow = false,
-  onContinueWithoutAccount,
-  onSignInClick,
-  allowContinue = true,
-  title = "Save your progress",
-  description = "Sign in to save your quiz progress and access your results anytime.",
-  ctaText = "Sign in",
-}: AuthPromptProps) {
+  quizId,
+  redirectUrl,
+}: GuestSignInPromptProps) {
   const { isAuthenticated, user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -38,32 +44,49 @@ export function GuestSignInPrompt({
   }
 
   const handleSignIn = () => {
-    if (onSignInClick) {
-      onSignInClick()
-      return
-    }
-
+    // Prevent multiple clicks
+    if (isLoading) return
     setIsLoading(true)
 
-    // Default behavior if no custom handler
     try {
-      // Create redirect URL
-      const redirectUrl = quizId ? `/dashboard/quiz/${quizId}?fromAuth=true` : "/dashboard"
-
-      // Save current state before redirecting
+      // Always save current state before redirecting
       quizService.savePendingQuizData()
 
+      // If a redirectUrl is provided, save it for auth redirect
+      if (redirectUrl) {
+        quizService.saveAuthRedirect(redirectUrl)
+      }
+
+      // Call the provided onSignIn handler
+      if (onSignIn) {
+        onSignIn()
+        return
+      }
+
+      // Default behavior if no custom handler
+      // Create redirect URL if not provided
+      const actualRedirectUrl = redirectUrl || (quizId ? `/dashboard/quiz/${quizId}?fromAuth=true` : "/dashboard")
+
+      // Save auth redirect if not already saved
+      if (!redirectUrl) {
+        quizService.saveAuthRedirect(actualRedirectUrl)
+      }
+
       // Handle auth redirect
-      quizService.handleAuthRedirect(redirectUrl, true)
+      quizService.handleAuthRedirect(actualRedirectUrl, true)
     } catch (error) {
       console.error("Error during sign in:", error)
       setIsLoading(false)
     }
   }
 
-  const handleContinueWithoutAccount = () => {
-    if (onContinueWithoutAccount) {
-      onContinueWithoutAccount()
+  const handleGoBack = () => {
+    // Reset loading state if it was set
+    setIsLoading(false)
+
+    // Call the provided handler
+    if (onContinueAsGuest) {
+      onContinueAsGuest()
     }
   }
 
@@ -122,16 +145,39 @@ export function GuestSignInPrompt({
             )}
           </Button>
 
-          {allowContinue && (
-            <Button variant="outline" onClick={handleContinueWithoutAccount} className="w-full" disabled={isLoading}>
+          {allowContinue && onContinueAsGuest && (
+            <Button
+              variant="outline"
+              onClick={handleGoBack}
+              className="w-full"
+              disabled={isLoading}
+              data-testid="continue-as-guest"
+            >
               <span className="flex items-center gap-2">
-                <ArrowRight className="h-4 w-4" />
-                Continue without account
+                <ArrowLeft className="h-4 w-4" />
+                Go Back
               </span>
             </Button>
           )}
         </CardFooter>
       </Card>
+      {(process.env.NODE_ENV !== "production" || showClearDataButton) && (
+        <div className="mt-4 border-t pt-4">
+          <p className="text-sm text-muted-foreground mb-2">Testing Tools</p>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onClearData || (() => quizService.clearAllQuizData())}
+            className="w-full"
+            data-testid="clear-data"
+          >
+            Clear All Storage Data
+          </Button>
+          <p className="text-xs text-muted-foreground mt-1">
+            This will clear all local storage, session storage, and cookies, then reload the page.
+          </p>
+        </div>
+      )}
     </motion.div>
   )
 }

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 
 interface ShimmerProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string

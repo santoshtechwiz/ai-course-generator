@@ -1,12 +1,10 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { useRef } from "react"
-
-import { AlertCircle, Loader2, CheckCircle, Clock, RotateCcw } from "lucide-react"
+import { useRef, useEffect, useState, memo } from "react"
+import { AlertCircle, Loader2, CheckCircle, Clock, RotateCcw, LogIn } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { memo, useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import McqQuiz from "./McqQuiz"
@@ -16,6 +14,7 @@ import { quizService } from "@/lib/quiz-service"
 import type { Question } from "./types"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+import { toast } from "@/hooks/use-toast"
 
 interface McqQuizContentProps {
   quizData: {
@@ -41,6 +40,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
     isAuthenticated,
     handleAuthenticationRequired,
     fetchQuizResults,
+    clearGuestResults, // Add this
   } = useQuiz()
   const router = useRouter()
   const { isAuthenticated: authState, user } = useAuth()
@@ -73,6 +73,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
   const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
   const preparingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const processingAttempted = useRef(false)
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -84,9 +85,46 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
       if (fromAuth && !processingAttempted.current) {
         processingAttempted.current = true
         console.log("Detected return from auth, attempting to fetch results immediately")
-        fetchQuizResults().catch((err) => {
-          console.error("Error fetching results on auth return:", err)
-        })
+
+        // Set a timeout to handle cases where processing takes too long
+        authTimeoutRef.current = setTimeout(() => {
+          toast({
+            title: "Authentication timed out",
+            description: "The authentication process took too long. Please try again.",
+            variant: "destructive",
+          })
+          // Clear processing state
+          setIsReturningFromAuth(false)
+        }, 15000) // 15 second timeout
+
+        // Process pending data first, then fetch results
+        quizService
+          .processPendingQuizData()
+          .then(() => {
+            // Clear the timeout since processing completed
+            if (authTimeoutRef.current) {
+              clearTimeout(authTimeoutRef.current)
+              authTimeoutRef.current = null
+            }
+
+            // Now fetch quiz results
+            return fetchQuizResults()
+          })
+          .catch((err) => {
+            console.error("Error processing auth data or fetching results:", err)
+            toast({
+              title: "Error loading results",
+              description: "There was a problem loading your quiz results. Please try again.",
+              variant: "destructive",
+            })
+          })
+      }
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current)
       }
     }
   }, [fetchQuizResults])
@@ -165,8 +203,15 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
 
     // Completed quiz states
     if (isCompleted) {
-      // Auth required
-      if (requiresAuth && !userIsAuthenticated) {
+      // If user is authenticated, always show results
+      if (userIsAuthenticated) {
+        console.log("User is authenticated, showing results directly")
+        setDisplayState("results")
+        return
+      }
+
+      // Auth required for non-authenticated users
+      if (requiresAuth) {
         setDisplayState("auth")
         return
       }
@@ -265,6 +310,55 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
         completeQuiz(updatedAnswers.filter((a) => a !== null))
       }, 1000) // Slightly reduced delay for better UX
     }
+  }
+
+  const handleGoBack = () => {
+    console.log("User clicked Go Back, showing results without authentication")
+
+    // Always clear guest results first
+    if (typeof clearGuestResults === "function") {
+      clearGuestResults()
+    }
+
+    // Always restart the quiz to reset state
+    if (typeof restartQuiz === "function") {
+      restartQuiz()
+    }
+
+    // IMPORTANT: Set display state to results - this allows viewing results without authentication
+    setDisplayState("results")
+
+    // Prevent any potential redirects
+    setTimeout(() => {
+      if (displayState !== "results") {
+        console.log("Forcing display state to results")
+        setDisplayState("results")
+      }
+    }, 100)
+
+    // Show a toast notification
+    toast({
+      title: "Viewing results as guest",
+      description: "Your progress won't be saved. Sign in to save your results.",
+      variant: "default",
+    })
+  }
+
+  // Handle authentication required
+  const handleSignIn = () => {
+    console.log("User clicked Sign In, initiating authentication flow")
+
+    // Create the redirect URL
+    const redirectUrl = `/dashboard/mcq/${slug}?fromAuth=true`
+
+    // Save current quiz state before redirecting
+    quizService.savePendingQuizData()
+
+    // Save auth redirect info
+    quizService.saveAuthRedirect(redirectUrl)
+
+    // Call the authentication handler
+    handleAuthenticationRequired()
   }
 
   // Show loading state during initial auth check
@@ -393,7 +487,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
               </div>
             </div>
           </motion.div>
-        ) : displayState === "auth" ? (
+        ) : displayState === "auth" && !userIsAuthenticated ? (
           <motion.div
             key="auth-prompt"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -405,11 +499,20 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
               title="Sign in to view your results"
               description="Your quiz has been completed! Sign in to view your detailed results and save your progress."
               ctaText="Sign in to view results"
-              allowContinue={false}
-              onContinueAsGuest={() => setDisplayState("results")}
+              allowContinue={true}
+              onContinueAsGuest={handleGoBack} // Use the handleGoBack function here
+              onSignIn={handleSignIn} // Use the handleSignIn function here
+              onClearData={() => {
+                // Only available in development mode
+                if (process.env.NODE_ENV !== "production") {
+                  quizService.clearAllStorageData()
+                  window.location.reload()
+                }
+              }}
+              showClearDataButton={process.env.NODE_ENV !== "production"}
             />
           </motion.div>
-        ) : displayState === "results" ? (
+        ) : displayState === "results" || (displayState === "auth" && userIsAuthenticated) ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 20 }}
@@ -417,6 +520,28 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
             exit={{ opacity: 0, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
+            {!userIsAuthenticated && (
+              <div className="mb-4 p-4 border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-amber-800 dark:text-amber-300">Guest Mode</h3>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                      You're viewing results as a guest. Your progress won't be saved.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 bg-white dark:bg-transparent border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                      onClick={handleSignIn}
+                    >
+                      <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                      Sign in to save results
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             <McqQuizResult
               title={quizData?.title || "Quiz"}
               onRestart={restartQuiz}
@@ -471,6 +596,36 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
   const validQuizId = quizData?.id && quizData.id !== "unknown" ? quizData.id : null
   const validSlug = slug && slug !== "unknown" ? slug : null
 
+  // Skip initialization delay in test environment
+  useEffect(() => {
+    // Prevent double initialization
+    if (hasInitialized.current) return
+    hasInitialized.current = true
+
+    // Skip delay in test environment
+    if (process.env.NODE_ENV === "test") {
+      setIsInitializing(false)
+      return
+    }
+
+    // Short delay to allow state to initialize
+    const timer = setTimeout(() => {
+      setIsInitializing(false)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Check for redirect loops
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Check if we're in a redirect loop
+      if (quizService.isInRedirectLoop()) {
+        console.log("Detected redirect loop, breaking the cycle")
+        quizService.clearAuthFlow()
+      }
+    }
+  }, [])
+
   // Log quiz data for debugging
   useEffect(() => {
     console.log("McqQuizWrapper initialized with:", {
@@ -479,18 +634,6 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
       hasQuestions: questions?.length > 0,
     })
   }, [validQuizId, validSlug, questions])
-
-  useEffect(() => {
-    // Prevent double initialization
-    if (hasInitialized.current) return
-    hasInitialized.current = true
-
-    // Short delay to allow state to initialize
-    const timer = setTimeout(() => {
-      setIsInitializing(false)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [])
 
   // Show loading state during initialization
   if (isInitializing) {
@@ -565,11 +708,22 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
           return
         }
 
-        // Save auth redirect info
-        quizService.saveAuthRedirect(redirectUrl)
+        // Check if already in auth flow to prevent loops
+        if (quizService.isInAuthFlow()) {
+          console.log("Already in auth flow, preventing potential redirect loop")
+          toast({
+            title: "Authentication in progress",
+            description: "Please complete the sign-in process or refresh the page to try again.",
+            variant: "default",
+          })
+          return
+        }
 
         // Save current quiz state before redirecting
         quizService.savePendingQuizData()
+
+        // Save auth redirect info
+        quizService.saveAuthRedirect(redirectUrl)
 
         // Handle auth redirect using the service method with force=true to bypass loop detection
         quizService.handleAuthRedirect(redirectUrl, true)

@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge"
 
 import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 import { usePersistentState } from "@/hooks/usePersistentState"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import { codeQuizSchema } from "@/schema/schema"
 
 import type { z } from "zod"

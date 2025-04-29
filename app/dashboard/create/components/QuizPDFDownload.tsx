@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import ConfigurableQuizPDF from "./ConfigurableQuizPDF"
 import { Download, FileText, Lock } from "lucide-react"
 import { useSubscriptionStore } from "@/app/store/subscriptionStore"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface QuizPDFDownloadProps extends QuizPDFProps {

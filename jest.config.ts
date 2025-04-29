@@ -11,7 +11,7 @@ const config: Config = {
   coverageProvider: "v8",
   testEnvironment: "jest-environment-jsdom",
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/app/$1", // Correctly map '@/' to the 'app' directory
+    "^@/(.*)$": "<rootDir>/$1", // Map '@/' to the root directory, not just app directory
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   testPathIgnorePatterns: ["/node_modules/", "/.next/"],

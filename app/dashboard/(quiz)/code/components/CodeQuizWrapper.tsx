@@ -170,55 +170,43 @@ function CodeQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
 
   // Update display state based on all the available state information
   useEffect(() => {
-    // Initial checking state
     if (!authCheckComplete) {
-      console.log("Auth check not complete, waiting...")
-      // Only stay in checking state for a maximum of 2 seconds
       const timeoutId = setTimeout(() => {
-        console.log("Auth check timeout, proceeding anyway")
-        setDisplayState("quiz")
-      }, 2000)
+        console.warn("Auth check timeout, proceeding to quiz");
+        setDisplayState("quiz");
+      }, 2000);
 
-      return () => clearTimeout(timeoutId)
+      return () => clearTimeout(timeoutId);
     }
 
-    // Processing auth return
     if (isProcessingAuth || isReturningFromAuth) {
-      console.log("Processing auth or returning from auth, setting state to preparing")
-      setDisplayState("preparing")
-      return
+      setDisplayState("preparing");
+      return;
     }
 
-    // Loading state
     if (isLoading || isLoadingResults) {
-      setDisplayState("loading")
-      return
+      setDisplayState("loading");
+      return;
     }
 
-    // Saving results
     if (savingResults) {
-      setDisplayState("saving")
-      return
+      setDisplayState("saving");
+      return;
     }
 
-    // Completed quiz states
     if (isCompleted) {
-      // Auth required
       if (requiresAuth && !userIsAuthenticated) {
-        setDisplayState("auth")
+        setDisplayState("auth") // Show auth prompt if authentication is required
         return
       }
 
-      // Results ready
       if (resultsReady || answers.some((a) => a !== null)) {
-        console.log("Results ready or answers found, showing results")
         setDisplayState("results")
         return
       }
     }
 
-    // Default to quiz
-    setDisplayState("quiz")
+    setDisplayState("quiz");
   }, [
     authCheckComplete,
     isProcessingAuth,

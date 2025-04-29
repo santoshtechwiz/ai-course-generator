@@ -20,7 +20,7 @@ import {
   Facebook,
   Linkedin,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import { useCourseActions } from "@/hooks/useCourseActions"
 import { useScrollDirection } from "@/hooks/use-scroll-direction"
 import {

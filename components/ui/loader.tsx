@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 
 type LoaderSize = "sm" | "md" | "lg" | "xl"
 type LoaderVariant = "spinner" | "dots" | "pulse" | "skeleton"

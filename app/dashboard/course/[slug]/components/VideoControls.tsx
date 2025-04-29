@@ -16,7 +16,7 @@ import {
   Settings,
   Bookmark,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 
 // Simple menu component to replace DropdownMenu
 const SimpleMenu = ({

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/tailwindUtils"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { motion } from "framer-motion"
 
