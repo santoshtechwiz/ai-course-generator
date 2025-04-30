@@ -1,52 +1,16 @@
-import { QuizType } from "@/app/types/quiz-types"
+// Import the shared types from quiz-types.ts
+import {
+  QuizType,
+  type QuizAnswer,
+  type QuizResult,
+  type QuizSubmission,
+  type StoredQuizState,
+} from "@/app/types/quiz-types"
 import { toast } from "@/hooks/use-toast"
-
-
-
-export interface QuizAnswer {
-  answer: string
-  timeSpent: number
-  isCorrect?: boolean
-  similarity?: number
-  hintsUsed?: boolean
-}
-
-export interface QuizState {
-  quizId: string
-  type: QuizType
-  slug: string
-  currentQuestion: number
-  totalQuestions: number
-  startTime: number
-  isCompleted: boolean
-  answers?: QuizAnswer[]
-  timeSpentPerQuestion?: number[]
-}
-
-export interface QuizResult {
-  quizId: string
-  slug: string
-  type: QuizType
-  score: number
-  answers: QuizAnswer[]
-  totalTime: number
-  totalQuestions: number
-  completedAt?: string
-}
-
-export interface QuizSubmission {
-  quizId: string
-  slug: string
-  answers: QuizAnswer[]
-  totalTime: number
-  score: number
-  type: QuizType
-  totalQuestions: number
-}
 
 // Storage keys
 const STORAGE_KEYS = {
-  STATE: (quizId: string, type: QuizType) => `quiz_state_${type}_${quizId}`,
+  STATE: (quizId: string, type: QuizType | string) => `quiz_state_${type}_${quizId}`,
   RESULT: (quizId: string) => `quiz_result_${quizId}`,
   COMPLETED: (quizId: string) => `quiz_${quizId}_completed`,
   SAVED: (quizId: string) => `quiz_${quizId}_saved`,
@@ -61,7 +25,9 @@ const STORAGE_KEYS = {
 }
 
 // Make storage keys accessible externally
-const get = {
+const get: {
+  STORAGE_KEYS: () => typeof STORAGE_KEYS
+} = {
   STORAGE_KEYS() {
     return STORAGE_KEYS
   },
@@ -180,7 +146,7 @@ class QuizService {
   /**
    * Get quiz state from storage
    */
-  getQuizState(quizId: string, type: QuizType): QuizState | null {
+  getQuizState(quizId: string, type: QuizType | string): StoredQuizState | null {
     if (typeof window === "undefined") return null
 
     try {
@@ -217,7 +183,7 @@ class QuizService {
   /**
    * Save quiz state to storage
    */
-  saveQuizState(state: QuizState): void {
+  saveQuizState(state: StoredQuizState): void {
     if (typeof window === "undefined") return
 
     try {
@@ -238,7 +204,7 @@ class QuizService {
   /**
    * Clear quiz state from storage
    */
-  clearQuizState(quizId: string, type: QuizType): void {
+  clearQuizState(quizId: string, type: QuizType | string): void {
     if (typeof window === "undefined") return
 
     try {
@@ -255,13 +221,7 @@ class QuizService {
         }
       }
 
-      // Don't clear completion marker or result
-      // localStorage.removeItem(STORAGE_KEYS.COMPLETED(quizId))
-      // localStorage.removeItem(STORAGE_KEYS.SAVED(quizId))
-      // localStorage.removeItem(STORAGE_KEYS.RESULT(quizId))
-
-      // Don't clear from cache either
-      // this.resultCache.delete(quizId)
+      console.log(`Quiz state cleared for quiz ${quizId} of type ${type}`)
     } catch (error) {
       console.error("Error clearing quiz state:", error)
     }
@@ -600,8 +560,8 @@ class QuizService {
 
       console.log("[QuizService] Sending API request to save quiz result:", payload)
 
-      // Send to server
-      const response = await fetch(`/api/quiz/${submission.slug}/complete`, {
+      // Send to server - IMPORTANT: Use quizId instead of slug in the API endpoint
+      const response = await fetch(`/api/quiz/${submission.quizId}/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -729,21 +689,25 @@ class QuizService {
   /**
    * Calculate score for a quiz based on answers
    */
-  calculateScore(answers: QuizAnswer[], type: QuizType): number {
+  calculateScore(answers: QuizAnswer[], type: QuizType | string): number {
     if (!answers || answers.length === 0) return 0
 
     switch (type) {
+      case QuizType.MCQ:
       case "mcq":
+      case QuizType.CODE:
       case "code":
         // Count correct answers
         const correctCount = answers.filter((a) => a.isCorrect).length
         return Math.round((correctCount / answers.length) * 100)
 
+      case QuizType.BLANKS:
       case "blanks":
         // Average similarity scores with threshold of 80%
         const blanksSimilarity = answers.reduce((sum, a) => sum + (a.similarity || 0), 0)
         return Math.round(blanksSimilarity / answers.length)
 
+      case QuizType.OPENENDED:
       case "openended":
         // Average similarity scores with threshold of 70%
         const openEndedSimilarity = answers.reduce((sum, a) => sum + (a.similarity || 0), 0)
@@ -757,17 +721,21 @@ class QuizService {
   /**
    * Count correct answers in a quiz
    */
-  countCorrectAnswers(answers: QuizAnswer[], type: QuizType): number {
+  countCorrectAnswers(answers: QuizAnswer[], type: QuizType | string): number {
     if (!answers || answers.length === 0) return 0
 
     switch (type) {
+      case QuizType.MCQ:
       case "mcq":
+      case QuizType.CODE:
       case "code":
         return answers.filter((a) => a.isCorrect).length
 
+      case QuizType.BLANKS:
       case "blanks":
         return answers.filter((a) => (a.similarity || 0) > 80).length
 
+      case QuizType.OPENENDED:
       case "openended":
         return answers.filter((a) => (a.similarity || 0) > 70).length
 
@@ -910,17 +878,26 @@ class QuizService {
       }
 
       // Extract quiz type from the URL if possible
-      let quizType = "mcq" // Default fallback
+      let quizType: QuizType = QuizType.MCQ // Default fallback
       try {
         // Try to extract quiz type from the URL path
         const urlPath = redirectUrl.split("?")[0] // Get path without query params
         const pathParts = urlPath.split("/")
 
         // Look for known quiz types in the path
-        const knownTypes = ["mcq", "blanks", "openended", "code"]
+        const knownTypes = [
+          QuizType.MCQ,
+          QuizType.BLANKS,
+          QuizType.OPENENDED,
+          QuizType.CODE,
+          QuizType.FLASHCARD,
+          QuizType.DOCUMENT,
+        ]
+
         for (const part of pathParts) {
-          if (knownTypes.includes(part)) {
-            quizType = part
+          // Check if the part matches any of the enum values
+          if (Object.values(QuizType).includes(part as QuizType)) {
+            quizType = part as QuizType
             console.log(`Detected quiz type from URL: ${quizType}`)
             break
           }
@@ -1095,14 +1072,22 @@ class QuizService {
     // Try sessionStorage first
     const sessionData = sessionStorage.getItem(STORAGE_KEYS.PENDING_DATA)
     if (sessionData) {
-      pendingData = JSON.parse(sessionData)
+      try {
+        pendingData = JSON.parse(sessionData)
+      } catch (e) {
+        console.error("Error parsing session data:", e)
+      }
     }
 
     // Try localStorage if not in sessionStorage
     if (!pendingData) {
       const localData = localStorage.getItem(STORAGE_KEYS.PENDING_DATA)
       if (localData) {
-        pendingData = JSON.parse(localData)
+        try {
+          pendingData = JSON.parse(localData)
+        } catch (e) {
+          console.error("Error parsing local data:", e)
+        }
       }
     }
 
@@ -1118,12 +1103,12 @@ class QuizService {
         // If we have a quiz type but no pending data, create minimal pending data
         if (!pendingData) {
           pendingData = {
-            type: savedQuizType,
+            type: savedQuizType as QuizType,
             // Other fields will be filled in later if needed
           }
         } else if (!pendingData.type) {
           // If we have pending data but no type, add the saved type
-          pendingData.type = savedQuizType
+          pendingData.type = savedQuizType as QuizType
         }
       }
 
@@ -1135,15 +1120,25 @@ class QuizService {
 
           // Submit each guest result to the server
           for (const result of guestResults) {
-            await this.submitQuizResult({
-              quizId: result.quizId,
-              slug: result.slug,
-              type: result.type as QuizType,
-              score: result.score,
-              answers: result.answers,
-              totalTime: result.totalTime,
-              totalQuestions: result.totalQuestions,
-            })
+            try {
+              await this.submitQuizResult({
+                quizId: result.quizId,
+                slug: result.slug,
+                type: result.type,
+                score: result.score,
+                answers: result.answers,
+                totalTime: result.totalTime,
+                totalQuestions: result.totalQuestions,
+              })
+
+              // Mark this quiz as completed
+              this.markQuizCompleted(result.quizId)
+
+              // Save the result to local storage for immediate access
+              this.saveQuizResult(result)
+            } catch (e) {
+              console.error("Error submitting guest result:", e)
+            }
           }
 
           // Clear guest results after migration
@@ -1158,7 +1153,7 @@ class QuizService {
 
     // If we have answers, save the result
     if (pendingData.answers && Array.isArray(pendingData.answers)) {
-      const validAnswers = pendingData.answers.filter((a) => a !== null)
+      const validAnswers = pendingData.answers.filter((a: QuizAnswer | null) => a !== null)
 
       if (validAnswers.length === 0) {
         console.log("No valid answers in pending data")
@@ -1185,21 +1180,25 @@ class QuizService {
 
       // For authenticated users, save to server
       if (this.isAuthenticated()) {
-        await this.submitQuizResult({
-          quizId: result.quizId,
-          slug: result.slug,
-          type: result.type,
-          score: result.score,
-          answers: result.answers,
-          totalTime: result.totalTime,
-          totalQuestions: result.totalQuestions,
-        })
+        try {
+          await this.submitQuizResult({
+            quizId: result.quizId,
+            slug: result.slug,
+            type: result.type,
+            score: result.score,
+            answers: result.answers,
+            totalTime: result.totalTime,
+            totalQuestions: result.totalQuestions,
+          })
 
-        // Clear storage after saving
-        this.clearPendingData()
+          // Clear storage after saving
+          this.clearPendingData()
 
-        // Also clear any guest result for this quiz
-        this.clearGuestResult(result.quizId)
+          // Also clear any guest result for this quiz
+          this.clearGuestResult(result.quizId)
+        } catch (e) {
+          console.error("Error submitting quiz result:", e)
+        }
       } else {
         // For guest users, save to localStorage
         this.saveGuestResult(result)
@@ -1316,7 +1315,7 @@ class QuizService {
   /**
    * Cleanup after quiz completion
    */
-  cleanupAfterQuizCompletion(quizId: string, type: QuizType): void {
+  cleanupAfterQuizCompletion(quizId: string, type: QuizType | string): void {
     if (typeof window === "undefined") return
 
     try {

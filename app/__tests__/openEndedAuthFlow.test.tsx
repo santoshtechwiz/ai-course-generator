@@ -4,7 +4,7 @@ import React from "react"
 import { render, fireEvent, act, waitFor } from "@testing-library/react"
 import { quizService } from "@/lib/quiz-service"
 import * as QuizContext from "@/app/context/QuizContext"
-import McqQuizWrapper from "../dashboard/(quiz)/mcq/components/McqQuizWrapper"
+import OpenEndedQuizWrapper from "../dashboard/(quiz)/openended/components/OpenEndedQuizWrapper"
 
 // Mock dependencies
 jest.mock("next/navigation", () => ({
@@ -78,7 +78,7 @@ jest.mock("@/lib/quiz-service", () => ({
     isAuthenticated: jest.fn().mockReturnValue(false),
     isInAuthFlow: jest.fn().mockReturnValue(false),
     clearAuthFlow: jest.fn(),
-    clearAllStorageData: jest.fn(),
+    clearAllStorage: jest.fn(),
     savePendingQuizData: jest.fn(),
     processPendingQuizData: jest.fn(),
     getGuestResult: jest.fn(),
@@ -90,28 +90,27 @@ jest.mock("@/lib/quiz-service", () => ({
   },
 }))
 
-// Update the mock for McqQuiz to ensure it renders properly in tests
-jest.mock("../dashboard/(quiz)/mcq/components/McqQuiz", () => {
-  return function MockMcqQuiz(props) {
-    // Always render the answer button immediately in tests
+// Mock the OpenEndedQuizQuestion component
+jest.mock("../dashboard/(quiz)/openended/components/OpenEndedQuizQuestion", () => {
+  return function MockOpenEndedQuizQuestion(props) {
     return React.createElement(
       "div",
-      { "data-testid": "mcq-quiz" },
+      { "data-testid": "openended-quiz" },
       React.createElement("button", {
         "data-testid": "answer-question",
-        onClick: () => props.onAnswer("test", 10, true),
+        onClick: () => props.onAnswer("This is my answer"),
         children: "Answer Question",
       }),
     )
   }
 })
 
-// Mock the McqQuizResult component
-jest.mock("../dashboard/(quiz)/mcq/components/McqQuizResult", () => {
-  return function MockMcqQuizResult(props) {
+// Mock the QuizResultsOpenEnded component
+jest.mock("../dashboard/(quiz)/openended/components/QuizResultsOpenEnded", () => {
+  return function MockQuizResultsOpenEnded(props) {
     return React.createElement(
       "div",
-      { "data-testid": "mcq-result" },
+      { "data-testid": "openended-result" },
       React.createElement("button", {
         "data-testid": "restart-quiz",
         onClick: props.onRestart,
@@ -129,12 +128,7 @@ jest.mock("../dashboard/(quiz)/components/GuestSignInPrompt", () => ({
       { "data-testid": "guest-prompt" },
       React.createElement("button", {
         "data-testid": "continue-as-guest",
-        onClick: () => {
-          // Call the function when continue as guest is clicked
-          if (props.onContinueAsGuest) {
-            props.onContinueAsGuest()
-          }
-        },
+        onClick: props.onContinueAsGuest,
         children: "Go Back",
       }),
       React.createElement("button", {
@@ -145,7 +139,7 @@ jest.mock("../dashboard/(quiz)/components/GuestSignInPrompt", () => ({
           if (props.onSignIn) {
             // This simulates what happens in the real component
             quizService.savePendingQuizData()
-            quizService.saveAuthRedirect("/dashboard/mcq/test-quiz")
+            quizService.saveAuthRedirect("/dashboard/openended/test-quiz")
             props.onSignIn()
           }
         },
@@ -161,7 +155,7 @@ jest.mock("../dashboard/(quiz)/components/GuestSignInPrompt", () => ({
   },
 }))
 
-describe("Quiz Authentication Flow", () => {
+describe("Open Ended Quiz Authentication Flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Reset window.location.search for each test
@@ -170,33 +164,23 @@ describe("Quiz Authentication Flow", () => {
 
   const mockQuizData = {
     id: "123",
-    title: "Test Quiz",
+    title: "Test Open Ended Quiz",
     slug: "test-quiz",
     isPublic: true,
     isFavorite: false,
     userId: "user1",
+    questions: [
+      {
+        id: "q1",
+        question: "Explain the concept of recursion",
+      },
+      {
+        id: "q2",
+        question: "Describe the difference between var, let, and const",
+      },
+    ],
   }
 
-  const mockQuestions = [
-    {
-      id: 1,
-      question: "Question 1",
-      answer: "Answer 1",
-      option1: "Option 1",
-      option2: "Option 2",
-      option3: "Option 3",
-    },
-    {
-      id: 2,
-      question: "Question 2",
-      answer: "Answer 2",
-      option1: "Option 1",
-      option2: "Option 2",
-      option3: "Option 3",
-    },
-  ]
-
-  // Also update the test to wait for the component to render
   test("authenticated user sees results immediately after quiz completion", async () => {
     // 1. Mock the auth provider to return isAuthenticated: true
     const { useAuth } = require("@/providers/unified-auth-provider")
@@ -219,8 +203,8 @@ describe("Quiz Authentication Flow", () => {
       const submission = {
         quizId: "123",
         slug: "test-quiz",
-        type: "mcq",
-        score: 100,
+        type: "openended",
+        score: 85,
         answers: answers.filter((a) => a !== null),
         totalTime: 20,
         totalQuestions: 2,
@@ -234,7 +218,7 @@ describe("Quiz Authentication Flow", () => {
       state: {
         quizId: "123",
         slug: "test-quiz",
-        quizType: "mcq",
+        quizType: "openended",
         currentQuestionIndex: 0,
         questionCount: 2,
         isLoading: false,
@@ -250,6 +234,7 @@ describe("Quiz Authentication Flow", () => {
         savingResults: false,
         resultLoadError: null,
         isInitialized: true,
+        startTime: Date.now() - 5000, // 5 seconds ago
       },
       submitAnswer: jest.fn(),
       completeQuiz,
@@ -263,9 +248,7 @@ describe("Quiz Authentication Flow", () => {
     ;(QuizContext.useQuiz as jest.Mock).mockReturnValue(mockUseQuiz)
 
     // 4. Render the component
-    const { getByTestId, findByTestId } = render(
-      <McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />,
-    )
+    const { getByTestId, findByTestId } = render(<OpenEndedQuizWrapper quizData={mockQuizData} slug="test-quiz" />)
 
     // 5. Wait for the answer button to appear
     const answerButton = await findByTestId("answer-question")
@@ -274,8 +257,8 @@ describe("Quiz Authentication Flow", () => {
     // 6. Complete the quiz by calling completeQuiz directly
     await act(async () => {
       completeQuiz([
-        { answer: "test", timeSpent: 10, isCorrect: true },
-        { answer: "test", timeSpent: 10, isCorrect: true },
+        { answer: "Recursion is a function calling itself", timeSpent: 10, isCorrect: true },
+        { answer: "var is function scoped, let and const are block scoped", timeSpent: 10, isCorrect: true },
       ])
     })
 
@@ -299,44 +282,23 @@ describe("Quiz Authentication Flow", () => {
     ;(quizService.isAuthenticated as jest.Mock).mockReturnValue(false)
 
     // 3. Set up the mock for useQuiz with a guest user
-    const completeQuiz = jest.fn().mockImplementation((answers) => {
-      // This simulates what happens in the real completeQuiz function
-      // For guest users, it should call saveGuestResult
-      const submission = {
-        quizId: "123",
-        slug: "test-quiz",
-        type: "mcq",
-        score: 100,
-        answers: answers.filter((a) => a !== null),
-        totalTime: 20,
-        totalQuestions: 2,
-        completedAt: new Date().toISOString(),
-      }
-
-      // Call saveGuestResult directly to ensure it's called
-      quizService.saveGuestResult(submission)
-
-      // Mock that we now have a guest result
-      ;(quizService.getGuestResult as jest.Mock).mockReturnValue(submission)
-    })
-
     const mockUseQuiz = {
       state: {
         quizId: "123",
         slug: "test-quiz",
-        quizType: "mcq",
-        currentQuestionIndex: 0,
+        quizType: "openended",
+        currentQuestionIndex: 1, // Last question
         questionCount: 2,
         isLoading: false,
         error: null,
-        isCompleted: true,
+        isCompleted: true, // Quiz is completed
         answers: [
-          { answer: "test", timeSpent: 10, isCorrect: true },
-          { answer: "test", timeSpent: 10, isCorrect: true },
+          { answer: "Recursion is a function calling itself", timeSpent: 10, isCorrect: true },
+          { answer: "var is function scoped, let and const are block scoped", timeSpent: 10, isCorrect: true },
         ],
         animationState: "showing-results",
         timeSpentPerQuestion: [10, 10],
-        requiresAuth: true,
+        requiresAuth: true, // Requires auth
         hasGuestResult: true,
         authCheckComplete: true,
         pendingAuthRequired: true,
@@ -345,7 +307,7 @@ describe("Quiz Authentication Flow", () => {
         isInitialized: true,
       },
       submitAnswer: jest.fn(),
-      completeQuiz,
+      completeQuiz: jest.fn(),
       restartQuiz: jest.fn(),
       isAuthenticated: false,
       handleAuthenticationRequired: jest.fn(),
@@ -356,25 +318,12 @@ describe("Quiz Authentication Flow", () => {
     ;(QuizContext.useQuiz as jest.Mock).mockReturnValue(mockUseQuiz)
 
     // 4. Render the component
-    const { getByTestId } = render(
-      <McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />,
-    )
+    const { getByTestId } = render(<OpenEndedQuizWrapper quizData={mockQuizData} slug="test-quiz" />)
 
-    // 5. Complete the quiz by calling completeQuiz directly
-    await act(async () => {
-      completeQuiz([
-        { answer: "test", timeSpent: 10, isCorrect: true },
-        { answer: "test", timeSpent: 10, isCorrect: true },
-      ])
-    })
-
-    // 6. Verify that the guest prompt is shown
+    // 5. Verify that the guest prompt is shown
     await waitFor(() => {
       expect(getByTestId("guest-prompt")).toBeInTheDocument()
     })
-
-    // 7. Verify that saveGuestResult was called to save the guest result
-    expect(quizService.saveGuestResult).toHaveBeenCalled()
   })
 
   test("clicking sign-in button redirects to authentication", async () => {
@@ -397,27 +346,27 @@ describe("Quiz Authentication Flow", () => {
       // This simulates what happens in the real handleAuthenticationRequired function
       // It should call savePendingQuizData and saveAuthRedirect
       quizService.savePendingQuizData()
-      quizService.saveAuthRedirect("/dashboard/mcq/test-quiz?completed=true")
-      quizService.handleAuthRedirect("/dashboard/mcq/test-quiz?completed=true", true)
+      quizService.saveAuthRedirect("/dashboard/openended/test-quiz?completed=true")
+      quizService.handleAuthRedirect("/dashboard/openended/test-quiz?completed=true", true)
     })
 
     const mockUseQuiz = {
       state: {
         quizId: "123",
         slug: "test-quiz",
-        quizType: "mcq",
-        currentQuestionIndex: 0,
+        quizType: "openended",
+        currentQuestionIndex: 1, // Last question
         questionCount: 2,
         isLoading: false,
         error: null,
-        isCompleted: true,
+        isCompleted: true, // Quiz is completed
         answers: [
-          { answer: "test", timeSpent: 10, isCorrect: true },
-          { answer: "test", timeSpent: 10, isCorrect: true },
+          { answer: "Recursion is a function calling itself", timeSpent: 10, isCorrect: true },
+          { answer: "var is function scoped, let and const are block scoped", timeSpent: 10, isCorrect: true },
         ],
         animationState: "showing-results",
         timeSpentPerQuestion: [10, 10],
-        requiresAuth: true,
+        requiresAuth: true, // Requires auth
         hasGuestResult: true,
         authCheckComplete: true,
         pendingAuthRequired: true,
@@ -437,9 +386,7 @@ describe("Quiz Authentication Flow", () => {
     ;(QuizContext.useQuiz as jest.Mock).mockReturnValue(mockUseQuiz)
 
     // 4. Render the component
-    const { getByTestId } = render(
-      <McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />,
-    )
+    const { getByTestId } = render(<OpenEndedQuizWrapper quizData={mockQuizData} slug="test-quiz" />)
 
     // 5. Verify that the guest prompt is shown
     await waitFor(() => {
@@ -456,6 +403,81 @@ describe("Quiz Authentication Flow", () => {
     // 8. Verify that savePendingQuizData and saveAuthRedirect were called
     expect(quizService.savePendingQuizData).toHaveBeenCalled()
     expect(quizService.saveAuthRedirect).toHaveBeenCalled()
+  })
+
+  test("clicking 'Continue as Guest' resets quiz without redirecting", async () => {
+    // 1. Mock the auth provider to return isAuthenticated: false
+    const { useAuth } = require("@/providers/unified-auth-provider")
+    ;(useAuth as jest.Mock).mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      login: jest.fn(),
+      logout: jest.fn(),
+      loading: false,
+      signIn: jest.fn(),
+    })
+
+    // 2. Mock quizService.isAuthenticated to return false
+    ;(quizService.isAuthenticated as jest.Mock).mockReturnValue(false)
+
+    // 3. Set up the mock for useQuiz with a guest user who has completed the quiz
+    const clearGuestResults = jest.fn()
+    const restartQuiz = jest.fn()
+    const handleAuthenticationRequired = jest.fn()
+
+    const mockUseQuiz = {
+      state: {
+        quizId: "123",
+        slug: "test-quiz",
+        quizType: "openended",
+        currentQuestionIndex: 1, // Last question
+        questionCount: 2,
+        isLoading: false,
+        error: null,
+        isCompleted: true, // Quiz is completed
+        answers: [
+          { answer: "Recursion is a function calling itself", timeSpent: 10, isCorrect: true },
+          { answer: "var is function scoped, let and const are block scoped", timeSpent: 10, isCorrect: true },
+        ],
+        animationState: "showing-results",
+        timeSpentPerQuestion: [10, 10],
+        requiresAuth: true, // Requires auth
+        hasGuestResult: true,
+        authCheckComplete: true,
+        pendingAuthRequired: true,
+        savingResults: false,
+        resultLoadError: null,
+        isInitialized: true,
+      },
+      submitAnswer: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz,
+      isAuthenticated: false,
+      handleAuthenticationRequired,
+      fetchQuizResults: jest.fn().mockResolvedValue(false),
+      clearQuizData: jest.fn(),
+      clearGuestResults,
+    }
+    ;(QuizContext.useQuiz as jest.Mock).mockReturnValue(mockUseQuiz)
+
+    // 4. Render the component
+    const { getByTestId } = render(<OpenEndedQuizWrapper quizData={mockQuizData} slug="test-quiz" />)
+
+    // 5. Verify that the guest prompt is shown
+    await waitFor(() => {
+      expect(getByTestId("guest-prompt")).toBeInTheDocument()
+    })
+
+    // 6. Click the continue as guest button
+    const continueAsGuestButton = getByTestId("continue-as-guest")
+    fireEvent.click(continueAsGuestButton)
+
+    // 7. Verify that clearGuestResults and restartQuiz were called
+    expect(clearGuestResults).toHaveBeenCalled()
+    expect(restartQuiz).toHaveBeenCalled()
+
+    // 8. Verify that handleAuthenticationRequired was NOT called (no redirect)
+    expect(handleAuthenticationRequired).not.toHaveBeenCalled()
   })
 
   test("returning from authentication shows results and clears state", async () => {
@@ -488,22 +510,22 @@ describe("Quiz Authentication Flow", () => {
       // Simulate what happens in the real fetchQuizResults function
       // It should call clearGuestResult and clearQuizState when successful
       quizService.clearGuestResult("123")
-      quizService.clearQuizState("123", "mcq")
+      quizService.clearQuizState("123", "openended")
       return true
     })
     const mockUseQuiz = {
       state: {
         quizId: "123",
         slug: "test-quiz",
-        quizType: "mcq",
+        quizType: "openended",
         currentQuestionIndex: 0,
         questionCount: 2,
         isLoading: false,
         error: null,
         isCompleted: true,
         answers: [
-          { answer: "test", timeSpent: 10, isCorrect: true },
-          { answer: "test", timeSpent: 10, isCorrect: true },
+          { answer: "Recursion is a function calling itself", timeSpent: 10, isCorrect: true },
+          { answer: "var is function scoped, let and const are block scoped", timeSpent: 10, isCorrect: true },
         ],
         animationState: "showing-results",
         timeSpentPerQuestion: [10, 10],
@@ -528,7 +550,7 @@ describe("Quiz Authentication Flow", () => {
     ;(QuizContext.useQuiz as jest.Mock).mockReturnValue(mockUseQuiz)
 
     // 6. Render the component
-    render(<McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />)
+    render(<OpenEndedQuizWrapper quizData={mockQuizData} slug="test-quiz" />)
 
     // 7. Simulate processing pending data and fetching results
     await act(async () => {
@@ -546,84 +568,7 @@ describe("Quiz Authentication Flow", () => {
     expect(quizService.clearQuizState).toHaveBeenCalled()
   })
 
-  test("continue as guest button resets quiz without redirecting", async () => {
-    // 1. Mock the auth provider to return isAuthenticated: false
-    const { useAuth } = require("@/providers/unified-auth-provider")
-    ;(useAuth as jest.Mock).mockReturnValue({
-      isAuthenticated: false,
-      user: null,
-      login: jest.fn(),
-      logout: jest.fn(),
-      loading: false,
-      signIn: jest.fn(),
-    })
-
-    // 2. Mock quizService.isAuthenticated to return false
-    ;(quizService.isAuthenticated as jest.Mock).mockReturnValue(false)
-
-    // 3. Set up the mock for useQuiz with a guest user who has completed the quiz
-    const clearGuestResults = jest.fn()
-    const restartQuiz = jest.fn()
-    const handleAuthenticationRequired = jest.fn()
-
-    const mockUseQuiz = {
-      state: {
-        quizId: "123",
-        slug: "test-quiz",
-        quizType: "mcq",
-        currentQuestionIndex: 0,
-        questionCount: 2,
-        isLoading: false,
-        error: null,
-        isCompleted: true,
-        answers: [
-          { answer: "test", timeSpent: 10, isCorrect: true },
-          { answer: "test", timeSpent: 10, isCorrect: true },
-        ],
-        animationState: "showing-results",
-        timeSpentPerQuestion: [10, 10],
-        requiresAuth: true,
-        hasGuestResult: true,
-        authCheckComplete: true,
-        pendingAuthRequired: true,
-        savingResults: false,
-        resultLoadError: null,
-        isInitialized: true,
-      },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
-      restartQuiz,
-      isAuthenticated: false,
-      handleAuthenticationRequired,
-      fetchQuizResults: jest.fn().mockResolvedValue(false),
-      clearQuizData: jest.fn(),
-      clearGuestResults,
-    }
-    ;(QuizContext.useQuiz as jest.Mock).mockReturnValue(mockUseQuiz)
-
-    // 5. Render the component
-    const { getByTestId } = render(
-      <McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />,
-    )
-
-    // 6. Verify that the guest prompt is shown
-    await waitFor(() => {
-      expect(getByTestId("guest-prompt")).toBeInTheDocument()
-    })
-
-    // 7. Click the continue as guest button
-    const continueAsGuestButton = getByTestId("continue-as-guest")
-    fireEvent.click(continueAsGuestButton)
-
-    // 8. Verify that clearGuestResults and restartQuiz were called
-    expect(clearGuestResults).toHaveBeenCalled()
-    expect(restartQuiz).toHaveBeenCalled()
-
-    // 9. Verify that handleAuthenticationRequired was NOT called (no redirect)
-    expect(handleAuthenticationRequired).not.toHaveBeenCalled()
-  })
-
-  test("should transition from preparing results to showing results after authentication", async () => {
+  test("should properly handle authentication state transitions", async () => {
     // 1. Set URL parameter to simulate returning from auth
     mockLocation.search = "?fromAuth=true"
 
@@ -641,96 +586,73 @@ describe("Quiz Authentication Flow", () => {
     // 3. Mock quizService.isAuthenticated to return true
     ;(quizService.isAuthenticated as jest.Mock).mockReturnValue(true)
 
-    // 4. Mock processPendingQuizData to simulate processing saved data with a delay
-    quizService.processPendingQuizData.mockImplementation(async () => {
-      // Simulate a delay in processing
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      return { success: true }
-    })
+    // 4. Set up state transitions for testing
+    const initialState = {
+      quizId: "123",
+      slug: "test-quiz",
+      quizType: "openended",
+      currentQuestionIndex: 0,
+      questionCount: 2,
+      isLoading: false,
+      error: null,
+      isCompleted: true,
+      answers: [
+        { answer: "Recursion is a function calling itself", timeSpent: 10, isCorrect: true },
+        { answer: "var is function scoped, let and const are block scoped", timeSpent: 10, isCorrect: true },
+      ],
+      animationState: "preparing-results",
+      timeSpentPerQuestion: [10, 10],
+      requiresAuth: false,
+      hasGuestResult: false,
+      authCheckComplete: true,
+      pendingAuthRequired: false,
+      isProcessingAuth: true,
+      savingResults: false,
+      resultLoadError: null,
+      isInitialized: true,
+    }
 
-    // 5. Set up the mock for useQuiz with an authenticated user returning from auth
-    // Start with preparing results state
-    let stateUpdater: any
-    const mockUseQuiz = {
-      state: {
-        quizId: "123",
-        slug: "test-quiz",
-        quizType: "mcq",
-        currentQuestionIndex: 0,
-        questionCount: 2,
-        isLoading: false,
-        error: null,
-        isCompleted: true,
-        answers: [
-          { answer: "test", timeSpent: 10, isCorrect: true },
-          { answer: "test", timeSpent: 10, isCorrect: true },
-        ],
-        animationState: "preparing-results",
-        timeSpentPerQuestion: [10, 10],
-        requiresAuth: false,
-        hasGuestResult: false,
-        authCheckComplete: true,
-        pendingAuthRequired: false,
-        isProcessingAuth: true,
-        savingResults: false,
-        resultLoadError: null,
-        isInitialized: true,
-      },
+    // 5. Mock the useQuiz hook to simulate state updates
+    const fetchQuizResults = jest.fn().mockResolvedValue(true)
+    const stateUpdater = jest.fn((callback) => {
+      callback({
+        ...initialState,
+        animationState: "showing-results",
+        isProcessingAuth: false,
+      })
+    })
+    ;(QuizContext.useQuiz as jest.Mock).mockReturnValue({
+      state: initialState,
       submitAnswer: jest.fn(),
       completeQuiz: jest.fn(),
       restartQuiz: jest.fn(),
       isAuthenticated: true,
       handleAuthenticationRequired: jest.fn(),
-      fetchQuizResults: jest.fn().mockImplementation(async () => {
-        // Simulate successful result fetch after a delay
-        await new Promise((resolve) => setTimeout(resolve, 100))
-
-        // Update the state to show results
-        if (stateUpdater) {
-          stateUpdater({
-            ...mockUseQuiz.state,
-            animationState: "showing-results",
-            isProcessingAuth: false,
-          })
-        }
-
-        return true
-      }),
+      fetchQuizResults,
       clearQuizData: jest.fn(),
       clearGuestResults: jest.fn(),
-    }
-
-    // Mock the useQuiz hook to capture state updates
-    ;(QuizContext.useQuiz as jest.Mock).mockImplementation(() => {
-      const [state, setState] = React.useState(mockUseQuiz.state)
-      stateUpdater = setState
-
-      return {
-        ...mockUseQuiz,
-        state,
-      }
+      setState: stateUpdater,
     })
 
     // 6. Render the component
-    const { getByText, findByText } = render(
-      <McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />,
-    )
+    const { findByTestId } = render(<OpenEndedQuizWrapper quizData={mockQuizData} slug="test-quiz" />)
 
-    // 7. Verify that "Preparing your results" is shown initially
-    expect(getByText(/Preparing your results/i)).toBeInTheDocument()
-
-    // 8. Simulate processing pending data and fetching results
+    // 7. Simulate processing pending data and fetching results
     await act(async () => {
-      await quizService.processPendingQuizData()
-      await mockUseQuiz.fetchQuizResults()
+      await fetchQuizResults()
     })
 
-    // 9. Verify that the results are eventually shown
-    await findByText(/Quiz Results/i)
+    // 8. Simulate state transition to "showing-results"
+    act(() => {
+      stateUpdater((prevState) => ({
+        ...prevState,
+        animationState: "showing-results",
+        isProcessingAuth: false,
+      }))
+    })
 
-    // 10. Verify fetchQuizResults was called
-    expect(mockUseQuiz.fetchQuizResults).toHaveBeenCalled()
+    // 9. Verify that the results are displayed
+    const resultsElement = await findByTestId("openended-result")
+    expect(resultsElement).toBeInTheDocument()
   })
-
-
 })

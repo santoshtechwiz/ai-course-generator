@@ -31,12 +31,13 @@ import { RandomQuiz } from "./RandomQuiz"
 import RandomQuote from "@/components/RandomQuote"
 import { cn } from "@/lib/tailwindUtils"
 import QuizActions from "./QuizActions"
+import { QuizType } from "@/app/types/quiz-types"
 
 interface QuizDetailsPageProps {
   title: string
   description: string
   slug: string
-  quizType: "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"
+  quizType: QuizType
   questionCount: number
   estimatedTime: string
   difficulty?: "easy" | "medium" | "hard"
@@ -270,9 +271,9 @@ export default function QuizDetailsPage({
                 >
                   <Badge
                     variant="outline"
-                    className={cn("px-2.5 py-1 text-xs font-medium rounded-full border", QUIZ_TYPE_STYLES[quizType])}
+                    className={cn("px-2.5 py-1 text-xs font-medium rounded-full border", QUIZ_TYPE_STYLES[quizType as keyof typeof QUIZ_TYPE_STYLES])}
                   >
-                    {quizTypeLabels[quizType]}
+                    {quizTypeLabels[quizType as keyof typeof quizTypeLabels]}
                   </Badge>
                   <Badge
                     variant="outline"

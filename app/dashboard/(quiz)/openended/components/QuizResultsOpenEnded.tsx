@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { CheckCircle, Clock, XCircle } from "lucide-react"
+import { CheckCircle, Clock, XCircle, AlertTriangle } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,9 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-
+import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+import { useQuiz } from "@/app/context/QuizContext"
+import { useAuth } from "@/providers/unified-auth-provider"
 
 interface QuizResultsOpenEndedProps {
   quizId?: string
@@ -24,6 +26,7 @@ interface QuizResultsOpenEndedProps {
   score?: number
   onRestart?: () => void
   onSignIn?: () => void
+  isGuestMode?: boolean
 }
 
 export default function QuizResultsOpenEnded({
@@ -37,10 +40,15 @@ export default function QuizResultsOpenEnded({
   score = 0,
   onRestart,
   onSignIn,
+  isGuestMode = false,
 }: QuizResultsOpenEndedProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("summary")
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const { handleAuthenticationRequired } = useQuiz()
+  const { isAuthenticated } = useAuth()
 
   // Calculate total time spent
   const totalTimeSpent = answers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
@@ -60,6 +68,46 @@ export default function QuizResultsOpenEnded({
   // Handle create new quiz
   const handleCreateNew = () => {
     router.push("/dashboard/openended")
+  }
+
+  // If there's an error, show error state
+  if (error) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center min-h-[300px] p-6 bg-card rounded-lg shadow-sm border"
+      >
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Error Loading Results</h3>
+        <p className="text-muted-foreground text-center max-w-md mb-6" data-testid="error-message">
+          {error || "Failed to load results. Please try again."}
+        </p>
+        <div className="flex gap-3">
+          <Button onClick={() => setError(null)} variant="default">
+            Try Again
+          </Button>
+          <Button onClick={handleRestart} variant="outline">
+            Restart Quiz
+          </Button>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // If guest mode is active and user is not authenticated, show sign-in prompt
+  if (isGuestMode && !isAuthenticated) {
+    return (
+      <GuestSignInPrompt
+        quizId={quizId || "unknown"}
+        forceShow={true}
+        onContinueAsGuest={handleRestart}
+      
+        title="Sign in to view your results"
+        description="Your quiz has been completed! Sign in to view your detailed results and save your progress."
+        ctaText="Sign in to view results"
+      />
+    )
   }
 
   return (
@@ -175,12 +223,9 @@ export default function QuizResultsOpenEnded({
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between">
-          <Button variant="outline" onClick={handleRestart} className="w-full sm:w-auto">
-            Restart Quiz
-          </Button>
-          <Button onClick={handleCreateNew} className="w-full sm:w-auto">
-            Create New Quiz
+        <CardFooter className="flex justify-center">
+          <Button onClick={() => (window.location.href = "/dashboard")} variant="default">
+            Return to Dashboard
           </Button>
         </CardFooter>
       </Card>

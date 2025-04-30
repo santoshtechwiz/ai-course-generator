@@ -2,17 +2,21 @@
 
 import type React from "react"
 import Editor from "@monaco-editor/react"
+import type { CodeQuizEditorProps } from "@/app/types/code-quiz-types"
 
-interface CodeQuizEditorProps {
-  value: string
-  language: string
-  readOnly?: boolean
-  onChange?: (value: string | undefined) => void
+interface ExtendedCodeQuizEditorProps extends CodeQuizEditorProps {
+  height?: string
 }
 
-const CodeQuizEditor: React.FC<CodeQuizEditorProps> = ({ value, language, readOnly = false, onChange }) => {
+const CodeQuizEditor: React.FC<ExtendedCodeQuizEditorProps> = ({
+  value,
+  language,
+  readOnly = false,
+  onChange,
+  height = "180px", // Default to a smaller height
+}) => {
   return (
-    <div className="h-64 border rounded-md overflow-hidden">
+    <div className="border rounded-md overflow-hidden" style={{ height }}>
       <Editor
         height="100%"
         language={language}
@@ -23,6 +27,9 @@ const CodeQuizEditor: React.FC<CodeQuizEditorProps> = ({ value, language, readOn
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
           fontSize: 14,
+          lineNumbers: "on",
+          folding: true,
+          automaticLayout: true,
         }}
         onChange={onChange}
       />

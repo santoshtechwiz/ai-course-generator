@@ -4,11 +4,17 @@ import type React from "react"
 import { createContext, useContext, useReducer, useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/unified-auth-provider"
-import { quizService, type QuizAnswer } from "@/lib/quiz-service"
+import { quizService } from "@/lib/quiz-service"
 import { quizApi } from "@/lib/quiz-api"
 import { quizUtils } from "@/lib/quiz-utils"
 import { toast } from "@/hooks/use-toast"
-import type { QuizType } from "../types/quiz-types"
+import {
+  QuizType,
+  type QuizDataInput,
+  type QuizSubmission,
+  type StoredQuizState,
+  type QuizAnswer,
+} from "@/app/types/quiz-types"
 
 // -- Context State & Actions ----------------------------------
 interface QuizContextState {
@@ -16,7 +22,7 @@ interface QuizContextState {
   slug: string
   title: string
   description: string
-  quizType: QuizType
+  quizType: QuizType | string
   questionCount: number
   currentQuestionIndex: number
   answers: (QuizAnswer | null)[]
@@ -30,7 +36,7 @@ interface QuizContextState {
   isProcessingAuth: boolean
   isLoadingResults: boolean
   resultsReady: boolean
-  quizData?: any
+  quizData?: QuizDataInput
   isRefreshed: boolean
   requiresAuth: boolean
   hasGuestResult: boolean
@@ -39,6 +45,7 @@ interface QuizContextState {
   pendingAuthRequired: boolean
   savingResults: boolean
   resultLoadError: string | null
+  startTime?: number
 }
 
 type QuizAction =
@@ -54,7 +61,7 @@ type QuizAction =
   | { type: "SET_ANIMATION_STATE"; payload: QuizContextState["animationState"] }
   | { type: "UPDATE_TIME_SPENT"; payload: { questionIndex: number; time: number } }
   | { type: "SET_PROCESSING_AUTH"; payload: boolean }
-  | { type: "SET_QUIZ_DATA"; payload: any }
+  | { type: "SET_QUIZ_DATA"; payload: QuizDataInput }
   | { type: "SET_REFRESHED"; payload: boolean }
   | { type: "SET_REQUIRES_AUTH"; payload: boolean }
   | { type: "SET_HAS_GUEST_RESULT"; payload: boolean }
@@ -64,6 +71,8 @@ type QuizAction =
   | { type: "SET_SAVING_RESULTS"; payload: boolean }
   | { type: "SET_RESULT_LOAD_ERROR"; payload: string | null }
   | { type: "CLEAR_GUEST_RESULTS" }
+  | { type: "NEXT_QUESTION" }
+  | { type: "PREV_QUESTION" }
 
 interface QuizContextType {
   state: QuizContextState
@@ -93,7 +102,7 @@ const initialState: QuizContextState = {
   slug: "",
   title: "",
   description: "",
-  quizType: "mcq",
+  quizType: QuizType.MCQ,
   questionCount: 0,
   currentQuestionIndex: 0,
   answers: [],
@@ -107,7 +116,7 @@ const initialState: QuizContextState = {
   timeSpentPerQuestion: [],
   lastQuestionChangeTime: Date.now(),
   isProcessingAuth: false,
-  quizData: null,
+  quizData: undefined,
   isRefreshed: false,
   requiresAuth: false,
   hasGuestResult: false,
@@ -131,6 +140,40 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
       return {
         ...state,
         currentQuestionIndex: action.payload,
+        timeSpentPerQuestion: times,
+        lastQuestionChangeTime: Date.now(),
+      }
+    }
+
+    case "NEXT_QUESTION": {
+      if (state.currentQuestionIndex >= state.questionCount - 1) {
+        return state
+      }
+
+      const elapsed = Date.now() - state.lastQuestionChangeTime
+      const times = [...state.timeSpentPerQuestion]
+      times[state.currentQuestionIndex] = (times[state.currentQuestionIndex] || 0) + elapsed
+
+      return {
+        ...state,
+        currentQuestionIndex: state.currentQuestionIndex + 1,
+        timeSpentPerQuestion: times,
+        lastQuestionChangeTime: Date.now(),
+      }
+    }
+
+    case "PREV_QUESTION": {
+      if (state.currentQuestionIndex <= 0) {
+        return state
+      }
+
+      const elapsed = Date.now() - state.lastQuestionChangeTime
+      const times = [...state.timeSpentPerQuestion]
+      times[state.currentQuestionIndex] = (times[state.currentQuestionIndex] || 0) + elapsed
+
+      return {
+        ...state,
+        currentQuestionIndex: state.currentQuestionIndex - 1,
         timeSpentPerQuestion: times,
         lastQuestionChangeTime: Date.now(),
       }
@@ -246,7 +289,7 @@ const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextSt
 // -- Provider --------------------------------------------------
 interface QuizProviderProps {
   children: React.ReactNode
-  quizData: any
+  quizData: QuizDataInput
   slug: string
   quizType: QuizType
   /**
@@ -259,17 +302,25 @@ const QuizContext = createContext<QuizContextType | undefined>(undefined)
 
 // Update QuizProvider to use useAuth instead of any useSession references
 export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, slug, quizType, onAuthRequired }) => {
+  // Validate that quizId is provided
+  // if (!quizData.quizId) {
+  //   console.error("QuizProvider requires quizData.quizId to be provided")
+  //   // Provide a fallback quizId if possible
+  //   quizData.quizId = quizData.id || ""
+  // }
+
   const [state, dispatch] = useReducer(quizReducer, {
     ...initialState,
-    quizId: quizData?.id || "",
+    quizId: quizData.quizId,
     slug,
-    title: quizData?.title || "",
-    description: quizData?.description || "",
-    quizType: quizData?.quizType || quizType,
-    questionCount: quizData?.questions?.length || 0,
-    answers: new Array(quizData?.questions?.length || 0).fill(null),
-    timeSpentPerQuestion: new Array(quizData?.questions?.length || 0).fill(0),
+    title: quizData.title || "",
+    description: quizData.description || "",
+    quizType: quizData.quizType || quizType,
+    questionCount: quizData.questions?.length || 0,
+    answers: new Array(quizData.questions?.length || 0).fill(null),
+    timeSpentPerQuestion: new Array(quizData.questions?.length || 0).fill(0),
     quizData: quizData,
+    startTime: Date.now(),
   })
 
   const { signIn, isAuthenticated: authIsAuthenticated } = useAuth()
@@ -308,11 +359,17 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       quizService.clearGuestResult(state.quizId)
     }
 
-    // Reset the quiz state
+    // Reset the quiz state completely
     dispatch({ type: "CLEAR_GUEST_RESULTS" })
 
+    // Mark as not completed to ensure the quiz restarts
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(`quiz_${state.quizId}_completed`)
+      sessionStorage.removeItem(`quiz_${state.quizId}_completed`)
+    }
+
     console.log("Cleared guest results and reset quiz state")
-  }, [state.quizId])
+  }, [state.quizId, dispatch])
 
   // Fix the handleAuthenticationRequired method to properly save state before redirecting
   const handleAuthenticationRequired = useCallback(() => {
@@ -389,7 +446,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         variant: "destructive",
       })
     }
-  }, [onAuthRequired, state.quizType, state.slug, signIn, state, authIsAuthenticated])
+  }, [onAuthRequired, state.quizType, state.slug, signIn, authIsAuthenticated, state, dispatch])
 
   // Detect page refresh
   useEffect(() => {
@@ -429,7 +486,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         quizService.clearQuizState(state.quizId, state.quizType)
       }
     }
-  }, [state.isCompleted, state.quizId, state.quizType, cleanupUrlIfNeeded])
+  }, [state.isCompleted, state.quizId, state.quizType, cleanupUrlIfNeeded, dispatch])
 
   // Initial auth check effect - runs once on mount
   useEffect(() => {
@@ -502,7 +559,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     return () => {
       isMounted = false
     }
-  }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId])
+  }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId, dispatch])
 
   // Fetch quiz results using QuizService
   const fetchQuizResults = useCallback(async () => {
@@ -566,6 +623,40 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
             return true
           } else {
             console.log("No results found in API")
+
+            // Check if we have a guest result that can be migrated
+            const guestResult = quizService.getGuestResult(state.quizId)
+            if (guestResult && guestResult.answers && guestResult.answers.length > 0) {
+              console.log("Found guest result to migrate:", guestResult)
+
+              // Submit the guest result to the server
+              await quizService.submitQuizResult({
+                quizId: guestResult.quizId,
+                slug: guestResult.slug,
+                type: guestResult.type,
+                score: guestResult.score,
+                answers: guestResult.answers,
+                totalTime: guestResult.totalTime,
+                totalQuestions: guestResult.totalQuestions,
+              })
+
+              // Now try fetching again
+              const retryResult = await quizApi.fetchQuizResult(state.quizId, state.slug)
+              if (retryResult && retryResult.answers && retryResult.answers.length > 0) {
+                dispatch({
+                  type: "COMPLETE_QUIZ",
+                  payload: {
+                    score: retryResult.score,
+                    answers: retryResult.answers,
+                  },
+                })
+
+                dispatch({ type: "SET_RESULTS_READY", payload: true })
+                dispatch({ type: "SET_LOADING_RESULTS", payload: false })
+                return true
+              }
+            }
+
             dispatch({ type: "SET_ERROR", payload: "No saved results found." })
           }
         } catch (apiError) {
@@ -582,26 +673,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
           // Mark that we have a guest result
           dispatch({ type: "SET_HAS_GUEST_RESULT", payload: true })
 
-          // For MCQ and blanks quizzes, require authentication to see results
-          if (state.quizType === "mcq" || state.quizType === "blanks") {
-            console.log("Authentication required to view results for this quiz type")
-            dispatch({ type: "SET_REQUIRES_AUTH", payload: true })
-            dispatch({ type: "SET_LOADING_RESULTS", payload: false })
-            return false
-          }
-
-          // For other quiz types, show guest results
-          dispatch({
-            type: "COMPLETE_QUIZ",
-            payload: {
-              score: guestResult.score,
-              answers: guestResult.answers,
-            },
-          })
-
-          dispatch({ type: "SET_RESULTS_READY", payload: true })
+          // For all quiz types, require authentication to see results
+          dispatch({ type: "SET_REQUIRES_AUTH", payload: true })
           dispatch({ type: "SET_LOADING_RESULTS", payload: false })
-          return true
+          return false
         }
       }
 
@@ -614,7 +689,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       dispatch({ type: "SET_LOADING_RESULTS", payload: false })
       return false
     }
-  }, [state.quizId, state.slug, state.quizType, state.isLoadingResults, authIsAuthenticated])
+  }, [state.quizId, state.slug, state.quizType, state.isLoadingResults, authIsAuthenticated, dispatch])
 
   // Check storage for completed state
   useEffect(() => {
@@ -705,6 +780,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.requiresAuth,
     cleanupUrlIfNeeded,
     fetchQuizResults,
+    dispatch,
   ])
 
   // Initialize quiz state and handle refresh
@@ -792,6 +868,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.questionCount,
     state.requiresAuth,
     fetchQuizResults,
+    dispatch,
   ])
 
   // Calculate score
@@ -809,10 +886,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   // Navigation
   const nextQuestion = useCallback(() => {
     if (state.currentQuestionIndex < state.questionCount - 1) {
-      dispatch({ type: "SET_CURRENT_QUESTION", payload: state.currentQuestionIndex + 1 })
+      dispatch({ type: "NEXT_QUESTION" })
 
       // Save current state to storage
-      const currentState = {
+      const currentState: StoredQuizState = {
         quizId: state.quizId,
         type: state.quizType,
         slug: state.slug,
@@ -834,14 +911,15 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.answers,
     state.timeSpentPerQuestion,
     startTime,
+    dispatch,
   ])
 
   const prevQuestion = useCallback(() => {
     if (state.currentQuestionIndex > 0) {
-      dispatch({ type: "SET_CURRENT_QUESTION", payload: state.currentQuestionIndex - 1 })
+      dispatch({ type: "PREV_QUESTION" })
 
-      // Save current state to storage
-      const currentState = {
+      // Save current state
+      const currentState: StoredQuizState = {
         quizId: state.quizId,
         type: state.quizType,
         slug: state.slug,
@@ -863,11 +941,12 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.answers,
     state.timeSpentPerQuestion,
     startTime,
+    dispatch,
   ])
 
   const submitAnswer = useCallback(
     (answer: string, timeSpent: number, isCorrect: boolean) => {
-      const answerObj = { answer, timeSpent, isCorrect }
+      const answerObj: QuizAnswer = { answer, timeSpent, isCorrect }
 
       dispatch({
         type: "SET_ANSWER",
@@ -878,7 +957,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       const updatedAnswers = [...state.answers]
       updatedAnswers[state.currentQuestionIndex] = answerObj
 
-      const currentState = {
+      const currentState: StoredQuizState = {
         quizId: state.quizId,
         type: state.quizType,
         slug: state.slug,
@@ -905,6 +984,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       state.timeSpentPerQuestion,
       startTime,
       nextQuestion,
+      dispatch,
     ],
   )
 
@@ -912,7 +992,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   const retryLoadingResults = useCallback(async () => {
     dispatch({ type: "SET_ERROR", payload: null })
     await fetchQuizResults()
-  }, [fetchQuizResults])
+  }, [fetchQuizResults, dispatch])
 
   // Fix the completeQuiz function to properly save guest results
   const handleCompleteQuiz = useCallback(
@@ -966,20 +1046,75 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
             // Save the result using QuizService
             const validAnswers = filled.filter((a) => a !== null) as QuizAnswer[]
 
-            // Create submission object
-            const submission = {
-              quizId: state.quizId || "",
-              slug: state.slug || "",
+            // Add this right before creating the submission object
+            console.log("[QuizContext] Quiz completion data:", {
+              quizId: state.quizId,
+              slug: state.slug,
+              quizType: state.quizType,
+              score,
+              validAnswersCount: validAnswers.length,
+              totalTime: (Date.now() - startTime) / 1000,
+              totalQuestions: state.questionCount,
+            })
+
+            // Add a fallback mechanism for empty quizId or slug:
+            const quizId = state.quizId || quizData?.id || ""
+            const slug = state.slug || window.location.pathname.split("/").pop() || ""
+
+            // Extract the actual quiz ID from the URL if needed
+            const extractQuizIdFromUrl = () => {
+              if (typeof window !== "undefined") {
+                const pathParts = window.location.pathname.split("/")
+                // The quiz ID is typically the last part of the URL path
+                const potentialId = pathParts[pathParts.length - 1]
+                // Only return if it looks like a valid ID (not empty, not a file extension)
+                if (potentialId && !potentialId.includes(".")) {
+                  return potentialId
+                }
+              }
+              return ""
+            }
+
+            // Then update the submission object creation with better fallbacks
+            const submission: QuizSubmission = {
+              quizId: state.quizId || quizData?.id || extractQuizIdFromUrl(),
+              slug: state.slug || window.location.pathname.split("/").pop() || "",
               type: state.quizType,
               score,
-              answers: validAnswers,
+              answers: validAnswers.map((answer) => {
+                // For code quizzes, ensure we have the correct format
+                if (state.quizType === "code") {
+                  return {
+                    ...answer,
+                    userAnswer: answer.answer || "", // Ensure userAnswer is present
+                    language: answer.language || "javascript", // Default language if not provided
+                  }
+                }
+                return answer
+              }),
               totalTime: (Date.now() - startTime) / 1000,
               totalQuestions: state.questionCount,
             }
 
+            // Log the submission for debugging
+            console.log(`[QuizContext] Submitting ${state.quizType} quiz:`, {
+              quizId: submission.quizId,
+              slug: submission.slug,
+              type: submission.type,
+              answersCount: submission.answers.length,
+              firstAnswer: submission.answers[0],
+            })
+
             // Validate submission before proceeding
-            if (!submission.quizId || !submission.slug || !submission.answers || !submission.answers.length) {
-              console.error("[QuizContext] Invalid submission data:", submission)
+            // Replace the existing validation check with this more detailed version
+            if (!submission.quizId || !submission.slug) {
+              console.error("[QuizContext] Invalid submission data - missing required fields:", {
+                hasQuizId: !!submission.quizId,
+                hasSlug: !!submission.slug,
+                hasAnswers: !!submission.answers && Array.isArray(submission.answers),
+                answerCount: submission.answers?.length || 0,
+                submission,
+              })
               toast({
                 title: "Error completing quiz",
                 description: "Missing required quiz data. Please try again or contact support.",
@@ -1062,13 +1197,8 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
                 dispatch({ type: "SET_REQUIRES_AUTH", payload: true })
                 dispatch({ type: "SET_PENDING_AUTH_REQUIRED", payload: true })
 
-                // Prompt to sign in if onAuthRequired is provided
-                if (onAuthRequired) {
-                  authRedirectTimeout = setTimeout(() => {
-                    const redirectUrl = `/dashboard/${state.quizType}/${state.slug}`
-                    onAuthRequired(redirectUrl)
-                  }, 1500)
-                }
+                // No longer automatically redirect - let the user decide when to sign in
+                console.log("Guest user completed quiz - waiting for user to choose sign in or restart")
               } else {
                 // User is already authenticated or this is a quiz type that doesn't require auth
                 // Mark results as ready to view immediately
@@ -1125,9 +1255,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       state.isCompleted,
       state.savingResults,
       authIsAuthenticated,
-      onAuthRequired,
       calculateScore,
       startTime,
+      quizData?.id,
+      dispatch,
     ],
   )
 
@@ -1160,7 +1291,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
 
     dispatch({ type: "RESET_QUIZ" })
-  }, [clearQuizData, state.quizId, cleanupUrlIfNeeded])
+  }, [clearQuizData, state.quizId, cleanupUrlIfNeeded, dispatch])
 
   const getTimeSpentOnCurrentQuestion = useCallback(
     () => state.timeSpentPerQuestion[state.currentQuestionIndex] || 0,
@@ -1217,6 +1348,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.requiresAuth,
     fetchQuizResults,
     cleanupUrlIfNeeded,
+    dispatch,
   ])
 
   // Add a cleanup effect when the component unmounts
@@ -1242,7 +1374,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }, 5000)
 
     return () => clearTimeout(safetyTimeout)
-  }, [isLoading])
+  }, [isLoading, dispatch])
 
   // Add a timeout to prevent getting stuck in auth processing state
   useEffect(() => {
@@ -1266,9 +1398,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     return () => {
       if (timeoutId) clearTimeout(timeoutId)
     }
-  }, [state.isProcessingAuth])
-
-  // Add a clearGuestResults function to clear guest results
+  }, [state.isProcessingAuth, dispatch])
 
   return (
     <QuizContext.Provider

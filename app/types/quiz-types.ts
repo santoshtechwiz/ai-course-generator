@@ -1,189 +1,301 @@
-import type { ReactNode } from "react"
+import type React from "react"
 
-// Quiz types
-export type QuizType = "mcq" | "openended" | "blanks" | "code" | "flashcard" | "document"
-
-// Base interfaces
-export interface BaseQuizState {
-  quizId: string
-  quizType: QuizType
-  quizSlug: string
-  currentQuestion: number
-  totalQuestions: number
-  startTime: number
-  isCompleted: boolean
+// Convert QuizType to an enum
+export enum QuizType {
+  MCQ = "mcq",
+  CODE = "code",
+  BLANKS = "blanks",
+  OPENENDED = "openended",
+  FLASHCARD = "flashcard",
+  DOCUMENT = "document",
 }
 
-export interface BaseAnswer {
-  timeSpent: number
-  hintsUsed?: boolean
-}
-
-// Specific answer types
-export interface MCQAnswer extends BaseAnswer {
-  answer: string
-  isCorrect: boolean
-}
-
-export interface BlankAnswer extends BaseAnswer {
-  answer: string
-  similarity?: number
-}
-
-export interface OpenEndedAnswer extends BaseAnswer {
-  answer: string
-}
-
-export interface CodeAnswer extends BaseAnswer {
-  answer: string
-  userAnswer?: string
-  isCorrect: boolean
-}
-
-export interface FlashcardAnswer extends BaseAnswer {
-  isCorrect: boolean
-  saved?: boolean
-}
-
-// Union type for all answer types
-export type QuizAnswer = MCQAnswer | BlankAnswer | OpenEndedAnswer | CodeAnswer | FlashcardAnswer
-
-// Question interfaces
+// Base question interface
 export interface BaseQuestion {
   id: string | number
   question: string
+  explanation?: string
+  difficulty?: "easy" | "medium" | "hard"
+  tags?: string[]
+  timeLimit?: number // in seconds
+  points?: number
+  category?: string
 }
 
-export interface MCQQuestion extends BaseQuestion {
+// MCQ question
+export interface McqQuestion extends BaseQuestion {
+  options: string[]
+  correctAnswer: number
+  multipleCorrect?: boolean
+  correctAnswers?: number[]
+}
+
+// Code question
+export interface CodeQuestion extends BaseQuestion {
+  initialCode?: string
+  solution: string
+  language: string
+  testCases?: {
+    input: string
+    expectedOutput: string
+  }[]
+  hints?: string[]
+}
+
+// Fill in the blanks question
+export interface BlankQuestion extends BaseQuestion {
+  text: string
+  blanks: string[]
+  caseSensitive?: boolean
+}
+
+// Open ended question
+export interface OpenEndedQuestion extends BaseQuestion {
+  modelAnswer: string
+  keywords?: string[]
+  minWordCount?: number
+  maxWordCount?: number
+}
+
+// Flashcard question
+export interface FlashcardQuestion extends BaseQuestion {
+  answer: string
+  imageUrl?: string
+}
+
+// Document question
+export interface DocumentQuestion extends BaseQuestion {
+  documentUrl: string
+  pageNumber?: number
+}
+
+// Union type for all question types
+export type QuizQuestion =
+  | McqQuestion
+  | CodeQuestion
+  | BlankQuestion
+  | OpenEndedQuestion
+  | FlashcardQuestion
+  | DocumentQuestion
+
+// Quiz metadata
+export interface QuizMetadata {
+  createdAt: string
+  updatedAt: string
+  createdBy: string
+  lastAttemptedAt?: string
+  completionCount?: number
+  averageScore?: number
+  averageTimeSpent?: number // in seconds
+  difficulty?: "easy" | "medium" | "hard"
+  estimatedDuration?: number // in minutes
+  category?: string
+  tags?: string[]
+  isPublic: boolean
+  isFeatured?: boolean
+  isFavorite?: boolean
+  viewCount?: number
+  rating?: number
+  ratingCount?: number
+}
+
+// Quiz data interface
+export interface QuizData {
+  quizId: string
+  title: string
+  description?: string
+  quizType: QuizType | string
+  slug: string
+  questions: QuizQuestion[]
+  metadata: QuizMetadata
+  ownerId?: string
+  timeLimit?: number // in minutes, for the entire quiz
+  passingScore?: number // minimum score to pass the quiz
+  allowReview?: boolean // whether users can review their answers after submission
+  randomizeQuestions?: boolean // whether to randomize the order of questions
+  showCorrectAnswers?: boolean // whether to show correct answers after submission
+  maxAttempts?: number // maximum number of attempts allowed
+}
+
+// Consolidated QuizAnswer interface - making isCorrect optional to match quiz-service usage
+export interface QuizAnswer {
+  answer: string
+  timeSpent: number
+  isCorrect?: boolean // Made optional to match quiz-service usage
+  similarity?: number
+  hintsUsed?: boolean
+  userAnswer?: string
+  language?: string
+}
+
+// Add Question and McqQuizProps from types.ts
+export interface Question {
+  id: string
+  question: string
   answer: string
   option1: string
   option2: string
   option3: string
+  options?: string[] // Added for flexibility
+  title?: string
 }
 
-export interface BlankQuestion extends BaseQuestion {
-  answer: string
-  hint?: string
-}
-
-export interface OpenEndedQuestion extends BaseQuestion {
-  answer: string
-  hint?: string
-}
-
-export interface CodeQuestion extends BaseQuestion {
-  answer: string
-  starter?: string
-  hint?: string
-  tests?: string[]
-}
-
-export interface FlashcardQuestion extends BaseQuestion {
-  answer: string
-  hint?: string
-}
-
-// Quiz result interfaces
-export interface QuizResult {
+export interface McqQuizProps {
   quizId: string
   slug: string
-  answers: QuizAnswer[]
-  totalTime: number
-  score: number
-  type: QuizType
-  totalQuestions: number
-  correctAnswers?: number
-}
-
-// Performance level interface
-export interface PerformanceLevel {
-  threshold: number
-  color: string
-  bgColor: string
-  label: string
-  message: string
-}
-
-// Common props for quiz components
-export interface QuizBaseProps {
-  quizId: string
   title: string
-  slug: string
-  type: QuizType
-  totalQuestions: number
-  children: ReactNode
+  questions: Question[]
+  isPublic: boolean
+  isFavorite: boolean
+  ownerId?: string
+  difficulty?: string
 }
 
-export interface QuizResultBaseProps {
-  quizId: string
-  title: string
-  score: number
-  totalQuestions: number
-  totalTime: number
-  slug: string
-  quizType: QuizType
-  children: ReactNode
-  clearGuestData?: () => void
-  isSaving?: boolean
-  onSaveComplete?: () => void
-  onSaveError?: (error: Error) => void
-}
-
-export interface QuizWrapperProps {
-  quizState: BaseQuizState
-  answers: QuizAnswer[]
-  redirectPath: string
-  showAuthModal: boolean
-  onAuthModalClose: () => void
-  children: ReactNode
-}
-
-export type QuizAnimationState = "idle" | "completing" | "showing-results" | "redirecting"
-
-
-
-export interface QuizQuestion {
+// Add QuizListItem from types.ts
+export interface QuizListItem {
   id: string
-  question: string
-  options?: string[]
-  correctAnswer?: string
-  explanation?: string
+  title: string
+  slug: string
+  ownerId?: string
+  isPublic: boolean
+  isFavorite: boolean
+  questionCount: number
+  createdAt: string
+  updatedAt: string
+  quizType: QuizType
 }
 
-export interface QuizResult {
-  quizId: string
+// Add UserQuiz from types.ts
+export interface UserQuiz {
+  id: string
+  title: string
+  slug: string
+  type: "code" | "mcq" | "openended"
+  userId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Add QuizState and QuizContextType from types.ts
+export interface QuizState {
+  currentQuestionIndex: number
+  questionCount: number
+  isLoading: boolean
+  error: string | null
+  isCompleted: boolean
+  showAuthPrompt: boolean
+  answers: (QuizAnswer | null)[]
   score: number
-  answers: QuizAnswer[]
-  completedAt: string
   timeSpent: number
 }
 
-export interface QuizProgress {
-  currentQuestionIndex: number
-  answers: (QuizAnswer | null)[]
-  timeSpentPerQuestion: number[]
-  lastQuestionChangeTime: number
+export interface QuizContextType {
+  state: QuizState
+  submitAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
+  completeQuiz: (answers: QuizAnswer[]) => void
+  restartQuiz: () => void
 }
 
-export interface QuizMetadata {
-  quizId: string
+// Add CreateQuizResponse from types.ts
+export interface CreateQuizResponse {
+  userQuizId: string
   slug: string
+}
+
+// Add QuizDetailsPageProps from types.ts
+export interface QuizDetailsPageProps {
   title: string
   description: string
-  quizType: QuizType
+  slug: string
+  quizType: string
   questionCount: number
-  requiresAuth: boolean
+  estimatedTime: string
+  breadcrumbItems: BreadcrumbItem[]
+  quizId: string
+  authorId: string
+  isPublic: boolean
+  isFavorite: boolean
+  children: React.ReactNode
 }
 
-export interface QuizContextState extends QuizMetadata, QuizProgress {
-  isCompleted: boolean
-  isLoading: boolean
-  isLoadingResults: boolean
-  resultsReady: boolean
-  error: string | null
+// Add BreadcrumbItem from types.ts
+export interface BreadcrumbItem {
+  name: string
+  href: string
+}
+
+// Add FlashCard from types.ts
+export interface FlashCard {
+  id: string
+  question: string
+  answer: string
+  isSaved: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Add QueryParams from types.ts
+export type QueryParams = {
+  page?: number
+  limit?: number
+  search?: string
+  sortBy?: string
+  orderBy?: "asc" | "desc"
+}
+
+// Define a proper QuizDataInput interface for the QuizContext
+export interface QuizDataInput {
+  // Required fields
+  quizId: string
+
+
+  title?: string
+  description?: string
+  quizType?: QuizType
+  questions?: Array<Question | QuizQuestion>
+  isPublic?: boolean
+  isFavorite?: boolean
+  userId?: string
+  difficulty?: string
+  slug?: string
+
+  // Any other properties that might be used
+  [key: string]: any
+}
+
+// Define a submission type for quiz results
+export interface QuizSubmission {
+  quizId: string
+  slug: string
+  type: QuizType
   score: number
-  animationState: QuizAnimationState
-  isProcessingAuth: boolean
-  hasGuestResult: boolean
-  quizData?: any
+  answers: QuizAnswer[]
+  totalTime: number
+  totalQuestions: number
+  completedAt?: string
+}
+
+// Define a quiz state storage type
+export interface StoredQuizState {
+  quizId: string
+  type: QuizType
+  slug: string
+  currentQuestion: number
+  totalQuestions: number
+  startTime: number
+  isCompleted: boolean
+  answers: (QuizAnswer | null)[]
+  timeSpentPerQuestion: number[]
+}
+
+// Define a quiz result type
+export interface QuizResult {
+  quizId: string
+  slug: string
+  type: QuizType
+  score: number
+  answers: QuizAnswer[]
+  totalTime: number
+  totalQuestions: number
+  completedAt?: string
 }

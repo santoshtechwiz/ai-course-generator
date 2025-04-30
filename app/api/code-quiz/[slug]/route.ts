@@ -1,4 +1,4 @@
-import type { CodingQuizProps } from "@/app/types/types"
+
 import prisma from "@/lib/db"
 import { NextResponse } from "next/server"
 
@@ -36,7 +36,7 @@ export async function GET(_: Request, props: { params: Promise< { slug: string }
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
 
-    const quizData: CodingQuizProps = {
+    const quizData: any = {
       isFavorite: result.isFavorite ?? false,
       isPublic: result.isPublic ?? false,
       slug: slug,

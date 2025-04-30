@@ -1,16 +1,9 @@
 "use client"
-
-import type React from "react"
 import { motion } from "framer-motion"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/tailwindUtils"
-
-interface CodeQuizOptionsProps {
-  options: string[]
-  selectedOption: string | null
-  onSelect: (option: string) => void
-  disabled?: boolean
-  renderOptionContent: (option: string) => React.ReactNode
-}
+import type { CodeQuizOptionsProps } from "@/app/types/code-quiz-types"
 
 export default function CodeQuizOptions({
   options,
@@ -20,10 +13,10 @@ export default function CodeQuizOptions({
   renderOptionContent,
 }: CodeQuizOptionsProps) {
   return (
-    <div className="space-y-3 mt-4">
+    <RadioGroup value={selectedOption || ""} onValueChange={onSelect} className="space-y-3 w-full" disabled={disabled}>
       {options.map((option, index) => (
         <motion.div
-          key={index}
+          key={`option-${index}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -35,16 +28,20 @@ export default function CodeQuizOptions({
           <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <div
               className={cn(
-                "border-2 rounded-lg p-4 cursor-pointer transition-all",
+                "flex items-center space-x-2 p-4 rounded-lg transition-all w-full",
+                "border-2",
                 selectedOption === option ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/80",
               )}
               onClick={() => !disabled && onSelect(option)}
             >
-              {renderOptionContent(option)}
+              <RadioGroupItem value={option} id={`option-${index}`} />
+              <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer font-medium text-sm sm:text-base">
+                {renderOptionContent ? renderOptionContent(option) : option}
+              </Label>
             </div>
           </motion.div>
         </motion.div>
       ))}
-    </div>
+    </RadioGroup>
   )
 }

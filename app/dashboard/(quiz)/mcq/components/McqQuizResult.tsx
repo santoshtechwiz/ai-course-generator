@@ -6,12 +6,12 @@ import { useSession } from "next-auth/react"
 import { quizService } from "@/lib/quiz-service"
 import type { Question } from "./types"
 import { motion } from "framer-motion"
-import { CheckCircle2, XCircle, Clock, BarChart3, RefreshCw, Award } from "lucide-react"
+import { CheckCircle2, XCircle, Clock, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import {  formatQuizTime } from "@/lib/utils"
+import { formatQuizTime } from "@/lib/utils"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 import { cn } from "@/lib/tailwindUtils"
@@ -291,14 +291,9 @@ export default function McqQuizResult({ title, onRestart, quizId, questions, ans
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-between pt-6 flex-wrap gap-4">
-          <Button variant="outline" onClick={handleRestart} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Restart Quiz
-          </Button>
-          <Button className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            View Detailed Analysis
+        <CardFooter className="flex justify-center pt-6">
+          <Button onClick={() => (window.location.href = "/dashboard")} variant="default">
+            Return to Dashboard
           </Button>
         </CardFooter>
       </Card>

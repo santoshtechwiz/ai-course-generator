@@ -1,7 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"
 import { useRef, useEffect, useState, memo } from "react"
-import { AlertCircle, Loader2, CheckCircle, Clock, RotateCcw, LogIn } from "lucide-react"
+import { AlertCircle, Loader2, CheckCircle, Clock, RotateCcw, LogIn, Info } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,23 +15,16 @@ import type { Question } from "./types"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 import { toast } from "@/hooks/use-toast"
+import { QuizDataInput, QuizType } from "@/app/types/quiz-types"
 
 interface McqQuizContentProps {
-  quizData: {
-    id: string
-    title: string
-    slug: string
-    isPublic: boolean
-    isFavorite: boolean
-    userId: string
-    difficulty?: string
-  }
+  quizData: QuizDataInput,
   questions: Question[]
   slug: string
 }
 
 // Memoize the content component to prevent unnecessary re-renders
-const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug }: McqQuizContentProps) {
+export const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug }: McqQuizContentProps) {
   const {
     state,
     submitAnswer,
@@ -40,7 +33,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
     isAuthenticated,
     handleAuthenticationRequired,
     fetchQuizResults,
-    clearGuestResults, // Add this
+    clearGuestResults,
   } = useQuiz()
   const router = useRouter()
   const { isAuthenticated: authState, user } = useAuth()
@@ -210,18 +203,11 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
         return
       }
 
-      // Auth required for non-authenticated users
-      if (requiresAuth) {
-        setDisplayState("auth")
-        return
-      }
-
-      // Results ready
-      if (resultsReady || answers.some((a) => a !== null)) {
-        console.log("Results ready or answers found, showing results")
-        setDisplayState("results")
-        return
-      }
+      // IMPORTANT: Always require authentication for non-authenticated users to view results
+      // This ensures guest users cannot see results without signing in
+      console.log("User is not authenticated, showing auth prompt")
+      setDisplayState("auth")
+      return
     }
 
     // Default to quiz
@@ -234,10 +220,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
     isLoadingResults,
     savingResults,
     isCompleted,
-    requiresAuth,
     userIsAuthenticated,
-    resultsReady,
-    answers,
   ])
 
   // Early return for error states with retry button
@@ -313,7 +296,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
   }
 
   const handleGoBack = () => {
-    console.log("User clicked Go Back, showing results without authentication")
+    console.log("User clicked Go Back, returning to quiz")
 
     // Always clear guest results first
     if (typeof clearGuestResults === "function") {
@@ -325,21 +308,14 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
       restartQuiz()
     }
 
-    // IMPORTANT: Set display state to results - this allows viewing results without authentication
-    setDisplayState("results")
-
-    // Prevent any potential redirects
-    setTimeout(() => {
-      if (displayState !== "results") {
-        console.log("Forcing display state to results")
-        setDisplayState("results")
-      }
-    }, 100)
+    // IMPORTANT: Set display state to quiz instead of results
+    // This prevents guest users from seeing results
+    setDisplayState("quiz")
 
     // Show a toast notification
     toast({
-      title: "Viewing results as guest",
-      description: "Your progress won't be saved. Sign in to save your results.",
+      title: "Quiz restarted",
+      description: "You can now retake the quiz. Sign in to save your results.",
       variant: "default",
     })
   }
@@ -527,17 +503,34 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
                   <div>
                     <h3 className="font-medium text-amber-800 dark:text-amber-300">Guest Mode</h3>
                     <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                      You're viewing results as a guest. Your progress won't be saved.
+                      You're viewing results as a guest. Your progress won't be saved when you leave this page.
                     </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-2 bg-white dark:bg-transparent border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                      onClick={handleSignIn}
-                    >
-                      <LogIn className="h-3.5 w-3.5 mr-1.5" />
-                      Sign in to save results
-                    </Button>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-700 text-white border-none"
+                        onClick={handleSignIn}
+                      >
+                        <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                        Sign in to save results
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                        onClick={() => {
+                          toast({
+                            title: "Guest Mode Information",
+                            description:
+                              "In guest mode, you can view your results but they won't be saved to your account or be available after you leave this page.",
+                            variant: "default",
+                          })
+                        }}
+                      >
+                        <Info className="h-3.5 w-3.5 mr-1.5" />
+                        Learn more
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -549,6 +542,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, questions, slug 
               questions={questions}
               answers={state.answers}
               score={state.score}
+              isGuestMode={!userIsAuthenticated}
             />
           </motion.div>
         ) : (
@@ -681,7 +675,8 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
 
   // Add a safety check for quizData
   const safeQuizData = {
-    id: validQuizId,
+    quizId: "", // Add the required quizId property
+    id: "",
     title: quizData?.title || "Quiz",
     slug: validSlug,
     isPublic: quizData?.isPublic || false,
@@ -695,11 +690,12 @@ export default function McqQuizWrapper({ quizData, questions, slug }: McqQuizWra
 
   return (
     <QuizProvider
+      quizId={quizData?.id || ""}
       quizData={{
         ...safeQuizData,
         questions,
       }}
-      quizType="mcq"
+      quizType={QuizType.MCQ}
       slug={validSlug}
       onAuthRequired={(redirectUrl) => {
         // If user is already authenticated, don't show auth prompt

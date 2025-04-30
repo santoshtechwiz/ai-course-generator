@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { QuizType } from "@/app/types/quiz-types"
 
 interface QuizActionsProps {
   quizId: string
@@ -40,7 +41,7 @@ interface QuizActionsProps {
   initialIsFavorite: boolean
   userId: string
   ownerId: string
-  quizType?: string
+  quizType?: QuizType
   className?: string
   children?: React.ReactNode
   icon?: React.ReactNode

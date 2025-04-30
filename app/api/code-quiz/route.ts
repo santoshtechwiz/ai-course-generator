@@ -4,6 +4,7 @@ import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCr
 import { titleSubTopicToSlug } from "@/lib/slug";
 import { NextResponse } from "next/server";
 import { generateCodingMCQs } from "./quizGenerator";
+import { QuizType } from "@/app/types/quiz-types";
 
 
 export async function POST(req: Request) {
@@ -36,13 +37,13 @@ export async function POST(req: Request) {
       // Add difficulty to each quiz (in a real scenario, you'd have different quizzes for each difficulty)
       quizzes = quizzes.map((quiz) => ({ ...quiz, difficulty }))
 
-      await createQuestions(quizzes, userQuiz.id,"code");
+      await createQuestions(quizzes, userQuiz.id,QuizType.CODE);
 
       // 4. Update topic count
       await updateTopicCount(language);
 
       // 5. Only deduct credits if everything else succeeded
-      await updateUserCredits(session.user.id,"code");
+      await updateUserCredits(session.user.id,QuizType.CODE);
 
       return NextResponse.json({
         userQuizId: userQuiz.id,

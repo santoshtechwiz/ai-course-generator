@@ -2,33 +2,40 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
-import { CheckCircle2, XCircle, Clock, BarChart3, RefreshCw, Award } from "lucide-react"
+import { CheckCircle2, XCircle, Clock, Award, LogIn, AlertCircle, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { cn, formatQuizTime } from "@/lib/utils"
+import { formatQuizTime } from "@/lib/utils"
 import { useQuiz } from "@/app/context/QuizContext"
 import { useSession } from "next-auth/react"
 import { quizService } from "@/lib/quiz-service"
+import { useAuth } from "@/providers/unified-auth-provider"
+import { toast } from "@/hooks/use-toast"
+import { cn } from "@/lib/tailwindUtils"
+import { CodeQuizResultProps } from "@/app/types/code-quiz-types"
 
-interface CodeQuizResultProps {
-  title: string
-  onRestart: () => void
-  quizId?: string
-  questions?: any[]
-  answers?: Array<{
-    answer: string
-    timeSpent: number
-    isCorrect: boolean
-  } | null>
-  score?: number
-}
 
-export default function CodeQuizResult({ title, onRestart, quizId, questions, answers, score }: CodeQuizResultProps) {
-  const { state } = useQuiz()
+export default function CodeQuizResult({
+  title,
+  onRestart,
+  quizId,
+  questions,
+  answers,
+  score,
+  isGuestMode,
+}: CodeQuizResultProps) {
+  const { state, handleAuthenticationRequired } = useQuiz()
   const { data: session } = useSession()
+  const { isAuthenticated, user } = useAuth()
   const [showAnimation, setShowAnimation] = useState(true)
+
+  // Enhanced authentication check
+  const userIsAuthenticated = !!(isAuthenticated || user || session?.user)
+
+  // Use isGuestMode prop if provided, otherwise determine from authentication state
+  const isGuest = isGuestMode !== undefined ? isGuestMode : !userIsAuthenticated
 
   // Use props if provided, otherwise fall back to state
   const quizQuestions = questions || state.questions || []
@@ -38,8 +45,13 @@ export default function CodeQuizResult({ title, onRestart, quizId, questions, an
   // Calculate statistics
   const totalQuestions = quizQuestions.length
   const correctAnswers = quizAnswers.filter((a) => a?.isCorrect).length
-  const incorrectAnswers = quizAnswers.filter((a) => a && !a.isCorrect).length
-  const scorePercentage = score !== undefined ? score : Math.round((correctAnswers / totalQuestions) * 100) || 0
+  const incorrectAnswers = quizAnswers.filter((a) => a && a.isCorrect === false).length
+  const unansweredQuestions = totalQuestions - correctAnswers - incorrectAnswers
+
+  // Calculate score percentage correctly
+  const scorePercentage =
+    score !== undefined ? score : totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
+
   const totalTime = quizAnswers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
   const averageTime = totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0
 
@@ -70,27 +82,100 @@ export default function CodeQuizResult({ title, onRestart, quizId, questions, an
   const hasSavedRef = useRef(false)
 
   useEffect(() => {
-    if (session?.user && quizId_ && !hasSavedRef.current) {
-      hasSavedRef.current = true;
+    if (userIsAuthenticated && quizId_ && !hasSavedRef.current) {
+      hasSavedRef.current = true
 
+      // Use a small timeout to ensure we don't block rendering
       setTimeout(() => {
+        // Save to server if authenticated
         quizService.saveCompleteQuizResult({
           quizId: quizId_,
           slug: state.slug,
           type: "code",
           score: scorePercentage,
           answers: quizAnswers.filter((a) => a !== null),
-          totalTime,
-          totalQuestions,
-        });
+          totalTime: totalTime,
+          totalQuestions: totalQuestions,
+        })
 
-        quizService.clearAllStorage();
-      }, 100);
+        // Clear all storage after saving to database
+        quizService.clearAllStorage()
+      }, 100)
+    } else if (!userIsAuthenticated && quizId_) {
+      // For guest users, save as guest result but don't show results
+      quizService.saveGuestResult({
+        quizId: quizId_,
+        slug: state.slug,
+        type: "code",
+        score: scorePercentage,
+        answers: quizAnswers.filter((a) => a !== null),
+        totalTime: totalTime,
+        totalQuestions: totalQuestions,
+        completedAt: new Date().toISOString(),
+      })
     }
-  }, [session, quizId_, state.slug, quizAnswers, scorePercentage, totalTime, totalQuestions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userIsAuthenticated, quizId_, state.slug, quizAnswers, scorePercentage, totalTime, totalQuestions])
+
+  // Handle sign in button click
+  const handleSignIn = () => {
+    console.log("User clicked Sign In, initiating authentication flow")
+
+    // Create the redirect URL
+    const redirectUrl = `/dashboard/code/${state.slug}?fromAuth=true`
+
+    // Save current quiz state before redirecting
+    quizService.savePendingQuizData()
+
+    // Save auth redirect info
+    quizService.saveAuthRedirect(redirectUrl)
+
+    // Call the authentication handler
+    handleAuthenticationRequired()
+  }
 
   return (
     <div className="space-y-8 w-full max-w-3xl mx-auto">
+      {isGuest && (
+        <div className="mb-4 p-4 border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-amber-800 dark:text-amber-300">Guest Mode</h3>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                You're viewing results as a guest. Your progress won't be saved when you leave this page.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Button
+                  size="sm"
+                  className="bg-amber-600 hover:bg-amber-700 text-white border-none"
+                  onClick={handleSignIn}
+                >
+                  <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                  Sign in to save results
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                  onClick={() => {
+                    toast({
+                      title: "Guest Mode Information",
+                      description:
+                        "In guest mode, you can view your results but they won't be saved to your account or be available after you leave this page.",
+                      variant: "default",
+                    })
+                  }}
+                >
+                  <Info className="h-3.5 w-3.5 mr-1.5" />
+                  Learn more
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-2xl font-bold">{title} Results</CardTitle>
@@ -210,14 +295,24 @@ export default function CodeQuizResult({ title, onRestart, quizId, questions, an
                           <div className="flex items-center gap-2">
                             <span className="font-semibold">Your answer:</span>
                             <span className={isCorrect ? "text-green-600" : "text-red-600"}>
-                              {answer?.answer || "No answer provided"}
+                              {answer?.answer ? (
+                                <code className="bg-muted p-1 rounded text-xs">
+                                  {answer.answer.length > 100 ? answer.answer.substring(0, 100) + "..." : answer.answer}
+                                </code>
+                              ) : (
+                                "No answer provided"
+                              )}
                             </span>
                           </div>
 
                           {!isCorrect && (
                             <div className="flex items-center gap-2">
                               <span className="font-semibold">Correct answer:</span>
-                              <span className="text-green-600">{question?.answer || "Answer not available"}</span>
+                              <span className="text-green-600">
+                                <code className="bg-muted p-1 rounded text-xs">
+                                  {question?.answer || question?.correctAnswer || "Answer not available"}
+                                </code>
+                              </span>
                             </div>
                           )}
 
@@ -234,14 +329,9 @@ export default function CodeQuizResult({ title, onRestart, quizId, questions, an
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-between pt-6 flex-wrap gap-4">
-          <Button variant="outline" onClick={onRestart} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Restart Quiz
-          </Button>
-          <Button className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            View Detailed Analysis
+        <CardFooter className="flex justify-center pt-6">
+          <Button onClick={() => (window.location.href = "/dashboard")} variant="default">
+            Return to Dashboard
           </Button>
         </CardFooter>
       </Card>
