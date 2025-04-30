@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useState, useEffect } from "react"
 import { ArrowRight, ArrowLeft, Code, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
@@ -13,45 +13,31 @@ import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import { formatQuizTime } from "@/lib/utils"
 import CodeQuizOptions from "./CodeQuizOptions"
+import CodeQuizEditor from "./CodeQuizEditor"
 
-// Define proper TypeScript interfaces
-interface Question {
-  id: string
-  question: string
-  code?: string
-  codeSnippet?: string
-  language?: string
-  options: string[]
-  answer: string
-  explanation?: string
-  difficulty: string
-  timeLimit?: number
-}
-
-interface CodingQuizProps {
-  question: Question
-  onAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
-  questionNumber: number
-  totalQuestions: number
-}
 
 export default function CodingQuiz({ question, onAnswer, questionNumber, totalQuestions }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [userCode, setUserCode] = useState<string>(question?.codeSnippet || "")
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  console.log("CodingQuiz question", question)
 
   // Start timer when component mounts
-  React.useEffect(() => {
+  useEffect(() => {
     const startTime = Date.now()
     const timer = setInterval(() => {
       setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
     }, 1000)
 
+    // Initialize user code with the question's code snippet
+    if (question?.codeSnippet) {
+      setUserCode(question.codeSnippet)
+    }
+
     return () => clearInterval(timer)
-  }, [question?.id]) // Reset timer when question changes
+  }, [question?.id, question?.codeSnippet]) // Reset timer when question changes
 
   const options = useMemo(() => {
     return Array.isArray(question?.options) ? question.options : []
@@ -61,32 +47,44 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
     setSelectedOption(option)
   }, [])
 
+  const handleCodeChange = useCallback((code: string | undefined) => {
+    if (code !== undefined) {
+      setUserCode(code)
+    }
+  }, [])
+
+  // Update the handleSubmit function to properly check answers
   const handleSubmit = useCallback(() => {
-    if (!selectedOption || isSubmitting) return
+    if (isSubmitting) return
 
     setIsSubmitting(true)
 
-    // Determine if the selected option is correct
-    const isCorrect = selectedOption === question.answer
+    // For code quizzes, we need to evaluate the code against the expected answer
+    const answer = userCode
 
-    // Check if this is the last question
-    const isLastQuestion = questionNumber === totalQuestions
+    // Improved answer validation - check if the answer contains the expected solution
+    // or if the selected option matches the correct answer
+    let isCorrect = false
+
+    if (question.answer || question.correctAnswer) {
+      const correctAnswer = question.answer || question.correctAnswer || ""
+
+      // If we have options and a selected option, check if it matches
+      if (options.length > 0 && selectedOption) {
+        isCorrect = selectedOption === correctAnswer
+      } else {
+        // For code answers, check if the user's code contains the expected solution
+        // This is a simple check - in production you'd want more sophisticated validation
+        isCorrect = answer.includes(correctAnswer)
+      }
+    }
 
     // Submit the answer
     setTimeout(() => {
-      if (isLastQuestion) {
-        // Ensure authentication is required for restricted quiz types
-        if (!isAuthenticated && (question.quizType === "mcq" || question.quizType === "blanks")) {
-          console.log("Authentication required to complete the quiz.")
-          // Trigger authentication flow here (e.g., redirect to sign-in page)
-          return
-        }
-      }
-
-      onAnswer(selectedOption, elapsedTime, isCorrect)
+      onAnswer(answer, elapsedTime, isCorrect)
       setIsSubmitting(false)
     }, 300) // Small delay for better UX
-  }, [selectedOption, question, questionNumber, totalQuestions, onAnswer, elapsedTime, isSubmitting, isAuthenticated])
+  }, [userCode, question, onAnswer, elapsedTime, isSubmitting, options, selectedOption])
 
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null
@@ -139,28 +137,6 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
     )
   }, [])
 
-  const renderOptionContent = useCallback(
-    (option: string) => {
-      if (!option) return null
-
-      const codeRegex = /```[\s\S]*?```/g
-      const parts = option.split(codeRegex)
-      const codes = option.match(codeRegex) || []
-
-      return (
-        <div className="w-full">
-          {parts.map((part, index) => (
-            <React.Fragment key={index}>
-              {part && <span className="block mb-2">{part.trim()}</span>}
-              {codes[index] && <div className="my-2">{renderCode(codes[index], question?.language)}</div>}
-            </React.Fragment>
-          ))}
-        </div>
-      )
-    },
-    [question?.language, renderCode],
-  )
-
   // If no question is available
   if (!question) {
     return (
@@ -207,7 +183,7 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        <MotionTransition key={question.id} motionKey={String(question.id)}>
+        <MotionTransition key={question.id} motionKey={String(question.id || questionNumber)}>
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
@@ -221,21 +197,32 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
                 <h2 className="text-lg sm:text-xl font-semibold">{renderQuestionText(question?.question || "")}</h2>
               </div>
 
-              {question?.codeSnippet && (
-                <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
-                  <div className="my-4 overflow-x-auto">{renderCode(question.codeSnippet, question.language)}</div>
-                </MotionWrapper>
-              )}
+              {/* Code Editor */}
+              <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
+                {/* Update the CodeQuizEditor component to take up less space */}
+                {/* Replace the existing CodeEditor div with this: */}
+                <div className="my-4">
+                  <CodeQuizEditor
+                    value={userCode}
+                    language={question.language || "javascript"}
+                    onChange={handleCodeChange}
+                    height="180px" // Reduced height
+                  />
+                </div>
+              </MotionWrapper>
 
+              {/* Multiple choice options if available */}
               {options.length > 0 && (
                 <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
-                  <CodeQuizOptions
-                    options={options}
-                    selectedOption={selectedOption}
-                    onSelect={handleSelectOption}
-                    disabled={isSubmitting}
-                    renderOptionContent={renderOptionContent}
-                  />
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium mb-3">Select the correct option:</h3>
+                    <CodeQuizOptions
+                      options={options}
+                      selectedOption={selectedOption}
+                      onSelect={handleSelectOption}
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 </MotionWrapper>
               )}
             </div>
@@ -273,7 +260,7 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
           )}
         </div>
 
-        <Button onClick={handleSubmit} disabled={!selectedOption || isSubmitting} className="w-full sm:w-auto">
+        <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto">
           {isSubmitting ? (
             <div className="flex items-center gap-2">
               <div

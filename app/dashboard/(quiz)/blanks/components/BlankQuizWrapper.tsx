@@ -1,7 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
-import { AlertCircle, RotateCcw, Loader2, Clock, CheckCircle } from "lucide-react"
+import { AlertCircle, RotateCcw, Loader2, Clock, CheckCircle, LogIn, Info } from "lucide-react"
 import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from "react"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 import BlankQuizResults from "./BlankQuizResults"
 import FillInTheBlanksQuiz from "./FillInTheBlanksQuiz"
+import { toast } from "@/hooks/use-toast"
 
 interface BlankQuizWrapperProps {
   quizData: any
@@ -60,7 +61,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
   )
 }
 
-// This component consumes the context
+// Update the BlankQuizContent component to align with MCQ auth flow
 function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   const router = useRouter()
   const {
@@ -72,6 +73,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     retryLoadingResults,
     handleAuthenticationRequired,
     fetchQuizResults,
+    clearGuestResults,
   } = useQuiz()
   const { isAuthenticated: authState, user } = useAuth()
   // Start directly in quiz state instead of checking
@@ -131,8 +133,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
       preparingTimeoutRef.current = setTimeout(() => {
         // Try to fetch results one more time
         fetchQuizResults()
-          .catch(() => {
-          })
+          .catch(() => {})
           .finally(() => {
             // Move to results if completed, otherwise to quiz
             if (isCompleted && (resultsReady || answers.some((a) => a !== null))) {
@@ -173,17 +174,18 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
 
     // Completed quiz states
     if (isCompleted) {
-      // Auth required
-      if (requiresAuth && !userIsAuthenticated) {
-        setDisplayState("quiz") // Show quiz instead of auth prompt
-        return
-      }
-
-      // Results ready
-      if (resultsReady || answers.some((a) => a !== null)) {
+      // If user is authenticated, always show results
+      if (userIsAuthenticated) {
+        console.log("User is authenticated, showing results directly")
         setDisplayState("results")
         return
       }
+
+      // IMPORTANT: Always require authentication for non-authenticated users to view results
+      // This ensures guest users cannot see results without signing in
+      console.log("User is not authenticated, showing auth prompt")
+      setDisplayState("auth")
+      return
     }
 
     // Default to quiz
@@ -195,10 +197,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     isLoadingResults,
     savingResults,
     isCompleted,
-    requiresAuth,
     userIsAuthenticated,
-    resultsReady,
-    answers,
   ])
 
   // Get current question data
@@ -235,6 +234,48 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
         completeQuiz(validAnswers)
       }, 800)
     }
+  }
+
+  // Handle go back (restart quiz)
+  const handleGoBack = () => {
+    console.log("User clicked Go Back, returning to quiz")
+
+    // Always clear guest results first
+    if (typeof clearGuestResults === "function") {
+      clearGuestResults()
+    }
+
+    // Always restart the quiz to reset state
+    if (typeof restartQuiz === "function") {
+      restartQuiz()
+    }
+
+    // Set display state to quiz
+    setDisplayState("quiz")
+
+    // Show a toast notification
+    toast({
+      title: "Quiz restarted",
+      description: "You can now retake the quiz. Sign in to save your results.",
+      variant: "default",
+    })
+  }
+
+  // Handle authentication required
+  const handleSignIn = () => {
+    console.log("User clicked Sign In, initiating authentication flow")
+
+    // Create the redirect URL
+    const redirectUrl = `/dashboard/blanks/${slug}?fromAuth=true`
+
+    // Save current quiz state before redirecting
+    quizService.savePendingQuizData()
+
+    // Save auth redirect info
+    quizService.saveAuthRedirect(redirectUrl)
+
+    // Call the authentication handler
+    handleAuthenticationRequired()
   }
 
   // Preparing results after authentication
@@ -440,8 +481,17 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
               title="Sign in to view your results"
               description="Your quiz has been completed! Sign in to view your detailed results and save your progress."
               ctaText="Sign in to view results"
-              allowContinue={false}
-              onContinueAsGuest={() => setDisplayState("results")}
+              allowContinue={true}
+              onContinueAsGuest={handleGoBack}
+              onSignIn={handleSignIn}
+              onClearData={() => {
+                // Only available in development mode
+                if (process.env.NODE_ENV !== "production") {
+                  quizService.clearAllStorageData()
+                  window.location.reload()
+                }
+              }}
+              showClearDataButton={process.env.NODE_ENV !== "production"}
             />
           </motion.div>
         ) : displayState === "results" ? (
@@ -453,6 +503,45 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="p-4 bg-card rounded-lg shadow-sm border"
           >
+            {!userIsAuthenticated && (
+              <div className="mb-4 p-4 border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-amber-800 dark:text-amber-300">Guest Mode</h3>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                      You're viewing results as a guest. Your progress won't be saved when you leave this page.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-700 text-white border-none"
+                        onClick={handleSignIn}
+                      >
+                        <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                        Sign in to save results
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                        onClick={() => {
+                          toast({
+                            title: "Guest Mode Information",
+                            description:
+                              "In guest mode, you can view your results but they won't be saved to your account or be available after you leave this page.",
+                            variant: "default",
+                          })
+                        }}
+                      >
+                        <Info className="h-3.5 w-3.5 mr-1.5" />
+                        Learn more
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             <BlankQuizResults
               answers={answers.filter((a) => a !== null)}
               questions={quizData?.questions || []}
@@ -460,8 +549,7 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
               quizId={quizId || "unknown"}
               title={title || ""}
               slug={slug || "unknown"}
-              onComplete={(score) => {
-              }}
+              onComplete={(score) => {}}
               onRetryLoading={retryLoadingResults}
             />
           </motion.div>

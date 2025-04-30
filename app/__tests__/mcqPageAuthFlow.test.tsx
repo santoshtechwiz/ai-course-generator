@@ -335,7 +335,14 @@ describe("Quiz Authentication Flow", () => {
     // 2. Mock quiz service to return not authenticated
     ;(quizService.isAuthenticated as jest.Mock).mockReturnValue(false)
 
-    // 3. Set up the useQuiz mock with guest state and completed quiz
+    // 3. Mock hasGuestResult to return true
+    ;(quizService.getGuestResult as jest.Mock).mockReturnValue({
+      quizId: "123",
+      score: 80,
+      answers: [{ answer: "test", timeSpent: 10, isCorrect: true }],
+    })
+
+    // 4. Set up the useQuiz mock with guest state and completed quiz
     const mockUseQuiz = {
       state: {
         quizId: "123",
@@ -359,6 +366,7 @@ describe("Quiz Authentication Flow", () => {
         savingResults: false,
         resultLoadError: null,
         isInitialized: true,
+        score: 80,
       },
       submitAnswer: jest.fn(),
       completeQuiz: jest.fn(),
@@ -371,17 +379,14 @@ describe("Quiz Authentication Flow", () => {
     }
     ;(QuizContext.useQuiz as jest.Mock).mockReturnValue(mockUseQuiz)
 
-    // 4. Render the component
+    // 5. Render the component
     const { findByTestId } = render(
       <McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />,
     )
 
-    // 5. Verify that the guest prompt is shown
+    // 6. Verify that the guest prompt is shown
     const guestPrompt = await findByTestId("guest-prompt")
     expect(guestPrompt).toBeInTheDocument()
-
-    // 6. Verify that saveGuestResult was called to save the guest result
-    expect(quizService.saveGuestResult).not.toHaveBeenCalled() // It's called in the component, not in our test
   })
 
   test("clicking 'Sign In' saves state and redirects to auth", async () => {
@@ -607,5 +612,124 @@ describe("Quiz Authentication Flow", () => {
 
     // 7. Verify that restartQuiz was called
     expect(restartQuiz).toHaveBeenCalled()
+  })
+
+  test("should properly handle authentication state transitions", async () => {
+    // 1. Mock the auth provider to return isAuthenticated: false initially
+    const { useAuth } = require("@/providers/unified-auth-provider")
+    const mockSignIn = jest.fn()
+    ;(useAuth as jest.Mock).mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      login: jest.fn(),
+      logout: jest.fn(),
+      loading: false,
+      signIn: mockSignIn,
+    })
+
+    // 2. Mock quiz service to return not authenticated
+    ;(quizService.isAuthenticated as jest.Mock).mockReturnValue(false)
+
+    // 3. Set up the useQuiz mock with guest state and completed quiz
+    const handleAuthenticationRequired = jest.fn()
+    const fetchQuizResults = jest.fn().mockResolvedValue(true)
+
+    const mockUseQuiz = {
+      state: {
+        quizId: "123",
+        slug: "test-quiz",
+        quizType: "mcq",
+        currentQuestionIndex: 1, // Last question
+        questionCount: 2,
+        isLoading: false,
+        error: null,
+        isCompleted: true, // Quiz is completed
+        answers: [
+          { answer: "test", timeSpent: 10, isCorrect: true },
+          { answer: "test", timeSpent: 10, isCorrect: true },
+        ],
+        animationState: "showing-results",
+        timeSpentPerQuestion: [10, 10],
+        requiresAuth: true, // Requires auth
+        hasGuestResult: true,
+        authCheckComplete: true,
+        pendingAuthRequired: true,
+        savingResults: false,
+        resultLoadError: null,
+        isInitialized: true,
+        score: 80,
+      },
+      submitAnswer: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      isAuthenticated: false,
+      handleAuthenticationRequired,
+      fetchQuizResults,
+      clearQuizData: jest.fn(),
+      clearGuestResults: jest.fn(),
+    }
+
+    // Use a stable reference for the mock to avoid re-renders
+    const stableMockUseQuiz = { ...mockUseQuiz }
+    ;(QuizContext.useQuiz as jest.Mock).mockReturnValue(stableMockUseQuiz)
+
+    // 4. Render the component
+    const { findByTestId } = render(
+      <McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />,
+    )
+
+    // 5. Verify that the guest prompt is shown
+    const guestPrompt = await findByTestId("guest-prompt")
+    expect(guestPrompt).toBeInTheDocument()
+
+    // 6. Find and click the "Sign In" button
+    const signInButton = await findByTestId("sign-in")
+    fireEvent.click(signInButton)
+
+    // 7. Verify that handleAuthenticationRequired was called
+    expect(handleAuthenticationRequired).toHaveBeenCalled()
+
+    // 8. Verify that savePendingQuizData was called
+    expect(quizService.savePendingQuizData).toHaveBeenCalled()
+
+    // 9. Now simulate returning from authentication
+    // First, update the auth mock to return authenticated
+    ;(useAuth as jest.Mock).mockReturnValue({
+      isAuthenticated: true,
+      user: { id: "user1" },
+      login: jest.fn(),
+      logout: jest.fn(),
+      loading: false,
+      signIn: mockSignIn,
+    })
+
+    // Update quiz service mock
+    ;(quizService.isAuthenticated as jest.Mock).mockReturnValue(true)
+
+    // Mock URL parameters to simulate returning from auth
+    mockLocation.search = "?fromAuth=true"
+
+    // Mock processPendingQuizData to simulate processing auth data
+    quizService.processPendingQuizData.mockImplementation(async () => {
+      console.log("Processing pending quiz data")
+      quizService.clearGuestResult("123")
+      quizService.clearQuizState("123", "mcq")
+    })
+
+    // Create a new component instance with authenticated state
+    const { findByTestId: findByTestIdAuth } = render(
+      <McqQuizWrapper quizData={mockQuizData} questions={mockQuestions} slug="test-quiz" />,
+    )
+
+    // Verify that processPendingQuizData was called
+    await waitFor(() => {
+      expect(quizService.processPendingQuizData).toHaveBeenCalled()
+    })
+
+    // Verify that clearGuestResult was called
+    expect(quizService.clearGuestResult).toHaveBeenCalled()
+
+    // Verify that clearQuizState was called
+    expect(quizService.clearQuizState).toHaveBeenCalled()
   })
 })

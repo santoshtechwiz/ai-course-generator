@@ -1,4 +1,5 @@
-import type { MultipleChoiceQuestion, QuizType, OpenEndedQuestion, CodeChallenge } from "@/app/types/types"
+import { OpenEndedQuestion } from "@/app/types/quiz-types"
+import { MultipleChoiceQuestion, QuizType, CodeChallenge } from "@/app/types/types"
 import { type Prisma, PrismaClient } from "@prisma/client"
 
 // Create a global object to store the Prisma client instance (for Next.js Fast Refresh)
@@ -336,12 +337,12 @@ export async function createQuestions(
   const data = questions.map((question) => {
     if (type === "mcq") {
       const mcqQuestion = question as MultipleChoiceQuestion
-      const options = [mcqQuestion.answer, mcqQuestion.option1, mcqQuestion.option2, mcqQuestion.option3].sort(
+      const options = [mcqQuestion.correctAnswer, mcqQuestion.options].sort(
         () => Math.random() - 0.5,
       )
       return {
         question: mcqQuestion.question,
-        answer: mcqQuestion.answer,
+        answer: mcqQuestion.correctAnswer,
         options: JSON.stringify(options),
         userQuizId,
         questionType: "mcq" as const,

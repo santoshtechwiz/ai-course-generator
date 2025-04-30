@@ -1,4 +1,6 @@
-import type { QuizType, QuizResult, QuizSubmission } from "./quiz-service"
+import { QuizResult, QuizSubmission } from "@/app/types/quiz-types"
+import { QuizType } from "@/app/types/types"
+
 
 /**
  * Quiz API Service
@@ -43,9 +45,7 @@ class QuizApi {
     }
   }
 
-  /**
-   * Submit quiz result to the server
-   */
+  // Update the submitQuizResult method to use quizId instead of slug for consistency
   async submitQuizResult(submission: QuizSubmission): Promise<QuizResult | null> {
     // Validate inputs to prevent "unknown" API calls
     if (!submission.slug || submission.slug === "unknown" || !submission.quizId || submission.quizId === "unknown") {
@@ -54,9 +54,9 @@ class QuizApi {
     }
 
     try {
-      console.log(`Submitting quiz result to /api/quiz/${submission.slug}/complete`)
+      console.log(`Submitting quiz result to /api/quiz/${submission.quizId}/complete`)
 
-      const response = await fetch(`/api/quiz/${submission.slug}/complete`, {
+      const response = await fetch(`/api/quiz/${submission.quizId}/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -124,7 +124,6 @@ class QuizApi {
 
       const result = await response.json()
 
-
       console.log("Successfully fetched quiz result from API:", result)
       return result
     } catch (error) {
@@ -133,7 +132,7 @@ class QuizApi {
     }
   }
 
-  formatApiError(message: string, statusCode: number = 500) {
+  formatApiError(message: string, statusCode = 500) {
     return new Response(JSON.stringify({ error: message }), {
       status: statusCode,
       headers: { "Content-Type": "application/json" },

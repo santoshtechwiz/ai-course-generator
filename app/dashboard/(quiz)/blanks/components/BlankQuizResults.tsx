@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { ArrowLeft, XCircle, RotateCcw, Loader2, ShieldAlert } from "lucide-react"
+import { XCircle, RotateCcw, Loader2, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import type { QuizAnswer } from "@/lib/quiz-service"
+
 import { useQuiz } from "@/app/context/QuizContext"
 import { motion } from "framer-motion"
 import { Progress } from "@/components/ui/progress"
@@ -16,6 +16,7 @@ import { quizService } from "@/lib/quiz-service"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 import { useSession } from "next-auth/react"
 import { toast } from "@/hooks/use-toast"
+import { QuizAnswer } from "@/app/types/quiz-types"
 
 interface BlankQuizResultsProps {
   answers?: QuizAnswer[]
@@ -28,6 +29,8 @@ interface BlankQuizResultsProps {
   onRetryLoading?: () => Promise<void>
 }
 
+// Update the BlankQuizResults component to align with MCQ auth flow
+// Add the isGuestMode prop to match the MCQ component
 export default function BlankQuizResults({
   answers,
   questions,
@@ -37,7 +40,8 @@ export default function BlankQuizResults({
   slug,
   onComplete,
   onRetryLoading,
-}: BlankQuizResultsProps) {
+  isGuestMode,
+}: BlankQuizResultsProps & { isGuestMode?: boolean }) {
   const { state, restartQuiz, handleAuthenticationRequired } = useQuiz()
   const [isRetrying, setIsRetrying] = useState(false)
   const { isAuthenticated, user, isLoading: authLoading } = useAuth()
@@ -216,8 +220,8 @@ export default function BlankQuizResults({
       >
         <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
         <h3 className="text-xl font-semibold mb-2">Error Saving Results</h3>
-        <p className="text-muted-foreground text-center max-w-md mb-6">
-          {saveError || "There was a problem saving your quiz results. Your progress may not be recorded."}
+        <p className="text-muted-foreground text-center max-w-md mb-6" data-testid="error-message">
+          {saveError || "Failed to load results. Your progress may not be recorded."}
         </p>
         <div className="flex gap-3">
           <Button onClick={() => setResultState("ready")} variant="default">
@@ -275,23 +279,9 @@ export default function BlankQuizResults({
             </p>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleRetryLoading} className="w-full sm:w-auto" disabled={isRetrying || !onRetryLoading}>
-            {isRetrying ? (
-              <>
-                <span className="animate-spin mr-2 h-4 w-4 border-2 border-background border-t-transparent rounded-full" />
-                Retrying...
-              </>
-            ) : (
-              <>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Retry Loading Results
-              </>
-            )}
-          </Button>
-          <Button onClick={handleRestart} variant="outline" className="w-full sm:w-auto">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Start New Quiz
+        <CardFooter className="flex justify-center">
+          <Button onClick={() => (window.location.href = "/dashboard")} variant="default">
+            Return to Dashboard
           </Button>
         </CardFooter>
       </Card>

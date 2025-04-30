@@ -2,7 +2,6 @@
  * Subscription types for the application
  */
 
-export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"; // Updated to match QuizDetailsPageWithContext
 // Subscription plan types
 export type SubscriptionPlanType = "FREE" | "BASIC" | "PREMIUM" | "ENTERPRISE"
 
@@ -148,10 +147,9 @@ export interface MultipleChoiceQuestion {
   question: string
   options: string[]
   correctAnswer: string
- 
 }
 export interface CodeChallenge {
-  id?: string | number
+  quizId?: string | number
   question: string
   options: string[]
   correctAnswer: string
@@ -160,157 +158,28 @@ export interface CodeChallenge {
   explanation?: string
 }
 
-// export interface CodingQuizProps {
-//   quizId: string | number
-//   slug: string
-//   isFavorite: boolean
-//   isPublic: boolean
-//   ownerId?: string
-//   quizData: {
-//     title: string
-//     questions: CodeChallenge[]
-//   }
-// }
+// Import quiz-related types to avoid duplication
+import type {
+  QuizListItem,
+  UserQuiz,
+  QueryParams,
+  BreadcrumbItem,
+  QuizDetailsPageProps,
+  FlashCard,
+  Question,
+  McqQuizProps,
+  QuizType,
+} from "./quiz-types"
 
-export interface QuizListItem{
-  id: string
-  title: string
-  slug: string
-  ownerId?: string
-  isPublic: boolean
-  isFavorite: boolean
-  questionCount: number
-  createdAt: string
-  updatedAt: string
-  quizType: QuizType
-}
-export type QueryParams = {
-  page?: number
-  limit?: number
-  search?: string
-  sortBy?: string
-  orderBy?: "asc" | "desc"
-}
-
-import type React from "react"
-
-
-
-export interface QuizData {
-  id?: string
-  title: string
-  description?: string
-  questions: Question[]
-  type: "code" | "mcq" | "openended"
-  createdAt?: Date
-  updatedAt?: Date
-}
-
-export interface UserQuiz {
-  id: string
-  title: string
-  slug: string
-  type: "code" | "mcq" | "openended"
-  userId: string
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface CodingQuizProps {
-  quizData: QuizData
-  quizId: string
-  ownerId: string
-  isPublic: boolean
-  isFavorite: boolean
-  title:string
-}
-
-export interface QuizAnswer {
-  answer: string
-  timeSpent: number
-  isCorrect: boolean
-}
-
-// Quiz context types
-export interface QuizState {
-  currentQuestionIndex: number
-  questionCount: number
-  isLoading: boolean
-  error: string | null
-  isCompleted: boolean
-  showAuthPrompt: boolean
-  answers: (QuizAnswer | null)[]
-  score: number
-  timeSpent: number
-}
-
-export interface QuizContextType {
-  state: QuizState
-  submitAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
-  completeQuiz: (answers: QuizAnswer[]) => void
-  restartQuiz: () => void
-}
-
-// API response types
-export interface CreateQuizResponse {
-  userQuizId: string
-  slug: string
-}
-
-export interface BreadcrumbItem {
-  name: string
-  href: string
-}
-
-export interface QuizDetailsPageProps {
-  title: string
-  description: string
-  slug: string
-  quizType: string
-  questionCount: number
-  estimatedTime: string
-  breadcrumbItems: BreadcrumbItem[]
-  quizId: string
-  authorId: string
-  isPublic: boolean
-  isFavorite: boolean
-  children: React.ReactNode
-}
-
-export interface FlashCard {
-  
-  id: string
-  question: string
-  answer: string
-  isSaved: boolean
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface Question {
-  id: string
-  question: string
-  answer: string
-  option1: string
-  option2: string
-  option3: string
-  options?: string[] // Added for flexibility
-  title?: string
-}
-
-export interface McqQuizProps {
-  quizId: string
-  slug: string
-  title: string
-  questions: Question[]
-  isPublic: boolean
-  isFavorite: boolean
-  ownerId?: string
-  difficulty?: string
-}
-
-export interface QuizAnswer {
-  answer: string
-  timeSpent: number
-  isCorrect: boolean
+// Re-export quiz-related types for backward compatibility
+export type {
+  QuizListItem,
+  UserQuiz,
+  QueryParams,
+  BreadcrumbItem,
+  QuizDetailsPageProps,
+  FlashCard,
+  Question,
+  McqQuizProps,
+  QuizType,
 }

@@ -3,12 +3,13 @@
 import { QuizProvider } from "@/app/context/QuizContext"
 import type React from "react"
 import QuizDetailsPage from "./QuizDetailsPage"
+import type { QuizType } from "@/app/types/quiz-types"
 
 interface QuizDetailsPageWithContextProps {
   title: string
   description: string
   slug: string
-  quizType: "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"
+  quizType: QuizType
   questionCount: number
   estimatedTime: string
   difficulty?: "easy" | "medium" | "hard"
@@ -43,14 +44,25 @@ export default function QuizDetailsPageWithContext({
 }: QuizDetailsPageWithContextProps) {
   return (
     <QuizProvider
-      quizId={quizId || ""}
+      quizId=""
+      quizData={{
+        quizId: quizId || "",
+        title,
+        description,
+        quizType,
+        questions: [],
+        questionCount,
+        estimatedTime,
+        difficulty,
+        authorId,
+        isFavorite,
+        isPublic,
+        category,
+        tags,
+        slug,
+      }}
       slug={slug}
-      title={title}
-      description={description}
       quizType={quizType}
-      questionCount={questionCount}
-      estimatedTime={estimatedTime}
-      breadcrumbItems={breadcrumbItems}
     >
       <QuizDetailsPage
         title={title}

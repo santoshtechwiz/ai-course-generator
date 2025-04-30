@@ -2,7 +2,14 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LogIn, ArrowLeft, Shield, Clock, Save } from "lucide-react"
 import { useAuth } from "@/providers/unified-auth-provider"
@@ -14,7 +21,7 @@ interface GuestSignInPromptProps {
   ctaText?: string
   allowContinue?: boolean
   onContinueAsGuest?: () => void
-  onSignIn: () => void
+  onSignIn?: () => Promise<void> | void
   onClearData?: () => void
   showClearDataButton?: boolean
   forceShow?: boolean
@@ -35,63 +42,59 @@ export function GuestSignInPrompt({
   quizId,
   redirectUrl,
 }: GuestSignInPromptProps) {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
 
-  // If user is authenticated and this isn't forced, don't show
-  if (isAuthenticated && !forceShow) {
-    return null
-  }
+  // Don't show if already signed in (unless forced)
+  if (isAuthenticated && !forceShow) return null
 
-  const handleSignIn = () => {
-    // Prevent multiple clicks
+  const handleSignIn = async () => {
     if (isLoading) return
     setIsLoading(true)
 
     try {
-      // Always save current state before redirecting
-      quizService.savePendingQuizData()
+      // Save current quiz state before any redirect
+      await quizService.savePendingQuizData()
 
-      // If a redirectUrl is provided, save it for auth redirect
-      if (redirectUrl) {
-        quizService.saveAuthRedirect(redirectUrl)
-      }
+      // Determine where to return after auth
+      const destination =
+        redirectUrl || (quizId ? `/dashboard/quiz/${quizId}?fromAuth=true` : "/dashboard")
 
-      // Call the provided onSignIn handler
+      // Persist redirect URL
+      await quizService.saveAuthRedirect(destination)
+
+      // Custom onSignIn takes precedence
       if (onSignIn) {
-        onSignIn()
-        return
+        await Promise.resolve(onSignIn())
+      } else {
+        // Default redirect flow
+        await quizService.handleAuthRedirect(destination, true)
       }
-
-      // Default behavior if no custom handler
-      // Create redirect URL if not provided
-      const actualRedirectUrl = redirectUrl || (quizId ? `/dashboard/quiz/${quizId}?fromAuth=true` : "/dashboard")
-
-      // Save auth redirect if not already saved
-      if (!redirectUrl) {
-        quizService.saveAuthRedirect(actualRedirectUrl)
-      }
-
-      // Handle auth redirect
-      quizService.handleAuthRedirect(actualRedirectUrl, true)
     } catch (error) {
-      console.error("Error during sign in:", error)
+      console.error("Error during sign-in flow:", error)
       setIsLoading(false)
     }
   }
 
-  const handleGoBack = () => {
-    // Reset loading state if it was set
+  const handleContinue = () => {
+    if (isLoading) return
     setIsLoading(false)
+    onContinueAsGuest?.()
+  }
 
-    // Call the provided handler
-    if (onContinueAsGuest) {
-      onContinueAsGuest()
+  const handleClearAll = () => {
+    if (onClearData) {
+      onClearData()
+    } else {
+      quizService.clearAllStorageData().finally(() => {
+        window.location.reload()
+      })
     }
   }
 
   return (
-    <motion.div
+    <motion.section
+      aria-labelledby="guest-signin-title"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
@@ -100,38 +103,51 @@ export function GuestSignInPrompt({
     >
       <Card className="border-primary/20 shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">{title}</CardTitle>
+          <CardTitle id="guest-signin-title" className="text-2xl">
+            {title}
+          </CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <Save className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium">Save your progress</p>
-                <p className="text-muted-foreground">Access your results from any device</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <Clock className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium">Track your improvement</p>
-                <p className="text-muted-foreground">See your progress over time</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <Shield className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium">Secure your data</p>
-                <p className="text-muted-foreground">Your quiz history is safely stored</p>
-              </div>
-            </div>
-          </div>
+          {/* Benefits List */}
+          <ul className="space-y-3" role="list">
+            {[
+              {
+                icon: Save,
+                heading: "Save your progress",
+                detail: "Access your results from any device",
+              },
+              {
+                icon: Clock,
+                heading: "Track your improvement",
+                detail: "See your progress over time",
+              },
+              {
+                icon: Shield,
+                heading: "Secure your data",
+                detail: "Your quiz history is safely stored",
+              },
+            ].map(({ icon: Icon, heading, detail }) => (
+              <li
+                key={heading}
+                className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+              >
+                <Icon className="h-5 w-5 text-primary flex-shrink-0" aria-hidden="true" />
+                <div className="text-sm">
+                  <p className="font-medium">{heading}</p>
+                  <p className="text-muted-foreground">{detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
-          <Button onClick={handleSignIn} className="w-full" disabled={isLoading}>
+          <Button
+            onClick={handleSignIn}
+            className="w-full"
+            disabled={isLoading}
+            aria-busy={isLoading}
+          >
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -139,35 +155,36 @@ export function GuestSignInPrompt({
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <LogIn className="h-4 w-4" />
+                <LogIn className="h-4 w-4" aria-hidden="true" />
                 {ctaText}
               </span>
             )}
           </Button>
 
-          {allowContinue && onContinueAsGuest && (
+          {allowContinue && (
             <Button
               variant="outline"
-              onClick={handleGoBack}
+              onClick={handleContinue}
               className="w-full"
               disabled={isLoading}
               data-testid="continue-as-guest"
             >
               <span className="flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Go Back
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                Restart Quiz
               </span>
             </Button>
           )}
         </CardFooter>
       </Card>
+
       {(process.env.NODE_ENV !== "production" || showClearDataButton) && (
-        <div className="mt-4 border-t pt-4">
+        <section className="mt-4 border-t pt-4">
           <p className="text-sm text-muted-foreground mb-2">Testing Tools</p>
           <Button
             variant="destructive"
             size="sm"
-            onClick={onClearData || (() => quizService.clearAllQuizData())}
+            onClick={handleClearAll}
             className="w-full"
             data-testid="clear-data"
           >
@@ -176,8 +193,8 @@ export function GuestSignInPrompt({
           <p className="text-xs text-muted-foreground mt-1">
             This will clear all local storage, session storage, and cookies, then reload the page.
           </p>
-        </div>
+        </section>
       )}
-    </motion.div>
+    </motion.section>
   )
 }
