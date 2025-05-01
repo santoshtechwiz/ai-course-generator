@@ -1,95 +1,161 @@
+import { QuizType, type QuizAnswer } from "@/app/types/quiz-types"
+
 /**
- * Quiz utility functions
+ * Utility functions for quiz operations
  */
+export const quizUtils = {
+  /**
+   * Calculate score for a quiz based on answers
+   * @param answers Array of quiz answers
+   * @param type Quiz type
+   * @returns Score as a percentage (0-100)
+   */
+  calculateScore(answers: QuizAnswer[], type: QuizType | string): number {
+    if (!answers || answers.length === 0) return 0
 
-// Get performance level based on score
-export function getPerformanceLevel(score: number) {
-  if (score >= 90) {
-    return {
-      label: "Excellent",
-      message: "Outstanding performance! You've mastered this topic.",
-      color: "text-green-600 dark:text-green-400",
-      bgColor: "bg-green-600 dark:bg-green-500",
+    switch (type) {
+      case QuizType.MCQ:
+      case "mcq":
+      case QuizType.CODE:
+      case "code":
+        // Count correct answers
+        const correctCount = answers.filter((a) => a.isCorrect).length
+        return Math.round((correctCount / answers.length) * 100)
+
+      case QuizType.BLANKS:
+      case "blanks":
+        // Average similarity scores with threshold of 80%
+        const blanksSimilarity = answers.reduce((sum, a) => sum + (a.similarity || 0), 0)
+        return Math.round(blanksSimilarity / answers.length)
+
+      case QuizType.OPENENDED:
+      case "openended":
+        // Average similarity scores with threshold of 70%
+        const openEndedSimilarity = answers.reduce((sum, a) => sum + (a.similarity || 0), 0)
+        return Math.round(openEndedSimilarity / answers.length)
+
+      default:
+        return 0
     }
-  } else if (score >= 75) {
-    return {
-      label: "Good",
-      message: "Great job! You have a solid understanding of this topic.",
-      color: "text-green-600 dark:text-green-400",
-      bgColor: "bg-green-500 dark:bg-green-400",
+  },
+
+  /**
+   * Count correct answers in a quiz
+   * @param answers Array of quiz answers
+   * @param type Quiz type
+   * @returns Number of correct answers
+   */
+  countCorrectAnswers(answers: QuizAnswer[], type: QuizType | string): number {
+    if (!answers || answers.length === 0) return 0
+
+    switch (type) {
+      case QuizType.MCQ:
+      case "mcq":
+      case QuizType.CODE:
+      case "code":
+        return answers.filter((a) => a.isCorrect).length
+
+      case QuizType.BLANKS:
+      case "blanks":
+        return answers.filter((a) => (a.similarity || 0) > 80).length
+
+      case QuizType.OPENENDED:
+      case "openended":
+        return answers.filter((a) => (a.similarity || 0) > 70).length
+
+      default:
+        return 0
     }
-  } else if (score >= 60) {
-    return {
-      label: "Satisfactory",
-      message: "Good effort! You're on the right track.",
-      color: "text-yellow-600 dark:text-yellow-400",
-      bgColor: "bg-yellow-500 dark:bg-yellow-400",
+  },
+
+  /**
+   * Calculate similarity between two strings using Levenshtein distance
+   * @param str1 First string
+   * @param str2 Second string
+   * @returns Similarity percentage (0-100)
+   */
+  calculateSimilarity(str1: string, str2: string): number {
+    if (!str1 && !str2) return 100
+    if (!str1 || !str2) return 0
+
+    // Normalize strings
+    const a = str1.toLowerCase().trim()
+    const b = str2.toLowerCase().trim()
+
+    if (a === b) return 100
+
+    // Simple Levenshtein distance implementation
+    const an = a.length
+    const bn = b.length
+    const matrix = Array(bn + 1)
+      .fill(0)
+      .map(() => Array(an + 1).fill(0))
+
+    for (let i = 0; i <= an; i++) matrix[0][i] = i
+    for (let j = 0; j <= bn; j++) matrix[j][0] = j
+
+    for (let j = 1; j <= bn; j++) {
+      for (let i = 1; i <= an; i++) {
+        const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1, // deletion
+          matrix[j - 1][i] + 1, // insertion
+          matrix[j - 1][i - 1] + substitutionCost, // substitution
+        )
+      }
     }
-  } else if (score >= 40) {
-    return {
-      label: "Needs Improvement",
-      message: "You're making progress, but this topic needs more review.",
-      color: "text-orange-600 dark:text-orange-400",
-      bgColor: "bg-orange-500 dark:bg-orange-400",
+
+    return 100 - (matrix[bn][an] / Math.max(an, bn)) * 100
+  },
+
+  /**
+   * Format time in seconds to a human-readable string
+   * @param seconds Time in seconds
+   * @returns Formatted time string (e.g., "2m 30s")
+   */
+  formatTime(seconds: number): string {
+    if (isNaN(seconds) || seconds < 0) return "0s"
+
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = Math.floor(seconds % 60)
+
+    if (minutes === 0) {
+      return `${remainingSeconds}s`
     }
-  } else {
-    return {
-      label: "Review Required",
-      message: "This topic requires significant review. Don't give up!",
-      color: "text-red-600 dark:text-red-400",
-      bgColor: "bg-red-500 dark:bg-red-400",
+
+    return `${minutes}m ${remainingSeconds}s`
+  },
+
+  /**
+   * Generate a unique quiz ID
+   * @returns Unique ID string
+   */
+  generateQuizId(): string {
+    return `quiz_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  },
+
+  /**
+   * Validate quiz data
+   * @param data Quiz data to validate
+   * @returns Object with validation result
+   */
+  validateQuizData(data: any): { isValid: boolean; error?: string } {
+    if (!data) {
+      return { isValid: false, error: "Quiz data is missing" }
     }
-  }
-}
 
-// Get answer class name based on similarity
-export function getAnswerClassName(similarity: number) {
-  if (similarity === 100) {
-    return "font-bold text-green-600 dark:text-green-400"
-  } else if (similarity > 80) {
-    return "font-semibold text-yellow-600 dark:text-yellow-400"
-  } else if (similarity > 50) {
-    return "font-medium text-orange-600 dark:text-orange-400"
-  } else {
-    return "font-normal text-red-600 dark:text-red-400"
-  }
-}
+    if (!data.title) {
+      return { isValid: false, error: "Quiz title is required" }
+    }
 
-// Format time for display
-export function formatQuizTime(seconds: number): string {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = Math.round(seconds % 60)
-  return `${minutes}m ${remainingSeconds}s`
-}
+    if (!data.type && !data.quizType) {
+      return { isValid: false, error: "Quiz type is required" }
+    }
 
-// Create a standardized quiz result object
-export function createQuizResult(
-  quizId: string,
-  slug: string,
-  quizType: string,
-  score: number,
-  answers: any[],
-  totalTime: number,
-) {
-  return {
-    quizId,
-    slug,
-    quizType,
-    score,
-    answers,
-    totalTime,
-    timestamp: Date.now(),
-    isCompleted: true,
-  }
-}
+    if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+      return { isValid: false, error: "Quiz must have at least one question" }
+    }
 
-// Safely parse URL parameters
-export function getUrlParams(): URLSearchParams {
-  if (typeof window === "undefined") return new URLSearchParams()
-  return new URLSearchParams(window.location.search)
-}
-
-// Check if a quiz is completed from URL
-export function isQuizCompletedFromUrl(): boolean {
-  return getUrlParams().get("completed") === "true"
+    return { isValid: true }
+  },
 }

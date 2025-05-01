@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { formatQuizTime } from "@/lib/utils"
+
 import { useQuiz } from "@/app/context/QuizContext"
 import { useSession } from "next-auth/react"
 import { quizService } from "@/lib/quiz-service"
@@ -15,7 +15,13 @@ import { useAuth } from "@/providers/unified-auth-provider"
 import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/tailwindUtils"
 import { CodeQuizResultProps } from "@/app/types/code-quiz-types"
+const formatQuizTime = (time: number): string => {
+  const hours = Math.floor(time / 3600)
+  const minutes = Math.floor((time % 3600) / 60)
+  const seconds = time % 60
 
+  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
+}
 
 export default function CodeQuizResult({
   title,

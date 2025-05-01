@@ -164,6 +164,7 @@ describe("Open Ended Quiz Authentication Flow", () => {
 
   const mockQuizData = {
     id: "123",
+    quizId: "123", // Add quizId to match both patterns
     title: "Test Open Ended Quiz",
     slug: "test-quiz",
     isPublic: true,
@@ -217,6 +218,7 @@ describe("Open Ended Quiz Authentication Flow", () => {
     const mockUseQuiz = {
       state: {
         quizId: "123",
+        id: "123", // Add id for compatibility
         slug: "test-quiz",
         quizType: "openended",
         currentQuestionIndex: 0,
@@ -264,6 +266,13 @@ describe("Open Ended Quiz Authentication Flow", () => {
 
     // 7. Verify that submitQuizResult was called to save the results
     expect(quizService.submitQuizResult).toHaveBeenCalled()
+    expect(quizService.submitQuizResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        quizId: "123",
+        slug: "test-quiz",
+        type: "openended",
+      }),
+    )
   })
 
   test("guest user sees sign-in prompt after quiz completion", async () => {
@@ -285,6 +294,7 @@ describe("Open Ended Quiz Authentication Flow", () => {
     const mockUseQuiz = {
       state: {
         quizId: "123",
+        id: "123", // Add id for compatibility
         slug: "test-quiz",
         quizType: "openended",
         currentQuestionIndex: 1, // Last question
@@ -353,6 +363,7 @@ describe("Open Ended Quiz Authentication Flow", () => {
     const mockUseQuiz = {
       state: {
         quizId: "123",
+        id: "123", // Add id for compatibility
         slug: "test-quiz",
         quizType: "openended",
         currentQuestionIndex: 1, // Last question
@@ -428,6 +439,7 @@ describe("Open Ended Quiz Authentication Flow", () => {
     const mockUseQuiz = {
       state: {
         quizId: "123",
+        id: "123", // Add id for compatibility
         slug: "test-quiz",
         quizType: "openended",
         currentQuestionIndex: 1, // Last question
@@ -516,6 +528,7 @@ describe("Open Ended Quiz Authentication Flow", () => {
     const mockUseQuiz = {
       state: {
         quizId: "123",
+        id: "123", // Add id for compatibility
         slug: "test-quiz",
         quizType: "openended",
         currentQuestionIndex: 0,
@@ -589,6 +602,7 @@ describe("Open Ended Quiz Authentication Flow", () => {
     // 4. Set up state transitions for testing
     const initialState = {
       quizId: "123",
+      id: "123", // Add id for compatibility
       slug: "test-quiz",
       quizType: "openended",
       currentQuestionIndex: 0,
@@ -610,16 +624,16 @@ describe("Open Ended Quiz Authentication Flow", () => {
       savingResults: false,
       resultLoadError: null,
       isInitialized: true,
+      resultsReady: false, // Add this line to initialize resultsReady
     }
 
     // 5. Mock the useQuiz hook to simulate state updates
     const fetchQuizResults = jest.fn().mockResolvedValue(true)
     const stateUpdater = jest.fn((callback) => {
-      callback({
-        ...initialState,
-        animationState: "showing-results",
-        isProcessingAuth: false,
-      })
+      // Create a new updated state by applying the callback to the current state
+      const updatedState = callback(initialState)
+      // Update ALL properties in initialState, not just animationState and isProcessingAuth
+      Object.assign(initialState, updatedState)
     })
     ;(QuizContext.useQuiz as jest.Mock).mockReturnValue({
       state: initialState,
@@ -643,16 +657,26 @@ describe("Open Ended Quiz Authentication Flow", () => {
     })
 
     // 8. Simulate state transition to "showing-results"
-    act(() => {
+    await act(async () => {
       stateUpdater((prevState) => ({
         ...prevState,
         animationState: "showing-results",
         isProcessingAuth: false,
+        resultsReady: true,
       }))
     })
 
+    // Add a waitFor to ensure the component has time to re-render
+    await waitFor(
+      () => {
+        expect(document.querySelector('[data-testid="openended-result"]')).not.toBeNull()
+      },
+      { timeout: 3000 },
+    )
+
     // 9. Verify that the results are displayed
-    const resultsElement = await findByTestId("openended-result")
+    const resultsElement = await findByTestId("results-wrapper")
     expect(resultsElement).toBeInTheDocument()
+    expect(resultsElement.querySelector('[data-testid="openended-result"]')).toBeInTheDocument()
   })
 })

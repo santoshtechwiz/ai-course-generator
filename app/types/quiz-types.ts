@@ -1,14 +1,17 @@
 import type React from "react"
 
 // Convert QuizType to an enum
-export enum QuizType {
-  MCQ = "mcq",
-  CODE = "code",
-  BLANKS = "blanks",
-  OPENENDED = "openended",
-  FLASHCARD = "flashcard",
-  DOCUMENT = "document",
-}
+export const QuizType = {
+  MCQ: "mcq",
+  CODE: "code",
+  BLANKS: "blanks",
+  OPENENDED: "openended",
+  FLASHCARD: "flashcard",
+  DOCUMENT: "document",
+} as const;
+
+export type QuizType = typeof QuizType[keyof typeof QuizType];
+
 
 // Base question interface
 export interface BaseQuestion {
@@ -119,23 +122,41 @@ export interface QuizData {
 
 // Consolidated QuizAnswer interface - making isCorrect optional to match quiz-service usage
 export interface QuizAnswer {
-  answer: string
+  answer: string | string[]
+  userAnswer?: string | string[]
+  isCorrect: boolean
   timeSpent: number
-  isCorrect?: boolean // Made optional to match quiz-service usage
   similarity?: number
-  hintsUsed?: boolean
-  userAnswer?: string
+  language?: string
+  codeSnippet?: string
+}
+
+// Add the missing BlanksQuizAnswer interface
+export interface BlanksQuizAnswer {
+  userAnswer: string
+  timeSpent: number
+  hintsUsed: boolean
+  elapsedTime?: number
+}
+
+// Add the missing CodeQuizAnswer interface
+export interface CodeQuizAnswer {
+  answer: string
+  userAnswer: string
+  isCorrect: boolean
+  timeSpent: number
+  codeSnippet?: string
   language?: string
 }
 
 // Add Question and McqQuizProps from types.ts
 export interface Question {
-  id: string
+  id: string | number
   question: string
   answer: string
-  option1: string
-  option2: string
-  option3: string
+  option1?: string
+  option2?: string
+  option3?: string
   options?: string[] // Added for flexibility
   title?: string
 }
@@ -170,7 +191,7 @@ export interface UserQuiz {
   id: string
   title: string
   slug: string
-  type: "code" | "mcq" | "openended"
+  type: "code" | "mcq" | "openended" | "blanks" | "flashcard" | "document"
   userId: string
   createdAt: Date
   updatedAt: Date
@@ -184,15 +205,15 @@ export interface QuizState {
   error: string | null
   isCompleted: boolean
   showAuthPrompt: boolean
-  answers: (QuizAnswer | null)[]
+  answers: (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer | null)[]
   score: number
   timeSpent: number
 }
 
 export interface QuizContextType {
   state: QuizState
-  submitAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
-  completeQuiz: (answers: QuizAnswer[]) => void
+  submitAnswer: (answer: string | string[], timeSpent: number, isCorrect: boolean) => void
+  completeQuiz: (answers: (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer)[]) => void
   restartQuiz: () => void
 }
 
@@ -245,13 +266,14 @@ export type QueryParams = {
 
 // Define a proper QuizDataInput interface for the QuizContext
 export interface QuizDataInput {
-  // Required fields
-  quizId: string
+  // Required fields - support both id and quizId for backward compatibility
+  id?: string
+  quizId?: string
 
-
+  // Common fields
   title?: string
   description?: string
-  quizType?: QuizType
+  quizType?: QuizType | string
   questions?: Array<Question | QuizQuestion>
   isPublic?: boolean
   isFavorite?: boolean
@@ -267,9 +289,9 @@ export interface QuizDataInput {
 export interface QuizSubmission {
   quizId: string
   slug: string
-  type: QuizType
+  type: QuizType | string
   score: number
-  answers: QuizAnswer[]
+  answers: (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer)[]
   totalTime: number
   totalQuestions: number
   completedAt?: string
@@ -278,13 +300,13 @@ export interface QuizSubmission {
 // Define a quiz state storage type
 export interface StoredQuizState {
   quizId: string
-  type: QuizType
+  type: QuizType | string
   slug: string
   currentQuestion: number
   totalQuestions: number
   startTime: number
   isCompleted: boolean
-  answers: (QuizAnswer | null)[]
+  answers: (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer | null)[]
   timeSpentPerQuestion: number[]
 }
 
@@ -292,10 +314,30 @@ export interface StoredQuizState {
 export interface QuizResult {
   quizId: string
   slug: string
-  type: QuizType
+  type: QuizType | string
   score: number
-  answers: QuizAnswer[]
+  answers: (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer)[]
   totalTime: number
   totalQuestions: number
   completedAt?: string
+}
+
+// Add a utility type for API responses
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  details?: any
+}
+
+// Add a utility type for quiz completion responses
+export interface QuizCompletionResponse extends ApiResponse {
+  result?: {
+    updatedUserQuiz: any
+    quizAttempt: any
+    percentageScore: number
+    totalQuestions: number
+    score: number
+    totalTime: number
+  }
 }

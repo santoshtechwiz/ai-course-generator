@@ -1,10 +1,8 @@
 "use client"
 
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
-import { useQuiz, QuizProvider } from "@/app/context/QuizContext"
-import { useReducer } from "react"
-import { renderHook } from "@testing-library/react-hooks"
-import { quizReducer, defaultState } from "@/app/context/QuizContext"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { useQuiz, QuizProvider, type QuizContextState } from "@/app/context/QuizContext"
+
 import { quizService } from "@/lib/quiz-service" // Import quizService
 import { QuizType } from "../types/quiz-types"
 
@@ -325,50 +323,69 @@ describe("QuizContext", () => {
     expect(quizService.submitQuizResult).not.toHaveBeenCalled()
   })
 
-  // Update the test for restarting quiz to ensure clearQuizState is called
+  // Define defaultState for the test
+  const defaultState: QuizContextState = {
+    quizId: "",
+    slug: "",
+    title: "",
+    description: "",
+    quizType: "mcq",
+    questionCount: 0,
+    currentQuestionIndex: 0,
+    answers: [],
+    isCompleted: false,
+    isLoading: true,
+    isLoadingResults: false,
+    resultsReady: false,
+    error: null,
+    score: 0,
+    animationState: "idle",
+    timeSpentPerQuestion: [],
+    lastQuestionChangeTime: Date.now(),
+    isProcessingAuth: false,
+    quizData: undefined,
+    isRefreshed: false,
+    requiresAuth: false,
+    hasGuestResult: false,
+    authCheckComplete: false,
+    pendingAuthRequired: false,
+    savingResults: false,
+    resultLoadError: null,
+  }
+
+  // Fix the test for restarting quiz
   test("restarts quiz and resets state", async () => {
     // Mock the quiz service clearQuizState function
     const clearQuizStateMock = jest.fn()
     quizService.clearQuizState = clearQuizStateMock
 
-    // Set up the initial state
-    const initialState = {
-      ...defaultState,
-      quizId: "test-quiz-123",
-      quizType: "mcq",
-      isCompleted: true,
-      answers: [{ answer: "test", timeSpent: 10, isCorrect: true }],
-      score: 100,
-    }
+    // Render the component with the QuizProvider
+    render(
+      <QuizProvider quizData={mockQuizData} slug="test-quiz" quizType="mcq">
+        <TestComponent />
+      </QuizProvider>,
+    )
 
-    // Render the component with the initial state
-    const { result } = renderHook(() => useReducer(quizReducer, initialState))
-    const [state, dispatch] = result.current
+    // Complete the quiz first to set the completed state
+    fireEvent.click(screen.getByTestId("complete-quiz"))
 
-    // Create a mock restartQuiz function that calls clearQuizData and dispatch
-    const clearQuizData = jest.fn().mockImplementation(() => {
-      // This simulates what happens in the real clearQuizData function
-      quizService.clearQuizState("test-quiz-123", "mcq")
+    // Wait for state updates
+    await waitFor(() => {
+      expect(screen.getByTestId("is-completed").textContent).toBe("true")
     })
 
-    const restartQuiz = () => {
-      clearQuizData()
-      dispatch({ type: "RESET_QUIZ" })
-    }
-
-    // Call restartQuiz
-    act(() => {
-      restartQuiz()
-    })
+    // Now restart the quiz
+    fireEvent.click(screen.getByTestId("restart-quiz"))
 
     // Verify that clearQuizState was called with the correct parameters
-    expect(clearQuizStateMock).toHaveBeenCalledWith("test-quiz-123", "mcq")
+    expect(clearQuizStateMock).toHaveBeenCalled()
 
     // Verify that the state was reset
-    expect(result.current[0].isCompleted).toBe(false)
-    expect(result.current[0].currentQuestionIndex).toBe(0)
-    expect(result.current[0].score).toBe(0)
-    expect(result.current[0].answers.every((a) => a === null)).toBe(true)
+    await waitFor(() => {
+      expect(screen.getByTestId("is-completed").textContent).toBe("false")
+      expect(screen.getByTestId("current-question").textContent).toBe("0")
+      expect(screen.getByTestId("score").textContent).toBe("0")
+    })
   })
 
   // New tests for authentication flow

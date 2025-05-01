@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { quizService } from "@/lib/quiz-service"
 import { quizApi } from "@/lib/quiz-api"
-import { quizUtils } from "@/lib/quiz-utils"
 import { toast } from "@/hooks/use-toast"
 import {
   QuizType,
@@ -14,10 +13,12 @@ import {
   type QuizSubmission,
   type StoredQuizState,
   type QuizAnswer,
+  type QuizResult,
 } from "@/app/types/quiz-types"
+import { quizUtils } from "@/utils/quiz-utils"
 
 // -- Context State & Actions ----------------------------------
-interface QuizContextState {
+export interface QuizContextState {
   quizId: string
   slug: string
   title: string
@@ -30,7 +31,7 @@ interface QuizContextState {
   isLoading: boolean
   error: string | null
   score: number
-  animationState: "idle" | "completing" | "showing-results" | "redirecting"
+  animationState: "idle" | "completing" | "preparing-results" | "showing-results" | "redirecting"
   timeSpentPerQuestion: number[]
   lastQuestionChangeTime: number
   isProcessingAuth: boolean
@@ -74,12 +75,12 @@ type QuizAction =
   | { type: "NEXT_QUESTION" }
   | { type: "PREV_QUESTION" }
 
-interface QuizContextType {
+export interface QuizContextType {
   state: QuizContextState
   isAuthenticated: boolean
   nextQuestion: () => void
   prevQuestion: () => void
-  submitAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
+  submitAnswer: (answer: string, timeSpent: number, isCorrect: boolean, similarity?: number) => void
   completeQuiz: (finalAnswers: (QuizAnswer | null)[], finalScore?: number) => void
   restartQuiz: () => void
   getTimeSpentOnCurrentQuestion: () => number
@@ -97,7 +98,7 @@ interface QuizContextType {
 }
 
 // -- Initial State --------------------------------------------
-const initialState: QuizContextState = {
+export const initialState: QuizContextState = {
   quizId: "",
   slug: "",
   title: "",
@@ -128,7 +129,7 @@ const initialState: QuizContextState = {
 }
 
 // -- Reducer --------------------------------------------------
-const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextState => {
+export const quizReducer = (state: QuizContextState, action: QuizAction): QuizContextState => {
   switch (action.type) {
     case "INITIALIZE_QUIZ":
       return { ...state, ...action.payload }
@@ -291,7 +292,7 @@ interface QuizProviderProps {
   children: React.ReactNode
   quizData: QuizDataInput
   slug: string
-  quizType: QuizType
+  quizType: QuizType | string
   /**
    * Optional callback invoked instead of default signIn when auth is required.
    */
@@ -302,24 +303,26 @@ const QuizContext = createContext<QuizContextType | undefined>(undefined)
 
 // Update QuizProvider to use useAuth instead of any useSession references
 export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, slug, quizType, onAuthRequired }) => {
-  // Validate that quizId is provided
-  // if (!quizData.quizId) {
-  //   console.error("QuizProvider requires quizData.quizId to be provided")
-  //   // Provide a fallback quizId if possible
-  //   quizData.quizId = quizData.id || ""
-  // }
+  // Add these declarations at the start of the QuizProvider component:
+  const animationTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const authRedirectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const safetyTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const processingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+
+  // Ensure quizId is available
+  const quizId = quizData?.quizId || quizData?.id || ""
 
   const [state, dispatch] = useReducer(quizReducer, {
     ...initialState,
-    quizId: quizData.quizId,
+    quizId,
     slug,
-    title: quizData.title || "",
-    description: quizData.description || "",
-    quizType: quizData.quizType || quizType,
-    questionCount: quizData.questions?.length || 0,
-    answers: new Array(quizData.questions?.length || 0).fill(null),
-    timeSpentPerQuestion: new Array(quizData.questions?.length || 0).fill(0),
-    quizData: quizData,
+    title: quizData?.title || "",
+    description: quizData?.description || "",
+    quizType: quizData?.quizType || quizType,
+    questionCount: quizData?.questions?.length || 0,
+    answers: new Array(quizData?.questions?.length || 0).fill(null),
+    timeSpentPerQuestion: new Array(quizData?.questions?.length || 0),
+    quizData,
     startTime: Date.now(),
   })
 
@@ -333,10 +336,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   const refreshDetected = useRef(false)
   const authCheckDone = useRef(false)
   const [isLoading, setIsLoading] = useState(true)
-
-  // Declare the missing variables
-  let animationTimeout: NodeJS.Timeout
-  let authRedirectTimeout: NodeJS.Timeout
 
   // Helper function to clean up URL parameters
   const cleanupUrlIfNeeded = useCallback(() => {
@@ -369,7 +368,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
 
     console.log("Cleared guest results and reset quiz state")
-  }, [state.quizId, dispatch])
+  }, [state.quizId])
 
   // Fix the handleAuthenticationRequired method to properly save state before redirecting
   const handleAuthenticationRequired = useCallback(() => {
@@ -446,7 +445,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         variant: "destructive",
       })
     }
-  }, [onAuthRequired, state.quizType, state.slug, signIn, authIsAuthenticated, state, dispatch])
+  }, [onAuthRequired, state.quizType, state.slug, signIn, authIsAuthenticated])
 
   // Detect page refresh
   useEffect(() => {
@@ -486,7 +485,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         quizService.clearQuizState(state.quizId, state.quizType)
       }
     }
-  }, [state.isCompleted, state.quizId, state.quizType, cleanupUrlIfNeeded, dispatch])
+  }, [state.isCompleted, state.quizId, state.quizType, cleanupUrlIfNeeded])
 
   // Initial auth check effect - runs once on mount
   useEffect(() => {
@@ -559,10 +558,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     return () => {
       isMounted = false
     }
-  }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId, dispatch])
+  }, [authIsAuthenticated, cleanupUrlIfNeeded, state.quizId])
 
   // Fetch quiz results using QuizService
-  const fetchQuizResults = useCallback(async () => {
+  const fetchQuizResults = useCallback(async (): Promise<boolean> => {
     if (!state.quizId || !state.slug || state.isLoadingResults) return false
 
     dispatch({ type: "SET_LOADING_RESULTS", payload: true })
@@ -689,7 +688,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       dispatch({ type: "SET_LOADING_RESULTS", payload: false })
       return false
     }
-  }, [state.quizId, state.slug, state.quizType, state.isLoadingResults, authIsAuthenticated, dispatch])
+  }, [state.quizId, state.slug, state.quizType, state.isLoadingResults, authIsAuthenticated])
 
   // Check storage for completed state
   useEffect(() => {
@@ -780,7 +779,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.requiresAuth,
     cleanupUrlIfNeeded,
     fetchQuizResults,
-    dispatch,
   ])
 
   // Initialize quiz state and handle refresh
@@ -861,14 +859,12 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
   }, [
     quizData,
-    slug,
     state.isRefreshed,
     state.quizId,
     state.quizType,
     state.questionCount,
     state.requiresAuth,
     fetchQuizResults,
-    dispatch,
   ])
 
   // Calculate score
@@ -911,7 +907,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.answers,
     state.timeSpentPerQuestion,
     startTime,
-    dispatch,
   ])
 
   const prevQuestion = useCallback(() => {
@@ -941,12 +936,11 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.answers,
     state.timeSpentPerQuestion,
     startTime,
-    dispatch,
   ])
 
   const submitAnswer = useCallback(
-    (answer: string, timeSpent: number, isCorrect: boolean) => {
-      const answerObj: QuizAnswer = { answer, timeSpent, isCorrect }
+    (answer: string, timeSpent: number, isCorrect: boolean, similarity?: number) => {
+      const answerObj: QuizAnswer = { answer, timeSpent, isCorrect, similarity }
 
       dispatch({
         type: "SET_ANSWER",
@@ -984,7 +978,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       state.timeSpentPerQuestion,
       startTime,
       nextQuestion,
-      dispatch,
     ],
   )
 
@@ -992,7 +985,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
   const retryLoadingResults = useCallback(async () => {
     dispatch({ type: "SET_ERROR", payload: null })
     await fetchQuizResults()
-  }, [fetchQuizResults, dispatch])
+  }, [fetchQuizResults])
 
   // Fix the completeQuiz function to properly save guest results
   const handleCompleteQuiz = useCallback(
@@ -1003,8 +996,19 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         return
       }
 
+      // Safety check for finalAnswers
+      if (!finalAnswers) {
+        console.error("[QuizContext] finalAnswers is undefined or null")
+        toast({
+          title: "Error completing quiz",
+          description: "Invalid quiz data. Please try again.",
+          variant: "destructive",
+        })
+        return
+      }
+
       // Validate input parameters
-      if (!finalAnswers || !Array.isArray(finalAnswers)) {
+      if (!Array.isArray(finalAnswers)) {
         console.error("[QuizContext] Invalid finalAnswers provided:", finalAnswers)
         toast({
           title: "Error completing quiz",
@@ -1035,7 +1039,12 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         const filled = [...finalAnswers]
         while (filled.length < state.questionCount) filled.push(null)
 
-        animationTimeout = setTimeout(() => {
+        // Clear any existing timeout
+        if (animationTimeoutRef.current) {
+          clearTimeout(animationTimeoutRef.current)
+        }
+
+        animationTimeoutRef.current = setTimeout(() => {
           try {
             // Batch state updates to reduce renders
             dispatch({
@@ -1056,10 +1065,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
               totalTime: (Date.now() - startTime) / 1000,
               totalQuestions: state.questionCount,
             })
-
-            // Add a fallback mechanism for empty quizId or slug:
-            const quizId = state.quizId || quizData?.id || ""
-            const slug = state.slug || window.location.pathname.split("/").pop() || ""
 
             // Extract the actual quiz ID from the URL if needed
             const extractQuizIdFromUrl = () => {
@@ -1087,7 +1092,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
                   return {
                     ...answer,
                     userAnswer: answer.answer || "", // Ensure userAnswer is present
-                    language: answer.language || "javascript", // Default language if not provided
+                    language: (answer as any).language || "javascript", // Default language if not provided
                   }
                 }
                 return answer
@@ -1106,7 +1111,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
             })
 
             // Validate submission before proceeding
-            // Replace the existing validation check with this more detailed version
             if (!submission.quizId || !submission.slug) {
               console.error("[QuizContext] Invalid submission data - missing required fields:", {
                 hasQuizId: !!submission.quizId,
@@ -1177,16 +1181,15 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
                 })
             } else {
               // Save locally for guest users
-              quizService.saveQuizResult({
+              const quizResult: QuizResult = {
                 ...submission,
                 completedAt: new Date().toISOString(),
-              })
+              }
+
+              quizService.saveQuizResult(quizResult)
 
               // Also save as guest result
-              quizService.saveGuestResult({
-                ...submission,
-                completedAt: new Date().toISOString(),
-              })
+              quizService.saveGuestResult(quizResult)
 
               // Mark that we have a guest result
               dispatch({ type: "SET_HAS_GUEST_RESULT", payload: true })
@@ -1239,13 +1242,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
           variant: "destructive",
         })
       }
-
-      // Return a cleanup function that can be called if the component unmounts
-      return () => {
-        if (animationTimeout) clearTimeout(animationTimeout)
-        if (authRedirectTimeout) clearTimeout(authRedirectTimeout)
-        completionInProgress.current = false
-      }
     },
     [
       state.quizId,
@@ -1258,7 +1254,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       calculateScore,
       startTime,
       quizData?.id,
-      dispatch,
     ],
   )
 
@@ -1291,11 +1286,11 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
 
     dispatch({ type: "RESET_QUIZ" })
-  }, [clearQuizData, state.quizId, cleanupUrlIfNeeded, dispatch])
+  }, [clearQuizData, state.quizId, cleanupUrlIfNeeded])
 
   const getTimeSpentOnCurrentQuestion = useCallback(
     () => state.timeSpentPerQuestion[state.currentQuestionIndex] || 0,
-    [state],
+    [state.timeSpentPerQuestion, state.currentQuestionIndex],
   )
 
   // Handle returning from authentication
@@ -1348,7 +1343,6 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     state.requiresAuth,
     fetchQuizResults,
     cleanupUrlIfNeeded,
-    dispatch,
   ])
 
   // Add a cleanup effect when the component unmounts
@@ -1359,13 +1353,19 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         // Only clear in-progress state, keep the result
         quizService.clearQuizState(state.quizId, state.quizType)
       }
+
+      // Clear all timeouts
+      if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current)
+      if (authRedirectTimeoutRef.current) clearTimeout(authRedirectTimeoutRef.current)
+      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
+      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
     }
   }, [state.isCompleted, state.quizId, state.quizType])
 
   // Add a safety timeout to ensure initialization completes
   useEffect(() => {
     // Safety timeout to ensure we don't get stuck in loading state
-    const safetyTimeout = setTimeout(() => {
+    safetyTimeoutRef.current = setTimeout(() => {
       if (isLoading) {
         console.log("Safety timeout triggered - forcing loading to complete")
         dispatch({ type: "SET_LOADING", payload: false })
@@ -1373,16 +1373,16 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       }
     }, 5000)
 
-    return () => clearTimeout(safetyTimeout)
-  }, [isLoading, dispatch])
+    return () => {
+      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
+    }
+  }, [isLoading])
 
   // Add a timeout to prevent getting stuck in auth processing state
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout
-
     if (state.isProcessingAuth) {
       console.log("[QuizContext] Auth processing started, setting safety timeout")
-      timeoutId = setTimeout(() => {
+      processingTimeoutRef.current = setTimeout(() => {
         console.log("[QuizContext] Auth processing timeout reached, forcing state update")
         dispatch({ type: "SET_PROCESSING_AUTH", payload: false })
 
@@ -1396,9 +1396,9 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId)
+      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
     }
-  }, [state.isProcessingAuth, dispatch])
+  }, [state.isProcessingAuth])
 
   return (
     <QuizContext.Provider

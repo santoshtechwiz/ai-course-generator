@@ -1,6 +1,24 @@
-import { QuizResult, QuizSubmission } from "@/app/types/quiz-types"
-import { QuizType } from "@/app/types/types"
+import type { QuizResult, QuizSubmission } from "@/app/types/quiz-types"
+import type { QuizType } from "@/app/types/types"
 
+/**
+ * API response types for better type safety
+ */
+export interface ApiResponse<T> {
+  success: boolean
+  data?: T
+  error?: string
+  details?: any
+}
+
+export interface QuizDataResponse {
+  isPublic: boolean
+  isFavorite: boolean
+  quizData: {
+    title: string
+    questions: any[]
+  }
+}
 
 /**
  * Quiz API Service
@@ -21,7 +39,7 @@ class QuizApi {
   /**
    * Fetch quiz data from the server
    */
-  async getQuizData(slug: string, quizType: QuizType): Promise<any> {
+  async getQuizData(slug: string, quizType: QuizType): Promise<QuizDataResponse> {
     // Validate inputs to prevent "unknown" API calls
     if (!slug || slug === "unknown") {
       console.error("Invalid slug provided to getQuizData:", slug)
@@ -45,7 +63,11 @@ class QuizApi {
     }
   }
 
-  // Update the submitQuizResult method to use quizId instead of slug for consistency
+  /**
+   * Submit quiz result to the server
+   * @param submission Quiz submission data
+   * @returns Quiz result or null if submission failed
+   */
   async submitQuizResult(submission: QuizSubmission): Promise<QuizResult | null> {
     // Validate inputs to prevent "unknown" API calls
     if (!submission.slug || submission.slug === "unknown" || !submission.quizId || submission.quizId === "unknown") {
@@ -78,7 +100,8 @@ class QuizApi {
         throw new Error(errorData.error || `Failed to save quiz result: ${response.status}`)
       }
 
-      return await response.json()
+      const result = await response.json()
+      return result.success ? result.result : null
     } catch (error) {
       console.error("Error submitting quiz result:", error)
       throw error
@@ -99,7 +122,6 @@ class QuizApi {
       console.log(`Fetching quiz result from API for quizId: ${quizId}, slug: ${slug}`)
 
       // Add cache-busting parameter to prevent caching issues
-      const timestamp = Date.now()
       const response = await fetch(`/api/quiz/${slug}`, {
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -132,6 +154,9 @@ class QuizApi {
     }
   }
 
+  /**
+   * Helper method to format API errors consistently
+   */
   formatApiError(message: string, statusCode = 500) {
     return new Response(JSON.stringify({ error: message }), {
       status: statusCode,
