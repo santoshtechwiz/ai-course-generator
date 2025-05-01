@@ -1,139 +1,115 @@
-import { QuizAnswer, QuizType } from "./quiz-service"
-
+import type { QuizAnswer, BlanksQuizAnswer, CodeQuizAnswer } from "@/app/types/quiz-types"
 
 /**
- * Utility functions for quiz operations
+ * Quiz types enum
  */
-export const quizUtils = {
-  /**
-   * Calculate similarity between two strings
-   */
-  calculateSimilarity(str1: string, str2: string): number {
-    if (!str1 && !str2) return 100
-    if (!str1 || !str2) return 0
+export enum QuizType {
+  MCQ = "mcq",
+  CODE = "code",
+  BLANKS = "blanks",
+  OPENENDED = "openended",
+  FLASHCARD = "flashcard",
+  DOCUMENT = "document",
+}
 
-    // Normalize strings
-    const a = str1.toLowerCase().trim()
-    const b = str2.toLowerCase().trim()
+import type { QuizType as TQuizType } from "@/app/types/quiz-types"
 
-    if (a === b) return 100
+/**
+ * Type guard to check if an answer is a QuizAnswer
+ */
+export function isQuizAnswer(answer: any): answer is QuizAnswer {
+  return answer && "answer" in answer && "timeSpent" in answer && "isCorrect" in answer
+}
 
-    // Simple Levenshtein distance implementation
-    const an = a.length
-    const bn = b.length
-    const matrix = Array(bn + 1)
-      .fill(0)
-      .map(() => Array(an + 1).fill(0))
+/**
+ * Type guard to check if an answer is a BlanksQuizAnswer
+ */
+export function isBlanksQuizAnswer(answer: any): answer is BlanksQuizAnswer {
+  return answer && "userAnswer" in answer && "timeSpent" in answer && "hintsUsed" in answer
+}
 
-    for (let i = 0; i <= an; i++) matrix[0][i] = i
-    for (let j = 0; j <= bn; j++) matrix[j][0] = j
+/**
+ * Type guard to check if an answer is a CodeQuizAnswer
+ */
+export function isCodeQuizAnswer(answer: any): answer is CodeQuizAnswer {
+  return answer && "answer" in answer && "userAnswer" in answer && "isCorrect" in answer && "timeSpent" in answer
+}
 
-    for (let j = 1; j <= bn; j++) {
-      for (let i = 1; i <= an; i++) {
-        const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1, // deletion
-          matrix[j - 1][i] + 1, // insertion
-          matrix[j - 1][i - 1] + substitutionCost, // substitution
-        )
-      }
-    }
+/**
+ * Calculate percentage score based on quiz type
+ */
+export function calculatePercentageScore(score: number, totalQuestions: number, type: TQuizType): number {
+  // For open-ended and fill-blanks quizzes, the score is already a percentage
+  if (type === QuizType.OPENENDED || type === QuizType.BLANKS) {
+    // Ensure the score is within 0-100 range
+    return Math.min(100, Math.max(0, score))
+  }
+  // For other quiz types, calculate percentage based on correct answers
+  else {
+    return (score / Math.max(1, totalQuestions)) * 100
+  }
+}
 
-    return 100 - (matrix[bn][an] / Math.max(an, bn)) * 100
-  },
+/**
+ * Extract user answer from different answer types
+ */
+export function extractUserAnswer(answer: QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer | null): string | string[] {
+  if (!answer) return ""
 
-  /**
-   * Calculate score for a quiz based on answers
-   */
-  calculateScore(answers: QuizAnswer[], type: QuizType): number {
-    if (!answers || answers.length === 0) return 0
+  if ("userAnswer" in answer && answer.userAnswer !== undefined) {
+    return answer.userAnswer
+  } else if ("answer" in answer && answer.answer !== undefined) {
+    return answer.answer
+  }
+  return ""
+}
 
-    switch (type) {
-      case "mcq":
-      case "code":
-        // Count correct answers
-        const correctCount = answers.filter((a) => a.isCorrect).length
-        return Math.round((correctCount / answers.length) * 100)
+/**
+ * Format time in seconds to a readable format (mm:ss)
+ */
+export function formatTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+}
 
-      case "blanks":
-        // Average similarity scores with threshold of 80%
-        const blanksSimilarity = answers.reduce((sum, a) => sum + (a.similarity || 0), 0)
-        return Math.round(blanksSimilarity / answers.length)
+/**
+ * Calculate estimated time to complete a quiz based on question count and type
+ */
+export function calculateEstimatedTime(questionCount: number, quizType: TQuizType): number {
+  // Average time per question in seconds
+  const timePerQuestion: Record<QuizType, number> = {
+    [QuizType.MCQ]: 30,
+    [QuizType.CODE]: 180,
+    [QuizType.BLANKS]: 45,
+    [QuizType.OPENENDED]: 120,
+    [QuizType.FLASHCARD]: 20,
+    [QuizType.DOCUMENT]: 60,
+  }
 
-      case "openended":
-        // Average similarity scores with threshold of 70%
-        const openEndedSimilarity = answers.reduce((sum, a) => sum + (a.similarity || 0), 0)
-        return Math.round(openEndedSimilarity / answers.length)
+  return questionCount * (timePerQuestion[quizType] || 30)
+}
 
-      default:
-        return 0
-    }
-  },
+/**
+ * Normalize quiz type string to enum value
+ */
+export function normalizeQuizType(type: string): QuizType {
+  const normalizedType = type.toLowerCase()
 
-  /**
-   * Count correct answers in a quiz
-   */
-  countCorrectAnswers(answers: QuizAnswer[], type: QuizType): number {
-    if (!answers || answers.length === 0) return 0
-
-    switch (type) {
-      case "mcq":
-      case "code":
-        return answers.filter((a) => a.isCorrect).length
-
-      case "blanks":
-        return answers.filter((a) => (a.similarity || 0) > 80).length
-
-      case "openended":
-        return answers.filter((a) => (a.similarity || 0) > 70).length
-
-      default:
-        return 0
-    }
-  },
-
-  /**
-   * Format answers based on quiz type
-   */
-  formatAnswers(answers: QuizAnswer[], type: QuizType): QuizAnswer[] {
-    if (!answers || !Array.isArray(answers)) return []
-
-    // Ensure all answers are valid objects
-    let formattedAnswers = answers
-      .filter((answer) => answer !== null)
-      .map((answer) => {
-        if (!answer) {
-          return {
-            answer: "",
-            timeSpent: 0,
-            isCorrect: false,
-            similarity: 0,
-            hintsUsed: false,
-          }
-        }
-        return answer
-      })
-
-    // Type-specific formatting
-    switch (type) {
-      case "blanks":
-        formattedAnswers = formattedAnswers.map((answer) => ({
-          ...answer,
-          userAnswer: typeof answer.answer === "string" ? answer.answer : "",
-          similarity: answer.similarity || 0,
-          isCorrect: (answer.similarity || 0) > 80,
-        }))
-        break
-
-      case "openended":
-        formattedAnswers = formattedAnswers.map((answer) => ({
-          ...answer,
-          similarity: answer.similarity || 0,
-          isCorrect: (answer.similarity || 0) > 70,
-        }))
-        break
-    }
-
-    return formattedAnswers
-  },
+  switch (normalizedType) {
+    case "mcq":
+      return QuizType.MCQ
+    case "code":
+      return QuizType.CODE
+    case "blanks":
+      return QuizType.BLANKS
+    case "openended":
+      return QuizType.OPENENDED
+    case "flashcard":
+      return QuizType.FLASHCARD
+    case "document":
+      return QuizType.DOCUMENT
+    default:
+      return QuizType.MCQ // Default to MCQ if unknown type
+  }
 }

@@ -27,7 +27,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     handleAuthenticationRequired,
     fetchQuizResults,
     clearGuestResults,
-    dispatch,
+   
   } = useQuiz()
   const router = useRouter()
   const { isAuthenticated: authState, user } = useAuth()

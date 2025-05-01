@@ -11,18 +11,39 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
-import { formatQuizTime } from "@/lib/utils"
+// import { formatQuizTime } from "@/lib/utils"
 import CodeQuizOptions from "./CodeQuizOptions"
 import CodeQuizEditor from "./CodeQuizEditor"
+const formatQuizTime = (time: number): string => {
+  const hours = Math.floor(time / 3600)
+  const minutes = Math.floor((time % 3600) / 60)
+  const seconds = time % 60
 
+  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
+}
+// Define types for props
+interface CodingQuizProps {
+  question: {
+    id: string
+    question: string
+    codeSnippet?: string
+    options?: string[]
+    answer?: string
+    correctAnswer?: string
+    language?: string
+  }
+  onAnswer: (answer: string, elapsedTime: number, isCorrect: boolean) => void
+  questionNumber: number
+  totalQuestions: number
+}
 
 export default function CodingQuiz({ question, onAnswer, questionNumber, totalQuestions }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>(question?.codeSnippet || "")
-  const [elapsedTime, setElapsedTime] = useState(0)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [elapsedTime, setElapsedTime] = useState<number>(0)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   // Start timer when component mounts
   useEffect(() => {

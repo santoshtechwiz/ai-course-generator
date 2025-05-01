@@ -7,6 +7,7 @@ import {
   type StoredQuizState,
 } from "@/app/types/quiz-types"
 import { toast } from "@/hooks/use-toast"
+import { quizApi } from "./quiz-api"
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -35,7 +36,7 @@ const get: {
 
 /**
  * Simplified Quiz Service
- * Handles quiz state management, storage,age, and API interactions
+ * Handles quiz state management, storage, and API interactions
  */
 class QuizService {
   private static instance: QuizService
@@ -471,6 +472,11 @@ class QuizService {
    * Submit quiz result to server
    */
   async submitQuizResult(submission: QuizSubmission): Promise<QuizResult | null> {
+    if (!submission.quizId || !submission.slug) {
+      console.error("Invalid submission: Missing quizId or slug")
+      return null
+    }
+
     // Validate submission
     if (
       !submission.quizId ||
@@ -545,61 +551,21 @@ class QuizService {
         return existingResult
       }
 
-      // Prepare the request payload
-      const payload = {
-        quizId: submission.quizId,
-        slug: submission.slug,
-        answers: submission.answers,
-        totalTime: submission.totalTime,
-        score: submission.score,
-        type: submission.type,
-        totalQuestions: submission.totalQuestions,
-        completedAt: new Date().toISOString(),
-        userId: this.getCurrentUserId(),
-      }
+      // Use the quizApi service to submit the result
+      const result = await quizApi.submitQuizResult(submission)
 
-      console.log("[QuizService] Sending API request to save quiz result:", payload)
+      if (result) {
+        // Cache the result
+        this.resultCache.set(submissionKey, result)
 
-      // Send to server - IMPORTANT: Use quizId instead of slug in the API endpoint
-      const response = await fetch(`/api/quiz/${submission.quizId}/complete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        credentials: "include", // Important for auth cookies
-      })
+        // Mark as saved
+        localStorage.setItem(STORAGE_KEYS.SAVED(submission.quizId), "true")
 
-      if (!response.ok) {
-        let errorMessage = `Failed to save quiz result: ${response.status}`
-
-        try {
-          const errorData = await response.json()
-          if (errorData.error) {
-            errorMessage = errorData.error
-          }
-        } catch (e) {
-          // If JSON parsing fails, try to get the text response
-          const errorText = await response.text()
-          if (errorText) {
-            errorMessage += ` - ${errorText}`
-          }
+        // Clear guest result after successful save for authenticated users
+        if (this.isAuthenticated()) {
+          this.clearGuestResult(submission.quizId)
+          this.clearQuizState(submission.quizId, submission.type)
         }
-        throw new Error(errorMessage)
-      }
-
-      const result = await response.json()
-
-      // Cache the result
-      this.resultCache.set(submissionKey, result)
-
-      // Mark as saved
-      localStorage.setItem(STORAGE_KEYS.SAVED(submission.quizId), "true")
-
-      // Clear guest result after successful save for authenticated users
-      if (this.isAuthenticated()) {
-        this.clearGuestResult(submission.quizId)
-        this.clearQuizState(submission.quizId, submission.type)
       }
 
       console.log(`[QuizService] Successfully saved quiz ${submissionKey}`)
@@ -672,6 +638,13 @@ class QuizService {
         ) {
           sessionStorage.removeItem(key)
         }
+      })
+
+      // Clear cookies
+      document.cookie.split(";").forEach((cookie) => {
+        const eqPos = cookie.indexOf("=")
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT`
       })
 
       // Clear cache

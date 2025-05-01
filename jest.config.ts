@@ -21,7 +21,7 @@ const config: Config = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   verbose: true,
   silent: true,
-  collectCoverage: true,
+ 
   
 }
 

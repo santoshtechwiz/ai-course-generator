@@ -1,12 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+// Define response types for better type safety
+interface QuizResponse {
+  isPublic: boolean
+  isFavorite: boolean
+  quizData: {
+    title: string
+    questions: any[]
+  }
+}
+
+interface ErrorResponse {
+  error: string
+}
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -18,7 +29,7 @@ export async function PATCH(
 
     const quiz = await prisma.userQuiz.findUnique({
       where: { slug },
-      select: { userId: true }
+      select: { userId: true },
     })
 
     if (!quiz) {
@@ -45,7 +56,7 @@ export async function PATCH(
 }
 
 export async function DELETE(req: Request, props: { params: Promise<{ slug: string }> }) {
-  const params = await props.params;
+  const params = await props.params
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -56,7 +67,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ slug: stri
 
     const quiz = await prisma.userQuiz.findUnique({
       where: { slug },
-      select: { userId: true }
+      select: { userId: true },
     })
 
     if (!quiz) {
@@ -78,42 +89,48 @@ export async function DELETE(req: Request, props: { params: Promise<{ slug: stri
   }
 }
 
+export async function GET(
+  req: Request,
+  props: { params: Promise<{ slug: string }> },
+): Promise<NextResponse<QuizResponse | ErrorResponse>> {
+  const params = await props.params
 
-export async function GET(req: Request, props: { params: Promise<{ slug: string }> }) {
-  const params = await props.params;
-
-  const { slug } = await params;
+  const { slug } = await params
   if (!slug) {
     return NextResponse.json({ error: "Slug is required" }, { status: 400 })
   }
 
-  const result = await prisma.userQuiz.findUnique({
-    where: {
-      slug: slug
-    },
-    include: {
-      questions: {
-        select: {
-          question: true,
-          options: true,
-          answer: true
-        }
-      }
-    }
-  });
+  try {
+    const result = await prisma.userQuiz.findUnique({
+      where: {
+        slug: slug,
+      },
+      include: {
+        questions: {
+          select: {
+            question: true,
+            options: true,
+            answer: true,
+          },
+        },
+      },
+    })
 
-  if (!result) {
-    return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
+    if (!result) {
+      return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
+    }
+
+    const data: QuizResponse = {
+      isPublic: result.isPublic,
+      isFavorite: result.isFavorite,
+      quizData: {
+        title: result.title,
+        questions: result.questions,
+      },
+    }
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error("Error fetching quiz:", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
-
-  const data = {
-    isPublic: result.isPublic,
-    isFavorite: result.isFavorite,
-    quizData: {
-      title: result.title,
-      questions: result.questions,
-      
-    }
-  };
-  return NextResponse.json(data)
 }

@@ -1,36 +1,13 @@
 import { prisma } from "@/lib/db"
 import { getAuthSession } from "@/lib/authOptions"
 import { NextResponse } from "next/server"
-import { QuizType } from "@/app/types/quiz-types"
+import type { QuizType, QuizAnswer, BlanksQuizAnswer, CodeQuizAnswer } from "@/app/types/quiz-types"
 
+// Improve the type definitions for quiz answers
+export type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer
 
-// Type definitions
-export interface QuizAnswer {
-  answer: string | string[]
-  userAnswer?: string | string[]
-  isCorrect: boolean
-  timeSpent: number
-}
-
-export interface BlanksQuizAnswer {
-  userAnswer: string
-  timeSpent: number
-  hintsUsed: boolean
-  elapsedTime?: number
-}
-
-export interface CodeQuizAnswer {
-  answer: string
-  userAnswer: string
-  isCorrect: boolean
-  timeSpent: number
-  codeSnippet?: string
-  language?: string
-}
-
-type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer
-
-interface QuizSubmission {
+// Create a properly typed interface for quiz submissions
+export interface QuizSubmission {
   quizId: string
   answers: QuizAnswerUnion[]
   totalTime: number
@@ -39,6 +16,21 @@ interface QuizSubmission {
   totalQuestions?: number
   correctAnswers?: number
   completedAt?: string
+}
+
+// Create a typed response interface
+export interface QuizCompletionResponse {
+  success: boolean
+  result?: {
+    updatedUserQuiz: any
+    quizAttempt: any
+    percentageScore: number
+    totalQuestions: number
+    score: number
+    totalTime: number
+  }
+  error?: string
+  details?: any
 }
 
 // Helper functions
@@ -396,7 +388,7 @@ async function processQuestionAnswers(
 }
 
 // Optional retry wrapper
-async function retryTransaction(fn: () => Promise<any>, retries = 3): Promise<any> {
+async function retryTransaction<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   for (let i = 0; i < retries; i++) {
     try {
       return await fn()
@@ -413,7 +405,7 @@ async function retryTransaction(fn: () => Promise<any>, retries = 3): Promise<an
 }
 
 // Main handler
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<NextResponse<QuizCompletionResponse>> {
   try {
     const session = await getAuthSession()
     const userId = session?.user?.id
