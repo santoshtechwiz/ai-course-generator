@@ -9,7 +9,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscription-provider"
 
 export function SubscriptionRefresher() {
   const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)

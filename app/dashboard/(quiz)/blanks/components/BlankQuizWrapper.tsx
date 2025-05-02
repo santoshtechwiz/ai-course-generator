@@ -120,15 +120,29 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
       const fromAuth = urlParams.get("fromAuth") === "true"
       setIsReturningFromAuth(fromAuth)
 
-      // If returning from auth, try to process results immediately
-      if (fromAuth && !processingAttempted.current) {
+      if (fromAuth && userIsAuthenticated && !processingAttempted.current) {
         processingAttempted.current = true
-        fetchQuizResults().catch(() => {
-          // Handle errors silently
-        })
+
+        // Process pending data
+        const pendingDataStr = localStorage.getItem("pendingQuizData")
+        if (pendingDataStr) {
+          try {
+            // Clear pending data
+            localStorage.removeItem("pendingQuizData")
+            localStorage.removeItem("quizAuthRedirect")
+            localStorage.removeItem("inAuthFlow")
+
+            // Fetch quiz results
+            fetchQuizResults().catch(() => {
+              // Handle errors silently
+            })
+          } catch (e) {
+            console.error("Error processing pending data:", e)
+          }
+        }
       }
     }
-  }, [fetchQuizResults])
+  }, [fetchQuizResults, userIsAuthenticated])
 
   // Force exit from preparing state after 5 seconds if still stuck
   useEffect(() => {
@@ -243,20 +257,13 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   const handleGoBack = () => {
     console.log("User clicked Go Back, returning to quiz")
 
-    // Always clear guest results first
-    if (typeof clearGuestResults === "function") {
-      clearGuestResults()
-    }
-
-    // Always restart the quiz to reset state
-    if (typeof restartQuiz === "function") {
-      restartQuiz()
-    }
+    // Clear guest results and restart quiz
+    clearGuestResults()
+    restartQuiz()
 
     // Set display state to quiz
     setDisplayState("quiz")
 
-    // Show a toast notification
     toast({
       title: "Quiz restarted",
       description: "You can now retake the quiz. Sign in to save your results.",
@@ -271,11 +278,21 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     // Create the redirect URL
     const redirectUrl = `/dashboard/blanks/${slug}?fromAuth=true`
 
-    // Save current quiz state before redirecting
-    quizService.savePendingQuizData()
-
-    // Save auth redirect info
-    quizService.saveAuthRedirect(redirectUrl)
+    // Save minimal data needed for auth redirect
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "pendingQuizData",
+        JSON.stringify({
+          quizId: state.quizId,
+          slug,
+          type: "blanks",
+          answers: state.answers,
+          score: state.score,
+        }),
+      )
+      localStorage.setItem("quizAuthRedirect", redirectUrl)
+      localStorage.setItem("inAuthFlow", "true")
+    }
 
     // Call the authentication handler
     handleAuthenticationRequired()

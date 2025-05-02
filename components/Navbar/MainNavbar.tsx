@@ -20,10 +20,11 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/providers/unified-auth-provider"
+
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import { ThemeToggle } from "./ThemeToggle"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
 
 // Fix 1: Remove window reference in component definition
 const NavItems = memo(() => {
@@ -73,10 +74,14 @@ export default function MainNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
-  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
-  const subscriptionStatus = useSubscriptionStore((state) => state.data)
-  const isLoadingSubscription = useSubscriptionStore((state) => state.isLoading)
-  const isError = useSubscriptionStore((state) => state.isError)
+  // Replace Zustand with Redux hooks
+  const {
+    fetchSubscriptionStatus,
+    data: subscriptionStatus,
+    isLoading: isLoadingSubscription,
+    isError,
+    lastFetched,
+  } = useSubscription()
 
   // Fix 3: Use useState + useEffect pattern for pathname
   const [currentPath, setCurrentPath] = useState("")
@@ -103,47 +108,43 @@ export default function MainNavbar() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Fix 6: Use debounced scroll handler
-      const scrollListener = () => {
-        const debounced = setTimeout(() => {
-          setScrolled(window.scrollY > 20)
-        }, 10)
-        return () => clearTimeout(debounced)
-      }
-
       window.addEventListener("scroll", handleScroll, { passive: true })
       return () => window.removeEventListener("scroll", handleScroll)
     }
   }, [handleScroll])
 
+  // FIX: Completely revise the subscription fetching logic to prevent infinite calls
   useEffect(() => {
-    if (userAuthenticated) {
-      const initialLoadTimer = setTimeout(() => {
-        setIsInitialLoad(false)
-      }, 3000)
+    if (!userAuthenticated) return
 
+    // Set initial load timeout
+    const initialLoadTimer = setTimeout(() => {
+      setIsInitialLoad(false)
+    }, 3000)
+
+    // Only fetch if we don't have data or it's stale (older than 30 seconds)
+    const now = Date.now()
+    const shouldFetch = !lastFetched || now - lastFetched > 30000
+
+    if (shouldFetch) {
       fetchSubscriptionStatus(true)
-
-      const quickInitialRefresh = setTimeout(() => {
-        fetchSubscriptionStatus(true)
-      }, 1000)
-
-      let interval = 30000
-      const intervalId = setInterval(() => {
-        if (isError) {
-          interval = Math.min(interval * 1.5, 120000)
-        } else {
-          interval = Math.max(interval * 0.9, 30000)
-        }
-        fetchSubscriptionStatus()
-      }, interval)
-
-      return () => {
-        clearTimeout(initialLoadTimer)
-        clearTimeout(quickInitialRefresh)
-        clearInterval(intervalId)
-      }
     }
-  }, [fetchSubscriptionStatus, userAuthenticated, isError])
+
+    // Set up a reasonable interval for refreshing (much less frequent)
+    const intervalId = setInterval(() => {
+      // Only fetch if the user is still on the page (document is visible)
+      if (document.visibilityState === "visible") {
+        fetchSubscriptionStatus(false)
+      }
+    }, 120000) // 2 minutes interval instead of dynamic
+
+    return () => {
+      clearTimeout(initialLoadTimer)
+      clearInterval(intervalId)
+    }
+  }, [fetchSubscriptionStatus, userAuthenticated, lastFetched])
+
+  // FIX: Remove the user activity listener that triggers additional fetches
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -158,24 +159,6 @@ export default function MainNavbar() {
 
     return () => clearTimeout(debounceTimer)
   }, [subscriptionStatus, session?.user?.credits, credits])
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const handleUserActivity = () => {
-        if (userAuthenticated && !isLoadingSubscription) {
-          fetchSubscriptionStatus()
-        }
-      }
-
-      window.addEventListener("mousemove", handleUserActivity, { passive: true, once: true })
-      window.addEventListener("touchstart", handleUserActivity, { passive: true, once: true })
-
-      return () => {
-        window.removeEventListener("mousemove", handleUserActivity)
-        window.removeEventListener("touchstart", handleUserActivity)
-      }
-    }
-  }, [userAuthenticated, isLoadingSubscription, fetchSubscriptionStatus])
 
   const headerVariants = {
     hidden: { opacity: 0, y: -20 },

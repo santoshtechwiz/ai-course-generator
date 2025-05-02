@@ -19,7 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
 
@@ -27,6 +27,8 @@ import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
+import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
+import PlanAwareButton from "../../components/PlanAwareButton"
 
 const flashcardSchema = z.object({
   title: z.string().nonempty("Topic is required"),
@@ -50,8 +52,8 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
-  const { data: session, status } = useSession()
-  const { subscriptionStatus } = useSubscriptionStore()
+
+  const { data:subscriptionStatus } = useSubscription()
 
   // Use a ref to track if component is mounted
   const isMounted = React.useRef(false)

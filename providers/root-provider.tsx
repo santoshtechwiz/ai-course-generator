@@ -10,8 +10,10 @@ import { UnifiedAuthProvider } from "./unified-auth-provider"
 import TrialModal from "@/components/TrialModal"
 
 import { AnimationProvider } from "./animation-provider"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
-import { SubscriptionProvider } from "./SubscriptionProvider"
+
+import { ReduxProvider } from "./redux-provider"
+import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
+import { SubscriptionProvider } from "@/app/store/subscription-provider"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -42,32 +44,32 @@ export function RootProvider({ children, session }: RootProviderProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-    
       <SessionProvider session={session}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
-        <SubscriptionProvider>
-          <AnimationProvider>
-            <UnifiedAuthProvider>
-              {mounted && (
-                <Suspense fallback={null}>
-                  <SubscriptionStatus />
-                </Suspense>
-              )}
-              <Toaster position="top-right" closeButton richColors />
-              {children}
-            </UnifiedAuthProvider>
-          </AnimationProvider>
-        </SubscriptionProvider>
-      </ThemeProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
+          <ReduxProvider>
+            <SubscriptionProvider>
+              <AnimationProvider>
+                <UnifiedAuthProvider>
+                  {mounted && (
+                    <Suspense fallback={null}>
+                      <SubscriptionStatus />
+                    </Suspense>
+                  )}
+                  <Toaster position="top-right" closeButton richColors />
+                  {children}
+                </UnifiedAuthProvider>
+              </AnimationProvider>
+            </SubscriptionProvider>
+          </ReduxProvider>
+        </ThemeProvider>
       </SessionProvider>
-     
     </QueryClientProvider>
   )
 }
 
 // Extract subscription status logic into a separate component
 function SubscriptionStatus() {
-  const { data, status } = useSubscriptionStore()
+  const { data, status } = useSubscription()
   const isLoading = status === "loading"
 
   // Only show trial modal if we have successfully loaded data

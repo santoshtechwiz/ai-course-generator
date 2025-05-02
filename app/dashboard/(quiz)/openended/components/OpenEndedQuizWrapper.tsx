@@ -249,8 +249,23 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
 
   const handleSignIn = () => {
     const redirectUrl = `/dashboard/openended/${slug}?fromAuth=true`
-    quizService.savePendingQuizData()
-    quizService.saveAuthRedirect(redirectUrl)
+
+    // Save minimal data needed for auth redirect
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "pendingQuizData",
+        JSON.stringify({
+          quizId: quizId,
+          slug,
+          type: "openended",
+          answers: answers,
+          score: score,
+        }),
+      )
+      localStorage.setItem("quizAuthRedirect", redirectUrl)
+      localStorage.setItem("inAuthFlow", "true")
+    }
+
     handleAuthenticationRequired()
   }
 

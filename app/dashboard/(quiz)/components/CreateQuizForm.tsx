@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ConfirmDialog } from "./ConfirmDialog"
 
 import { quizSchema } from "@/schema/schema"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
 
@@ -30,6 +30,7 @@ import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "./PlanAwareButton"
 import { SubscriptionSlider } from "../../subscription/components/SubscriptionSlider"
+import { useSubscription } from "../../subscription/hooks/use-subscription"
 
 type QuizFormData = z.infer<typeof quizSchema> & {
   userType?: string
@@ -48,7 +49,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
-  const { subscriptionStatus } = useSubscriptionStore()
+  const { status:subscriptionStatus } = useSubscription()
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     title: params?.title || "",
