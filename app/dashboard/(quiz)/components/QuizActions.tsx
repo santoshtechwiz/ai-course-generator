@@ -31,8 +31,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+
 import { QuizType } from "@/app/types/quiz-types"
+import { useSubscription } from "../../subscription/hooks/use-subscription"
 
 interface QuizActionsProps {
   quizId: string
@@ -75,7 +76,7 @@ export function QuizActions({
   const [rating, setRating] = useState<number | null>(null)
   const [hasBeenSeen, setHasBeenSeen] = useState(false)
   const router = useRouter()
-  const { canDownloadPDF } = useSubscriptionStore()
+  const { canDownloadPDF } = useSubscription()
   const toolbarRef = useRef<HTMLDivElement>(null)
 
   const isOwner = userId === ownerId
@@ -401,7 +402,7 @@ export function QuizActions({
             </DropdownMenuItem>
 
             {/* Download PDF */}
-            {canDownloadPDF() && (
+            {canDownloadPDF && (
               <DropdownMenuItem
                 onSelect={(e) => e.preventDefault()}
                 className="flex items-center px-2 py-2.5 rounded-md focus:bg-accent hover:bg-accent/50 transition-colors duration-200"

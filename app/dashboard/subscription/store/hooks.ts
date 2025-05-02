@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { shallow } from "zustand/shallow"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscription-provider"
 import type { SubscriptionData, TokenUsage } from "../types/subscription"
 
 /**

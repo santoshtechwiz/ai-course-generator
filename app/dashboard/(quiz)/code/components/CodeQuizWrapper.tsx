@@ -312,21 +312,13 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
   const handleGoBack = () => {
     console.log("User clicked Go Back, returning to quiz")
 
-    // Always clear guest results first
-    if (typeof clearGuestResults === "function") {
-      clearGuestResults()
-    }
+    // Clear guest results and restart quiz
+    clearGuestResults()
+    restartQuiz()
 
-    // Always restart the quiz to reset state
-    if (typeof restartQuiz === "function") {
-      restartQuiz()
-    }
-
-    // IMPORTANT: Set display state to quiz instead of results
-    // This prevents guest users from seeing results
+    // Set display state to quiz
     setDisplayState("quiz")
 
-    // Show a toast notification
     toast({
       title: "Quiz restarted",
       description: "You can now retake the quiz. Sign in to save your results.",
@@ -341,11 +333,21 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     // Create the redirect URL
     const redirectUrl = `/dashboard/code/${slug}?fromAuth=true`
 
-    // Save current quiz state before redirecting
-    quizService.savePendingQuizData()
-
-    // Save auth redirect info
-    quizService.saveAuthRedirect(redirectUrl)
+    // Save minimal data needed for auth redirect
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "pendingQuizData",
+        JSON.stringify({
+          quizId: quizId,
+          slug,
+          type: "code",
+          answers: state.answers,
+          score: state.score,
+        }),
+      )
+      localStorage.setItem("quizAuthRedirect", redirectUrl)
+      localStorage.setItem("inAuthFlow", "true")
+    }
 
     // Call the authentication handler
     handleAuthenticationRequired()
@@ -674,9 +676,14 @@ export default function CodeQuizWrapper({
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Check if we're in a redirect loop
-      if (quizService.isInRedirectLoop()) {
-        console.log("Detected redirect loop, breaking the cycle")
-        quizService.clearAuthFlow()
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromAuth = urlParams.get("fromAuth") === "true"
+      const inAuthFlow = localStorage.getItem("inAuthFlow") === "true"
+
+      if (fromAuth && inAuthFlow) {
+        console.log("Detected potential redirect loop, clearing auth flow state")
+        localStorage.removeItem("inAuthFlow")
+        localStorage.removeItem("quizAuthRedirect")
       }
     }
   }, [])
