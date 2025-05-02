@@ -44,19 +44,21 @@ export function AnimationProvider({ children, initialState = true }: AnimationPr
   }, [])
 
   // If user has reduced motion preference, disable animations regardless of setting
-  const effectiveAnimationsEnabled = reducedMotion ? false : animationsEnabled
+  const effectiveAnimationsEnabled = !reducedMotion && animationsEnabled
 
   const toggleAnimations = () => {
-    const newState = !animationsEnabled
-    setAnimationsEnabled(newState)
+    if (!reducedMotion) {
+      const newState = !animationsEnabled
+      setAnimationsEnabled(newState)
 
-    // Save preference to localStorage
-    try {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("animationsEnabled", newState.toString())
+      // Save preference to localStorage
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("animationsEnabled", newState.toString())
+        }
+      } catch (error) {
+        console.error("Failed to save animation preference:", error)
       }
-    } catch (error) {
-      console.error("Failed to save animation preference:", error)
     }
   }
 

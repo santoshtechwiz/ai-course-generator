@@ -8,13 +8,14 @@ import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
 import { quizService } from "@/lib/quiz-service"
 import { useEffect, useState, useRef, memo } from "react"
 import { useAuth } from "@/providers/unified-auth-provider"
-import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+
 import { QuizType } from "@/app/types/quiz-types"
 import { toast } from "@/hooks/use-toast"
 
 import CodeQuizResult from "./CodeQuizResult"
 import CodingQuiz from "./CodingQuiz"
 import type { CodeQuizWrapperProps, CodeQuizContentProps } from "@/app/types/code-quiz-types"
+import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 
 // Memoize the content component to prevent unnecessary re-renders
 export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, userId, quizId }: CodeQuizContentProps) {
@@ -27,6 +28,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     handleAuthenticationRequired,
     fetchQuizResults,
     clearGuestResults,
+    dispatch
    
   } = useQuiz()
   const router = useRouter()
@@ -47,6 +49,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     isLoadingResults,
     requiresAuth,
     hasGuestResult,
+    
   } = state
 
   const [displayState, setDisplayState] = useState<
@@ -513,15 +516,14 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
           >
             <GuestSignInPrompt
               title="Sign in to view your results"
-              description="Your quiz has been completed! Sign in to view your detailed results and save your progress."
-              ctaText="Sign in to view results"
+             
               allowContinue={true}
               onContinueAsGuest={handleGoBack}
               onSignIn={handleSignIn}
               onClearData={() => {
                 // Only available in development mode
                 if (process.env.NODE_ENV !== "production") {
-                  quizService.clearAllStorageData()
+                  quizService.clearAllQuizData()
                   window.location.reload()
                 }
               }}

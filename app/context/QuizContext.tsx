@@ -95,6 +95,8 @@ export interface QuizContextType {
   onAuthRequired?: (redirectUrl: string) => void
   handleAuthenticationRequired: () => void
   clearGuestResults: () => void
+  // Add dispatch to the context type
+  dispatch: React.Dispatch<QuizAction>
 }
 
 // -- Initial State --------------------------------------------
@@ -447,15 +449,19 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
     }
   }, [onAuthRequired, state.quizType, state.slug, signIn, authIsAuthenticated])
 
+  // Rest of the implementation...
+  // (For brevity, I'm not including all the implementation details here)
+
   // Detect page refresh
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    // Check if this is a page refresh - use a more reliable method
+    // Check if this is a page refresh - use a more reliable method with fallbacks for test environments
     const isRefresh =
       window.performance &&
-      (window.performance.navigation?.type === 1 ||
-        window.performance.getEntriesByType("navigation").some((nav) => (nav as any).type === "reload"))
+      ((window.performance.navigation && window.performance.navigation.type === 1) ||
+        (window.performance.getEntriesByType &&
+          window.performance.getEntriesByType("navigation").some((nav) => (nav as any).type === "reload")))
 
     if (isRefresh && !refreshDetected.current) {
       refreshDetected.current = true
@@ -1417,6 +1423,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
         onAuthRequired,
         handleAuthenticationRequired,
         clearGuestResults: clearGuestResultsAction,
+        dispatch, // Add dispatch to the context value
       }}
     >
       {children}
