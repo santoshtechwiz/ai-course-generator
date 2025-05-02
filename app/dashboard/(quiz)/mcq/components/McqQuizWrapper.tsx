@@ -15,10 +15,10 @@ import type { Question } from "./types"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 import { toast } from "@/hooks/use-toast"
-import { QuizDataInput, QuizType } from "@/app/types/quiz-types"
+import { type QuizDataInput, QuizType } from "@/app/types/quiz-types"
 
 interface McqQuizContentProps {
-  quizData: QuizDataInput,
+  quizData: QuizDataInput
   questions: Question[]
   slug: string
 }
@@ -86,8 +86,9 @@ export const McqQuizContent = memo(function McqQuizContent({ quizData, questions
             description: "The authentication process took too long. Please try again.",
             variant: "destructive",
           })
-          // Clear processing state
+          // Clear processing state and force transition to quiz state
           setIsReturningFromAuth(false)
+          setDisplayState("quiz")
         }, 15000) // 15 second timeout
 
         // Process pending data first, then fetch results
@@ -103,6 +104,16 @@ export const McqQuizContent = memo(function McqQuizContent({ quizData, questions
             // Now fetch quiz results
             return fetchQuizResults()
           })
+          .then((success) => {
+            // Force transition to appropriate state based on result
+            if (success && userIsAuthenticated) {
+              console.log("Successfully fetched results after auth, showing results")
+              setDisplayState("results")
+            } else {
+              console.log("No results found after auth or not authenticated, showing quiz")
+              setDisplayState("quiz")
+            }
+          })
           .catch((err) => {
             console.error("Error processing auth data or fetching results:", err)
             toast({
@@ -110,6 +121,8 @@ export const McqQuizContent = memo(function McqQuizContent({ quizData, questions
               description: "There was a problem loading your quiz results. Please try again.",
               variant: "destructive",
             })
+            // Force transition to quiz state on error
+            setDisplayState("quiz")
           })
       }
     }
@@ -120,9 +133,9 @@ export const McqQuizContent = memo(function McqQuizContent({ quizData, questions
         clearTimeout(authTimeoutRef.current)
       }
     }
-  }, [fetchQuizResults])
+  }, [fetchQuizResults, userIsAuthenticated])
 
-  // Add a timeout to prevent getting stuck in the initialization phase (in McqQuizContent)
+  // Add a timeout to prevent getting stuck in the initialization phase
   useEffect(() => {
     // Force exit from checking state after 3 seconds if still stuck
     if (displayState === "checking") {
@@ -140,16 +153,18 @@ export const McqQuizContent = memo(function McqQuizContent({ quizData, questions
         console.log("Forcing exit from preparing state after timeout")
         // Try to fetch results one more time
         fetchQuizResults()
-          .catch(() => {
-            console.log("Final attempt to fetch results failed, proceeding to quiz")
-          })
-          .finally(() => {
-            // Move to results if completed, otherwise to quiz
-            if (isCompleted && (resultsReady || answers.some((a) => a !== null))) {
+          .then((success) => {
+            console.log("Final attempt to fetch results completed with success:", success)
+            // Move to results if completed and authenticated, otherwise to quiz
+            if (success && userIsAuthenticated) {
               setDisplayState("results")
             } else {
               setDisplayState("quiz")
             }
+          })
+          .catch(() => {
+            console.log("Final attempt to fetch results failed, proceeding to quiz")
+            setDisplayState("quiz")
           })
       }, 5000)
 
@@ -159,7 +174,7 @@ export const McqQuizContent = memo(function McqQuizContent({ quizData, questions
         }
       }
     }
-  }, [displayState, isCompleted, resultsReady, answers, fetchQuizResults])
+  }, [displayState, isCompleted, resultsReady, answers, fetchQuizResults, userIsAuthenticated])
 
   // Update display state based on all the available state information
   useEffect(() => {

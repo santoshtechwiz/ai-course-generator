@@ -6,14 +6,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
 import { useAnimation } from "@/providers/animation-provider"
 import { QuizProgress } from "../../components/QuizProgress"
-
 import { QuizLoader } from "@/components/ui/quiz-loader"
-
 import { useSession } from "next-auth/react"
-import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
+import { useQuiz } from "@/app/context/QuizContext"
 import FlashCardResults from "./FlashCardQuizResults"
-import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 import { quizService } from "@/lib/quiz-service"
+import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -24,7 +22,7 @@ interface FlashCardComponentProps {
   savedCardIds?: string[]
 }
 
-export function FlashCardWrapper({
+export function FlashCardComponent({
   cards,
   quizId,
   slug,
@@ -32,23 +30,16 @@ export function FlashCardWrapper({
   onSaveCard,
   savedCardIds = [],
 }: FlashCardComponentProps) {
-  return (
-    <QuizProvider quizData={{ questions: cards, id: quizId, title }} slug={slug}>
-      <FlashCardContent
-        cards={cards}
-        quizId={quizId}
-        slug={slug}
-        title={title}
-        onSaveCard={onSaveCard}
-        savedCardIds={savedCardIds}
-      />
-    </QuizProvider>
-  )
-}
-
-function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds = [] }: FlashCardComponentProps) {
   // Use QuizContext
-  const { state, dispatch, submitAnswer, completeQuiz, restartQuiz, getTimeSpentOnCurrentQuestion } = useQuiz()
+  const {
+    state,
+    dispatch,
+    submitAnswer,
+    completeQuiz,
+    restartQuiz,
+    getTimeSpentOnCurrentQuestion,
+    handleAuthenticationRequired,
+  } = useQuiz()
   const { data: session } = useSession()
 
   // Local UI state that doesn't need to be in context
@@ -165,7 +156,7 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
       setFlipped(false)
       setExitComplete(false)
       setTimeout(() => {
-        dispatch({ type: "NEXT_QUESTION" }) // Fix incorrect method call
+        dispatch({ type: "NEXT_QUESTION" })
       }, 300)
     } else {
       // Complete the quiz
@@ -179,24 +170,9 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
       setFlipped(false)
       setExitComplete(false)
       setTimeout(() => {
-        dispatch({ type: "PREV_QUESTION" }) // Fix incorrect method call
+        dispatch({ type: "PREV_QUESTION" })
       }, 300)
     }
-  }
-
-  // Handle authentication required
-  const handleAuthRequired = () => {
-    // Get the current URL to redirect back after sign in
-    const redirectUrl = `${window.location.origin}/dashboard/flashcard/${slug}?completed=true`
-
-    // Save auth redirect info
-    quizService.saveAuthRedirect(redirectUrl)
-
-    // Save current quiz state before redirecting
-    quizService.savePendingQuizData()
-
-    // Handle auth redirect using the service method
-    quizService.handleAuthRedirect(redirectUrl)
   }
 
   // Enhanced card variants with more dynamic 3D effects and smoother transitions
@@ -347,6 +323,35 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
     createConfetti()
   }, [showConfetti])
 
+  // Check for authentication return
+  useEffect(() => {
+    // Check if returning from authentication
+    if (typeof window === "undefined") return
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const fromAuth = urlParams.get("fromAuth") === "true"
+    const completed = urlParams.get("completed") === "true"
+
+    if ((fromAuth || completed) && session?.user) {
+      console.log("Detected return from authentication, processing pending data")
+      quizService.processPendingQuizData().then(() => {
+        // After processing, check if we have results to show
+        const result = quizService.getQuizResult(quizId.toString())
+        if (result) {
+          console.log("Found quiz result after auth return:", result)
+          // Force completion state
+          dispatch({
+            type: "COMPLETE_QUIZ",
+            payload: {
+              score: result.score || 0,
+              answers: result.answers || [],
+            },
+          })
+        }
+      })
+    }
+  }, [session, quizId, dispatch])
+
   if (isLoading) {
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }
@@ -356,10 +361,10 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
       const correctCount = calculateScore()
       const totalQuestions = cards.length
       const percentage = (correctCount / totalQuestions) * 100
-      const totalTime = state.answers.reduce((acc, answer) => acc + (answer.timeSpent || 0), 0) // Fix total time calculation
+      const totalTime = state.answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0)
 
       // Show auth prompt if needed and user is not authenticated
-      if (state.showAuthPrompt && !state.isAuthenticated) {
+      if (state.requiresAuth && !session?.user) {
         return (
           <motion.div
             key="auth-prompt"
@@ -368,7 +373,16 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
           >
-            <GuestPrompt forceShow={true} onSignInClick={handleAuthRequired} /> {/* Fix component usage */}
+            <GuestSignInPrompt
+              title="Sign in to view your results"
+              description="Sign in to save your progress and see your flashcard results."
+              ctaText="Sign in to view results"
+              allowContinue={true}
+              onContinueAsGuest={restartQuiz}
+              onSignIn={handleAuthenticationRequired}
+              quizId={quizId.toString()}
+              redirectUrl={`${window.location.origin}/dashboard/flashcard/${slug}?fromAuth=true&completed=true`}
+            />
           </motion.div>
         )
       }
@@ -391,6 +405,14 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
             slug={slug}
             onRestart={restartQuiz}
           />
+
+          {cardsToReview.length > 0 && (
+            <div className="mt-6 text-center">
+              <Button onClick={handleEnterReviewMode} variant="outline" className="mx-auto">
+                Review {cardsToReview.length} card{cardsToReview.length !== 1 ? "s" : ""} to improve
+              </Button>
+            </div>
+          )}
         </motion.div>
       )
     }
@@ -402,9 +424,9 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
           <div className="px-6 py-4 space-y-4">
             <QuizProgress
               currentQuestionIndex={state.currentQuestionIndex}
-              totalQuestions={cards.length}
+              totalQuestions={reviewMode ? reviewCards.length : cards.length}
               timeSpent={[]}
-              title={title}
+              title={reviewMode ? `Review Mode: ${title}` : title}
               quizType="Flashcard"
               animate={animationsEnabled}
             />
@@ -676,7 +698,11 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
                   disabled={!exitComplete}
                   className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
                 >
-                  {state.currentQuestionIndex < cards.length - 1 ? (
+                  {(
+                    reviewMode
+                      ? state.currentQuestionIndex < reviewCards.length - 1
+                      : state.currentQuestionIndex < cards.length - 1
+                  ) ? (
                     <>
                       <span className="whitespace-nowrap">Next</span>
                       <ChevronRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -699,14 +725,16 @@ function FlashCardContent({ cards, quizId, slug, title, onSaveCard, savedCardIds
                   style={{
                     width: `${progress}%`,
                   }}
-                  initial={{ width: `${(state.currentQuestionIndex / cards.length) * 100}%` }}
+                  initial={{
+                    width: `${(state.currentQuestionIndex / (reviewMode ? reviewCards.length : cards.length)) * 100}%`,
+                  }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
                 ></motion.div>
               </div>
               <div className="flex justify-between mt-1 sm:mt-2 text-xs text-muted-foreground">
                 <span>Card {state.currentQuestionIndex + 1}</span>
-                <span>{cards.length} Cards</span>
+                <span>{reviewMode ? reviewCards.length : cards.length} Cards</span>
               </div>
             </div>
           </div>

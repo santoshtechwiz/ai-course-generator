@@ -111,6 +111,9 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   const preparingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const processingAttempted = useRef(false)
 
+  // Improve loading UX and fix auth flow issues in BlankQuizWrapper
+
+  // Update the useEffect that handles returning from authentication to be more robust
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search)

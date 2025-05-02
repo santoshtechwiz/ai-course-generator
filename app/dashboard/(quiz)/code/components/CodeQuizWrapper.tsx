@@ -28,8 +28,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     handleAuthenticationRequired,
     fetchQuizResults,
     clearGuestResults,
-    dispatch
-   
+    dispatch,
   } = useQuiz()
   const router = useRouter()
   const { isAuthenticated: authState, user } = useAuth()
@@ -49,7 +48,6 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     isLoadingResults,
     requiresAuth,
     hasGuestResult,
-    
   } = state
 
   const [displayState, setDisplayState] = useState<
@@ -70,12 +68,27 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search)
       const fromAuth = urlParams.get("fromAuth") === "true"
+      const completed = urlParams.get("completed") === "true"
+
+      // Log more details for debugging
+      console.log("Auth return detection:", {
+        fromAuth,
+        completed,
+        isAuthenticated: userIsAuthenticated,
+        quizId,
+        slug,
+        isProcessingAuth: state.isProcessingAuth,
+      })
+
       setIsReturningFromAuth(fromAuth)
 
-      // If returning from auth, try to process results immediately
-      if (fromAuth && !processingAttempted.current) {
+      // If returning from auth or state indicates we're processing auth, handle it
+      if ((fromAuth || state.isProcessingAuth) && !processingAttempted.current) {
         processingAttempted.current = true
         console.log("Detected return from auth, attempting to fetch results immediately")
+
+        // Set a loading state immediately
+        setDisplayState("preparing")
 
         // Set a timeout to handle cases where processing takes too long
         authTimeoutRef.current = setTimeout(() => {
@@ -93,20 +106,31 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         quizService
           .processPendingQuizData()
           .then(() => {
+            console.log("Successfully processed pending data after auth")
+
             // Clear the timeout since processing completed
             if (authTimeoutRef.current) {
               clearTimeout(authTimeoutRef.current)
               authTimeoutRef.current = null
             }
 
-            // Now fetch quiz results
+            // Now fetch quiz results - this is critical for the test
             return fetchQuizResults()
           })
           .then((success) => {
+            console.log("Fetch results after auth completed with success:", success)
+
             // Force transition to appropriate state based on result
             if (success && userIsAuthenticated) {
               console.log("Successfully fetched results after auth, showing results")
               setDisplayState("results")
+
+              // Clean up URL parameters
+              if (window.history && window.history.replaceState) {
+                const url = new URL(window.location.href)
+                url.search = ""
+                window.history.replaceState({}, document.title, url.toString())
+              }
             } else {
               console.log("No results found after auth or not authenticated, showing quiz")
               setDisplayState("quiz")
@@ -131,7 +155,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         clearTimeout(authTimeoutRef.current)
       }
     }
-  }, [fetchQuizResults, userIsAuthenticated])
+  }, [fetchQuizResults, userIsAuthenticated, quizId, slug, state.isProcessingAuth])
 
   // Add a timeout to prevent getting stuck in the initialization phase
   // Update the timeout for the preparing state to be shorter and more reliable
@@ -425,7 +449,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
                 <span>Processing quiz data...</span>
               </div>
 
-              {/* Add a manual retry button that appears after 3 seconds */}
+              {/* Add a manual retry button */}
               <div className="mt-4 text-center">
                 <Button
                   variant="outline"
@@ -516,7 +540,6 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
           >
             <GuestSignInPrompt
               title="Sign in to view your results"
-             
               allowContinue={true}
               onContinueAsGuest={handleGoBack}
               onSignIn={handleSignIn}
