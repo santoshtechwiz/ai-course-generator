@@ -600,7 +600,27 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, 
       if (authIsAuthenticated) {
         try {
           console.log("User is authenticated, fetching results from API for:", state.quizId)
-          const apiResult = await quizApi.fetchQuizResult(state.quizId, state.slug)
+
+          // Add a retry mechanism for API fetch
+          let apiResult = null
+          let retryCount = 0
+          const maxRetries = 2
+
+          while (!apiResult && retryCount <= maxRetries) {
+            try {
+              apiResult = await quizApi.fetchQuizResult(state.quizId, state.slug)
+              if (apiResult) break
+            } catch (fetchError) {
+              console.error(`API fetch attempt ${retryCount + 1} failed:`, fetchError)
+            }
+
+            retryCount++
+            if (retryCount <= maxRetries) {
+              console.log(`Retrying API fetch, attempt ${retryCount + 1}/${maxRetries + 1}`)
+              // Wait a bit before retrying
+              await new Promise((resolve) => setTimeout(resolve, 1000))
+            }
+          }
 
           if (apiResult && apiResult.answers && apiResult.answers.length > 0) {
             console.log("Found results from API:", apiResult)

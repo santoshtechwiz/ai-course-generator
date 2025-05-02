@@ -10,7 +10,8 @@ import { Sparkles } from "lucide-react"
 import axios from "axios"
 
 import QuizActions from "../../components/QuizActions"
-import { FlashCardWrapper } from "./FlashCardComponent"
+import { FlashCardWrapper } from "./FlashCardWrapper"
+
 
 
 interface FlashCardsPageClientProps {

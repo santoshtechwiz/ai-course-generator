@@ -11,7 +11,7 @@ const config: Config = {
   coverageProvider: "v8",
   testEnvironment: "jest-environment-jsdom",
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/$1", // Correctly map the alias to the project root
+    "^@/(.*)$": "<rootDir>/$1",
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   testPathIgnorePatterns: ["/node_modules/", "/.next/"],

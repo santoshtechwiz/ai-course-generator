@@ -6,7 +6,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Badge } from "@/components/ui/badge"
 
 import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
-import { formatQuizTime } from "@/lib/utils"
+// import { formatQuizTime } from "@/lib/utils"
+const formatQuizTime = (time: number): string => {
+  const hours = Math.floor(time / 3600)
+  const minutes = Math.floor((time % 3600) / 60)
+  const seconds = time % 60
+
+  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
+}
 
 interface QuizProgressProps {
   currentQuestionIndex: number

@@ -477,6 +477,25 @@ class QuizService {
       return null
     }
 
+    // Ensure type is always present
+    if (!submission.type) {
+      // Try to infer type from URL or other sources
+      let inferredType = "flashcard" // Default to flashcard if we can't determine
+
+      if (typeof window !== "undefined") {
+        const path = window.location.pathname
+        if (path.includes("/mcq/")) inferredType = "mcq"
+        else if (path.includes("/code/")) inferredType = "code"
+        else if (path.includes("/blanks/")) inferredType = "blanks"
+        else if (path.includes("/openended/")) inferredType = "openended"
+        else if (path.includes("/flashcard/")) inferredType = "flashcard"
+        else if (path.includes("/document/")) inferredType = "document"
+      }
+
+      console.log(`Type was missing in submission, inferred type: ${inferredType}`)
+      submission.type = inferredType
+    }
+
     // Validate submission
     if (
       !submission.quizId ||
@@ -953,12 +972,13 @@ class QuizService {
     // Check URL parameters first
     const urlParams = new URLSearchParams(window.location.search)
     const fromAuth = urlParams.get("fromAuth")
+    const completed = urlParams.get("completed")
 
     // Check localStorage as fallback
     const authRedirect = localStorage.getItem("quizAuthRedirect")
 
-    const isReturning = fromAuth === "true" || !!authRedirect
-    console.log("[QuizService] isReturningFromAuth check:", isReturning, { fromAuth, authRedirect })
+    const isReturning = fromAuth === "true" || completed === "true" || !!authRedirect
+    console.log("[QuizService] isReturningFromAuth check:", isReturning, { fromAuth, completed, authRedirect })
 
     return isReturning
   }
@@ -1029,10 +1049,6 @@ class QuizService {
   private async _processPendingQuizDataInternal(): Promise<void> {
     // Get the pending quiz data from localStorage
     const pendingQuizData = this.getPendingQuizData()
-    if (!pendingQuizData) {
-      console.log("[QuizService] No pending quiz data found")
-      return
-    }
 
     console.log("[QuizService] Found pending quiz data:", pendingQuizData)
 
@@ -1040,29 +1056,7 @@ class QuizService {
     this.clearPendingQuizData()
 
     // Try to get pending data
-    let pendingData = null
-
-    // Try sessionStorage first
-    const sessionData = sessionStorage.getItem(STORAGE_KEYS.PENDING_DATA)
-    if (sessionData) {
-      try {
-        pendingData = JSON.parse(sessionData)
-      } catch (e) {
-        console.error("Error parsing session data:", e)
-      }
-    }
-
-    // Try localStorage if not in sessionStorage
-    if (!pendingData) {
-      const localData = localStorage.getItem(STORAGE_KEYS.PENDING_DATA)
-      if (localData) {
-        try {
-          pendingData = JSON.parse(localData)
-        } catch (e) {
-          console.error("Error parsing local data:", e)
-        }
-      }
-    }
+    let pendingData = pendingQuizData
 
     // If we don't have valid pending data, check for the saved quiz type
     if (!pendingData || !pendingData.quizId) {
@@ -1082,6 +1076,22 @@ class QuizService {
         } else if (!pendingData.type) {
           // If we have pending data but no type, add the saved type
           pendingData.type = savedQuizType as QuizType
+        }
+      }
+
+      // Try to extract quiz ID from URL if available
+      if (typeof window !== "undefined") {
+        const pathParts = window.location.pathname.split("/")
+        const potentialQuizId = pathParts[pathParts.length - 1]
+
+        if (potentialQuizId && !potentialQuizId.includes(".")) {
+          console.log(`Extracted potential quiz ID from URL: ${potentialQuizId}`)
+
+          if (!pendingData) {
+            pendingData = { quizId: potentialQuizId }
+          } else if (!pendingData.quizId) {
+            pendingData.quizId = potentialQuizId
+          }
         }
       }
 
@@ -1109,6 +1119,9 @@ class QuizService {
 
               // Save the result to local storage for immediate access
               this.saveQuizResult(result)
+
+              // Clear guest result after successful migration
+              this.clearGuestResult(result.quizId)
             } catch (e) {
               console.error("Error submitting guest result:", e)
             }
@@ -1154,6 +1167,12 @@ class QuizService {
       // For authenticated users, save to server
       if (this.isAuthenticated()) {
         try {
+          console.log("Submitting authenticated quiz result:", {
+            quizId: result.quizId,
+            type: result.type,
+            answersCount: result.answers.length,
+          })
+
           await this.submitQuizResult({
             quizId: result.quizId,
             slug: result.slug,
@@ -1169,6 +1188,11 @@ class QuizService {
 
           // Also clear any guest result for this quiz
           this.clearGuestResult(result.quizId)
+
+          // Ensure the result is available immediately
+          this.saveQuizResult(result)
+
+          console.log("Successfully submitted and saved quiz result after authentication")
         } catch (e) {
           console.error("Error submitting quiz result:", e)
         }
