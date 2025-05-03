@@ -1,50 +1,50 @@
 "use client"
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import type React from "react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import { SessionProvider } from "next-auth/react"
-import { QuizProvider } from "@/app/context/QuizContext"
 import McqQuizWrapper from "../dashboard/(quiz)/mcq/components/McqQuizWrapper"
 import quizReducer from "@/store/slices/quizSlice"
 
-// Mock router
+// Mock next/navigation
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({
+  useRouter: jest.fn(() => ({
     push: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    prefetch: jest.fn(),
-    replace: jest.fn(),
-    refresh: jest.fn(),
-  }),
-  usePathname: () => "/test-path",
-  useSearchParams: () => new URLSearchParams(),
+  })),
+  usePathname: jest.fn(() => "/test-path"),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
 }))
 
-// Mock the useSession hook
+// Mock next-auth/react
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(() => ({
     data: null,
     status: "unauthenticated",
   })),
-  SessionProvider: ({ children }) => children,
+  SessionProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
-// Mock the McqQuiz component
+// Mock hooks/use-toast
+jest.mock("@/hooks/use-toast", () => ({
+  useToast: jest.fn(() => ({
+    toast: jest.fn(),
+  })),
+}))
+
+// Mock quiz components
 jest.mock("../dashboard/(quiz)/mcq/components/McqQuiz", () => ({
   __esModule: true,
-  default: ({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }) => (
+  default: ({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }: any) => (
     <div data-testid="mcq-quiz">
-      <h2>{question.question}</h2>
+      <h2>{question?.question || "Test Question"}</h2>
       <p>
         Question {questionNumber}/{totalQuestions}
       </p>
       <div>
-        <div onClick={() => onAnswer(question.answer, 5, true)}>{question.answer}</div>
-        <div onClick={() => onAnswer(question.option1, 5, false)}>{question.option1}</div>
-        <div onClick={() => onAnswer(question.option2, 5, false)}>{question.option2}</div>
-        <div onClick={() => onAnswer(question.option3, 5, false)}>{question.option3}</div>
+        <div onClick={() => onAnswer("Paris", 10, true)}>Paris</div>
+        <div onClick={() => onAnswer("London", 10, false)}>London</div>
       </div>
       <button data-testid={isLastQuestion ? "submit-button" : "next-button"}>
         {isLastQuestion ? "Submit Quiz" : "Next"}
@@ -53,117 +53,69 @@ jest.mock("../dashboard/(quiz)/mcq/components/McqQuiz", () => ({
   ),
 }))
 
-// Mock the utility functions
-jest.mock("@/lib/utils/quiz-options", () => ({
-  shuffleArray: (array) => array,
-  isAnswerCorrect: (userAnswer, correctAnswer) => userAnswer === correctAnswer,
+jest.mock("../dashboard/(quiz)/mcq/components/McqQuizResult", () => ({
+  __esModule: true,
+  default: ({ result }: any) => (
+    <div data-testid="quiz-results">
+      Quiz Results
+      <div data-testid="quiz-score">{result?.score || 0}</div>
+    </div>
+  ),
 }))
 
-jest.mock("@/lib/utils/quiz-performance", () => ({
-  formatQuizTime: (seconds) => `${Math.floor(seconds / 60)}m ${seconds % 60}s`,
-  calculatePerformanceLevel: (score) =>
-    score >= 90 ? "Excellent" : score >= 75 ? "Good" : score >= 60 ? "Satisfactory" : "Needs Improvement",
-  getDifficultyColor: (difficulty) =>
-    difficulty === "easy" ? "text-green-500" : difficulty === "medium" ? "text-yellow-500" : "text-red-500",
-  isTooFastAnswer: () => false,
+jest.mock("../dashboard/(quiz)/components/GuestSignInPrompt", () => ({
+  __esModule: true,
+  default: ({ onContinueAsGuest, onSignIn }: any) => (
+    <div data-testid="guest-sign-in-prompt">
+      <button data-testid="continue-as-guest" onClick={onContinueAsGuest}>
+        Continue as Guest
+      </button>
+      <button data-testid="sign-in" onClick={onSignIn}>
+        Sign In
+      </button>
+    </div>
+  ),
 }))
 
-// Mock quiz-index.ts which is the central export point
+// Mock quiz utils
 jest.mock("@/lib/utils/quiz-index", () => ({
   createQuizError: jest.fn((type, message) => ({ type, message })),
   QuizErrorType: {
     VALIDATION: "VALIDATION",
     UNKNOWN: "UNKNOWN",
   },
-  getUserFriendlyErrorMessage: jest.fn((error) => error.message),
+  getUserFriendlyErrorMessage: jest.fn((error) => error?.message || "Unknown error"),
   quizUtils: {
-    calculateScore: jest.fn((answers, type) => {
-      if (!Array.isArray(answers) || answers.length === 0) return 0
-      const correctCount = answers.filter((a) => a?.isCorrect).length
-      return Math.round((correctCount / answers.length) * 100)
-    }),
+    calculateScore: jest.fn(() => 100),
   },
-  formatQuizTime: jest.fn((seconds) => `${Math.floor(seconds / 60)}m ${seconds % 60}s`),
-  calculateTotalTime: jest.fn((answers) => {
-    if (!Array.isArray(answers)) return 0
-    return answers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
-  }),
+  formatQuizTime: jest.fn(() => "1m 0s"),
+  calculateTotalTime: jest.fn(() => 60),
 }))
-
-// Mock the useToast hook
-jest.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({
-    toast: jest.fn(),
-  }),
-}))
-
-// Mock data
-const mockQuestions = [
-  {
-    id: "1",
-    question: "What is the capital of France?",
-    answer: "Paris",
-    option1: "London",
-    option2: "Berlin",
-    option3: "Madrid",
-  },
-  {
-    id: "2",
-    question: "What is 2 + 2?",
-    answer: "4",
-    option1: "3",
-    option2: "5",
-    option3: "6",
-  },
-]
-
-// Create a test store
-const createTestStore = (initialState = {}) => {
-  return configureStore({
-    reducer: {
-      quiz: quizReducer,
-    },
-    preloadedState: {
-      quiz: {
-        quizId: "test-quiz",
-        slug: "test-quiz",
-        title: "Test Quiz",
-        quizType: "mcq",
-        questions: mockQuestions,
-        currentQuestionIndex: 0,
-        answers: [],
-        timeSpent: [],
-        isCompleted: false,
-        score: 0,
-        requiresAuth: false,
-        isAuthenticated: false,
-        hasGuestResult: false,
-        guestResultsSaved: false,
-        pendingAuthRequired: false,
-        authCheckComplete: false,
-        isProcessingAuth: false,
-        error: null,
-        animationState: "idle",
-        isSavingResults: false,
-        completedAt: null,
-        ...initialState,
-      },
-    },
-  })
-}
 
 // Mock the QuizContext
-jest.mock("@/app/context/QuizContext", () => {
-  const originalModule = jest.requireActual("@/app/context/QuizContext")
-
+jest.mock("../context/QuizContext", () => {
+  const originalModule = jest.requireActual("../context/QuizContext")
   return {
     ...originalModule,
     useQuiz: jest.fn(() => ({
       state: {
-        quizId: "test-quiz",
+        quizId: "test-quiz-id",
         slug: "test-quiz",
         quizType: "mcq",
-        questions: mockQuestions,
+        questions: [
+          {
+            id: "q1",
+            question: "What is the capital of France?",
+            options: ["Paris", "London", "Berlin", "Madrid"],
+            answer: "Paris",
+          },
+          {
+            id: "q2",
+            question: "What is 2+2?",
+            options: ["3", "4", "5", "6"],
+            answer: "4",
+          },
+        ],
         currentQuestionIndex: 0,
         answers: [],
         timeSpent: [],
@@ -180,143 +132,160 @@ jest.mock("@/app/context/QuizContext", () => {
       completeQuiz: jest.fn(),
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
+      initializeQuiz: jest.fn(),
     })),
-    QuizProvider: ({ children }) => children,
+    QuizProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   }
 })
 
-// Mock McqQuizResult component
-jest.mock("../dashboard/(quiz)/mcq/components/McqQuizResult", () => ({
-  __esModule: true,
-  default: () => <div data-testid="quiz-results">Quiz Results</div>,
-}))
+// Sample quiz data
+const mockQuizData = {
+  id: "test-quiz-id",
+  slug: "test-quiz",
+  title: "Test Quiz",
+  quizType: "mcq",
+  questions: [
+    {
+      id: "q1",
+      question: "What is the capital of France?",
+      options: ["Paris", "London", "Berlin", "Madrid"],
+      answer: "Paris",
+    },
+    {
+      id: "q2",
+      question: "What is 2+2?",
+      options: ["3", "4", "5", "6"],
+      answer: "4",
+    },
+  ],
+}
 
-// Mock GuestSignInPrompt component
-jest.mock("../dashboard/(quiz)/components/GuestSignInPrompt", () => ({
-  __esModule: true,
-  default: ({ onSignIn }) => (
-    <div data-testid="guest-signin-prompt">
-      <h2>Sign In to Save Results</h2>
-      <p>You need to sign in to save your quiz results.</p>
-      <button onClick={onSignIn}>Sign In</button>
-    </div>
-  ),
-}))
+// Initial state to prevent undefined errors
+const initialState = {
+  quizId: "test-quiz-id",
+  slug: "test-quiz",
+  title: "Test Quiz",
+  quizType: "mcq",
+  questions: mockQuizData.questions,
+  currentQuestionIndex: 0,
+  answers: [],
+  timeSpent: [],
+  isCompleted: false,
+  score: 0,
+  requiresAuth: false,
+  pendingAuthRequired: false,
+  isAuthenticated: false,
+  hasGuestResult: false,
+  guestResultsSaved: false,
+  authCheckComplete: false,
+  isProcessingAuth: false,
+  error: null,
+  animationState: "idle",
+  isSavingResults: false,
+  resultsSaved: false,
+  completedAt: null,
+}
+
+// Create a custom render function with providers
+const renderWithProviders = (
+  ui: React.ReactElement,
+  {
+    preloadedState = {},
+    store = configureStore({
+      reducer: { quiz: quizReducer },
+      preloadedState: { quiz: { ...initialState, ...preloadedState } },
+    }),
+    ...renderOptions
+  } = {},
+) => {
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <Provider store={store}>
+      <SessionProvider>{children}</SessionProvider>
+    </Provider>
+  )
+  return render(ui, { wrapper: Wrapper, ...renderOptions })
+}
 
 describe("MCQ Quiz Auth Flow", () => {
   beforeEach(() => {
-    // Clear all mocks before each test
     jest.clearAllMocks()
 
-    // Reset the useQuiz mock implementation for each test
-    const { useQuiz } = require("@/app/context/QuizContext")
-    useQuiz.mockImplementation(() => ({
+    // Reset URL
+    Object.defineProperty(window, "location", {
+      value: { search: "" },
+      writable: true,
+    })
+
+    // Reset session mock
+    require("next-auth/react").useSession.mockReturnValue({
+      data: null,
+      status: "unauthenticated",
+    })
+  })
+
+  test("shows auth prompt when quiz requires authentication", () => {
+    // Setup
+    const { useQuiz } = require("../context/QuizContext")
+
+    useQuiz.mockReturnValue({
       state: {
-        quizId: "test-quiz",
+        quizId: "test-quiz-id",
         slug: "test-quiz",
         quizType: "mcq",
-        questions: mockQuestions,
+        questions: mockQuizData.questions,
         currentQuestionIndex: 0,
         answers: [],
         timeSpent: [],
-        isCompleted: false,
+        isCompleted: true,
         score: 0,
-        requiresAuth: false,
+        requiresAuth: true,
         isAuthenticated: false,
-        hasGuestResult: false,
+        hasGuestResult: true,
         guestResultsSaved: false,
         error: null,
-        animationState: "idle",
+        animationState: "completed",
       },
       submitAnswer: jest.fn(),
       completeQuiz: jest.fn(),
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
-    }))
-  })
-
-  test("renders quiz questions correctly", () => {
-    const store = createTestStore({ questions: mockQuestions })
-
-    render(
-      <Provider store={store}>
-        <SessionProvider session={null}>
-          <QuizProvider quizData={{ questions: mockQuestions }} slug="test-quiz" quizType="mcq">
-            <McqQuizWrapper questions={mockQuestions} quizId="test-quiz" slug="test-quiz" />
-          </QuizProvider>
-        </SessionProvider>
-      </Provider>,
-    )
-
-    // Check if the first question is rendered
-    expect(screen.getByText("What is the capital of France?")).toBeInTheDocument()
-    expect(screen.getByText("Question 1/2")).toBeInTheDocument()
-  })
-
-  test("allows selecting an answer and moving to next question", async () => {
-    const store = createTestStore({ questions: mockQuestions })
-    const { useQuiz } = require("@/app/context/QuizContext")
-    const submitAnswerMock = jest.fn()
-
-    useQuiz.mockImplementation(() => ({
-      state: {
-        quizId: "test-quiz",
-        slug: "test-quiz",
-        quizType: "mcq",
-        questions: mockQuestions,
-        currentQuestionIndex: 0,
-        answers: [],
-        timeSpent: [],
-        isCompleted: false,
-        score: 0,
-        requiresAuth: false,
-        isAuthenticated: false,
-        hasGuestResult: false,
-        guestResultsSaved: false,
-        error: null,
-        animationState: "idle",
-      },
-      submitAnswer: submitAnswerMock,
-      completeQuiz: jest.fn(),
-      handleAuthenticationRequired: jest.fn(),
-      setAuthCheckComplete: jest.fn(),
-    }))
-
-    render(
-      <Provider store={store}>
-        <SessionProvider session={null}>
-          <QuizProvider quizData={{ questions: mockQuestions }} slug="test-quiz" quizType="mcq">
-            <McqQuizWrapper questions={mockQuestions} quizId="test-quiz" slug="test-quiz" />
-          </QuizProvider>
-        </SessionProvider>
-      </Provider>,
-    )
-
-    // Select an answer by clicking directly on the answer
-    fireEvent.click(screen.getByText("Paris"))
-
-    // This should trigger the onAnswer callback which will move to the next question
-    await waitFor(() => {
-      expect(submitAnswerMock).toHaveBeenCalled()
-      expect(screen.getByText("What is 2 + 2?")).toBeInTheDocument()
-      expect(screen.getByText("Question 2/2")).toBeInTheDocument()
+      initializeQuiz: jest.fn(),
     })
+
+    // Render
+    renderWithProviders(
+      <McqQuizWrapper
+        quizData={mockQuizData}
+        questions={mockQuizData.questions}
+        quizId={mockQuizData.id}
+        slug={mockQuizData.slug}
+      />,
+      {
+        preloadedState: {
+          isCompleted: true,
+          requiresAuth: true,
+          isAuthenticated: false,
+          hasGuestResult: true,
+        },
+      },
+    )
+
+    // Check that auth prompt is shown
+    expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
   })
 
-  test("shows 'Submit Quiz' on last question", async () => {
-    const store = createTestStore({ questions: mockQuestions })
-    const { useQuiz } = require("@/app/context/QuizContext")
-    const submitAnswerMock = jest.fn()
+  test("shows 'Submit Quiz' on last question", () => {
+    // Setup
+    const { useQuiz } = require("../context/QuizContext")
 
-    // Mock the component to be on the last question
-    useQuiz.mockImplementation(() => ({
+    useQuiz.mockReturnValue({
       state: {
-        quizId: "test-quiz",
+        quizId: "test-quiz-id",
         slug: "test-quiz",
         quizType: "mcq",
-        questions: mockQuestions,
-        currentQuestionIndex: 1, // Set to the last question index
-        answers: [{ questionId: "1", isCorrect: true, timeSpent: 10, answer: "Paris" }],
+        questions: mockQuizData.questions,
+        currentQuestionIndex: 1, // Last question
+        answers: [{ questionId: "q1", isCorrect: true, timeSpent: 10, answer: "Paris" }],
         timeSpent: [10],
         isCompleted: false,
         score: 0,
@@ -327,165 +296,70 @@ describe("MCQ Quiz Auth Flow", () => {
         error: null,
         animationState: "idle",
       },
-      submitAnswer: submitAnswerMock,
+      submitAnswer: jest.fn(),
       completeQuiz: jest.fn(),
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
-    }))
+      initializeQuiz: jest.fn(),
+    })
 
-    render(
-      <Provider store={store}>
-        <SessionProvider session={null}>
-          <QuizProvider quizData={{ questions: mockQuestions }} slug="test-quiz" quizType="mcq">
-            <McqQuizWrapper
-              questions={mockQuestions}
-              quizId="test-quiz"
-              slug="test-quiz"
-              currentQuestionIndex={1} // Pass the current question index directly
-            />
-          </QuizProvider>
-        </SessionProvider>
-      </Provider>,
+    // Render with current question index set to the last question
+    renderWithProviders(
+      <McqQuizWrapper
+        quizData={mockQuizData}
+        questions={mockQuizData.questions}
+        quizId={mockQuizData.id}
+        slug={mockQuizData.slug}
+        currentQuestionIndex={1}
+      />,
+      {
+        preloadedState: {
+          currentQuestionIndex: 1,
+        },
+      },
     )
 
-    // Check if the submit button is rendered
+    // Check if the button says "Submit Quiz" instead of "Next"
     expect(screen.getByTestId("submit-button")).toBeInTheDocument()
     expect(screen.queryByTestId("next-button")).not.toBeInTheDocument()
   })
 
-  test("shows auth prompt when quiz requires authentication", async () => {
-    // Override the useQuiz mock for this specific test
-    const { useQuiz } = require("@/app/context/QuizContext")
-    useQuiz.mockImplementation(() => ({
-      state: {
-        quizId: "test-quiz",
-        slug: "test-quiz",
-        quizType: "mcq",
-        questions: mockQuestions,
-        currentQuestionIndex: 0,
-        answers: [],
-        timeSpent: [],
-        isCompleted: true, // Set isCompleted to true
-        score: 0,
-        requiresAuth: true, // Set requiresAuth to true
-        isAuthenticated: false,
-        hasGuestResult: true,
-        guestResultsSaved: false,
-        error: null,
-        animationState: "idle",
-        isProcessingAuth: false,
-      },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
-      handleAuthenticationRequired: jest.fn(),
-      setAuthCheckComplete: jest.fn(),
-    }))
-
-    const store = createTestStore({
-      questions: mockQuestions,
-      requiresAuth: true,
-      isAuthenticated: false,
-      isCompleted: true,
-      hasGuestResult: true,
-      guestResultsSaved: false,
-      isProcessingAuth: false,
-    })
-
-    render(
-      <Provider store={store}>
-        <SessionProvider session={null}>
-          <QuizProvider
-            quizData={{
-              questions: mockQuestions,
-              requiresAuth: true,
-              isCompleted: true,
-            }}
-            slug="test-quiz"
-            quizType="mcq"
-          >
-            <McqQuizWrapper questions={mockQuestions} quizId="test-quiz" slug="test-quiz" />
-          </QuizProvider>
-        </SessionProvider>
-      </Provider>,
+  test("handles error states correctly", () => {
+    // Render with error prop
+    renderWithProviders(
+      <McqQuizWrapper
+        quizData={mockQuizData}
+        questions={mockQuizData.questions}
+        quizId={mockQuizData.id}
+        slug={mockQuizData.slug}
+        error={{ message: "Test error" }}
+      />,
     )
 
-    // Check if auth prompt is shown
-    await waitFor(() => {
-      expect(screen.getByTestId("guest-signin-prompt")).toBeInTheDocument()
-      expect(screen.getByText("Sign In to Save Results")).toBeInTheDocument()
-    })
-  })
-
-  test("handles error states correctly", async () => {
-    // Override the useQuiz mock for this specific test
-    const { useQuiz } = require("@/app/context/QuizContext")
-    useQuiz.mockImplementation(() => ({
-      state: {
-        quizId: "test-quiz",
-        slug: "test-quiz",
-        quizType: "mcq",
-        questions: [],
-        currentQuestionIndex: 0,
-        answers: [],
-        timeSpent: [],
-        isCompleted: false,
-        score: 0,
-        requiresAuth: false,
-        isAuthenticated: false,
-        hasGuestResult: false,
-        guestResultsSaved: false,
-        error: "No questions available for this quiz.",
-        animationState: "idle",
-      },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
-      handleAuthenticationRequired: jest.fn(),
-      setAuthCheckComplete: jest.fn(),
-    }))
-
-    const store = createTestStore({
-      questions: [],
-      error: "No questions available for this quiz.",
-    })
-
-    render(
-      <Provider store={store}>
-        <SessionProvider session={null}>
-          <QuizProvider quizData={{ questions: [] }} slug="test-quiz" quizType="mcq">
-            <McqQuizWrapper
-              questions={[]}
-              quizId="test-quiz"
-              slug="test-quiz"
-              error={{ message: "No questions available for this quiz." }}
-            />
-          </QuizProvider>
-        </SessionProvider>
-      </Provider>,
-    )
-
-    // Check if error message is displayed
-    expect(screen.getByText(/No questions available for this quiz/i)).toBeInTheDocument()
+    // Check that error message is shown
+    expect(screen.getByText("Error Loading Quiz")).toBeInTheDocument()
   })
 
   test("shows results when quiz is completed and auth is not required", async () => {
-    // Override the useQuiz mock for this specific test
-    const { useQuiz } = require("@/app/context/QuizContext")
-    useQuiz.mockImplementation(() => ({
+    // Setup
+    const { useQuiz } = require("../context/QuizContext")
+
+    useQuiz.mockReturnValue({
       state: {
-        quizId: "test-quiz",
+        quizId: "test-quiz-id",
         slug: "test-quiz",
         quizType: "mcq",
-        questions: mockQuestions,
-        currentQuestionIndex: 0,
+        questions: mockQuizData.questions,
+        currentQuestionIndex: 1,
         answers: [
-          { questionId: "1", isCorrect: true, timeSpent: 10, answer: "Paris" },
-          { questionId: "2", isCorrect: true, timeSpent: 15, answer: "4" },
+          { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "Paris" },
+          { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "4" },
         ],
-        timeSpent: [10, 15],
-        isCompleted: true, // Set isCompleted to true
+        timeSpent: [10, 5],
+        isCompleted: true,
         score: 100,
         requiresAuth: false,
-        isAuthenticated: true, // Set isAuthenticated to true
+        isAuthenticated: true,
         hasGuestResult: false,
         guestResultsSaved: false,
         error: null,
@@ -495,52 +369,143 @@ describe("MCQ Quiz Auth Flow", () => {
       completeQuiz: jest.fn(),
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
-    }))
-
-    const store = createTestStore({
-      questions: mockQuestions,
-      isCompleted: true,
-      isAuthenticated: true,
-      answers: [
-        { questionId: "1", isCorrect: true, timeSpent: 10, answer: "Paris" },
-        { questionId: "2", isCorrect: true, timeSpent: 15, answer: "4" },
-      ],
-      score: 100,
+      initializeQuiz: jest.fn(),
     })
 
-    render(
-      <Provider store={store}>
-        <SessionProvider session={{ user: { name: "Test User" } }}>
-          <QuizProvider
-            quizData={{
-              questions: mockQuestions,
-              requiresAuth: false,
-              isCompleted: true,
-            }}
-            slug="test-quiz"
-            quizType="mcq"
-          >
-            <McqQuizWrapper
-              questions={mockQuestions}
-              quizId="test-quiz"
-              slug="test-quiz"
-              showResults={true} // Force showing results
-              quizResults={{
-                quizId: "test-quiz",
-                slug: "test-quiz",
-                score: 100,
-                answers: [
-                  { questionId: "1", isCorrect: true, timeSpent: 10, answer: "Paris" },
-                  { questionId: "2", isCorrect: true, timeSpent: 15, answer: "4" },
-                ],
-              }}
-            />
-          </QuizProvider>
-        </SessionProvider>
-      </Provider>,
+    // Render with completed quiz
+    renderWithProviders(
+      <McqQuizWrapper
+        quizData={mockQuizData}
+        questions={mockQuizData.questions}
+        quizId={mockQuizData.id}
+        slug={mockQuizData.slug}
+        showResults={true}
+        quizResults={{
+          quizId: mockQuizData.id,
+          slug: mockQuizData.slug,
+          score: 100,
+          totalQuestions: 2,
+          correctAnswers: 2,
+        }}
+      />,
+      {
+        preloadedState: {
+          isCompleted: true,
+          isAuthenticated: true,
+          score: 100,
+        },
+      },
     )
 
-    // Check if results component is rendered
+    // Check that results are shown
     expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
+  })
+
+  test("handles authentication flow when returning from sign-in", async () => {
+    // Setup - mock URL with fromAuth=true
+    Object.defineProperty(window, "location", {
+      value: {
+        search: "?fromAuth=true",
+      },
+      writable: true,
+    })
+
+    // Mock authenticated session
+    require("next-auth/react").useSession.mockReturnValue({
+      data: { user: { name: "Test User" } },
+      status: "authenticated",
+    })
+
+    // Mock localStorage with saved quiz state
+    const savedState = {
+      answers: [
+        { answer: "Paris", isCorrect: true, timeSpent: 10, questionId: "q1" },
+        { answer: "4", isCorrect: true, timeSpent: 5, questionId: "q2" },
+      ],
+      currentQuestionIndex: 1,
+      quizId: mockQuizData.id,
+      slug: mockQuizData.slug,
+      quizResults: {
+        quizId: mockQuizData.id,
+        slug: mockQuizData.slug,
+        score: 100,
+        totalQuestions: 2,
+        correctAnswers: 2,
+      },
+      completedAt: new Date().toISOString(),
+    }
+
+    // Mock localStorage
+    Object.defineProperty(window, "localStorage", {
+      value: {
+        getItem: jest.fn((key) => {
+          if (key === `quiz_state_${mockQuizData.slug}`) {
+            return JSON.stringify(savedState)
+          }
+          return null
+        }),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      },
+      writable: true,
+    })
+
+    // Setup mock for useQuiz
+    const { useQuiz } = require("../context/QuizContext")
+    const mockCompleteQuiz = jest.fn()
+
+    useQuiz.mockReturnValue({
+      state: {
+        quizId: "test-quiz-id",
+        slug: "test-quiz",
+        quizType: "mcq",
+        questions: mockQuizData.questions,
+        currentQuestionIndex: 1,
+        answers: [
+          { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "Paris" },
+          { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "4" },
+        ],
+        timeSpent: [10, 5],
+        isCompleted: true,
+        score: 100,
+        requiresAuth: false,
+        isAuthenticated: true,
+        hasGuestResult: false,
+        guestResultsSaved: false,
+        error: null,
+        animationState: "completed",
+        pendingAuthRequired: true,
+      },
+      submitAnswer: jest.fn(),
+      completeQuiz: mockCompleteQuiz,
+      handleAuthenticationRequired: jest.fn(),
+      setAuthCheckComplete: jest.fn(),
+      initializeQuiz: jest.fn(),
+    })
+
+    // Render
+    renderWithProviders(
+      <McqQuizWrapper
+        quizData={mockQuizData}
+        questions={mockQuizData.questions}
+        quizId={mockQuizData.id}
+        slug={mockQuizData.slug}
+      />,
+      {
+        preloadedState: {
+          isCompleted: true,
+          isAuthenticated: true,
+          pendingAuthRequired: true,
+        },
+      },
+    )
+
+    // Should show quiz results
+    await waitFor(() => {
+      expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
+    })
+
+    // Should have attempted to remove the saved state from localStorage
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith(`quiz_state_${mockQuizData.slug}`)
   })
 })

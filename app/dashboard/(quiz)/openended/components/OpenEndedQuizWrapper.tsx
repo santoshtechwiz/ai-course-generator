@@ -6,7 +6,7 @@ import { AlertCircle } from "lucide-react"
 
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
-import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+import GuestSignInPrompt  from "../../components/GuestSignInPrompt"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"

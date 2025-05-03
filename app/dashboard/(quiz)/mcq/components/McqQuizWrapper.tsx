@@ -153,6 +153,73 @@ export default function McqQuizWrapper({
     }
   }, [propShowResults])
 
+  // Save quiz state to localStorage before redirecting to sign-in
+  const saveQuizStateToLocalStorage = useCallback(() => {
+    if (typeof window !== "undefined") {
+      const stateToSave = {
+        answers,
+        currentQuestionIndex,
+        quizId,
+        slug,
+        quizResults,
+        completedAt: new Date().toISOString(),
+      }
+      localStorage.setItem(`quiz_state_${slug}`, JSON.stringify(stateToSave))
+    }
+  }, [answers, currentQuestionIndex, quizId, slug, quizResults])
+
+  // Restore quiz state from localStorage when returning from sign-in
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromAuth = urlParams.get("fromAuth")
+
+      if (fromAuth === "true") {
+        try {
+          const savedState = localStorage.getItem(`quiz_state_${slug}`)
+          if (savedState) {
+            const parsedState = JSON.parse(savedState)
+
+            // Restore answers and other state
+            if (parsedState.answers) setAnswers(parsedState.answers)
+            if (parsedState.quizResults) setQuizResults(parsedState.quizResults)
+            if (parsedState.currentQuestionIndex) setCurrentQuestionIndex(parsedState.currentQuestionIndex)
+
+            // If we had completed the quiz before auth, complete it again
+            if (parsedState.quizResults && completeQuiz) {
+              completeQuiz({
+                answers: parsedState.answers,
+                score: parsedState.quizResults.score,
+                completedAt: parsedState.completedAt || new Date().toISOString(),
+              })
+              setShowResults(true)
+            }
+
+            // Clear the saved state after restoring
+            localStorage.removeItem(`quiz_state_${slug}`)
+          }
+        } catch (err) {
+          console.error("Error restoring quiz state:", err)
+        }
+      }
+    }
+  }, [slug, completeQuiz])
+
+  // Clear quiz state after results are saved to database
+  useEffect(() => {
+    if (safeState.resultsSaved && safeState.isAuthenticated) {
+      // Wait a moment to ensure everything is processed
+      const timer = setTimeout(() => {
+        // Clear localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(`quiz_state_${slug}`)
+        }
+      }, 1000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [safeState.resultsSaved, safeState.isAuthenticated, slug])
+
   // Memoize the current question to prevent unnecessary re-renders
   const currentQuestion = React.useMemo(() => {
     return quizQuestions[currentQuestionIndex]
@@ -294,9 +361,13 @@ export default function McqQuizWrapper({
   // Handle sign in
   const handleSignIn = useCallback(() => {
     if (handleAuthenticationRequired) {
+      // Save current quiz state before redirecting
+      saveQuizStateToLocalStorage()
+
+      // Redirect to sign-in
       handleAuthenticationRequired(`/dashboard/mcq/${slug}?fromAuth=true`)
     }
-  }, [handleAuthenticationRequired, slug])
+  }, [handleAuthenticationRequired, slug, saveQuizStateToLocalStorage])
 
   // If there's an error, show the error message
   if (error) {
@@ -304,8 +375,6 @@ export default function McqQuizWrapper({
       <Card className="p-6">
         <div className="flex flex-col items-center justify-center text-center gap-4">
           <AlertTriangle className="h-12 w-12 text-amber-500" />
-          <h3 className="text-xl font-semibold">Error Loading Quiz</h3>
-          <p className />
           <h3 className="text-xl font-semibold">Error Loading Quiz</h3>
           <p className="text-muted-foreground">{getUserFriendlyErrorMessage(error)}</p>
           <Button onClick={() => router.push("/dashboard/mcq")}>Return to Quiz List</Button>
