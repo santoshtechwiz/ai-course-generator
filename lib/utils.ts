@@ -108,7 +108,7 @@ export const buildQuizUrl = (slug: string, type: QuizType) => {
   switch (type) {
     case "mcq":
       return `/dashboard/mcq/${slug}`
-    case "fill-blanks":
+    case "blanks":
       return `/dashboard/blanks/${slug}`
     case "openended":
       return `/dashboard/openended/${slug}`
@@ -121,13 +121,7 @@ export const buildQuizUrl = (slug: string, type: QuizType) => {
   }
 }
 
-export const formatQuizTime = (time: number): string => {
-  const hours = Math.floor(time / 3600)
-  const minutes = Math.floor((time % 3600) / 60)
-  const seconds = time % 60
 
-  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
-}
 
 export async function markdownToHtml(markdown: string): Promise<string> {
   // Simple implementation - in a real app, you might use a library like marked or remark
