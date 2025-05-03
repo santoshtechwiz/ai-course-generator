@@ -1,102 +1,53 @@
 "use client"
-
-import { useState } from "react"
-import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, LogIn, UserPlus } from "lucide-react"
-import { motion } from "framer-motion"
+import { UserIcon, SaveIcon } from "lucide-react"
 
 interface GuestSignInPromptProps {
+  onSignIn: () => void
   onContinueAsGuest: () => void
-  onSignIn?: () => void
-  quizType?: string
-  showSaveMessage?: boolean
+  "data-testid"?: string
 }
 
-export  function GuestSignInPrompt({
-  onContinueAsGuest,
+export default function GuestSignInPrompt({
   onSignIn,
-  quizType = "quiz",
-  showSaveMessage = true,
+  onContinueAsGuest,
+  "data-testid": dataTestId,
 }: GuestSignInPromptProps) {
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleSignIn = async () => {
-    setIsLoading(true)
-
-    try {
-      // Store current URL to redirect back after login
-      localStorage.setItem("authRedirectUrl", window.location.href)
-
-      // Call the onSignIn callback if provided
-      if (onSignIn) {
-        onSignIn()
-      }
-
-      // Redirect to sign in page
-      await signIn("google", { callbackUrl: window.location.href })
-    } catch (error) {
-      console.error("Error signing in:", error)
-      setIsLoading(false)
-    }
-  }
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="w-full max-w-md mx-auto"
-    >
-      <Card className="border-primary/20 shadow-lg">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-500" />
-            <CardTitle className="text-xl">Sign in to continue</CardTitle>
-          </div>
+    <div className="w-full max-w-md mx-auto mt-8" data-testid={dataTestId}>
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl">Sign in to save your progress</CardTitle>
           <CardDescription>
-            {showSaveMessage ? (
-              <>Sign in to save your {quizType} progress and results.</>
-            ) : (
-              <>Sign in to access all features and track your progress.</>
-            )}
+            Your quiz results are ready! Sign in to save your progress and track your learning journey.
           </CardDescription>
         </CardHeader>
-
         <CardContent className="space-y-4">
-          <div className="bg-muted/50 p-3 rounded-md text-sm">
-            <p className="font-medium mb-2">Benefits of signing in:</p>
-            <ul className="space-y-1 list-disc pl-4 text-muted-foreground">
-              <li>Save your progress and results</li>
-              <li>Track your performance over time</li>
-              <li>Access your history from any device</li>
-              <li>Unlock additional features</li>
-            </ul>
+          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-md">
+            <SaveIcon className="h-6 w-6 text-gray-500" />
+            <div>
+              <h3 className="font-medium">Save your results</h3>
+              <p className="text-sm text-gray-500">Track your progress over time</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-md">
+            <UserIcon className="h-6 w-6 text-gray-500" />
+            <div>
+              <h3 className="font-medium">Create your profile</h3>
+              <p className="text-sm text-gray-500">Access personalized learning recommendations</p>
+            </div>
           </div>
         </CardContent>
-
-        <CardFooter className="flex flex-col sm:flex-row gap-3">
-          <Button variant="outline" className="w-full sm:w-auto" onClick={onContinueAsGuest}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Continue as Guest
+        <CardFooter className="flex flex-col space-y-2">
+          <Button onClick={onSignIn} className="w-full">
+            Sign in
           </Button>
-
-          <Button className="w-full sm:w-auto" onClick={handleSignIn} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <div className="h-4 w-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              <>
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign in
-              </>
-            )}
+          <Button onClick={onContinueAsGuest} variant="outline" className="w-full">
+            Continue as guest
           </Button>
         </CardFooter>
       </Card>
-    </motion.div>
+    </div>
   )
 }

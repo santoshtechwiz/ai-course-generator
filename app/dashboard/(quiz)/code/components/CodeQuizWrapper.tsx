@@ -7,14 +7,15 @@ import { Button } from "@/components/ui/button"
 import { useQuiz, QuizProvider } from "@/app/context/QuizContext"
 import { ErrorDisplay, LoadingDisplay, PreparingDisplay, SavingDisplay, InitializingDisplay, QuizNotFoundDisplay, EmptyQuestionsDisplay } from "@/app/dashboard/components/QuizStateDisplay"
 import { CodeQuizContentProps, CodeQuizWrapperProps } from "@/app/types/code-quiz-types"
-import { QuizType } from "@/lib/quiz-utils"
+
 import { determineDisplayState, createSafeQuizData } from "@/lib/utils/quiz-state-utils"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { memo, useState, useEffect, useRef } from "react"
 import { toast } from "sonner"
-import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+
 import CodeQuizResult from "./CodeQuizResult"
 import CodingQuiz from "./CodingQuiz"
+import GuestSignInPrompt from "../../components/GuestSignInPrompt"
 
 
 // Memoize the content component to prevent unnecessary re-renders
@@ -375,7 +376,7 @@ export default function CodeQuizWrapper({
         slug: validSlug,
       }}
       slug={validSlug}
-      quizType={QuizType.CODE}
+      quizType="code"
       onAuthRequired={(redirectUrl) => {
         // If user is already authenticated, don't show auth prompt
         if (userIsAuthenticated) {

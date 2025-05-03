@@ -1,3 +1,5 @@
+import { QuizType } from "@/app/types/quiz-types"
+import { quizApi } from "@/lib/utils/quiz-index"
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 
 // Define types
@@ -61,21 +63,17 @@ const initialState: QuizState = {
   completedAt: null,
 }
 
-// Mock API for tests
-const quizApi = {
-  fetchQuizResult: async () => ({ score: 100, completedAt: new Date().toISOString() }),
-  submitQuizResult: async () => ({ success: true }),
-}
+
 
 // Async thunks
 export const fetchQuizResults = createAsyncThunk(
   "quiz/fetchResults",
-  async ({ quizId, slug, quizType }: { quizId: string; slug: string; quizType: string }, { rejectWithValue }) => {
+  async ({ slug, quizType }: { slug: string; quizType: QuizType }, { rejectWithValue }) => {
     try {
-      const result = await quizApi.fetchQuizResult(quizId, slug, quizType)
+      const result = await quizApi.getQuizData(slug, quizType)
       return result
     } catch (error) {
-      return rejectWithValue(error)
+      return rejectWithValue(error instanceof Error ? error.message : "An unknown error occurred")
     }
   },
 )
@@ -103,7 +101,7 @@ export const submitQuizResults = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const result = await quizApi.submitQuizResult(quizId, slug, quizType, answers, score, totalTime, totalQuestions)
+      const result = await quizApi.submitQuiz(quizId, slug, quizType, answers, totalTime)
       return result
     } catch (error) {
       return rejectWithValue(error)
@@ -130,15 +128,15 @@ const quizSlice = createSlice({
       state.answers = action.payload.initialAnswers || Array(questionCount).fill(null)
       state.timeSpent = action.payload.initialTimeSpent || Array(questionCount).fill(0)
 
-      state.isCompleted = false
-      state.score = 0
-      state.requiresAuth = false
-      state.pendingAuthRequired = false
+      state.isCompleted = action.payload.isCompleted || false
+      state.score = action.payload.score || 0
+      state.requiresAuth = action.payload.requiresAuth || false
+      state.pendingAuthRequired = action.payload.pendingAuthRequired || false
       state.isAuthenticated = action.payload.isAuthenticated || false
-      state.hasGuestResult = false
-      state.guestResultsSaved = false
-      state.authCheckComplete = false
-      state.isProcessingAuth = false
+      state.hasGuestResult = action.payload.hasGuestResult || false
+      state.guestResultsSaved = action.payload.guestResultsSaved || false
+      state.authCheckComplete = action.payload.authCheckComplete || false
+      state.isProcessingAuth = action.payload.isProcessingAuth || false
       state.error = null
       state.animationState = "idle"
       state.isSavingResults = false
@@ -190,13 +188,13 @@ const quizSlice = createSlice({
       // Calculate score if not provided
       let calculatedScore = action.payload?.score
 
-      if (!calculatedScore && Array.isArray(state.answers)) {
+      if (calculatedScore === undefined && Array.isArray(state.answers)) {
         const correctAnswers = state.answers.filter((a) => a?.isCorrect).length
         const totalQuestions = state.questions.length
         calculatedScore = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
       }
 
-      // Update state
+      // Always set isCompleted to true
       state.isCompleted = true
       state.score = calculatedScore || 0
       state.completedAt = action.payload?.completedAt || new Date().toISOString()
