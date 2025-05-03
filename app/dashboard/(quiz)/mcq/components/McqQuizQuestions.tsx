@@ -16,7 +16,13 @@ export default function McqQuizQuestions({ questions, quizId, slug }: any) {
   const router = useRouter()
 
   // Use the quiz context for state management
-  const { state, submitAnswer: submitQuizAnswer, completeQuiz, handleAuthenticationRequired } = useQuiz()
+  const {
+    state,
+    submitAnswer: submitQuizAnswer,
+    completeQuiz,
+    handleAuthenticationRequired,
+    setAuthCheckComplete,
+  } = useQuiz()
 
   // Validate questions on component mount
   useEffect(() => {
@@ -34,6 +40,17 @@ export default function McqQuizQuestions({ questions, quizId, slug }: any) {
     }
   }, [questions])
 
+  // Check for URL parameters that indicate returning from auth
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const fromAuth = urlParams.get("fromAuth")
+
+    if (fromAuth === "true" && state.isCompleted && state.pendingAuthRequired) {
+      // User has returned from authentication
+      setAuthCheckComplete?.()
+    }
+  }, [state.isCompleted, state.pendingAuthRequired, setAuthCheckComplete])
+
   const currentQuestion = questions?.[currentQuestionIndex]
   const isLastQuestion = currentQuestionIndex === (questions?.length ?? 0) - 1
 
@@ -44,6 +61,7 @@ export default function McqQuizQuestions({ questions, quizId, slug }: any) {
       userAnswer: selectedOption,
       isCorrect,
       timeSpent,
+      questionId: currentQuestion?.id || currentQuestionIndex,
     }
 
     // Update local state
@@ -70,11 +88,15 @@ export default function McqQuizQuestions({ questions, quizId, slug }: any) {
       const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
 
       // Complete the quiz in Redux
-      completeQuiz(finalAnswers)
+      completeQuiz({
+        answers: finalAnswers,
+        score,
+        completedAt: new Date().toISOString(),
+      })
 
       // If the quiz requires authentication but user is not authenticated,
-      // the handleAuthenticationRequired will be called by the Redux action
-      if (state.requiresAuth && !state.isAuthenticated) {
+      // redirect to sign in page
+      if (!state.isAuthenticated) {
         if (typeof handleAuthenticationRequired === "function") {
           handleAuthenticationRequired(`/dashboard/mcq/${slug}?fromAuth=true`)
         } else {
@@ -113,7 +135,7 @@ export default function McqQuizQuestions({ questions, quizId, slug }: any) {
   }
 
   // If the quiz is completed and requires auth, show auth prompt
-  if (state.isCompleted && state.requiresAuth && !state.isAuthenticated) {
+  if (state.isCompleted && state.requiresAuth && !state.isAuthenticated && !state.isProcessingAuth) {
     return (
       <Card className="p-6">
         <div className="flex flex-col items-center justify-center text-center gap-4">
@@ -121,7 +143,7 @@ export default function McqQuizQuestions({ questions, quizId, slug }: any) {
           <p className="text-muted-foreground">You need to sign in to save your quiz results.</p>
           <div className="flex gap-4">
             <Button
-              onClick={() => handleAuthenticationRequired(`/dashboard/mcq/${slug}?fromAuth=true`)}
+              onClick={() => handleAuthenticationRequired?.(`/dashboard/mcq/${slug}?fromAuth=true`)}
               variant="default"
             >
               Sign In

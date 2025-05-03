@@ -1,126 +1,92 @@
-import { QuizDataInput } from "@/app/types/quiz-types"
-
+import type { QuizState } from "@/store/slices/quizSlice"
 
 /**
- * Determine the display state of the quiz
+ * Utility functions for managing quiz state transitions
  */
-export function determineDisplayState(state: any, isAuthenticated: boolean, isReturningFromAuth: boolean): string {
-  // Handle authentication flow
-  if (state.isProcessingAuth) {
+
+/**
+ * Determine the display state based on quiz state
+ */
+export function determineDisplayState(
+  state: QuizState,
+  isAuthenticated: boolean,
+  isReturningFromAuth: boolean,
+): "quiz" | "results" | "auth" | "loading" | "saving" | "preparing" {
+  // Processing auth return
+  if (state.isProcessingAuth || isReturningFromAuth) {
     return "preparing"
   }
 
-  if (isReturningFromAuth) {
-    return "preparing"
-  }
-
-  // Handle loading states
-  if (state.isLoading) {
+  // Loading state
+  if (state.isLoading || state.isLoadingResults) {
     return "loading"
   }
 
-  if (state.isLoadingResults) {
-    return "loading"
-  }
-
-  // Handle saving state
-  if (state.isSavingResults) {
+  // Saving results
+  if (state.savingResults) {
     return "saving"
   }
 
-  // Handle results state
+  // Completed quiz states
   if (state.isCompleted) {
-    if (state.requiresAuth && !isAuthenticated) {
-      return "auth"
+    // If user is authenticated, always show results
+    if (isAuthenticated) {
+      return "results"
     }
-    return "results"
+
+    // For guest users, require authentication to view results
+    return "auth"
   }
 
-  // Default to quiz state
+  // Default to quiz
   return "quiz"
 }
 
 /**
- * Calculate the quiz score based on answers
+ * Calculate quiz score from answers
  */
 export function calculateQuizScore(answers: any[], totalQuestions: number): number {
-  if (!answers || answers.length === 0 || totalQuestions === 0) {
-    return 0
-  }
-
-  const correctCount = answers.filter((a) => a && a.isCorrect).length
-  return Math.round((correctCount / totalQuestions) * 100)
+  const correctAnswers = answers.filter((a) => a?.isCorrect).length
+  return totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
 }
 
 /**
- * Calculate the total time spent on the quiz
+ * Calculate total time spent on quiz
  */
 export function calculateTotalTime(answers: any[]): number {
-  if (!answers || answers.length === 0) {
-    return 0
-  }
-
-  return answers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
+  return answers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
 }
 
 /**
- * Validate initial quiz data
+ * Validate quiz data is complete and ready for initialization
  */
-export function validateInitialQuizData(quizData: QuizDataInput | null): { isValid: boolean; error?: string } {
+export function validateInitialQuizData(quizData: any): { isValid: boolean; error?: string } {
   if (!quizData) {
-    return {
-      isValid: false,
-      error: "Quiz data is missing",
-    }
+    return { isValid: false, error: "Quiz data is missing" }
   }
 
   if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
-    return {
-      isValid: false,
-      error: "Quiz questions are missing or invalid",
-    }
+    return { isValid: false, error: "Quiz questions are missing or invalid" }
   }
 
   return { isValid: true }
 }
 
 /**
- * Create safe quiz data with defaults
+ * Create a safe quiz data object with defaults for missing values
  */
-export function createSafeQuizData(quizData: QuizDataInput | null, slug: string, quizType: string): QuizDataInput {
-  const safeData: QuizDataInput = {
-    id: "unknown",
-    quizId: "unknown",
-    title: "Quiz",
-    description: "",
-    quizType: quizType || "mcq",
-    slug: slug || "unknown",
-    difficulty: "medium",
-    isPublic: false,
-    isFavorite: false,
-    userId: "",
-    questions: [],
-  }
-
-  if (!quizData) {
-    return safeData
-  }
-
-  // Handle id and quizId - ensure both are set
-  if (quizData.id) {
-    safeData.id = quizData.id
-    safeData.quizId = quizData.id
-  } else if (quizData.quizId) {
-    safeData.id = quizData.quizId
-    safeData.quizId = quizData.quizId
-  }
-
-  // Copy other properties
+export function createSafeQuizData(quizData: any, slug: string, quizType: string): any {
   return {
-    ...safeData,
-    ...quizData,
-    // Ensure these are always set
-    slug: slug || quizData.slug || safeData.slug,
-    quizType: quizType || quizData.quizType || safeData.quizType,
+    id: quizData?.id || quizData?.quizId || "unknown",
+    quizId: quizData?.id || quizData?.quizId || "unknown",
+    title: quizData?.title || "Quiz",
+    slug: slug || "unknown",
+    quizType: quizType || "mcq",
+    description: quizData?.description || "",
+    questions: quizData?.questions || [],
+    isPublic: quizData?.isPublic || false,
+    isFavorite: quizData?.isFavorite || false,
+    userId: quizData?.userId || "",
+    difficulty: quizData?.difficulty || "medium",
   }
 }

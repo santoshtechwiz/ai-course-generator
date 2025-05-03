@@ -1,4 +1,5 @@
 import { calculateQuizScore, calculateTotalTime } from "./quiz-state-utils"
+import { formatQuizTime } from "./quiz-performance"
 
 /**
  * Quiz utilities for common operations
@@ -9,10 +10,10 @@ export const quizUtils = {
    */
   calculateScore: (answers: any[], quizType: string): number => {
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
-      return 0
+      return 0;
     }
 
-    return calculateQuizScore(answers, answers.length)
+    return calculateQuizScore(answers, answers.length);
   },
 
   /**
@@ -20,10 +21,17 @@ export const quizUtils = {
    */
   calculateTotalTime: (answers: any[]): number => {
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
-      return 0
+      return 0;
     }
 
-    return calculateTotalTime(answers)
+    return calculateTotalTime(answers);
+  },
+
+  /**
+   * Formats quiz time in seconds to a human-readable string
+   */
+  formatTime: (seconds: number): string => {
+    return formatQuizTime(seconds);
   },
 
   /**
@@ -31,11 +39,11 @@ export const quizUtils = {
    */
   validateQuestion: (question: any): boolean => {
     if (!question) {
-      return false
+      return false;
     }
 
     // Basic validation - ensure question has required fields
-    return !!(question.question && (question.answer || question.correctAnswer))
+    return !!(question.question && (question.answer || question.correctAnswer));
   },
 
   /**
@@ -43,11 +51,11 @@ export const quizUtils = {
    */
   validateAnswer: (answer: any): boolean => {
     if (!answer) {
-      return false
+      return false;
     }
 
     // Basic validation - ensure answer has required fields
-    return !!(answer.answer || answer.userAnswer)
+    return !!(answer.answer || answer.userAnswer);
   },
 
   /**
@@ -56,19 +64,19 @@ export const quizUtils = {
   getQuizTypeDisplayName: (quizType: string): string => {
     switch (quizType) {
       case "mcq":
-        return "Multiple Choice"
+        return "Multiple Choice";
       case "blanks":
-        return "Fill in the Blanks"
+        return "Fill in the Blanks";
       case "code":
-        return "Coding Quiz"
+        return "Coding Quiz";
       case "openended":
-        return "Open Ended"
+        return "Open Ended";
       case "flashcard":
-        return "Flashcards"
+        return "Flashcards";
       case "document":
-        return "Document Quiz"
+        return "Document Quiz";
       default:
-        return "Quiz"
+        return "Quiz";
     }
   },
 
@@ -78,13 +86,13 @@ export const quizUtils = {
   getQuizDifficultyDisplayName: (difficulty: string): string => {
     switch (difficulty?.toLowerCase()) {
       case "easy":
-        return "Easy"
+        return "Easy";
       case "medium":
-        return "Medium"
+        return "Medium";
       case "hard":
-        return "Hard"
+        return "Hard";
       default:
-        return "Medium"
+        return "Medium";
     }
   },
-}
+};

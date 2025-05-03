@@ -60,7 +60,7 @@ export async function submitQuiz(
   const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/quiz/${quizType}/${slug}/submit`, {
+    const response = await fetch(`${API_BASE_URL}/api/quiz/${quizType}/${slug}/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

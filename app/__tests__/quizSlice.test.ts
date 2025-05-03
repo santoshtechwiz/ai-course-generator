@@ -1,180 +1,233 @@
-import { configureStore } from "@reduxjs/toolkit"
 import quizReducer, {
-  initializeQuiz,
+  initQuiz,
   submitAnswer,
   nextQuestion,
   completeQuiz,
   resetQuiz,
-  setRequiresAuth,
   setIsAuthenticated,
-  setGuestResultsSaved,
-  setError,
-  setProcessingAuth,
+  setRequiresAuth,
+  setPendingAuthRequired,
+  setHasGuestResult,
+  clearGuestResults,
 } from "@/store/slices/quizSlice"
 
-describe("Quiz Slice", () => {
-  // Mock quiz data
-  const mockQuizData = {
-    id: "test-quiz-id",
-    slug: "test-quiz",
-    title: "Test Quiz",
-    quizType: "mcq",
-    questions: [
-      { id: "q1", question: "Question 1", answer: "A" },
-      { id: "q2", question: "Question 2", answer: "B" },
-    ],
+describe("quizSlice", () => {
+  const initialState = {
+    quizId: "",
+    slug: "",
+    title: "",
+    quizType: "",
+    questions: [],
+    currentQuestionIndex: 0,
+    answers: [],
+    timeSpent: [],
+    isCompleted: false,
+    score: 0,
+    requiresAuth: false,
+    pendingAuthRequired: false,
+    isAuthenticated: false,
+    hasGuestResult: false,
+    guestResultsSaved: false,
+    authCheckComplete: false,
+    isProcessingAuth: false,
+    error: null,
+    animationState: "idle",
+    isSavingResults: false,
+    completedAt: null,
   }
 
-  // Create a test store
-  const createTestStore = (initialState = {}) => {
-    return configureStore({
-      reducer: {
-        quiz: quizReducer,
-      },
-      preloadedState: {
-        quiz: {
-          quizId: "",
-          slug: "",
-          title: "",
-          quizType: "",
-          questions: [],
-          currentQuestionIndex: 0,
-          answers: [],
-          timeSpent: [],
-          isCompleted: false,
-          score: 0,
-          requiresAuth: false,
-          isAuthenticated: false,
-          error: null,
-          animationState: "idle",
-          ...initialState,
-        },
-      },
-    })
-  }
+  const mockQuestions = [
+    {
+      id: "1",
+      question: "What is the capital of France?",
+      answer: "Paris",
+      option1: "London",
+      option2: "Berlin",
+      option3: "Madrid",
+    },
+    {
+      id: "2",
+      question: "What is 2 + 2?",
+      answer: "4",
+      option1: "3",
+      option2: "5",
+      option3: "6",
+    },
+  ]
 
-  it("should initialize quiz with correct data", () => {
-    const store = createTestStore()
-    store.dispatch(initializeQuiz(mockQuizData))
-
-    const state = store.getState().quiz
-
-    expect(state.quizId).toBe(mockQuizData.id)
-    expect(state.slug).toBe(mockQuizData.slug)
-    expect(state.title).toBe(mockQuizData.title)
-    expect(state.quizType).toBe(mockQuizData.quizType)
-    expect(state.questions).toEqual(mockQuizData.questions)
-    expect(state.currentQuestionIndex).toBe(0)
-    expect(state.answers).toEqual([null, null])
-    expect(state.timeSpent).toEqual([0, 0])
-    expect(state.isCompleted).toBe(false)
+  test("should return the initial state", () => {
+    expect(quizReducer(undefined, { type: undefined })).toEqual(initialState)
   })
 
-  it("should submit an answer correctly", () => {
-    const store = createTestStore({
-      questions: mockQuizData.questions,
-      answers: [null, null],
-      timeSpent: [0, 0],
-    })
+  test("should handle initQuiz", () => {
+    const quizData = {
+      id: "test-quiz",
+      slug: "test-quiz",
+      title: "Test Quiz",
+      quizType: "mcq",
+      questions: mockQuestions,
+      isAuthenticated: true,
+    }
 
-    store.dispatch(submitAnswer({ answer: "A", timeSpent: 10, isCorrect: true }))
+    const nextState = quizReducer(initialState, initQuiz(quizData))
 
-    const state = store.getState().quiz
-    expect(state.answers[0]).toEqual({ answer: "A", timeSpent: 10, isCorrect: true })
-    expect(state.timeSpent[0]).toBe(10)
-    expect(state.animationState).toBe("answering")
+    expect(nextState.quizId).toBe("test-quiz")
+    expect(nextState.slug).toBe("test-quiz")
+    expect(nextState.title).toBe("Test Quiz")
+    expect(nextState.quizType).toBe("mcq")
+    expect(nextState.questions).toEqual(mockQuestions)
+    expect(nextState.isAuthenticated).toBe(true)
+    expect(nextState.currentQuestionIndex).toBe(0)
+    expect(nextState.answers).toEqual([])
+    expect(nextState.timeSpent).toEqual([])
+    expect(nextState.isCompleted).toBe(false)
+    expect(nextState.score).toBe(0)
   })
 
-  it("should move to the next question", () => {
-    const store = createTestStore({
-      questions: mockQuizData.questions,
+  test("should handle submitAnswer", () => {
+    const answer = {
+      answer: "Paris",
+      userAnswer: "Paris",
+      isCorrect: true,
+      timeSpent: 10,
+      questionId: "1",
+    }
+
+    const state = {
+      ...initialState,
+      questions: mockQuestions,
       currentQuestionIndex: 0,
-      answers: [{ answer: "A", timeSpent: 10, isCorrect: true }, null],
-      timeSpent: [10, 0],
-    })
+    }
 
-    store.dispatch(nextQuestion())
+    const nextState = quizReducer(state, submitAnswer(answer))
 
-    const state = store.getState().quiz
-    expect(state.currentQuestionIndex).toBe(1)
-    expect(state.animationState).toBe("idle")
+    expect(nextState.answers[0]).toEqual(answer)
+    expect(nextState.timeSpent[0]).toBe(10)
+    expect(nextState.animationState).toBe("answering")
   })
 
-  it("should complete the quiz and calculate score", async () => {
-    const answers = [
-      { answer: "A", timeSpent: 10, isCorrect: true },
-      { answer: "C", timeSpent: 15, isCorrect: false },
-    ]
+  test("should handle nextQuestion", () => {
+    const state = {
+      ...initialState,
+      questions: mockQuestions,
+      currentQuestionIndex: 0,
+    }
 
-    const store = createTestStore({
-      questions: mockQuizData.questions,
-      answers: answers,
-      timeSpent: [10, 15],
-    })
+    const nextState = quizReducer(state, nextQuestion())
 
-    store.dispatch(completeQuiz())
-
-    const state = store.getState().quiz
-    expect(state.answers).toEqual(answers)
-    expect(state.score).toBe(50) // 1 out of 2 correct = 50%
-    expect(state.isCompleted).toBe(true)
-    expect(state.animationState).toBe("completed")
+    expect(nextState.currentQuestionIndex).toBe(1)
+    expect(nextState.animationState).toBe("idle")
   })
 
-  it("should reset the quiz state", () => {
-    const store = createTestStore({
-      questions: mockQuizData.questions,
-      currentQuestionIndex: 1,
+  test("should not increment currentQuestionIndex beyond questions length", () => {
+    const state = {
+      ...initialState,
+      questions: mockQuestions,
+      currentQuestionIndex: 1, // Last question
+    }
+
+    const nextState = quizReducer(state, nextQuestion())
+
+    expect(nextState.currentQuestionIndex).toBe(1) // Should not change
+  })
+
+  test("should handle completeQuiz with provided score", () => {
+    const state = {
+      ...initialState,
+      questions: mockQuestions,
       answers: [
-        { answer: "A", timeSpent: 10, isCorrect: true },
-        { answer: "B", timeSpent: 15, isCorrect: true },
+        { answer: "Paris", userAnswer: "Paris", isCorrect: true, timeSpent: 10 },
+        { answer: "4", userAnswer: "4", isCorrect: true, timeSpent: 5 },
       ],
-      timeSpent: [10, 15],
+    }
+
+    const completedAt = new Date().toISOString()
+    const nextState = quizReducer(
+      state,
+      completeQuiz({
+        score: 100,
+        completedAt,
+      }),
+    )
+
+    expect(nextState.isCompleted).toBe(true)
+    expect(nextState.score).toBe(100)
+    expect(nextState.completedAt).toBe(completedAt)
+    expect(nextState.animationState).toBe("completed")
+  })
+
+  test("should handle completeQuiz with calculated score", () => {
+    const state = {
+      ...initialState,
+      questions: mockQuestions,
+      answers: [
+        { answer: "Paris", userAnswer: "Paris", isCorrect: true, timeSpent: 10 },
+        { answer: "4", userAnswer: "3", isCorrect: false, timeSpent: 5 },
+      ],
+    }
+
+    const nextState = quizReducer(state, completeQuiz())
+
+    expect(nextState.isCompleted).toBe(true)
+    expect(nextState.score).toBe(50) // 1 out of 2 correct = 50%
+    expect(nextState.completedAt).toBeTruthy()
+    expect(nextState.animationState).toBe("completed")
+  })
+
+  test("should handle resetQuiz", () => {
+    const state = {
+      ...initialState,
+      questions: mockQuestions,
+      currentQuestionIndex: 1,
+      answers: [{ answer: "Paris", userAnswer: "Paris", isCorrect: true, timeSpent: 10 }],
+      timeSpent: [10],
       isCompleted: true,
       score: 100,
+      completedAt: new Date().toISOString(),
       animationState: "completed",
-    })
+    }
 
-    store.dispatch(resetQuiz())
+    const nextState = quizReducer(state, resetQuiz())
 
-    const state = store.getState().quiz
-    expect(state.currentQuestionIndex).toBe(0)
-    expect(state.answers).toEqual([null, null])
-    expect(state.timeSpent).toEqual([0, 0])
-    expect(state.isCompleted).toBe(false)
-    expect(state.animationState).toBe("idle")
-    expect(state.score).toBe(0)
+    expect(nextState.currentQuestionIndex).toBe(0)
+    expect(nextState.answers).toEqual(Array(mockQuestions.length).fill(null))
+    expect(nextState.timeSpent).toEqual(Array(mockQuestions.length).fill(0))
+    expect(nextState.isCompleted).toBe(false)
+    expect(nextState.score).toBe(0)
+    expect(nextState.completedAt).toBeNull()
+    expect(nextState.animationState).toBe("idle")
   })
 
-  it("should set authentication flags correctly", () => {
-    const store = createTestStore()
-
-    store.dispatch(setRequiresAuth(true))
-    expect(store.getState().quiz.requiresAuth).toBe(true)
-
-    store.dispatch(setIsAuthenticated(true))
-    expect(store.getState().quiz.isAuthenticated).toBe(true)
+  test("should handle setIsAuthenticated", () => {
+    const nextState = quizReducer(initialState, setIsAuthenticated(true))
+    expect(nextState.isAuthenticated).toBe(true)
   })
 
-  it("should handle guest result flags", () => {
-    const store = createTestStore()
-
-    store.dispatch(setGuestResultsSaved(true))
-    expect(store.getState().quiz.guestResultsSaved).toBe(true)
+  test("should handle setRequiresAuth", () => {
+    const nextState = quizReducer(initialState, setRequiresAuth(true))
+    expect(nextState.requiresAuth).toBe(true)
   })
 
-  it("should set error state", () => {
-    const store = createTestStore()
-    const error = { message: "Test error", type: "validation" }
-
-    store.dispatch(setError(error))
-    expect(store.getState().quiz.error).toEqual(error)
+  test("should handle setPendingAuthRequired", () => {
+    const nextState = quizReducer(initialState, setPendingAuthRequired(true))
+    expect(nextState.pendingAuthRequired).toBe(true)
   })
 
-  it("should set processing auth state", () => {
-    const store = createTestStore()
+  test("should handle setHasGuestResult", () => {
+    const nextState = quizReducer(initialState, setHasGuestResult(true))
+    expect(nextState.hasGuestResult).toBe(true)
+    expect(nextState.guestResultsSaved).toBe(true)
+  })
 
-    store.dispatch(setProcessingAuth(true))
-    expect(store.getState().quiz.isProcessingAuth).toBe(true)
+  test("should handle clearGuestResults", () => {
+    const state = {
+      ...initialState,
+      hasGuestResult: true,
+      guestResultsSaved: true,
+    }
+
+    const nextState = quizReducer(state, clearGuestResults())
+    expect(nextState.hasGuestResult).toBe(false)
+    expect(nextState.guestResultsSaved).toBe(false)
   })
 })
