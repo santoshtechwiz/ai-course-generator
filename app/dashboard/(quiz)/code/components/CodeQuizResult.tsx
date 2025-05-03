@@ -1,4 +1,5 @@
 "use client"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,20 +31,6 @@ interface CodeQuizResultProps {
   }
 }
 
-// Helper function to determine difficulty color
-const getDifficultyColor = (difficulty: string): string => {
-  switch (difficulty) {
-    case "easy":
-      return "text-green-500"
-    case "medium":
-      return "text-yellow-500"
-    case "hard":
-      return "text-red-500"
-    default:
-      return "text-gray-500"
-  }
-}
-
 export default function CodeQuizResult({ result }: CodeQuizResultProps) {
   const [showAnswers, setShowAnswers] = useState(false)
   const router = useRouter()
@@ -65,9 +52,12 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
   const performanceLevel = calculatePerformanceLevel(safeResult.score)
 
   // Get color for performance level
-  const performanceColor = getDifficultyColor(
-    safeResult.score >= 90 ? "easy" : safeResult.score >= 60 ? "medium" : "hard",
-  )
+  const getPerformanceColor = () => {
+    if (safeResult.score >= 90) return "text-green-500"
+    if (safeResult.score >= 70) return "text-yellow-500"
+    if (safeResult.score >= 50) return "text-orange-500"
+    return "text-red-500"
+  }
 
   return (
     <div className="space-y-6">
@@ -81,7 +71,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
             <div className="flex flex-col items-center p-4 border rounded-lg">
               <Award className="h-8 w-8 text-primary mb-2" />
               <p className="text-sm text-muted-foreground">Score</p>
-              <p className={`text-2xl font-bold ${performanceColor}`}>{safeResult.score}%</p>
+              <p className={`text-2xl font-bold ${getPerformanceColor()}`}>{safeResult.score}%</p>
               <p className="text-xs text-muted-foreground mt-1">{performanceLevel}</p>
             </div>
 
