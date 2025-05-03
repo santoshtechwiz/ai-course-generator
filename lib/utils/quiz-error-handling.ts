@@ -114,6 +114,7 @@ export function handleFetchError(error: any): QuizError {
  * Get a user-friendly error message
  */
 export function getUserFriendlyErrorMessage(error: QuizError): string {
+  console.error("Error details:", error)
   switch (error.type) {
     case QuizErrorType.NETWORK:
       return "Network error. Please check your connection and try again."

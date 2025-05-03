@@ -168,7 +168,7 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => router.push("/dashboard/mcq")}>
+          <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
             Return to Quizzes
           </Button>
           <Button onClick={() => router.push(`/dashboard/mcq/${safeResult.slug}`)}>

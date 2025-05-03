@@ -1,6 +1,7 @@
+import { QuizType } from "@/app/types/quiz-types"
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"
 
-export type QuizType = "daily" | "weekly" | "monthly"
 
 export interface Quiz {
   slug: string
@@ -22,7 +23,7 @@ export interface QuizResult {
   completionTime: number
 }
 
-export async function getQuizData(slug: string, quizType: QuizType = "daily"): Promise<Quiz> {
+export async function getQuizData(slug: string, quizType: QuizType): Promise<Quiz> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
@@ -38,6 +39,7 @@ export async function getQuizData(slug: string, quizType: QuizType = "daily"): P
     }
 
     const data = await response.json()
+    console.log("Fetched quiz data:", data);
     return data
   } catch (error: any) {
     clearTimeout(timeoutId)

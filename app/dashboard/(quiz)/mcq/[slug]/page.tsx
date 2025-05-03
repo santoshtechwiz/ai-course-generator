@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const quiz = await getMcqQuestions(slug)
 
-  if (!quiz || !quiz.result) {
+  if (!quiz ) {
     return generatePageMetadata({
       title: "Multiple Choice Quiz Not Found | CourseAI",
       description:
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     })
   }
 
-  const quizData = quiz.result
+  const quizData = quiz;
 
   return generatePageMetadata({
     title: `${quizData.title} | Programming Multiple Choice Quiz`,
@@ -50,17 +50,14 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
   // Fetch quiz data - this is the only API call we should make
   const result = await getMcqQuestions(slug)
-  if (!result || !result.result) {
+  if (!result ) {
     console.error(`Quiz not found for slug: ${slug}`)
     notFound()
   }
 
-  const { result: quizData, questions } = result
-
-  console.log(`Successfully fetched quiz: ${quizData.title} with ${questions.length} questions`)
 
   // Estimate quiz time based on question count
-  const questionCount = questions.length
+  const questionCount = result.questions.length
   const estimatedTime = `PT${Math.max(5, Math.min(60, questionCount * 2))}M`
 
   // Create breadcrumb items
@@ -68,55 +65,36 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
     { name: "Home", href: baseUrl },
     { name: "Dashboard", href: `${baseUrl}/dashboard` },
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
-    { name: quizData.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
+    { name: result.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
 
   return (
-    <QuizProvider
-      quizId={quizData.id.toString()}
-      quizData={{
-        quizId: quizData.id.toString(),
-        title: quizData.title,
-    
-        quizType: "mcq",
-        questions: questions,
-        questionCount,
-        estimatedTime,
-        difficulty: quizData.difficulty || "medium",
-        authorId: quizData.userId,
-        isFavorite: quizData.isFavorite || false,
-        isPublic: quizData.isPublic || false,
-      
-        slug,
-      }}
-      slug={slug}
-      quizType="mcq"
-    >
+    <QuizProvider>
       <QuizDetailsPageWithContext
-        title={quizData.title}
-        description={`Test your coding knowledge on ${quizData.title} with multiple choice questions`}
+        title={result.title}
+        description={`Test your coding knowledge on ${result.title} with multiple choice questions`}
         slug={slug}
         quizType="mcq"
         questionCount={questionCount}
         estimatedTime={estimatedTime}
         breadcrumbItems={breadcrumbItems}
-        quizId={quizData.id.toString()}
-        authorId={quizData.userId}
-        isPublic={quizData.isPublic || false}
-        isFavorite={quizData.isFavorite || false}
+        quizId={result.id.toString()}
+        authorId={result.userId}
+        isPublic={result.isPublic || false}
+        isFavorite={result.isFavorite || false}
         difficulty={
-          ["easy", "medium", "hard"].includes(quizData.difficulty || "")
-            ? (quizData.difficulty as "easy" | "medium" | "hard")
+          ["easy", "medium", "hard"].includes(result.difficulty || "")
+            ? (result.difficulty as "easy" | "medium" | "hard")
             : "medium"
         }
       >
         <McqQuizWrapper
-          quizData={quizData}
-          questions={questions.map((q) => ({ ...q, id: Number(q.id) }))}
+          quizData={result}
+     
           slug={slug}
         />
       </QuizDetailsPageWithContext>
-    </QuizProvider>
+      </QuizProvider>
   )
 }
 

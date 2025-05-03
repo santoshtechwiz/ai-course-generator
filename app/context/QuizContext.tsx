@@ -1,96 +1,137 @@
-"use client"
+"use client";
 
-import React from "react"
-import { createContext, useContext, useRef } from "react"
-import { Provider } from "react-redux"
-import { store } from "@/store"
-import { useQuizState } from "@/hooks/useQuizState"
+import React, {
+  createContext,
+  useContext,
+  useRef,
+  useEffect,
+  ReactNode,
+} from "react";
+import { Provider as ReduxProvider, useDispatch, useSelector } from "react-redux";
+import { store } from "@/store";
+import { useSession } from "next-auth/react";
+import { useQuizState } from "@/hooks/useQuizState";
+import {
+  setIsAuthenticated,
+  setRequiresAuth,
+  setIsProcessingAuth,
+} from "@/store/slices/quizSlice";
 
-// Create the context
-const QuizContext = createContext<any>(null)
-
-// Provider component
 interface QuizProviderProps {
-  children: React.ReactNode
-  quizId?: string
-  quizData?: any
-  slug?: string
-  quizType?: string
-  onAuthRequired?: (redirectUrl: string) => void
+  children: ReactNode;
+  quizId?: string;
+  slug?: string;
+  quizType?: string;
+  quizData?: any;
+  onAuthRequired?: (redirectUrl: string) => void;
 }
 
-// Provider component
-export const QuizProvider = ({ children, quizData, onAuthRequired }: QuizProviderProps) => {
-  // Track if we've initialized to prevent infinite loops
-  const initialized = useRef(false)
+type QuizContextValue = ReturnType<typeof useQuizState> & {
+  quizData?: any;
+  quizId?: string;
+  slug?: string;
+  quizType?: string;
+};
+
+const QuizContext = createContext<QuizContextValue | null>(null);
+
+export const QuizProvider = ({
+  children,
+  quizId,
+  slug,
+  quizType,
+  quizData,
+  onAuthRequired,
+}: QuizProviderProps) => {
+  const initializedQuizId = useRef<string | undefined>(undefined);
+  const quizState = useQuizState();
+  const reduxState = useSelector((s: any) => s.quiz);
+  const dispatch = useDispatch();
+  const { data: session, status } = useSession();
+  const isAuthenticated = Boolean(session?.user);
+
+  // Reset init when we switch quizzes
+  useEffect(() => {
+    if (quizId !== initializedQuizId.current) {
+      initializedQuizId.current = undefined;
+    }
+  }, [quizId]);
+
+  // Initialize quiz data once per quiz
+  useEffect(() => {
+    if (
+      quizData &&
+      quizState.initializeQuiz &&
+      initializedQuizId.current !== quizId
+    ) {
+      quizState.initializeQuiz(quizData);
+      initializedQuizId.current = quizId;
+    }
+  }, [quizData, quizId, quizState]);
+
+  // Keep Redux slice in sync with NextAuth
+  useEffect(() => {
+    if (status !== "loading") {
+      dispatch(setIsAuthenticated(isAuthenticated));
+    }
+  }, [status, isAuthenticated, dispatch]);
+
+  // Trigger onAuthRequired callback
+  useEffect(() => {
+    if (
+      onAuthRequired &&
+      reduxState.requiresAuth &&
+      !reduxState.isAuthenticated &&
+      !reduxState.isProcessingAuth
+    ) {
+      const currentUrl = typeof window !== "undefined" ? window.location.href : "";
+      onAuthRequired(currentUrl);
+    }
+  }, [
+    reduxState.requiresAuth,
+    reduxState.isAuthenticated,
+    reduxState.isProcessingAuth,
+    onAuthRequired,
+  ]);
+
+  const contextValue: QuizContextValue = {
+    ...quizState,
+    quizData,
+    quizId,
+    slug,
+    quizType,
+  };
 
   return (
-    <Provider store={store}>
-      <QuizProviderInner quizData={quizData} initialized={initialized} onAuthRequired={onAuthRequired}>
+    <ReduxProvider store={store}>
+      <QuizContext.Provider value={contextValue}>
         {children}
-      </QuizProviderInner>
-    </Provider>
-  )
-}
+      </QuizContext.Provider>
+    </ReduxProvider>
+  );
+};
 
-// Inner provider to use Redux after Provider is set up
-const QuizProviderInner = ({
-  children,
-  quizData,
-  initialized,
-  onAuthRequired,
-}: {
-  children: React.ReactNode
-  quizData?: any
-  initialized: React.RefObject<boolean>
-  onAuthRequired?: (redirectUrl: string) => void
-}) => {
-  const quizState = useQuizState()
-
-  // Initialize quiz state if props are provided
-  React.useEffect(() => {
-    if (quizData && quizState.initializeQuiz && !initialized.current) {
-      initialized.current = true
-      quizState.initializeQuiz(quizData)
-    }
-  }, [quizData, quizState, initialized])
-
-  // Set up auth required callback if provided
-  React.useEffect(() => {
-    if (onAuthRequired && quizState.state.requiresAuth && !quizState.state.isAuthenticated) {
-      const currentUrl = typeof window !== "undefined" ? window.location.href : ""
-      onAuthRequired(currentUrl)
-    }
-  }, [quizState.state.requiresAuth, quizState.state.isAuthenticated, onAuthRequired])
-
-  return <QuizContext.Provider value={quizState}>{children}</QuizContext.Provider>
-}
-
-// Custom hook to use the context
 export const useQuiz = () => {
-  const context = useContext(QuizContext)
-
-  // If there's no context (provider not used), throw an error
-  if (!context) {
-    throw new Error("useQuiz must be used within a QuizProvider")
+  const ctx = useContext(QuizContext);
+  if (!ctx) {
+    throw new Error("useQuiz must be used within a QuizProvider");
   }
+  return ctx;
+};
 
-  return context
-}
-
-// Re-export from the slice for convenience
+// re-export slice actions for convenience
 export {
   resetQuiz,
   submitAnswer,
   nextQuestion,
   completeQuiz,
   setRequiresAuth,
+  setIsProcessingAuth,
+  fetchQuizResults,
+  submitQuizResults,
   setPendingAuthRequired,
   setAuthCheckComplete,
   setHasGuestResult,
   clearGuestResults,
   setError,
-  setIsProcessingAuth,
-  fetchQuizResults,
-  submitQuizResults,
-} from "@/store/slices/quizSlice"
+} from "@/store/slices/quizSlice";
