@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator"
 
 import { useQuiz } from "@/app/context/QuizContext"
 import { useSession } from "next-auth/react"
-import { quizService } from "@/lib/quiz-service"
+import { quizService } from "@/lib/utils/quiz-service"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/tailwindUtils"

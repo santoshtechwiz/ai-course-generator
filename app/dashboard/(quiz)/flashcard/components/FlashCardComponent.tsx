@@ -10,7 +10,7 @@ import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useSession } from "next-auth/react"
 import { useQuiz } from "@/app/context/QuizContext"
 import FlashCardResults from "./FlashCardQuizResults"
-import { quizService } from "@/lib/quiz-service"
+import { quizService } from "@/lib/utils/quiz-service"
 import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
 
 interface FlashCardComponentProps {

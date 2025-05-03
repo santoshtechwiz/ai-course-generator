@@ -13,7 +13,7 @@ import { AnimationProvider } from "./animation-provider"
 
 import { ReduxProvider } from "./redux-provider"
 import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
-import { SubscriptionProvider } from "@/app/store/subscription-provider"
+import { SubscriptionProvider } from "@/store/subscription-provider"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -42,9 +42,20 @@ export function RootProvider({ children, session }: RootProviderProps) {
     setMounted(true)
   }, [])
 
+  // Add a debounced session provider to reduce API calls
+  const sessionOptions = {
+    refetchInterval: 5 * 60, // 5 minutes in seconds
+    refetchOnWindowFocus: false,
+    refetchWhenOffline: false,
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionProvider session={session}>
+      <SessionProvider
+        session={session}
+        refetchInterval={sessionOptions.refetchInterval}
+        refetchOnWindowFocus={sessionOptions.refetchOnWindowFocus}
+      >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
           <ReduxProvider>
             <SubscriptionProvider>
@@ -52,7 +63,7 @@ export function RootProvider({ children, session }: RootProviderProps) {
                 <UnifiedAuthProvider>
                   {mounted && (
                     <Suspense fallback={null}>
-                      <SubscriptionStatus />
+                      {/* <SubscriptionStatus /> */}
                     </Suspense>
                   )}
                   <Toaster position="top-right" closeButton richColors />
@@ -68,17 +79,17 @@ export function RootProvider({ children, session }: RootProviderProps) {
 }
 
 // Extract subscription status logic into a separate component
-function SubscriptionStatus() {
-  const { data, status } = useSubscription()
-  const isLoading = status === "loading"
+// function SubscriptionStatus() {
+//   const { subscription: data, fetchStatus: status } = useSubscription()
+//   const isLoading = status === "fetching" ;
 
-  // Only show trial modal if we have successfully loaded data
-  if (isLoading || !data) {
-    return null
-  }
+//   // Only show trial modal if we have successfully loaded data
+//   if (isLoading || !data) {
+//     return null
+//   }
 
-  const isSubscribed = data?.isSubscribed || false
-  const currentPlan = data?.subscriptionPlan || null
+//   const isSubscribed = data?.isSubscribed || false
+//   const currentPlan = data.currentPlan || null
 
-  return <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
-}
+//   return <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
+// }

@@ -19,6 +19,9 @@ import {
 import { cn } from "@/lib/tailwindUtils"
 import { useQuiz } from "@/app/context/QuizContext"
 
+import { formatQuizTime } from "@/lib/utils/quiz-performance"
+import { isTooFastAnswer } from "@/lib/utils/quiz-validation"
+
 interface QuizQuestionProps {
   question: {
     id: number
@@ -89,7 +92,7 @@ export default function OpenEndedQuizQuestion({
 
     // Check if answer was submitted too quickly
     const timeSpent = (Date.now() - startTime) / 1000
-    if (timeSpent < minimumTimeThreshold) {
+    if (isTooFastAnswer(timeSpent, minimumTimeThreshold)) {
       setShowTooFastWarning(true)
       return
     }
@@ -142,12 +145,6 @@ export default function OpenEndedQuizQuestion({
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
   const { state } = useQuiz()
   const isCompleting = state.animationState === "completing"
 
@@ -177,7 +174,7 @@ export default function OpenEndedQuizQuestion({
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
                 <Clock className="h-3.5 w-3.5" />
-                <span className="font-mono">{formatTime(elapsedTime)}</span>
+                <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
               </div>
               <Badge
                 variant="secondary"

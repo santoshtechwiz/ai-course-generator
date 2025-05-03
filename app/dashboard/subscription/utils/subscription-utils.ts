@@ -1,140 +1,106 @@
-/**
- * Subscription Utility Functions
- *
- * This file contains utility functions for subscription-related operations.
- */
+import { SubscriptionState, SubscriptionStatus, SubscriptionPlanType } from "@/store/slices/subscription-slice"
 
 /**
- * Calculate the percentage savings between monthly and longer-term plans
+ * Safely parses subscription data from storage
+ * @param data The data to parse
+ * @returns Parsed subscription data or null if invalid
  */
-export function calculateSavings(monthlyPrice: number, longerTermPrice: number, months: number): number {
-  if (monthlyPrice <= 0 || longerTermPrice <= 0 || months <= 0) {
-    return 0
-  }
-
-  const totalMonthlyPrice = monthlyPrice * months
-  const savings = totalMonthlyPrice - longerTermPrice
-  const savingsPercentage = (savings / totalMonthlyPrice) * 100
-
-  return Math.round(savingsPercentage)
-}
-
-/**
- * Format a price with currency symbol
- */
-export function formatPrice(price: number, currency = "USD"): string {
-  const formatter = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  })
-
-  return formatter.format(price)
-}
-
-/**
- * Calculate discounted price based on a percentage discount
- */
-export function calculateDiscountedPrice(originalPrice: number, discountPercentage: number): number {
-  if (discountPercentage <= 0 || discountPercentage >= 100) {
-    return originalPrice
-  }
-
-  const discountAmount = (originalPrice * discountPercentage) / 100
-  return Math.round((originalPrice - discountAmount) * 100) / 100 // Round to 2 decimal places
-}
-
-/**
- * Determine if a plan change is allowed based on current plan and target plan
- */
-export function canChangePlan(
-  currentPlan: string | null,
-  targetPlan: string,
-  subscriptionStatus: string | null,
-): { canChange: boolean; reason?: string } {
-  // If no current plan, any plan can be selected
-  if (!currentPlan) {
-    return { canChange: true }
-  }
-
-  // Normalize status for comparison
-  const normalizedStatus = subscriptionStatus?.toUpperCase() || null
-
-  // If subscription is not active, any plan can be selected
-  if (normalizedStatus !== "ACTIVE" && normalizedStatus !== "TRIAL") {
-    return { canChange: true }
-  }
-
-  // Cannot change to the same plan
-  if (currentPlan === targetPlan) {
-    return {
-      canChange: false,
-      reason: "You are already subscribed to this plan",
-    }
-  }
-
-  // Free plan cannot be selected if user has a paid plan
-  if (targetPlan === "FREE" && currentPlan !== "FREE") {
-    return {
-      canChange: false,
-      reason: "You must cancel your current subscription before switching to the free plan",
-    }
-  }
-
-  // Allow upgrades (assuming plan hierarchy: FREE < BASIC < PRO < ULTIMATE)
-  const planHierarchy = { FREE: 0, BASIC: 1, PRO: 2, ULTIMATE: 3 }
-  const currentPlanRank = planHierarchy[currentPlan as keyof typeof planHierarchy] || 0
-  const targetPlanRank = planHierarchy[targetPlan as keyof typeof planHierarchy] || 0
-
-  if (targetPlanRank <= currentPlanRank) {
-    return {
-      canChange: false,
-      reason: "You can only upgrade to a higher tier plan",
-    }
-  }
-
-  return { canChange: true }
-}
-
-/**
- * Format a date string in a user-friendly format
- */
-export function formatDate(dateString: string | undefined): string {
-  if (!dateString) return "N/A"
+export function parseSubscriptionData(data: string | null): Partial<SubscriptionState> | null {
+  if (!data) return null
 
   try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+    const parsed = JSON.parse(data)
+
+    // Validate the parsed data has the minimum required fields
+    if (typeof parsed !== "object" || parsed === null) {
+      return null
+    }
+
+    // Ensure type property exists
+    if (!parsed.type) {
+      parsed.type = "subscription"
+    }
+
+    return parsed
   } catch (error) {
-    console.error("Error formatting date:", error)
-    return "Invalid Date"
+    console.error("Error parsing subscription data:", error)
+    return null
   }
 }
 
 /**
- * Calculate days remaining until a date
+ * Checks if a subscription is active
+ * @param subscription The subscription to check
+ * @returns True if the subscription is active
  */
-export function calculateDaysRemaining(dateString: string | undefined): number {
-  if (!dateString) return 0
+export function isSubscriptionActive(subscription: SubscriptionState | null): boolean {
+  if (!subscription) return false
 
-  try {
-    const targetDate = new Date(dateString)
-    const currentDate = new Date()
+  // Check if subscription is active
+  if (subscription.status === SubscriptionStatus.ACTIVE) return true
 
-    // Reset time portion for accurate day calculation
-    targetDate.setHours(0, 0, 0, 0)
-    currentDate.setHours(0, 0, 0, 0)
+  // Check if subscription is on a paid plan
+  if (subscription.plan !== SubscriptionPlanType.FREE && subscription.isSubscribed) return true
 
-    const differenceInTime = targetDate.getTime() - currentDate.getTime()
-    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24))
+  return false
+}
 
-    return Math.max(0, differenceInDays)
-  } catch (error) {
-    console.error("Error calculating days remaining:", error)
-    return 0
+/**
+ * Gets the number of credits available based on subscription plan
+ * @param subscription The subscription to check
+ * @returns The number of credits available
+ */
+export function getAvailableCredits(subscription: SubscriptionState | null): number {
+  if (!subscription) return 0
+
+  // Return credits from subscription or calculate based on plan
+  if (typeof subscription.credits === "number") {
+    return Math.max(0, subscription.credits - (subscription.tokensUsed || 0))
+  }
+
+  // Default credits by plan if not explicitly set
+  switch (subscription.plan) {
+    case SubscriptionPlanType.PREMIUM:
+      return 500
+    case SubscriptionPlanType.PRO:
+      return 250
+    case SubscriptionPlanType.BASIC:
+      return 100
+    case SubscriptionPlanType.FREE:
+    default:
+      return 10
+  }
+}
+
+/**
+ * Checks if a feature is available for a subscription
+ * @param subscription The subscription to check
+ * @param feature The feature to check
+ * @returns True if the feature is available
+ */
+export function isFeatureAvailable(
+  subscription: SubscriptionState | null,
+  feature: "advanced_quizzes" | "unlimited_generation" | "api_access" | "priority_support",
+): boolean {
+  if (!subscription) return false
+
+  // Check if subscription is active
+  if (!isSubscriptionActive(subscription)) {
+    // Free users can still use basic features
+    if (feature === "advanced_quizzes") return false
+    return feature === "unlimited_generation" ? false : false
+  }
+
+  // Feature availability by plan
+  switch (subscription.plan) {
+    case SubscriptionPlanType.PREMIUM:
+      return true // All features available
+    case SubscriptionPlanType.PRO:
+      return feature !== "api_access" // All except API access
+    case SubscriptionPlanType.BASIC:
+      return feature === "advanced_quizzes" || feature === "unlimited_generation"
+    case SubscriptionPlanType.FREE:
+    default:
+      return false
   }
 }

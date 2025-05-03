@@ -11,6 +11,7 @@ import type { BreadcrumbItem } from "@/app/types/types"
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
 
+
 interface PageParams {
   params: Promise<{ slug: string }>
 }
@@ -97,7 +98,7 @@ const CodePage = async (props: PageParams) => {
       title={result.quizData.title}
       description={`Test your coding skills on ${result.quizData.title} with interactive programming challenges`}
       slug={slug}
-      quizType={QuizType.CODE}
+      quizType="code"
       questionCount={questionCount}
       estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
