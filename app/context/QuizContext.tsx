@@ -1,93 +1,77 @@
 "use client"
 
-import React, { createContext, useContext, type ReactNode } from "react"
+import React from "react"
+import { createContext, useContext, useRef } from "react"
 import { Provider } from "react-redux"
 import { store } from "@/store"
 import { useQuizState } from "@/hooks/useQuizState"
-import type { QuizType } from "../types/quiz-types"
 
-// Define the context type
-export type QuizContextType = ReturnType<typeof useQuizState> & {
-  handleAuthenticationRequired?: (redirectUrl?: string) => void
-}
+// Create the context
+const QuizContext = createContext<any>(null)
 
-// Create the context with a default value
-const QuizContext = createContext<QuizContextType | undefined>(undefined)
-
-// Props for the QuizProvider component
+// Provider component
 interface QuizProviderProps {
-  children: ReactNode
-  quizData: any
-  slug: string
-  quizType: QuizType
+  children: React.ReactNode
+  quizId?: string
+  quizData?: any
+  slug?: string
+  quizType?: string
   onAuthRequired?: (redirectUrl: string) => void
 }
 
-/**
- * QuizProvider component that wraps the application with Redux Provider
- * and initializes the quiz state
- */
-export const QuizProvider: React.FC<QuizProviderProps> = ({ children, quizData, slug, quizType, onAuthRequired }) => {
+// Provider component
+export const QuizProvider = ({ children, quizData, onAuthRequired }: QuizProviderProps) => {
+  // Track if we've initialized to prevent infinite loops
+  const initialized = useRef(false)
+
   return (
     <Provider store={store}>
-      <QuizProviderInner quizData={quizData} slug={slug} quizType={quizType} onAuthRequired={onAuthRequired}>
+      <QuizProviderInner quizData={quizData} initialized={initialized} onAuthRequired={onAuthRequired}>
         {children}
       </QuizProviderInner>
     </Provider>
   )
 }
 
-/**
- * Inner provider component that uses the useQuizState hook
- * This separation allows us to use the Redux store inside the hook
- */
-const QuizProviderInner: React.FC<QuizProviderProps> = ({ children, quizData, slug, quizType, onAuthRequired }) => {
-  // Use our custom hook to get quiz state and actions
+// Inner provider to use Redux after Provider is set up
+const QuizProviderInner = ({
+  children,
+  quizData,
+  initialized,
+  onAuthRequired,
+}: {
+  children: React.ReactNode
+  quizData?: any
+  initialized: React.RefObject<boolean>
+  onAuthRequired?: (redirectUrl: string) => void
+}) => {
   const quizState = useQuizState()
 
-  // Track initialization to prevent multiple initializations
-  const hasInitialized = React.useRef(false)
-
-  // Initialize the quiz when the component mounts
+  // Initialize quiz state if props are provided
   React.useEffect(() => {
-    // Prevent multiple initializations
-    if (hasInitialized.current) return
-    hasInitialized.current = true
-
-    // Initialize with the provided quiz data
-    quizState.initializeQuiz({
-      ...quizData,
-      slug,
-      quizType,
-    })
-
-    // Set up auth required callback if provided
-    if (onAuthRequired) {
-      // Add the handleAuthenticationRequired function
-      quizState.handleAuthenticationRequired = (redirectUrl?: string) => {
-        if (redirectUrl && onAuthRequired) {
-          onAuthRequired(redirectUrl)
-        }
-      }
+    if (quizData && quizState.initializeQuiz && !initialized.current) {
+      initialized.current = true
+      quizState.initializeQuiz(quizData)
     }
+  }, [quizData, quizState, initialized])
 
-    // Cleanup function
-    return () => {
-      // Reset initialization flag when component unmounts
-      hasInitialized.current = false
+  // Set up auth required callback if provided
+  React.useEffect(() => {
+    if (onAuthRequired && quizState.state.requiresAuth && !quizState.state.isAuthenticated) {
+      const currentUrl = typeof window !== "undefined" ? window.location.href : ""
+      onAuthRequired(currentUrl)
     }
-  }, [quizData, slug, quizType, onAuthRequired, quizState])
+  }, [quizState.state.requiresAuth, quizState.state.isAuthenticated, onAuthRequired])
 
   return <QuizContext.Provider value={quizState}>{children}</QuizContext.Provider>
 }
 
-/**
- * Custom hook to use the quiz context
- */
-export const useQuiz = (): QuizContextType => {
+// Custom hook to use the context
+export const useQuiz = () => {
   const context = useContext(QuizContext)
 
-  if (context === undefined) {
+  // If there's no context (provider not used), throw an error
+  if (!context) {
     throw new Error("useQuiz must be used within a QuizProvider")
   }
 

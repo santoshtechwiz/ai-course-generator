@@ -1,53 +1,110 @@
 "use client"
 
-import { useCallback } from "react"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { useCallback, useEffect, useRef } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import {
+  setIsAuthenticated,
+  setIsProcessingAuth,
+  setAuthCheckComplete,
+  setPendingAuthRequired,
+  setRequiresAuth,
+  setHasGuestResult,
   resetQuiz,
   submitAnswer,
   nextQuestion,
   completeQuiz,
-  setRequiresAuth,
-  setPendingAuthRequired,
-  setHasGuestResult,
   clearGuestResults,
   setError,
   initQuiz,
   fetchQuizResults,
   submitQuizResults,
 } from "@/store/slices/quizSlice"
-import { quizService } from "@/lib/utils/quiz-service"
-import { useSession } from "next-auth/react"
+import { calculateTotalTime } from "@/lib/utils/quiz-index"
 
-/**
- * Custom hook that provides access to quiz state and actions
- * This hook maintains backward compatibility with the original QuizContext
- */
 export function useQuizState() {
-  const dispatch = useAppDispatch()
-  const { data: session } = useSession()
+  const dispatch = useDispatch()
 
-  // Select all quiz state from Redux
-  const quizState = useAppSelector((state) => state.quiz)
+  // Use session hook safely
+  const sessionResult = useSession()
+  const session = sessionResult.data
+  const status = sessionResult.status
 
-  // Check if user is authenticated
+  const quizState = useSelector((state: any) => state.quiz || {})
+
+  // Use router safely
+  let router = {
+    push: (url: string) => console.log(`Mock router push: ${url}`),
+    replace: (url: string) => console.log(`Mock router replace: ${url}`),
+    back: () => console.log("Mock router back"),
+    forward: () => console.log("Mock router forward"),
+    refresh: () => console.log("Mock router refresh"),
+    prefetch: (url: string) => console.log(`Mock router prefetch: ${url}`),
+  }
+
+  try {
+    router = useRouter()
+  } catch (error) {
+    console.warn("Router hook failed, using mock router")
+  }
+
+  // Use a ref to track if we've already updated the auth state
+  const authStateUpdated = useRef(false)
+
+  // Safely check if user is authenticated
   const isAuthenticated = !!session?.user
+
+  // Handle authentication state changes
+  useEffect(() => {
+    // Only run this effect when the session status is determined (not "loading")
+    if (status !== "loading") {
+      const isUserAuthenticated = status === "authenticated"
+
+      // Only dispatch if we haven't updated yet or if the auth state has changed
+      if (!authStateUpdated.current || quizState.isAuthenticated !== isUserAuthenticated) {
+        dispatch(setIsAuthenticated(isUserAuthenticated))
+
+        // If this is the first time we're running this effect, mark it as updated
+        if (!authStateUpdated.current) {
+          authStateUpdated.current = true
+        }
+      }
+    }
+  }, [status, dispatch, quizState.isAuthenticated])
 
   // Initialize quiz with data
   const initializeQuiz = useCallback(
     (quizData: any) => {
-      dispatch(initQuiz(quizData))
+      // Initialize with null values for each question
+      const questionCount = quizData?.questions?.length || 0
+      const initialAnswers = Array(questionCount).fill(null)
+      const initialTimeSpent = Array(questionCount).fill(0)
+
+      dispatch(
+        initQuiz({
+          ...quizData,
+          isAuthenticated,
+          initialAnswers,
+          initialTimeSpent,
+        }),
+      )
     },
-    [dispatch],
+    [dispatch, isAuthenticated],
   )
 
   // Handle submitting an answer
   const handleSubmitAnswer = useCallback(
-    (answer: string, timeSpent: number, isCorrect: boolean) => {
-      dispatch(submitAnswer({ answer, timeSpent, isCorrect }))
+    (answer: any) => {
+      dispatch(
+        submitAnswer({
+          ...answer,
+          index: quizState.currentQuestionIndex,
+        }),
+      )
       return quizState.answers // Return answers for backward compatibility
     },
-    [dispatch, quizState.answers],
+    [dispatch, quizState.answers, quizState.currentQuestionIndex],
   )
 
   // Handle moving to the next question
@@ -58,11 +115,24 @@ export function useQuizState() {
   // Handle completing the quiz
   const handleCompleteQuiz = useCallback(
     (answers: any[]) => {
-      dispatch(completeQuiz(answers))
+      // Calculate score
+      const correctAnswers = Array.isArray(answers) ? answers.filter((a) => a?.isCorrect).length : 0
+      const totalQuestions = quizState.questions?.length || 0
+      const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
 
-      // If user is authenticated, submit results to the server
+      // Complete the quiz with calculated score
+      dispatch(
+        completeQuiz({
+          answers,
+          score,
+          completedAt: new Date().toISOString(),
+        }),
+      )
+
+      // If user is authenticated, submit results to the database
       if (isAuthenticated && quizState.quizId) {
-        const totalTime = answers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
+        // Fix: Ensure answers is an array before using reduce
+        const totalTime = Array.isArray(answers) ? calculateTotalTime(answers) : 0
 
         dispatch(
           submitQuizResults({
@@ -70,35 +140,18 @@ export function useQuizState() {
             slug: quizState.slug,
             quizType: quizState.quizType,
             answers,
-            score: quizState.score,
+            score,
             totalTime,
+            totalQuestions: quizState.questions?.length || (Array.isArray(answers) ? answers.length : 0),
           }),
         )
-      } else {
-        // For guest users, save as guest result
-        quizService.saveGuestResult({
-          quizId: quizState.quizId,
-          slug: quizState.slug,
-          type: quizState.quizType,
-          score: quizState.score,
-          answers: answers.filter((a) => a !== null),
-          totalTime: answers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0),
-          totalQuestions: quizState.questionCount,
-          completedAt: new Date().toISOString(),
-        })
-
+      } else if (!isAuthenticated) {
+        // For guest users, set flag that they need to authenticate
         dispatch(setHasGuestResult(true))
+        dispatch(setRequiresAuth(true))
       }
     },
-    [
-      dispatch,
-      isAuthenticated,
-      quizState.quizId,
-      quizState.slug,
-      quizState.quizType,
-      quizState.score,
-      quizState.questionCount,
-    ],
+    [dispatch, isAuthenticated, quizState.quizId, quizState.slug, quizState.quizType, quizState.questions],
   )
 
   // Handle restarting the quiz
@@ -106,16 +159,18 @@ export function useQuizState() {
     dispatch(resetQuiz())
   }, [dispatch])
 
-  // Handle authentication requirement
+  // Handle authentication required
   const handleAuthenticationRequired = useCallback(
     (redirectUrl?: string) => {
       // Set flag that auth is required
       dispatch(setRequiresAuth(true))
       dispatch(setPendingAuthRequired(true))
+      dispatch(setIsProcessingAuth(true))
 
-      // Use the quiz service to handle auth redirect
-      if (redirectUrl) {
-        quizService.handleAuthRedirect(redirectUrl)
+      // Redirect to sign in page if URL is provided
+      if (redirectUrl && router && typeof router.push === "function") {
+        // Use router to redirect to sign-in page
+        router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(redirectUrl)}`)
       }
     },
     [dispatch],
@@ -133,7 +188,7 @@ export function useQuizState() {
           quizId: quizState.quizId,
           slug: quizState.slug,
           quizType: quizState.quizType,
-        }),
+        }) as any,
       ).unwrap()
 
       return !!result
@@ -154,13 +209,20 @@ export function useQuizState() {
     dispatch(clearGuestResults())
   }, [dispatch])
 
+  // Set authentication check complete
+  const handleSetAuthCheckComplete = useCallback(() => {
+    dispatch(setAuthCheckComplete(true))
+    dispatch(setIsProcessingAuth(false))
+  }, [dispatch])
+
   // Return the state and actions in a format compatible with the original QuizContext
   return {
     state: {
       ...quizState,
-      // Add any missing properties for backward compatibility
+      isAuthenticated,
     },
     isAuthenticated,
+    initializeQuiz,
     submitAnswer: handleSubmitAnswer,
     nextQuestion: handleNextQuestion,
     completeQuiz: handleCompleteQuiz,
@@ -169,6 +231,7 @@ export function useQuizState() {
     fetchQuizResults: handleFetchQuizResults,
     retryLoadingResults: handleRetryLoadingResults,
     clearGuestResults: handleClearGuestResults,
+    setAuthCheckComplete: handleSetAuthCheckComplete,
     dispatch,
   }
 }

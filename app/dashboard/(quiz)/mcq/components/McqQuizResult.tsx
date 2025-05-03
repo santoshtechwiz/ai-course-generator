@@ -1,11 +1,10 @@
 "use client"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Clock, Award, ArrowRight } from "lucide-react"
-import { formatQuizTime, calculatePerformanceLevel, getDifficultyColor } from "@/lib/utils/quiz-performance"
+import { calculatePerformanceLevel, formatQuizTime } from "@/lib/utils/quiz-performance"
 
 interface McqQuizResultProps {
   result: {
@@ -25,6 +24,20 @@ interface McqQuizResultProps {
       isCorrect: boolean
       timeSpent: number
     }>
+  }
+}
+
+// Helper function to determine difficulty color
+const getDifficultyColor = (difficulty: string): string => {
+  switch (difficulty) {
+    case "easy":
+      return "text-green-500"
+    case "medium":
+      return "text-yellow-500"
+    case "hard":
+      return "text-red-500"
+    default:
+      return "text-gray-500"
   }
 }
 

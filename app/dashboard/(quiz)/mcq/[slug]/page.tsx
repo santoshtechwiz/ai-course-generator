@@ -5,7 +5,7 @@ import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
-
+import { QuizProvider } from "@/app/context/QuizContext"
 
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 import McqQuizWrapper from "../components/McqQuizWrapper"
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 }
 
-const McqPage = async ({ params }: { params: Promise< { slug: string }> }) => {
+const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
@@ -72,26 +72,51 @@ const McqPage = async ({ params }: { params: Promise< { slug: string }> }) => {
   ]
 
   return (
-    <QuizDetailsPageWithContext
-      title={quizData.title}
-      description={`Test your coding knowledge on ${quizData.title} with multiple choice questions`}
+    <QuizProvider
+      quizId={quizData.id.toString()}
+      quizData={{
+        quizId: quizData.id.toString(),
+        title: quizData.title,
+    
+        quizType: "mcq",
+        questions: questions,
+        questionCount,
+        estimatedTime,
+        difficulty: quizData.difficulty || "medium",
+        authorId: quizData.userId,
+        isFavorite: quizData.isFavorite || false,
+        isPublic: quizData.isPublic || false,
+      
+        slug,
+      }}
       slug={slug}
       quizType="mcq"
-      questionCount={questionCount}
-      estimatedTime={estimatedTime}
-      breadcrumbItems={breadcrumbItems}
-      quizId={quizData.id.toString()}
-      authorId={quizData.userId}
-      isPublic={quizData.isPublic || false}
-      isFavorite={quizData.isFavorite || false}
-      difficulty={["easy", "medium", "hard"].includes(quizData.difficulty || "") ? (quizData.difficulty as "easy" | "medium" | "hard") : "medium"}
     >
-      <McqQuizWrapper
-        quizData={quizData}
-        questions={questions.map((q) => ({ ...q, id: Number(q.id) }))}
+      <QuizDetailsPageWithContext
+        title={quizData.title}
+        description={`Test your coding knowledge on ${quizData.title} with multiple choice questions`}
         slug={slug}
-      />
-    </QuizDetailsPageWithContext>
+        quizType="mcq"
+        questionCount={questionCount}
+        estimatedTime={estimatedTime}
+        breadcrumbItems={breadcrumbItems}
+        quizId={quizData.id.toString()}
+        authorId={quizData.userId}
+        isPublic={quizData.isPublic || false}
+        isFavorite={quizData.isFavorite || false}
+        difficulty={
+          ["easy", "medium", "hard"].includes(quizData.difficulty || "")
+            ? (quizData.difficulty as "easy" | "medium" | "hard")
+            : "medium"
+        }
+      >
+        <McqQuizWrapper
+          quizData={quizData}
+          questions={questions.map((q) => ({ ...q, id: Number(q.id) }))}
+          slug={slug}
+        />
+      </QuizDetailsPageWithContext>
+    </QuizProvider>
   )
 }
 

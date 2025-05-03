@@ -31,39 +31,52 @@ export default function McqQuiz({ question, onAnswer, questionNumber, totalQuest
 
   // Set up options when question changes
   useEffect(() => {
+    // Create a stable copy of the question to prevent unnecessary re-renders
+    const currentQuestion = { ...question }
+
     // Get all valid options - either from options array or from individual properties
     let allOptions: string[] = []
 
-    if (question.options && Array.isArray(question.options) && question.options.length > 0) {
+    if (currentQuestion.options && Array.isArray(currentQuestion.options) && currentQuestion.options.length > 0) {
       // Use the options array if available
-      allOptions = [...question.options]
+      allOptions = [...currentQuestion.options]
     } else {
       // Otherwise, collect from individual properties
-      const optionsArray = [question.answer]
-      if (question.option1) optionsArray.push(question.option1)
-      if (question.option2) optionsArray.push(question.option2)
-      if (question.option3) optionsArray.push(question.option3)
+      const optionsArray = [currentQuestion.answer]
+      if (currentQuestion.option1) optionsArray.push(currentQuestion.option1)
+      if (currentQuestion.option2) optionsArray.push(currentQuestion.option2)
+      if (currentQuestion.option3) optionsArray.push(currentQuestion.option3)
       allOptions = optionsArray.filter(Boolean)
     }
 
     // Ensure we have at least one option
     if (allOptions.length === 0) {
-      console.error("No options available for question:", question)
+      console.error("No options available for question:", currentQuestion)
       allOptions = ["No options available"]
     }
 
     // Shuffle options using the utility function
     const shuffled = shuffleArray(allOptions)
-    setOptions(shuffled)
 
-    // Reset selected option when question changes
-    setSelectedOption(null)
-    setTooFastWarning(false)
+    // Use a stable stringified version to compare
+    const currentOptionsStr = JSON.stringify(options)
+    const newOptionsStr = JSON.stringify(shuffled)
+
+    // Only update if options have actually changed
+    if (currentOptionsStr !== newOptionsStr) {
+      setOptions(shuffled)
+      // Reset selected option when question changes
+      setSelectedOption(null)
+      setTooFastWarning(false)
+    }
   }, [question])
 
   const handleOptionSelect = (option: string) => {
-    setSelectedOption(option)
-    setTooFastWarning(false)
+    // Only update state if the selection is actually changing
+    if (selectedOption !== option) {
+      setSelectedOption(option)
+      setTooFastWarning(false)
+    }
   }
 
   const handleSubmit = () => {

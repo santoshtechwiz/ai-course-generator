@@ -39,7 +39,7 @@ describe("Quiz State Utilities", () => {
     })
 
     it("should return 'saving' when saving results", () => {
-      const state = { ...mockQuizState, isSavingResults: true }
+      const state = { ...mockQuizState, savingResults: true }
       expect(determineDisplayState(state, true, false)).toBe("saving")
     })
 

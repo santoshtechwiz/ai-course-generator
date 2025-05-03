@@ -1,5 +1,6 @@
-
-import { QuizResult, QuizType } from "@/app/types/quiz-types"
+import type { QuizResult, QuizType } from "@/app/types/quiz-types"
+import { handleApiError } from "../error-handler"
+import { handleFetchError } from "./quiz-error-handling"
 
 // Define the interface for quiz results
 interface QuizResultOld {
@@ -90,70 +91,6 @@ export const quizService = {
       return { data }
     } catch (error) {
       return { error: handleFetchError(error) }
-    }
-  },
-
-  /**
-   * Save quiz results for guest users (to local storage)
-   */
-  saveGuestQuizResults(slug: string, results: QuizResult) {
-    try {
-      // Get existing results from local storage
-      const existingResultsJson = localStorage.getItem("guestQuizResults")
-      const existingResults = existingResultsJson ? JSON.parse(existingResultsJson) : {}
-
-      // Add new result
-      existingResults[slug] = {
-        ...results,
-        timestamp: new Date().toISOString(),
-      }
-
-      // Save back to local storage
-      localStorage.setItem("guestQuizResults", JSON.stringify(existingResults))
-
-      return { data: { success: true } }
-    } catch (error) {
-      return {
-        error: createQuizError(QuizErrorType.UNKNOWN, "Failed to save quiz results locally", error, false),
-      }
-    }
-  },
-
-  /**
-   * Get guest quiz results from local storage
-   */
-  getGuestQuizResults() {
-    try {
-      const resultsJson = localStorage.getItem("guestQuizResults")
-      if (!resultsJson) {
-        return { data: {} }
-      }
-
-      const results = JSON.parse(resultsJson)
-      return { data: results }
-    } catch (error) {
-      return {
-        error: createQuizError(
-          QuizErrorType.UNKNOWN,
-          "Failed to retrieve quiz results from local storage",
-          error,
-          false,
-        ),
-      }
-    }
-  },
-
-  /**
-   * Clear guest quiz results from local storage
-   */
-  clearGuestQuizResults() {
-    try {
-      localStorage.removeItem("guestQuizResults")
-      return { data: { success: true } }
-    } catch (error) {
-      return {
-        error: createQuizError(QuizErrorType.UNKNOWN, "Failed to clear quiz results from local storage", error, false),
-      }
     }
   },
 
