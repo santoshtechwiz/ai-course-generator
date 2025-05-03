@@ -75,13 +75,8 @@ export default function MainNavbar() {
   const [scrolled, setScrolled] = useState(false)
 
   // Replace Zustand with Redux hooks
-  const {
-    fetchSubscriptionStatus,
-    data: subscriptionStatus,
-    isLoading: isLoadingSubscription,
-    isError,
-    lastFetched,
-  } = useSubscription()
+  const { data: subscriptionStatus, isLoading: isLoadingSubscription, 
+    isError, lastFetched } = useSubscription()
 
   // Fix 3: Use useState + useEffect pattern for pathname
   const [currentPath, setCurrentPath] = useState("")
@@ -113,7 +108,7 @@ export default function MainNavbar() {
     }
   }, [handleScroll])
 
-  // FIX: Completely revise the subscription fetching logic to prevent infinite calls
+  // CRITICAL FIX: Remove all subscription fetching from the navbar component
   useEffect(() => {
     if (!userAuthenticated) return
 
@@ -122,29 +117,10 @@ export default function MainNavbar() {
       setIsInitialLoad(false)
     }, 3000)
 
-    // Only fetch if we don't have data or it's stale (older than 30 seconds)
-    const now = Date.now()
-    const shouldFetch = !lastFetched || now - lastFetched > 30000
-
-    if (shouldFetch) {
-      fetchSubscriptionStatus(true)
-    }
-
-    // Set up a reasonable interval for refreshing (much less frequent)
-    const intervalId = setInterval(() => {
-      // Only fetch if the user is still on the page (document is visible)
-      if (document.visibilityState === "visible") {
-        fetchSubscriptionStatus(false)
-      }
-    }, 120000) // 2 minutes interval instead of dynamic
-
     return () => {
       clearTimeout(initialLoadTimer)
-      clearInterval(intervalId)
     }
-  }, [fetchSubscriptionStatus, userAuthenticated, lastFetched])
-
-  // FIX: Remove the user activity listener that triggers additional fetches
+  }, [userAuthenticated])
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {

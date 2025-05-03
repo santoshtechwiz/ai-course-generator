@@ -1,210 +1,157 @@
 "use client"
 
-import { useMemo, useCallback } from "react"
-import { motion } from "framer-motion"
-import { HelpCircle, ArrowRight, Clock } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import McqQuiz from "./McqQuiz"
+import { Card } from "@/components/ui/card"
+import { Loader2, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
-import { formatQuizTime } from "@/lib/utils"
-import { useAnimation } from "@/providers/animation-provider"
-import { MotionTransition } from "@/components/ui/animations/motion-wrapper"
-import { QuizProgress } from "../../components/QuizProgress"
-import type { Question } from "./types"
-import { cn } from "@/lib/tailwindUtils"
+import { useQuiz } from "@/app/context/QuizContext"
 
-interface McqQuizQuestionsProps {
-  currentQuestion: Question | null
-  currentQuestionIndex: number
-  selectedOptions: (string | null)[]
-  timeSpent: number[]
-  title: string
-  totalQuestions: number
-  isSubmitting: boolean
-  handleSelectOption: (value: string) => void
-  handleNextQuestion: () => void
-}
+export default function McqQuizQuestions({ questions, quizId, slug }: any) {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [answers, setAnswers] = useState<any[]>([])
+  const [isCompleting, setIsCompleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-/**
- * Component that renders the actual quiz questions and handles user interactions
- */
-export function McqQuizQuestions({
-  currentQuestion,
-  currentQuestionIndex,
-  selectedOptions,
-  timeSpent,
-  title,
-  totalQuestions,
-  isSubmitting,
-  handleSelectOption,
-  handleNextQuestion,
-}: McqQuizQuestionsProps) {
-  const { animationsEnabled } = useAnimation()
+  // Use the quiz context for state management
+  const { state, submitAnswer: submitQuizAnswer, completeQuiz, handleAuthenticationRequired } = useQuiz()
 
-  // Generate and shuffle options for the current question
-  const [uniqueOptions, hasError] = useMemo(() => {
-    if (!currentQuestion) {
-      return [[], true]
+  // Validate questions on component mount
+  useEffect(() => {
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      setError("No questions available for this quiz.")
+      return
     }
 
-    const allOptions = [
-      currentQuestion.answer,
-      currentQuestion.option1,
-      currentQuestion.option2,
-      currentQuestion.option3,
-    ].filter(Boolean)
+    // Check if questions have the required fields
+    const invalidQuestions = questions.filter((q) => !q || !q.question || !q.answer)
 
-    const uniqueOptionsSet = new Set(allOptions)
+    if (invalidQuestions.length > 0) {
+      console.error("Invalid questions found:", invalidQuestions)
+      setError("Some questions in this quiz are invalid. Please try another quiz.")
+    }
+  }, [questions])
 
-    if (uniqueOptionsSet.size < 2) {
-      return [[], true]
+  const currentQuestion = questions?.[currentQuestionIndex]
+  const isLastQuestion = currentQuestionIndex === (questions?.length ?? 0) - 1
+
+  const handleAnswer = (selectedOption: string, timeSpent: number, isCorrect: boolean) => {
+    // Create answer object
+    const answer = {
+      answer: selectedOption,
+      userAnswer: selectedOption,
+      isCorrect,
+      timeSpent,
     }
 
-    if (uniqueOptionsSet.size < 4) {
-      const fallbackOptions = [
-        "None of the above",
-        "All of the above",
-        "Not enough information",
-        "Cannot be determined",
-      ]
+    // Update local state
+    setAnswers((prev) => [...prev, answer])
 
-      let i = 0
-      while (uniqueOptionsSet.size < 4 && i < fallbackOptions.length) {
-        uniqueOptionsSet.add(fallbackOptions[i])
-        i++
+    // Submit answer to Redux
+    submitQuizAnswer(answer)
+
+    // Move to the next question or complete the quiz
+    if (isLastQuestion) {
+      handleQuizCompletion([...answers, answer])
+    } else {
+      setCurrentQuestionIndex((prev) => prev + 1)
+    }
+  }
+
+  const handleQuizCompletion = async (finalAnswers: any[]) => {
+    setIsCompleting(true)
+
+    try {
+      // Calculate score
+      const correctAnswers = finalAnswers.filter((a) => a.isCorrect).length
+      const totalQuestions = questions?.length || 0
+      const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
+
+      // Complete the quiz in Redux
+      completeQuiz(finalAnswers)
+
+      // If the quiz requires authentication but user is not authenticated,
+      // the handleAuthenticationRequired will be called by the Redux action
+      if (state.requiresAuth && !state.isAuthenticated) {
+        if (typeof handleAuthenticationRequired === "function") {
+          handleAuthenticationRequired(`/dashboard/mcq/${slug}?fromAuth=true`)
+        } else {
+          console.error("Authentication handler is not available")
+          setError("Unable to process authentication. Please try again later.")
+        }
       }
+    } catch (error) {
+      console.error("Error completing quiz:", error)
+      setError("Failed to complete the quiz. Please try again.")
+    } finally {
+      setIsCompleting(false)
     }
+  }
 
-    // Use a stable seed for consistent shuffling
-    const seed = currentQuestion.id || currentQuestionIndex
-    const shuffledOptions = [...uniqueOptionsSet].sort(() => {
-      const x = Math.sin(seed * 9999) * 10000
-      return x - Math.floor(x) - 0.5
-    })
-
-    return [shuffledOptions, false]
-  }, [currentQuestion, currentQuestionIndex])
-
-  // Memoized option selection handler
-  const onOptionSelect = useCallback(
-    (option: string) => {
-      if (!isSubmitting) {
-        handleSelectOption(option)
-      }
-    },
-    [handleSelectOption, isSubmitting],
-  )
-
-  // Handle error state when question has insufficient options
-  if (hasError) {
+  if (error) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="pt-6 text-center">
-          <p className="text-muted-foreground mb-4">This question needs review due to insufficient options.</p>
-          <Button onClick={handleNextQuestion}>Skip to Next Question</Button>
-        </CardContent>
+      <Card className="p-6">
+        <div className="flex flex-col items-center justify-center text-center gap-4">
+          <AlertTriangle className="h-12 w-12 text-amber-500" />
+          <h3 className="text-xl font-semibold">Error Loading Quiz</h3>
+          <p className="text-muted-foreground">{error}</p>
+          <Button onClick={() => router.push("/dashboard/mcq")}>Return to Quiz List</Button>
+        </div>
+      </Card>
+    )
+  }
+
+  if (!currentQuestion) {
+    return (
+      <Card className="p-6 flex justify-center items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <p>Loading questions...</p>
+      </Card>
+    )
+  }
+
+  // If the quiz is completed and requires auth, show auth prompt
+  if (state.isCompleted && state.requiresAuth && !state.isAuthenticated) {
+    return (
+      <Card className="p-6">
+        <div className="flex flex-col items-center justify-center text-center gap-4">
+          <h3 className="text-xl font-semibold">Sign In to Save Results</h3>
+          <p className="text-muted-foreground">You need to sign in to save your quiz results.</p>
+          <div className="flex gap-4">
+            <Button
+              onClick={() => handleAuthenticationRequired(`/dashboard/mcq/${slug}?fromAuth=true`)}
+              variant="default"
+            >
+              Sign In
+            </Button>
+            <Button onClick={() => router.push("/dashboard/mcq")} variant="outline">
+              Return to Quizzes
+            </Button>
+          </div>
+        </div>
       </Card>
     )
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="space-y-4">
-        <QuizProgress
-          currentQuestionIndex={currentQuestionIndex}
-          totalQuestions={totalQuestions}
-          timeSpent={timeSpent}
-          title={title}
-          quizType="Multiple Choice"
-          animate={animationsEnabled}
-        />
-      </CardHeader>
-      <CardContent className="p-6">
-        <MotionTransition
-          key={currentQuestionIndex}
-          motionKey={currentQuestion?.id?.toString() || String(currentQuestionIndex)}
-        >
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <HelpCircle className="w-6 h-6 text-primary mt-1 flex-shrink-0" aria-hidden="true" />
-                <h2 className="text-lg sm:text-xl font-semibold" id="question-text">
-                  {currentQuestion?.question}
-                </h2>
-              </div>
-              <RadioGroup
-                value={selectedOptions[currentQuestionIndex] || ""}
-                onValueChange={onOptionSelect}
-                className="space-y-3 w-full mt-4"
-                aria-labelledby="question-text"
-              >
-                {uniqueOptions.map((option, index) => (
-                  <motion.div
-                    key={`${currentQuestionIndex}-${index}-${option}`}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{
-                      delay: index * 0.1,
-                      duration: 0.3,
-                      ease: [0.25, 0.1, 0.25, 1],
-                    }}
-                  >
-                    <div
-                      className={cn(
-                        "flex items-center space-x-3 p-4 rounded-lg transition-all w-full",
-                        "border-2",
-                        selectedOptions[currentQuestionIndex] === option
-                          ? "border-primary bg-primary/5"
-                          : "border-transparent hover:bg-muted",
-                      )}
-                      onClick={() => onOptionSelect(option)}
-                    >
-                      <RadioGroupItem value={option} id={`option-${index}`} aria-labelledby={`option-label-${index}`} />
-                      <Label
-                        htmlFor={`option-${index}`}
-                        id={`option-label-${index}`}
-                        className="flex-grow cursor-pointer font-medium text-sm sm:text-base"
-                      >
-                        {option}
-                      </Label>
-                    </div>
-                  </motion.div>
-                ))}
-              </RadioGroup>
-            </div>
+    <div className="space-y-6">
+      <McqQuiz
+        question={currentQuestion}
+        onAnswer={handleAnswer}
+        questionNumber={currentQuestionIndex + 1}
+        totalQuestions={questions?.length || 0}
+        isLastQuestion={isLastQuestion}
+      />
+      {isCompleting && (
+        <Card className="p-4 mt-4">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+            <p>Submitting your answers...</p>
           </div>
-        </MotionTransition>
-      </CardContent>
-      <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
-        <p className="text-sm text-muted-foreground flex items-center gap-1">
-          <Clock className="h-3.5 w-3.5 inline" aria-hidden="true" />
-          <span className="font-mono">{formatQuizTime(timeSpent[currentQuestionIndex] || 0)}</span>
-        </p>
-        <Button
-          onClick={handleNextQuestion}
-          disabled={selectedOptions[currentQuestionIndex] === null || isSubmitting}
-          className="w-full sm:w-auto transition-all"
-          aria-busy={isSubmitting}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div
-                className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"
-                aria-hidden="true"
-              />
-              <span>Submitting...</span>
-            </div>
-          ) : currentQuestionIndex === totalQuestions - 1 ? (
-            "Finish Quiz"
-          ) : (
-            <>
-              Next Question
-              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-            </>
-          )}
-        </Button>
-      </CardFooter>
-    </Card>
+        </Card>
+      )}
+    </div>
   )
 }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { quizService } from "@/lib/quiz-service"
+import { quizService } from "@/lib/utils/quiz-service"
 import { AlertCircle, RefreshCw } from "lucide-react"
 
 interface FlashCardResultsProps {

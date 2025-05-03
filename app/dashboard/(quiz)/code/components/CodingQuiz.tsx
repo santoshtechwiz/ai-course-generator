@@ -14,13 +14,7 @@ import { MotionWrapper, MotionTransition } from "@/components/ui/animations/moti
 // import { formatQuizTime } from "@/lib/utils"
 import CodeQuizOptions from "./CodeQuizOptions"
 import CodeQuizEditor from "./CodeQuizEditor"
-const formatQuizTime = (time: number): string => {
-  const hours = Math.floor(time / 3600)
-  const minutes = Math.floor((time % 3600) / 60)
-  const seconds = time % 60
-
-  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
-}
+import { formatQuizTime } from "@/lib/utils/quiz-performance"
 // Define types for props
 interface CodingQuizProps {
   question: {

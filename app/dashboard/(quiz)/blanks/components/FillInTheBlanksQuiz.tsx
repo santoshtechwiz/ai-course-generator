@@ -1,12 +1,12 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
-import type React from "react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } 
+from "@/components/ui/tooltip"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   CheckCircle2,
@@ -22,7 +22,10 @@ import {
   Brain,
 } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
+import { formatQuizTime } from "@/lib/utils/quiz-performance"
 import { useQuiz } from "@/app/context/QuizContext"
+import { levenshteinDistance } from "@/lib/utils/quiz-options"
+import { isGarbageInput, isTooFastAnswer } from "@/lib/utils/quiz-validation"
 import { useState, useRef, useMemo, useEffect, useCallback } from "react"
 
 interface Question {
@@ -44,28 +47,20 @@ interface FillInTheBlanksQuizProps {
   totalQuestions: number
 }
 
-const Timer = ({ elapsedTime }: { elapsedTime: number }) => {
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-            <Clock className="h-3.5 w-3.5" />
-            <span className="font-mono">{formatTime(elapsedTime)}</span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Time spent on this question</p>
-        </TooltipContent>
-      </Tooltip>
+const Timer = ({ elapsedTime }: { elapsedTime: number }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+          <Clock className="h-3.5 w-3.5" />
+          <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Time spent on this question</p>
+      </TooltipContent>
     </TooltipProvider>
-  )
+  );
 }
 
 const BadgeGroup = ({ tags, difficulty }: { tags: string[]; difficulty: string }) => {
@@ -198,32 +193,6 @@ export default function FillInTheBlanksQuiz({
     return () => clearInterval(timer)
   }, [])
 
-  const checkForGarbage = useCallback(
-    (input: string): boolean => {
-      if (!input || input.length < 3) return false
-
-      const allWords = question.question
-        .toLowerCase()
-        .replace(/[^\w\s]/g, "")
-        .split(/\s+/)
-        .filter((word) => word.length > 3)
-
-      if (question.answer) {
-        allWords.push(question.answer.toLowerCase())
-      }
-
-      const inputLower = input.toLowerCase()
-      const minDistance = allWords.reduce((min, word) => {
-        const distance = levenshtein(inputLower, word.toLowerCase())
-        const normalizedDistance = distance / Math.max(inputLower.length, word.length)
-        return Math.min(min, normalizedDistance)
-      }, 1)
-
-      return minDistance > garbageThreshold
-    },
-    [question.question, question.answer],
-  )
-
   const handleInputChange = useCallback(
     (value: string) => {
       setAnswer(value)
@@ -237,14 +206,25 @@ export default function FillInTheBlanksQuiz({
         return
       }
 
-      if (checkForGarbage(userInput)) {
+      // Get all words from the question for context
+      const contextWords = question.question
+        .toLowerCase()
+        .replace(/[^\w\s]/g, "")
+        .split(/\s+/)
+        .filter((word) => word.length > 3)
+      
+      if (question.answer) {
+        contextWords.push(question.answer.toLowerCase())
+      }
+
+      if (isGarbageInput(userInput, contextWords)) {
         setShowGarbageWarning(true)
         setIsValidInput(false)
         return
       }
 
       const correctAnswer = question.answer?.trim()?.toLowerCase() || ""
-      const distance = levenshtein(userInput, correctAnswer)
+      const distance = levenshteinDistance(userInput, correctAnswer)
 
       // Consider an answer valid if it's close enough to the correct answer or starts with the correct prefix
       const isCloseEnough = distance <= similarityThreshold
@@ -252,20 +232,31 @@ export default function FillInTheBlanksQuiz({
 
       setIsValidInput(isCloseEnough || hasCorrectPrefix)
     },
-    [checkForGarbage, minimumPrefixLength, question.answer, similarityThreshold],
+    [minimumPrefixLength, question.answer, question.question, similarityThreshold],
   )
 
   const handleSubmit = useCallback(() => {
     setIsSubmitting(true)
 
     const timeSpent = (Date.now() - startTime) / 1000
-    if (timeSpent < minimumTimeThreshold) {
+    if (isTooFastAnswer(timeSpent, minimumTimeThreshold)) {
       setShowTooFastWarning(true)
       setIsSubmitting(false)
       return
     }
 
-    if (checkForGarbage(answer)) {
+    // Get all words from the question for context
+    const contextWords = question.question
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .split(/\s+/)
+      .filter((word) => word.length > 3)
+    
+    if (question.answer) {
+      contextWords.push(question.answer.toLowerCase())
+    }
+
+    if (isGarbageInput(answer, contextWords)) {
       setShowGarbageWarning(true)
       setIsSubmitting(false)
       return
@@ -273,7 +264,7 @@ export default function FillInTheBlanksQuiz({
 
     const userAnswer = answer.trim().toLowerCase()
     const correctAnswer = question.answer.trim().toLowerCase()
-    const distance = levenshtein(userAnswer, correctAnswer)
+    const distance = levenshteinDistance(userAnswer, correctAnswer)
     const maxLength = Math.max(userAnswer.length, correctAnswer.length)
     const similarity = maxLength > 0 ? Math.max(0, 100 - (distance / maxLength) * 100) : 0
 
@@ -288,11 +279,11 @@ export default function FillInTheBlanksQuiz({
     }, 500)
   }, [
     answer,
-    checkForGarbage,
     hintLevel,
     minimumTimeThreshold,
     onAnswer,
     question.answer,
+    question.question,
     similarityThreshold,
     startTime,
   ])
@@ -559,38 +550,4 @@ export default function FillInTheBlanksQuiz({
       </motion.div>
     </div>
   )
-}
-
-// Levenshtein distance calculation function
-function levenshtein(a: string, b: string): number {
-  if (a.length === 0) return b.length
-  if (b.length === 0) return a.length
-
-  const matrix = Array(b.length + 1)
-    .fill(null)
-    .map(() => Array(a.length + 1).fill(0))
-
-  for (let i = 0; i <= a.length; i++) {
-    matrix[0][i] = i
-  }
-
-  for (let j = 0; j <= b.length; j++) {
-    matrix[j][0] = j
-  }
-
-  for (let j = 1; j <= b.length; j++) {
-    for (let i = 1; i <= a.length; i++) {
-      if (b[j - 1] === a[i - 1]) {
-        matrix[j][i] = matrix[j - 1][i - 1]
-      } else {
-        matrix[j][i] = Math.min(
-          matrix[j - 1][i - 1] + 1, // substitution
-          matrix[j][i - 1] + 1, // insertion
-          matrix[j - 1][i] + 1, // deletion
-        )
-      }
-    }
-  }
-
-  return matrix[b.length][a.length]
 }
