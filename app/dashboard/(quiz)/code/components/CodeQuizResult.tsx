@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Clock, Award, ArrowRight } from "lucide-react"
-import { formatQuizTime } from "@/lib/utils"
-import { calculatePerformanceLevel } from "@/lib/utils/quiz-performance"
+
+import { calculatePerformanceLevel, formatQuizTime } from "@/lib/utils/quiz-performance"
 
 interface CodeQuizResultProps {
   result: {
