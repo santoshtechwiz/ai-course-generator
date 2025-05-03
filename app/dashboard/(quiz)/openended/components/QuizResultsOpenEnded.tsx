@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+import GuestSignInPrompt  from "../../components/GuestSignInPrompt"
 import { useQuiz } from "@/app/context/QuizContext"
 import { useAuth } from "@/providers/unified-auth-provider"
 

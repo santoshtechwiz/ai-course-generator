@@ -10,6 +10,7 @@ import type { CodeQuizApiResponse } from "@/app/types/code-quiz-types"
 import type { BreadcrumbItem } from "@/app/types/types"
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
+import { QuizProvider } from "@/app/context/QuizContext"
 
 
 interface PageParams {
@@ -31,7 +32,7 @@ async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
       console.error(`Failed to fetch quiz data: ${response.statusText}`)
       return null
     }
-
+   
     return await response.json()
   } catch (error) {
     console.error("Error fetching quiz data:", error)
@@ -94,6 +95,7 @@ const CodePage = async (props: PageParams) => {
   ]
 
   return (
+    <QuizProvider>
     <QuizDetailsPageWithContext
       title={result.quizData.title}
       description={`Test your coding skills on ${result.quizData.title} with interactive programming challenges`}
@@ -117,6 +119,7 @@ const CodePage = async (props: PageParams) => {
         ownerId={result.ownerId}
       />
     </QuizDetailsPageWithContext>
+    </QuizProvider>
   )
 }
 
