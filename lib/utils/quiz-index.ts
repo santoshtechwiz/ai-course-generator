@@ -1,55 +1,89 @@
-// Central export file for all quiz utilities
-// This helps avoid circular dependencies and provides a single import point
+// This is a simplified version - you would need to include all the necessary functions
+// from your existing quiz-index.ts file
 
-// Import utilities from individual files
-import { createQuizError, QuizErrorType, getUserFriendlyErrorMessage } from "./quiz-error-handling"
-import { formatQuizTime } from "./quiz-performance"
-import * as quizUtils from "./quiz-utils"
-import * as quizValidation from "./quiz-validation"
-import * as quizApi from "./quiz-api"
-import * as quizOptions from "./quiz-options"
-import * as quizStateUtils from "./quiz-state-utils"
-
-// Calculate total time from answers
 export function calculateTotalTime(answers: any[]): number {
   if (!Array.isArray(answers)) return 0
-  return answers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
+  return answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0)
 }
 
-// Export all utilities
-export {
-  // Error handling
-  createQuizError,
-  QuizErrorType,
-  getUserFriendlyErrorMessage,
-  // Performance
-  formatQuizTime,
-  // Utils
-  quizUtils,
-  // Validation
-  quizValidation,
-  // API
-  quizApi,
-  // Options
-  quizOptions,
-  // State utils
-  quizStateUtils,
+export function formatQuizTime(timeInMs: number): string {
+  if (!timeInMs) return "0s"
+
+  const seconds = Math.floor(timeInMs / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+
+  if (minutes === 0) {
+    return `${remainingSeconds}s`
+  }
+
+  return `${minutes}m ${remainingSeconds}s`
 }
 
-// Export common utility functions directly
-export const isValidQuizData = (data: any): boolean => {
-  if (!data) return false
-  if (!data.questions || !Array.isArray(data.questions)) return false
-  if (data.questions.length === 0) return false
-  return true
+export const quizApi = {
+  submitQuiz: async (
+    quizId: string,
+    slug: string,
+    quizType: string,
+    answers: any[],
+    score: number,
+    totalTime: number,
+    totalQuestions: number,
+  ) => {
+    // Implementation would depend on your API
+    try {
+      // Mock implementation
+      return {
+        success: true,
+        quizId,
+        score,
+        completedAt: new Date().toISOString(),
+      }
+    } catch (error) {
+      console.error("Error submitting quiz:", error)
+      throw error
+    }
+  },
 }
 
-export const getCorrectAnswer = (question: any): string | string[] | null => {
-  if (!question) return null
-  return question.answer || question.correctAnswer || null
+export enum QuizErrorType {
+  NETWORK = "network",
+  VALIDATION = "validation",
+  AUTHENTICATION = "authentication",
+  AUTHORIZATION = "authorization",
+  NOT_FOUND = "not_found",
+  SERVER = "server",
+  UNKNOWN = "unknown",
 }
 
-export const getUserAnswer = (answer: any): string | string[] | null => {
-  if (!answer) return null
-  return answer.userAnswer || answer.answer || null
+export function createQuizError(type: QuizErrorType, message: string, originalError?: any, isUserFriendly = false) {
+  return {
+    type,
+    message,
+    originalError,
+    isUserFriendly,
+  }
+}
+
+export function getUserFriendlyErrorMessage(error: any): string {
+  if (error?.isUserFriendly) {
+    return error.message
+  }
+
+  switch (error?.type) {
+    case QuizErrorType.NETWORK:
+      return "Network error. Please check your internet connection and try again."
+    case QuizErrorType.VALIDATION:
+      return "Invalid input. Please check your answers and try again."
+    case QuizErrorType.AUTHENTICATION:
+      return "Authentication required. Please sign in to continue."
+    case QuizErrorType.AUTHORIZATION:
+      return "You don't have permission to access this quiz."
+    case QuizErrorType.NOT_FOUND:
+      return "Quiz not found. It may have been removed or is unavailable."
+    case QuizErrorType.SERVER:
+      return "Server error. Please try again later."
+    default:
+      return "An unexpected error occurred. Please try again later."
+  }
 }

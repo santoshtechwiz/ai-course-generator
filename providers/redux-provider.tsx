@@ -1,12 +1,20 @@
-// Create a new file for the Redux provider
-
 "use client"
 
-import type React from "react"
-
 import { Provider } from "react-redux"
-import { store } from "@/store"
+import { PersistGate } from "redux-persist/integration/react"
+import { store, persistor } from "@/store"
+import type { ReactNode } from "react"
 
-export function ReduxProvider({ children }: { children: React.ReactNode }) {
-  return <Provider store={store}>{children}</Provider>
+interface ReduxProviderProps {
+  children: ReactNode
+}
+
+export function ReduxProvider({ children }: ReduxProviderProps) {
+  return (
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        {children}
+      </PersistGate>
+    </Provider>
+  )
 }
