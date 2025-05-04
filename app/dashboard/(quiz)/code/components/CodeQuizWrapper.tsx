@@ -3,24 +3,31 @@
 import { useRouter } from "next/navigation"
 import { memo, useState, useEffect, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 
 import CodeQuizResult from "./CodeQuizResult"
 import CodingQuiz from "./CodingQuiz"
 import GuestSignInPrompt from "../../components/GuestSignInPrompt"
 import { useQuiz } from "@/app/context/QuizContext"
-import { ErrorDisplay, LoadingDisplay, InitializingDisplay, QuizNotFoundDisplay, EmptyQuestionsDisplay } from "@/app/dashboard/components/QuizStateDisplay"
-import { CodeQuizContentProps, CodeQuizWrapperProps } from "@/app/types/code-quiz-types"
+import {
+  ErrorDisplay,
+  LoadingDisplay,
+  InitializingDisplay,
+  QuizNotFoundDisplay,
+  EmptyQuestionsDisplay,
+} from "@/app/dashboard/components/QuizStateDisplay"
+import type { CodeQuizContentProps, CodeQuizWrapperProps } from "@/app/types/code-quiz-types"
 import { useToast } from "@/hooks"
-
+import { quizUtils, formatQuizTime, calculateTotalTime } from "@/lib/utils/quiz-index"
 
 // Memoize the content component to prevent unnecessary re-renders
 export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, userId, quizId }: CodeQuizContentProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<any[]>([])
   const [isCompleting, setIsCompleting] = useState(false)
-  const [error, setError] = useState<any>(null)
   const [showResults, setShowResults] = useState(false)
   const [quizResults, setQuizResults] = useState<any>(null)
   const [startTime] = useState<number>(Date.now())
@@ -54,18 +61,18 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
 
   // Check for URL parameters that indicate returning from auth
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search)
-      const fromAuth = urlParams.get("fromAuth")
+    const fromAuth = searchParams.get("fromAuth")
 
-      if (fromAuth === "true" && contextState.isCompleted && contextState.pendingAuthRequired) {
-        if (typeof setAuthCheckComplete === "function") {
-          setAuthCheckComplete(true)
-        }
-        setShowResults(true)
+    if (fromAuth === "true") {
+      // Always set showResults to true when returning from auth
+      setShowResults(true)
+
+      // Call setAuthCheckComplete if available
+      if (typeof setAuthCheckComplete === "function") {
+        setAuthCheckComplete(true)
       }
     }
-  }, [contextState, setAuthCheckComplete])
+  }, [searchParams, setAuthCheckComplete])
 
   // Handle result saving notification
   useEffect(() => {
@@ -77,74 +84,18 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     }
   }, [contextState, toast])
 
-  // Save quiz state to localStorage before redirecting to sign-in
-  const saveQuizStateToLocalStorage = useCallback(() => {
-    if (typeof window !== "undefined") {
-      const stateToSave = {
-        answers,
-        currentQuestionIndex,
-        quizId,
-        slug,
-        quizResults,
-        completedAt: new Date().toISOString(),
-      }
-      localStorage.setItem(`code_quiz_state_${slug}`, JSON.stringify(stateToSave))
-      console.log("Saved code quiz state to localStorage:", stateToSave)
-    }
-  }, [answers, currentQuestionIndex, quizId, slug, quizResults])
-
-  // Restore quiz state from localStorage when returning from sign-in
+  // Add this after the useEffect hooks
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search)
-      const fromAuth = urlParams.get("fromAuth")
-
-      if (fromAuth === "true") {
-        try {
-          const savedState = localStorage.getItem(`code_quiz_state_${slug}`)
-          if (savedState) {
-            console.log("Restoring code quiz state from localStorage")
-            const parsedState = JSON.parse(savedState)
-
-            // Restore answers and other state
-            if (parsedState.answers) setAnswers(parsedState.answers)
-            if (parsedState.quizResults) setQuizResults(parsedState.quizResults)
-            if (parsedState.currentQuestionIndex) setCurrentQuestionIndex(parsedState.currentQuestionIndex)
-
-            // If we had completed the quiz before auth, complete it again
-            if (parsedState.quizResults && completeQuiz) {
-              completeQuiz({
-                answers: parsedState.answers,
-                score: parsedState.quizResults.score,
-                completedAt: parsedState.completedAt || new Date().toISOString(),
-              })
-              setShowResults(true)
-            }
-
-            // Clear the saved state after restoring
-            localStorage.removeItem(`code_quiz_state_${slug}`)
-          }
-        } catch (err) {
-          console.error("Error restoring code quiz state:", err)
-        }
-      }
+    if (process.env.NODE_ENV === "development") {
+      console.log("CodeQuizWrapper state:", {
+        showResults,
+        isCompleted: contextState.isCompleted,
+        isAuthenticated: contextState.isAuthenticated,
+        pendingAuthRequired: contextState.pendingAuthRequired,
+        fromAuth: searchParams.get("fromAuth"),
+      })
     }
-  }, [slug, completeQuiz])
-
-  // Clear quiz state after results are saved to database
-  useEffect(() => {
-    if (contextState.resultsSaved && contextState.isAuthenticated) {
-      // Wait a moment to ensure everything is processed
-      const timer = setTimeout(() => {
-        // Clear localStorage
-        if (typeof window !== "undefined") {
-          localStorage.removeItem(`code_quiz_state_${slug}`)
-        }
-      }, 1000)
-
-      return () => clearTimeout(timer)
-    }
-  }, [contextState.resultsSaved, contextState.isAuthenticated, slug])
+  }, [contextState, searchParams, showResults])
 
   // Get current question
   const currentQuestion = quizQuestions[currentQuestionIndex]
@@ -192,7 +143,6 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         }
       } catch (err) {
         console.error("Error handling answer:", err)
-        setError("Failed to process your answer. Please try again.")
       }
     },
     [isCompleting, submitQuizAnswer, currentQuestion, currentQuestionIndex, isLastQuestion, answers],
@@ -211,10 +161,24 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         // Calculate score
         const correctAnswers = answersArray.filter((a) => a && a.isCorrect).length
         const totalQuestions = quizQuestions?.length || 0
-        const score = Math.round((correctAnswers / totalQuestions) * 100)
+        const score = quizUtils.calculateScore
+          ? quizUtils.calculateScore(
+              answersArray.map((a) =>
+                a
+                  ? {
+                      answer: a.answer,
+                      isCorrect: a.isCorrect,
+                      timeSpent: a.timeSpent,
+                    }
+                  : { answer: "", isCorrect: false, timeSpent: 0 },
+              ),
+              "code",
+            )
+          : Math.round((correctAnswers / totalQuestions) * 100)
 
         // Calculate total time
-        const totalTimeSpent = answersArray.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
+        const totalTimeSpent = calculateTotalTime(answersArray.filter(Boolean))
+        const formattedTimeSpent = formatQuizTime(totalTimeSpent)
 
         // Prepare result data
         const resultQuizId = quizId || contextState?.quizId || "test-quiz"
@@ -257,7 +221,6 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         }
       } catch (err) {
         console.error("Error completing quiz:", err)
-        setError("Failed to complete the quiz. Please try again.")
       } finally {
         setIsCompleting(false)
       }
@@ -282,19 +245,16 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
   // Handle sign in
   const handleSignIn = useCallback(() => {
     if (handleAuthenticationRequired) {
-      // Save current quiz state before redirecting
-      saveQuizStateToLocalStorage()
-
       // Redirect to sign-in
       handleAuthenticationRequired(`/dashboard/code/${slug}?fromAuth=true`)
     }
-  }, [handleAuthenticationRequired, slug, saveQuizStateToLocalStorage])
+  }, [handleAuthenticationRequired, slug])
 
-  // If there's an error, show the error message
-  if (error) {
+  // If there's an error in the context, show the error message
+  if (contextState.error) {
     return (
       <ErrorDisplay
-        error={error}
+        error={contextState.error}
         onRetry={() => window.location.reload()}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
@@ -314,7 +274,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
   }
 
   // If the quiz is completed and results are available, show the results
-  if ((showResults && quizResults) || (contextState.isCompleted && contextState.isAuthenticated)) {
+  if (showResults || contextState.isCompleted) {
     return (
       <CodeQuizResult
         title={quizData?.title || "Code Quiz"}

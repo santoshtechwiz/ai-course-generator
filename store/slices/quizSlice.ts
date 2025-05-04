@@ -1,3 +1,4 @@
+import { quizApi } from "@/lib/utils/quiz-index"
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 
 // Define types
@@ -61,18 +62,14 @@ const initialState: QuizState = {
   completedAt: null,
 }
 
-// Mock API for tests
-const quizApi = {
-  fetchQuizResult: async () => ({ score: 100, completedAt: new Date().toISOString() }),
-  submitQuizResult: async () => ({ success: true }),
-}
+
 
 // Async thunks
 export const fetchQuizResults = createAsyncThunk(
   "quiz/fetchResults",
   async ({ quizId, slug, quizType }: { quizId: string; slug: string; quizType: string }, { rejectWithValue }) => {
     try {
-      const result = await quizApi.fetchQuizResult(quizId, slug, quizType)
+      const result = await quizApi.submitQuiz(quizId, slug, quizType)
       return result
     } catch (error) {
       return rejectWithValue(error)
