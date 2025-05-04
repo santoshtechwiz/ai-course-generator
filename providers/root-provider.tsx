@@ -7,12 +7,10 @@ import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
 import { Suspense, useState, useEffect } from "react"
 import { UnifiedAuthProvider } from "./unified-auth-provider"
-import TrialModal from "@/components/TrialModal"
 
 import { AnimationProvider } from "./animation-provider"
 
 import { ReduxProvider } from "./redux-provider"
-import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
 import { SubscriptionProvider } from "@/store/subscription-provider"
 
 // Create a query client with optimized settings
@@ -61,11 +59,7 @@ export function RootProvider({ children, session }: RootProviderProps) {
             <SubscriptionProvider>
               <AnimationProvider>
                 <UnifiedAuthProvider>
-                  {mounted && (
-                    <Suspense fallback={null}>
-                      {/* <SubscriptionStatus /> */}
-                    </Suspense>
-                  )}
+                  {mounted && <Suspense fallback={null}>{/* <SubscriptionStatus /> */}</Suspense>}
                   <Toaster position="top-right" closeButton richColors />
                   {children}
                 </UnifiedAuthProvider>

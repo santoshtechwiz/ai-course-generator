@@ -5,16 +5,17 @@ import type { Metadata } from "next"
 import { authOptions } from "@/lib/authOptions"
 import getMcqQuestions from "@/app/actions/getMcqQuestions"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import { QuizProvider } from "@/app/context/QuizContext"
 
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 import McqQuizWrapper from "../components/McqQuizWrapper"
+import { QuizProvider } from "@/app/context/QuizContext"
+
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const quiz = await getMcqQuestions(slug)
 
-  if (!quiz ) {
+  if (!quiz) {
     return generatePageMetadata({
       title: "Multiple Choice Quiz Not Found | CourseAI",
       description:
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     })
   }
 
-  const quizData = quiz;
+  const quizData = quiz
 
   return generatePageMetadata({
     title: `${quizData.title} | Programming Multiple Choice Quiz`,
@@ -50,11 +51,10 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
   // Fetch quiz data - this is the only API call we should make
   const result = await getMcqQuestions(slug)
-  if (!result ) {
+  if (!result) {
     console.error(`Quiz not found for slug: ${slug}`)
     notFound()
   }
-
 
   // Estimate quiz time based on question count
   const questionCount = result.questions.length
@@ -68,8 +68,15 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
     { name: result.title, href: `${baseUrl}/dashboard/mcq/${slug}` },
   ]
 
+  // IMPORTANT: Remove the onAuthRequired function prop
   return (
-    <QuizProvider>
+    <QuizProvider
+      quizId={result.id.toString()}
+      slug={slug}
+      quizType="mcq"
+      quizData={result}
+      callbackUrl={`/dashboard/mcq/${slug}?fromAuth=true`}
+    >
       <QuizDetailsPageWithContext
         title={result.title}
         description={`Test your coding knowledge on ${result.title} with multiple choice questions`}
@@ -88,13 +95,9 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
             : "medium"
         }
       >
-        <McqQuizWrapper
-          quizData={result}
-     
-          slug={slug}
-        />
+        <McqQuizWrapper quizData={result} slug={slug} />
       </QuizDetailsPageWithContext>
-      </QuizProvider>
+    </QuizProvider>
   )
 }
 
