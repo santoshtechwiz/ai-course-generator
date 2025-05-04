@@ -9,7 +9,7 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
-import { formatQuizTime } from "@/lib/utils/quiz-performance"
+import { formatQuizTime, isTooFastAnswer } from "@/lib/utils/quiz-performance"
 import CodeQuizEditor from "./CodeQuizEditor"
 import { cn } from "@/lib/tailwindUtils"
 
@@ -83,8 +83,7 @@ export default function CodingQuiz({
 
     // Check if answer was submitted too quickly (potential cheating)
     const answerTime = Date.now() - startTime
-    if (answerTime < 1000) {
-      // Less than 1 second
+    if (isTooFastAnswer(startTime, 1)) {
       setTooFastWarning(true)
       return
     }
