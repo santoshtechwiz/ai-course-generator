@@ -257,6 +257,11 @@ export default function BlankQuizResults({
                               <span className={isCorrect ? "text-green-600" : "text-red-600"}>
                                 {answer?.answer || "No answer provided"}
                               </span>
+                              {answer?.similarity !== undefined && (
+                                <span className="ml-2 text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                                  Similarity: {Math.round(answer.similarity)}%
+                                </span>
+                              )}
                             </div>
 
                             {!isCorrect && (

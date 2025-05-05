@@ -257,6 +257,11 @@ export default function QuizResultsOpenEnded({
                         <div className="text-sm">
                           <span className="font-medium">Your response: </span>
                           <span className="text-foreground">{answer?.answer || "No response provided"}</span>
+                          {answer?.similarity !== undefined && (
+                            <span className="ml-2 text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                              Similarity: {Math.round(answer.similarity)}%
+                            </span>
+                          )}
                         </div>
 
                         <div className="text-xs text-muted-foreground mt-1">
