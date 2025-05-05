@@ -167,7 +167,12 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
           <Button variant="outline" onClick={() => router.push("/dashboard/code")}>
             Return to Quizzes
           </Button>
-          <Button onClick={() => router.push(`/dashboard/code/${safeResult.slug}`)}>
+          <Button
+            onClick={() => {
+              // Add reset=true and timestamp to force a fresh load
+              router.push(`/dashboard/code/${safeResult.slug}?reset=true&t=${Date.now()}`)
+            }}
+          >
             Try Again <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>

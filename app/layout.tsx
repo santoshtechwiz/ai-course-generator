@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 
 import { RootProvider } from "@/providers/root-provider"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import "./globals.css"
 import { Suspense } from "react"
 

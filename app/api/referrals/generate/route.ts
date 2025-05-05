@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next"
 import { type NextRequest, NextResponse } from "next/server"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { nanoid } from "nanoid"
 

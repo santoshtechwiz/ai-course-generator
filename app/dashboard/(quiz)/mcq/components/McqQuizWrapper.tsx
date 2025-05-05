@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import McqQuiz from "./McqQuiz"
 import McqQuizResult from "./McqQuizResult"
 import { Card } from "@/components/ui/card"
 import { Loader2, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useQuiz } from "@/app/context/QuizContext"
+import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 import {
   createQuizError,
   QuizErrorType,
@@ -17,12 +18,11 @@ import {
   formatQuizTime,
   calculateTotalTime,
 } from "@/lib/utils/quiz-index"
-import React from "react"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { useToast } from "@/hooks/use-toast"
-import { setRequiresAuth, setPendingAuthRequired, saveStateBeforeAuth } from "@/store/slices/quizSlice"
+import { setRequiresAuth, setPendingAuthRequired, saveStateBeforeAuth, resetQuiz } from "@/store/slices/quizSlice"
 import { setIsProcessingAuth } from "@/store/slices/authSlice"
-import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
+import { Progress } from "@/components/ui/progress"
 import { quizUtils } from "@/lib/utils/quiz-utils"
 
 // Debug component for state visualization
@@ -78,6 +78,7 @@ export default function McqQuizWrapper({
 }: McqQuizWrapperProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(propCurrentQuestionIndex || 0)
   const [answers, setAnswers] = useState<any[]>([])
@@ -87,6 +88,8 @@ export default function McqQuizWrapper({
   const [quizResults, setQuizResults] = useState<any>(propQuizResults || null)
   const [startTime] = useState<number>(Date.now())
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isReset, setIsReset] = useState(false)
 
   // Use the quiz context for state management
   const {
@@ -97,6 +100,7 @@ export default function McqQuizWrapper({
     handleAuthenticationRequired,
     setAuthCheckComplete,
     restoreFromSavedState,
+    restartQuiz,
   } = useQuiz()
 
   // Get Redux state
@@ -107,22 +111,56 @@ export default function McqQuizWrapper({
   const state = contextState || quizReduxState
   const isAuthenticated = authReduxState.isAuthenticated
 
+  // Check for reset parameter
+  useEffect(() => {
+    const reset = searchParams?.get("reset")
+    if (reset === "true") {
+      // Reset the quiz state
+      dispatch(resetQuiz())
+
+      // Reset local state
+      setCurrentQuestionIndex(0)
+      setAnswers([])
+      setShowResults(false)
+      setQuizResults(null)
+      setIsReset(true)
+
+      // Remove the reset parameter from URL
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete("reset")
+      newUrl.searchParams.delete("t") // Remove timestamp parameter too
+      window.history.replaceState({}, "", newUrl.toString())
+    }
+  }, [searchParams, dispatch])
+
   // Get questions from props or context
-  const quizQuestions = questions || quizData?.questions || state?.questions || []
+  const quizQuestions = useMemo(() => {
+    return questions || quizData?.questions || state?.questions || []
+  }, [questions, quizData, state])
 
   // Initialize answers array on component mount
   useEffect(() => {
     if (quizQuestions && Array.isArray(quizQuestions) && quizQuestions.length > 0) {
-      setAnswers(Array(quizQuestions.length).fill(null))
+      // Only initialize answers if they're not already set or if we're resetting
+      if (answers.length === 0 || isReset) {
+        setAnswers(Array(quizQuestions.length).fill(null))
+        setIsReset(false)
+      }
+      setIsLoading(false)
+    } else {
+      // Set a timeout to stop showing loading state if questions don't load
+      const timer = setTimeout(() => setIsLoading(false), 3000)
+      return () => clearTimeout(timer)
     }
-  }, [quizQuestions])
+  }, [quizQuestions, answers.length, isReset])
 
   // Check if we should show results when state changes
   useEffect(() => {
-    if (state.isCompleted && isAuthenticated) {
+    // Only show results if not in reset mode
+    if (state.isCompleted && isAuthenticated && !isReset) {
       setShowResults(true)
     }
-  }, [state, isAuthenticated])
+  }, [state, isAuthenticated, isReset])
 
   // Check for URL parameters that indicate returning from auth
   useEffect(() => {
@@ -130,23 +168,50 @@ export default function McqQuizWrapper({
       const urlParams = new URLSearchParams(window.location.search)
       const fromAuth = urlParams.get("fromAuth")
 
-      if (fromAuth === "true" && state.pendingAuthRequired) {
+      if (fromAuth === "true") {
+        // Set loading state while we restore
+        setIsLoading(true)
+
         // Restore state from Redux
-        restoreFromSavedState()
+        if (restoreFromSavedState) {
+          restoreFromSavedState()
+        }
 
         if (typeof setAuthCheckComplete === "function") {
           setAuthCheckComplete(true)
         }
 
+        // Force show results
         setShowResults(true)
+
+        // Force isCompleted in local state
+        if (state.savedState) {
+          // Create quiz results from saved state
+          const savedAnswers = state.savedState.answers || []
+          const correctAnswers = savedAnswers.filter((a: any) => a && a.isCorrect).length
+          const totalQuestions = savedAnswers.length
+
+          setQuizResults({
+            quizId: state.savedState.quizId || quizId || "",
+            slug: state.savedState.slug || slug,
+            score: state.savedState.score || 0,
+            totalQuestions,
+            correctAnswers,
+            answers: savedAnswers,
+            completedAt: state.savedState.completedAt || new Date().toISOString(),
+          })
+        }
 
         // Clear the fromAuth parameter
         const newUrl = new URL(window.location.href)
         newUrl.searchParams.delete("fromAuth")
         window.history.replaceState({}, "", newUrl.toString())
+
+        // End loading state
+        setIsLoading(false)
       }
     }
-  }, [state, setAuthCheckComplete, restoreFromSavedState])
+  }, [state, setAuthCheckComplete, restoreFromSavedState, quizId, slug])
 
   // Handle result saving notification
   useEffect(() => {
@@ -160,11 +225,11 @@ export default function McqQuizWrapper({
 
   // Set quiz results from props if provided
   useEffect(() => {
-    if (propQuizResults && !quizResults) {
+    if (propQuizResults && !quizResults && !isReset) {
       setQuizResults(propQuizResults)
       setShowResults(true)
     }
-  }, [propQuizResults, quizResults])
+  }, [propQuizResults, quizResults, isReset])
 
   // Set error from props if provided
   useEffect(() => {
@@ -175,24 +240,30 @@ export default function McqQuizWrapper({
 
   // Set current question index from props if provided
   useEffect(() => {
-    if (propCurrentQuestionIndex !== undefined) {
+    if (propCurrentQuestionIndex !== undefined && !isReset) {
       setCurrentQuestionIndex(propCurrentQuestionIndex)
     }
-  }, [propCurrentQuestionIndex])
+  }, [propCurrentQuestionIndex, isReset])
 
   // Set show results from props if provided
   useEffect(() => {
-    if (propShowResults !== undefined) {
+    if (propShowResults !== undefined && !isReset) {
       setShowResults(propShowResults)
     }
-  }, [propShowResults])
+  }, [propShowResults, isReset])
 
   // Memoize the current question to prevent unnecessary re-renders
-  const currentQuestion = React.useMemo(() => {
+  const currentQuestion = useMemo(() => {
     return quizQuestions[currentQuestionIndex]
   }, [quizQuestions, currentQuestionIndex])
 
   const isLastQuestion = currentQuestionIndex === (quizQuestions?.length ?? 0) - 1
+
+  // Calculate progress percentage
+  const progressPercentage = useMemo(() => {
+    if (!quizQuestions || quizQuestions.length === 0) return 0
+    return Math.round(((currentQuestionIndex + 1) / quizQuestions.length) * 100)
+  }, [currentQuestionIndex, quizQuestions])
 
   // Handle answer selection
   const handleAnswer = useCallback(
@@ -253,7 +324,7 @@ export default function McqQuizWrapper({
         // Calculate score
         const correctAnswers = answersArray.filter((a) => a && a.isCorrect).length
         const totalQuestions = quizQuestions?.length || 0
-        const score =quizUtils.calculateScore
+        const score = quizUtils.calculateScore
           ? quizUtils.calculateScore(
               answersArray.map((a) =>
                 a
@@ -328,6 +399,9 @@ export default function McqQuizWrapper({
   // Handle sign in
   const handleSignIn = useCallback(() => {
     if (handleAuthenticationRequired) {
+      // First set loading state to prevent flashing content
+      setIsLoading(true)
+
       // Store current state in Redux
       dispatch(
         saveStateBeforeAuth({
@@ -336,18 +410,22 @@ export default function McqQuizWrapper({
           quizType: "mcq",
           currentQuestionIndex,
           answers,
-          isCompleted: state.isCompleted,
-          score: state.score || quizResults?.score || 0,
+          isCompleted: true, // Force isCompleted to true
+          score: quizResults?.score || 0,
           completedAt: new Date().toISOString(),
         }),
       )
 
+      // Set all required flags
       dispatch(setRequiresAuth(true))
       dispatch(setPendingAuthRequired(true))
       dispatch(setIsProcessingAuth(true))
 
-      // Redirect to sign-in
-      handleAuthenticationRequired(`/dashboard/mcq/${slug}?fromAuth=true`)
+      // Use a small timeout to ensure Redux state is updated before redirect
+      setTimeout(() => {
+        // Redirect to sign-in
+        handleAuthenticationRequired(`/dashboard/mcq/${slug}?fromAuth=true`)
+      }, 50)
     }
   }, [
     handleAuthenticationRequired,
@@ -356,9 +434,8 @@ export default function McqQuizWrapper({
     quizId,
     currentQuestionIndex,
     answers,
-    state.isCompleted,
-    state.score,
     quizResults?.score,
+    setIsLoading,
   ])
 
   // If there's an error, show the error message
@@ -376,7 +453,7 @@ export default function McqQuizWrapper({
   }
 
   // If the quiz is completed and the user is not authenticated, show the non-authenticated user sign-in prompt
-  if (state.isCompleted && !isAuthenticated && !authReduxState.isProcessingAuth) {
+  if ((state.isCompleted || quizResults) && !isAuthenticated && !authReduxState.isProcessingAuth && !isReset) {
     return (
       <NonAuthenticatedUserSignInPrompt
         onContinueAsNonAuthenticatedUser={handleContinueAsNonAuthenticatedUser}
@@ -388,31 +465,33 @@ export default function McqQuizWrapper({
   }
 
   // If the quiz is completed and results are available, show the results
-  if ((showResults && quizResults) || (state.isCompleted && isAuthenticated)) {
+  if (showResults && quizResults && !isReset) {
     return (
       <McqQuizResult
-        result={quizResults || {
-          quizId: quizId || state?.quizId || "test-quiz",
-          slug,
-          score: state.score || 0,
-          answers: state.answers || [],
-          totalQuestions: quizQuestions?.length || 0,
-          correctAnswers: (state.answers || []).filter((a: any) => a && a.isCorrect).length,
-          completedAt: state.completedAt || new Date().toISOString(),
-        }} onTryAgain={function (): void {
-         
-        } } onBackToQuizzes={function (): void {
-        
-        } }      />
+        result={
+          quizResults || {
+            quizId: quizId || state?.quizId || "test-quiz",
+            slug,
+            score: state.score || 0,
+            answers: state.answers || [],
+            totalQuestions: quizQuestions?.length || 0,
+            correctAnswers: (state.answers || []).filter((a: any) => a && a.isCorrect).length,
+            completedAt: state.completedAt || new Date().toISOString(),
+          }
+        }
+      />
     )
   }
 
   // If there's no current question and we're not showing results, show a loading indicator
-  if (!currentQuestion && !showResults) {
+  if (isLoading || (!currentQuestion && !showResults)) {
     return (
-      <Card className="p-6 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-        <p>Loading questions...</p>
+      <Card className="p-6">
+        <div className="flex flex-col items-center justify-center py-8 gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-center text-muted-foreground">Loading quiz questions...</p>
+          <Progress value={30} className="w-full max-w-md mx-auto mt-2" />
+        </div>
       </Card>
     )
   }
@@ -432,6 +511,7 @@ export default function McqQuizWrapper({
                 isCompleting,
                 answersCount: answers.length,
                 quizResultsExists: !!quizResults,
+                isReset,
               },
               sessionStatus: status,
               isAuthenticated: !!session?.user,
@@ -446,6 +526,17 @@ export default function McqQuizWrapper({
           />
         </>
       )}
+
+      {/* Quiz Progress Bar */}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm text-muted-foreground mb-1">
+          <span>
+            Question {currentQuestionIndex + 1} of {quizQuestions.length}
+          </span>
+          <span>{progressPercentage}% Complete</span>
+        </div>
+        <Progress value={progressPercentage} className="h-2" />
+      </div>
 
       <McqQuiz
         question={currentQuestion}

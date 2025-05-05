@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 export async function GET(request: NextRequest) {

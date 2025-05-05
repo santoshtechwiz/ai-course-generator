@@ -1,6 +1,6 @@
 import { openai } from "@ai-sdk/openai"
 import { streamText } from "ai"
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 import prisma from "@/lib/db"
 import type { NextRequest } from "next/server"
 import { MemoryManager } from "@/lib/memory"

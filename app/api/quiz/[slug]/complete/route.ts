@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { QuizType, QuizAnswer, BlanksQuizAnswer, CodeQuizAnswer } from "@/app/types/quiz-types"
 

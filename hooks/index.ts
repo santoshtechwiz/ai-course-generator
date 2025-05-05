@@ -1,5 +1,5 @@
 
-export * from "./use-auth-check"
+export * from "./use-auth"
 export * from "./use-media-query"
 
 
