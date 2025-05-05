@@ -54,19 +54,19 @@ export function RootProvider({ children, session }: RootProviderProps) {
         refetchInterval={sessionOptions.refetchInterval}
         refetchOnWindowFocus={sessionOptions.refetchOnWindowFocus}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
-          <ReduxProvider>
-            <SubscriptionProvider>
-              <AnimationProvider>
-                <UnifiedAuthProvider>
+        <ReduxProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
+            <UnifiedAuthProvider>
+              <SubscriptionProvider>
+                <AnimationProvider>
                   {mounted && <Suspense fallback={null}>{/* <SubscriptionStatus /> */}</Suspense>}
                   <Toaster position="top-right" closeButton richColors />
                   {children}
-                </UnifiedAuthProvider>
-              </AnimationProvider>
-            </SubscriptionProvider>
-          </ReduxProvider>
-        </ThemeProvider>
+                </AnimationProvider>
+              </SubscriptionProvider>
+            </UnifiedAuthProvider>
+          </ThemeProvider>
+        </ReduxProvider>
       </SessionProvider>
     </QueryClientProvider>
   )
