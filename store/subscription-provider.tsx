@@ -43,7 +43,7 @@ async function fetchSubscription(userId: string | undefined): Promise<{
   if (!userId) return { subscription: null, details: null }
 
   try {
-    const response = await fetch(`/api/subscription?userId=${userId}`)
+    const response = await fetch(`/api/subscriptions`)
     if (!response.ok) {
       throw new Error("Failed to fetch subscription data")
     }

@@ -43,6 +43,8 @@ export interface QuizState {
     score?: number
     completedAt?: string
   } | null
+  isProcessingAuth?: boolean
+  redirectUrl?: string | null
 }
 
 // Define initial state
@@ -68,6 +70,8 @@ const initialState: QuizState = {
   resultsSaved: false,
   completedAt: null,
   savedState: null,
+  isProcessingAuth: false,
+  redirectUrl: null,
 }
 
 // Async thunks
@@ -329,6 +333,22 @@ const quizSlice = createSlice({
         state.savedState = null
       }
     },
+    setCurrentQuestion: (state, action) => {
+      state.currentQuestionIndex = action.payload
+      state.animationState = "idle"
+    },
+    prevQuestion: (state) => {
+      if (state.currentQuestionIndex > 0) {
+        state.currentQuestionIndex -= 1
+        state.animationState = "idle"
+      }
+    },
+    setIsProcessingAuth: (state, action) => {
+      state.isProcessingAuth = action.payload
+    },
+    setRedirectUrl: (state, action) => {
+      state.redirectUrl = action.payload
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -386,6 +406,10 @@ export const {
   saveStateBeforeAuth,
   clearSavedState,
   restoreFromSavedState,
+  setCurrentQuestion,
+  prevQuestion,
+  setIsProcessingAuth,
+  setRedirectUrl,
 } = quizSlice.actions
 
 // Export reducer

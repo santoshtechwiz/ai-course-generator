@@ -135,12 +135,22 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id
-        session.user.credits = token.credits || 0
-        session.user.isAdmin = token.isAdmin || false
-        session.user.userType = token.userType || "FREE"
-        session.user.subscriptionPlan = token.subscriptionPlan || null
-        session.user.subscriptionStatus = token.subscriptionStatus || null
+        // Only update session if necessary
+        if (
+          session.user.id !== token.id ||
+          session.user.credits !== token.credits ||
+          session.user.isAdmin !== token.isAdmin ||
+          session.user.userType !== token.userType ||
+          session.user.subscriptionPlan !== token.subscriptionPlan ||
+          session.user.subscriptionStatus !== token.subscriptionStatus
+        ) {
+          session.user.id = token.id
+          session.user.credits = token.credits || 0
+          session.user.isAdmin = token.isAdmin || false
+          session.user.userType = token.userType || "FREE"
+          session.user.subscriptionPlan = token.subscriptionPlan || null
+          session.user.subscriptionStatus = token.subscriptionStatus || null
+        }
       }
       return session
     },
@@ -208,7 +218,6 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session }) {
-      // Limit logging to reduce noise
       if (process.env.NODE_ENV === "development") {
         console.log("Session event triggered", { userId: session?.user?.id })
       }
@@ -241,11 +250,9 @@ export const authOptions: NextAuthOptions = {
 
 // Improved session caching with proper invalidation
 const SESSION_CACHE = new Map<string, { session: any; timestamp: number }>()
-const SESSION_CACHE_MAX_AGE = 60 * 1000 // 1 minute
+const SESSION_CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes (increased cache duration for fewer calls)
 
 export const getAuthSession = async () => {
-  // Generate a cache key based on the current request context
-  // In a real implementation, you might use headers or cookies
   const cacheKey = "global"
   const now = Date.now()
 
@@ -255,7 +262,7 @@ export const getAuthSession = async () => {
     return cached.session
   }
 
-  // Otherwise fetch a new session
+  // Fetch a new session if not cached or expired
   try {
     const session = await getServerSession(authOptions)
 
