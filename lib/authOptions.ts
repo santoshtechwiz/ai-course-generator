@@ -49,7 +49,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       // Initial sign in
       if (user) {
         token.id = user.id
@@ -57,6 +57,11 @@ export const authOptions: NextAuthOptions = {
         token.isAdmin = user.isAdmin || false
         token.userType = user.userType || "FREE"
         token.updatedAt = Date.now()
+      }
+
+      // Force refresh token on session update
+      if (trigger === "update") {
+        token.updatedAt = 0 // Force a refresh
       }
 
       // On every JWT refresh, get the latest user data
@@ -159,6 +164,10 @@ export const authOptions: NextAuthOptions = {
         console.error("Error in signIn event:", error)
       }
     },
+    async session({ session }) {
+      // This event is triggered when a session is created or updated
+      console.log("Session event triggered", { userId: session?.user?.id })
+    },
   },
   pages: {
     signIn: "/auth/signin",
@@ -182,6 +191,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
 }
 
 // Improved session caching with proper invalidation
@@ -240,6 +250,9 @@ export async function updateUserData(userId: string, data: any) {
     where: { id: userId },
     data,
   })
+
+  // Invalidate session cache to ensure fresh data
+  invalidateSessionCache()
 }
 
 // Invalidate session cache
