@@ -10,13 +10,14 @@ export interface Answer {
   questionId?: string | number
   userAnswer?: string
   index?: number
+  hintsUsed?: boolean
 }
 
 export interface QuizState {
   quizId: string
   slug: string
   title: string
-  quizType: QuizType
+  quizType: QuizType | string
   questions: any[]
   currentQuestionIndex: number
   answers: Answer[]
@@ -33,6 +34,7 @@ export interface QuizState {
   isSavingResults: boolean
   resultsSaved: boolean
   completedAt: string | null
+  startTime: number
   savedState: {
     quizId?: string
     slug?: string
@@ -69,6 +71,7 @@ const initialState: QuizState = {
   isSavingResults: false,
   resultsSaved: false,
   completedAt: null,
+  startTime: Date.now(),
   savedState: null,
   isProcessingAuth: false,
   redirectUrl: null,
@@ -77,7 +80,10 @@ const initialState: QuizState = {
 // Async thunks
 export const fetchQuizResults = createAsyncThunk(
   "quiz/fetchResults",
-  async ({ quizId, slug, quizType }: { quizId: string; slug: string; quizType: QuizType }, { rejectWithValue }) => {
+  async (
+    { quizId, slug, quizType }: { quizId: string; slug: string; quizType: QuizType | string },
+    { rejectWithValue },
+  ) => {
     try {
       const result = await quizApi.getQuizData(slug, quizType)
       return result
@@ -133,6 +139,7 @@ const quizSlice = createSlice({
       state.quizType = action.payload.quizType || ""
       state.questions = action.payload.questions || []
       state.currentQuestionIndex = 0
+      state.startTime = Date.now()
 
       // Initialize with proper arrays based on question count
       state.answers = action.payload.initialAnswers || Array(questionCount).fill(null)
@@ -144,7 +151,7 @@ const quizSlice = createSlice({
       state.pendingAuthRequired = action.payload.pendingAuthRequired || false
       state.hasNonAuthenticatedUserResult = action.payload.hasNonAuthenticatedUserResult || false
       state.nonAuthenticatedUserResultsSaved = action.payload.nonAuthenticatedUserResultsSaved || false
-      state.authCheckComplete = action.payload.authCheckComplete || false
+      state.authCheckComplete = action.payload.authCheckComplete || true // Set to true by default
       state.error = null
       state.animationState = "idle"
       state.isSavingResults = false
@@ -174,6 +181,7 @@ const quizSlice = createSlice({
         isCorrect: action.payload.isCorrect,
         timeSpent: action.payload.timeSpent,
         questionId: action.payload.questionId,
+        hintsUsed: action.payload.hintsUsed,
       }
       state.answers = newAnswers
 
@@ -181,6 +189,11 @@ const quizSlice = createSlice({
       const newTimeSpent = [...state.timeSpent]
       newTimeSpent[indexToUpdate] = action.payload.timeSpent
       state.timeSpent = newTimeSpent
+
+      // Move to the next question
+      if (state.currentQuestionIndex < state.questions.length - 1) {
+        state.currentQuestionIndex += 1
+      }
 
       state.animationState = "answering"
     },
@@ -224,11 +237,17 @@ const quizSlice = createSlice({
     resetQuiz: (state) => {
       return {
         ...initialState,
+        quizId: state.quizId,
+        slug: state.slug,
+        title: state.title,
+        quizType: state.quizType,
+        questions: state.questions,
         requiresAuth: state.requiresAuth,
-        pendingAuthRequired: state.pendingAuthRequired,
-        hasNonAuthenticatedUserResult: state.hasNonAuthenticatedUserResult,
-        nonAuthenticatedUserResultsSaved: state.nonAuthenticatedUserResultsSaved,
-        authCheckComplete: state.authCheckComplete,
+        pendingAuthRequired: false,
+        hasNonAuthenticatedUserResult: false,
+        nonAuthenticatedUserResultsSaved: false,
+        authCheckComplete: true,
+        startTime: Date.now(),
       }
     },
     setRequiresAuth: (state, action: PayloadAction<boolean>) => {
