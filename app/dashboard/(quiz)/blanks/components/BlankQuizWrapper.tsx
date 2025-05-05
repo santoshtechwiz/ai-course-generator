@@ -7,20 +7,24 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { useState, useEffect } from "react"
-import GuestSignInPrompt  from "../../components/GuestSignInPrompt"
+import GuestSignInPrompt from "../../components/GuestSignInPrompt"
 import BlankQuizResults from "./BlankQuizResults"
 import FillInTheBlanksQuiz from "./FillInTheBlanksQuiz"
 import { toast } from "@/hooks/use-toast"
 import { determineDisplayState, createSafeQuizData, validateInitialQuizData } from "@/lib/utils/quiz-state-utils"
-import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
-import { ErrorDisplay, LoadingDisplay, PreparingDisplay, SavingDisplay } from "@/app/dashboard/components/QuizStateDisplay"
+import { useQuizState } from "@/hooks/useQuizState"
+import {
+  ErrorDisplay,
+  LoadingDisplay,
+  PreparingDisplay,
+  SavingDisplay,
+} from "@/app/dashboard/components/QuizStateDisplay"
 
 interface BlankQuizWrapperProps {
   quizData: any
   slug: string
 }
 
-// This is the main wrapper that uses the provider
 export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperProps) {
   const { isAuthenticated, user } = useAuth()
   const router = useRouter()
@@ -48,24 +52,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
   // Create a safe quiz data object
   const safeQuizData = createSafeQuizData(quizData, slug, "blanks")
 
-  return (
-    <QuizProvider
-      quizData={safeQuizData}
-      slug={slug || "unknown"}
-      quizType="blanks"
-      onAuthRequired={(redirectUrl) => {
-        // If user is already authenticated, don't show auth prompt
-        if (userIsAuthenticated) {
-          return
-        }
-
-        // Redirect to auth page
-        window.location.href = "/api/auth/signin?callbackUrl=" + encodeURIComponent(redirectUrl)
-      }}
-    >
-      <BlankQuizContent quizData={safeQuizData} slug={slug || "unknown"} />
-    </QuizProvider>
-  )
+  return <BlankQuizContent quizData={safeQuizData} slug={slug || "unknown"} />
 }
 
 // Update the BlankQuizContent component to align with MCQ auth flow
@@ -81,7 +68,10 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     handleAuthenticationRequired,
     fetchQuizResults,
     clearGuestResults,
-  } = useQuiz()
+    saveQuizStateToStorage,
+    restoreQuizStateFromStorage,
+    initializeQuiz,
+  } = useQuizState()
   const { isAuthenticated: authState, user } = useAuth()
 
   // Use a single display state for all UI states
@@ -110,21 +100,35 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
   // Check URL parameters for auth return
   const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
 
-  // Update the useEffect that handles returning from authentication to be more robust
+  // Initialize quiz on component mount
   useEffect(() => {
+    // Initialize the quiz with the provided data
+    initializeQuiz({
+      id: quizData.id || slug,
+      slug,
+      questions: quizData?.questions || [],
+      quizType: "blanks",
+      requiresAuth: true,
+      isAuthenticated: userIsAuthenticated,
+      title: quizData?.title || "Fill in the Blanks Quiz",
+    })
+
+    // Try to restore state from storage if returning from auth
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search)
       const fromAuth = urlParams.get("fromAuth") === "true"
       setIsReturningFromAuth(fromAuth)
 
       if (fromAuth && userIsAuthenticated) {
-        // Fetch quiz results
-        fetchQuizResults().catch(() => {
-          // Handle errors silently
-        })
+        // Restore quiz state
+        restoreQuizStateFromStorage(slug)
+
+        // Clear URL parameter
+        const newUrl = window.location.pathname
+        window.history.replaceState({}, document.title, newUrl)
       }
     }
-  }, [fetchQuizResults, userIsAuthenticated])
+  }, [initializeQuiz, quizData, slug, userIsAuthenticated, restoreQuizStateFromStorage])
 
   // Update display state based on all the available state information
   useEffect(() => {
@@ -141,7 +145,10 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
     const isCorrect = similarity ? similarity > 80 : false
 
     // Submit answer to the context
-    submitAnswer(answer, timeSpent, isCorrect)
+    submitAnswer(answer, timeSpent, isCorrect, {
+      hintsUsed,
+      similarity: similarity || 0,
+    })
 
     // If this is the last question, complete the quiz
     if (currentQuestionIndex >= questionCount - 1) {
@@ -153,6 +160,8 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
         isCorrect,
         hintsUsed,
         similarity: similarity || 0,
+        questionId: currentQuestionIndex,
+        index: currentQuestionIndex,
       }
 
       // Filter out any null answers before completing
@@ -183,6 +192,9 @@ function BlankQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
 
   // Handle authentication required
   const handleSignIn = () => {
+    // Save quiz state before redirecting
+    saveQuizStateToStorage()
+
     // Create the redirect URL
     const redirectUrl = `/dashboard/blanks/${slug}?fromAuth=true`
 

@@ -11,40 +11,43 @@ export type SubscriptionStatusType = "ACTIVE" | "CANCELED" | "PAST_DUE" | "UNPAI
 // Subscription data interface
 export interface SubscriptionData {
   isSubscribed: boolean
-  subscriptionPlan: SubscriptionPlanType
-  status?: SubscriptionStatusType
-  expirationDate?: string
+  currentPlan: string | null
+  trialEndsAt: string | null
+  status: string
   cancelAtPeriodEnd?: boolean
-  credits: number
-  tokensUsed: number
-  features?: string[]
+  credits?: number // Keep existing fields, mark optional if necessary
+  tokensUsed?: number // Keep existing fields, mark optional if necessary
+  features?: string[] // Keep existing fields, mark optional if necessary
 }
 
 // Token usage interface
 export interface TokenUsage {
-  used: number
   total: number
-  percentage: number
-  hasExceededLimit: boolean
+  used: number
   remaining: number
+  resetDate: string
 }
 
 // Subscription details interface
 export interface SubscriptionDetails {
-  id?: string
-  customerId?: string
-  plan?: SubscriptionPlanType
-  status?: SubscriptionStatusType
-  currentPeriodStart?: string
-  currentPeriodEnd?: string
-  cancelAtPeriodEnd?: boolean
-  canceledAt?: string
-  endedAt?: string
-  trialStart?: string
-  trialEnd?: string
-  tokenUsage?: TokenUsage
-  paymentMethod?: any
-  invoices?: any[]
+  id: string
+  customerId: string
+  priceId: string
+  quantity: number
+  status: string
+  currentPeriodStart: string
+  currentPeriodEnd: string
+  cancelAtPeriodEnd: boolean
+  createdAt: string
+  updatedAt: string
+  plan?: SubscriptionPlanType // Keep existing fields, mark optional if necessary
+  canceledAt?: string // Keep existing fields, mark optional if necessary
+  endedAt?: string // Keep existing fields, mark optional if necessary
+  trialStart?: string // Keep existing fields, mark optional if necessary
+  trialEnd?: string // Keep existing fields, mark optional if necessary
+  tokenUsage?: TokenUsage // Keep existing fields, mark optional if necessary
+  paymentMethod?: any // Keep existing fields, mark optional if necessary
+  invoices?: any[] // Keep existing fields, mark optional if necessary
 }
 
 // Feature availability

@@ -39,8 +39,12 @@ declare module "next-auth/jwt" {
     subscriptionPlan: string | null
     subscriptionStatus: string | null
     updatedAt?: number
+    refreshCount?: number // Track refresh attempts
   }
 }
+
+// Track active refreshes to prevent duplicates
+const activeRefreshes = new Map<string, number>()
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -57,21 +61,47 @@ export const authOptions: NextAuthOptions = {
         token.isAdmin = user.isAdmin || false
         token.userType = user.userType || "FREE"
         token.updatedAt = Date.now()
+        token.refreshCount = 0
+        return token
       }
 
-      // Force refresh token on session update
+      // Force refresh token on session update, but only if explicitly requested
       if (trigger === "update") {
-        token.updatedAt = 0 // Force a refresh
+        // Don't reset updatedAt here - we'll handle the refresh below
+        // with proper throttling
+        token.refreshCount = 0 // Reset refresh count on explicit update
       }
 
       // On every JWT refresh, get the latest user data
-      // Only refresh user data if token is older than 5 minutes to reduce DB load
+      // Only refresh user data if token is older than 15 minutes to reduce DB load
       const now = Date.now()
       const tokenUpdatedAt = (token.updatedAt as number) || 0
-      const shouldRefreshToken = !tokenUpdatedAt || now - tokenUpdatedAt > 5 * 60 * 1000
+      const refreshInterval = 15 * 60 * 1000 // 15 minutes
+      const shouldRefreshToken = !tokenUpdatedAt || now - tokenUpdatedAt > refreshInterval
 
-      if (token.id && shouldRefreshToken) {
+      // Add refresh throttling to prevent loops
+      const refreshCount = token.refreshCount || 0
+      const userId = token.id as string
+
+      // Check if this user already has an active refresh
+      if (userId && activeRefreshes.has(userId)) {
+        const lastRefresh = activeRefreshes.get(userId) || 0
+        // If last refresh was less than 5 seconds ago, skip this one
+        if (now - lastRefresh < 5000) {
+          return token
+        }
+      }
+
+      if (token.id && shouldRefreshToken && refreshCount < 3) {
         try {
+          // Mark this user as having an active refresh
+          if (userId) {
+            activeRefreshes.set(userId, now)
+          }
+
+          // Increment refresh count to prevent infinite loops
+          token.refreshCount = refreshCount + 1
+
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id },
             include: {
@@ -86,11 +116,18 @@ export const authOptions: NextAuthOptions = {
             token.subscriptionPlan = dbUser.subscription?.planId || null
             token.subscriptionStatus = dbUser.subscription?.status || null
             token.updatedAt = now
+            token.refreshCount = 0 // Reset count after successful refresh
+          }
+
+          // Clear the active refresh marker
+          if (userId) {
+            setTimeout(() => {
+              activeRefreshes.delete(userId)
+            }, 5000)
           }
         } catch (error) {
           console.error("Error fetching user data for JWT:", error)
           // Don't update the token.updatedAt if there was an error
-          // This will force another attempt on the next request
         }
       }
 
@@ -165,8 +202,10 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session }) {
-      // This event is triggered when a session is created or updated
-      console.log("Session event triggered", { userId: session?.user?.id })
+      // Limit logging to reduce noise
+      if (process.env.NODE_ENV === "development") {
+        console.log("Session event triggered", { userId: session?.user?.id })
+      }
     },
   },
   pages: {
@@ -195,24 +234,31 @@ export const authOptions: NextAuthOptions = {
 }
 
 // Improved session caching with proper invalidation
-let cachedSession: any = null
-let sessionCacheTime = 0
-const SESSION_CACHE_MAX_AGE = 30 * 1000 // 30 seconds
+const SESSION_CACHE = new Map<string, { session: any; timestamp: number }>()
+const SESSION_CACHE_MAX_AGE = 60 * 1000 // 1 minute
 
 export const getAuthSession = async () => {
+  // Generate a cache key based on the current request context
+  // In a real implementation, you might use headers or cookies
+  const cacheKey = "global"
   const now = Date.now()
 
-  // Return cached session if it's still valid
-  if (cachedSession && now - sessionCacheTime < SESSION_CACHE_MAX_AGE) {
-    return cachedSession
+  // Check cache
+  const cached = SESSION_CACHE.get(cacheKey)
+  if (cached && now - cached.timestamp < SESSION_CACHE_MAX_AGE) {
+    return cached.session
   }
 
   // Otherwise fetch a new session
   const session = await getServerSession(authOptions)
 
   // Cache the result
-  cachedSession = session
-  sessionCacheTime = now
+  if (session) {
+    SESSION_CACHE.set(cacheKey, {
+      session,
+      timestamp: now,
+    })
+  }
 
   return session
 }
@@ -257,6 +303,5 @@ export async function updateUserData(userId: string, data: any) {
 
 // Invalidate session cache
 export function invalidateSessionCache() {
-  cachedSession = null
-  sessionCacheTime = 0
+  SESSION_CACHE.clear()
 }

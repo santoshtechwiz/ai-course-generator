@@ -70,12 +70,8 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
   // IMPORTANT: Remove the onAuthRequired function prop
   return (
-    <QuizProvider
-      quizId={result.id.toString()}
-      slug={slug}
-      quizType="mcq"
-      quizData={result}
-      callbackUrl={`/dashboard/mcq/${slug}?fromAuth=true`}
+    <QuizProvider 
+    
     >
       <QuizDetailsPageWithContext
         title={result.title}

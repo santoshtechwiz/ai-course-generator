@@ -6,13 +6,12 @@ import { AlertCircle } from "lucide-react"
 
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
-import GuestSignInPrompt  from "../../components/GuestSignInPrompt"
+import GuestSignInPrompt from "../../components/GuestSignInPrompt"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { QuizProvider, useQuiz } from "@/app/context/QuizContext"
-import { quizService } from "@/lib/utils/quiz-service"
-import { useEffect, useState, useRef } from "react"
+import { useQuizState } from "@/hooks/useQuizState"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/providers/unified-auth-provider"
 import { toast } from "@/hooks/use-toast"
 
@@ -23,6 +22,7 @@ interface OpenEndedQuizWrapperProps {
 
 export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWrapperProps) {
   const { isAuthenticated, user } = useAuth()
+  const router = useRouter()
 
   // Enhanced authentication check
   const userIsAuthenticated = isAuthenticated || !!user
@@ -35,28 +35,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     questions: [],
   }
 
-  return (
-    <QuizProvider
-      quizData={safeQuizData}
-      slug={slug || "unknown"}
-      onAuthRequired={(redirectUrl) => {
-        // If user is already authenticated, don't show auth prompt
-        if (userIsAuthenticated) {
-          console.log("User is already authenticated, skipping auth prompt")
-          return
-        }
-
-        // Use QuizService API methods
-        quizService.saveAuthRedirect(redirectUrl)
-        quizService.savePendingQuizData()
-
-        // Handle auth redirect
-        quizService.handleAuthRedirect(redirectUrl, true)
-      }}
-    >
-      <OpenEndedQuizContent quizData={safeQuizData} slug={slug || "unknown"} />
-    </QuizProvider>
-  )
+  return <OpenEndedQuizContent quizData={safeQuizData} slug={slug || "unknown"} />
 }
 
 function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string }) {
@@ -71,7 +50,10 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
     handleAuthenticationRequired,
     fetchQuizResults,
     clearGuestResults,
-  } = useQuiz()
+    saveQuizStateToStorage,
+    restoreQuizStateFromStorage,
+    initializeQuiz,
+  } = useQuizState()
   const { isAuthenticated: authState, user } = useAuth()
   const [displayState, setDisplayState] = useState<
     "quiz" | "results" | "auth" | "loading" | "checking" | "saving" | "preparing"
@@ -90,7 +72,7 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
     isProcessingAuth,
     animationState,
     authCheckComplete,
-    pendingAuthRequired,
+    pendingAuthRedirect,
     savingResults,
     resultsReady,
     isLoadingResults,
@@ -100,16 +82,36 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
 
   const userIsAuthenticated = authState || !!user || isAuthenticated
   const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
-  const preparingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const previousAnimationState = useRef(animationState)
 
+  // Initialize quiz on component mount
   useEffect(() => {
+    // Initialize the quiz with the provided data
+    initializeQuiz({
+      id: quizData.id || slug,
+      slug,
+      questions: quizData?.questions || [],
+      quizType: "openended",
+      requiresAuth: true,
+      isAuthenticated: userIsAuthenticated,
+      title: quizData?.title || "Open-Ended Quiz",
+    })
+
+    // Check for URL parameters that indicate returning from auth
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search)
       const fromAuth = urlParams.get("fromAuth") === "true"
       setIsReturningFromAuth(fromAuth)
+
+      if (fromAuth && userIsAuthenticated) {
+        // Restore quiz state
+        restoreQuizStateFromStorage(slug)
+
+        // Clear URL parameter
+        const newUrl = window.location.pathname
+        window.history.replaceState({}, document.title, newUrl)
+      }
     }
-  }, [])
+  }, [initializeQuiz, quizData, slug, userIsAuthenticated, restoreQuizStateFromStorage])
 
   // Main state management effect
   useEffect(() => {
@@ -131,10 +133,8 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
 
     // Initial auth check
     if (!authCheckComplete) {
-      const timeout = setTimeout(() => {
-        setDisplayState("quiz")
-      }, 2000)
-      return () => clearTimeout(timeout)
+      setDisplayState("checking")
+      return
     }
 
     // Loading states
@@ -165,22 +165,6 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
 
       // Authenticated users waiting for results
       if (userIsAuthenticated && !resultsReady) {
-        // Force transition to results after a timeout to prevent getting stuck
-        if (process.env.NODE_ENV === "test") {
-          // Use a shorter timeout in tests
-          const timeout = setTimeout(() => {
-            setDisplayState("results")
-          }, 500)
-          preparingTimeoutRef.current = timeout
-          return () => clearTimeout(timeout)
-        } else {
-          const timeout = setTimeout(() => {
-            setDisplayState("results")
-          }, 5000)
-          preparingTimeoutRef.current = timeout
-          return () => clearTimeout(timeout)
-        }
-
         setDisplayState("preparing")
         return
       }
@@ -206,39 +190,22 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
     animationState,
   ])
 
-  // Add cleanup for timeouts when component unmounts
-  useEffect(() => {
-    return () => {
-      if (preparingTimeoutRef.current) {
-        clearTimeout(preparingTimeoutRef.current)
-      }
-    }
-  }, [])
-
   // Handle answer submission
   const handleAnswer = (answer: string) => {
     const timeSpent = (Date.now() - state.startTime) / 1000
-    const answerObj = {
-      answer,
-      timeSpent,
-      isCorrect: true,
-      hintsUsed: false,
-    }
 
+    // Submit answer to Redux
     submitAnswer(answer, timeSpent, true)
 
+    // If this is the last question, complete the quiz
     if (currentQuestionIndex >= questionCount - 1) {
-      completeQuiz([...answers.slice(0, currentQuestionIndex), answerObj])
+      completeQuiz()
     }
   }
 
   const handleGoBack = () => {
-    if (typeof clearGuestResults === "function") {
-      clearGuestResults()
-    }
-    if (typeof restartQuiz === "function") {
-      restartQuiz()
-    }
+    clearGuestResults()
+    restartQuiz()
     setDisplayState("quiz")
     toast({
       title: "Quiz restarted",
@@ -248,25 +215,14 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
   }
 
   const handleSignIn = () => {
+    // Save quiz state before redirecting
+    saveQuizStateToStorage()
+
+    // Create the redirect URL
     const redirectUrl = `/dashboard/openended/${slug}?fromAuth=true`
 
-    // Save minimal data needed for auth redirect
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        "pendingQuizData",
-        JSON.stringify({
-          quizId: quizId,
-          slug,
-          type: "openended",
-          answers: answers,
-          score: score,
-        }),
-      )
-      localStorage.setItem("quizAuthRedirect", redirectUrl)
-      localStorage.setItem("inAuthFlow", "true")
-    }
-
-    handleAuthenticationRequired()
+    // Call the authentication handler
+    handleAuthenticationRequired(redirectUrl)
   }
 
   const renderQuizResults = () => {
@@ -421,7 +377,6 @@ function OpenEndedQuizContent({ quizData, slug }: { quizData: any; slug: string 
               onSignIn={handleSignIn}
               onClearData={() => {
                 if (process.env.NODE_ENV !== "production") {
-                  quizService.clearAllStorage()
                   window.location.reload()
                 }
               }}
