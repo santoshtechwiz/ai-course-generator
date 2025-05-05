@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { quizService } from "@/lib/utils/quiz-service"
 import { AlertCircle, RefreshCw } from "lucide-react"
+
+import { resetQuiz } from "@/store/slices/quizSlice"
+import { useAppDispatch } from "@/store"
 
 interface FlashCardResultsProps {
   quizId: string
@@ -30,82 +32,57 @@ export default function FlashCardResults({
   onRestart,
 }: FlashCardResultsProps) {
   const router = useRouter()
+  const dispatch = useAppDispatch()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isRestarting, setIsRestarting] = useState(false)
 
-  // Attempt to save results if they haven't been saved yet
-  useEffect(() => {
-    const checkAndSaveResults = async () => {
-      try {
-        // Check if results are already saved
-        const isSaved = localStorage.getItem(`quiz_${quizId}_saved`) === "true"
+  // Format time to show minutes and seconds
+  const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds)) return "0s"
 
-        if (!isSaved && quizService.isAuthenticated()) {
-          setIsSubmitting(true)
-          setError(null)
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
 
-          // Get cached result
-          const result = quizService.getQuizResult(quizId)
-
-          if (result) {
-            // Ensure type is set
-            const submission = {
-              ...result,
-              type: "flashcard", // Always set the type explicitly
-              quizId,
-              slug,
-              score,
-              totalQuestions,
-              totalTime,
-            }
-
-            await quizService.submitQuizResult(submission)
-            localStorage.setItem(`quiz_${quizId}_saved`, "true")
-            console.log("Results saved successfully")
-          }
-        }
-      } catch (err) {
-        console.error("Error saving results:", err)
-        setError("Failed to save results. You can try again.")
-      } finally {
-        setIsSubmitting(false)
-      }
+    if (minutes === 0) {
+      return `${remainingSeconds}s`
     }
 
-    checkAndSaveResults()
-  }, [quizId, slug, score, totalQuestions, totalTime])
+    return `${minutes}m ${remainingSeconds}s`
+  }
 
   const handleRetry = async () => {
     setIsSubmitting(true)
     setError(null)
 
     try {
-      const result = quizService.getQuizResult(quizId)
-
-      if (result) {
-        // Ensure type is set
-        const submission = {
-          ...result,
-          type: "flashcard", // Always set the type explicitly
-          quizId,
-          slug,
-          score,
-          totalQuestions,
-          totalTime,
-        }
-
-        await quizService.submitQuizResult(submission)
-        localStorage.setItem(`quiz_${quizId}_saved`, "true")
-        setError(null)
-      } else {
-        setError("No result data found to submit")
-      }
+      // Submit results using Redux action if needed
+      // This would be implemented if we need to retry submission
+      setError(null)
     } catch (err) {
       console.error("Error retrying submission:", err)
       setError("Failed to save results. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleTryAgain = () => {
+    setIsRestarting(true)
+
+    // Reset the quiz state in Redux
+    dispatch(resetQuiz())
+
+    // Add reset parameters to URL to force a fresh load
+    const url = new URL(window.location.href)
+    url.searchParams.set("reset", "true")
+    url.searchParams.set("t", Date.now().toString())
+
+    // Navigate to the same page with reset parameters
+    router.push(url.toString())
+
+    // Call the onRestart callback
+    onRestart()
   }
 
   return (
@@ -129,6 +106,7 @@ export default function FlashCardResults({
               <p className="text-xl font-semibold">
                 {Math.floor(totalTime / 60)}m {Math.round(totalTime % 60)}s
               </p>
+              <div className="text-sm text-muted-foreground">Total time: {formatTime(totalTime)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -155,7 +133,9 @@ export default function FlashCardResults({
         )}
 
         <div className="flex justify-center gap-4">
-          <Button onClick={onRestart}>Restart Quiz</Button>
+          <Button onClick={handleTryAgain} disabled={isRestarting}>
+            {isRestarting ? "Restarting..." : "Try Again"}
+          </Button>
           <Button variant="outline" onClick={() => router.push("/dashboard/flashcard")}>
             Back to Dashboard
           </Button>

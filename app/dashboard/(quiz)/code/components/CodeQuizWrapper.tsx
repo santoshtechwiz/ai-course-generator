@@ -1,14 +1,13 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { memo, useState, useEffect, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { useSearchParams } from "next/navigation"
+import { useDispatch } from "react-redux"
 
 import CodeQuizResult from "./CodeQuizResult"
 import CodingQuiz from "./CodingQuiz"
-import GuestSignInPrompt from "../../components/GuestSignInPrompt"
-import { useQuiz } from "@/app/context/QuizContext"
+import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 import {
   ErrorDisplay,
   LoadingDisplay,
@@ -20,12 +19,23 @@ import type { CodeQuizContentProps, CodeQuizWrapperProps } from "@/app/types/cod
 import { useToast } from "@/hooks"
 import {  formatQuizTime, calculateTotalTime } from "@/lib/utils/quiz-index"
 import { quizUtils } from "@/lib/utils/quiz-utils"
+import { useAppSelector } from "@/store"
+import { setRedirectUrl } from "@/store/slices/authSlice"
+import { initQuiz, resetQuiz, setAuthCheckComplete, submitAnswer, completeQuiz, setPendingAuthRequired } from "@/store/slices/quizSlice"
+
+
 
 // Memoize the content component to prevent unnecessary re-renders
 export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, userId, quizId }: CodeQuizContentProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { data: session, status } = useSession()
+  const dispatch = useDispatch()
+  const { data: session } = useSession()
+
+  // Use Redux state directly
+  const quizReduxState = useAppSelector((state) => state.quiz)
+  const authReduxState = useAppSelector((state) => state.auth)
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<any[]>([])
   const [isCompleting, setIsCompleting] = useState(false)
@@ -34,17 +44,27 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
   const [startTime] = useState<number>(Date.now())
   const { toast } = useToast()
 
-  // Use the quiz context for state management
-  const {
-    state: contextState,
-    submitAnswer: submitQuizAnswer,
-    completeQuiz,
-    handleAuthenticationRequired,
-    setAuthCheckComplete,
-  } = useQuiz()
+  // Get questions from props or Redux state
+  const quizQuestions = quizData?.questions || quizReduxState?.questions || []
 
-  // Get questions from props or context
-  const quizQuestions = quizData?.questions || contextState?.questions || []
+  // Handle reset parameter in URL
+  const isReset = searchParams.get("reset") === "true"
+
+  // Initialize quiz in Redux when component mounts
+  useEffect(() => {
+    if (quizData && !isReset) {
+      dispatch(
+        initQuiz({
+          id: quizData.id || quizId,
+          slug,
+          title: quizData.title || "Code Quiz",
+          quizType: "code",
+          questions: quizData.questions || [],
+          requiresAuth: quizData.requiresAuth || false,
+        }),
+      )
+    }
+  }, [dispatch, quizData, quizId, slug, isReset])
 
   // Initialize answers array on component mount
   useEffect(() => {
@@ -55,41 +75,17 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
 
   // Check if we should show results when state changes
   useEffect(() => {
-    if (contextState.isCompleted && contextState.isAuthenticated) {
+    if (quizReduxState.isCompleted && authReduxState.isAuthenticated && !isReset) {
       setShowResults(true)
     }
-  }, [contextState])
-
-  // Check for URL parameters that indicate returning from auth
-  useEffect(() => {
-    const fromAuth = searchParams.get("fromAuth")
-
-    if (fromAuth === "true") {
-      // Always set showResults to true when returning from auth
-      setShowResults(true)
-
-      // Call setAuthCheckComplete if available
-      if (typeof setAuthCheckComplete === "function") {
-        setAuthCheckComplete(true)
-      }
-    }
-  }, [searchParams, setAuthCheckComplete])
-
-  // Handle result saving notification
-  useEffect(() => {
-    if (contextState.isCompleted && contextState.isAuthenticated && !contextState.resultsSaved) {
-      toast({
-        title: "Quiz completed!",
-        description: "Your results have been saved.",
-      })
-    }
-  }, [contextState, toast])
+  }, [quizReduxState, authReduxState, isReset])
 
   // Handle reset parameter in URL
-  const isReset = searchParams.get("reset") === "true"
-
   useEffect(() => {
     if (isReset) {
+      // Reset Redux state
+      dispatch(resetQuiz())
+
       // Reset local state
       setCurrentQuestionIndex(0)
       setShowResults(false)
@@ -105,20 +101,44 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
       url.searchParams.delete("t")
       window.history.replaceState({}, "", url)
     }
-  }, [isReset, quizQuestions])
+  }, [isReset, dispatch, quizQuestions])
 
-  // Add this after the useEffect hooks
+  // Check for URL parameters that indicate returning from auth
+  useEffect(() => {
+    const fromAuth = searchParams.get("fromAuth")
+
+    if (fromAuth === "true") {
+      // Always set showResults to true when returning from auth
+      setShowResults(true)
+
+      // Call setAuthCheckComplete
+      dispatch(setAuthCheckComplete(true))
+    }
+  }, [searchParams, dispatch])
+
+  // Handle result saving notification
+  useEffect(() => {
+    if (quizReduxState.isCompleted && authReduxState.isAuthenticated && !quizReduxState.resultsSaved) {
+      toast({
+        title: "Quiz completed!",
+        description: "Your results have been saved.",
+      })
+    }
+  }, [quizReduxState, authReduxState, toast])
+
+  // Debug logging
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       console.log("CodeQuizWrapper state:", {
         showResults,
-        isCompleted: contextState.isCompleted,
-        isAuthenticated: contextState.isAuthenticated,
-        pendingAuthRequired: contextState.pendingAuthRequired,
+        isCompleted: quizReduxState.isCompleted,
+        isAuthenticated: authReduxState.isAuthenticated,
+        pendingAuthRequired: quizReduxState.pendingAuthRequired,
         fromAuth: searchParams.get("fromAuth"),
+        isReset,
       })
     }
-  }, [contextState, searchParams, showResults])
+  }, [quizReduxState, authReduxState, searchParams, showResults, isReset])
 
   // Get current question
   const currentQuestion = quizQuestions[currentQuestionIndex]
@@ -128,7 +148,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
   const handleAnswer = useCallback(
     (selectedAnswer: string, timeSpent: number, isCorrect: boolean) => {
       try {
-        if (isCompleting || !submitQuizAnswer) return
+        if (isCompleting) return
 
         // Create answer object
         const answer = {
@@ -149,14 +169,16 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         setAnswers(newAnswers)
 
         // Submit answer to Redux
-        submitQuizAnswer({
-          answer: selectedAnswer,
-          userAnswer: selectedAnswer,
-          isCorrect,
-          timeSpent,
-          questionId: currentQuestion?.id || currentQuestionIndex,
-          index: currentQuestionIndex,
-        })
+        dispatch(
+          submitAnswer({
+            answer: selectedAnswer,
+            userAnswer: selectedAnswer,
+            isCorrect,
+            timeSpent,
+            questionId: currentQuestion?.id || currentQuestionIndex,
+            index: currentQuestionIndex,
+          }),
+        )
 
         // Move to the next question or complete the quiz
         if (isLastQuestion) {
@@ -168,13 +190,13 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         console.error("Error handling answer:", err)
       }
     },
-    [isCompleting, submitQuizAnswer, currentQuestion, currentQuestionIndex, isLastQuestion, answers],
+    [isCompleting, dispatch, currentQuestion, currentQuestionIndex, isLastQuestion, answers],
   )
 
   // Handle quiz completion
   const handleQuizCompletion = useCallback(
     async (finalAnswers: any[]) => {
-      if (isCompleting || !completeQuiz) return
+      if (isCompleting) return
 
       setIsCompleting(true)
 
@@ -204,7 +226,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         const formattedTimeSpent = formatQuizTime(totalTimeSpent)
 
         // Prepare result data
-        const resultQuizId = quizId || contextState?.quizId || "test-quiz"
+        const resultQuizId = quizId || quizReduxState?.quizId || "test-quiz"
         const quizResult = {
           quizId: resultQuizId,
           slug,
@@ -220,26 +242,28 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         setQuizResults(quizResult)
 
         // Complete the quiz in Redux
-        await completeQuiz({
-          answers: answersArray.map((a) =>
-            a
-              ? {
-                  answer: a.answer,
-                  userAnswer: a.userAnswer,
-                  isCorrect: a.isCorrect,
-                  timeSpent: a.timeSpent,
-                  questionId: a.questionId,
-                  codeSnippet: a.codeSnippet,
-                  language: a.language,
-                }
-              : null,
-          ),
-          score,
-          completedAt: new Date().toISOString(),
-        })
+        dispatch(
+          completeQuiz({
+            answers: answersArray.map((a) =>
+              a
+                ? {
+                    answer: a.answer,
+                    userAnswer: a.userAnswer,
+                    isCorrect: a.isCorrect,
+                    timeSpent: a.timeSpent,
+                    questionId: a.questionId,
+                    codeSnippet: a.codeSnippet,
+                    language: a.language,
+                  }
+                : null,
+            ),
+            score,
+            completedAt: new Date().toISOString(),
+          }),
+        )
 
         // If the user is authenticated, show results immediately
-        if (contextState.isAuthenticated) {
+        if (authReduxState.isAuthenticated) {
           setShowResults(true)
         }
       } catch (err) {
@@ -250,13 +274,13 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
     },
     [
       isCompleting,
-      completeQuiz,
+      dispatch,
       quizQuestions,
       slug,
       startTime,
-      contextState.isAuthenticated,
+      authReduxState.isAuthenticated,
       quizId,
-      contextState?.quizId,
+      quizReduxState?.quizId,
     ],
   )
 
@@ -267,49 +291,54 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
 
   // Handle sign in
   const handleSignIn = useCallback(() => {
-    if (handleAuthenticationRequired) {
-      // Redirect to sign-in
-      handleAuthenticationRequired(`/dashboard/code/${slug}?fromAuth=true`)
-    }
-  }, [handleAuthenticationRequired, slug])
+    // Set redirect URL in Redux
+    dispatch(setRedirectUrl(`/dashboard/code/${slug}?fromAuth=true`))
 
-  // If there's an error in the context, show the error message
-  if (contextState.error) {
+    // Set pending auth required
+    dispatch(setPendingAuthRequired(true))
+
+    // Redirect to sign-in page
+    router.push("/auth/signin")
+  }, [dispatch, router, slug])
+
+  // If there's an error in the Redux state, show the error message
+  if (quizReduxState.error) {
     return (
       <ErrorDisplay
-        error={contextState.error}
+        error={quizReduxState.error}
         onRetry={() => window.location.reload()}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
     )
   }
 
-  // If the quiz is completed and the user is not authenticated, show the guest sign-in prompt
-  if (contextState.isCompleted && !contextState.isAuthenticated && !contextState.isProcessingAuth) {
+  // If the quiz is completed and the user is not authenticated, show the non-authenticated user sign-in prompt
+  if (quizReduxState.isCompleted && !authReduxState.isAuthenticated && !authReduxState.isProcessingAuth) {
     return (
-      <GuestSignInPrompt
-        onContinueAsGuest={handleContinueAsGuest}
-        onSignIn={handleSignIn}
-        quizType="code"
-        showSaveMessage={true}
+      <NonAuthenticatedUserSignInPrompt onSignIn={function (): void {
+        throw new Error("Function not implemented.")
+      } } onContinueAsNonAuthenticatedUser={function (): void {
+        throw new Error("Function not implemented.")
+      } }      
+     
       />
     )
   }
 
   // If the quiz is completed and results are available, show the results
-  if ((showResults || contextState.isCompleted) && !isReset) {
+  if ((showResults || quizReduxState.isCompleted) && !isReset) {
     return (
       <CodeQuizResult
         result={{
-          quizId: quizId || contextState?.quizId || "test-quiz",
+          quizId: quizId || quizReduxState?.quizId || "test-quiz",
           slug,
-          score: quizResults?.score || contextState.score || 0,
+          score: quizResults?.score || quizReduxState.score || 0,
           totalQuestions: quizQuestions?.length || 0,
-          correctAnswers: (quizResults?.answers || contextState.answers || []).filter((a: any) => a && a.isCorrect)
+          correctAnswers: (quizResults?.answers || quizReduxState.answers || []).filter((a: any) => a && a.isCorrect)
             .length,
-          totalTimeSpent: quizResults?.totalTimeSpent || calculateTotalTime(contextState.answers || []),
-          completedAt: quizResults?.completedAt || contextState.completedAt || new Date().toISOString(),
-          answers: quizResults?.answers || contextState.answers || [],
+          totalTimeSpent: quizResults?.totalTimeSpent || calculateTotalTime(quizReduxState.answers || []),
+          completedAt: quizResults?.completedAt || quizReduxState.completedAt || new Date().toISOString(),
+          answers: quizResults?.answers || quizReduxState.answers || [],
         }}
       />
     )
@@ -327,7 +356,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         <div className="bg-slate-50 border border-slate-200 p-3 rounded-md">
           <h3 className="text-sm text-slate-700">Quiz State Debug</h3>
           <pre className="text-xs bg-slate-100 p-2 rounded overflow-auto max-h-60 mt-2">
-            {JSON.stringify(contextState, null, 2)}
+            {JSON.stringify(quizReduxState, null, 2)}
           </pre>
         </div>
       )}
@@ -338,6 +367,7 @@ export const CodeQuizContent = memo(function CodeQuizContent({ quizData, slug, u
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={quizQuestions?.length || 0}
         isLastQuestion={isLastQuestion}
+        key={`question-${currentQuestionIndex}-${isReset ? "reset" : "normal"}`}
       />
 
       {isCompleting && (
@@ -364,6 +394,8 @@ export default function CodeQuizWrapper({
   const [isInitializing, setIsInitializing] = useState(true)
   const router = useRouter()
   const hasInitialized = useRef(false)
+  const searchParams = useSearchParams()
+  const isReset = searchParams.get("reset") === "true"
 
   // Validate quiz data and slug
   const validQuizId = quizId || ""
@@ -372,7 +404,7 @@ export default function CodeQuizWrapper({
   // Skip initialization delay in test environment
   useEffect(() => {
     // Prevent double initialization
-    if (hasInitialized.current) return
+    if (hasInitialized.current && !isReset) return
     hasInitialized.current = true
 
     // Skip delay in test environment
@@ -386,7 +418,7 @@ export default function CodeQuizWrapper({
       setIsInitializing(false)
     }, 500)
     return () => clearTimeout(timer)
-  }, [])
+  }, [isReset])
 
   // Show loading state during initialization
   if (isInitializing) {
