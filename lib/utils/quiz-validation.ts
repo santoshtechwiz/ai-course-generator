@@ -62,7 +62,7 @@ export function validateQuizData(quiz: any): { isValid: boolean; error?: string 
  * @param b - Second string
  * @returns Levenshtein distance
  */
-function levenshteinDistance(a: string, b: string): number {
+export function levenshteinDistance(a: string, b: string): number {
   if (a.length === 0) return b.length
   if (b.length === 0) return a.length
 

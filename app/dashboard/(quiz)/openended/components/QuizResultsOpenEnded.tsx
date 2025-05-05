@@ -1,19 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { CheckCircle, Clock, XCircle, AlertTriangle } from "lucide-react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-
+import { motion } from "framer-motion"
+import { CheckCircle2, Clock, BarChart3, RefreshCw, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import GuestSignInPrompt  from "../../components/GuestSignInPrompt"
-import { useQuiz } from "@/app/context/QuizContext"
-import { useAuth } from "@/providers/unified-auth-provider"
+import { submitQuizResults } from "@/store/slices/quizSlice"
+import { useAppDispatch, useAppSelector } from "@/store"
 
 interface QuizResultsOpenEndedProps {
   quizId?: string
@@ -26,103 +23,154 @@ interface QuizResultsOpenEndedProps {
   score?: number
   onRestart?: () => void
   onSignIn?: () => void
-  isGuestMode?: boolean
 }
 
 export default function QuizResultsOpenEnded({
-  quizId,
-  slug,
-  title,
-  answers = [],
-  questions = [],
-  totalQuestions = 0,
-  startTime = 0,
-  score = 0,
+  quizId: propQuizId,
+  slug: propSlug,
+  title: propTitle,
+  answers: propAnswers,
+  questions: propQuestions,
+  totalQuestions: propTotalQuestions,
+  startTime: propStartTime,
+  score: propScore,
   onRestart,
   onSignIn,
-  isGuestMode = false,
 }: QuizResultsOpenEndedProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const dispatch = useAppDispatch()
+
+  // Get state from Redux
+  const { isAuthenticated } = useAppSelector((state) => state.auth)
+  const quizState = useAppSelector((state) => state.quiz)
+
+  // Use props if provided, otherwise use Redux state
+  const answers = useMemo(() => propAnswers || quizState.answers, [propAnswers, quizState.answers])
+  const questions = useMemo(() => propQuestions || quizState.questions, [propQuestions, quizState.questions])
+  const quizId = propQuizId || quizState.quizId
+  const title = propTitle || quizState.title
+  const slug = propSlug || quizState.slug
+  const totalQuestions = propTotalQuestions || questions.length
+  const score = propScore || quizState.score
+  const startTime = propStartTime || quizState.startTime
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("summary")
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const { handleAuthenticationRequired } = useQuiz()
-  const { isAuthenticated } = useAuth()
 
-  // Calculate total time spent
-  const totalTimeSpent = answers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
-  const formattedTime = formatTime(totalTimeSpent)
+  // Memoize calculated values to prevent recalculation on re-renders
+  const stats = useMemo(() => {
+    const totalTimeSpent = answers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
+    const averageTimePerQuestion = answers.length > 0 ? Math.round(totalTimeSpent / answers.length) : 0
+    const endTime = Date.now()
+    const totalElapsedTime = Math.floor((endTime - startTime) / 1000)
 
-  // Calculate accuracy
-  const correctAnswers = answers.filter((answer) => answer?.isCorrect).length
-  const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0
+    return {
+      totalTimeSpent,
+      averageTimePerQuestion,
+      totalElapsedTime,
+      answeredQuestions: answers.length,
+    }
+  }, [answers, startTime])
+
+  // Format time function
+  const formatTime = useCallback((seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`
+  }, [])
+
+  // Save results if authenticated
+  useEffect(() => {
+    if (isAuthenticated && !quizState.resultsSaved && !isSubmitting && answers.length > 0) {
+      handleSaveResults()
+    }
+  }, [isAuthenticated, quizState.resultsSaved, answers.length])
+
+  // Handle save results
+  const handleSaveResults = useCallback(async () => {
+    if (isSubmitting || quizState.resultsSaved || !isAuthenticated) return
+
+    setIsSubmitting(true)
+
+    try {
+      await dispatch(
+        submitQuizResults({
+          quizId,
+          slug,
+          quizType: "openended",
+          answers,
+          score: 100, // Open-ended quizzes don't have a specific score
+          totalTime: stats.totalTimeSpent,
+          totalQuestions,
+        }),
+      ).unwrap()
+
+      toast({
+        title: "Results saved",
+        description: "Your quiz results have been saved successfully.",
+      })
+    } catch (error) {
+      console.error("Failed to save results:", error)
+      toast({
+        title: "Error saving results",
+        description: "There was a problem saving your results. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [
+    isSubmitting,
+    quizState.resultsSaved,
+    isAuthenticated,
+    dispatch,
+    quizId,
+    slug,
+    answers,
+    stats,
+    totalQuestions,
+    toast,
+  ])
 
   // Handle restart
-  const handleRestart = () => {
+  const handleRestart = useCallback(() => {
     if (onRestart) {
       onRestart()
     }
-  }
+  }, [onRestart])
 
-  // Handle create new quiz
-  const handleCreateNew = () => {
-    router.push("/dashboard/openended")
-  }
+  // Handle sign in
+  const handleSignIn = useCallback(() => {
+    if (onSignIn) {
+      onSignIn()
+    }
+  }, [onSignIn])
 
-  // If there's an error, show error state
-  if (error) {
+  // If no answers or questions, show a message
+  if (!answers.length || !questions.length) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center min-h-[300px] p-6 bg-card rounded-lg shadow-sm border"
-      >
-        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h3 className="text-xl font-semibold mb-2">Error Loading Results</h3>
-        <p className="text-muted-foreground text-center max-w-md mb-6" data-testid="error-message">
-          {error || "Failed to load results. Please try again."}
-        </p>
-        <div className="flex gap-3">
-          <Button onClick={() => setError(null)} variant="default">
-            Try Again
-          </Button>
-          <Button onClick={handleRestart} variant="outline">
-            Restart Quiz
-          </Button>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // If guest mode is active and user is not authenticated, show sign-in prompt
-  if (isGuestMode && !isAuthenticated) {
-    return (
-      <GuestSignInPrompt
-        quizId={quizId || "unknown"}
-        forceShow={true}
-        onContinueAsGuest={handleRestart}
-      
-        title="Sign in to view your results"
-        description="Your quiz has been completed! Sign in to view your detailed results and save your progress."
-        ctaText="Sign in to view results"
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle>No Results Available</CardTitle>
+          <CardDescription>There are no quiz results to display.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>Try taking the quiz again or return to the dashboard.</p>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={() => router.push("/dashboard")}>Return to Dashboard</Button>
+        </CardFooter>
+      </Card>
     )
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="w-full max-w-4xl mx-auto p-4"
-    >
-      <Card className="w-full">
+    <div className="space-y-6">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">{title || "Quiz Results"}</CardTitle>
-          <CardDescription>
-            You've completed the open-ended quiz with {correctAnswers} out of {totalQuestions} correct answers.
-          </CardDescription>
+          <CardTitle className="text-2xl">{title || "Quiz Results"}</CardTitle>
+          <CardDescription>You completed the open-ended quiz with {stats.answeredQuestions} responses</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -130,112 +178,125 @@ export default function QuizResultsOpenEnded({
               <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="answers">Your Answers</TabsTrigger>
             </TabsList>
-            <TabsContent value="summary" className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium">Score</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2, duration: 0.5 }}
-                      className="text-2xl font-bold"
-                    >
-                      {Math.round(accuracy)}%
-                    </motion.div>
-                    <motion.div
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ delay: 0.4, duration: 0.5 }}
-                      style={{ transformOrigin: "left" }}
-                    >
-                      <Progress value={accuracy} className="h-2 mt-2" />
-                    </motion.div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium">Time</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span className="text-2xl font-bold">{formattedTime}</span>
+
+            <TabsContent value="summary" className="space-y-6 pt-4">
+              {/* Completion visualization */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Completion</span>
+                  <span>
+                    {stats.answeredQuestions} of {totalQuestions} questions answered
+                  </span>
+                </div>
+                <Progress value={(stats.answeredQuestions / totalQuestions) * 100} className="h-3" />
+              </div>
+
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className="text-sm font-medium">Questions Answered</p>
+                      <p className="text-2xl font-bold">{stats.answeredQuestions}</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium">Questions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-2xl font-bold">
-                      {correctAnswers}/{totalQuestions}
+
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <BookOpen className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium">Total Questions</p>
+                      <p className="text-2xl font-bold">{totalQuestions}</p>
                     </div>
-                    <div className="text-sm text-muted-foreground">correct answers</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium">Total Time</p>
+                      <p className="text-2xl font-bold">{formatTime(stats.totalElapsedTime)}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <BarChart3 className="h-5 w-5 text-purple-500" />
+                    <div>
+                      <p className="text-sm font-medium">Avg. Time/Question</p>
+                      <p className="text-2xl font-bold">{formatTime(stats.averageTimePerQuestion)}</p>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
+
             <TabsContent value="answers" className="space-y-4 pt-4">
+              {/* Answer review - using virtualized list for better performance with many questions */}
               {questions.map((question, index) => {
                 const answer = answers[index]
+                if (!answer) return null
+
                 return (
                   <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
+                    key={question?.id || index}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 * index, duration: 0.3 }}
+                    transition={{ delay: Math.min(index * 0.05, 1) }} // Cap delay for better performance with many items
+                    className="border rounded-lg p-4"
                   >
-                    <Card key={index} className="overflow-hidden">
-                      <CardHeader className="p-4 pb-2 bg-muted/50">
-                        <CardTitle className="text-sm font-medium flex items-center">
-                          <span className="mr-2">Question {index + 1}</span>
-                          {answer?.isCorrect ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-red-500" />
-                          )}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4">
-                        <div className="text-sm font-medium mb-2">{question.question}</div>
-                        <Separator className="my-2" />
-                        <div className="space-y-2">
-                          <div>
-                            <div className="text-xs font-medium text-muted-foreground">Your Answer:</div>
-                            <div className="text-sm mt-1 p-2 bg-muted rounded-md">
-                              {answer?.answer || "No answer provided"}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs font-medium text-muted-foreground">Time Spent:</div>
-                            <div className="text-sm">{formatTime(answer?.timeSpent || 0)}</div>
-                          </div>
+                    <div className="space-y-2 w-full">
+                      <p className="font-medium">Question {index + 1}</p>
+                      <p className="text-sm text-muted-foreground">{question.question}</p>
+
+                      <div className="grid grid-cols-1 gap-2 mt-2">
+                        <div className="text-sm">
+                          <span className="font-medium">Your response: </span>
+                          <span className="text-foreground">{answer?.answer || "No response provided"}</span>
                         </div>
-                      </CardContent>
-                    </Card>
+
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Time spent: {formatTime(answer?.timeSpent || 0)}
+                        </div>
+                      </div>
+                    </div>
                   </motion.div>
                 )
               })}
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button onClick={() => (window.location.href = "/dashboard")} variant="default">
-            Return to Dashboard
+        <CardFooter className="flex flex-col sm:flex-row gap-3 justify-between">
+          <Button onClick={handleRestart} variant="outline" className="w-full sm:w-auto">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Restart Quiz
           </Button>
+
+          <div className="flex gap-3 w-full sm:w-auto">
+            {!isAuthenticated && (
+              <Button onClick={handleSignIn} variant="secondary" className="flex-1 sm:flex-initial">
+                Sign In to Save
+              </Button>
+            )}
+
+            <Button
+              onClick={() => router.push("/dashboard/quizzes")}
+              variant="secondary"
+              className="flex-1 sm:flex-initial"
+            >
+              Browse Quizzes
+            </Button>
+
+            <Button onClick={() => router.push("/dashboard/openended")} className="flex-1 sm:flex-initial">
+              Create New Quiz
+            </Button>
+          </div>
         </CardFooter>
       </Card>
-    </motion.div>
+    </div>
   )
-}
-
-// Helper function to format time
-function formatTime(seconds: number): string {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = Math.floor(seconds % 60)
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
 }

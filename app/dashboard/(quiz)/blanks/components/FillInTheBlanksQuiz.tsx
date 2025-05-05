@@ -1,12 +1,14 @@
 "use client"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import type React from "react"
+
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } 
-from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   CheckCircle2,
@@ -21,30 +23,28 @@ import {
   AlertCircle,
   Brain,
 } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+
 import { formatQuizTime } from "@/lib/utils/quiz-performance"
-import { useQuiz } from "@/app/context/QuizContext"
-import { levenshteinDistance } from "@/lib/utils/quiz-options"
-import { isGarbageInput, isTooFastAnswer } from "@/lib/utils/quiz-validation"
-import { useState, useRef, useMemo, useEffect, useCallback } from "react"
+import { levenshteinDistance, isGarbageInput, isTooFastAnswer } from "@/lib/utils/quiz-validation"
+import { cn } from "@/lib/tailwindUtils"
 
 interface Question {
   id: number
   question: string
   answer: string
-  openEndedQuestion: {
-    hints: string[]
-    difficulty: string
-    tags: string[]
-    inputType: string
+  openEndedQuestion?: {
+    hints?: string[]
+    difficulty?: string
+    tags?: string[]
+    inputType?: string
   }
 }
 
 interface FillInTheBlanksQuizProps {
   question: Question
-  onAnswer: (answer: string, timeSpent: number, hintsUsed: boolean, similarity?: number) => void
   questionNumber: number
   totalQuestions: number
+  onAnswer: (answer: string, timeSpent: number, hintsUsed: boolean, similarity?: number) => void
 }
 
 const Timer = ({ elapsedTime }: { elapsedTime: number }) => (
@@ -59,11 +59,11 @@ const Timer = ({ elapsedTime }: { elapsedTime: number }) => (
       <TooltipContent>
         <p>Time spent on this question</p>
       </TooltipContent>
-    </TooltipProvider>
-  );
-}
+    </Tooltip>
+  </TooltipProvider>
+)
 
-const BadgeGroup = ({ tags, difficulty }: { tags: string[]; difficulty: string }) => {
+const BadgeGroup = ({ tags = [], difficulty = "medium" }: { tags?: string[]; difficulty?: string }) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty?.toLowerCase()) {
       case "easy":
@@ -82,11 +82,12 @@ const BadgeGroup = ({ tags, difficulty }: { tags: string[]; difficulty: string }
       <Badge variant="outline" className={`text-xs ${getDifficultyColor(difficulty)}`}>
         {difficulty}
       </Badge>
-      {tags.map((tag, index) => (
-        <Badge key={index} variant="secondary" className="text-xs">
-          {tag}
-        </Badge>
-      ))}
+      {Array.isArray(tags) &&
+        tags.map((tag, index) => (
+          <Badge key={index} variant="secondary" className="text-xs">
+            {tag}
+          </Badge>
+        ))}
     </div>
   )
 }
@@ -115,10 +116,11 @@ const ProgressBar = ({ progressPercentage, questionNumber, totalQuestions }: Pro
 
 export default function FillInTheBlanksQuiz({
   question,
-  onAnswer,
   questionNumber,
   totalQuestions,
+  onAnswer,
 }: FillInTheBlanksQuizProps) {
+  // Local state
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [submitted, setSubmitted] = useState(false)
@@ -130,18 +132,14 @@ export default function FillInTheBlanksQuiz({
   const [inputFocused, setInputFocused] = useState(false)
   const [showTooFastWarning, setShowTooFastWarning] = useState(false)
   const [showGarbageWarning, setShowGarbageWarning] = useState(false)
-  const [startTime, setStartTime] = useState(Date.now())
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-
-  const { state } = useQuiz()
-  const isCompleting = state.animationState === "completing"
+  const [currentQuestionStartTime, setCurrentQuestionStartTime] = useState<number | null>(null)
 
   const similarityThreshold = 3
   const minimumPrefixLength = 2
   const progressPercentage = (questionNumber / totalQuestions) * 100
-  const garbageThreshold = 0.75 // Adjust as needed
   const minimumTimeThreshold = 2 // seconds
+
   const questionParts = useMemo(() => {
     return question.question.split("_____")
   }, [question.question])
@@ -164,7 +162,12 @@ export default function FillInTheBlanksQuiz({
       hints.push(hintText)
     }
 
-    return [...hints, ...(question.openEndedQuestion?.hints || [])]
+    // Add any additional hints from the question data
+    if (question.openEndedQuestion?.hints && Array.isArray(question.openEndedQuestion.hints)) {
+      hints.push(...question.openEndedQuestion.hints)
+    }
+
+    return hints
   }, [question.answer, question.openEndedQuestion?.hints])
 
   useEffect(() => {
@@ -175,10 +178,10 @@ export default function FillInTheBlanksQuiz({
     setIsValidInput(false)
     setElapsedTime(0)
     setHintLevel(0)
-    setShowHintPanel(false)
+    setShowTooFastWarning(false)
+    setCurrentQuestionStartTime(Date.now())
     setShowTooFastWarning(false)
     setShowGarbageWarning(false)
-    setStartTime(Date.now())
 
     // Focus the input field when a new question is loaded
     setTimeout(() => {
@@ -189,9 +192,14 @@ export default function FillInTheBlanksQuiz({
   }, [question.id, progressiveHints.length])
 
   useEffect(() => {
-    const timer = setInterval(() => setElapsedTime((prev) => prev + 1), 1000)
+    const timer = setInterval(() => {
+      if (currentQuestionStartTime) {
+        const elapsed = Math.floor((Date.now() - currentQuestionStartTime) / 1000)
+        setElapsedTime(elapsed)
+      }
+    }, 1000)
     return () => clearInterval(timer)
-  }, [])
+  }, [currentQuestionStartTime])
 
   const handleInputChange = useCallback(
     (value: string) => {
@@ -212,7 +220,7 @@ export default function FillInTheBlanksQuiz({
         .replace(/[^\w\s]/g, "")
         .split(/\s+/)
         .filter((word) => word.length > 3)
-      
+
       if (question.answer) {
         contextWords.push(question.answer.toLowerCase())
       }
@@ -236,12 +244,11 @@ export default function FillInTheBlanksQuiz({
   )
 
   const handleSubmit = useCallback(() => {
-    setIsSubmitting(true)
+    if (!currentQuestionStartTime) return
 
-    const timeSpent = (Date.now() - startTime) / 1000
+    const timeSpent = (Date.now() - currentQuestionStartTime) / 1000
     if (isTooFastAnswer(timeSpent, minimumTimeThreshold)) {
       setShowTooFastWarning(true)
-      setIsSubmitting(false)
       return
     }
 
@@ -251,14 +258,13 @@ export default function FillInTheBlanksQuiz({
       .replace(/[^\w\s]/g, "")
       .split(/\s+/)
       .filter((word) => word.length > 3)
-    
+
     if (question.answer) {
       contextWords.push(question.answer.toLowerCase())
     }
 
     if (isGarbageInput(answer, contextWords)) {
       setShowGarbageWarning(true)
-      setIsSubmitting(false)
       return
     }
 
@@ -272,21 +278,27 @@ export default function FillInTheBlanksQuiz({
     setIsCorrect(isAnswerCorrect)
     setSubmitted(true)
 
-    // Add a small delay to show the submission state
-    setTimeout(() => {
-      setIsSubmitting(false)
-      onAnswer(answer, Math.round(timeSpent), hintLevel > 0, similarity)
-    }, 500)
+    // Call the onAnswer prop with the user's answer
+    onAnswer(answer, Math.round(timeSpent), hintLevel > 0, similarity)
   }, [
     answer,
+    currentQuestionStartTime,
     hintLevel,
     minimumTimeThreshold,
     onAnswer,
     question.answer,
     question.question,
     similarityThreshold,
-    startTime,
   ])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && isValidInput && !submitted) {
+        handleSubmit()
+      }
+    },
+    [handleSubmit, isValidInput, submitted],
+  )
 
   const handleProgressiveHint = useCallback(() => {
     if (hintLevel < progressiveHints.length) {
@@ -298,15 +310,6 @@ export default function FillInTheBlanksQuiz({
       setHintLevel((prev) => prev + 1)
     }
   }, [hintLevel, progressiveHints.length])
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && isValidInput && !submitted && !isSubmitting) {
-        handleSubmit()
-      }
-    },
-    [handleSubmit, isSubmitting, isValidInput, submitted],
-  )
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -326,10 +329,7 @@ export default function FillInTheBlanksQuiz({
                 <Brain className="h-3.5 w-3.5" />
                 Fill in the Blank
               </Badge>
-              <BadgeGroup
-                tags={question.openEndedQuestion?.tags || []}
-                difficulty={question.openEndedQuestion?.difficulty || "medium"}
-              />
+              <BadgeGroup tags={question.openEndedQuestion?.tags} difficulty={question.openEndedQuestion?.difficulty} />
             </div>
             <Timer elapsedTime={elapsedTime} />
           </div>
@@ -410,7 +410,7 @@ export default function FillInTheBlanksQuiz({
                   submitted && (isCorrect ? "text-green-600" : "text-red-600"),
                 )}
                 placeholder="Type answer"
-                disabled={submitted || isSubmitting}
+                disabled={submitted}
                 aria-label="Answer input field"
               />
             </span>
@@ -482,7 +482,7 @@ export default function FillInTheBlanksQuiz({
                         size="sm"
                         className="text-xs w-full border-blue-200 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30"
                         onClick={handleProgressiveHint}
-                        disabled={submitted || isSubmitting}
+                        disabled={submitted}
                       >
                         <Lightbulb className="w-3.5 h-3.5 mr-1" />
                         Reveal Next Hint
@@ -501,7 +501,7 @@ export default function FillInTheBlanksQuiz({
             size="sm"
             className="text-sm w-full sm:w-auto"
             onClick={() => setShowHintPanel(!showHintPanel)}
-            disabled={submitted || isSubmitting}
+            disabled={submitted}
           >
             {showHintPanel ? (
               <>
@@ -517,30 +517,15 @@ export default function FillInTheBlanksQuiz({
           </Button>
 
           <Button
-            onClick={
-              submitted
-                ? () => onAnswer(answer, Math.round((Date.now() - startTime) / 1000), hintLevel > 0, similarity)
-                : handleSubmit
-            }
-            disabled={(!isValidInput && !submitted) || isSubmitting}
+            onClick={handleSubmit}
+            disabled={(!isValidInput && !submitted) || submitted}
             className="w-full sm:w-auto transition-colors duration-300 relative"
             size="lg"
           >
-            {isSubmitting ? (
+            {submitted ? (
               <>
-                <span className="opacity-0">Submit Answer</span>
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <motion.div
-                    className="h-5 w-5 border-2 border-current border-t-transparent rounded-full"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                  />
-                </span>
-              </>
-            ) : submitted ? (
-              <>
+                <ArrowRight className="mr-2 h-4 w-4" />
                 Continue
-                <ArrowRight className="ml-2 h-4 w-4" />
               </>
             ) : (
               "Submit Answer"
