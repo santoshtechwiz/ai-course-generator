@@ -1,6 +1,6 @@
 // This is a simplified version - you would need to include all the necessary functions
 // from your existing quiz-index.ts file
-
+import * as QuizUtils from './quiz-utils';
 export function calculateTotalTime(answers: any[]): number {
   if (!Array.isArray(answers)) return 0
   return answers.reduce((sum, answer) => sum + (answer?.timeSpent || 0), 0)

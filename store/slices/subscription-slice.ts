@@ -1,141 +1,98 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+"use client"
 
-// Define subscription plan types
-export enum SubscriptionPlanType {
-  FREE = "FREE",
-  BASIC = "BASIC",
-  PRO = "PRO",
-  PREMIUM = "PREMIUM",
-}
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
+import type { SubscriptionData, SubscriptionDetails, TokenUsage } from "@/types/types"
+import { fetchWithAuth } from "@/lib/utils/fetch-utils"
 
-// Define subscription status types
-export enum SubscriptionStatus {
-  ACTIVE = "active",
-  CANCELED = "canceled",
-  PAST_DUE = "past_due",
-  UNPAID = "unpaid",
-  TRIALING = "trialing",
-  INACTIVE = "inactive",
-}
-
-// Define token usage interface
-export interface TokenUsage {
-  used: number
-  total: number
-  remaining: number
-  percentage: number
-}
-
-// Define subscription state interface
+// Define the subscription state type
 export interface SubscriptionState {
-  isSubscribed: boolean
-  plan: SubscriptionPlanType
-  status: SubscriptionStatus | null
-  expiresAt: string | null
-  cancelAtPeriodEnd: boolean
-  credits: number
-  tokensUsed: number
+  data: SubscriptionData | null
+  details: SubscriptionDetails | null
   tokenUsage: TokenUsage | null
   isLoading: boolean
   error: string | null
   lastFetched: number | null
-  type?: string // Added to handle the type property that was causing the error
 }
 
-// Initial state
+// Initial state with safe defaults
 const initialState: SubscriptionState = {
-  isSubscribed: false,
-  plan: SubscriptionPlanType.FREE,
-  status: null,
-  expiresAt: null,
-  cancelAtPeriodEnd: false,
-  credits: 0,
-  tokensUsed: 0,
+  data: null,
+  details: null,
   tokenUsage: null,
   isLoading: false,
   error: null,
   lastFetched: null,
-  type: "subscription", // Default value for the type property
 }
 
-// Async thunk to fetch subscription status
+// Async thunk for fetching subscription status
 export const fetchSubscriptionStatus = createAsyncThunk("subscription/fetchStatus", async (_, { rejectWithValue }) => {
   try {
-    const response = await fetch("/api/subscriptions/status", {
-      headers: {
-        "Cache-Control": "no-cache",
-        "x-force-refresh": "true",
-      },
-    })
+    const response = await fetchWithAuth("/api/subscription/status")
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`)
+      const errorData = await response.json()
+      return rejectWithValue(errorData.message || "Failed to fetch subscription status")
     }
 
     const data = await response.json()
     return data
   } catch (error) {
-    return rejectWithValue((error as Error).message)
+    return rejectWithValue((error as Error).message || "An unknown error occurred")
   }
 })
 
-// Async thunk to fetch token usage
+// Async thunk for fetching token usage
 export const fetchTokenUsage = createAsyncThunk("subscription/fetchTokenUsage", async (_, { rejectWithValue }) => {
   try {
-    const response = await fetch("/api/subscriptions/tokens")
+    const response = await fetchWithAuth("/api/subscription/tokens")
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`)
+      const errorData = await response.json()
+      return rejectWithValue(errorData.message || "Failed to fetch token usage")
     }
 
     const data = await response.json()
     return data
   } catch (error) {
-    return rejectWithValue((error as Error).message)
+    return rejectWithValue((error as Error).message || "An unknown error occurred")
   }
 })
 
-// Async thunk to cancel subscription
+// Async thunk for canceling subscription
 export const cancelSubscription = createAsyncThunk("subscription/cancel", async (_, { rejectWithValue }) => {
   try {
-    const response = await fetch("/api/subscriptions/cancel", {
+    const response = await fetchWithAuth("/api/subscription/cancel", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
     })
 
     if (!response.ok) {
       const errorData = await response.json()
-      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`)
+      return rejectWithValue(errorData.message || "Failed to cancel subscription")
     }
 
     const data = await response.json()
     return data
   } catch (error) {
-    return rejectWithValue((error as Error).message)
+    return rejectWithValue((error as Error).message || "An unknown error occurred")
   }
 })
 
-// Async thunk to resume subscription
+// Async thunk for resuming subscription
 export const resumeSubscription = createAsyncThunk("subscription/resume", async (_, { rejectWithValue }) => {
   try {
-    const response = await fetch("/api/subscriptions/resume", {
+    const response = await fetchWithAuth("/api/subscription/resume", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
     })
 
     if (!response.ok) {
       const errorData = await response.json()
-      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`)
+      return rejectWithValue(errorData.message || "Failed to resume subscription")
     }
 
     const data = await response.json()
     return data
   } catch (error) {
-    return rejectWithValue((error as Error).message)
+    return rejectWithValue((error as Error).message || "An unknown error occurred")
   }
 })
 
@@ -148,91 +105,80 @@ const subscriptionSlice = createSlice({
       state.error = null
     },
     clearSubscriptionData: (state) => {
-      return {
-        ...initialState,
-        lastFetched: state.lastFetched,
-      }
+      return initialState
     },
   },
   extraReducers: (builder) => {
-    // Handle fetchSubscriptionStatus
-    builder.addCase(fetchSubscriptionStatus.pending, (state) => {
-      state.isLoading = true
-      state.error = null
-    })
-    builder.addCase(fetchSubscriptionStatus.fulfilled, (state, action) => {
-      const {
-        isSubscribed,
-        subscriptionPlan,
-        plan,
-        status,
-        expiresAt,
-        expirationDate,
-        cancelAtPeriodEnd,
-        credits,
-        tokensUsed,
-      } = action.payload
+    // Fetch subscription status
+    builder
+      .addCase(fetchSubscriptionStatus.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(
+        fetchSubscriptionStatus.fulfilled,
+        (state, action: PayloadAction<{ subscription: SubscriptionData; details: SubscriptionDetails }>) => {
+          state.isLoading = false
+          state.data = action.payload.subscription
+          state.details = action.payload.details
+          state.lastFetched = Date.now()
+        },
+      )
+      .addCase(fetchSubscriptionStatus.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = (action.payload as string) || "Failed to fetch subscription"
+      })
 
-      state.isSubscribed = isSubscribed || false
-      state.plan = (plan || subscriptionPlan || SubscriptionPlanType.FREE) as SubscriptionPlanType
-      state.status = (status || null) as SubscriptionStatus | null
-      state.expiresAt = expiresAt || expirationDate || null
-      state.cancelAtPeriodEnd = cancelAtPeriodEnd || false
-      state.credits = credits || 0
-      state.tokensUsed = tokensUsed || 0
-      state.isLoading = false
-      state.lastFetched = Date.now()
-      state.type = "subscription" // Ensure type is always set after fetch
-    })
-    builder.addCase(fetchSubscriptionStatus.rejected, (state, action) => {
-      state.isLoading = false
-      state.error = action.payload as string
-    })
+    // Fetch token usage
+    builder
+      .addCase(fetchTokenUsage.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(fetchTokenUsage.fulfilled, (state, action: PayloadAction<TokenUsage>) => {
+        state.isLoading = false
+        state.tokenUsage = action.payload
+      })
+      .addCase(fetchTokenUsage.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = (action.payload as string) || "Failed to fetch token usage"
+      })
 
-    // Handle fetchTokenUsage
-    builder.addCase(fetchTokenUsage.pending, (state) => {
-      state.isLoading = true
-      state.error = null
-    })
-    builder.addCase(fetchTokenUsage.fulfilled, (state, action) => {
-      state.tokenUsage = action.payload
-      state.isLoading = false
-    })
-    builder.addCase(fetchTokenUsage.rejected, (state, action) => {
-      state.isLoading = false
-      state.error = action.payload as string
-    })
+    // Cancel subscription
+    builder
+      .addCase(cancelSubscription.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(cancelSubscription.fulfilled, (state, action: PayloadAction<{ subscription: SubscriptionData }>) => {
+        state.isLoading = false
+        if (state.data && action.payload.subscription) {
+          state.data = action.payload.subscription
+        }
+      })
+      .addCase(cancelSubscription.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = (action.payload as string) || "Failed to cancel subscription"
+      })
 
-    // Handle cancelSubscription
-    builder.addCase(cancelSubscription.pending, (state) => {
-      state.isLoading = true
-      state.error = null
-    })
-    builder.addCase(cancelSubscription.fulfilled, (state) => {
-      state.cancelAtPeriodEnd = true
-      state.isLoading = false
-    })
-    builder.addCase(cancelSubscription.rejected, (state, action) => {
-      state.isLoading = false
-      state.error = action.payload as string
-    })
-
-    // Handle resumeSubscription
-    builder.addCase(resumeSubscription.pending, (state) => {
-      state.isLoading = true
-      state.error = null
-    })
-    builder.addCase(resumeSubscription.fulfilled, (state) => {
-      state.cancelAtPeriodEnd = false
-      state.isLoading = false
-    })
-    builder.addCase(resumeSubscription.rejected, (state, action) => {
-      state.isLoading = false
-      state.error = action.payload as string
-    })
+    // Resume subscription
+    builder
+      .addCase(resumeSubscription.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(resumeSubscription.fulfilled, (state, action: PayloadAction<{ subscription: SubscriptionData }>) => {
+        state.isLoading = false
+        if (state.data && action.payload.subscription) {
+          state.data = action.payload.subscription
+        }
+      })
+      .addCase(resumeSubscription.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = (action.payload as string) || "Failed to resume subscription"
+      })
   },
 })
 
-// Export actions and reducer
 export const { resetSubscriptionError, clearSubscriptionData } = subscriptionSlice.actions
 export default subscriptionSlice.reducer

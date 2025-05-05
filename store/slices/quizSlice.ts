@@ -1,205 +1,367 @@
+import type { QuizType } from "@/app/types/quiz-types"
+import { quizApi } from "@/lib/utils/quiz-index"
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 
 // Define types
 export interface Answer {
   answer: string
-  userAnswer?: string
-  selectedOption?: string
-  correctOption?: string
-  question?: string
-  isCorrect: boolean
   timeSpent: number
-  questionId: string | number
-  index: number
+  isCorrect: boolean
+  questionId?: string | number
+  userAnswer?: string
+  index?: number
 }
 
 export interface QuizState {
-  quizId: string | null
-  slug: string | null
-  quizType: string | null
+  quizId: string
+  slug: string
+  title: string
+  quizType: QuizType
   questions: any[]
   currentQuestionIndex: number
   answers: Answer[]
   timeSpent: number[]
-  score: number
   isCompleted: boolean
-  completedAt: string | null
-  isAuthenticated: boolean
+  score: number
   requiresAuth: boolean
-  isProcessingAuth: boolean
+  pendingAuthRequired: boolean
+  hasNonAuthenticatedUserResult: boolean
+  nonAuthenticatedUserResultsSaved: boolean
   authCheckComplete: boolean
-  forceShowResults: boolean
-  pendingAuthRedirect: boolean
-  redirectUrl: string | null
+  error: string | null
+  animationState: "idle" | "answering" | "completed"
+  isSavingResults: boolean
+  resultsSaved: boolean
+  completedAt: string | null
+  savedState: {
+    quizId?: string
+    slug?: string
+    quizType?: string
+    currentQuestionIndex?: number
+    answers?: Answer[]
+    isCompleted?: boolean
+    score?: number
+    completedAt?: string
+  } | null
 }
 
-// Initial state
+// Define initial state
 const initialState: QuizState = {
-  quizId: null,
-  slug: null,
-  quizType: null,
+  quizId: "",
+  slug: "",
+  title: "",
+  quizType: "",
   questions: [],
   currentQuestionIndex: 0,
   answers: [],
   timeSpent: [],
-  score: 0,
   isCompleted: false,
-  completedAt: null,
-  isAuthenticated: false,
+  score: 0,
   requiresAuth: false,
-  isProcessingAuth: false,
+  pendingAuthRequired: false,
+  hasNonAuthenticatedUserResult: false,
+  nonAuthenticatedUserResultsSaved: false,
   authCheckComplete: false,
-  forceShowResults: false,
-  pendingAuthRedirect: false,
-  redirectUrl: null,
+  error: null,
+  animationState: "idle",
+  isSavingResults: false,
+  resultsSaved: false,
+  completedAt: null,
+  savedState: null,
 }
 
-// Async thunk for submitting quiz results
-export const submitQuizResults = createAsyncThunk("quiz/submitResults", async (data: any, { rejectWithValue }) => {
-  try {
-    // Implement your API call here
-    return data
-  } catch (error) {
-    return rejectWithValue(error)
-  }
-})
+// Async thunks
+export const fetchQuizResults = createAsyncThunk(
+  "quiz/fetchResults",
+  async ({ quizId, slug, quizType }: { quizId: string; slug: string; quizType: QuizType }, { rejectWithValue }) => {
+    try {
+      const result = await quizApi.getQuizData(slug, quizType)
+      return result
+    } catch (error) {
+      return rejectWithValue(error)
+    }
+  },
+)
 
-// Create quiz slice
+export const submitQuizResults = createAsyncThunk(
+  "quiz/submitResults",
+  async (
+    {
+      quizId,
+      slug,
+      quizType,
+      answers,
+      score,
+      totalTime,
+      totalQuestions,
+    }: {
+      quizId: string
+      slug: string
+      quizType: string
+      answers: Answer[]
+      score: number
+      totalTime: number
+      totalQuestions: number
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const result = await quizApi.submitQuiz(quizId, slug, quizType, answers, score, totalTime, totalQuestions)
+      return result
+    } catch (error: any) {
+      console.error("Failed to submit quiz results:", error)
+      return rejectWithValue(error.message || "Failed to submit quiz results")
+    }
+  },
+)
+
+// Create slice
 const quizSlice = createSlice({
   name: "quiz",
   initialState,
   reducers: {
-    // Initialize quiz
     initQuiz: (state, action: PayloadAction<any>) => {
-      const { id, slug, questions, quizType, requiresAuth, isAuthenticated } = action.payload
-      const questionCount = questions?.length || 0
+      const questionCount = action.payload.questions?.length || 0
 
-      console.log("Initializing quiz in Redux:", { id, slug, quizType, requiresAuth, isAuthenticated, questionCount })
+      state.quizId = action.payload.id || action.payload.quizId || ""
+      state.slug = action.payload.slug || ""
+      state.title = action.payload.title || ""
+      state.quizType = action.payload.quizType || ""
+      state.questions = action.payload.questions || []
+      state.currentQuestionIndex = 0
 
-      // Set quiz metadata
-      state.quizId = id || null
-      state.slug = slug || null
-      state.quizType = quizType || "mcq"
-      state.questions = questions || []
-      state.requiresAuth = requiresAuth || false
-      state.isAuthenticated = isAuthenticated || false
+      // Initialize with proper arrays based on question count
+      state.answers = action.payload.initialAnswers || Array(questionCount).fill(null)
+      state.timeSpent = action.payload.initialTimeSpent || Array(questionCount).fill(0)
 
-      // Only reset if not coming back from authentication
-      if (!state.pendingAuthRedirect) {
-        // Reset quiz progress
-        state.currentQuestionIndex = 0
-        state.answers = Array(questionCount).fill(null)
-        state.timeSpent = Array(questionCount).fill(0)
-
-        // Reset quiz status
-        state.isCompleted = false
-        state.score = 0
-        state.completedAt = null
-        state.forceShowResults = false
-      } else {
-        console.log("Preserving quiz state due to pending auth redirect")
-      }
+      state.isCompleted = action.payload.isCompleted || false
+      state.score = action.payload.score || 0
+      state.requiresAuth = action.payload.requiresAuth || false
+      state.pendingAuthRequired = action.payload.pendingAuthRequired || false
+      state.hasNonAuthenticatedUserResult = action.payload.hasNonAuthenticatedUserResult || false
+      state.nonAuthenticatedUserResultsSaved = action.payload.nonAuthenticatedUserResultsSaved || false
+      state.authCheckComplete = action.payload.authCheckComplete || false
+      state.error = null
+      state.animationState = "idle"
+      state.isSavingResults = false
+      state.resultsSaved = false
+      state.completedAt = null
+      state.savedState = null
     },
-
-    // Submit answer
     submitAnswer: (state, action: PayloadAction<Answer>) => {
-      const { index, isCorrect, timeSpent } = action.payload
-
-      // Update answers and time spent
-      state.answers[index] = action.payload
-      state.timeSpent[index] = timeSpent
-
-      // Update score if answer is correct
-      if (isCorrect) {
-        state.score += 1
+      // Create a new answers array if it doesn't exist
+      if (!Array.isArray(state.answers)) {
+        state.answers = Array(state.questions.length).fill(null)
       }
-    },
 
-    // Navigation
+      // Create a new timeSpent array if it doesn't exist
+      if (!Array.isArray(state.timeSpent)) {
+        state.timeSpent = Array(state.questions.length).fill(0)
+      }
+
+      // Get the index to update (either from the action payload or use currentQuestionIndex)
+      const indexToUpdate = action.payload.index !== undefined ? action.payload.index : state.currentQuestionIndex
+
+      // Update the answer at the specified index
+      const newAnswers = [...state.answers]
+      newAnswers[indexToUpdate] = {
+        answer: action.payload.answer,
+        userAnswer: action.payload.userAnswer || action.payload.answer,
+        isCorrect: action.payload.isCorrect,
+        timeSpent: action.payload.timeSpent,
+        questionId: action.payload.questionId,
+      }
+      state.answers = newAnswers
+
+      // Update the timeSpent at the specified index
+      const newTimeSpent = [...state.timeSpent]
+      newTimeSpent[indexToUpdate] = action.payload.timeSpent
+      state.timeSpent = newTimeSpent
+
+      state.animationState = "answering"
+    },
     nextQuestion: (state) => {
       if (state.currentQuestionIndex < state.questions.length - 1) {
         state.currentQuestionIndex += 1
+        state.animationState = "idle"
       }
     },
-    previousQuestion: (state) => {
-      if (state.currentQuestionIndex > 0) {
-        state.currentQuestionIndex -= 1
-      }
-    },
-    goToQuestion: (state, action: PayloadAction<number>) => {
-      const index = action.payload
-      if (index >= 0 && index < state.questions.length) {
-        state.currentQuestionIndex = index
-      }
-    },
-
-    // Complete quiz
-    completeQuiz: (state) => {
+    completeQuiz: (
+      state,
+      action: PayloadAction<{ answers?: Answer[]; score?: number; completedAt?: string }> = { payload: {} },
+    ) => {
+      // Always set isCompleted to true first
       state.isCompleted = true
-      state.completedAt = new Date().toISOString()
-      console.log("Quiz completed:", { score: state.score, totalQuestions: state.questions.length })
+
+      // Calculate score if not provided
+      let calculatedScore = action.payload?.score
+
+      if (calculatedScore === undefined && Array.isArray(state.answers)) {
+        const correctAnswers = state.answers.filter((a) => a?.isCorrect).length
+        const totalQuestions = state.questions.length || 1 // Avoid division by zero
+        calculatedScore = Math.round((correctAnswers / totalQuestions) * 100)
+      }
+
+      // Update state with provided or calculated values
+      state.score = calculatedScore || 0
+      state.completedAt = action.payload?.completedAt || new Date().toISOString()
+      state.animationState = "completed"
+
+      // If answers are provided, update them
+      if (Array.isArray(action.payload?.answers) && action.payload.answers.length > 0) {
+        state.answers = action.payload.answers
+      }
+
+      // If quiz requires auth and user is not authenticated, set pendingAuthRequired
+      if (state.requiresAuth) {
+        state.pendingAuthRequired = true
+      }
     },
-
-    // Reset quiz
     resetQuiz: (state) => {
-      const questionCount = state.questions.length
-
-      console.log("Resetting quiz")
-
-      // Reset progress
       state.currentQuestionIndex = 0
-      state.answers = Array(questionCount).fill(null)
-      state.timeSpent = Array(questionCount).fill(0)
-
-      // Reset quiz status
+      state.answers = Array(state.questions.length).fill(null)
+      state.timeSpent = Array(state.questions.length).fill(0)
       state.isCompleted = false
       state.score = 0
       state.completedAt = null
-      state.forceShowResults = false
-      state.pendingAuthRedirect = false
-      state.redirectUrl = null
-    },
-
-    // Authentication
-    setIsAuthenticated: (state, action: PayloadAction<boolean>) => {
-      state.isAuthenticated = action.payload
-
-      // If becoming authenticated and there was a pending redirect, force show results
-      if (action.payload && state.pendingAuthRedirect) {
-        console.log("User authenticated with pending redirect, forcing show results")
-        state.forceShowResults = true
-      }
+      state.animationState = "idle"
+      state.error = null
+      state.resultsSaved = false
+      // Don't reset savedState here to ensure it persists through resets
     },
     setRequiresAuth: (state, action: PayloadAction<boolean>) => {
       state.requiresAuth = action.payload
     },
-    setIsProcessingAuth: (state, action: PayloadAction<boolean>) => {
-      state.isProcessingAuth = action.payload
+    setPendingAuthRequired: (state, action: PayloadAction<boolean>) => {
+      state.pendingAuthRequired = action.payload
+    },
+    setHasNonAuthenticatedUserResult: (state, action: PayloadAction<boolean>) => {
+      state.hasNonAuthenticatedUserResult = action.payload
+      state.nonAuthenticatedUserResultsSaved = action.payload
+    },
+    setNonAuthenticatedUserResultsSaved: (state, action: PayloadAction<boolean>) => {
+      state.nonAuthenticatedUserResultsSaved = action.payload
+    },
+    clearNonAuthenticatedUserResults: (state) => {
+      state.hasNonAuthenticatedUserResult = false
+      state.nonAuthenticatedUserResultsSaved = false
     },
     setAuthCheckComplete: (state, action: PayloadAction<boolean>) => {
       state.authCheckComplete = action.payload
     },
-
-    // Force show results (used after authentication)
-    setForceShowResults: (state, action: PayloadAction<boolean>) => {
-      console.log("Setting forceShowResults:", action.payload)
-      state.forceShowResults = action.payload
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload
     },
+    setAnimationState: (state, action: PayloadAction<"idle" | "answering" | "completed">) => {
+      state.animationState = action.payload
+    },
+    saveStateBeforeAuth: (
+      state,
+      action: PayloadAction<{
+        quizId?: string
+        slug?: string
+        quizType?: string
+        currentQuestionIndex?: number
+        answers?: Answer[]
+        isCompleted?: boolean
+        score?: number
+        completedAt?: string
+      }>,
+    ) => {
+      state.savedState = action.payload
+    },
+    clearSavedState: (state) => {
+      state.savedState = null
+    },
+    restoreQuizState: (state, action: PayloadAction<Partial<QuizState>>) => {
+      // Only restore properties that are provided in the payload
+      const payload = action.payload
 
-    // Set pending auth redirect
-    setPendingAuthRedirect: (state, action: PayloadAction<{ pending: boolean; redirectUrl?: string }>) => {
-      console.log("Setting pendingAuthRedirect:", action.payload)
-      state.pendingAuthRedirect = action.payload.pending
-      state.redirectUrl = action.payload.redirectUrl || null
+      // Core quiz data
+      if (payload.quizId !== undefined) state.quizId = payload.quizId
+      if (payload.slug !== undefined) state.slug = payload.slug
+      if (payload.title !== undefined) state.title = payload.title
+      if (payload.quizType !== undefined) state.quizType = payload.quizType
+      if (payload.questions !== undefined) state.questions = payload.questions
+
+      // Progress data
+      if (payload.currentQuestionIndex !== undefined) state.currentQuestionIndex = payload.currentQuestionIndex
+      if (payload.answers !== undefined) state.answers = payload.answers
+      if (payload.timeSpent !== undefined) state.timeSpent = payload.timeSpent
+
+      // Completion data
+      if (payload.isCompleted !== undefined) state.isCompleted = payload.isCompleted
+      if (payload.score !== undefined) state.score = payload.score
+      if (payload.completedAt !== undefined) state.completedAt = payload.completedAt
+
+      // Auth state
+      if (payload.requiresAuth !== undefined) state.requiresAuth = payload.requiresAuth
+      if (payload.pendingAuthRequired !== undefined) state.pendingAuthRequired = payload.pendingAuthRequired
+      if (payload.authCheckComplete !== undefined) state.authCheckComplete = payload.authCheckComplete
+
+      // Results state
+      if (payload.resultsSaved !== undefined) state.resultsSaved = payload.resultsSaved
+      if (payload.hasNonAuthenticatedUserResult !== undefined)
+        state.hasNonAuthenticatedUserResult = payload.hasNonAuthenticatedUserResult
+      if (payload.nonAuthenticatedUserResultsSaved !== undefined)
+        state.nonAuthenticatedUserResultsSaved = payload.nonAuthenticatedUserResultsSaved
+
+      // Reset animation state based on completion
+      state.animationState = payload.isCompleted ? "completed" : "idle"
+
+      // Reset error state
+      state.error = null
+    },
+    restoreFromSavedState: (state) => {
+      if (state.savedState) {
+        if (state.savedState.quizId) state.quizId = state.savedState.quizId
+        if (state.savedState.slug) state.slug = state.savedState.slug
+        if (state.savedState.quizType) state.quizType = state.savedState.quizType
+        if (state.savedState.currentQuestionIndex !== undefined)
+          state.currentQuestionIndex = state.savedState.currentQuestionIndex
+        if (state.savedState.answers) state.answers = state.savedState.answers
+        if (state.savedState.isCompleted !== undefined) state.isCompleted = state.savedState.isCompleted
+        if (state.savedState.score !== undefined) state.score = state.savedState.score
+        if (state.savedState.completedAt) state.completedAt = state.savedState.completedAt
+
+        // Clear saved state after restoring
+        state.savedState = null
+      }
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(submitQuizResults.fulfilled, (state, action) => {
-        // Handle successful submission
+      .addCase("FORCE_QUIZ_COMPLETED", (state) => {
+        state.isCompleted = true
+      })
+      .addCase(fetchQuizResults.pending, (state) => {
+        state.isSavingResults = true
+        state.error = null
+      })
+      .addCase(fetchQuizResults.fulfilled, (state, action) => {
+        state.isSavingResults = false
+        if (action.payload) {
+          state.score = action.payload.score || 0
+          state.isCompleted = true
+          state.completedAt = action.payload.completedAt || new Date().toISOString()
+          state.resultsSaved = true
+        }
+      })
+      .addCase(fetchQuizResults.rejected, (state, action) => {
+        state.isSavingResults = false
+        state.error = action.error.message || "Failed to fetch quiz results"
+      })
+      .addCase(submitQuizResults.pending, (state) => {
+        state.isSavingResults = true
+        state.error = null
+      })
+      .addCase(submitQuizResults.fulfilled, (state) => {
+        state.isSavingResults = false
+        state.resultsSaved = true
       })
       .addCase(submitQuizResults.rejected, (state, action) => {
-        // Handle failed submission
+        state.isSavingResults = false
+        state.error = action.error.message || "Failed to submit quiz results"
       })
   },
 })
@@ -209,16 +371,20 @@ export const {
   initQuiz,
   submitAnswer,
   nextQuestion,
-  previousQuestion,
-  goToQuestion,
   completeQuiz,
   resetQuiz,
-  setIsAuthenticated,
   setRequiresAuth,
-  setIsProcessingAuth,
+  setPendingAuthRequired,
+  setHasNonAuthenticatedUserResult,
+  setNonAuthenticatedUserResultsSaved,
+  clearNonAuthenticatedUserResults,
   setAuthCheckComplete,
-  setForceShowResults,
-  setPendingAuthRedirect,
+  setError,
+  setAnimationState,
+  restoreQuizState,
+  saveStateBeforeAuth,
+  clearSavedState,
+  restoreFromSavedState,
 } = quizSlice.actions
 
 // Export reducer

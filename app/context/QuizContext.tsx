@@ -1,20 +1,12 @@
 "use client"
 
-import { createContext, useContext, useRef, useEffect, type ReactNode, useCallback, useState } from "react"
-import { Provider as ReduxProvider, useDispatch, useSelector } from "react-redux"
-import { store, persistor } from "@/store"
+import { createContext, useContext, useRef, useEffect, type ReactNode } from "react"
+import { useAppDispatch, useAppSelector } from "@/store"
 import { useSession } from "next-auth/react"
+
+import { setPendingAuthRequired, saveStateBeforeAuth } from "@/store/slices/quizSlice"
+import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
 import { useQuizState } from "@/hooks/useQuizState"
-import { PersistGate } from "redux-persist/integration/react"
-import {
-  setIsAuthenticated,
-  setIsProcessingAuth,
-  setAuthCheckComplete,
-  setForceShowResults,
-  setPendingAuthRedirect,
-} from "@/store/slices/quizSlice"
-import { useToast } from "@/hooks/use-toast"
-import { useSearchParams } from "next/navigation"
 
 interface QuizProviderProps {
   children: ReactNode
@@ -30,163 +22,86 @@ type QuizContextValue = ReturnType<typeof useQuizState> & {
   quizId?: string
   slug?: string
   quizType?: string
-  setAuthCheckComplete?: (complete: boolean) => void
-  handleFromAuthRedirect: () => void
-  isAuthRedirectProcessed: boolean
 }
 
-// Export the context so it can be imported if needed
-export const QuizContext = createContext<QuizContextValue | null>(null)
+const QuizContext = createContext<QuizContextValue | null>(null)
 
 export const QuizProvider = ({ children, quizId, slug, quizType, quizData, onAuthRequired }: QuizProviderProps) => {
   const initializedQuizId = useRef<string | undefined>(undefined)
   const quizState = useQuizState()
-  const reduxState = useSelector((s: any) => s.quiz)
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const { data: session, status } = useSession()
-  const { toast } = useToast()
-  const hasCheckedAuth = useRef(false)
-  const searchParams = useSearchParams()
-  const [isAuthRedirectProcessed, setIsAuthRedirectProcessed] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<any>({})
+  const isAuthenticated = Boolean(session?.user)
+  const authState = useAppSelector((state) => state.auth)
+  const quizReduxState = useAppSelector((state) => state.quiz)
 
-  // Update debug info
+  // Reset init when we switch quizzes
   useEffect(() => {
-    setDebugInfo({
-      sessionStatus: status,
-      isAuthenticated: status === "authenticated",
-      hasUser: !!session?.user,
-      userId: session?.user?.id || null,
-      email: session?.user?.email || null,
-      slug,
-      quizId,
-      quizType,
-      reduxState: {
-        isCompleted: reduxState.isCompleted,
-        forceShowResults: reduxState.forceShowResults,
-        isAuthenticated: reduxState.isAuthenticated,
-        requiresAuth: reduxState.requiresAuth,
-        isProcessingAuth: reduxState.isProcessingAuth,
-        authCheckComplete: reduxState.authCheckComplete,
-        pendingAuthRedirect: reduxState.pendingAuthRedirect,
-      },
-      isAuthRedirectProcessed,
-      hasCheckedAuth: hasCheckedAuth.current,
-      searchParams: searchParams ? Object.fromEntries(searchParams.entries()) : {},
-    })
-  }, [status, session, slug, quizId, quizType, reduxState, isAuthRedirectProcessed, searchParams])
+    if (quizId !== initializedQuizId.current) {
+      initializedQuizId.current = undefined
+    }
+  }, [quizId])
 
   // Initialize quiz data once per quiz
   useEffect(() => {
     if (quizData && quizState.initializeQuiz && initializedQuizId.current !== quizId) {
-      console.log("Initializing quiz in QuizProvider:", { quizId, slug, quizType })
       quizState.initializeQuiz({
-        id: quizId,
+        ...quizData,
+        quizId,
         slug,
-        questions: quizData?.questions || [],
-        quizType: quizType || "mcq",
-        requiresAuth: true,
-        isAuthenticated: status === "authenticated" && !!session?.user,
+        quizType,
+        isAuthenticated,
       })
       initializedQuizId.current = quizId
     }
-  }, [quizData, quizId, quizState, slug, quizType, status, session])
+  }, [quizData, quizId, quizState, slug, quizType, isAuthenticated])
 
-  // Keep Redux slice in sync with NextAuth
+  // Trigger onAuthRequired callback
   useEffect(() => {
-    const isAuthenticated = status === "authenticated" && !!session?.user
-    dispatch(setIsAuthenticated(isAuthenticated))
-
-    // Mark auth check as complete when session status is determined
-    if (status !== "loading") {
-      dispatch(setAuthCheckComplete(true))
-    }
-  }, [status, dispatch, session])
-
-  // Handle return from authentication - check for fromAuth parameter
-  useEffect(() => {
-    if (typeof window !== "undefined" && !isAuthRedirectProcessed) {
-      try {
-        const fromAuth = searchParams?.get("fromAuth") === "true"
-
-        if (fromAuth && status === "authenticated") {
-          console.log("Detected return from authentication, processing...")
-
-          // Process the authentication redirect immediately
-          handleFromAuthRedirect()
-        }
-      } catch (error) {
-        console.error("Error checking auth redirect:", error)
-      }
-    }
-  }, [status, searchParams, isAuthRedirectProcessed])
-
-  // Trigger onAuthRequired callback immediately when needed
-  useEffect(() => {
-    if (
-      onAuthRequired &&
-      reduxState.requiresAuth &&
-      !reduxState.isAuthenticated &&
-      !reduxState.isProcessingAuth &&
-      status !== "loading" &&
-      status !== "authenticated"
-    ) {
+    if (onAuthRequired && quizReduxState.requiresAuth && !authState.isAuthenticated && !authState.isProcessingAuth) {
       const currentUrl = typeof window !== "undefined" ? window.location.href : ""
-      console.log("Authentication required, redirecting to sign-in")
 
-      // Set processing auth immediately to prevent multiple redirects
-      dispatch(setIsProcessingAuth(true))
-
-      // Set pending auth redirect flag in Redux
+      // Save quiz state to Redux before redirecting
       dispatch(
-        setPendingAuthRedirect({
-          pending: true,
-          redirectUrl: currentUrl,
+        saveStateBeforeAuth({
+          quizId,
+          slug,
+          quizType,
+          isCompleted: quizReduxState.isCompleted,
+          currentQuestionIndex: quizReduxState.currentQuestionIndex,
+          answers: quizReduxState.answers,
+          score: quizReduxState.score,
+          completedAt: quizReduxState.completedAt || new Date().toISOString(),
         }),
       )
 
-      // Trigger the redirect immediately
+      // Set processing auth to prevent multiple redirects
+      dispatch(setIsProcessingAuth(true))
+      dispatch(setPendingAuthRequired(true))
+      dispatch(setRedirectUrl(currentUrl))
+
+      // Trigger the redirect
       onAuthRequired(currentUrl)
     }
-  }, [
-    reduxState.requiresAuth,
-    reduxState.isAuthenticated,
-    reduxState.isProcessingAuth,
-    onAuthRequired,
-    dispatch,
-    status,
-  ])
+  }, [quizReduxState, authState, onAuthRequired, quizId, slug, quizType, dispatch])
 
-  // Handle redirect from authentication
-  const handleFromAuthRedirect = useCallback(() => {
-    if (isAuthRedirectProcessed) {
-      return
+  // Add a new useEffect to restore state when returning from auth
+  useEffect(() => {
+    if (typeof window !== "undefined" && status === "authenticated") {
+      // Check if we're returning from auth
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromAuth = urlParams.get("fromAuth")
+
+      if (fromAuth === "true" && quizReduxState.pendingAuthRequired) {
+        // Reset the processing flags
+        dispatch(setIsProcessingAuth(false))
+
+        if (process.env.NODE_ENV === "development") {
+          console.log("Auth completed, state restored from Redux")
+        }
+      }
     }
-
-    console.log("Processing authentication redirect")
-
-    // Clear the URL parameter
-    if (typeof window !== "undefined") {
-      const newUrl = window.location.pathname
-      window.history.replaceState({}, document.title, newUrl)
-    }
-
-    // Mark auth check as complete and reset processing state
-    dispatch(setAuthCheckComplete(true))
-    dispatch(setIsProcessingAuth(false))
-
-    // Force show results - this is critical to ensure results are displayed
-    dispatch(setForceShowResults(true))
-
-    // Show toast notification
-    toast({
-      title: "Authentication successful",
-      description: "Your quiz results have been saved.",
-    })
-
-    // Mark as processed to prevent multiple processing
-    setIsAuthRedirectProcessed(true)
-  }, [dispatch, toast, isAuthRedirectProcessed])
+  }, [status, quizReduxState, dispatch])
 
   const contextValue: QuizContextValue = {
     ...quizState,
@@ -194,31 +109,9 @@ export const QuizProvider = ({ children, quizId, slug, quizType, quizData, onAut
     quizId,
     slug,
     quizType,
-    setAuthCheckComplete: (complete: boolean) => {
-      dispatch(setAuthCheckComplete(complete))
-    },
-    handleFromAuthRedirect,
-    isAuthRedirectProcessed,
   }
 
-  return (
-    <ReduxProvider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <QuizContext.Provider value={contextValue}>
-          {children}
-
-          <div className="fixed bottom-4 right-4 z-50 max-w-md">
-            <details className="bg-slate-800 text-white p-2 rounded-md text-xs">
-              <summary className="cursor-pointer font-bold">Quiz Context Debug</summary>
-              <pre className="mt-2 overflow-auto max-h-96 p-2 bg-slate-900 rounded">
-                {JSON.stringify(debugInfo, null, 2)}
-              </pre>
-            </details>
-          </div>
-        </QuizContext.Provider>
-      </PersistGate>
-    </ReduxProvider>
-  )
+  return <QuizContext.Provider value={contextValue}>{children}</QuizContext.Provider>
 }
 
 export const useQuiz = () => {
@@ -228,3 +121,19 @@ export const useQuiz = () => {
   }
   return ctx
 }
+
+// re-export slice actions for convenience
+export {
+  resetQuiz,
+  submitAnswer,
+  nextQuestion,
+  completeQuiz,
+  setRequiresAuth,
+  fetchQuizResults,
+  submitQuizResults,
+  setPendingAuthRequired,
+  setAuthCheckComplete,
+  setHasNonAuthenticatedUserResult,
+  clearNonAuthenticatedUserResults,
+  setError,
+} from "@/store/slices/quizSlice"
