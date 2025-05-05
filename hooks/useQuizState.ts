@@ -230,8 +230,25 @@ export const useQuizState = () => {
 
   // Restore from saved state in Redux
   const handleRestoreFromSavedState = useCallback(() => {
+    // First dispatch the restore action
     dispatch(restoreFromSavedState())
-  }, [dispatch])
+
+    // Then check if we need to force completion
+    const savedState = quizState.savedState
+    if (savedState && savedState.isCompleted) {
+      // Force the quiz to be completed with the saved data
+      dispatch(
+        completeQuiz({
+          answers: savedState.answers || [],
+          score: savedState.score || 0,
+          completedAt: savedState.completedAt || new Date().toISOString(),
+        }),
+      )
+
+      // Force the state to be updated
+      dispatch({ type: "FORCE_QUIZ_COMPLETED" })
+    }
+  }, [dispatch, quizState.savedState])
 
   // Return these methods in the hook's return value
   return {

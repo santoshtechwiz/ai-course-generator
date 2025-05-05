@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { updateContactSubmission, deleteContactSubmission } from "@/app/actions/actions"
 import { sendContactResponse } from "@/lib/email"
-import { isAdmin } from "@/lib/authOptions"
+import { isAdmin } from "@/lib/auth"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {

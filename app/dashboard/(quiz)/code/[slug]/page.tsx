@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { QuizType } from "@/app/types/quiz-types"
 import type { CodeQuizApiResponse } from "@/app/types/code-quiz-types"

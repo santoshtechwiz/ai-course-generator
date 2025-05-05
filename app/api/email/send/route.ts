@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { sendEmail, sendContactResponse, sendAdminNotification } from "@/lib/email"
 
 export async function POST(request: Request) {

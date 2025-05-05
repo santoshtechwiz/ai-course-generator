@@ -28,6 +28,7 @@ interface CodingQuizProps {
   questionNumber: number
   totalQuestions: number
   isLastQuestion: boolean
+  key?: any
 }
 
 export default function CodingQuiz({
@@ -36,6 +37,7 @@ export default function CodingQuiz({
   questionNumber,
   totalQuestions,
   isLastQuestion,
+  key,
 }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)

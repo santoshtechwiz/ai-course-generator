@@ -12,6 +12,7 @@ import { ReduxProvider } from "./redux-provider"
 import { SubscriptionProvider } from "@/store/subscription-provider"
 import { SessionProvider } from "./session-provider"
 import type { SessionProviderProps } from "next-auth/react"
+import MainNavbar from "@/components/Navbar/MainNavbar"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -50,6 +51,7 @@ export function RootProvider({ children, session, ...sessionProps }: RootProvide
   return (
     <QueryClientProvider client={queryClient}>
       <ReduxProvider>
+        
         <SessionProvider
         
           refetchInterval={sessionOptions.refetchInterval}
@@ -57,6 +59,7 @@ export function RootProvider({ children, session, ...sessionProps }: RootProvide
           refetchWhenOffline={sessionOptions.refetchWhenOffline}
           {...sessionProps}
         >
+          <MainNavbar></MainNavbar>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
          
               {/* SubscriptionProvider must come after SessionProvider */}

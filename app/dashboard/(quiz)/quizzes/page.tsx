@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { JsonLd } from "@/app/schema/components/json-ld"

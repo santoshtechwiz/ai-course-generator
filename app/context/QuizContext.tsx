@@ -3,10 +3,14 @@
 import { createContext, useContext, useRef, useEffect, type ReactNode } from "react"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { useSession } from "next-auth/react"
-
-import { setPendingAuthRequired, saveStateBeforeAuth } from "@/store/slices/quizSlice"
-import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
 import { useQuizState } from "@/hooks/useQuizState"
+import {
+  setPendingAuthRequired,
+  saveStateBeforeAuth,
+  restoreFromSavedState,
+  completeQuiz,
+} from "@/store/slices/quizSlice"
+import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
 
 interface QuizProviderProps {
   children: ReactNode
@@ -67,7 +71,7 @@ export const QuizProvider = ({ children, quizId, slug, quizType, quizData, onAut
           quizId,
           slug,
           quizType,
-          isCompleted: quizReduxState.isCompleted,
+          isCompleted: quizReduxState.isCompleted || true, // Force isCompleted to true
           currentQuestionIndex: quizReduxState.currentQuestionIndex,
           answers: quizReduxState.answers,
           score: quizReduxState.score,
@@ -92,9 +96,23 @@ export const QuizProvider = ({ children, quizId, slug, quizType, quizData, onAut
       const urlParams = new URLSearchParams(window.location.search)
       const fromAuth = urlParams.get("fromAuth")
 
-      if (fromAuth === "true" && quizReduxState.pendingAuthRequired) {
+      if (fromAuth === "true" && quizReduxState.pendingAuthRequired && quizReduxState.savedState) {
         // Reset the processing flags
         dispatch(setIsProcessingAuth(false))
+
+        // Restore from saved state
+        dispatch(restoreFromSavedState())
+
+        // Force quiz to completed state if it was completed before
+        if (quizReduxState.savedState.isCompleted) {
+          dispatch(
+            completeQuiz({
+              answers: quizReduxState.savedState.answers,
+              score: quizReduxState.savedState.score,
+              completedAt: quizReduxState.savedState.completedAt,
+            }),
+          )
+        }
 
         if (process.env.NODE_ENV === "development") {
           console.log("Auth completed, state restored from Redux")

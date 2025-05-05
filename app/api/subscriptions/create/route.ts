@@ -4,7 +4,7 @@ import { z } from "zod"
 
 
 import { prisma } from "@/lib/db"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 // Define validation schema for request body

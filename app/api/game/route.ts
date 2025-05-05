@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { MultipleChoiceQuestion, OpenEndedQuestion, QuizType } from "@/app/types/types";
 
-import { getAuthSession } from "@/lib/authOptions";
+import { getAuthSession } from "@/lib/auth";
 import { quizCreationSchema } from "@/schema/schema";
 import { generateSlug } from "@/lib/utils";
 import NodeCache from 'node-cache';

@@ -218,16 +218,14 @@ const quizSlice = createSlice({
       }
     },
     resetQuiz: (state) => {
-      state.currentQuestionIndex = 0
-      state.answers = Array(state.questions.length).fill(null)
-      state.timeSpent = Array(state.questions.length).fill(0)
-      state.isCompleted = false
-      state.score = 0
-      state.completedAt = null
-      state.animationState = "idle"
-      state.error = null
-      state.resultsSaved = false
-      // Don't reset savedState here to ensure it persists through resets
+      return {
+        ...initialState,
+        requiresAuth: state.requiresAuth,
+        pendingAuthRequired: state.pendingAuthRequired,
+        hasNonAuthenticatedUserResult: state.hasNonAuthenticatedUserResult,
+        nonAuthenticatedUserResultsSaved: state.nonAuthenticatedUserResultsSaved,
+        authCheckComplete: state.authCheckComplete,
+      }
     },
     setRequiresAuth: (state, action: PayloadAction<boolean>) => {
       state.requiresAuth = action.payload
@@ -323,6 +321,9 @@ const quizSlice = createSlice({
         if (state.savedState.isCompleted !== undefined) state.isCompleted = state.savedState.isCompleted
         if (state.savedState.score !== undefined) state.score = state.savedState.score
         if (state.savedState.completedAt) state.completedAt = state.savedState.completedAt
+
+        // Set animation state based on completion
+        state.animationState = state.savedState.isCompleted ? "completed" : "idle"
 
         // Clear saved state after restoring
         state.savedState = null

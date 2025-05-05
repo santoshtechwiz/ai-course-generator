@@ -178,27 +178,33 @@ export const authOptions: NextAuthOptions = {
 
           // Send welcome email to new user
           if (user.email && user.name) {
-            await sendEmail(user.email, user.name)
+            await sendEmail(user.email, user.name).catch((err) => console.error("Failed to send welcome email:", err))
           }
         }
 
         // Record the sign-in provider for analytics
         if (account) {
-          const existingMetric = await prisma.userEngagementMetrics.findUnique({
-            where: { userId: user.id },
-          })
-
-          if (!existingMetric) {
-            await prisma.userEngagementMetrics.create({
-              data: {
-                userId: user.id,
-                createdAt: new Date(),
-              },
+          try {
+            const existingMetric = await prisma.userEngagementMetrics.findUnique({
+              where: { userId: user.id },
             })
+
+            if (!existingMetric) {
+              await prisma.userEngagementMetrics.create({
+                data: {
+                  userId: user.id,
+                  createdAt: new Date(),
+                },
+              })
+            }
+          } catch (error) {
+            console.error("Error recording sign-in metrics:", error)
+            // Non-critical error, continue sign-in process
           }
         }
       } catch (error) {
         console.error("Error in signIn event:", error)
+        // Don't throw here - allow sign-in to continue even if these operations fail
       }
     },
     async session({ session }) {
@@ -250,29 +256,44 @@ export const getAuthSession = async () => {
   }
 
   // Otherwise fetch a new session
-  const session = await getServerSession(authOptions)
+  try {
+    const session = await getServerSession(authOptions)
 
-  // Cache the result
-  if (session) {
-    SESSION_CACHE.set(cacheKey, {
-      session,
-      timestamp: now,
-    })
+    // Cache the result
+    if (session) {
+      SESSION_CACHE.set(cacheKey, {
+        session,
+        timestamp: now,
+      })
+    }
+
+    return session
+  } catch (error) {
+    console.error("Error fetching auth session:", error)
+    return null
   }
-
-  return session
 }
 
 // Helper to check if user is authenticated
 export async function isAuthenticated() {
-  const session = await getAuthSession()
-  return !!session?.user
+  try {
+    const session = await getAuthSession()
+    return !!session?.user
+  } catch (error) {
+    console.error("Error checking authentication:", error)
+    return false
+  }
 }
 
 // Helper to check if user is admin
 export async function isAdmin() {
-  const session = await getAuthSession()
-  return session?.user?.isAdmin === true
+  try {
+    const session = await getAuthSession()
+    return session?.user?.isAdmin === true
+  } catch (error) {
+    console.error("Error checking admin status:", error)
+    return false
+  }
 }
 
 // Standard unauthorized response
@@ -282,23 +303,32 @@ export function unauthorized() {
 
 // Helper to clear expired sessions
 export async function clearExpiredSessions() {
-  const now = new Date()
-  await prisma.session.deleteMany({
-    where: {
-      expires: { lt: now },
-    },
-  })
+  try {
+    const now = new Date()
+    await prisma.session.deleteMany({
+      where: {
+        expires: { lt: now },
+      },
+    })
+  } catch (error) {
+    console.error("Error clearing expired sessions:", error)
+  }
 }
 
 // Helper to update user data
 export async function updateUserData(userId: string, data: any) {
-  await prisma.user.update({
-    where: { id: userId },
-    data,
-  })
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data,
+    })
 
-  // Invalidate session cache to ensure fresh data
-  invalidateSessionCache()
+    // Invalidate session cache to ensure fresh data
+    invalidateSessionCache()
+  } catch (error) {
+    console.error("Error updating user data:", error)
+    throw error
+  }
 }
 
 // Invalidate session cache
