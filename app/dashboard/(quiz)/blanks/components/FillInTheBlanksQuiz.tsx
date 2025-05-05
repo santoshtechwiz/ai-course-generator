@@ -114,6 +114,38 @@ const ProgressBar = ({ progressPercentage, questionNumber, totalQuestions }: Pro
   </div>
 )
 
+// Add this function to calculate string similarity (if it doesn't exist)
+const calculateStringSimilarity = (str1: string, str2: string): number => {
+  // Convert both strings to lowercase for case-insensitive comparison
+  const s1 = str1.toLowerCase()
+  const s2 = str2.toLowerCase()
+
+  // If strings are identical, return 100%
+  if (s1 === s2) return 100
+
+  // If either string is empty, return 0%
+  if (s1.length === 0 || s2.length === 0) return 0
+
+  // Simple length-based similarity for demo purposes
+  // In a real app, use Levenshtein distance or other algorithms
+  const lengthRatio = Math.min(s1.length, s2.length) / Math.max(s1.length, s2.length)
+
+  // Count matching characters (simple approach)
+  let matchCount = 0
+  const minLength = Math.min(s1.length, s2.length)
+
+  for (let i = 0; i < minLength; i++) {
+    if (s1[i] === s2[i]) matchCount++
+  }
+
+  const charMatchRatio = minLength > 0 ? matchCount / minLength : 0
+
+  // Combine length and character matching for final similarity
+  const similarity = (lengthRatio * 0.4 + charMatchRatio * 0.6) * 100
+
+  return Math.round(similarity)
+}
+
 export default function FillInTheBlanksQuiz({
   question,
   questionNumber,

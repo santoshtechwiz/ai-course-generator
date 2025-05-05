@@ -127,6 +127,25 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   const handleAnswer = (answer: string) => {
     const timeSpent = Math.floor((Date.now() - startTime) / 1000)
 
+    // For open-ended questions, we can simulate a similarity score
+    // In a real app, this would be calculated by comparing to model answers
+    const currentQuestion = quizState.questions[quizState.currentQuestionIndex]
+    const modelAnswer = currentQuestion.modelAnswer || currentQuestion.answer || ""
+
+    // Simple similarity calculation (in a real app, use NLP or AI for this)
+    let similarity = 85 // Default reasonable similarity
+
+    // If we have a model answer, do a basic length comparison
+    if (modelAnswer && answer) {
+      // Very basic similarity - just comparing lengths as a demo
+      // In a real app, use proper text comparison algorithms
+      const lengthRatio = Math.min(answer.length, modelAnswer.length) / Math.max(answer.length, modelAnswer.length)
+      similarity = Math.round(lengthRatio * 100)
+
+      // Ensure minimum similarity of 50% for demo purposes
+      similarity = Math.max(similarity, 50)
+    }
+
     // Submit answer to Redux
     dispatch(
       submitAnswer({
@@ -134,15 +153,23 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         userAnswer: answer,
         timeSpent,
         isCorrect: true, // For open-ended, we don't have a strict correct/incorrect
+        similarity, // Add the similarity score
       }),
     )
 
     // If this is the last question, complete the quiz
     if (quizState.currentQuestionIndex >= quizState.questions.length - 1) {
       // Complete the quiz with all answers
-      const allAnswers = [...quizState.answers, { answer, userAnswer: answer, timeSpent, isCorrect: true }].filter(
-        Boolean,
-      )
+      const allAnswers = [
+        ...quizState.answers,
+        {
+          answer,
+          userAnswer: answer,
+          timeSpent,
+          isCorrect: true,
+          similarity,
+        },
+      ].filter(Boolean)
 
       dispatch(
         completeQuiz({
