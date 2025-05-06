@@ -9,6 +9,7 @@ import {
   saveStateBeforeAuth,
   restoreFromSavedState,
   completeQuiz,
+  clearSavedState,
 } from "@/store/slices/quizSlice"
 import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
 
@@ -107,12 +108,17 @@ export const QuizProvider = ({ children, quizId, slug, quizType, quizData, onAut
         if (quizReduxState.savedState.isCompleted) {
           dispatch(
             completeQuiz({
-              answers: quizReduxState.savedState.answers,
-              score: quizReduxState.savedState.score,
-              completedAt: quizReduxState.savedState.completedAt,
+              answers: quizReduxState.savedState.answers || [],
+              score: quizReduxState.savedState.score || 0,
+              completedAt: quizReduxState.savedState.completedAt || new Date().toISOString(),
             }),
           )
         }
+
+        // Clear the URL parameter
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete("fromAuth")
+        window.history.replaceState({}, "", newUrl.toString())
 
         if (process.env.NODE_ENV === "development") {
           console.log("Auth completed, state restored from Redux")
@@ -120,6 +126,16 @@ export const QuizProvider = ({ children, quizId, slug, quizType, quizData, onAut
       }
     }
   }, [status, quizReduxState, dispatch])
+
+  // Clear saved state when leaving the quiz
+  useEffect(() => {
+    return () => {
+      // Only clear if not in the middle of auth flow
+      if (!quizReduxState.pendingAuthRequired) {
+        dispatch(clearSavedState())
+      }
+    }
+  }, [dispatch, quizReduxState.pendingAuthRequired])
 
   const contextValue: QuizContextValue = {
     ...quizState,

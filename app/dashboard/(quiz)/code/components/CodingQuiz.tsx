@@ -28,7 +28,6 @@ interface CodingQuizProps {
   questionNumber: number
   totalQuestions: number
   isLastQuestion: boolean
-  key?: any
 }
 
 export default function CodingQuiz({
@@ -37,7 +36,6 @@ export default function CodingQuiz({
   questionNumber,
   totalQuestions,
   isLastQuestion,
-  key,
 }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
@@ -198,7 +196,7 @@ export default function CodingQuiz({
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-sm border">
+    <Card className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-sm border" data-testid="coding-quiz">
       <CardHeader className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">
@@ -227,6 +225,7 @@ export default function CodingQuiz({
                     language={question.language || "javascript"}
                     onChange={handleCodeChange}
                     height="180px" // Reduced height
+                    data-testid="code-editor"
                   />
                 </div>
               </MotionWrapper>
@@ -245,6 +244,7 @@ export default function CodingQuiz({
                             selectedOption === option ? "border-primary bg-primary/5" : "hover:bg-gray-50",
                           )}
                           onClick={() => handleSelectOption(option)}
+                          data-testid={`option-${index}`}
                         >
                           <div className="flex items-center">
                             <div
@@ -284,6 +284,7 @@ export default function CodingQuiz({
           onClick={handleSubmit}
           disabled={isSubmitting || (options.length > 0 && !selectedOption)}
           className="px-8"
+          data-testid="submit-answer"
         >
           {isSubmitting ? (
             <div className="flex items-center gap-2">

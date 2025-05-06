@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { AlertCircle, Loader2 } from "lucide-react"
 
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
@@ -31,8 +31,45 @@ interface OpenEndedQuizWrapperProps {
   slug: string
 }
 
+const ErrorDisplay = ({ error, onReturn }: { error: string; onReturn: () => void }) => {
+  return (
+    <Alert variant="destructive" className="animate-pulse-once">
+      <AlertCircle className="h-5 w-5" />
+      <AlertTitle className="text-lg">Error</AlertTitle>
+      <AlertDescription className="mt-2">
+        <p className="mb-4">{error}</p>
+        <div className="mt-4 flex gap-3">
+          <Button onClick={onReturn} variant="default">
+            Return to Quiz Creator
+          </Button>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </AlertDescription>
+    </Alert>
+  )
+}
+
+function validateInitialQuizData(quizData: any): { isValid: boolean; error?: string } {
+  if (!quizData) {
+    return { isValid: false, error: "Quiz data is missing" }
+  }
+
+  if (!quizData.questions || !Array.isArray(quizData.questions)) {
+    return { isValid: false, error: "Questions array is missing or invalid" }
+  }
+
+  if (quizData.questions.length === 0) {
+    return { isValid: false, error: "No questions found in the quiz" }
+  }
+
+  return { isValid: true }
+}
+
 export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWrapperProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const { toast } = useToast()
 
@@ -47,10 +84,42 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   const [displayState, setDisplayState] = useState<"quiz" | "results" | "auth" | "loading">("loading")
   const [startTime] = useState<number>(Date.now())
   const [hasInitialized, setHasInitialized] = useState(false)
+  const [isReset, setIsReset] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Check URL parameters for reset
+  useEffect(() => {
+    const reset = searchParams?.get("reset")
+    if (reset === "true") {
+      // Reset the quiz state
+      dispatch(resetQuiz())
+      setIsReset(true)
+      setDisplayState("quiz")
+
+      // Remove the reset parameter from URL
+      if (typeof window !== "undefined") {
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete("reset")
+        newUrl.searchParams.delete("t") // Remove timestamp parameter too
+        window.history.replaceState({}, "", newUrl.toString())
+      }
+    }
+  }, [searchParams, dispatch])
 
   // Initialize quiz with Redux
   useEffect(() => {
-    if (hasInitialized) return
+    if (hasInitialized && !isReset) return
+
+    if (!quizData) {
+      setError("Quiz data is missing or invalid")
+      return
+    }
+
+    const validation = validateInitialQuizData(quizData)
+    if (!validation.isValid) {
+      setError(validation.error || "Invalid quiz data")
+      return
+    }
 
     // Validate quiz data
     if (!quizData || !quizData.questions || !Array.isArray(quizData.questions)) {
@@ -72,17 +141,18 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
         questions: quizData.questions || [],
         isCompleted: false,
         score: 0,
-        requiresAuth: false,
+        requiresAuth: true, // Always require auth to see results
       }),
     )
 
     setHasInitialized(true)
+    setIsReset(false)
 
     // Set display state to quiz after initialization
     setTimeout(() => {
       setDisplayState("quiz")
     }, 500)
-  }, [quizData, slug, dispatch, toast, hasInitialized])
+  }, [quizData, slug, dispatch, toast, hasInitialized, isReset])
 
   // Check URL parameters for auth return
   useEffect(() => {
@@ -230,6 +300,10 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   // Handle continue as guest
   const handleContinueAsGuest = () => {
     setDisplayState("results")
+  }
+
+  if (error) {
+    return <ErrorDisplay error={`Error loading quiz: ${error}`} onReturn={() => router.push("/dashboard/quizzes")} />
   }
 
   // Error state

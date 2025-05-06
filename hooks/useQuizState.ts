@@ -20,6 +20,7 @@ import {
   submitQuizResults,
   restoreQuizState as restoreQuizStateAction,
   restoreFromSavedState,
+  clearSavedState,
   type Answer,
 } from "@/store/slices/quizSlice"
 import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
@@ -250,6 +251,11 @@ export const useQuizState = () => {
     }
   }, [dispatch, quizState.savedState])
 
+  // Clear saved state
+  const handleClearSavedState = useCallback(() => {
+    dispatch(clearSavedState())
+  }, [dispatch])
+
   // Return these methods in the hook's return value
   return {
     state: quizState,
@@ -268,6 +274,7 @@ export const useQuizState = () => {
     submitQuizResults: handleSubmitQuizResults,
     restoreQuizState,
     restoreFromSavedState: handleRestoreFromSavedState,
+    clearSavedState: handleClearSavedState,
     isAuthenticated,
   }
 }

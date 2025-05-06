@@ -3,6 +3,7 @@ import { useQuizState } from "@/hooks/useQuizState"
 import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import quizReducer from "@/store/slices/quizSlice"
+import authReducer from "@/store/slices/authSlice"
 import { SessionProvider } from "next-auth/react"
 
 // Mock next-auth/react
@@ -39,6 +40,7 @@ const createTestStore = (initialState = {}) => {
   return configureStore({
     reducer: {
       quiz: quizReducer,
+      auth: authReducer,
     },
     preloadedState: {
       quiz: {
@@ -147,7 +149,7 @@ describe("useQuizState Hook", () => {
     ]
 
     act(() => {
-      result.current.completeQuiz(answers)
+      result.current.completeQuiz({ answers })
     })
 
     // Basic assertions that don't depend on Redux state
@@ -183,15 +185,27 @@ describe("useQuizState Hook", () => {
     expect(typeof result.current.handleAuthenticationRequired).toBe("function")
   })
 
-  it("should clear guest results", () => {
+  it("should clear non-authenticated user results", () => {
     const { result } = renderHook(() => useQuizState(), { wrapper })
 
     act(() => {
-      result.current.clearGuestResults()
+      result.current.clearNonAuthenticatedUserResults()
     })
 
     // Basic assertions that don't depend on Redux state
-    expect(result.current.clearGuestResults).toBeDefined()
-    expect(typeof result.current.clearGuestResults).toBe("function")
+    expect(result.current.clearNonAuthenticatedUserResults).toBeDefined()
+    expect(typeof result.current.clearNonAuthenticatedUserResults).toBe("function")
+  })
+
+  it("should clear saved state", () => {
+    const { result } = renderHook(() => useQuizState(), { wrapper })
+
+    act(() => {
+      result.current.clearSavedState()
+    })
+
+    // Basic assertions that don't depend on Redux state
+    expect(result.current.clearSavedState).toBeDefined()
+    expect(typeof result.current.clearSavedState).toBe("function")
   })
 })

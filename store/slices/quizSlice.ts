@@ -11,6 +11,7 @@ export interface Answer {
   userAnswer?: string
   index?: number
   hintsUsed?: boolean
+  similarity?: number
 }
 
 export interface QuizState {
@@ -182,6 +183,7 @@ const quizSlice = createSlice({
         timeSpent: action.payload.timeSpent,
         questionId: action.payload.questionId,
         hintsUsed: action.payload.hintsUsed,
+        similarity: action.payload.similarity,
       }
       state.answers = newAnswers
 
@@ -189,11 +191,6 @@ const quizSlice = createSlice({
       const newTimeSpent = [...state.timeSpent]
       newTimeSpent[indexToUpdate] = action.payload.timeSpent
       state.timeSpent = newTimeSpent
-
-      // Move to the next question
-      if (state.currentQuestionIndex < state.questions.length - 1) {
-        state.currentQuestionIndex += 1
-      }
 
       state.animationState = "answering"
     },
@@ -293,6 +290,8 @@ const quizSlice = createSlice({
     },
     clearSavedState: (state) => {
       state.savedState = null
+      state.pendingAuthRequired = false
+      state.isProcessingAuth = false
     },
     restoreQuizState: (state, action: PayloadAction<Partial<QuizState>>) => {
       // Only restore properties that are provided in the payload
@@ -347,9 +346,6 @@ const quizSlice = createSlice({
 
         // Set animation state based on completion
         state.animationState = state.savedState.isCompleted ? "completed" : "idle"
-
-        // Clear saved state after restoring
-        state.savedState = null
       }
     },
     setCurrentQuestion: (state, action) => {
