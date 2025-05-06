@@ -57,9 +57,9 @@ export default function OpenEndedQuizQuestion({
   const minimumAnswerLength = 10 // characters
 
   // Parse hints from question data
-  const hints = Array.isArray(question.openEndedQuestion?.hints)
+  const hints = Array.isArray(question?.openEndedQuestion?.hints)
     ? question.openEndedQuestion.hints
-    : question.openEndedQuestion?.hints?.split("|") || []
+    : question?.openEndedQuestion?.hints?.split("|") || []
 
   // Reset state when question changes
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function OpenEndedQuizQuestion({
         textareaRef.current.focus()
       }
     }, 300)
-  }, [question.id, hints.length])
+  }, [question?.id, hints.length])
 
   // Timer for elapsed time
   useEffect(() => {

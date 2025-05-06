@@ -4,11 +4,10 @@ import quizReducer, {
   nextQuestion,
   completeQuiz,
   resetQuiz,
-  setIsAuthenticated,
   setRequiresAuth,
   setPendingAuthRequired,
-  setHasGuestResult,
-  clearGuestResults,
+  setHasNonAuthenticatedUserResult,
+  clearNonAuthenticatedUserResults,
 } from "@/store/slices/quizSlice"
 
 // Define initial state for tests
@@ -25,16 +24,18 @@ const initialState = {
   score: 0,
   requiresAuth: false,
   pendingAuthRequired: false,
-  isAuthenticated: false,
-  hasGuestResult: false,
-  guestResultsSaved: false,
+  hasNonAuthenticatedUserResult: false,
+  nonAuthenticatedUserResultsSaved: false,
   authCheckComplete: false,
-  isProcessingAuth: false,
   error: null,
   animationState: "idle",
   isSavingResults: false,
   resultsSaved: false,
   completedAt: null,
+  startTime: expect.any(Number),
+  savedState: null,
+  isProcessingAuth: false,
+  redirectUrl: null,
 }
 
 // Mock data
@@ -80,7 +81,6 @@ describe("quizSlice", () => {
     expect(nextState.title).toBe("Test Quiz")
     expect(nextState.quizType).toBe("mcq")
     expect(nextState.questions).toEqual(mockQuestions)
-    expect(nextState.isAuthenticated).toBe(true)
     expect(nextState.currentQuestionIndex).toBe(0)
     // Expect arrays with null values for new quiz
     expect(nextState.answers).toEqual(Array(mockQuestions.length).fill(null))
@@ -206,19 +206,15 @@ describe("quizSlice", () => {
     const nextState = quizReducer(state, resetQuiz())
 
     expect(nextState.currentQuestionIndex).toBe(0)
-    expect(nextState.answers).toEqual([null, null])
-    expect(nextState.timeSpent).toEqual([0, 0])
+    expect(nextState.answers).toEqual([])
+    expect(nextState.timeSpent).toEqual([])
     expect(nextState.isCompleted).toBe(false)
     expect(nextState.score).toBe(0)
     expect(nextState.completedAt).toBeNull()
     expect(nextState.animationState).toBe("idle")
     expect(nextState.error).toBeNull()
     expect(nextState.resultsSaved).toBe(false)
-  })
-
-  test("should handle setIsAuthenticated", () => {
-    const nextState = quizReducer(initialState, setIsAuthenticated(true))
-    expect(nextState.isAuthenticated).toBe(true)
+    expect(nextState.questions).toEqual(mockQuestions) // Questions should be preserved
   })
 
   test("should handle setRequiresAuth", () => {
@@ -231,21 +227,21 @@ describe("quizSlice", () => {
     expect(nextState.pendingAuthRequired).toBe(true)
   })
 
-  test("should handle setHasGuestResult", () => {
-    const nextState = quizReducer(initialState, setHasGuestResult(true))
-    expect(nextState.hasGuestResult).toBe(true)
-    expect(nextState.guestResultsSaved).toBe(true)
+  test("should handle setHasNonAuthenticatedUserResult", () => {
+    const nextState = quizReducer(initialState, setHasNonAuthenticatedUserResult(true))
+    expect(nextState.hasNonAuthenticatedUserResult).toBe(true)
+    expect(nextState.nonAuthenticatedUserResultsSaved).toBe(true)
   })
 
-  test("should handle clearGuestResults", () => {
+  test("should handle clearNonAuthenticatedUserResults", () => {
     const state = {
       ...initialState,
-      hasGuestResult: true,
-      guestResultsSaved: true,
+      hasNonAuthenticatedUserResult: true,
+      nonAuthenticatedUserResultsSaved: true,
     }
 
-    const nextState = quizReducer(state, clearGuestResults())
-    expect(nextState.hasGuestResult).toBe(false)
-    expect(nextState.guestResultsSaved).toBe(false)
+    const nextState = quizReducer(state, clearNonAuthenticatedUserResults())
+    expect(nextState.hasNonAuthenticatedUserResult).toBe(false)
+    expect(nextState.nonAuthenticatedUserResultsSaved).toBe(false)
   })
 })

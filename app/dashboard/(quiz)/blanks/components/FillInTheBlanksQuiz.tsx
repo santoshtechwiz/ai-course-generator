@@ -173,11 +173,12 @@ export default function FillInTheBlanksQuiz({
   const minimumTimeThreshold = 2 // seconds
 
   const questionParts = useMemo(() => {
+    if (!question?.question) return ["", ""]
     return question.question.split("_____")
-  }, [question.question])
+  }, [question?.question])
 
   const progressiveHints = useMemo(() => {
-    if (!question.answer) return []
+    if (!question?.answer) return []
 
     const correctAnswer = question.answer.toLowerCase()
     const hintSteps = Math.ceil(correctAnswer.length / 3)
@@ -200,7 +201,7 @@ export default function FillInTheBlanksQuiz({
     }
 
     return hints
-  }, [question.answer, question.openEndedQuestion?.hints])
+  }, [question?.answer, question?.openEndedQuestion?.hints])
 
   useEffect(() => {
     setAnswer("")
@@ -276,7 +277,7 @@ export default function FillInTheBlanksQuiz({
   )
 
   const handleSubmit = useCallback(() => {
-    if (!currentQuestionStartTime) return
+    if (!currentQuestionStartTime || !question?.answer) return
 
     const timeSpent = (Date.now() - currentQuestionStartTime) / 1000
     if (isTooFastAnswer(timeSpent, minimumTimeThreshold)) {
