@@ -261,7 +261,10 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
   }
 
   // Handle sign in
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
+    // Import signIn from next-auth/react
+    const { signIn } = await import("next-auth/react")
+
     // Create the redirect URL
     const redirectUrl = `/dashboard/blanks/${slug}?fromAuth=true`
 
@@ -285,7 +288,10 @@ export default function BlankQuizWrapper({ quizData, slug }: BlankQuizWrapperPro
     dispatch(setIsProcessingAuth(true))
     dispatch(setRedirectUrl(redirectUrl))
 
-    // Redirect to sign-in
+    // Call signIn directly
+    signIn(undefined, { callbackUrl: redirectUrl })
+
+    // Also keep the router.push as a fallback
     router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(redirectUrl)}`)
   }
 

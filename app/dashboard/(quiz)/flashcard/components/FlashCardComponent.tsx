@@ -1002,4 +1002,4 @@ export function FlashCardComponent({
      `}</style>
     </>
   )
-
+}

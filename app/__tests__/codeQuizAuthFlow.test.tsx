@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { render, screen, waitFor, fireEvent } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import { SessionProvider } from "next-auth/react"
@@ -85,10 +85,10 @@ jest.mock("../dashboard/(quiz)/code/components/CodeQuizResult", () => ({
 
 jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => ({
   __esModule: true,
-  default: ({ onContinueAsNonAuthenticatedUser, onSignIn }: any) => (
+  default: ({ onContinueAsGuest, onSignIn }: any) => (
     <div data-testid="guest-sign-in-prompt">
       <p>Sign in required</p>
-      <button data-testid="continue-as-guest" onClick={onContinueAsNonAuthenticatedUser}>
+      <button data-testid="continue-as-guest" onClick={onContinueAsGuest}>
         Continue as Guest
       </button>
       <button data-testid="sign-in" onClick={onSignIn}>
@@ -432,7 +432,6 @@ describe("Code Quiz Auth Flow", () => {
     })
   })
 
- 
   test("authenticated user sees results immediately", async () => {
     // Mock authenticated session
     require("next-auth/react").useSession.mockReturnValue({
