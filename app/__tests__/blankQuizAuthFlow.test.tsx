@@ -18,9 +18,10 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(() => new URLSearchParams()),
 }))
 
-// Mock next-auth/react
-const signInMock = jest.fn().mockResolvedValue({ ok: true })
+// Mock next-auth/react with inline mock function
 jest.mock("next-auth/react", () => {
+  const signInMock = jest.fn().mockResolvedValue({ ok: true })
+
   return {
     useSession: jest.fn(() => ({
       data: null,
@@ -218,7 +219,7 @@ describe("Blanks Quiz Auth Flow", () => {
     })
 
     // Reset signIn mock
-    signInMock.mockClear()
+    require("next-auth/react").signIn.mockClear()
   })
 
   test("shows auth prompt when quiz requires authentication", async () => {
