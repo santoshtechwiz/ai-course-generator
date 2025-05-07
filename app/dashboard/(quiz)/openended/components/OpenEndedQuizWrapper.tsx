@@ -21,6 +21,8 @@ import {
   setRequiresAuth,
   setPendingAuthRequired,
   nextQuestion,
+  restoreFromSavedState,
+  clearSavedState,
 } from "@/store/slices/quizSlice"
 import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
 import { Progress } from "@/components/ui/progress"
@@ -161,16 +163,35 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
       const fromAuth = urlParams.get("fromAuth") === "true"
 
       if (fromAuth && isAuthenticated) {
-        // If returning from auth and authenticated, show results
+        // If we have saved state, restore it
+        if (quizState.savedState) {
+          dispatch(restoreFromSavedState())
+
+          // Force the quiz to completed state if it was completed before
+          if (quizState.savedState.isCompleted) {
+            dispatch(
+              completeQuiz({
+                answers: quizState.savedState.answers || [],
+                score: quizState.savedState.score || 0,
+                completedAt: quizState.savedState.completedAt || new Date().toISOString(),
+              }),
+            )
+          }
+        }
+
+        // Show results
         setDisplayState("results")
 
-        // Clear the fromAuth parameter
+        // Clean up URL parameters
         const newUrl = new URL(window.location.href)
         newUrl.searchParams.delete("fromAuth")
         window.history.replaceState({}, "", newUrl.toString())
+
+        // Clean up the saved state
+        dispatch(clearSavedState())
       }
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, dispatch, quizState.savedState])
 
   // Update display state based on quiz state
   useEffect(() => {
@@ -300,6 +321,25 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   // Handle continue as guest
   const handleContinueAsGuest = () => {
     setDisplayState("results")
+  }
+
+  // Handle declined authentication
+  const handleDeclinedAuth = () => {
+    // Reset the quiz
+    dispatch(resetQuiz())
+
+    // Reset display state
+    setDisplayState("quiz")
+
+    // Clear saved state
+    dispatch(clearSavedState())
+
+    // Show toast
+    toast({
+      title: "Quiz reset",
+      description: "You can now start the quiz again from the beginning.",
+      variant: "default",
+    })
   }
 
   if (error) {

@@ -26,6 +26,7 @@ import {
   resetQuiz,
   clearSavedState,
   initQuiz,
+  restoreFromSavedState,
 } from "@/store/slices/quizSlice"
 import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
 import { Progress } from "@/components/ui/progress"
@@ -106,7 +107,8 @@ export default function McqQuizWrapper({
     completeQuiz,
     handleAuthenticationRequired,
     setAuthCheckComplete,
-    restoreFromSavedState,
+    restoreFromSavedState: contextRestoreFromSavedState,
+    handleDeclinedAuthentication,
   } = useQuiz()
 
   // Get Redux state
@@ -202,9 +204,24 @@ export default function McqQuizWrapper({
         // Set loading state while we restore
         setIsLoading(true)
 
-        // Restore state from Redux
-        if (restoreFromSavedState) {
-          restoreFromSavedState()
+        // If we have saved state in Redux, restore it
+        if (quizReduxState.savedState) {
+          dispatch(restoreFromSavedState())
+
+          // Force quiz to completed state if it was completed before
+          if (quizReduxState.savedState.isCompleted) {
+            dispatch(
+              completeQuiz({
+                answers: quizReduxState.savedState.answers || [],
+                score: quizReduxState.savedState.score || 0,
+                completedAt: quizReduxState.savedState.completedAt || new Date().toISOString(),
+              }),
+            )
+          }
+        }
+        // Otherwise use context restore if available
+        else if (contextRestoreFromSavedState) {
+          contextRestoreFromSavedState()
         }
 
         if (typeof setAuthCheckComplete === "function") {
@@ -245,7 +262,16 @@ export default function McqQuizWrapper({
         dispatch(clearSavedState())
       }
     }
-  }, [state, setAuthCheckComplete, restoreFromSavedState, quizId, slug, status, dispatch])
+  }, [
+    state,
+    setAuthCheckComplete,
+    contextRestoreFromSavedState,
+    quizId,
+    slug,
+    status,
+    dispatch,
+    quizReduxState.savedState,
+  ])
 
   // Handle result saving notification
   useEffect(() => {
@@ -472,6 +498,33 @@ export default function McqQuizWrapper({
       }, 50)
     }
   }, [handleAuthenticationRequired, slug, dispatch, quizId, currentQuestionIndex, answers, quizResults?.score])
+
+  // Handle declined authentication
+  const handleDeclinedAuth = useCallback(() => {
+    if (handleDeclinedAuthentication) {
+      handleDeclinedAuthentication()
+    } else {
+      // Reset quiz state
+      dispatch(resetQuiz())
+
+      // Reset local state
+      setCurrentQuestionIndex(0)
+      setAnswers([])
+      setShowResults(false)
+      setShowAuthPrompt(false)
+      setQuizResults(null)
+
+      // Clear saved state
+      dispatch(clearSavedState())
+
+      // Show toast
+      toast({
+        title: "Quiz reset",
+        description: "You can now start the quiz again from the beginning.",
+        variant: "default",
+      })
+    }
+  }, [dispatch, toast, handleDeclinedAuthentication])
 
   // Clean up on unmount
   useEffect(() => {

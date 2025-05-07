@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { render, screen, waitFor, fireEvent } from "@testing-library/react"
+import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react"
 import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import { SessionProvider } from "next-auth/react"
@@ -19,13 +19,17 @@ jest.mock("next/navigation", () => ({
 }))
 
 // Mock next-auth/react
-jest.mock("next-auth/react", () => ({
-  useSession: jest.fn(() => ({
-    data: null,
-    status: "unauthenticated",
-  })),
-  SessionProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
+const signInMock = jest.fn().mockResolvedValue({ ok: true })
+jest.mock("next-auth/react", () => {
+  return {
+    useSession: jest.fn(() => ({
+      data: null,
+      status: "unauthenticated",
+    })),
+    signIn: signInMock,
+    SessionProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  }
+})
 
 // Mock hooks/use-toast
 jest.mock("@/hooks/use-toast", () => ({
@@ -73,18 +77,31 @@ jest.mock("../dashboard/(quiz)/blanks/components/BlankQuizResults", () => ({
   ),
 }))
 
+// Enhanced mock for NonAuthenticatedUserSignInPrompt
 jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => ({
   __esModule: true,
-  default: ({ onContinueAsGuest, onSignIn }: any) => (
-    <div data-testid="guest-sign-in-prompt">
-      <button data-testid="continue-as-guest" onClick={onContinueAsGuest}>
-        Continue as Guest
-      </button>
-      <button data-testid="sign-in" onClick={onSignIn}>
-        Sign In
-      </button>
-    </div>
-  ),
+  default: ({ onContinueAsGuest, onSignIn }: any) => {
+    // Create a wrapper function that ensures onSignIn is called
+    const handleSignIn = () => {
+      console.log("Sign in button clicked")
+      if (typeof onSignIn === "function") {
+        onSignIn()
+      } else {
+        console.error("onSignIn is not a function:", onSignIn)
+      }
+    }
+
+    return (
+      <div data-testid="guest-sign-in-prompt">
+        <button data-testid="continue-as-guest" onClick={onContinueAsGuest}>
+          Continue as Guest
+        </button>
+        <button data-testid="sign-in" onClick={handleSignIn}>
+          Sign In
+        </button>
+      </div>
+    )
+  },
 }))
 
 // Mock quiz utils
@@ -179,7 +196,9 @@ const renderWithProviders = (
 
 describe("Blanks Quiz Auth Flow", () => {
   beforeEach(() => {
+    // Reset all mocks
     jest.clearAllMocks()
+    cleanup() // Clean up after each test
 
     // Reset URL
     Object.defineProperty(window, "location", {
@@ -197,6 +216,9 @@ describe("Blanks Quiz Auth Flow", () => {
       data: null,
       status: "unauthenticated",
     })
+
+    // Reset signIn mock
+    signInMock.mockClear()
   })
 
   test("shows auth prompt when quiz requires authentication", async () => {
@@ -337,6 +359,88 @@ describe("Blanks Quiz Auth Flow", () => {
     // Should show quiz results
     await waitFor(() => {
       expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
+    })
+  })
+
+  test("redirects to sign in when sign in button is clicked", async () => {
+    // Reset the signIn mock before the test
+    const signInMock = require("next-auth/react").signIn
+    signInMock.mockClear()
+
+    // Verify the mock is properly reset
+    expect(signInMock).not.toHaveBeenCalled()
+
+    // Render with completed quiz requiring auth
+    renderWithProviders(<BlankQuizWrapper quizData={mockBlankQuizData} slug={mockBlankQuizData.slug} />, {
+      preloadedState: {
+        quiz: {
+          isCompleted: true,
+          requiresAuth: true,
+          hasNonAuthenticatedUserResult: true,
+        },
+        auth: {
+          isAuthenticated: false,
+        },
+      },
+    })
+
+    // Check that auth prompt is shown
+    await waitFor(() => {
+      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
+    })
+
+    // Get the sign-in button
+    const signInButton = screen.getByTestId("sign-in")
+    expect(signInButton).toBeInTheDocument()
+
+    // Click sign in button
+    fireEvent.click(signInButton)
+
+    // Wait for signIn to be called
+    await waitFor(
+      () => {
+        expect(signInMock).toHaveBeenCalled()
+      },
+      { timeout: 3000 },
+    )
+  })
+
+  test("saves quiz state before redirecting to sign in", async () => {
+    // Render with completed quiz requiring auth
+    const { store } = renderWithProviders(
+      <BlankQuizWrapper quizData={mockBlankQuizData} slug={mockBlankQuizData.slug} />,
+      {
+        preloadedState: {
+          quiz: {
+            isCompleted: true,
+            requiresAuth: true,
+            hasNonAuthenticatedUserResult: true,
+            answers: [
+              { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "Paris" },
+              { questionId: "q2", isCorrect: false, timeSpent: 5, answer: "3" },
+            ],
+            score: 50,
+          },
+          auth: {
+            isAuthenticated: false,
+          },
+        },
+      },
+    )
+
+    // Check that auth prompt is shown
+    await waitFor(() => {
+      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
+    })
+
+    // Click sign in button
+    fireEvent.click(screen.getByTestId("sign-in"))
+
+    // Should save quiz state
+    await waitFor(() => {
+      const state = store.getState()
+      expect(state.quiz.pendingAuthRequired).toBe(true)
+      expect(state.auth.isProcessingAuth).toBe(true)
     })
   })
 })

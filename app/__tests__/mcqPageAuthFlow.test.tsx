@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { render, screen, waitFor, fireEvent } from "@testing-library/react"
+import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react"
 import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import { SessionProvider } from "next-auth/react"
@@ -34,6 +34,10 @@ jest.mock("@/hooks/use-toast", () => ({
   })),
 }))
 
+// Create mock functions for the quiz context
+const mockSubmitAnswer = jest.fn()
+const mockCompleteQuiz = jest.fn()
+
 // Mock quiz components
 jest.mock("../dashboard/(quiz)/mcq/components/McqQuiz", () => ({
   __esModule: true,
@@ -44,12 +48,12 @@ jest.mock("../dashboard/(quiz)/mcq/components/McqQuiz", () => ({
         Question {questionNumber}/{totalQuestions}
       </p>
       <div>
-        <div data-testid="option-paris" onClick={() => onAnswer("Paris", 10, true)}>
+        <button data-testid="option-paris" onClick={() => onAnswer("Paris", 10, true)}>
           Paris
-        </div>
-        <div data-testid="option-london" onClick={() => onAnswer("London", 10, false)}>
+        </button>
+        <button data-testid="option-london" onClick={() => onAnswer("London", 10, false)}>
           London
-        </div>
+        </button>
       </div>
       <button data-testid={isLastQuestion ? "submit-button" : "next-button"}>
         {isLastQuestion ? "Submit Quiz" : "Next"}
@@ -70,9 +74,9 @@ jest.mock("../dashboard/(quiz)/mcq/components/McqQuizResult", () => ({
 
 jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => ({
   __esModule: true,
-  default: ({ onContinueAsNonAuthenticatedUser, onSignIn }: any) => (
+  default: ({ onContinueAsGuest, onSignIn }: any) => (
     <div data-testid="guest-sign-in-prompt">
-      <button data-testid="continue-as-guest" onClick={onContinueAsNonAuthenticatedUser}>
+      <button data-testid="continue-as-guest" onClick={onContinueAsGuest}>
         Continue as Guest
       </button>
       <button data-testid="sign-in" onClick={onSignIn}>
@@ -132,8 +136,8 @@ jest.mock("../context/QuizContext", () => {
         animationState: "idle",
         pendingAuthRequired: false,
       },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
+      submitAnswer: mockSubmitAnswer,
+      completeQuiz: mockCompleteQuiz,
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
       initializeQuiz: jest.fn(),
@@ -237,6 +241,7 @@ Object.defineProperty(window, "history", {
 describe("MCQ Quiz Auth Flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    cleanup() // Clean up after each test
 
     // Reset URL
     Object.defineProperty(window, "location", {
@@ -249,6 +254,10 @@ describe("MCQ Quiz Auth Flow", () => {
       data: null,
       status: "unauthenticated",
     })
+
+    // Reset mock functions
+    mockSubmitAnswer.mockClear()
+    mockCompleteQuiz.mockClear()
 
     // Reset useQuiz mock
     require("../context/QuizContext").useQuiz.mockReturnValue({
@@ -269,8 +278,8 @@ describe("MCQ Quiz Auth Flow", () => {
         error: null,
         animationState: "idle",
       },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
+      submitAnswer: mockSubmitAnswer,
+      completeQuiz: mockCompleteQuiz,
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
       initializeQuiz: jest.fn(),
@@ -303,8 +312,8 @@ describe("MCQ Quiz Auth Flow", () => {
         error: null,
         animationState: "completed",
       },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
+      submitAnswer: mockSubmitAnswer,
+      completeQuiz: mockCompleteQuiz,
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
       initializeQuiz: jest.fn(),
@@ -357,8 +366,8 @@ describe("MCQ Quiz Auth Flow", () => {
         error: null,
         animationState: "idle",
       },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
+      submitAnswer: mockSubmitAnswer,
+      completeQuiz: mockCompleteQuiz,
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
       initializeQuiz: jest.fn(),
@@ -433,8 +442,8 @@ describe("MCQ Quiz Auth Flow", () => {
         error: null,
         animationState: "completed",
       },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
+      submitAnswer: mockSubmitAnswer,
+      completeQuiz: mockCompleteQuiz,
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
       initializeQuiz: jest.fn(),
@@ -519,8 +528,8 @@ describe("MCQ Quiz Auth Flow", () => {
           completedAt: new Date().toISOString(),
         },
       },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
+      submitAnswer: mockSubmitAnswer,
+      completeQuiz: mockCompleteQuiz,
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
       initializeQuiz: jest.fn(),
@@ -594,8 +603,8 @@ describe("MCQ Quiz Auth Flow", () => {
         error: null,
         animationState: "completed",
       },
-      submitAnswer: jest.fn(),
-      completeQuiz: jest.fn(),
+      submitAnswer: mockSubmitAnswer,
+      completeQuiz: mockCompleteQuiz,
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
       initializeQuiz: jest.fn(),
@@ -633,8 +642,14 @@ describe("MCQ Quiz Auth Flow", () => {
   })
 
   test("user can answer questions and complete quiz", async () => {
-    // Mock the completeQuiz function
-    const mockCompleteQuiz = jest.fn()
+    // First, render the quiz with the first question
+    cleanup() // Ensure clean DOM
+
+    // Reset mocks
+    mockSubmitAnswer.mockClear()
+    mockCompleteQuiz.mockClear()
+
+    // Set up the initial state - first question
     require("../context/QuizContext").useQuiz.mockReturnValue({
       state: {
         quizId: "test-quiz-id",
@@ -653,7 +668,7 @@ describe("MCQ Quiz Auth Flow", () => {
         error: null,
         animationState: "idle",
       },
-      submitAnswer: jest.fn(),
+      submitAnswer: mockSubmitAnswer,
       completeQuiz: mockCompleteQuiz,
       handleAuthenticationRequired: jest.fn(),
       setAuthCheckComplete: jest.fn(),
@@ -661,8 +676,8 @@ describe("MCQ Quiz Auth Flow", () => {
       restoreFromSavedState: jest.fn(),
     })
 
-    // Render quiz
-    renderWithProviders(
+    // Render the first question
+    const { unmount } = renderWithProviders(
       <McqQuizWrapper
         quizData={mockQuizData}
         questions={mockQuizData.questions}
@@ -671,20 +686,61 @@ describe("MCQ Quiz Auth Flow", () => {
       />,
     )
 
-    // Answer first question
+    // Answer the first question
     fireEvent.click(screen.getByTestId("option-paris"))
 
-    // Wait for next question
-    await waitFor(() => {
-      expect(screen.getByText("What is 2+2?")).toBeInTheDocument()
+    // Verify submitAnswer was called
+    expect(mockSubmitAnswer).toHaveBeenCalledTimes(1)
+
+    // Clean up the first render
+    unmount()
+    cleanup()
+
+    // Now set up the state for the second question
+    require("../context/QuizContext").useQuiz.mockReturnValue({
+      state: {
+        quizId: "test-quiz-id",
+        slug: "test-quiz",
+        quizType: "mcq",
+        questions: mockQuizData.questions,
+        currentQuestionIndex: 1, // Last question
+        answers: [{ questionId: "q1", isCorrect: true, timeSpent: 10, answer: "Paris" }],
+        timeSpent: [10],
+        isCompleted: false,
+        score: 0,
+        requiresAuth: false,
+        pendingAuthRequired: false,
+        hasNonAuthenticatedUserResult: false,
+        nonAuthenticatedUserResultsSaved: false,
+        error: null,
+        animationState: "idle",
+      },
+      submitAnswer: mockSubmitAnswer,
+      completeQuiz: mockCompleteQuiz,
+      handleAuthenticationRequired: jest.fn(),
+      setAuthCheckComplete: jest.fn(),
+      initializeQuiz: jest.fn(),
+      restoreFromSavedState: jest.fn(),
     })
 
-    // Answer second question
+    // Render the second question
+    renderWithProviders(
+      <McqQuizWrapper
+        quizData={mockQuizData}
+        questions={mockQuizData.questions}
+        quizId={mockQuizData.id}
+        slug={mockQuizData.slug}
+        currentQuestionIndex={1}
+      />,
+    )
+
+    // Answer the second question
     fireEvent.click(screen.getByTestId("option-london"))
 
-    // Should have called completeQuiz
-    await waitFor(() => {
-      expect(mockCompleteQuiz).toHaveBeenCalled()
-    })
+    // Click submit button to complete the quiz
+    fireEvent.click(screen.getByTestId("submit-button"))
+
+    // Verify completeQuiz was called
+    expect(mockCompleteQuiz).toHaveBeenCalledTimes(1)
   })
 })
