@@ -1,4 +1,21 @@
-import { SubscriptionState, SubscriptionStatus, SubscriptionPlanType } from "@/store/slices/subscription-slice"
+import { SubscriptionState } from "@/store/slices/subscription-slice"
+
+// Define the missing SubscriptionPlanType enum
+export enum SubscriptionPlanType {
+  FREE = "free",
+  BASIC = "basic",
+  PRO = "pro",
+  PREMIUM = "premium"
+}
+
+// Define the SubscriptionStatus enum if it's not properly imported
+export enum SubscriptionStatus {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  CANCELED = "canceled",
+  PAST_DUE = "past_due",
+  PENDING = "pending"
+}
 
 /**
  * Safely parses subscription data from storage
@@ -27,7 +44,22 @@ export function parseSubscriptionData(data: string | null): Partial<Subscription
     return null
   }
 }
+export function calculateSavings (subscription: SubscriptionState | null): number {
+  if (!subscription) return 0
 
+  // Calculate savings based on subscription plan
+  switch (subscription.data.plan) {
+    case SubscriptionPlanType.PREMIUM:
+      return 100 // Example savings for premium plan
+    case SubscriptionPlanType.PRO:
+      return 50 // Example savings for pro plan
+    case SubscriptionPlanType.BASIC:
+      return 20 // Example savings for basic plan
+    case SubscriptionPlanType.FREE:
+    default:
+      return 0 // No savings for free plan
+  }
+}
 /**
  * Checks if a subscription is active
  * @param subscription The subscription to check
@@ -86,13 +118,12 @@ export function isFeatureAvailable(
 
   // Check if subscription is active
   if (!isSubscriptionActive(subscription)) {
-    // Free users can still use basic features
-    if (feature === "advanced_quizzes") return false
-    return feature === "unlimited_generation" ? false : false
+    // Free users can only use basic features
+    return false
   }
 
   // Feature availability by plan
-  switch (subscription.plan) {
+  switch (subscription.data?.currentPlan) {
     case SubscriptionPlanType.PREMIUM:
       return true // All features available
     case SubscriptionPlanType.PRO:

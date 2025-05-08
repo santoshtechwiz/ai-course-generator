@@ -13,30 +13,24 @@ import { submitQuizResults } from "@/store/slices/quizSlice"
 import { useAppDispatch, useAppSelector } from "@/store"
 
 interface QuizResultsOpenEndedProps {
-  quizId?: string
-  slug?: string
-  title?: string
-  answers?: any[]
-  questions?: any[]
-  totalQuestions?: number
-  startTime?: number
-  score?: number
+  result?: {
+    quizId?: string
+    slug?: string
+    title?: string
+    answers?: any[]
+    questions?: any[]
+    totalQuestions?: number
+    startTime?: number
+    score?: number
+    totalTimeSpent?: number
+    completedAt?: string
+  }
   onRestart?: () => void
   onSignIn?: () => void
+  [key: string]: any
 }
 
-export default function QuizResultsOpenEnded({
-  quizId: propQuizId,
-  slug: propSlug,
-  title: propTitle,
-  answers: propAnswers,
-  questions: propQuestions,
-  totalQuestions: propTotalQuestions,
-  startTime: propStartTime,
-  score: propScore,
-  onRestart,
-  onSignIn,
-}: QuizResultsOpenEndedProps) {
+export default function QuizResultsOpenEnded({ result, onRestart, onSignIn, ...props }: QuizResultsOpenEndedProps) {
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
@@ -46,32 +40,47 @@ export default function QuizResultsOpenEnded({
   const quizState = useAppSelector((state) => state.quiz)
 
   // Use props if provided, otherwise use Redux state
-  const answers = useMemo(() => propAnswers || quizState.answers, [propAnswers, quizState.answers])
-  const questions = useMemo(() => propQuestions || quizState.questions, [propQuestions, quizState.questions])
-  const quizId = propQuizId || quizState.quizId
-  const title = propTitle || quizState.title
-  const slug = propSlug || quizState.slug
-  const totalQuestions = propTotalQuestions || questions.length
-  const score = propScore || quizState.score
-  const startTime = propStartTime || quizState.startTime
+  const answers = useMemo(() => result?.answers || quizState.answers || [], [result?.answers, quizState.answers])
+  const questions = useMemo(
+    () => result?.questions || quizState.questions || [],
+    [result?.questions, quizState.questions],
+  )
+  const quizId = result?.quizId || quizState.quizId
+  const title = result?.title || quizState.title
+  const slug = result?.slug || quizState.slug
+  const totalQuestions = result?.totalQuestions || questions.length
+  const score = result?.score || quizState.score
+  const startTime = result?.startTime || quizState.startTime
+  const totalTimeSpent = result?.totalTimeSpent || 0
+  const completedAt = result?.completedAt || quizState.completedAt
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("summary")
 
   // Memoize calculated values to prevent recalculation on re-renders
   const stats = useMemo(() => {
-    const totalTimeSpent = answers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
-    const averageTimePerQuestion = answers.length > 0 ? Math.round(totalTimeSpent / answers.length) : 0
+    // Ensure we have valid answers array
+    const validAnswers = Array.isArray(answers) ? answers.filter(Boolean) : []
+
+    // Calculate total time spent from answers or use provided totalTimeSpent
+    const calculatedTotalTimeSpent =
+      totalTimeSpent || validAnswers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
+
+    // Calculate average time per question
+    const averageTimePerQuestion =
+      validAnswers.length > 0 ? Math.round(calculatedTotalTimeSpent / validAnswers.length) : 0
+
+    // Calculate total elapsed time
     const endTime = Date.now()
-    const totalElapsedTime = Math.floor((endTime - startTime) / 1000)
+    const totalElapsedTime = startTime ? Math.floor((endTime - startTime) / 1000) : calculatedTotalTimeSpent
 
     return {
-      totalTimeSpent,
+      totalTimeSpent: calculatedTotalTimeSpent,
       averageTimePerQuestion,
       totalElapsedTime,
-      answeredQuestions: answers.length,
+      answeredQuestions: validAnswers.length,
     }
-  }, [answers, startTime])
+  }, [answers, startTime, totalTimeSpent])
 
   // Format time function
   const formatTime = useCallback((seconds: number) => {
@@ -137,8 +146,12 @@ export default function QuizResultsOpenEnded({
   const handleRestart = useCallback(() => {
     if (onRestart) {
       onRestart()
+    } else {
+      // Add a timestamp parameter to force a fresh load
+      const timestamp = new Date().getTime()
+      router.push(`/dashboard/openended/${slug}?reset=true&t=${timestamp}`)
     }
-  }, [onRestart])
+  }, [onRestart, router, slug])
 
   // Handle sign in
   const handleSignIn = useCallback(() => {
@@ -146,6 +159,43 @@ export default function QuizResultsOpenEnded({
       onSignIn()
     }
   }, [onSignIn])
+
+  const answerReview = useMemo(() => {
+    return questions.map((question, index) => {
+      const answer = answers[index]
+      if (!answer) return null
+
+      return (
+        <motion.div
+          key={question?.id || `question-${index}`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: Math.min(index * 0.05, 1) }}
+          className="border rounded-lg p-4"
+          data-testid={`answer-item-${index}`}
+        >
+          <div className="space-y-2 w-full">
+            <p className="font-medium">Question {index + 1}</p>
+            <p className="text-sm text-muted-foreground">{question.question}</p>
+
+            <div className="grid grid-cols-1 gap-2 mt-2">
+              <div className="text-sm">
+                <span className="font-medium">Your response: </span>
+                <span className="text-foreground">{answer?.answer || "No response provided"}</span>
+                {answer?.similarity !== undefined && (
+                  <span className="ml-2 text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                    Similarity: {Math.round(answer.similarity)}%
+                  </span>
+                )}
+              </div>
+
+              <div className="text-xs text-muted-foreground mt-1">Time spent: {formatTime(answer?.timeSpent || 0)}</div>
+            </div>
+          </div>
+        </motion.div>
+      )
+    })
+  }, [questions, answers, formatTime])
 
   // If no answers or questions, show a message
   if (!answers.length || !questions.length) {
@@ -166,20 +216,26 @@ export default function QuizResultsOpenEnded({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="quiz-results-openended">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">{title || "Quiz Results"}</CardTitle>
-          <CardDescription>You completed the open-ended quiz with {stats.answeredQuestions} responses</CardDescription>
+          <CardDescription data-testid="quiz-completion-text">
+            You completed the open-ended quiz with {stats.answeredQuestions} responses
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="answers">Your Answers</TabsTrigger>
+              <TabsTrigger value="summary" data-testid="summary-tab">
+                Summary
+              </TabsTrigger>
+              <TabsTrigger value="answers" data-testid="answers-tab">
+                Your Answers
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="summary" className="space-y-6 pt-4">
+            <TabsContent value="summary" className="space-y-6 pt-4" data-testid="summary-content">
               {/* Completion visualization */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -235,43 +291,9 @@ export default function QuizResultsOpenEnded({
               </div>
             </TabsContent>
 
-            <TabsContent value="answers" className="space-y-4 pt-4">
+            <TabsContent value="answers" className="space-y-4 pt-4" data-testid="answers-content">
               {/* Answer review - using virtualized list for better performance with many questions */}
-              {questions.map((question, index) => {
-                const answer = answers[index]
-                if (!answer) return null
-
-                return (
-                  <motion.div
-                    key={question?.id || index}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(index * 0.05, 1) }} // Cap delay for better performance with many items
-                    className="border rounded-lg p-4"
-                  >
-                    <div className="space-y-2 w-full">
-                      <p className="font-medium">Question {index + 1}</p>
-                      <p className="text-sm text-muted-foreground">{question.question}</p>
-
-                      <div className="grid grid-cols-1 gap-2 mt-2">
-                        <div className="text-sm">
-                          <span className="font-medium">Your response: </span>
-                          <span className="text-foreground">{answer?.answer || "No response provided"}</span>
-                          {answer?.similarity !== undefined && (
-                            <span className="ml-2 text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                              Similarity: {Math.round(answer.similarity)}%
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Time spent: {formatTime(answer?.timeSpent || 0)}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
+              {answerReview}
             </TabsContent>
           </Tabs>
         </CardContent>

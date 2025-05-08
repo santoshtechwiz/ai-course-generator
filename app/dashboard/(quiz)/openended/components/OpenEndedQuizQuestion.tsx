@@ -22,7 +22,7 @@ import { isTooFastAnswer } from "@/lib/utils/quiz-validation"
 
 interface QuizQuestionProps {
   question: {
-    id: number
+    id: number | string
     question: string
     answer: string
     openEndedQuestion?: {
@@ -35,6 +35,7 @@ interface QuizQuestionProps {
   onAnswer: (answer: string) => void
   questionNumber: number
   totalQuestions: number
+  isLastQuestion?: boolean
 }
 
 export default function OpenEndedQuizQuestion({
@@ -42,6 +43,7 @@ export default function OpenEndedQuizQuestion({
   onAnswer,
   questionNumber,
   totalQuestions,
+  isLastQuestion,
 }: QuizQuestionProps) {
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
@@ -159,6 +161,7 @@ export default function OpenEndedQuizQuestion({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
+      data-testid="openended-quiz-question"
     >
       <Card className="w-full max-w-4xl mx-auto shadow-lg border-t-4 border-primary">
         <CardHeader className="space-y-4">
@@ -193,6 +196,7 @@ export default function OpenEndedQuizQuestion({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
+            data-testid="question-text"
           >
             {question.question}
           </motion.h2>
@@ -254,6 +258,7 @@ export default function OpenEndedQuizQuestion({
             }}
             placeholder="Type your answer here..."
             className="min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary"
+            data-testid="answer-textarea"
           />
           <div className="space-y-2">
             <Button
@@ -262,6 +267,7 @@ export default function OpenEndedQuizQuestion({
               onClick={handleProgressiveHint}
               disabled={hintLevel >= hints.length}
               className="w-full sm:w-auto hover:bg-primary hover:text-primary-foreground"
+              data-testid="hint-button"
             >
               <LightbulbIcon className="w-4 h-4 mr-2" />
               {hintLevel === 0 ? "Get Hint" : `Next Hint (${hintLevel}/${hints.length})`}
@@ -294,6 +300,7 @@ export default function OpenEndedQuizQuestion({
             onClick={handleSubmit}
             disabled={!isAnswerValid()}
             className="w-full sm:w-auto ml-auto bg-primary hover:bg-primary/90 text-primary-foreground"
+            data-testid="submit-button"
           >
             {isSubmitting ? (
               <>
