@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo } from "react"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -12,34 +12,103 @@ import {
   resetQuiz,
   setRequiresAuth,
   setPendingAuthRequired,
-  setHasNonAuthenticatedUserResult,
-  clearNonAuthenticatedUserResults,
-  setAuthCheckComplete,
   setError,
-  fetchQuizResults,
   submitQuizResults,
-  restoreQuizState as restoreQuizStateAction,
+  saveStateBeforeAuth,
   restoreFromSavedState,
   clearSavedState,
   type Answer,
 } from "@/store/slices/quizSlice"
-import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
+import { setIsAuthenticated, setIsProcessingAuth, setRedirectUrl, setUser } from "@/store/slices/authSlice"
 import { calculateTotalTime } from "@/lib/utils/quiz-index"
 
-export const useQuizState = () => {
+export function useQuiz() {
   const dispatch = useAppDispatch()
   const quizState = useAppSelector((state) => state.quiz)
   const authState = useAppSelector((state) => state.auth)
   const { data: session, status } = useSession()
   const router = useRouter()
 
+  // Update authentication state based on session
+  useEffect(() => {
+    const isAuthenticated = status === "authenticated" && !!session?.user
+    dispatch(setIsAuthenticated(isAuthenticated))
+
+    if (isAuthenticated && session?.user) {
+      dispatch(setUser(session.user))
+    }
+  }, [dispatch, session, status])
+
   // Check if user is authenticated
   const isAuthenticated = useMemo(() => {
     return status === "authenticated" && !!session?.user
   }, [session, status])
 
-  // Submit quiz results
-  const handleSubmitQuizResults = useCallback(
+  // Initialize the quiz with data
+  const initialize = useCallback(
+    (quizData: any) => {
+      dispatch(
+        initQuiz({
+          ...quizData,
+          requiresAuth: true, // Always require auth for code quizzes
+        }),
+      )
+    },
+    [dispatch],
+  )
+
+  // Submit an answer for the current question
+  const submitQuizAnswer = useCallback(
+    (answerData: Answer) => {
+      dispatch(submitAnswer(answerData))
+    },
+    [dispatch],
+  )
+
+  // Move to the next question
+  const goToNextQuestion = useCallback(() => {
+    dispatch(nextQuestion())
+  }, [dispatch])
+
+  // Complete the quiz and calculate score
+  const completeQuizWithAnswers = useCallback(
+    (data?: { answers?: Answer[]; score?: number; completedAt?: string }) => {
+      try {
+        // Ensure we have a valid payload
+        const payload = {
+          answers: data?.answers || [],
+          score: data?.score !== undefined ? data.score : 0,
+          completedAt: data?.completedAt || new Date().toISOString(),
+        }
+
+        // Dispatch the action with the payload
+        dispatch(completeQuiz(payload))
+
+        // If user is authenticated and we have a quizId, submit results
+        if (isAuthenticated && quizState.quizId) {
+          submitResults({
+            quizId: quizState.quizId,
+            slug: quizState.slug || "test-quiz",
+            quizType: quizState.quizType || "code",
+            answers: payload.answers,
+            score: payload.score,
+          }).catch((err) => {
+            console.error("Failed to submit quiz results:", err)
+          })
+        }
+
+        return true
+      } catch (err) {
+        console.error("Error completing quiz:", err)
+        dispatch(setError("Failed to complete quiz. Please try again."))
+        return false
+      }
+    },
+    [dispatch, quizState, isAuthenticated],
+  )
+
+  // Submit quiz results to the server
+  const submitResults = useCallback(
     async ({
       quizId,
       slug,
@@ -71,89 +140,29 @@ export const useQuizState = () => {
     [dispatch],
   )
 
-  // Initialize the quiz with data
-  const initializeQuiz = useCallback(
-    (quizData: any) => {
-      dispatch(
-        initQuiz({
-          ...quizData,
-          isAuthenticated,
-        }),
-      )
-    },
-    [dispatch, isAuthenticated],
-  )
-
-  // Submit an answer for the current question
-  const handleSubmitAnswer = useCallback(
-    (answerData: Answer) => {
-      dispatch(submitAnswer(answerData))
-    },
-    [dispatch],
-  )
-
-  // Move to the next question
-  const handleNextQuestion = useCallback(() => {
-    dispatch(nextQuestion())
-  }, [dispatch])
-
-  // Complete the quiz and calculate score
-  const handleCompleteQuiz = useCallback(
-    (data?: { answers?: Answer[]; score?: number; completedAt?: string }) => {
-      try {
-        // Ensure we have a valid payload
-        const payload = {
-          answers: data?.answers || [],
-          score: data?.score !== undefined ? data.score : 0,
-          completedAt: data?.completedAt || new Date().toISOString(),
-        }
-
-        // Directly dispatch the action with the payload
-        dispatch(completeQuiz(payload))
-
-        // Force the state to be updated
-        dispatch({ type: "FORCE_QUIZ_COMPLETED" })
-
-        // If user is authenticated and we have a quizId, submit results
-        if (isAuthenticated && quizState.quizId) {
-          handleSubmitQuizResults({
-            quizId: quizState.quizId,
-            slug: quizState.slug || "test-quiz",
-            quizType: quizState.quizType || "mcq",
-            answers: payload.answers,
-            score: payload.score,
-          }).catch((err) => {
-            console.error("Failed to submit quiz results:", err)
-            // Don't set error here to avoid disrupting the user experience
-          })
-        }
-
-        return true // Return true to indicate success
-      } catch (err) {
-        console.error("Error completing quiz:", err)
-        dispatch(setError("Failed to complete quiz. Please try again."))
-        return false
-      }
-    },
-    [dispatch, quizState, isAuthenticated, handleSubmitQuizResults],
-  )
-
-  // Helper function to calculate score
-  const calculateScore = (answers: Answer[]) => {
-    if (!Array.isArray(answers)) return 0
-    const correctAnswers = answers.filter((a) => a?.isCorrect).length
-    const totalQuestions = answers.length
-    return totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
-  }
-
   // Restart the quiz
-  const handleRestartQuiz = useCallback(() => {
+  const restartQuiz = useCallback(() => {
     dispatch(resetQuiz())
   }, [dispatch])
 
-  // Handle authentication requirement
-  const handleAuthenticationRequired = useCallback(
+  // Handle authentication flow
+  const requireAuthentication = useCallback(
     (redirectUrl: string) => {
+      // Save current quiz state
+      dispatch(
+        saveStateBeforeAuth({
+          quizId: quizState.quizId,
+          slug: quizState.slug,
+          quizType: quizState.quizType,
+          currentQuestionIndex: quizState.currentQuestionIndex,
+          answers: quizState.answers,
+          isCompleted: quizState.isCompleted,
+          score: quizState.score,
+          completedAt: quizState.completedAt || new Date().toISOString(),
+        }),
+      )
+
+      // Set up auth flow
       dispatch(setRequiresAuth(true))
       dispatch(setPendingAuthRequired(true))
       dispatch(setIsProcessingAuth(true))
@@ -162,119 +171,61 @@ export const useQuizState = () => {
       // Redirect to sign-in page
       router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(redirectUrl)}`)
     },
-    [dispatch, router],
+    [dispatch, router, quizState],
   )
 
-  // Handle non-authenticated user results
-  const handleNonAuthenticatedUserResults = useCallback(
-    (hasResults: boolean) => {
-      dispatch(setHasNonAuthenticatedUserResult(hasResults))
-    },
-    [dispatch],
-  )
-
-  // Clear non-authenticated user results
-  const handleClearNonAuthenticatedUserResults = useCallback(() => {
-    dispatch(clearNonAuthenticatedUserResults())
-  }, [dispatch])
-
-  // Set auth check complete
-  const handleAuthCheckComplete = useCallback(
-    (isComplete: boolean) => {
-      dispatch(setAuthCheckComplete(isComplete))
-    },
-    [dispatch],
-  )
-
-  // Set error
-  const handleSetError = useCallback(
-    (error: string | null) => {
-      dispatch(setError(error))
-    },
-    [dispatch],
-  )
-
-  // Fetch quiz results
-  const handleFetchQuizResults = useCallback(
-    async ({ quizId, slug, quizType }: { quizId: string; slug: string; quizType: string }) => {
-      return dispatch(fetchQuizResults({ quizId, slug, quizType }))
-    },
-    [dispatch],
-  )
-
-  // Restore quiz state from saved data
-  const restoreQuizState = useCallback(
-    (savedState: Partial<any>) => {
-      if (!savedState) return
-
-      // Log what we're restoring for debugging
-      if (process.env.NODE_ENV === "development") {
-        console.log("Restoring quiz state:", savedState)
-      }
-
-      // Dispatch the restore action to update Redux state
-      dispatch(restoreQuizStateAction(savedState))
-
-      // If the quiz was completed, handle completion again with simplified logic
-      if (savedState.isCompleted && savedState.answers) {
-        dispatch(
-          completeQuiz({
-            answers: savedState.answers,
-            score: savedState.score || 0,
-            completedAt: savedState.completedAt || new Date().toISOString(),
-          }),
-        )
-      }
-    },
-    [dispatch],
-  )
-
-  // Restore from saved state in Redux
-  const handleRestoreFromSavedState = useCallback(() => {
-    // First dispatch the restore action
+  // Restore state after authentication
+  const restoreState = useCallback(() => {
     dispatch(restoreFromSavedState())
 
-    // Then check if we need to force completion
-    const savedState = quizState.savedState
-    if (savedState && savedState.isCompleted) {
-      // Force the quiz to be completed with the saved data
+    // If the quiz was completed before auth, force it to be completed again
+    if (quizState.savedState?.isCompleted) {
       dispatch(
         completeQuiz({
-          answers: savedState.answers || [],
-          score: savedState.score || 0,
-          completedAt: savedState.completedAt || new Date().toISOString(),
+          answers: quizState.savedState.answers || [],
+          score: quizState.savedState.score || 0,
+          completedAt: quizState.savedState.completedAt || new Date().toISOString(),
         }),
       )
-
-      // Force the state to be updated
-      dispatch({ type: "FORCE_QUIZ_COMPLETED" })
     }
+
+    // Clear saved state after restoration
+    dispatch(clearSavedState())
   }, [dispatch, quizState.savedState])
 
-  // Clear saved state
-  const handleClearSavedState = useCallback(() => {
-    dispatch(clearSavedState())
-  }, [dispatch])
+  // Check for auth return and restore state if needed
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromAuth = urlParams.get("fromAuth") === "true"
 
-  // Return these methods in the hook's return value
+      if (fromAuth && isAuthenticated && quizState.savedState) {
+        restoreState()
+
+        // Clean up URL
+        const url = new URL(window.location.href)
+        url.searchParams.delete("fromAuth")
+        window.history.replaceState({}, "", url.toString())
+      }
+    }
+  }, [isAuthenticated, quizState.savedState, restoreState])
+
   return {
-    state: quizState,
+    // State
+    quizState,
     authState,
-    initializeQuiz,
-    submitAnswer: handleSubmitAnswer,
-    nextQuestion: handleNextQuestion,
-    completeQuiz: handleCompleteQuiz,
-    restartQuiz: handleRestartQuiz,
-    handleAuthenticationRequired,
-    handleNonAuthenticatedUserResults,
-    clearNonAuthenticatedUserResults: handleClearNonAuthenticatedUserResults,
-    setAuthCheckComplete: handleAuthCheckComplete,
-    setError: handleSetError,
-    fetchQuizResults: handleFetchQuizResults,
-    submitQuizResults: handleSubmitQuizResults,
-    restoreQuizState,
-    restoreFromSavedState: handleRestoreFromSavedState,
-    clearSavedState: handleClearSavedState,
     isAuthenticated,
+
+    // Quiz actions
+    initialize,
+    submitAnswer: submitQuizAnswer,
+    nextQuestion: goToNextQuestion,
+    completeQuiz: completeQuizWithAnswers,
+    restartQuiz,
+    submitResults,
+
+    // Auth actions
+    requireAuthentication,
+    restoreState,
   }
 }

@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, fireEvent } from "@testing-library/react"
 import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import { SessionProvider } from "next-auth/react"
@@ -29,6 +29,7 @@ jest.mock("next-auth/react", () => ({
     data: null,
     status: "unauthenticated",
   })),
+  signIn: jest.fn(),
   SessionProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
@@ -83,15 +84,13 @@ jest.mock("../dashboard/(quiz)/code/components/CodeQuizResult", () => ({
   ),
 }))
 
+// Update the NonAuthenticatedUserSignInPrompt mock to properly call onSignIn
 jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => ({
   __esModule: true,
-  default: ({ onContinueAsGuest, onSignIn }: any) => (
+  default: ({ onSignIn }: any) => (
     <div data-testid="guest-sign-in-prompt">
       <p>Sign in required</p>
-      <button data-testid="continue-as-guest" onClick={onContinueAsGuest}>
-        Continue as Guest
-      </button>
-      <button data-testid="sign-in" onClick={onSignIn}>
+      <button data-testid="sign-in" onClick={() => onSignIn && onSignIn()}>
         Sign In
       </button>
     </div>
@@ -115,11 +114,78 @@ jest.mock("@/lib/utils/quiz-index", () => ({
 
 // Mock QuizStateDisplay component
 jest.mock("@/app/dashboard/components/QuizStateDisplay", () => ({
-  ErrorDisplay: ({ error }: any) => <div data-testid="error-display">{error.message}</div>,
+  ErrorDisplay: ({ error }: any) => <div data-testid="error-display">{error || "Unknown error"}</div>,
   LoadingDisplay: () => <div data-testid="loading-display">Loading...</div>,
   InitializingDisplay: () => <div data-testid="initializing-display">Initializing...</div>,
   QuizNotFoundDisplay: () => <div data-testid="not-found-display">Quiz not found</div>,
   EmptyQuestionsDisplay: () => <div data-testid="empty-questions-display">No questions available</div>,
+}))
+
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: jest.fn((key: string) => store[key] || null),
+    setItem: jest.fn((key: string, value: string) => {
+      store[key] = value.toString()
+    }),
+    removeItem: jest.fn((key: string) => {
+      delete store[key]
+    }),
+    clear: jest.fn(() => {
+      store = {}
+    }),
+  }
+})()
+
+Object.defineProperty(window, "localStorage", {
+  value: localStorageMock,
+})
+
+// Mock useQuiz hook with saveState function
+const mockRequireAuthentication = jest.fn()
+const mockRestoreState = jest.fn()
+const mockSaveState = jest.fn()
+
+jest.mock("@/hooks/useQuizState", () => ({
+  useQuiz: jest.fn(() => ({
+    quizState: {
+      quizId: "test-code-quiz-id",
+      slug: "test-code-quiz",
+      title: "Test Code Quiz",
+      quizType: "code",
+      questions: [],
+      currentQuestionIndex: 0,
+      answers: [],
+      timeSpent: [],
+      isCompleted: false,
+      score: 0,
+      requiresAuth: false,
+      pendingAuthRequired: false,
+      error: null,
+      animationState: "idle",
+      isSavingResults: false,
+      resultsSaved: false,
+      completedAt: null,
+      savedState: null,
+    },
+    authState: {
+      isAuthenticated: false,
+      isProcessingAuth: false,
+      redirectUrl: null,
+      user: null,
+    },
+    isAuthenticated: false,
+    initialize: jest.fn(),
+    submitAnswer: jest.fn(),
+    nextQuestion: jest.fn(),
+    completeQuiz: jest.fn(),
+    restartQuiz: jest.fn(),
+    submitResults: jest.fn(),
+    requireAuthentication: mockRequireAuthentication,
+    restoreState: mockRestoreState,
+    saveState: mockSaveState,
+  })),
 }))
 
 // Mock window.history.replaceState
@@ -172,21 +238,22 @@ const initialState = {
     score: 0,
     requiresAuth: false,
     pendingAuthRequired: false,
-    hasNonAuthenticatedUserResult: false,
-    guestResultsSaved: false,
-    authCheckComplete: false,
-    isProcessingAuth: false,
+    authCheckComplete: true,
     error: null,
     animationState: "idle",
     isSavingResults: false,
     resultsSaved: false,
     completedAt: null,
+    startTime: Date.now(),
     savedState: null,
   },
   auth: {
+    user: null,
     isAuthenticated: false,
-    isProcessingAuth: false,
+    isLoading: false,
+    error: null,
     redirectUrl: null,
+    isProcessingAuth: false,
   },
 }
 
@@ -216,6 +283,455 @@ const renderWithProviders = (
   return render(ui, { wrapper: Wrapper, ...renderOptions })
 }
 
+describe("CodeQuizWrapper", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+
+    // Reset URL
+    if (typeof window !== "undefined") {
+      Object.defineProperty(window, "location", {
+        value: {
+          search: "",
+          pathname: "/dashboard/code/test-code-quiz",
+          href: "http://localhost/dashboard/code/test-code-quiz",
+        },
+        writable: true,
+      })
+      window.history.replaceState = jest.fn()
+    }
+
+    // Reset session mock
+    require("next-auth/react").useSession.mockReturnValue({
+      data: null,
+      status: "unauthenticated",
+    })
+
+    // Reset the useSearchParams mock
+    require("next/navigation").useSearchParams.mockReturnValue(new URLSearchParams())
+
+    // Reset useQuiz mock
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+      },
+      authState: {
+        ...initialState.auth,
+      },
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
+    // Clear localStorage
+    localStorage.clear()
+  })
+
+  test("initializes with loading state", async () => {
+    // Skip the initialization delay by setting isInitializing to true
+    jest.spyOn(React, "useState").mockImplementationOnce(() => [true, jest.fn()])
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId="user-123"
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    expect(screen.getByTestId("initializing-display")).toBeInTheDocument()
+  })
+
+  test("shows quiz content when data is loaded", async () => {
+    // Mock useQuiz to return loaded quiz state
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        questions: mockCodeQuizData.questions,
+      },
+      authState: {
+        ...initialState.auth,
+      },
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
+    // Skip initialization delay in test environment
+    Object.defineProperty(process.env, "NODE_ENV", {
+      value: "test",
+      writable: true,
+    })
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId="user-123"
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(screen.getByTestId("coding-quiz")).toBeInTheDocument()
+    })
+  })
+
+  test("shows auth prompt when quiz is completed and user is not authenticated", async () => {
+    // Mock useQuiz to return completed quiz state but not authenticated
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        requiresAuth: true,
+        questions: mockCodeQuizData.questions,
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: false,
+      },
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId=""
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the auth prompt to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
+    })
+  })
+
+  test("shows results when quiz is completed and user is authenticated", async () => {
+    // Mock useQuiz to return completed quiz state and authenticated
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        score: 90,
+        questions: mockCodeQuizData.questions,
+        answers: [
+          { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
+          { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "return a * b" },
+        ],
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: true,
+        user: { id: "user-123", name: "Test User" },
+      },
+      isAuthenticated: true,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId="user-123"
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the results to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
+      expect(screen.getByTestId("quiz-score")).toHaveTextContent("90")
+    })
+  })
+
+  test("handles sign-in flow when user clicks sign in button", async () => {
+    // Reset mockRequireAuthentication before the test
+    mockRequireAuthentication.mockClear()
+    mockSaveState.mockClear()
+
+    // Create a local mock function that we can verify
+    const localMockRequireAuth = jest.fn()
+    const localMockSaveState = jest.fn()
+
+    // Mock useQuiz to return completed quiz state but not authenticated
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        requiresAuth: true,
+        questions: mockCodeQuizData.questions,
+        score: 85,
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: false,
+      },
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: localMockRequireAuth,
+      restoreState: mockRestoreState,
+      saveState: localMockSaveState,
+    })
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId=""
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the auth prompt to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
+    })
+
+    // Click the sign in button
+    fireEvent.click(screen.getByTestId("sign-in"))
+
+    // Check that requireAuthentication was called with the correct redirect URL
+    expect(localMockRequireAuth).toHaveBeenCalledWith(`/dashboard/code/${mockCodeQuizData.slug}?fromAuth=true`)
+  })
+
+  test("restores state after authentication when returning from sign-in", async () => {
+    // Mock URL with fromAuth=true
+    const mockSearchParams = new URLSearchParams()
+    mockSearchParams.set("fromAuth", "true")
+    require("next/navigation").useSearchParams.mockReturnValue(mockSearchParams)
+
+    // Mock restoreState function
+    mockRestoreState.mockClear()
+
+    // Mock useQuiz to return authenticated state with saved state
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        savedState: {
+          quizId: "test-code-quiz-id",
+          slug: "test-code-quiz",
+          isCompleted: true,
+          score: 85,
+          answers: [
+            { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
+            { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "return a * b" },
+          ],
+          completedAt: new Date().toISOString(),
+        },
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: true,
+        user: { id: "user-123", name: "Test User" },
+      },
+      isAuthenticated: true,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId="user-123"
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Check that restoreState was called
+    await waitFor(() => {
+      expect(mockRestoreState).toHaveBeenCalled()
+    })
+  })
+
+  test("shows results after authentication when quiz was completed before sign-in", async () => {
+    // Mock URL with fromAuth=true
+    const mockSearchParams = new URLSearchParams()
+    mockSearchParams.set("fromAuth", "true")
+    require("next/navigation").useSearchParams.mockReturnValue(mockSearchParams)
+
+    // Mock useQuiz to return authenticated state with completed quiz
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        score: 85,
+        questions: mockCodeQuizData.questions,
+        answers: [
+          { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
+          { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "return a * b" },
+        ],
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: true,
+        user: { id: "user-123", name: "Test User" },
+      },
+      isAuthenticated: true,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId="user-123"
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the results to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
+      expect(screen.getByTestId("quiz-score")).toHaveTextContent("85")
+    })
+  })
+
+  test("handles error states correctly", async () => {
+    // Mock useQuiz to return error state
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        error: "Test error message",
+      },
+      authState: {
+        ...initialState.auth,
+      },
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId="user-123"
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the error display to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("error-display")).toBeInTheDocument()
+      expect(screen.getByTestId("error-display")).toHaveTextContent("Test error message")
+    })
+  })
+
+  test("handles empty questions correctly", async () => {
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={{ ...mockCodeQuizData, questions: [] }}
+        slug={mockCodeQuizData.slug}
+        userId="user-123"
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the empty questions display to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("empty-questions-display")).toBeInTheDocument()
+    })
+  })
+
+  test("handles invalid quiz ID correctly", async () => {
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug=""
+        userId="user-123"
+        quizId=""
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the not found display to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("not-found-display")).toBeInTheDocument()
+    })
+  })
+})
+
 describe("Code Quiz Auth Flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -242,82 +758,103 @@ describe("Code Quiz Auth Flow", () => {
     // Reset the useSearchParams mock
     require("next/navigation").useSearchParams.mockReturnValue(new URLSearchParams())
 
-    // Clear localStorage
-    if (typeof window !== "undefined") {
-      localStorage.clear()
-    }
-  })
-
-  test("shows auth prompt when quiz requires authentication", () => {
-    // Render with preloaded state
-    renderWithProviders(
-      <CodeQuizWrapper
-        quizData={mockCodeQuizData}
-        slug={mockCodeQuizData.slug}
-        userId="user-123"
-        quizId={mockCodeQuizData.id}
-        isPublic={false}
-        isFavorite={false}
-      />,
-      {
-        preloadedState: {
-          quiz: {
-            isCompleted: true,
-            requiresAuth: true,
-            hasNonAuthenticatedUserResult: true,
-            showResults: false,
-          },
-          auth: {
-            isAuthenticated: false,
-            isProcessingAuth: false,
-          },
-        },
+    // Reset useQuiz mock
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
       },
-    )
-
-    // Check that auth prompt is shown
-    expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
-  })
-
-  test("shows 'Submit Quiz' on last question", () => {
-    // Render with current question index set to the last question
-    renderWithProviders(
-      <CodeQuizWrapper
-        quizData={{
-          ...mockCodeQuizData,
-          questions: mockCodeQuizData.questions,
-        }}
-        slug={mockCodeQuizData.slug}
-        userId="user-123"
-        quizId={mockCodeQuizData.id}
-        isPublic={false}
-        isFavorite={false}
-      />,
-      {
-        preloadedState: {
-          quiz: {
-            currentQuestionIndex: 1, // Last question
-            questions: mockCodeQuizData.questions,
-          },
-          auth: {
-            isAuthenticated: true,
-          },
-        },
+      authState: {
+        ...initialState.auth,
       },
-    )
-
-    // Force the button text to be "Submit Quiz" for this test
-    const submitButton = screen.getByTestId("submit-answer")
-    Object.defineProperty(submitButton, "textContent", {
-      value: "Submit Quiz",
-      writable: true,
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
     })
 
-    expect(submitButton).toHaveTextContent("Submit Quiz")
+    // Clear localStorage
+    localStorage.clear()
   })
 
-  test("handles error states correctly", () => {
-    // Render with error prop
+  test("non-signed-in user is prompted to sign in after completing quiz", async () => {
+    // Mock useQuiz to return completed quiz state but not authenticated
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        requiresAuth: true,
+        questions: mockCodeQuizData.questions,
+        score: 75,
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: false,
+      },
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId=""
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the auth prompt to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
+    })
+  })
+
+  test("signed-in user sees results immediately after completing quiz", async () => {
+    // Mock useQuiz to return completed quiz state and authenticated
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        score: 90,
+        questions: mockCodeQuizData.questions,
+        answers: [
+          { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
+          { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "return a * b" },
+        ],
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: true,
+        user: { id: "user-123", name: "Test User" },
+      },
+      isAuthenticated: true,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
+    })
+
     renderWithProviders(
       <CodeQuizWrapper
         quizData={mockCodeQuizData}
@@ -327,72 +864,51 @@ describe("Code Quiz Auth Flow", () => {
         isPublic={false}
         isFavorite={false}
       />,
-      {
-        preloadedState: {
-          quiz: {
-            error: { message: "Test error message" },
-          },
-          auth: {
-            isAuthenticated: true,
-          },
-        },
-      },
     )
 
-    // Check that error display is shown
-    expect(screen.getByTestId("error-display")).toBeInTheDocument()
-    expect(screen.getByTestId("error-display")).toHaveTextContent("Test error message")
+    // Wait for the results to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
+      expect(screen.getByTestId("quiz-score")).toHaveTextContent("90")
+    })
   })
 
-  test("shows results when quiz is completed and auth is not required", () => {
-    // Mock the calculateTotalTime function to return a specific value
-    require("@/lib/utils/quiz-index").calculateTotalTime.mockReturnValue(60)
-
-    // Render with completed quiz
-    renderWithProviders(
-      <CodeQuizWrapper
-        quizData={mockCodeQuizData}
-        slug={mockCodeQuizData.slug}
-        userId="user-123"
-        quizId={mockCodeQuizData.id}
-        isPublic={false}
-        isFavorite={false}
-      />,
-      {
-        preloadedState: {
-          quiz: {
-            isCompleted: true,
-            score: 100,
-            answers: [
-              { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
-              { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "return a * b" },
-            ],
-          },
-          auth: {
-            isAuthenticated: true,
-          },
-        },
-      },
-    )
-
-    // Check that results are shown
-    expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
-    expect(screen.getByTestId("quiz-score")).toHaveTextContent("100")
-  })
-
-  test("handles authentication flow when returning from sign-in", async () => {
-    // Setup - mock URL with fromAuth=true
+  test("user sees results after signing in when returning from auth flow", async () => {
+    // Mock URL with fromAuth=true
     const mockSearchParams = new URLSearchParams()
     mockSearchParams.set("fromAuth", "true")
     require("next/navigation").useSearchParams.mockReturnValue(mockSearchParams)
 
-    // Mock authenticated session
-    require("next-auth/react").useSession.mockReturnValue({
-      data: { user: { id: "user-123", name: "Test User" } },
-      status: "authenticated",
+    // Mock useQuiz to return authenticated state with completed quiz
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        score: 85,
+        questions: mockCodeQuizData.questions,
+        answers: [
+          { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
+          { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "return a * b" },
+        ],
+        savedState: null, // State has been restored already
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: true,
+        user: { id: "user-123", name: "Test User" },
+      },
+      isAuthenticated: true,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: mockRequireAuthentication,
+      restoreState: mockRestoreState,
+      saveState: mockSaveState,
     })
 
-    // Render with pending auth required
     renderWithProviders(
       <CodeQuizWrapper
         quizData={mockCodeQuizData}
@@ -402,44 +918,160 @@ describe("Code Quiz Auth Flow", () => {
         isPublic={false}
         isFavorite={false}
       />,
-      {
-        preloadedState: {
-          quiz: {
-            isCompleted: true,
-            pendingAuthRequired: true,
-            savedState: {
-              quizId: "test-code-quiz-id",
-              slug: "test-code-quiz",
-              isCompleted: true,
-              score: 85,
-              answers: [
-                { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
-                { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "return a * b" },
-              ],
-              completedAt: new Date().toISOString(),
-            },
-          },
-          auth: {
-            isAuthenticated: true,
-          },
-        },
-      },
     )
 
-    // Should show quiz results
+    // Wait for the results to appear
     await waitFor(() => {
       expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
+      expect(screen.getByTestId("quiz-score")).toHaveTextContent("85")
     })
   })
 
-  test("authenticated user sees results immediately", async () => {
-    // Mock authenticated session
-    require("next-auth/react").useSession.mockReturnValue({
-      data: { user: { id: "user-123", name: "Test User" } },
-      status: "authenticated",
+  test("authentication flow is triggered when user clicks sign in button", async () => {
+    // Create a local mock function that we can verify
+    const localMockRequireAuth = jest.fn()
+    const localMockSaveState = jest.fn()
+
+    // Mock useQuiz to return completed quiz state but not authenticated
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        requiresAuth: true,
+        questions: mockCodeQuizData.questions,
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: false,
+      },
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: localMockRequireAuth,
+      restoreState: mockRestoreState,
+      saveState: localMockSaveState,
     })
 
-    // Render with completed quiz
+    renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId=""
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Wait for the auth prompt to appear
+    await waitFor(() => {
+      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
+    })
+
+    // Click the sign in button
+    fireEvent.click(screen.getByTestId("sign-in"))
+
+    // Check that requireAuthentication was called with the correct redirect URL
+    expect(localMockRequireAuth).toHaveBeenCalledWith(`/dashboard/code/${mockCodeQuizData.slug}?fromAuth=true`)
+  })
+
+  test("complete auth flow from quiz completion to sign in to viewing results", async () => {
+    // Create a local mock function that we can verify
+    const localMockRequireAuth = jest.fn()
+    const localMockSaveState = jest.fn()
+
+    // Step 1: Setup initial state - quiz completed, user not authenticated
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        requiresAuth: true,
+        questions: mockCodeQuizData.questions,
+        score: 80,
+        answers: [
+          { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
+          { questionId: "q2", isCorrect: false, timeSpent: 5, answer: "return a - b" },
+        ],
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: false,
+      },
+      isAuthenticated: false,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: localMockRequireAuth,
+      restoreState: mockRestoreState,
+      saveState: localMockSaveState,
+    })
+
+    const { unmount } = renderWithProviders(
+      <CodeQuizWrapper
+        quizData={mockCodeQuizData}
+        slug={mockCodeQuizData.slug}
+        userId=""
+        quizId={mockCodeQuizData.id}
+        isPublic={false}
+        isFavorite={false}
+      />,
+    )
+
+    // Verify auth prompt is shown
+    await waitFor(() => {
+      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
+    })
+
+    // Step 2: Simulate user clicking sign in
+    fireEvent.click(screen.getByTestId("sign-in"))
+    expect(localMockRequireAuth).toHaveBeenCalledWith(`/dashboard/code/${mockCodeQuizData.slug}?fromAuth=true`)
+
+    // Clean up the first render
+    unmount()
+
+    // Step 3: Simulate returning from auth flow
+    // Update URL params
+    const mockSearchParams = new URLSearchParams()
+    mockSearchParams.set("fromAuth", "true")
+    require("next/navigation").useSearchParams.mockReturnValue(mockSearchParams)
+
+    // Update useQuiz mock to simulate authenticated state
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quizState: {
+        ...initialState.quiz,
+        isCompleted: true,
+        score: 80,
+        questions: mockCodeQuizData.questions,
+        answers: [
+          { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
+          { questionId: "q2", isCorrect: false, timeSpent: 5, answer: "return a - b" },
+        ],
+      },
+      authState: {
+        ...initialState.auth,
+        isAuthenticated: true,
+        user: { id: "user-123", name: "Test User" },
+      },
+      isAuthenticated: true,
+      initialize: jest.fn(),
+      submitAnswer: jest.fn(),
+      nextQuestion: jest.fn(),
+      completeQuiz: jest.fn(),
+      restartQuiz: jest.fn(),
+      submitResults: jest.fn(),
+      requireAuthentication: localMockRequireAuth,
+      restoreState: mockRestoreState,
+      saveState: localMockSaveState,
+    })
+
+    // Re-render with updated state
     renderWithProviders(
       <CodeQuizWrapper
         quizData={mockCodeQuizData}
@@ -449,25 +1081,12 @@ describe("Code Quiz Auth Flow", () => {
         isPublic={false}
         isFavorite={false}
       />,
-      {
-        preloadedState: {
-          quiz: {
-            isCompleted: true,
-            score: 90,
-            answers: [
-              { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "return a + b" },
-              { questionId: "q2", isCorrect: true, timeSpent: 5, answer: "return a * b" },
-            ],
-          },
-          auth: {
-            isAuthenticated: true,
-          },
-        },
-      },
     )
 
-    // Should show quiz results immediately
-    expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
-    expect(screen.getByTestId("quiz-score")).toHaveTextContent("90")
+    // Verify results are shown
+    await waitFor(() => {
+      expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
+      expect(screen.getByTestId("quiz-score")).toHaveTextContent("80")
+    })
   })
 })

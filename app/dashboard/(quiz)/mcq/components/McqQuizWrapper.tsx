@@ -1,629 +1,400 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { memo, useState, useEffect, useCallback, useMemo, useRef } from "react"
 
 import McqQuizResult from "./McqQuizResult"
-import { Card } from "@/components/ui/card"
-import { Loader2, AlertTriangle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useQuiz } from "@/app/context/QuizContext"
+import McqQuiz from "./McqQuiz"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 import {
-  createQuizError,
-  QuizErrorType,
-  getUserFriendlyErrorMessage,
-  formatQuizTime,
-  calculateTotalTime,
-} from "@/lib/utils/quiz-index"
-import { useAppDispatch, useAppSelector } from "@/store"
-import { useToast } from "@/hooks/use-toast"
-import {
-  setRequiresAuth,
-  setPendingAuthRequired,
-  saveStateBeforeAuth,
-  resetQuiz,
-  clearSavedState,
-  initQuiz,
-  restoreFromSavedState,
-} from "@/store/slices/quizSlice"
-import { setIsProcessingAuth, setRedirectUrl } from "@/store/slices/authSlice"
-import { Progress } from "@/components/ui/progress"
+  ErrorDisplay,
+  LoadingDisplay,
+  InitializingDisplay,
+  QuizNotFoundDisplay,
+  EmptyQuestionsDisplay,
+} from "@/app/dashboard/components/QuizStateDisplay"
+import { useToast } from "@/hooks"
+import { calculateTotalTime } from "@/lib/utils/quiz-index"
 import { quizUtils } from "@/lib/utils/quiz-utils"
-import McqQuiz from "./McqQuiz"
+import { useQuiz } from "@/hooks/useQuizState"
+import type { McqQuizWrapperProps } from "./types"
 
-// Debug component for state visualization
-const StateDebugger = ({ state, title = "State Debug" }: { state: any; title?: string }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
-
-  if (process.env.NODE_ENV !== "development" || process.env.NEXT_PUBLIC_DEBUG_MODE !== "true") {
-    return null
-  }
-
-  return (
-    <Card className="bg-slate-50 border-slate-200 mb-4">
-      <div className="p-3">
-        <div className="flex justify-between items-center cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-          <h3 className="text-sm text-slate-700 font-medium">{title}</h3>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-            {isExpanded ? "−" : "+"}
-          </Button>
-        </div>
-        {isExpanded && (
-          <pre className="text-xs bg-slate-100 p-2 rounded overflow-auto max-h-60 mt-2">
-            {JSON.stringify(state, null, 2)}
-          </pre>
-        )}
-      </div>
-    </Card>
-  )
-}
-
-interface McqQuizWrapperProps {
-  quizData?: any
-  questions?: any[]
-  quizId?: string
-  slug: string
-  error?: any
-  quizResults?: any
-  currentQuestionIndex?: number
-  showResults?: boolean
-}
-
-/**
- * McqQuizWrapper - Handles the display and state management for MCQ quizzes
- */
-export default function McqQuizWrapper({
-  quizData,
-  questions,
-  quizId,
-  slug,
-  error: propError,
-  quizResults: propQuizResults,
-  currentQuestionIndex: propCurrentQuestionIndex,
-  showResults: propShowResults,
-}: McqQuizWrapperProps) {
-  const { data: session, status } = useSession()
+const McqQuizContent = memo(function McqQuizContent({ quizData, slug, userId, quizId }: McqQuizWrapperProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const dispatch = useAppDispatch()
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(propCurrentQuestionIndex || 0)
+  const { toast } = useToast()
+  const { quizState, isAuthenticated, initialize, submitAnswer, completeQuiz, requireAuthentication, restoreState } =
+    useQuiz()
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<any[]>([])
   const [isCompleting, setIsCompleting] = useState(false)
-  const [error, setError] = useState<any>(propError || null)
-  const [showResults, setShowResults] = useState(propShowResults || false)
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
-  const [quizResults, setQuizResults] = useState<any>(propQuizResults || null)
-  const [startTime] = useState<number>(Date.now())
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(true)
-  const [isReset, setIsReset] = useState(false)
+  const [error, setError] = useState<string | null>(quizState.error || null)
+  const [quizUIState, setQuizUIState] = useState({
+    showResults: false,
+    showAuthPrompt: false,
+    quizResults: null as any,
+  })
+  const [isRestoringState, setIsRestoringState] = useState(false)
 
-  // Use the quiz context for state management
-  const {
-    state: contextState,
-    submitAnswer: submitQuizAnswer,
-    completeQuiz,
-    handleAuthenticationRequired,
-    setAuthCheckComplete,
-    restoreFromSavedState: contextRestoreFromSavedState,
-    
-  } = useQuiz()
+  const startTimeRef = useRef<number>(Date.now())
+  const isReset = searchParams.get("reset") === "true"
+  const fromAuth = searchParams.get("fromAuth") === "true"
 
-  // Get Redux state
-  const quizReduxState = useAppSelector((state) => state.quiz)
-  const authReduxState = useAppSelector((state) => state.auth)
+  const quizQuestions = useMemo(
+    () => quizData?.questions || quizState?.questions || [],
+    [quizData?.questions, quizState?.questions],
+  )
 
-  // Use context state if available, otherwise use Redux state
-  const state = contextState || quizReduxState
-  const isAuthenticated = authReduxState.isAuthenticated || status === "authenticated"
-
-  // Initialize quiz in Redux when component mounts
   useEffect(() => {
     if (quizData && !isReset) {
-      dispatch(
-        initQuiz({
-          id: quizData.id || quizId,
-          slug,
-          title: quizData.title || "MCQ Quiz",
-          quizType: "mcq",
-          questions: quizData.questions || [],
-          requiresAuth: true, // Always require auth to see results
-        }),
-      )
+      initialize({
+        id: quizData.id || quizId,
+        slug,
+        title: quizData.title || "MCQ Quiz",
+        quizType: "mcq",
+        questions: quizData.questions || [],
+        requiresAuth: true,
+      })
     }
-  }, [dispatch, quizData, quizId, slug, isReset])
+  }, [initialize, quizData, quizId, slug, isReset])
 
-  // Check for reset parameter
   useEffect(() => {
-    const reset = searchParams?.get("reset")
-    if (reset === "true") {
-      // Reset the quiz state
-      dispatch(resetQuiz())
-
-      // Reset local state
-      setCurrentQuestionIndex(0)
-      setAnswers([])
-      setShowResults(false)
-      setShowAuthPrompt(false)
-      setQuizResults(null)
-      setIsReset(true)
-
-      // Remove the reset parameter from URL
-      if (typeof window !== "undefined") {
-        const newUrl = new URL(window.location.href)
-        newUrl.searchParams.delete("reset")
-        newUrl.searchParams.delete("t") // Remove timestamp parameter too
-        window.history.replaceState({}, "", newUrl.toString())
-      }
+    if (quizQuestions.length > 0) {
+      setAnswers(Array(quizQuestions.length).fill(null))
     }
-  }, [searchParams, dispatch])
+  }, [quizQuestions.length])
 
-  // Get questions from props or context
-  const quizQuestions = useMemo(() => {
-    return questions || quizData?.questions || state?.questions || []
-  }, [questions, quizData, state])
+  const createResultObject = useCallback(() => {
+    const answersArray = quizState.answers || []
+    const correctAnswers = answersArray.filter((a: any) => a?.isCorrect).length
+    const totalTimeSpent = calculateTotalTime(answersArray.filter(Boolean))
 
-  // Initialize answers array on component mount
-  useEffect(() => {
-    if (quizQuestions && Array.isArray(quizQuestions) && quizQuestions.length > 0) {
-      // Only initialize answers if they're not already set or if we're resetting
-      if (answers.length === 0 || isReset) {
-        setAnswers(Array(quizQuestions.length).fill(null))
-        setIsReset(false)
-      }
-      setIsLoading(false)
-    } else {
-      // Set a timeout to stop showing loading state if questions don't load
-      const timer = setTimeout(() => setIsLoading(false), 3000)
-      return () => clearTimeout(timer)
+    return {
+      quizId: quizId || quizState?.quizId || "test-quiz",
+      slug,
+      answers: answersArray,
+      score: quizState.score || 0,
+      totalQuestions: quizQuestions.length || 0,
+      correctAnswers,
+      totalTimeSpent,
+      completedAt: quizState.completedAt || new Date().toISOString(),
+      elapsedTime: Math.floor((Date.now() - startTimeRef.current) / 1000),
     }
-  }, [quizQuestions, answers.length, isReset])
+  }, [quizState, quizId, quizQuestions.length, slug])
 
-  // Check if we should show results when state changes
   useEffect(() => {
-    if (state.isCompleted) {
-      if (isAuthenticated) {
-        setShowResults(true)
-        setShowAuthPrompt(false)
-      } else {
-        setShowAuthPrompt(true)
-        setShowResults(false)
-      }
+    if (quizState.isCompleted && !isRestoringState) {
+      const results = createResultObject()
+      setQuizUIState({
+        showResults: isAuthenticated || fromAuth,
+        showAuthPrompt: !(isAuthenticated || fromAuth),
+        quizResults: results,
+      })
     }
-  }, [state.isCompleted, isAuthenticated])
+  }, [quizState.isCompleted, isAuthenticated, fromAuth, createResultObject, isRestoringState])
 
-  // Check for URL parameters that indicate returning from auth
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search)
-      const fromAuth = urlParams.get("fromAuth")
+    if (quizState.error) setError(quizState.error)
+  }, [quizState.error])
 
-      if (fromAuth === "true" && status === "authenticated") {
-        // Set loading state while we restore
-        setIsLoading(true)
-
-        // If we have saved state in Redux, restore it
-        if (quizReduxState.savedState) {
-          dispatch(restoreFromSavedState())
-
-          // Force quiz to completed state if it was completed before
-          if (quizReduxState.savedState.isCompleted) {
-            dispatch(
-              completeQuiz({
-                answers: quizReduxState.savedState.answers || [],
-                score: quizReduxState.savedState.score || 0,
-                completedAt: quizReduxState.savedState.completedAt || new Date().toISOString(),
-              }),
-            )
-          }
-        }
-        // Otherwise use context restore if available
-        else if (contextRestoreFromSavedState) {
-          contextRestoreFromSavedState()
-        }
-
-        if (typeof setAuthCheckComplete === "function") {
-          setAuthCheckComplete(true)
-        }
-
-        // Force show results
-        setShowResults(true)
-        setShowAuthPrompt(false)
-
-        // Force isCompleted in local state
-        if (state.savedState) {
-          // Create quiz results from saved state
-          const savedAnswers = state.savedState.answers || []
-          const correctAnswers = savedAnswers.filter((a: any) => a && a.isCorrect).length
-          const totalQuestions = savedAnswers.length
-
-          setQuizResults({
-            quizId: state.savedState.quizId || quizId || "",
-            slug: state.savedState.slug || slug,
-            score: state.savedState.score || 0,
-            totalQuestions,
-            correctAnswers,
-            answers: savedAnswers,
-            completedAt: state.savedState.completedAt || new Date().toISOString(),
-          })
-        }
-
-        // Clear the fromAuth parameter
-        const newUrl = new URL(window.location.href)
-        newUrl.searchParams.delete("fromAuth")
-        window.history.replaceState({}, "", newUrl.toString())
-
-        // End loading state
-        setIsLoading(false)
-
-        // Clear saved state after successful restoration
-        dispatch(clearSavedState())
-      }
-    }
-  }, [
-    state,
-    setAuthCheckComplete,
-    contextRestoreFromSavedState,
-    quizId,
-    slug,
-    status,
-    dispatch,
-    quizReduxState.savedState,
-  ])
-
-  // Handle result saving notification
   useEffect(() => {
-    if (state.isCompleted && isAuthenticated && !state.resultsSaved) {
+    if (quizState.isCompleted && isAuthenticated && !quizState.resultsSaved) {
       toast({
         title: "Quiz completed!",
         description: "Your results have been saved.",
       })
     }
-  }, [state.isCompleted, isAuthenticated, state.resultsSaved, toast])
+  }, [quizState.isCompleted, quizState.resultsSaved, isAuthenticated, toast])
 
-  // Set quiz results from props if provided
-  useEffect(() => {
-    if (propQuizResults && !quizResults && !isReset) {
-      setQuizResults(propQuizResults)
-      setShowResults(true)
-    }
-  }, [propQuizResults, quizResults, isReset])
+  const handleSignIn = useCallback(() => {
+    const redirectUrl = `/dashboard/mcq/${slug}?fromAuth=true`
 
-  // Set error from props if provided
-  useEffect(() => {
-    if (propError && !error) {
-      setError(propError)
-    }
-  }, [propError, error])
-
-  // Set current question index from props if provided
-  useEffect(() => {
-    if (propCurrentQuestionIndex !== undefined && !isReset) {
-      setCurrentQuestionIndex(propCurrentQuestionIndex)
-    }
-  }, [propCurrentQuestionIndex, isReset])
-
-  // Set show results from props if provided
-  useEffect(() => {
-    if (propShowResults !== undefined && !isReset) {
-      setShowResults(propShowResults)
-    }
-  }, [propShowResults, isReset])
-
-  // Memoize the current question to prevent unnecessary re-renders
-  const currentQuestion = useMemo(() => {
-    return quizQuestions[currentQuestionIndex]
-  }, [quizQuestions, currentQuestionIndex])
-
-  const isLastQuestion = currentQuestionIndex === (quizQuestions?.length ?? 0) - 1
-
-  // Calculate progress percentage
-  const progressPercentage = useMemo(() => {
-    if (!quizQuestions || quizQuestions.length === 0) return 0
-    return Math.round(((currentQuestionIndex + 1) / quizQuestions.length) * 100)
-  }, [currentQuestionIndex, quizQuestions])
-
-  // Handle answer selection
-  const handleAnswer = useCallback(
-    (selectedOption: string, timeSpent: number, isCorrect: boolean) => {
-      try {
-        if (isCompleting || !submitQuizAnswer) return
-
-        // Create answer object
-        const answer = {
-          questionId: currentQuestion?.id || currentQuestionIndex,
-          question: currentQuestion?.question,
-          selectedOption,
-          correctOption: currentQuestion?.answer,
-          isCorrect,
-          timeSpent,
-          index: currentQuestionIndex,
-        }
-
-        // Update local state
-        const newAnswers = [...answers]
-        newAnswers[currentQuestionIndex] = answer
-        setAnswers(newAnswers)
-
-        // Submit answer to Redux
-        submitQuizAnswer({
-          answer: selectedOption,
-          userAnswer: selectedOption,
-          isCorrect,
-          timeSpent,
-          questionId: currentQuestion?.id || currentQuestionIndex,
-          index: currentQuestionIndex,
-        })
-
-        // Move to the next question or complete the quiz
-        if (isLastQuestion) {
-          handleQuizCompletion(newAnswers)
-        } else {
-          setCurrentQuestionIndex((prev) => prev + 1)
-        }
-      } catch (err) {
-        console.error("Error handling answer:", err)
-        setError(createQuizError(QuizErrorType.UNKNOWN, "Failed to process your answer. Please try again.", err, true))
+    // Save current state before redirecting
+    if (quizUIState.quizResults) {
+      // Save to Redux state for restoration after auth
+      const stateToSave = {
+        quizId: quizUIState.quizResults.quizId,
+        slug,
+        isCompleted: true,
+        score: quizUIState.quizResults.score,
+        answers: quizUIState.quizResults.answers,
+        completedAt: quizUIState.quizResults.completedAt,
       }
-    },
-    [isCompleting, submitQuizAnswer, currentQuestion, currentQuestionIndex, isLastQuestion, answers],
+
+      // Use the saveState function from useQuiz to persist the state
+      // This ensures the state is available after authentication
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(`mcq_quiz_state_${slug}`, JSON.stringify(stateToSave))
+      }
+    }
+
+    requireAuthentication?.(redirectUrl)
+  }, [requireAuthentication, slug, quizUIState.quizResults])
+
+  // Ref to track if we've already attempted restoration
+  const hasAttemptedRestoration = useRef(false)
+
+  useEffect(() => {
+    if (fromAuth && isAuthenticated && !hasAttemptedRestoration.current) {
+      hasAttemptedRestoration.current = true
+      setIsRestoringState(true)
+
+      // First check if we have savedState in quizState
+      if (quizState.savedState) {
+        restoreState()
+
+        // After state is restored, update UI
+        setTimeout(() => {
+          setQuizUIState({
+            showResults: true,
+            showAuthPrompt: false,
+            quizResults: createResultObject(),
+          })
+          setIsRestoringState(false)
+        }, 0)
+      } else {
+        // Check if we have state in sessionStorage as fallback
+        try {
+          const savedStateString = sessionStorage.getItem(`mcq_quiz_state_${slug}`)
+          if (savedStateString) {
+            const savedState = JSON.parse(savedStateString)
+            if (savedState && savedState.isCompleted) {
+              // Manually set the quiz state as completed
+              try {
+                const completeQuizResult = completeQuiz({
+                  answers: savedState.answers || [],
+                  score: savedState.score || 0,
+                  completedAt: savedState.completedAt || new Date().toISOString(),
+                })
+
+                // Handle both Promise and non-Promise return types
+                if (completeQuizResult && typeof completeQuizResult.then === "function") {
+                  completeQuizResult
+                    .then(() => {
+                      setQuizUIState({
+                        showResults: true,
+                        showAuthPrompt: false,
+                        quizResults: savedState,
+                      })
+                    })
+                    .catch((err) => {
+                      console.error("Error completing quiz:", err)
+                      setError("Failed to restore quiz state. Please try again.")
+                    })
+                } else {
+                  // If not a Promise, update UI immediately
+                  setQuizUIState({
+                    showResults: true,
+                    showAuthPrompt: false,
+                    quizResults: savedState,
+                  })
+                }
+              } catch (err) {
+                console.error("Error completing quiz:", err)
+                setError("Failed to restore quiz state. Please try again.")
+              }
+            }
+          }
+          setIsRestoringState(false)
+        } catch (err) {
+          console.error("Error restoring state:", err)
+          setIsRestoringState(false)
+        }
+      }
+
+      // Clean up URL params
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href)
+        url.searchParams.delete("fromAuth")
+        window.history.replaceState({}, "", url.toString())
+      }
+    }
+  }, [isAuthenticated, quizState.savedState, restoreState, fromAuth, createResultObject, slug, completeQuiz])
+
+  const currentQuestion = useMemo(() => quizQuestions[currentQuestionIndex], [quizQuestions, currentQuestionIndex])
+  const isLastQuestion = useMemo(
+    () => currentQuestionIndex === quizQuestions.length - 1,
+    [currentQuestionIndex, quizQuestions.length],
   )
 
-  // Handle quiz completion
   const handleQuizCompletion = useCallback(
     async (finalAnswers: any[]) => {
-      if (isCompleting || !completeQuiz) return
+      if (isCompleting) return
 
       setIsCompleting(true)
 
       try {
-        const answersArray = Array.isArray(finalAnswers) ? finalAnswers : []
-
-        // Calculate score
-        const correctAnswers = answersArray.filter((a) => a && a.isCorrect).length
-        const totalQuestions = quizQuestions?.length || 0
+        const correctAnswers = finalAnswers.filter((a) => a?.isCorrect).length
         const score = quizUtils.calculateScore
-          ? quizUtils.calculateScore(
-              answersArray.map((a) =>
-                a
-                  ? {
-                      answer: a.selectedOption,
-                      isCorrect: a.isCorrect,
-                      timeSpent: a.timeSpent,
-                    }
-                  : { answer: "", isCorrect: false, timeSpent: 0 },
-              ),
-              "mcq",
-            )
-          : Math.round((correctAnswers / totalQuestions) * 100)
+          ? quizUtils.calculateScore(finalAnswers, "mcq")
+          : Math.round((correctAnswers / quizQuestions.length) * 100)
 
-        // Calculate total time
-        const totalTimeSpent = calculateTotalTime(answersArray.filter(Boolean))
-        const formattedTimeSpent = formatQuizTime(totalTimeSpent)
-
-        // Prepare result data
-        const resultQuizId = quizId || state?.quizId || "test-quiz"
-        const quizResult = {
-          quizId: resultQuizId,
+        const result = {
+          quizId: quizId || quizState.quizId || "test-quiz",
           slug,
-          answers: answersArray,
+          answers: finalAnswers,
           score,
-          totalQuestions,
+          totalQuestions: quizQuestions.length,
           correctAnswers,
-          totalTimeSpent,
-          formattedTimeSpent,
+          totalTimeSpent: calculateTotalTime(finalAnswers.filter(Boolean)),
           completedAt: new Date().toISOString(),
-          elapsedTime: Math.floor((Date.now() - startTime) / 1000),
+          elapsedTime: Math.floor((Date.now() - startTimeRef.current) / 1000),
         }
 
-        setQuizResults(quizResult)
+        // Only update UI state if not already showing results or auth prompt
+        if (!quizUIState.showResults && !quizUIState.showAuthPrompt) {
+          setQuizUIState({
+            showResults: isAuthenticated,
+            showAuthPrompt: !isAuthenticated,
+            quizResults: result,
+          })
+        }
 
-        // Complete the quiz in Redux
-        await completeQuiz({
-          answers: answersArray.map((a) =>
-            a
-              ? {
-                  answer: a.selectedOption,
-                  userAnswer: a.selectedOption,
-                  isCorrect: a.isCorrect,
-                  timeSpent: a.timeSpent,
-                  questionId: a.questionId,
-                }
-              : null,
-          ),
-          score,
-          completedAt: new Date().toISOString(),
-        })
+        try {
+          const completeQuizResult = completeQuiz({
+            answers: finalAnswers,
+            score,
+            completedAt: result.completedAt,
+          })
 
-        // If the user is authenticated, show results immediately
-        if (isAuthenticated) {
-          setShowResults(true)
-          setShowAuthPrompt(false)
-        } else {
-          // Otherwise, show auth prompt
-          setShowAuthPrompt(true)
-          setShowResults(false)
+          // Handle both Promise and non-Promise return types
+          if (completeQuizResult && typeof completeQuizResult.then === "function") {
+            await completeQuizResult
+          }
+        } catch (err) {
+          console.error("Error completing quiz:", err)
+          setError("Failed to complete the quiz. Please try again.")
+          toast({
+            title: "Error",
+            description: "Failed to complete the quiz.",
+            variant: "destructive",
+          })
         }
       } catch (err) {
         console.error("Error completing quiz:", err)
-        setError(createQuizError(QuizErrorType.UNKNOWN, "Failed to complete the quiz. Please try again.", err, true))
+        setError("Failed to complete the quiz. Please try again.")
+        toast({
+          title: "Error",
+          description: "Failed to complete the quiz.",
+          variant: "destructive",
+        })
       } finally {
         setIsCompleting(false)
       }
     },
-    [isCompleting, completeQuiz, quizQuestions, slug, startTime, isAuthenticated, quizId, state?.quizId],
+    [
+      isCompleting,
+      quizQuestions.length,
+      quizId,
+      quizState.quizId,
+      slug,
+      isAuthenticated,
+      toast,
+      completeQuiz,
+      quizUIState.showResults,
+      quizUIState.showAuthPrompt,
+    ],
   )
 
+  const handleAnswer = useCallback(
+    (selectedOption: string, timeSpent: number, isCorrect: boolean) => {
+      if (isCompleting || !currentQuestion) return
 
-
-  // Handle sign in
-  const handleSignIn = useCallback(() => {
-    if (handleAuthenticationRequired) {
-      // First set loading state to prevent flashing content
-      setIsLoading(true)
-
-      // Create the redirect URL
-      const redirectUrl = `/dashboard/mcq/${slug}?fromAuth=true`
-
-      // Store current state in Redux
-      dispatch(
-        saveStateBeforeAuth({
-          quizId,
-          slug,
-          quizType: "mcq",
-          currentQuestionIndex,
-          answers,
-          isCompleted: true, // Force isCompleted to true
-          score: quizResults?.score || 0,
-          completedAt: new Date().toISOString(),
-        }),
-      )
-
-      // Set all required flags
-      dispatch(setRequiresAuth(true))
-      dispatch(setPendingAuthRequired(true))
-      dispatch(setIsProcessingAuth(true))
-      dispatch(setRedirectUrl( redirectUrl ))
-
-      // Use a small timeout to ensure Redux state is updated before redirect
-      setTimeout(() => {
-        // Redirect to sign-in
-        handleAuthenticationRequired(redirectUrl)
-      }, 50)
-    }
-  }, [handleAuthenticationRequired, slug, dispatch, quizId, currentQuestionIndex, answers, quizResults?.score])
-
-
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      // Only clear if not in the middle of auth flow
-      if (!state.pendingAuthRequired) {
-        dispatch(clearSavedState())
+      const answer = {
+        questionId: currentQuestion.id,
+        question: currentQuestion.question,
+        selectedOption,
+        correctOption: currentQuestion.answer,
+        isCorrect,
+        timeSpent,
+        index: currentQuestionIndex,
       }
-    }
-  }, [dispatch, state.pendingAuthRequired])
 
-  // If there's an error, show the error message
+      setAnswers((prev) => {
+        const updated = [...prev]
+        updated[currentQuestionIndex] = answer
+        return updated
+      })
+
+      submitAnswer(answer)
+
+      if (isLastQuestion) {
+        const finalAnswers = [...answers.slice(0, currentQuestionIndex), answer]
+        handleQuizCompletion(finalAnswers)
+      } else {
+        setCurrentQuestionIndex((prev) => prev + 1)
+      }
+    },
+    [isCompleting, currentQuestion, currentQuestionIndex, isLastQuestion, answers, submitAnswer, handleQuizCompletion],
+  )
+
   if (error) {
     return (
-      <Card className="p-6">
-        <div className="flex flex-col items-center justify-center text-center gap-4">
-          <AlertTriangle className="h-12 w-12 text-amber-500" />
-          <h3 className="text-xl font-semibold">Error Loading Quiz</h3>
-          <p className="text-muted-foreground">{getUserFriendlyErrorMessage(error)}</p>
-          <Button onClick={() => router.push("/dashboard/mcq")}>Return to Quiz List</Button>
-        </div>
-      </Card>
-    )
-  }
-
-  // If the quiz is completed and the user is not authenticated, show the non-authenticated user sign-in prompt
-  if (showAuthPrompt || (state.isCompleted && !isAuthenticated && !authReduxState.isProcessingAuth && !isReset)) {
-    return (
-      <NonAuthenticatedUserSignInPrompt
-    
-        onSignIn={handleSignIn}
-        quizType="quiz"
-        showSaveMessage={true}
+      <ErrorDisplay
+        error={error}
+        onRetry={() => window.location.reload()}
+        onReturn={() => router.push("/dashboard/quizzes")}
       />
     )
   }
 
-  // If the quiz is completed and results are available, show the results
-  if ((showResults || state.isCompleted) && (quizResults || state.isCompleted) && !isReset && isAuthenticated) {
-    return (
-      <McqQuizResult
-        result={
-          quizResults || {
-            quizId: quizId || state?.quizId || "test-quiz",
-            slug,
-            score: state.score || 0,
-            answers: state.answers || [],
-            totalQuestions: quizQuestions?.length || 0,
-            correctAnswers: (state.answers || []).filter((a: any) => a && a.isCorrect).length,
-            completedAt: state.completedAt || new Date().toISOString(),
-          }
-        }
-      />
-    )
+  if (quizUIState.showAuthPrompt) {
+    return <NonAuthenticatedUserSignInPrompt onSignIn={handleSignIn} quizType="mcq quiz" showSaveMessage />
   }
 
-  // If there's no current question and we're not showing results, show a loading indicator
-  if (isLoading || (!currentQuestion && !showResults)) {
-    return (
-      <Card className="p-6">
-        <div className="flex flex-col items-center justify-center py-8 gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-center text-muted-foreground">Loading quiz questions...</p>
-          <Progress value={30} className="w-full max-w-md mx-auto mt-2" />
-        </div>
-      </Card>
-    )
+  if (quizUIState.showResults) {
+    return <McqQuizResult result={quizUIState.quizResults} />
   }
 
-  // Otherwise, show the quiz
+  if (!currentQuestion) {
+    return <LoadingDisplay />
+  }
+
   return (
     <div className="space-y-6">
-      {process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_DEBUG_MODE === "true" && (
-        <>
-          <StateDebugger state={state} title="Quiz Redux State" />
-          <StateDebugger state={authReduxState} title="Auth Redux State" />
-          <StateDebugger
-            state={{
-              localState: {
-                currentQuestionIndex,
-                showResults,
-                showAuthPrompt,
-                isCompleting,
-                answersCount: answers.length,
-                quizResultsExists: !!quizResults,
-                isReset,
-              },
-              sessionStatus: status,
-              isAuthenticated: !!session?.user,
-              currentQuestion: currentQuestion
-                ? {
-                    id: currentQuestion.id,
-                    question: currentQuestion.question,
-                  }
-                : null,
-            }}
-            title="Component State"
-          />
-        </>
-      )}
-
-      {/* Quiz Progress Bar */}
-      <div className="mb-4">
-        <div className="flex justify-between text-sm text-muted-foreground mb-1">
-          <span>
-            Question {currentQuestionIndex + 1} of {quizQuestions.length}
-          </span>
-          <span>{progressPercentage}% Complete</span>
-        </div>
-        <Progress value={progressPercentage} className="h-2" />
-      </div>
-
       <McqQuiz
         question={currentQuestion}
         onAnswer={handleAnswer}
         questionNumber={currentQuestionIndex + 1}
-        totalQuestions={quizQuestions?.length || 0}
+        totalQuestions={quizQuestions.length}
         isLastQuestion={isLastQuestion}
       />
 
       {isCompleting && (
-        <Card className="p-4 mt-4">
+        <div className="p-4 mt-4 border rounded-md">
           <div className="flex items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+            <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></div>
             <p>Submitting your answers...</p>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   )
+})
+
+export default function McqQuizWrapper({ quizData, slug, userId, quizId }: McqQuizWrapperProps) {
+  const [isInitializing, setIsInitializing] = useState(true)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const isReset = searchParams.get("reset") === "true"
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitializing(false), 500)
+    return () => clearTimeout(timer)
+  }, [isReset])
+
+  if (isInitializing) {
+    return <InitializingDisplay />
+  }
+
+  if (!slug) {
+    return <QuizNotFoundDisplay onReturn={() => router.push("/dashboard/quizzes")} />
+  }
+
+  if (!quizData?.questions?.length) {
+    return <EmptyQuestionsDisplay onReturn={() => router.push("/dashboard/quizzes")} />
+  }
+
+  return <McqQuizContent quizData={quizData} slug={slug} userId={userId} quizId={quizId} />
 }

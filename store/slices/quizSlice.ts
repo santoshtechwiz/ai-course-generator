@@ -12,6 +12,8 @@ export interface Answer {
   index?: number
   hintsUsed?: boolean
   similarity?: number
+  codeSnippet?: string
+  language?: string
 }
 
 export interface QuizState {
@@ -27,8 +29,6 @@ export interface QuizState {
   score: number
   requiresAuth: boolean
   pendingAuthRequired: boolean
-  hasNonAuthenticatedUserResult: boolean
-  nonAuthenticatedUserResultsSaved: boolean
   authCheckComplete: boolean
   error: string | null
   animationState: "idle" | "answering" | "completed"
@@ -46,8 +46,6 @@ export interface QuizState {
     score?: number
     completedAt?: string
   } | null
-  isProcessingAuth?: boolean
-  redirectUrl?: string | null
 }
 
 // Define initial state
@@ -64,9 +62,7 @@ const initialState: QuizState = {
   score: 0,
   requiresAuth: false,
   pendingAuthRequired: false,
-  hasNonAuthenticatedUserResult: false,
-  nonAuthenticatedUserResultsSaved: false,
-  authCheckComplete: false,
+  authCheckComplete: true,
   error: null,
   animationState: "idle",
   isSavingResults: false,
@@ -74,8 +70,6 @@ const initialState: QuizState = {
   completedAt: null,
   startTime: Date.now(),
   savedState: null,
-  isProcessingAuth: false,
-  redirectUrl: null,
 }
 
 // Async thunks
@@ -150,8 +144,6 @@ const quizSlice = createSlice({
       state.score = action.payload.score || 0
       state.requiresAuth = action.payload.requiresAuth || false
       state.pendingAuthRequired = action.payload.pendingAuthRequired || false
-      state.hasNonAuthenticatedUserResult = action.payload.hasNonAuthenticatedUserResult || false
-      state.nonAuthenticatedUserResultsSaved = action.payload.nonAuthenticatedUserResultsSaved || false
       state.authCheckComplete = action.payload.authCheckComplete || true // Set to true by default
       state.error = null
       state.animationState = "idle"
@@ -184,6 +176,8 @@ const quizSlice = createSlice({
         questionId: action.payload.questionId,
         hintsUsed: action.payload.hintsUsed,
         similarity: action.payload.similarity,
+        codeSnippet: action.payload.codeSnippet,
+        language: action.payload.language,
       }
       state.answers = newAnswers
 
@@ -241,8 +235,6 @@ const quizSlice = createSlice({
         questions: state.questions,
         requiresAuth: state.requiresAuth,
         pendingAuthRequired: false,
-        hasNonAuthenticatedUserResult: false,
-        nonAuthenticatedUserResultsSaved: false,
         authCheckComplete: true,
         startTime: Date.now(),
       }
@@ -252,17 +244,6 @@ const quizSlice = createSlice({
     },
     setPendingAuthRequired: (state, action: PayloadAction<boolean>) => {
       state.pendingAuthRequired = action.payload
-    },
-    setHasNonAuthenticatedUserResult: (state, action: PayloadAction<boolean>) => {
-      state.hasNonAuthenticatedUserResult = action.payload
-      state.nonAuthenticatedUserResultsSaved = action.payload
-    },
-    setNonAuthenticatedUserResultsSaved: (state, action: PayloadAction<boolean>) => {
-      state.nonAuthenticatedUserResultsSaved = action.payload
-    },
-    clearNonAuthenticatedUserResults: (state) => {
-      state.hasNonAuthenticatedUserResult = false
-      state.nonAuthenticatedUserResultsSaved = false
     },
     setAuthCheckComplete: (state, action: PayloadAction<boolean>) => {
       state.authCheckComplete = action.payload
@@ -291,46 +272,6 @@ const quizSlice = createSlice({
     clearSavedState: (state) => {
       state.savedState = null
       state.pendingAuthRequired = false
-      state.isProcessingAuth = false
-    },
-    restoreQuizState: (state, action: PayloadAction<Partial<QuizState>>) => {
-      // Only restore properties that are provided in the payload
-      const payload = action.payload
-
-      // Core quiz data
-      if (payload.quizId !== undefined) state.quizId = payload.quizId
-      if (payload.slug !== undefined) state.slug = payload.slug
-      if (payload.title !== undefined) state.title = payload.title
-      if (payload.quizType !== undefined) state.quizType = payload.quizType
-      if (payload.questions !== undefined) state.questions = payload.questions
-
-      // Progress data
-      if (payload.currentQuestionIndex !== undefined) state.currentQuestionIndex = payload.currentQuestionIndex
-      if (payload.answers !== undefined) state.answers = payload.answers
-      if (payload.timeSpent !== undefined) state.timeSpent = payload.timeSpent
-
-      // Completion data
-      if (payload.isCompleted !== undefined) state.isCompleted = payload.isCompleted
-      if (payload.score !== undefined) state.score = payload.score
-      if (payload.completedAt !== undefined) state.completedAt = payload.completedAt
-
-      // Auth state
-      if (payload.requiresAuth !== undefined) state.requiresAuth = payload.requiresAuth
-      if (payload.pendingAuthRequired !== undefined) state.pendingAuthRequired = payload.pendingAuthRequired
-      if (payload.authCheckComplete !== undefined) state.authCheckComplete = payload.authCheckComplete
-
-      // Results state
-      if (payload.resultsSaved !== undefined) state.resultsSaved = payload.resultsSaved
-      if (payload.hasNonAuthenticatedUserResult !== undefined)
-        state.hasNonAuthenticatedUserResult = payload.hasNonAuthenticatedUserResult
-      if (payload.nonAuthenticatedUserResultsSaved !== undefined)
-        state.nonAuthenticatedUserResultsSaved = payload.nonAuthenticatedUserResultsSaved
-
-      // Reset animation state based on completion
-      state.animationState = payload.isCompleted ? "completed" : "idle"
-
-      // Reset error state
-      state.error = null
     },
     restoreFromSavedState: (state) => {
       if (state.savedState) {
@@ -346,6 +287,12 @@ const quizSlice = createSlice({
 
         // Set animation state based on completion
         state.animationState = state.savedState.isCompleted ? "completed" : "idle"
+
+        // Reset error state
+        state.error = null
+
+        // Reset pending auth required
+        state.pendingAuthRequired = false
       }
     },
     setCurrentQuestion: (state, action) => {
@@ -357,12 +304,6 @@ const quizSlice = createSlice({
         state.currentQuestionIndex -= 1
         state.animationState = "idle"
       }
-    },
-    setIsProcessingAuth: (state, action) => {
-      state.isProcessingAuth = action.payload
-    },
-    setRedirectUrl: (state, action) => {
-      state.redirectUrl = action.payload
     },
   },
   extraReducers: (builder) => {
@@ -411,20 +352,14 @@ export const {
   resetQuiz,
   setRequiresAuth,
   setPendingAuthRequired,
-  setHasNonAuthenticatedUserResult,
-  setNonAuthenticatedUserResultsSaved,
-  clearNonAuthenticatedUserResults,
   setAuthCheckComplete,
   setError,
   setAnimationState,
-  restoreQuizState,
   saveStateBeforeAuth,
   clearSavedState,
   restoreFromSavedState,
   setCurrentQuestion,
   prevQuestion,
-  setIsProcessingAuth,
-  setRedirectUrl,
 } = quizSlice.actions
 
 // Export reducer

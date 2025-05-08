@@ -8,7 +8,7 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 import McqQuizWrapper from "../components/McqQuizWrapper"
-import { QuizProvider } from "@/app/context/QuizContext"
+
 
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -70,9 +70,7 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
   // IMPORTANT: Remove the onAuthRequired function prop
   return (
-    <QuizProvider 
-    
-    >
+   
       <QuizDetailsPageWithContext
         title={result.title}
         description={`Test your coding knowledge on ${result.title} with multiple choice questions`}
@@ -93,7 +91,7 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
       >
         <McqQuizWrapper quizData={result} slug={slug} />
       </QuizDetailsPageWithContext>
-    </QuizProvider>
+
   )
 }
 
