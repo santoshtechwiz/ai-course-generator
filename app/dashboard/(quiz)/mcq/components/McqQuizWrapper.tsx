@@ -108,7 +108,7 @@ export default function McqQuizWrapper({
     handleAuthenticationRequired,
     setAuthCheckComplete,
     restoreFromSavedState: contextRestoreFromSavedState,
-    handleDeclinedAuthentication,
+    
   } = useQuiz()
 
   // Get Redux state
@@ -456,11 +456,7 @@ export default function McqQuizWrapper({
     [isCompleting, completeQuiz, quizQuestions, slug, startTime, isAuthenticated, quizId, state?.quizId],
   )
 
-  // Handle continuing as guest
-  const handleContinueAsGuest = useCallback(() => {
-    setShowResults(true)
-    setShowAuthPrompt(false)
-  }, [])
+
 
   // Handle sign in
   const handleSignIn = useCallback(() => {
@@ -489,7 +485,7 @@ export default function McqQuizWrapper({
       dispatch(setRequiresAuth(true))
       dispatch(setPendingAuthRequired(true))
       dispatch(setIsProcessingAuth(true))
-      dispatch(setRedirectUrl(redirectUrl))
+      dispatch(setRedirectUrl( redirectUrl ))
 
       // Use a small timeout to ensure Redux state is updated before redirect
       setTimeout(() => {
@@ -499,32 +495,7 @@ export default function McqQuizWrapper({
     }
   }, [handleAuthenticationRequired, slug, dispatch, quizId, currentQuestionIndex, answers, quizResults?.score])
 
-  // Handle declined authentication
-  const handleDeclinedAuth = useCallback(() => {
-    if (handleDeclinedAuthentication) {
-      handleDeclinedAuthentication()
-    } else {
-      // Reset quiz state
-      dispatch(resetQuiz())
 
-      // Reset local state
-      setCurrentQuestionIndex(0)
-      setAnswers([])
-      setShowResults(false)
-      setShowAuthPrompt(false)
-      setQuizResults(null)
-
-      // Clear saved state
-      dispatch(clearSavedState())
-
-      // Show toast
-      toast({
-        title: "Quiz reset",
-        description: "You can now start the quiz again from the beginning.",
-        variant: "default",
-      })
-    }
-  }, [dispatch, toast, handleDeclinedAuthentication])
 
   // Clean up on unmount
   useEffect(() => {
@@ -554,7 +525,7 @@ export default function McqQuizWrapper({
   if (showAuthPrompt || (state.isCompleted && !isAuthenticated && !authReduxState.isProcessingAuth && !isReset)) {
     return (
       <NonAuthenticatedUserSignInPrompt
-        onContinueAsGuest={handleContinueAsGuest}
+    
         onSignIn={handleSignIn}
         quizType="quiz"
         showSaveMessage={true}
