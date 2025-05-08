@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 
 // Define response types for better type safety
 interface QuizResponse {

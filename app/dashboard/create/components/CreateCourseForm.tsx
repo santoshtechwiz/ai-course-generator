@@ -20,10 +20,10 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/tailwindUtils"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
+import { useSubscription } from "../../subscription/hooks/use-subscription"
 
 interface CourseCreationFormProps {
   maxQuestions: number
@@ -35,7 +35,7 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
 
-  const { subscriptionStatus } = useSubscriptionStore()
+  const {data: subscriptionStatus } = useSubscription()
   const { data: session, status: authStatus } = useSession()
   const router = useRouter()
   const { toast } = useToast()

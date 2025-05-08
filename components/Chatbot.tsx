@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/tailwindUtils"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscription-provider"
 
 // Improve the animation variants for smoother transitions
 const messageVariants = {

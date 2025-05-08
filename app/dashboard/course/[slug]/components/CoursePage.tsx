@@ -17,8 +17,9 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/tailwindUtils"
 import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
-import { useAuth } from "@/providers/unified-auth-provider"
+
 import MobilePlayList from "./MobilePlayList"
+import { useAuth } from "@/hooks"
 
 // Ensure proper typing for the reducer state and actions
 interface State {

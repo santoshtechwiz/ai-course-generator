@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 import { CheckCircle2, ArrowRight, Zap, FileText, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"

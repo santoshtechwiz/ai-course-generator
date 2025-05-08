@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth"
 import { type NextRequest, NextResponse } from "next/server"
 
 import { z } from "zod"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 // Adding consistent error handling and better typed responses

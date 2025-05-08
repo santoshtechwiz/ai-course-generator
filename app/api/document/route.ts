@@ -4,7 +4,7 @@ import { openai } from "@ai-sdk/openai"
 import { z } from "zod"
 
 import { updateUserCredits } from "@/lib/db"
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 
 const QuestionSchema = z.object({
   question: z.string(),

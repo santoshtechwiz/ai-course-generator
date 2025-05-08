@@ -1,346 +1,373 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { motion } from "framer-motion"
-import { CheckCircle2, XCircle, Clock, Award, LogIn, AlertCircle, Info } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useMemo, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, XCircle, Clock, Award, ArrowRight } from "lucide-react"
+import { calculatePerformanceLevel, formatQuizTime } from "@/lib/utils/quiz-performance"
 import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/use-toast"
+import { motion } from "framer-motion"
+import { useAppDispatch } from "@/store"
+import { resetQuiz } from "@/store/slices/quizSlice"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
-import { useQuiz } from "@/app/context/QuizContext"
-import { useSession } from "next-auth/react"
-import { quizService } from "@/lib/quiz-service"
-import { useAuth } from "@/providers/unified-auth-provider"
-import { toast } from "@/hooks/use-toast"
-import { cn } from "@/lib/tailwindUtils"
-import { CodeQuizResultProps } from "@/app/types/code-quiz-types"
-const formatQuizTime = (time: number): string => {
-  const hours = Math.floor(time / 3600)
-  const minutes = Math.floor((time % 3600) / 60)
-  const seconds = time % 60
+// Local storage key prefix for quiz state
+const QUIZ_STATE_STORAGE_KEY = "quiz_state_"
 
-  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
+interface CodeQuizResultProps {
+  result: {
+    quizId: string
+    slug: string
+    score: number
+    totalQuestions: number
+    correctAnswers: number
+    totalTimeSpent: number
+    formattedTimeSpent?: string
+    completedAt: string
+    answers: Array<{
+      questionId: string | number
+      question: string
+      selectedOption?: string
+      answer?: string
+      correctOption?: string
+      correctAnswer?: string
+      isCorrect: boolean
+      timeSpent: number
+      codeSnippet?: string
+      language?: string
+    }>
+  }
+  [key: string]: any
 }
 
-export default function CodeQuizResult({
-  title,
-  onRestart,
-  quizId,
-  questions,
-  answers,
-  score,
-  isGuestMode,
-}: CodeQuizResultProps) {
-  const { state, handleAuthenticationRequired } = useQuiz()
-  const { data: session } = useSession()
-  const { isAuthenticated, user } = useAuth()
-  const [showAnimation, setShowAnimation] = useState(true)
-
-  // Enhanced authentication check
-  const userIsAuthenticated = !!(isAuthenticated || user || session?.user)
-
-  // Use isGuestMode prop if provided, otherwise determine from authentication state
-  const isGuest = isGuestMode !== undefined ? isGuestMode : !userIsAuthenticated
-
-  // Use props if provided, otherwise fall back to state
-  const quizQuestions = questions || state.questions || []
-  const quizAnswers = answers || state.answers || []
-  const quizId_ = quizId || state.quizId
-
-  // Calculate statistics
-  const totalQuestions = quizQuestions.length
-  const correctAnswers = quizAnswers.filter((a) => a?.isCorrect).length
-  const incorrectAnswers = quizAnswers.filter((a) => a && a.isCorrect === false).length
-  const unansweredQuestions = totalQuestions - correctAnswers - incorrectAnswers
-
-  // Calculate score percentage correctly
-  const scorePercentage =
-    score !== undefined ? score : totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
-
-  const totalTime = quizAnswers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
-  const averageTime = totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0
-
-  // Determine performance level
-  let performanceLevel = "Needs Improvement"
-  let performanceColor = "text-red-500"
-
-  if (scorePercentage >= 90) {
-    performanceLevel = "Excellent"
-    performanceColor = "text-green-500"
-  } else if (scorePercentage >= 75) {
-    performanceLevel = "Good"
-    performanceColor = "text-blue-500"
-  } else if (scorePercentage >= 60) {
-    performanceLevel = "Satisfactory"
-    performanceColor = "text-yellow-500"
+// Helper function to determine difficulty color
+const getDifficultyColor = (difficulty: string): string => {
+  switch (difficulty) {
+    case "easy":
+      return "text-green-500"
+    case "medium":
+      return "text-yellow-500"
+    case "hard":
+      return "text-red-500"
+    default:
+      return "text-gray-500"
   }
+}
 
-  // Disable animation after initial render
+export default function CodeQuizResult({ result, ...props }: CodeQuizResultProps) {
+  const [activeTab, setActiveTab] = useState("summary")
+  const [isLoading, setIsLoading] = useState(false)
+  const [hasLoadedResult, setHasLoadedResult] = useState(false)
+  const router = useRouter()
+  const { toast } = useToast()
+  const dispatch = useAppDispatch()
+
+  // Ensure we have a valid result object with default values for tests
+  const safeResult = useMemo(
+    () => ({
+      quizId: result?.quizId || "",
+      slug: result?.slug || "",
+      score: typeof result?.score === "number" ? result.score : 0,
+      totalQuestions: result?.totalQuestions || 0,
+      correctAnswers: result?.correctAnswers || 0,
+      totalTimeSpent: result?.totalTimeSpent || 0,
+      formattedTimeSpent: result?.formattedTimeSpent || formatQuizTime(result?.totalTimeSpent || 0),
+      completedAt: result?.completedAt || new Date().toISOString(),
+      answers: Array.isArray(result?.answers) ? result.answers : [],
+    }),
+    [result],
+  )
+
+  // Check localStorage for saved result on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowAnimation(false)
-    }, 2000)
-    return () => clearTimeout(timer)
-  }, [])
-
-  // Save results to server if authenticated
-  const hasSavedRef = useRef(false)
-
-  useEffect(() => {
-    if (userIsAuthenticated && quizId_ && !hasSavedRef.current) {
-      hasSavedRef.current = true
-
-      // Use a small timeout to ensure we don't block rendering
-      setTimeout(() => {
-        // Save to server if authenticated
-        quizService.saveCompleteQuizResult({
-          quizId: quizId_,
-          slug: state.slug,
-          type: "code",
-          score: scorePercentage,
-          answers: quizAnswers.filter((a) => a !== null),
-          totalTime: totalTime,
-          totalQuestions: totalQuestions,
-        })
-
-        // Clear all storage after saving to database
-        quizService.clearAllStorage()
-      }, 100)
-    } else if (!userIsAuthenticated && quizId_) {
-      // For guest users, save as guest result but don't show results
-      quizService.saveGuestResult({
-        quizId: quizId_,
-        slug: state.slug,
-        type: "code",
-        score: scorePercentage,
-        answers: quizAnswers.filter((a) => a !== null),
-        totalTime: totalTime,
-        totalQuestions: totalQuestions,
-        completedAt: new Date().toISOString(),
-      })
+    if (!hasLoadedResult && (!result || Object.keys(result).length === 0)) {
+      try {
+        // Try to get saved result from localStorage
+        const slug = result?.slug || window.location.pathname.split("/").pop()
+        if (slug) {
+          const savedStateString = localStorage.getItem(`${QUIZ_STATE_STORAGE_KEY}${slug}`)
+          if (savedStateString) {
+            const savedState = JSON.parse(savedStateString)
+            if (savedState && savedState.score) {
+              console.log("Loaded result from localStorage:", savedState)
+              // We don't directly update the result prop, but we can use it for debugging
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error loading result from localStorage:", err)
+      }
+      setHasLoadedResult(true)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userIsAuthenticated, quizId_, state.slug, quizAnswers, scorePercentage, totalTime, totalQuestions])
+  }, [result, hasLoadedResult])
 
-  // Handle sign in button click
-  const handleSignIn = () => {
-    console.log("User clicked Sign In, initiating authentication flow")
+  // Memoize the performance level and color calculations
+  const performanceLevel = useMemo(() => calculatePerformanceLevel(safeResult.score), [safeResult.score])
+  const performanceColor = useMemo(
+    () => getDifficultyColor(safeResult.score >= 90 ? "easy" : safeResult.score >= 60 ? "medium" : "hard"),
+    [safeResult.score],
+  )
 
-    // Create the redirect URL
-    const redirectUrl = `/dashboard/code/${state.slug}?fromAuth=true`
+  // Simplified handleShare function
+  const handleShare = useCallback(async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "My Quiz Results",
+          text: `I scored ${safeResult.score}% on the ${safeResult.slug} quiz!`,
+          url: window.location.href,
+        })
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href)
+        toast({
+          title: "Link copied!",
+          description: "Share your results with friends",
+        })
+      } else {
+        console.warn("Sharing is not supported in this browser.")
+      }
+    } catch (error) {
+      console.error("Error sharing:", error)
+    }
+  }, [safeResult.score, safeResult.slug, toast])
 
-    // Save current quiz state before redirecting
-    quizService.savePendingQuizData()
+  // Optimize the handleTryAgain function
+  const handleTryAgain = useCallback(() => {
+    setIsLoading(true)
 
-    // Save auth redirect info
-    quizService.saveAuthRedirect(redirectUrl)
+    // Reset the quiz state in Redux
+    dispatch(resetQuiz())
 
-    // Call the authentication handler
-    handleAuthenticationRequired()
-  }
+    // Clear localStorage for this quiz
+    try {
+      localStorage.removeItem(`${QUIZ_STATE_STORAGE_KEY}${safeResult.slug}`)
+    } catch (err) {
+      console.error("Error clearing localStorage:", err)
+    }
+
+    // Add a timestamp parameter to force a fresh load
+    const timestamp = new Date().getTime()
+
+    // Navigate to the quiz page with reset=true parameter to ensure it reloads
+    router.push(`/dashboard/code/${safeResult.slug}?reset=true&t=${timestamp}`)
+  }, [dispatch, router, safeResult.slug])
+
+  // Memoized animation variants
+  const containerVariants = useMemo(
+    () => ({
+      hidden: { opacity: 0 },
+      visible: {
+        opacity: 1,
+        transition: {
+          staggerChildren: 0.1,
+        },
+      },
+    }),
+    [],
+  )
+
+  const itemVariants = useMemo(
+    () => ({
+      hidden: { y: 20, opacity: 0 },
+      visible: { y: 0, opacity: 1 },
+    }),
+    [],
+  )
 
   return (
-    <div className="space-y-8 w-full max-w-3xl mx-auto">
-      {isGuest && (
-        <div className="mb-4 p-4 border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 rounded-lg">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-amber-800 dark:text-amber-300">Guest Mode</h3>
-              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                You're viewing results as a guest. Your progress won't be saved when you leave this page.
-              </p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <Button
-                  size="sm"
-                  className="bg-amber-600 hover:bg-amber-700 text-white border-none"
-                  onClick={handleSignIn}
-                >
-                  <LogIn className="h-3.5 w-3.5 mr-1.5" />
-                  Sign in to save results
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                  onClick={() => {
-                    toast({
-                      title: "Guest Mode Information",
-                      description:
-                        "In guest mode, you can view your results but they won't be saved to your account or be available after you leave this page.",
-                      variant: "default",
-                    })
-                  }}
-                >
-                  <Info className="h-3.5 w-3.5 mr-1.5" />
-                  Learn more
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-2xl font-bold">{title} Results</CardTitle>
-          <CardDescription>You've completed the quiz. Here's how you did.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Score Overview */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-              className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg"
-            >
-              <div className="text-4xl font-bold mb-2">{scorePercentage}%</div>
-              <div className="text-sm text-muted-foreground">Overall Score</div>
-            </motion.div>
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg"
-            >
-              <div className="text-4xl font-bold mb-2 text-green-500">{correctAnswers}</div>
-              <div className="text-sm text-muted-foreground">Correct Answers</div>
-            </motion.div>
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-              className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg"
-            >
-              <div className="text-4xl font-bold mb-2 text-red-500">{incorrectAnswers}</div>
-              <div className="text-sm text-muted-foreground">Incorrect Answers</div>
-            </motion.div>
+    <motion.div
+      data-testid="quiz-results"
+      className="space-y-6"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <Card className="w-full print:shadow-none">
+        <CardHeader className="text-center">
+          <motion.div variants={itemVariants}>
+            <CardTitle className="text-2xl">Code Quiz Results</CardTitle>
+            <CardDescription>Completed on {new Date(safeResult.completedAt).toLocaleDateString()}</CardDescription>
           </motion.div>
+        </CardHeader>
 
-          {/* Performance Level */}
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-            <div className="flex items-center gap-3">
-              <Award className="h-6 w-6 text-primary" />
-              <div>
-                <div className="text-sm font-medium">Performance Level</div>
-                <div className={cn("text-lg font-bold", performanceColor)}>{performanceLevel}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Clock className="h-6 w-6 text-primary" />
-              <div>
-                <div className="text-sm font-medium">Total Time</div>
-                <div className="text-lg font-bold">{formatQuizTime(totalTime)}</div>
-              </div>
-            </div>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="summary">Summary</TabsTrigger>
+            <TabsTrigger value="details">Code Solutions</TabsTrigger>
+          </TabsList>
 
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>
-                Score: {correctAnswers}/{totalQuestions}
-              </span>
-              <span
-                className={cn(
-                  scorePercentage >= 75 ? "text-green-500" : scorePercentage >= 60 ? "text-yellow-500" : "text-red-500",
-                )}
-              >
-                {scorePercentage}%
-              </span>
-            </div>
-            <Progress
-              value={scorePercentage}
-              className={cn(
-                "h-2",
-                scorePercentage >= 75 ? "bg-green-200" : scorePercentage >= 60 ? "bg-yellow-200" : "bg-red-200",
-              )}
-              indicatorClassName={cn(
-                scorePercentage >= 75 ? "bg-green-500" : scorePercentage >= 60 ? "bg-yellow-500" : "bg-red-500",
-              )}
-            />
-          </div>
+          <TabsContent value="summary" className="pt-4">
+            <CardContent>
+              <motion.div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4" variants={containerVariants}>
+                <motion.div variants={itemVariants} className="flex flex-col items-center p-4 border rounded-lg">
+                  <Award className="h-8 w-8 text-primary mb-2" />
+                  <p className="text-sm text-muted-foreground">Score</p>
+                  <p data-testid="quiz-score" className={`text-2xl font-bold ${performanceColor}`}>
+                    {safeResult.score}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{performanceLevel}</p>
+                </motion.div>
 
-          <Separator />
+                <motion.div variants={itemVariants} className="flex flex-col items-center p-4 border rounded-lg">
+                  <CheckCircle className="h-8 w-8 text-green-600 mb-2" />
+                  <p className="text-sm text-muted-foreground">Correct Answers</p>
+                  <p className="text-2xl font-bold">
+                    {safeResult.correctAnswers}/{safeResult.totalQuestions}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Math.round((safeResult.correctAnswers / (safeResult.totalQuestions || 1)) * 100)}% accuracy
+                  </p>
+                </motion.div>
 
-          {/* Question Review */}
-          {quizQuestions.length > 0 && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold">Question Review</h3>
-              {quizQuestions.map((question, index) => {
-                const answer = quizAnswers[index]
-                const isCorrect = answer?.isCorrect
+                <motion.div variants={itemVariants} className="flex flex-col items-center p-4 border rounded-lg">
+                  <XCircle className="h-8 w-8 text-red-600 mb-2" />
+                  <p className="text-sm text-muted-foreground">Incorrect Answers</p>
+                  <p className="text-2xl font-bold">
+                    {safeResult.totalQuestions - safeResult.correctAnswers}/{safeResult.totalQuestions}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Math.round(
+                      ((safeResult.totalQuestions - safeResult.correctAnswers) / (safeResult.totalQuestions || 1)) *
+                        100,
+                    )}
+                    % error rate
+                  </p>
+                </motion.div>
 
-                return (
-                  <motion.div
-                    key={question?.id || index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.4 }}
-                    className="border rounded-lg p-4 space-y-3"
-                  >
-                    <div className="flex items-start gap-3">
-                      {isCorrect ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                      )}
-                      <div className="space-y-2 flex-1">
-                        <p className="font-medium">
-                          {index + 1}. {question?.question || "Question not available"}
-                        </p>
+                <motion.div variants={itemVariants} className="flex flex-col items-center p-4 border rounded-lg">
+                  <Clock className="h-8 w-8 text-blue-600 mb-2" />
+                  <p className="text-sm text-muted-foreground">Time Spent</p>
+                  <p className="text-2xl font-bold">
+                    {safeResult.formattedTimeSpent || formatQuizTime(safeResult.totalTimeSpent)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Math.round(safeResult.totalTimeSpent / (safeResult.totalQuestions || 1))} sec/question
+                  </p>
+                </motion.div>
+              </motion.div>
 
-                        <div className="text-sm space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">Your answer:</span>
-                            <span className={isCorrect ? "text-green-600" : "text-red-600"}>
-                              {answer?.answer ? (
-                                <code className="bg-muted p-1 rounded text-xs">
-                                  {answer.answer.length > 100 ? answer.answer.substring(0, 100) + "..." : answer.answer}
-                                </code>
-                              ) : (
-                                "No answer provided"
-                              )}
-                            </span>
-                          </div>
-
-                          {!isCorrect && (
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">Correct answer:</span>
-                              <span className="text-green-600">
-                                <code className="bg-muted p-1 rounded text-xs">
-                                  {question?.answer || question?.correctAnswer || "Answer not available"}
-                                </code>
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>{formatQuizTime(answer?.timeSpent || 0)}</span>
-                          </div>
-                        </div>
-                      </div>
+              <motion.div variants={itemVariants} className="mt-8">
+                <h3 className="text-lg font-medium mb-3">Performance Overview</h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium">Overall Score</span>
+                      <span className="text-sm font-medium">{safeResult.score}%</span>
                     </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-center pt-6">
-          <Button onClick={() => (window.location.href = "/dashboard")} variant="default">
-            Return to Dashboard
-          </Button>
+                    <Progress value={safeResult.score} className="h-2" />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium">Accuracy</span>
+                      <span className="text-sm font-medium">
+                        {Math.round((safeResult.correctAnswers / (safeResult.totalQuestions || 1)) * 100)}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={Math.round((safeResult.correctAnswers / (safeResult.totalQuestions || 1)) * 100)}
+                      className="h-2 bg-gray-200"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            </CardContent>
+          </TabsContent>
+
+          <TabsContent value="details">
+            <CardContent>
+              <motion.div variants={containerVariants} className="mt-6 space-y-4">
+                <h3 className="text-lg font-medium">Code Solutions</h3>
+                {safeResult.answers.length > 0 ? (
+                  safeResult.answers.map(
+                    (answer, index) =>
+                      answer && (
+                        <motion.div key={index} variants={itemVariants}>
+                          <Card className={answer.isCorrect ? "border-green-200" : "border-red-200"}>
+                            <CardContent className="pt-6">
+                              <div className="flex items-start gap-2">
+                                {answer.isCorrect ? (
+                                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                                ) : (
+                                  <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                )}
+                                <div className="w-full">
+                                  <p className="font-medium">
+                                    Question {index + 1}: {answer.question}
+                                  </p>
+                                  <div className="mt-3">
+                                    <p className="text-sm font-medium mb-2">Your solution:</p>
+                                    <SyntaxHighlighter
+                                      language={answer.language || "javascript"}
+                                      style={vscDarkPlus}
+                                      customStyle={{
+                                        margin: 0,
+                                        padding: "1rem",
+                                        fontSize: "0.85rem",
+                                        borderRadius: "0.375rem",
+                                      }}
+                                    >
+                                      {answer.codeSnippet || answer.answer || "// No solution provided"}
+                                    </SyntaxHighlighter>
+                                  </div>
+                                  {!answer.isCorrect && answer.correctAnswer && (
+                                    <div className="mt-3">
+                                      <p className="text-sm font-medium mb-2">Correct solution:</p>
+                                      <SyntaxHighlighter
+                                        language={answer.language || "javascript"}
+                                        style={vscDarkPlus}
+                                        customStyle={{
+                                          margin: 0,
+                                          padding: "1rem",
+                                          fontSize: "0.85rem",
+                                          borderRadius: "0.375rem",
+                                        }}
+                                      >
+                                        {answer.correctAnswer}
+                                      </SyntaxHighlighter>
+                                    </div>
+                                  )}
+                                  <p className="text-xs text-muted-foreground mt-3">
+                                    Time spent: {formatQuizTime(answer.timeSpent)}
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ),
+                  )
+                ) : (
+                  <p className="text-muted-foreground">No answer details available.</p>
+                )}
+              </motion.div>
+            </CardContent>
+          </TabsContent>
+        </Tabs>
+
+        <CardFooter className="flex flex-wrap justify-between gap-2">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
+              Return to Quizzes
+            </Button>
+            <Button onClick={handleTryAgain} disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <span className="animate-spin mr-2">⟳</span> Loading...
+                </>
+              ) : (
+                <>
+                  Try Again <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
-    </div>
+    </motion.div>
   )
 }

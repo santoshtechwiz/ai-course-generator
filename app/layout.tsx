@@ -1,16 +1,13 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 
 import { RootProvider } from "@/providers/root-provider"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import "./globals.css"
 import { Suspense } from "react"
-// Update the layout to use the unified auth provider
-import { UnifiedAuthProvider } from "@/providers/unified-auth-provider"
 
- const inter = Inter({ subsets: ["latin"] })
+// const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
@@ -50,14 +47,10 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions)
 
   return (
-    <html lang="en" suppressHydrationWarning className={inter.className}>
-      <body >
+    <html lang="en" suppressHydrationWarning>
+      <body>
         <RootProvider session={session}>
-          <UnifiedAuthProvider>
-          {/* <SubscriptionSyncProvider> */}
-              <Suspense>{children}</Suspense>
-            {/* </SubscriptionSyncProvider> */}
-          </UnifiedAuthProvider>
+          <Suspense>{children}</Suspense>
         </RootProvider>
       </body>
     </html>

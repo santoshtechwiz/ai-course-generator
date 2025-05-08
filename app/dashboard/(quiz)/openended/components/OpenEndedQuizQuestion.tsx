@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -17,23 +17,25 @@ import {
   Clock,
 } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
-import { useQuiz } from "@/app/context/QuizContext"
+import { formatQuizTime } from "@/lib/utils/quiz-performance"
+import { isTooFastAnswer } from "@/lib/utils/quiz-validation"
 
 interface QuizQuestionProps {
   question: {
-    id: number
+    id: number | string
     question: string
     answer: string
-    openEndedQuestion: {
-      hints: string | string[]
-      difficulty: string
-      tags: string | string[]
-      inputType: string
+    openEndedQuestion?: {
+      hints?: string | string[]
+      difficulty?: string
+      tags?: string | string[]
+      inputType?: string
     }
   }
   onAnswer: (answer: string) => void
   questionNumber: number
   totalQuestions: number
+  isLastQuestion?: boolean
 }
 
 export default function OpenEndedQuizQuestion({
@@ -41,6 +43,7 @@ export default function OpenEndedQuizQuestion({
   onAnswer,
   questionNumber,
   totalQuestions,
+  isLastQuestion,
 }: QuizQuestionProps) {
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
@@ -50,14 +53,17 @@ export default function OpenEndedQuizQuestion({
   const [startTime, setStartTime] = useState(Date.now())
   const [showTooFastWarning, setShowTooFastWarning] = useState(false)
   const [showGarbageWarning, setShowGarbageWarning] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const minimumTimeThreshold = 5 // seconds for open-ended questions (longer than fill-in-the-blanks)
   const minimumAnswerLength = 10 // characters
 
-  const hints = Array.isArray(question.openEndedQuestion?.hints)
+  // Parse hints from question data
+  const hints = Array.isArray(question?.openEndedQuestion?.hints)
     ? question.openEndedQuestion.hints
-    : question.openEndedQuestion?.hints?.split("|") || []
+    : question?.openEndedQuestion?.hints?.split("|") || []
 
+  // Reset state when question changes
   useEffect(() => {
     setShowHints(Array(hints.length).fill(false))
     setHintLevel(0)
@@ -66,8 +72,17 @@ export default function OpenEndedQuizQuestion({
     setStartTime(Date.now())
     setShowTooFastWarning(false)
     setShowGarbageWarning(false)
-  }, [question.id, hints.length])
+    setIsSubmitting(false)
 
+    // Focus the textarea when a new question is loaded
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+      }
+    }, 300)
+  }, [question?.id, hints.length])
+
+  // Timer for elapsed time
   useEffect(() => {
     const timer = setInterval(() => setElapsedTime((prev) => prev + 1), 1000)
     return () => clearInterval(timer)
@@ -89,16 +104,13 @@ export default function OpenEndedQuizQuestion({
 
     // Check if answer was submitted too quickly
     const timeSpent = (Date.now() - startTime) / 1000
-    if (timeSpent < minimumTimeThreshold) {
+    if (isTooFastAnswer(timeSpent, minimumTimeThreshold)) {
       setShowTooFastWarning(true)
       return
     }
 
     setIsSubmitting(true)
     try {
-      // Calculate time spent on this question
-      const timeSpent = (Date.now() - startTime) / 1000
-
       // Call the onAnswer prop with the user's answer
       onAnswer(answer)
 
@@ -129,7 +141,7 @@ export default function OpenEndedQuizQuestion({
     }
   }
 
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = (difficulty = "medium") => {
     switch (difficulty?.toLowerCase()) {
       case "easy":
         return "bg-green-500"
@@ -142,15 +154,6 @@ export default function OpenEndedQuizQuestion({
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
-  const { state } = useQuiz()
-  const isCompleting = state.animationState === "completing"
-
   return (
     <motion.div
       key={question.id} // Important: Add key to ensure proper animation when question changes
@@ -158,6 +161,7 @@ export default function OpenEndedQuizQuestion({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
+      data-testid="openended-quiz-question"
     >
       <Card className="w-full max-w-4xl mx-auto shadow-lg border-t-4 border-primary">
         <CardHeader className="space-y-4">
@@ -177,11 +181,11 @@ export default function OpenEndedQuizQuestion({
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
                 <Clock className="h-3.5 w-3.5" />
-                <span className="font-mono">{formatTime(elapsedTime)}</span>
+                <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
               </div>
               <Badge
                 variant="secondary"
-                className={cn("text-white", getDifficultyColor(question.openEndedQuestion?.difficulty || "medium"))}
+                className={cn("text-white", getDifficultyColor(question.openEndedQuestion?.difficulty))}
               >
                 {question.openEndedQuestion?.difficulty || "Medium"}
               </Badge>
@@ -192,6 +196,7 @@ export default function OpenEndedQuizQuestion({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
+            data-testid="question-text"
           >
             {question.question}
           </motion.h2>
@@ -244,13 +249,16 @@ export default function OpenEndedQuizQuestion({
           </AnimatePresence>
 
           <Textarea
+            ref={textareaRef}
             value={answer}
             onChange={(e) => {
               setAnswer(e.target.value)
               setShowGarbageWarning(false)
+              setShowTooFastWarning(false)
             }}
             placeholder="Type your answer here..."
             className="min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary"
+            data-testid="answer-textarea"
           />
           <div className="space-y-2">
             <Button
@@ -259,6 +267,7 @@ export default function OpenEndedQuizQuestion({
               onClick={handleProgressiveHint}
               disabled={hintLevel >= hints.length}
               className="w-full sm:w-auto hover:bg-primary hover:text-primary-foreground"
+              data-testid="hint-button"
             >
               <LightbulbIcon className="w-4 h-4 mr-2" />
               {hintLevel === 0 ? "Get Hint" : `Next Hint (${hintLevel}/${hints.length})`}
@@ -287,20 +296,11 @@ export default function OpenEndedQuizQuestion({
         </CardContent>
 
         <CardFooter>
-          <motion.button
+          <Button
             onClick={handleSubmit}
             disabled={!isAnswerValid()}
             className="w-full sm:w-auto ml-auto bg-primary hover:bg-primary/90 text-primary-foreground"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            animate={
-              isCompleting
-                ? {
-                    scale: [1, 1.1, 1],
-                    transition: { duration: 0.5 },
-                  }
-                : {}
-            }
+            data-testid="submit-button"
           >
             {isSubmitting ? (
               <>
@@ -313,7 +313,7 @@ export default function OpenEndedQuizQuestion({
                 Submit Answer
               </>
             )}
-          </motion.button>
+          </Button>
         </CardFooter>
       </Card>
     </motion.div>

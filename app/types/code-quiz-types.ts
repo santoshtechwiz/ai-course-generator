@@ -9,8 +9,14 @@ export interface CodeQuizApiResponse {
   userId: string
   ownerId: string
   quizData: {
-    title: string
-    description?: string
+    id: string;
+    title: string;
+    slug: string;
+    isPublic: boolean;
+    isFavorite: boolean;
+    userId?: string;
+    ownerId?: string;
+    difficulty?: string;
     questions: CodeQuizQuestion[]
   }
 }
@@ -32,10 +38,14 @@ export interface CodeQuizQuestion {
 // Props for the CodeQuizWrapper component
 export interface CodeQuizWrapperProps {
   quizData: {
-    id?: string
+    id: string
     title: string
-    description?: string
-    slug?: string
+    slug: string
+    isPublic: boolean
+    isFavorite: boolean
+    userId?: string
+    ownerId?: string
+    difficulty?: string
     questions: CodeQuizQuestion[]
   }
   slug: string
@@ -104,4 +114,7 @@ export interface CodeQuizContentProps {
   slug: string
   userId?: string
   quizId: string
+  isPublic?: boolean
+  isFavorite?: boolean
+  ownerId?: string
 }

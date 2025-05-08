@@ -1,4 +1,4 @@
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 import { generateFlashCards } from "@/lib/chatgpt/ai-service"
 import prisma from "@/lib/db"
 

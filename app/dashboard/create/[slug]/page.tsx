@@ -1,4 +1,4 @@
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { getCourses } from "@/app/actions/getCourses"
 

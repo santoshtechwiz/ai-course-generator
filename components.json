@@ -11,16 +11,19 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "@/components/global",
+    "components": "@/components",
     "page-components": "@/app/**/components",
     "ui": "@/components/ui",
     "lib": "@/lib",
-    "utils": "@/lib/utils",
+    "utils": "@/utils",
     "hooks": "@/hooks",
     "types": "@/types",
     "features": "@/features",
     "config": "@/config",
-    "services": "@/services"
+    "services": "@/services",
+    "store": "@/store",
+    "dashboard": "@/dashboard",
+    "context": "@/context"
   },
   "iconLibrary": "lucide"
 }

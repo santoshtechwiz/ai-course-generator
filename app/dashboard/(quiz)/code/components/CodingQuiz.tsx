@@ -1,26 +1,18 @@
 "use client"
 
 import { useCallback, useMemo, useState, useEffect } from "react"
-import { ArrowRight, ArrowLeft, Code, Clock } from "lucide-react"
+import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
-// import { formatQuizTime } from "@/lib/utils"
-import CodeQuizOptions from "./CodeQuizOptions"
+import { formatQuizTime, isTooFastAnswer } from "@/lib/utils/quiz-performance"
 import CodeQuizEditor from "./CodeQuizEditor"
-const formatQuizTime = (time: number): string => {
-  const hours = Math.floor(time / 3600)
-  const minutes = Math.floor((time % 3600) / 60)
-  const seconds = time % 60
+import { cn } from "@/lib/tailwindUtils"
 
-  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
-}
 // Define types for props
 interface CodingQuizProps {
   question: {
@@ -35,30 +27,40 @@ interface CodingQuizProps {
   onAnswer: (answer: string, elapsedTime: number, isCorrect: boolean) => void
   questionNumber: number
   totalQuestions: number
+  isLastQuestion: boolean
 }
 
-export default function CodingQuiz({ question, onAnswer, questionNumber, totalQuestions }: CodingQuizProps) {
+export default function CodingQuiz({
+  question,
+  onAnswer,
+  questionNumber,
+  totalQuestions,
+  isLastQuestion,
+}: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>(question?.codeSnippet || "")
   const [elapsedTime, setElapsedTime] = useState<number>(0)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [startTime] = useState<number>(Date.now())
+  const [tooFastWarning, setTooFastWarning] = useState<boolean>(false)
 
-  // Start timer when component mounts
+  // Reset state when question changes
   useEffect(() => {
-    const startTime = Date.now()
+    setUserCode(question?.codeSnippet || "")
+    setSelectedOption(null)
+    setElapsedTime(0)
+    setTooFastWarning(false)
+  }, [question?.id, question?.codeSnippet])
+
+  // Update elapsed time
+  useEffect(() => {
     const timer = setInterval(() => {
       setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
     }, 1000)
-
-    // Initialize user code with the question's code snippet
-    if (question?.codeSnippet) {
-      setUserCode(question.codeSnippet)
-    }
-
     return () => clearInterval(timer)
-  }, [question?.id, question?.codeSnippet]) // Reset timer when question changes
+  }, [startTime])
 
   const options = useMemo(() => {
     return Array.isArray(question?.options) ? question.options : []
@@ -66,22 +68,30 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
 
   const handleSelectOption = useCallback((option: string) => {
     setSelectedOption(option)
+    setTooFastWarning(false)
   }, [])
 
   const handleCodeChange = useCallback((code: string | undefined) => {
     if (code !== undefined) {
       setUserCode(code)
+      setTooFastWarning(false)
     }
   }, [])
 
-  // Update the handleSubmit function to properly check answers
   const handleSubmit = useCallback(() => {
     if (isSubmitting) return
+
+    // Check if answer was submitted too quickly (potential cheating)
+    const answerTime = Date.now() - startTime
+    if (isTooFastAnswer(startTime, 1)) {
+      setTooFastWarning(true)
+      return
+    }
 
     setIsSubmitting(true)
 
     // For code quizzes, we need to evaluate the code against the expected answer
-    const answer = userCode
+    const answer = options.length > 0 && selectedOption ? selectedOption : userCode
 
     // Improved answer validation - check if the answer contains the expected solution
     // or if the selected option matches the correct answer
@@ -100,12 +110,15 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
       }
     }
 
-    // Submit the answer
+    // Calculate time spent
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000)
+
+    // Submit the answer with a small delay for better UX
     setTimeout(() => {
-      onAnswer(answer, elapsedTime, isCorrect)
+      onAnswer(answer, timeSpent, isCorrect)
       setIsSubmitting(false)
-    }, 300) // Small delay for better UX
-  }, [userCode, question, onAnswer, elapsedTime, isSubmitting, options, selectedOption])
+    }, 300)
+  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption])
 
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null
@@ -183,18 +196,13 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-sm border" data-testid="coding-quiz">
       <CardHeader className="space-y-4">
-        <div className="flex flex-col space-y-1.5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Question {questionNumber} of {totalQuestions}
-            </p>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" />
-              <span>{formatQuizTime(elapsedTime)}</span>
-            </div>
-          </div>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">
+            Question {questionNumber}/{totalQuestions}
+          </h2>
+          <span className="text-gray-500">Code Challenge</span>
         </div>
         <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
           <div
@@ -207,27 +215,17 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
         <MotionTransition key={question.id} motionKey={String(question.id || questionNumber)}>
           <div className="space-y-6">
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Badge
-                  variant="outline"
-                  className="bg-primary/10 text-primary font-medium px-3 py-1 flex items-center gap-1.5 mt-1"
-                >
-                  <Code className="h-3.5 w-3.5" />
-                  Code Challenge
-                </Badge>
-                <h2 className="text-lg sm:text-xl font-semibold">{renderQuestionText(question?.question || "")}</h2>
-              </div>
+              <h3 className="text-lg font-medium mb-6">{renderQuestionText(question?.question || "")}</h3>
 
               {/* Code Editor */}
               <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
-                {/* Update the CodeQuizEditor component to take up less space */}
-                {/* Replace the existing CodeEditor div with this: */}
                 <div className="my-4">
                   <CodeQuizEditor
                     value={userCode}
                     language={question.language || "javascript"}
                     onChange={handleCodeChange}
                     height="180px" // Reduced height
+                    data-testid="code-editor"
                   />
                 </div>
               </MotionWrapper>
@@ -237,12 +235,31 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
                 <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
                   <div className="mt-6">
                     <h3 className="text-sm font-medium mb-3">Select the correct option:</h3>
-                    <CodeQuizOptions
-                      options={options}
-                      selectedOption={selectedOption}
-                      onSelect={handleSelectOption}
-                      disabled={isSubmitting}
-                    />
+                    <div className="space-y-3">
+                      {options.map((option, index) => (
+                        <div
+                          key={index}
+                          className={cn(
+                            "border rounded-md p-4 cursor-pointer transition-all",
+                            selectedOption === option ? "border-primary bg-primary/5" : "hover:bg-gray-50",
+                          )}
+                          onClick={() => handleSelectOption(option)}
+                          data-testid={`option-${index}`}
+                        >
+                          <div className="flex items-center">
+                            <div
+                              className={cn(
+                                "w-5 h-5 rounded-full border flex items-center justify-center mr-3",
+                                selectedOption === option ? "border-primary" : "border-gray-300",
+                              )}
+                            >
+                              {selectedOption === option && <div className="w-3 h-3 rounded-full bg-primary" />}
+                            </div>
+                            <span>{option}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </MotionWrapper>
               )}
@@ -250,38 +267,25 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
           </div>
         </MotionTransition>
       </CardContent>
-      <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 md:flex-row flex-col-reverse">
-        <div className="flex items-center gap-3">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Time spent on this question</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
 
-          {questionNumber > 1 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                /* Previous handled by parent */
-              }}
-              className="gap-1"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Previous
-            </Button>
-          )}
+      {tooFastWarning && (
+        <div className="mb-4 p-2 mx-6 bg-amber-50 border border-amber-200 rounded text-amber-600 text-sm">
+          Please take time to read the question carefully before answering.
+        </div>
+      )}
+
+      <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 p-6">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" />
+          <span>{formatQuizTime(elapsedTime)}</span>
         </div>
 
-        <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto">
+        <Button
+          onClick={handleSubmit}
+          disabled={isSubmitting || (options.length > 0 && !selectedOption)}
+          className="px-8"
+          data-testid="submit-answer"
+        >
           {isSubmitting ? (
             <div className="flex items-center gap-2">
               <div
@@ -290,11 +294,10 @@ export default function CodingQuiz({ question, onAnswer, questionNumber, totalQu
               />
               <span>Submitting...</span>
             </div>
+          ) : isLastQuestion ? (
+            "Submit Quiz"
           ) : (
-            <>
-              {questionNumber === totalQuestions ? "Finish Quiz" : "Next Question"}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </>
+            "Next"
           )}
         </Button>
       </CardFooter>

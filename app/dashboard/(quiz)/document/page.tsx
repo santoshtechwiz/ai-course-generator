@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 // Import the quiz store
 
 
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscription-provider"
 import { useSession } from "next-auth/react"
 import { SUBSCRIPTION_PLANS } from "../../subscription/components/subscription-plans"
 import { DocumentQuizOptions } from "./components/DocumentQuizOptions"

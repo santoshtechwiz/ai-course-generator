@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -29,9 +29,10 @@ import { ShareButton } from "@/components/ShareButton"
 import { Breadcrumb } from "../../../../components/breadcrumb"
 import { RandomQuiz } from "./RandomQuiz"
 import RandomQuote from "@/components/RandomQuote"
-import { cn } from "@/lib/tailwindUtils"
+// Update import to use the correct utility function
+import { cn } from "@/lib/utils/utils"
 import QuizActions from "./QuizActions"
-import { QuizType } from "@/app/types/quiz-types"
+import type { QuizType } from "@/app/types/quiz-types"
 
 interface QuizDetailsPageProps {
   title: string
@@ -104,62 +105,67 @@ export default function QuizDetailsPage({
   const [isBookmarked, setIsBookmarked] = useState(isFavorite)
   const [showConfetti, setShowConfetti] = useState(false)
 
-  const quizTypeLabels = {
-    mcq: "Multiple Choice",
-    openended: "Open-Ended",
-    "fill-blanks": "Fill in the Blanks",
-    code: "Code Challenge",
-    flashcard: "Flashcards",
-  }
+  // Memoize values that don't need to be recalculated on every render
+  const quizTypeLabels = useMemo(
+    () => ({
+      mcq: "Multiple Choice",
+      openended: "Open-Ended",
+      "fill-blanks": "Fill in the Blanks",
+      code: "Code Challenge",
+      flashcard: "Flashcards",
+    }),
+    [],
+  )
 
-  const difficultyConfig = {
-    easy: {
-      stars: 1,
-      label: "Easy",
-      color: "text-emerald-500 dark:text-emerald-400",
-      bgLight: "bg-emerald-50",
-      bgDark: "dark:bg-emerald-900/20",
-      borderLight: "border-emerald-200",
-      borderDark: "dark:border-emerald-800",
-      textLight: "text-emerald-700",
-      textDark: "dark:text-emerald-300",
-    },
-    medium: {
-      stars: 2,
-      label: "Medium",
-      color: "text-amber-500 dark:text-amber-400",
-      bgLight: "bg-amber-50",
-      bgDark: "dark:bg-amber-900/20",
-      borderLight: "border-amber-200",
-      borderDark: "dark:border-amber-800",
-      textLight: "text-amber-700",
-      textDark: "dark:text-amber-300",
-    },
-    hard: {
-      stars: 3,
-      label: "Hard",
-      color: "text-red-500 dark:text-red-400",
-      bgLight: "bg-red-50",
-      bgDark: "dark:bg-red-900/20",
-      borderLight: "border-red-200",
-      borderDark: "dark:border-red-800",
-      textLight: "text-red-700",
-      textDark: "dark:text-red-300",
-    },
-  }
+  const difficultyConfig = useMemo(
+    () => ({
+      easy: {
+        stars: 1,
+        label: "Easy",
+        color: "text-emerald-500 dark:text-emerald-400",
+      },
+      medium: {
+        stars: 2,
+        label: "Medium",
+        color: "text-amber-500 dark:text-amber-400",
+      },
+      hard: {
+        stars: 3,
+        label: "Hard",
+        color: "text-red-500 dark:text-red-400",
+      },
+    }),
+    [],
+  )
 
-  const formattedTime =
-    typeof estimatedTime === "string" && estimatedTime.includes("PT")
-      ? `${Number.parseInt(estimatedTime.replace(/PT(\d+)M/, "$1"))} min`
-      : estimatedTime
+  // Memoize the formatted time to prevent recalculations
+  const formattedTime = useMemo(() => {
+    if (typeof estimatedTime === "string" && estimatedTime.includes("PT")) {
+      return `${Number.parseInt(estimatedTime.replace(/PT(\d+)M/, "$1"))} min`
+    }
+    return estimatedTime
+  }, [estimatedTime])
 
   const toggleBookmark = () => {
-    setIsBookmarked(!isBookmarked)
+    setIsBookmarked((prev) => !prev)
     // Here you would typically call an API to update the bookmark status
     if (!isBookmarked) {
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
     }
+  }
+
+  // Safely get quiz type style
+  const getQuizTypeStyle = (type: QuizType) => {
+    return (
+      QUIZ_TYPE_STYLES[type as keyof typeof QUIZ_TYPE_STYLES] ||
+      "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800/50 dark:text-gray-300 dark:border-gray-700"
+    )
+  }
+
+  // Safely get difficulty style
+  const getDifficultyStyle = (diff: string) => {
+    return DIFFICULTY_STYLES[diff as keyof typeof DIFFICULTY_STYLES] || DIFFICULTY_STYLES.medium
   }
 
   return (
@@ -271,9 +277,9 @@ export default function QuizDetailsPage({
                 >
                   <Badge
                     variant="outline"
-                    className={cn("px-2.5 py-1 text-xs font-medium rounded-full border", QUIZ_TYPE_STYLES[quizType as keyof typeof QUIZ_TYPE_STYLES])}
+                    className={cn("px-2.5 py-1 text-xs font-medium rounded-full border", getQuizTypeStyle(quizType))}
                   >
-                    {quizTypeLabels[quizType as keyof typeof quizTypeLabels]}
+                    {quizTypeLabels[quizType as keyof typeof quizTypeLabels] || "Quiz"}
                   </Badge>
                   <Badge
                     variant="outline"
@@ -296,9 +302,9 @@ export default function QuizDetailsPage({
                           variant="outline"
                           className={cn(
                             "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border",
-                            DIFFICULTY_STYLES[difficulty].bg,
-                            DIFFICULTY_STYLES[difficulty].text,
-                            DIFFICULTY_STYLES[difficulty].border,
+                            getDifficultyStyle(difficulty).bg,
+                            getDifficultyStyle(difficulty).text,
+                            getDifficultyStyle(difficulty).border,
                           )}
                         >
                           <div className="flex">
@@ -307,14 +313,14 @@ export default function QuizDetailsPage({
                                 key={i}
                                 className={cn(
                                   "w-3 h-3",
-                                  i < difficultyConfig[difficulty].stars
-                                    ? `${difficultyConfig[difficulty].color} fill-current`
+                                  i < difficultyConfig[difficulty as keyof typeof difficultyConfig].stars
+                                    ? difficultyConfig[difficulty as keyof typeof difficultyConfig].color
                                     : "text-muted-foreground/30",
                                 )}
                               />
                             ))}
                           </div>
-                          {difficultyConfig[difficulty].label}
+                          {difficultyConfig[difficulty as keyof typeof difficultyConfig].label}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>

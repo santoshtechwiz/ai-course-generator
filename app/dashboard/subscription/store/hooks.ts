@@ -9,8 +9,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { shallow } from "zustand/shallow"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+
 import type { SubscriptionData, TokenUsage } from "../types/subscription"
+import { useSubscription } from "../hooks/use-subscription"
 
 /**
  * Custom hook to access subscription data from the Zustand store
@@ -26,9 +27,11 @@ export function useSubscriptionData({
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Get state from the Zustand store using individual selectors to prevent infinite loops
-  const data = useSubscriptionStore((state) => state.data)
-  const status = useSubscriptionStore((state) => state.status)
-  const error = useSubscriptionStore((state) => state.error)
+  // const data = useSubscriptionStore((state) => state.data)
+  // const status = useSubscriptionStore((state) => state.status)
+  // const error = useSubscriptionStore((state) => state.error)
+
+  const { data,status,error,isLoading,isError,} = useSubscription();
 
   // Memoize the subscription object to prevent recreating it on each render
   const subscription = useMemo<{
@@ -38,13 +41,8 @@ export function useSubscriptionData({
   }>(() => ({ data, status, error }), [data, status, error])
 
   // Get actions from the store
-  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
-  const fetchSubscriptionDetails = useSubscriptionStore((state) => state.fetchSubscriptionDetails)
-  const clearSubscriptionCache = useSubscriptionStore((state) => state.clearSubscriptionCache)
+  const { fetchSubscriptionStatus, fetchSubscriptionDetails, clearSubscriptionCache } = useSubscription()
 
-  // Derived loading and error states
-  const isLoading = useSubscriptionStore((state) => state.isLoading || state.status === "loading")
-  const isError = useSubscriptionStore((state) => state.isError || state.status === "failed")
 
   // Function to refresh data with optional force parameter
   const refreshData = useCallback(
@@ -97,12 +95,12 @@ export function useSubscriptionData({
  */
 export function useSubscriptionPlan() {
   // Use shallow comparison to prevent unnecessary rerenders
-  const subscriptionData = useSubscriptionStore((state) => state.data)
+  const { data: subscriptionData } = useSubscription()
 
-  const isSubscribed = subscriptionData?.isSubscribed || false
-  const currentPlan = subscriptionData?.subscriptionPlan || "FREE"
-  const expirationDate = subscriptionData?.expirationDate
-  const cancelAtPeriodEnd = subscriptionData?.cancelAtPeriodEnd || false
+  const isSubscribed = subscriptionData?.data?.isSubscribed || false
+  const currentPlan = subscriptionData?.data?.subscriptionPlan || "FREE"
+  const expirationDate = subscriptionData?.data?.expirationDate
+  const cancelAtPeriodEnd = subscriptionData?.data?.cancelAtPeriodEnd || false
   const status = subscriptionData?.status || "NONE"
 
   return {
@@ -123,7 +121,7 @@ export function useSubscriptionPlan() {
  */
 export function useTokenUsage(): TokenUsage {
   // Use shallow comparison to prevent unnecessary rerenders
-  const subscriptionData = useSubscriptionStore((state) => state.data, shallow)
+  const { subscription: subscriptionData } = useSubscription()
 
   const tokensUsed = subscriptionData?.tokensUsed || 0
   const totalTokens = subscriptionData?.credits || 0

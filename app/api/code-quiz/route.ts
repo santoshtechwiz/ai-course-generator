@@ -1,5 +1,5 @@
 
-import { getAuthSession } from "@/lib/authOptions";
+import { getAuthSession } from "@/lib/auth";
 import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
 import { titleSubTopicToSlug } from "@/lib/slug";
 import { NextResponse } from "next/server";
