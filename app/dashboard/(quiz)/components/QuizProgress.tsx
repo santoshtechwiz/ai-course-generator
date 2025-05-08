@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Progress } from "@/components/ui/progress"
 import { Timer } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -24,7 +25,7 @@ interface QuizProgressProps {
   animate?: boolean
 }
 
-export function QuizProgress({
+function QuizProgressComponent({
   currentQuestionIndex,
   totalQuestions,
   timeSpent,
@@ -76,3 +77,14 @@ export function QuizProgress({
     </div>
   )
 }
+
+// Memoize the component with a custom comparison function
+export const QuizProgress = memo(QuizProgressComponent, (prevProps, nextProps) => {
+  // Only re-render if these specific props change
+  return (
+    prevProps.currentQuestionIndex === nextProps.currentQuestionIndex &&
+    prevProps.totalQuestions === nextProps.totalQuestions &&
+    prevProps.timeSpent.length === nextProps.timeSpent.length &&
+    prevProps.timeSpent.every((time, i) => time === nextProps.timeSpent[i])
+  )
+})

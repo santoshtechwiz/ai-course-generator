@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, memo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -38,7 +38,7 @@ interface QuizQuestionProps {
   isLastQuestion?: boolean
 }
 
-export default function OpenEndedQuizQuestion({
+function OpenEndedQuizQuestionComponent({
   question,
   onAnswer,
   questionNumber,
@@ -319,3 +319,15 @@ export default function OpenEndedQuizQuestion({
     </motion.div>
   )
 }
+
+// Custom comparison function for memoization
+function arePropsEqual(prevProps: QuizQuestionProps, nextProps: QuizQuestionProps) {
+  return (
+    prevProps.question.id === nextProps.question.id &&
+    prevProps.questionNumber === nextProps.questionNumber &&
+    prevProps.totalQuestions === nextProps.totalQuestions
+  )
+}
+
+// Export memoized component with custom comparison
+export default memo(OpenEndedQuizQuestionComponent, arePropsEqual)

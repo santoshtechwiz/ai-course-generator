@@ -56,6 +56,7 @@ export default function QuizResultsOpenEnded({ result, onRestart, onSignIn, ...p
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("summary")
+  const [isRestarting, setIsRestarting] = useState(false)
 
   // Memoize calculated values to prevent recalculation on re-renders
   const stats = useMemo(() => {
@@ -144,14 +145,33 @@ export default function QuizResultsOpenEnded({ result, onRestart, onSignIn, ...p
 
   // Handle restart
   const handleRestart = useCallback(() => {
+    if (isRestarting) return // Prevent multiple clicks
+
+    setIsRestarting(true)
+
     if (onRestart) {
       onRestart()
+
+      // Reset the restarting state after a delay
+      setTimeout(() => {
+        setIsRestarting(false)
+      }, 3000)
     } else {
       // Add a timestamp parameter to force a fresh load
       const timestamp = new Date().getTime()
-      router.push(`/dashboard/openended/${slug}?reset=true&t=${timestamp}`)
+      const url = `/dashboard/openended/${slug}?reset=true&t=${timestamp}`
+
+      // Set a timeout to reset loading state if navigation takes too long
+      const timeoutId = setTimeout(() => {
+        setIsRestarting(false)
+      }, 3000)
+
+      // Navigate to the quiz page with reset parameters
+      router.push(url)
+
+      return () => clearTimeout(timeoutId)
     }
-  }, [onRestart, router, slug])
+  }, [onRestart, router, slug, isRestarting])
 
   // Handle sign in
   const handleSignIn = useCallback(() => {
@@ -297,13 +317,21 @@ export default function QuizResultsOpenEnded({ result, onRestart, onSignIn, ...p
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row gap-3 justify-between">
-          <Button onClick={handleRestart} variant="outline" className="w-full sm:w-auto">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Restart Quiz
+        <CardFooter className="flex flex-col sm:flex-row gap-4 justify-between pt-6">
+          <Button onClick={handleRestart} variant="outline" className="w-full sm:w-auto" disabled={isRestarting}>
+            {isRestarting ? (
+              <>
+                <span className="animate-spin mr-2">⟳</span> Restarting...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Restart Quiz
+              </>
+            )}
           </Button>
 
-          <div className="flex gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
             {!isAuthenticated && (
               <Button onClick={handleSignIn} variant="secondary" className="flex-1 sm:flex-initial">
                 Sign In to Save

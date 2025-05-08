@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState, useEffect } from "react"
+import { useCallback, useMemo, useState, useEffect, memo } from "react"
 import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
@@ -30,13 +30,7 @@ interface CodingQuizProps {
   isLastQuestion: boolean
 }
 
-export default function CodingQuiz({
-  question,
-  onAnswer,
-  questionNumber,
-  totalQuestions,
-  isLastQuestion,
-}: CodingQuizProps) {
+function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>(question?.codeSnippet || "")
@@ -304,3 +298,15 @@ export default function CodingQuiz({
     </Card>
   )
 }
+
+// Custom comparison function for memoization
+function arePropsEqual(prevProps: CodingQuizProps, nextProps: CodingQuizProps) {
+  return (
+    prevProps.question.id === nextProps.question.id &&
+    prevProps.questionNumber === nextProps.questionNumber &&
+    prevProps.isLastQuestion === nextProps.isLastQuestion
+  )
+}
+
+// Export memoized component with custom comparison
+export default memo(CodingQuizComponent, arePropsEqual)

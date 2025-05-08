@@ -265,4 +265,15 @@ function QuizListComponent({
   )
 }
 
-export const QuizList = memo(QuizListComponent)
+// Memoize the component with a custom comparison function
+export const QuizList = memo(QuizListComponent, (prevProps, nextProps) => {
+  // Only re-render if these specific props change
+  return (
+    prevProps.quizzes.length === nextProps.quizzes.length &&
+    prevProps.isLoading === nextProps.isLoading &&
+    prevProps.isError === nextProps.isError &&
+    prevProps.isFetchingNextPage === nextProps.isFetchingNextPage &&
+    prevProps.hasNextPage === nextProps.hasNextPage &&
+    prevProps.activeFilter === nextProps.activeFilter
+  )
+})
