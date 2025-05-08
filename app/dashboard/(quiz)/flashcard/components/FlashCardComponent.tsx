@@ -1,17 +1,30 @@
 "use client"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown, Settings, X } from "lucide-react"
+import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
-import { useAnimation } from "@/providers/animation-provider"
+import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
 import { QuizProgress } from "../../components/QuizProgress"
 import { QuizLoader } from "@/components/ui/quiz-loader"
-import { useSession } from "next-auth/react"
-import { useQuiz } from "@/app/context/QuizContext"
+import { useRouter, useSearchParams } from "next/navigation"
+
+import {
+  initQuiz,
+  submitAnswer,
+  completeQuiz,
+  resetQuiz,
+  setRequiresAuth,
+  setPendingAuthRequired,
+  nextQuestion,
+  setCurrentQuestion,
+} from "@/store/slices/quizSlice"
 import FlashCardResults from "./FlashCardQuizResults"
-import { quizService } from "@/lib/quiz-service"
-import { GuestSignInPrompt } from "../../components/GuestSignInPrompt"
+import { useSession } from "next-auth/react"
+import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
+import { Switch } from "@/components/ui/switch"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useAppDispatch, useAppSelector } from "@/store"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -30,30 +43,73 @@ export function FlashCardComponent({
   onSaveCard,
   savedCardIds = [],
 }: FlashCardComponentProps) {
-  // Use QuizContext
+  // Redux state
+  const dispatch = useAppDispatch()
   const {
-    state,
-    dispatch,
-    submitAnswer,
-    completeQuiz,
-    restartQuiz,
-    getTimeSpentOnCurrentQuestion,
-    handleAuthenticationRequired,
-  } = useQuiz()
-  const { data: session } = useSession()
+    currentQuestionIndex,
+    isCompleted,
+    answers,
+    requiresAuth,
+    pendingAuthRequired,
+    quizId: storeQuizId,
+  } = useAppSelector((state) => state.quiz)
 
-  // Local UI state that doesn't need to be in context
+  const { data: session } = useSession()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Local UI state
   const [flipped, setFlipped] = useState(false)
   const [direction, setDirection] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
-  const [exitComplete, setExitComplete] = useState(true)
   const [ratingAnimation, setRatingAnimation] = useState<"correct" | "incorrect" | null>(null)
   const [reviewMode, setReviewMode] = useState(false)
   const [reviewCards, setReviewCards] = useState<number[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [autoAdvance, setAutoAdvance] = useState(true)
+  const [showSettings, setShowSettings] = useState(false)
+  const [swipeThreshold, setSwipeThreshold] = useState(100)
+  const [swipeDisabled, setSwipeDisabled] = useState(false)
 
+  // Add these state variables after the other state declarations
+  const [startTime, setStartTime] = useState<number>(Date.now())
+  const [cardTimes, setCardTimes] = useState<Record<string, number>>({})
+
+  // Animation controls
+  const cardControls = useAnimation()
   const cardRef = useRef<HTMLDivElement>(null)
-  const { animationsEnabled } = useAnimation()
+  const { animationsEnabled } = useAnimationContext()
+
+  // Check for reset parameter
+  useEffect(() => {
+    const reset = searchParams.get("reset")
+    const timestamp = searchParams.get("t")
+
+    if (reset === "true" && timestamp) {
+      dispatch(resetQuiz())
+
+      // Remove the reset parameter from the URL
+      const url = new URL(window.location.href)
+      url.searchParams.delete("reset")
+      url.searchParams.delete("t")
+      window.history.replaceState({}, "", url.toString())
+    }
+  }, [searchParams, dispatch])
+
+  // Initialize quiz in Redux
+  useEffect(() => {
+    if (cards.length > 0 && (!storeQuizId || storeQuizId !== quizId.toString())) {
+      dispatch(
+        initQuiz({
+          id: quizId.toString(),
+          slug,
+          title,
+          quizType: "flashcard",
+          questions: cards,
+        }),
+      )
+    }
+  }, [cards, quizId, slug, title, dispatch, storeQuizId])
 
   // Add loading state with timeout
   useEffect(() => {
@@ -63,18 +119,18 @@ export function FlashCardComponent({
     return () => clearTimeout(timer)
   }, [])
 
-  // Get self-ratings from the answers in context
+  // Get self-ratings from the answers in Redux
   const selfRating = useMemo(() => {
     const ratings: Record<string, "correct" | "incorrect" | null> = {}
 
-    state.answers.forEach((answer, index) => {
+    answers.forEach((answer, index) => {
       if (cards[index]?.id && answer) {
         ratings[cards[index].id.toString()] = answer.answer as "correct" | "incorrect"
       }
     })
 
     return ratings
-  }, [state.answers, cards])
+  }, [answers, cards])
 
   const calculateScore = useCallback(() => {
     return Object.values(selfRating).filter((rating) => rating === "correct").length
@@ -91,32 +147,38 @@ export function FlashCardComponent({
       .filter((index) => index !== -1)
   }, [selfRating, cards])
 
-  const handleEnterReviewMode = () => {
+  // Replace the handleEnterReviewMode function
+  const handleEnterReviewMode = useCallback(() => {
     if (cardsToReview.length === 0) {
       // No cards to review
       return
     }
 
     setReviewCards(cardsToReview)
-    // Use dispatch to update current question index
-    dispatch({ type: "SET_CURRENT_QUESTION", payload: 0 })
+    dispatch(setCurrentQuestion(0)) // Use the action creator
     setFlipped(false)
     setReviewMode(true)
-  }
+    setStartTime(Date.now()) // Reset start time for the first review card
+  }, [cardsToReview, dispatch, setCurrentQuestion])
 
-  const handleExitReviewMode = () => {
+  // Fix 5: Update the handleExitReviewMode function
+  const handleExitReviewMode = useCallback(() => {
     setReviewMode(false)
-    dispatch({ type: "SET_CURRENT_QUESTION", payload: 0 })
+    dispatch(setCurrentQuestion(0)) // Use the action creator
     setFlipped(false)
-  }
+    setStartTime(Date.now()) // Reset start time when exiting review mode
+  }, [dispatch, setCurrentQuestion])
 
-  // Get the current card based on mode
-  const getCurrentCard = () => {
+  // Fix 6: Update the getCurrentCard function to properly handle review mode
+  const getCurrentCard = useCallback(() => {
     if (reviewMode && reviewCards.length > 0) {
-      return cards[reviewCards[state.currentQuestionIndex]]
+      // Make sure we don't go out of bounds
+      const reviewIndex = Math.min(currentQuestionIndex, reviewCards.length - 1)
+      const cardIndex = reviewCards[reviewIndex]
+      return cards[cardIndex] || cards[0] // Fallback to first card if index is invalid
     }
-    return cards[state.currentQuestionIndex]
-  }
+    return cards[currentQuestionIndex] || cards[0] // Fallback to first card if index is invalid
+  }, [reviewMode, reviewCards, currentQuestionIndex, cards])
 
   const currentCard = getCurrentCard()
 
@@ -124,149 +186,206 @@ export function FlashCardComponent({
   const isSaved = currentCard?.id ? savedCardIds.includes(currentCard.id.toString()) : false
 
   // Calculate progress
-  const progress = reviewMode
-    ? ((state.currentQuestionIndex + 1) / reviewCards.length) * 100
-    : ((state.currentQuestionIndex + 1) / cards.length) * 100
+  const progress = useMemo(() => {
+    return reviewMode
+      ? ((currentQuestionIndex + 1) / reviewCards.length) * 100
+      : ((currentQuestionIndex + 1) / cards.length) * 100
+  }, [reviewMode, currentQuestionIndex, reviewCards.length, cards.length])
 
-  const toggleFlip = () => {
+  // Update the toggleFlip function
+  const toggleFlip = useCallback(() => {
+    // If flipping to the back of the card, reset the start time
+    if (!flipped) {
+      setStartTime(Date.now())
+    }
     setFlipped(!flipped)
-  }
+  }, [flipped])
 
-  const handleSaveCard = () => {
+  const handleSaveCard = useCallback(() => {
     if (onSaveCard && currentCard) {
       onSaveCard(currentCard)
     }
-  }
+  }, [onSaveCard, currentCard])
 
-  const handleSelfRating = (cardId: string, rating: "correct" | "incorrect") => {
-    // Submit the answer to the context
-    submitAnswer(rating, 0, rating === "correct")
+  // Fix 7: Update the moveToNextCard function to handle review mode
+  const moveToNextCard = useCallback(() => {
+    const maxIndex = reviewMode ? reviewCards.length - 1 : cards.length - 1
 
-    setRatingAnimation(rating)
-
-    // Reset animation state after animation completes
-    setTimeout(() => {
-      setRatingAnimation(null)
-    }, 1000)
-  }
-
-  const handleNextCard = () => {
-    if (state.currentQuestionIndex < cards.length - 1) {
+    if (currentQuestionIndex < maxIndex) {
       setDirection(1)
       setFlipped(false)
-      setExitComplete(false)
-      setTimeout(() => {
-        dispatch({ type: "NEXT_QUESTION" })
-      }, 300)
+
+      // Animate card exit to the left
+      cardControls
+        .start({
+          x: -300,
+          opacity: 0,
+          transition: { duration: 0.3 },
+        })
+        .then(() => {
+          dispatch(nextQuestion())
+          // Reset position for next card
+          cardControls.set({ x: 0, opacity: 1 })
+          // Reset start time for next card
+          setStartTime(Date.now())
+        })
     } else {
       // Complete the quiz
-      completeQuiz(state.answers)
+      const correctCount = calculateScore()
+      const totalQuestions = cards.length
+      const score = (correctCount / totalQuestions) * 100
+
+      // Calculate total time from all answers with proper time values
+      const totalTime = answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0)
+
+      dispatch(
+        completeQuiz({
+          score,
+          answers,
+          completedAt: new Date().toISOString(),
+        }),
+      )
     }
-  }
+  }, [
+    currentQuestionIndex,
+    reviewMode,
+    reviewCards.length,
+    cards.length,
+    dispatch,
+    calculateScore,
+    answers,
+    cardControls,
+  ])
 
-  const handlePrevCard = () => {
-    if (state.currentQuestionIndex > 0) {
-      setDirection(-1)
-      setFlipped(false)
-      setExitComplete(false)
-      setTimeout(() => {
-        dispatch({ type: "PREV_QUESTION" })
-      }, 300)
+  // Replace the handleSelfRating function with this updated version
+  const handleSelfRating = useCallback(
+    (cardId: string, rating: "correct" | "incorrect") => {
+      // Calculate time spent on this card
+      const endTime = Date.now()
+      const timeSpent = Math.floor((endTime - startTime) / 1000) // Convert to seconds
+
+      // Update card times record
+      setCardTimes((prev) => ({
+        ...prev,
+        [cardId]: (prev[cardId] || 0) + timeSpent,
+      }))
+
+      // Temporarily disable swipe to prevent conflicts with rating animations
+      setSwipeDisabled(true)
+
+      // Submit the answer to Redux with the actual time spent
+      dispatch(
+        submitAnswer({
+          answer: rating,
+          userAnswer: rating,
+          timeSpent: timeSpent,
+          isCorrect: rating === "correct",
+          questionId: cardId,
+        }),
+      )
+
+      setRatingAnimation(rating)
+
+      // Auto-advance after rating if enabled
+      if (autoAdvance) {
+        const timer = setTimeout(() => {
+          setRatingAnimation(null)
+          moveToNextCard()
+          setSwipeDisabled(false)
+          // Reset start time for next card
+          setStartTime(Date.now())
+        }, 800)
+        return () => clearTimeout(timer)
+      } else {
+        // Just clear the animation after a delay
+        const timer = setTimeout(() => {
+          setRatingAnimation(null)
+          setSwipeDisabled(false)
+        }, 800)
+        return () => clearTimeout(timer)
+      }
+    },
+    [dispatch, autoAdvance, moveToNextCard, startTime],
+  )
+
+  const handleRestartQuiz = useCallback(() => {
+    dispatch(resetQuiz())
+    setFlipped(false)
+    setReviewMode(false)
+    setReviewCards([])
+
+    // Add reset parameters to URL to force a fresh load
+    const url = new URL(window.location.href)
+    url.searchParams.set("reset", "true")
+    url.searchParams.set("t", Date.now().toString())
+    router.push(url.toString())
+  }, [dispatch, router])
+
+  const handleAuthenticationRequired = useCallback(() => {
+    dispatch(setRequiresAuth(true))
+    dispatch(setPendingAuthRequired(true))
+
+    const redirectUrl = `${window.location.origin}/dashboard/flashcard/${slug}?fromAuth=true&completed=true`
+
+    // Redirect to sign-in page
+    router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(redirectUrl)}`)
+  }, [dispatch, router, slug])
+
+  // Handle swipe gestures
+  const handleDragEnd = useCallback(
+    (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      if (swipeDisabled) return
+
+      const swipeDirection = info.offset.x > 0 ? "right" : "left"
+      const swipeDistance = Math.abs(info.offset.x)
+
+      if (swipeDistance > swipeThreshold) {
+        if (swipeDirection === "left") {
+          // Swipe left to go to next card
+          moveToNextCard()
+        } else {
+          // Swipe right to flip card
+          toggleFlip()
+        }
+      } else {
+        // Reset position if swipe wasn't far enough
+        cardControls.start({ x: 0, opacity: 1 })
+      }
+    },
+    [swipeDisabled, swipeThreshold, moveToNextCard, toggleFlip, cardControls],
+  )
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isCompleted) return
+
+      switch (e.key) {
+        case "ArrowRight":
+          moveToNextCard()
+          break
+        case "ArrowLeft":
+        case " ": // Space bar
+          toggleFlip()
+          break
+        case "1":
+        case "y":
+          if (currentCard?.id && flipped) {
+            handleSelfRating(currentCard.id.toString(), "correct")
+          }
+          break
+        case "2":
+        case "n":
+          if (currentCard?.id && flipped) {
+            handleSelfRating(currentCard.id.toString(), "incorrect")
+          }
+          break
+      }
     }
-  }
 
-  // Enhanced card variants with more dynamic 3D effects and smoother transitions
-  const cardVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 300 : -300,
-      opacity: 0,
-      rotateY: direction > 0 ? 45 : -45,
-      scale: 0.9,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      rotateY: 0,
-      scale: 1,
-      transition: {
-        x: { type: "spring", stiffness: 300, damping: 25 },
-        opacity: { duration: 0.4 },
-        rotateY: { duration: 0.4 },
-        scale: { type: "spring", stiffness: 300, damping: 25 },
-      },
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? 300 : -300,
-      opacity: 0,
-      rotateY: direction < 0 ? 45 : -45,
-      scale: 0.9,
-      transition: {
-        x: { type: "spring", stiffness: 300, damping: 25 },
-        opacity: { duration: 0.4 },
-        rotateY: { duration: 0.4 },
-        scale: { duration: 0.3 },
-      },
-    }),
-  }
-
-  // Front card variants with enhanced hover effects
-  const frontCardVariants = {
-    initial: { opacity: 0, rotateY: 0 },
-    animate: {
-      opacity: 1,
-      rotateY: 0,
-      transition: { duration: 0.4 },
-    },
-    exit: {
-      opacity: 0,
-      rotateY: 90,
-      transition: { duration: 0.3 },
-    },
-    hover: {
-      scale: 1.03,
-      boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-      transition: { duration: 0.2 },
-    },
-  }
-
-  // Back card variants with enhanced hover effects
-  const backCardVariants = {
-    initial: { opacity: 0, rotateY: -90 },
-    animate: {
-      opacity: 1,
-      rotateY: 0,
-      transition: { duration: 0.4 },
-    },
-    exit: {
-      opacity: 0,
-      rotateY: -90,
-      transition: { duration: 0.3 },
-    },
-    hover: {
-      scale: 1.03,
-      boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-      transition: { duration: 0.2 },
-    },
-  }
-
-  // Rating feedback animation variants with more dynamic motion
-  const ratingFeedbackVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: [1, 1.2, 1],
-      transition: {
-        duration: 0.5,
-        times: [0, 0.5, 1],
-        type: "spring",
-      },
-    },
-    exit: {
-      opacity: 0,
-      scale: 1.2,
-      transition: { duration: 0.3 },
-    },
-  }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating])
 
   // Confetti animation
   useEffect(() => {
@@ -321,11 +440,18 @@ export function FlashCardComponent({
     }
 
     createConfetti()
+
+    // Cleanup function
+    return () => {
+      const confettiContainers = document.querySelectorAll(
+        'div[style*="position: fixed"][style*="pointer-events: none"]',
+      )
+      confettiContainers.forEach((container) => container.remove())
+    }
   }, [showConfetti])
 
   // Check for authentication return
   useEffect(() => {
-    // Check if returning from authentication
     if (typeof window === "undefined") return
 
     const urlParams = new URLSearchParams(window.location.search)
@@ -334,37 +460,124 @@ export function FlashCardComponent({
 
     if ((fromAuth || completed) && session?.user) {
       console.log("Detected return from authentication, processing pending data")
-      quizService.processPendingQuizData().then(() => {
-        // After processing, check if we have results to show
-        const result = quizService.getQuizResult(quizId.toString())
-        if (result) {
-          console.log("Found quiz result after auth return:", result)
-          // Force completion state
-          dispatch({
-            type: "COMPLETE_QUIZ",
-            payload: {
-              score: result.score || 0,
-              answers: result.answers || [],
-            },
-          })
-        }
-      })
+
+      // If we have completed state in Redux, make sure it's properly set
+      if (pendingAuthRequired && isCompleted) {
+        // Force completion state to be visible
+        dispatch({ type: "FORCE_QUIZ_COMPLETED" })
+      }
+
+      // Clean up URL parameters
+      const url = new URL(window.location.href)
+      url.searchParams.delete("fromAuth")
+      url.searchParams.delete("completed")
+      window.history.replaceState({}, "", url.toString())
     }
-  }, [session, quizId, dispatch])
+  }, [session, dispatch, pendingAuthRequired, isCompleted])
 
   if (isLoading) {
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }
 
+  // Card variants with swipe animation
+  const cardVariants = {
+    initial: (direction: number) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+      scale: 0.9,
+    }),
+    animate: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 25 },
+        opacity: { duration: 0.4 },
+        scale: { type: "spring", stiffness: 300, damping: 25 },
+      },
+    },
+    exit: (direction: number) => ({
+      x: direction < 0 ? 300 : -300,
+      opacity: 0,
+      scale: 0.9,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 25 },
+        opacity: { duration: 0.4 },
+        scale: { duration: 0.3 },
+      },
+    }),
+    drag: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 25 },
+      },
+    },
+  }
+
+  // Front and back card variants
+  const frontCardVariants = {
+    initial: { opacity: 0, rotateY: 0 },
+    animate: {
+      opacity: 1,
+      rotateY: 0,
+      transition: { duration: 0.4 },
+    },
+    exit: {
+      opacity: 0,
+      rotateY: 90,
+      transition: { duration: 0.3 },
+    },
+  }
+
+  const backCardVariants = {
+    initial: { opacity: 0, rotateY: -90 },
+    animate: {
+      opacity: 1,
+      rotateY: 0,
+      transition: { duration: 0.4 },
+    },
+    exit: {
+      opacity: 0,
+      rotateY: -90,
+      transition: { duration: 0.3 },
+    },
+  }
+
+  // Rating feedback animation variants
+  const ratingFeedbackVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: [1, 1.2, 1],
+      transition: {
+        duration: 0.5,
+        times: [0, 0.5, 1],
+        type: "spring",
+      },
+    },
+    exit: {
+      opacity: 0,
+      scale: 1.2,
+      transition: { duration: 0.3 },
+    },
+  }
+
   const renderQuizContent = () => {
-    if (state.isCompleted) {
+    if (isCompleted) {
       const correctCount = calculateScore()
       const totalQuestions = cards.length
       const percentage = (correctCount / totalQuestions) * 100
-      const totalTime = state.answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0)
+
+      // Calculate total time properly from answers
+      const totalTime = answers.reduce((acc, answer) => {
+        // Make sure we're adding a number
+        const time = typeof answer?.timeSpent === "number" ? answer.timeSpent : 0
+        return acc + time
+      }, 0)
 
       // Show auth prompt if needed and user is not authenticated
-      if (state.requiresAuth && !session?.user) {
+      if (requiresAuth && !session?.user) {
         return (
           <motion.div
             key="auth-prompt"
@@ -373,14 +586,8 @@ export function FlashCardComponent({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
           >
-            <GuestSignInPrompt
-              title="Sign in to view your results"
-              description="Sign in to save your progress and see your flashcard results."
-              ctaText="Sign in to view results"
-              allowContinue={true}
-              onContinueAsGuest={restartQuiz}
+            <NonAuthenticatedUserSignInPrompt
               onSignIn={handleAuthenticationRequired}
-              quizId={quizId.toString()}
               redirectUrl={`${window.location.origin}/dashboard/flashcard/${slug}?fromAuth=true&completed=true`}
             />
           </motion.div>
@@ -403,7 +610,7 @@ export function FlashCardComponent({
             totalTime={totalTime}
             correctAnswers={correctCount}
             slug={slug}
-            onRestart={restartQuiz}
+            onRestart={handleRestartQuiz}
           />
 
           {cardsToReview.length > 0 && (
@@ -421,76 +628,111 @@ export function FlashCardComponent({
       <div className="w-full max-w-4xl mx-auto">
         <div className="rounded-lg shadow-md border bg-background">
           {/* Header Section */}
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-6 py-4 flex justify-between items-center">
             <QuizProgress
-              currentQuestionIndex={state.currentQuestionIndex}
+              currentQuestionIndex={currentQuestionIndex}
               totalQuestions={reviewMode ? reviewCards.length : cards.length}
               timeSpent={[]}
               title={reviewMode ? `Review Mode: ${title}` : title}
               quizType="Flashcard"
               animate={animationsEnabled}
             />
+
+            <Popover open={showSettings} onOpenChange={setShowSettings}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Flashcard Settings</h4>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-medium">Auto-advance</div>
+                      <div className="text-xs text-muted-foreground">Automatically move to next card after rating</div>
+                    </div>
+                    <Switch checked={autoAdvance} onCheckedChange={setAutoAdvance} />
+                  </div>
+
+                  {reviewMode && (
+                    <Button variant="outline" size="sm" onClick={handleExitReviewMode} className="w-full">
+                      Exit Review Mode
+                    </Button>
+                  )}
+
+                  <div className="pt-2 text-xs text-muted-foreground">
+                    <p className="font-medium mb-1">Keyboard shortcuts:</p>
+                    <p>Space/Left Arrow: Flip card</p>
+                    <p>Right Arrow: Next card</p>
+                    <p>1/Y: Mark as known</p>
+                    <p>2/N: Mark as still learning</p>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Flashcard Content */}
+          {/* Flashcard Content with Swipe Gestures */}
           <div className="p-4 sm:p-6 md:p-8 border-b border-border/50">
-            {/* Flashcard with improved flip and hover animations and responsive height */}
             <div className="relative min-h-[250px] sm:min-h-[300px] md:min-h-[350px] w-full perspective-1000">
-              <AnimatePresence initial={false} custom={direction} onExitComplete={() => setExitComplete(true)}>
-                <motion.div
-                  key={reviewMode ? `review-${state.currentQuestionIndex}` : `card-${state.currentQuestionIndex}`}
-                  custom={direction}
-                  variants={cardVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  className="absolute inset-0 w-full h-full"
-                  ref={cardRef}
-                >
-                  {!flipped ? (
-                    // Front of card with enhanced gradient, shadow and improved text handling
+              <motion.div
+                key={reviewMode ? `review-${currentQuestionIndex}` : `card-${currentQuestionIndex}`}
+                drag={!swipeDisabled ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.2}
+                onDragEnd={handleDragEnd}
+                animate={cardControls}
+                className="absolute inset-0 w-full h-full"
+                ref={cardRef}
+              >
+                {!flipped ? (
+                  // Front of card
+                  <motion.div
+                    onClick={toggleFlip}
+                    className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden"
+                    variants={frontCardVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    {/* Decorative elements */}
                     <motion.div
-                      onClick={toggleFlip}
-                      className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden"
-                      variants={frontCardVariants}
-                      initial="initial"
-                      animate="animate"
-                      exit="exit"
-                      whileHover="hover"
-                    >
-                      {/* Decorative elements with improved positioning for small screens */}
-                      <motion.div
-                        className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-primary/10 rounded-full -mr-12 sm:-mr-16 -mt-12 sm:-mt-16"
-                        animate={{
-                          scale: [1, 1.05, 1],
-                          rotate: [0, 5, 0],
-                        }}
-                        transition={{
-                          duration: 8,
-                          repeat: Number.POSITIVE_INFINITY,
-                          repeatType: "reverse",
-                        }}
-                      />
-                      <motion.div
-                        className="absolute bottom-0 left-0 w-16 sm:w-24 h-16 sm:h-24 bg-primary/10 rounded-full -ml-8 sm:-ml-12 -mb-8 sm:-mb-12"
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          rotate: [0, -5, 0],
-                        }}
-                        transition={{
-                          duration: 7,
-                          repeat: Number.POSITIVE_INFINITY,
-                          repeatType: "reverse",
-                          delay: 1,
-                        }}
-                      />
+                      className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-primary/10 rounded-full -mr-12 sm:-mr-16 -mt-12 sm:-mt-16"
+                      animate={{
+                        scale: [1, 1.05, 1],
+                        rotate: [0, 5, 0],
+                      }}
+                      transition={{
+                        duration: 8,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                      }}
+                    />
+                    <motion.div
+                      className="absolute bottom-0 left-0 w-16 sm:w-24 h-16 sm:h-24 bg-primary/10 rounded-full -ml-8 sm:-ml-12 -mb-8 sm:-mb-12"
+                      animate={{
+                        scale: [1, 1.1, 1],
+                        rotate: [0, -5, 0],
+                      }}
+                      transition={{
+                        duration: 7,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                        delay: 1,
+                      }}
+                    />
 
-                      {/* Improved text container with better overflow handling */}
-                      <div className="text-lg sm:text-xl md:text-2xl font-medium text-center text-foreground z-10 max-w-full sm:max-w-md leading-relaxed overflow-auto max-h-[200px] sm:max-h-[250px] md:max-h-[300px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-2">
-                        {currentCard?.question}
-                      </div>
+                    {/* Question text */}
+                    <div className="text-lg sm:text-xl md:text-2xl font-medium text-center text-foreground z-10 max-w-full sm:max-w-md leading-relaxed overflow-auto max-h-[200px] sm:max-h-[250px] md:max-h-[300px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-2">
+                      {currentCard?.question}
+                    </div>
+
+                    {/* Swipe instructions */}
+                    <div className="mt-6 flex flex-col items-center">
                       <motion.span
-                        className="mt-4 sm:mt-6 text-xs sm:text-sm text-muted-foreground flex items-center gap-1"
+                        className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1"
                         animate={{
                           y: [0, -5, 0],
                         }}
@@ -502,123 +744,168 @@ export function FlashCardComponent({
                       >
                         Tap to reveal answer
                       </motion.span>
-                    </motion.div>
-                  ) : (
-                    // Back of card with different color scheme, animated self-rating buttons, and improved text handling
-                    <motion.div
-                      onClick={toggleFlip}
-                      className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden"
-                      variants={backCardVariants}
-                      initial="initial"
-                      animate="animate"
-                      exit="exit"
-                      whileHover="hover"
-                    >
-                      {/* Decorative elements with improved positioning for small screens */}
-                      <motion.div
-                        className="absolute top-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-secondary/20 rounded-full -ml-12 sm:-ml-16 -mt-12 sm:-mt-16"
-                        animate={{
-                          scale: [1, 1.05, 1],
-                          rotate: [0, -5, 0],
-                        }}
-                        transition={{
-                          duration: 8,
-                          repeat: Number.POSITIVE_INFINITY,
-                          repeatType: "reverse",
-                        }}
-                      />
-                      <motion.div
-                        className="absolute bottom-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-secondary/20 rounded-full -mr-8 sm:-mr-12 -mb-8 sm:-mb-12"
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          rotate: [0, 5, 0],
-                        }}
-                        transition={{
-                          duration: 7,
-                          repeat: Number.POSITIVE_INFINITY,
-                          repeatType: "reverse",
-                          delay: 1,
-                        }}
-                      />
-
-                      {/* Improved text container with better overflow handling */}
-                      <div className="text-base sm:text-lg md:text-xl text-center text-foreground z-10 max-w-full sm:max-w-md leading-relaxed overflow-auto max-h-[150px] sm:max-h-[180px] md:max-h-[220px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-2">
-                        {currentCard?.answer}
-                      </div>
-
-                      {/* Responsive self-rating buttons */}
-                      <div className="mt-4 sm:mt-6 md:mt-8 flex flex-col gap-2 sm:gap-3 w-full max-w-xs z-10">
-                        <p className="text-xs sm:text-sm text-center text-muted-foreground mb-1 sm:mb-2 font-medium">
-                          How well did you know this?
-                        </p>
-                        <div className="flex justify-center gap-2 sm:gap-4">
-                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button
-                              variant={selfRating[currentCard?.id || ""] === "correct" ? "default" : "outline"}
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (currentCard?.id) {
-                                  handleSelfRating(currentCard.id.toString(), "correct")
-                                }
-                              }}
-                              className="flex items-center gap-1 sm:gap-2 relative overflow-hidden h-8 sm:h-10 px-2 sm:px-4 text-xs sm:text-sm"
-                            >
-                              <ThumbsUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                              <span className="whitespace-nowrap">Got it</span>
-                            </Button>
+                      <div className="mt-2 flex items-center gap-8 text-xs text-muted-foreground">
+                        <div className="flex flex-col items-center">
+                          <motion.div
+                            animate={{
+                              x: [-5, 0, -5],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: "reverse",
+                            }}
+                          >
+                            ← Swipe
                           </motion.div>
-
-                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button
-                              variant={selfRating[currentCard?.id || ""] === "incorrect" ? "destructive" : "outline"}
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (currentCard?.id) {
-                                  handleSelfRating(currentCard.id.toString(), "incorrect")
-                                }
-                              }}
-                              className="flex items-center gap-1 sm:gap-2 relative overflow-hidden h-8 sm:h-10 px-2 sm:px-4 text-xs sm:text-sm"
-                            >
-                              <ThumbsDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                              <span className="whitespace-nowrap">Still learning</span>
-                            </Button>
+                          <span>Flip card</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <motion.div
+                            animate={{
+                              x: [5, 0, 5],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: "reverse",
+                            }}
+                          >
+                            Swipe →
                           </motion.div>
+                          <span>Next card</span>
                         </div>
                       </div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  // Back of card
+                  <motion.div
+                    onClick={toggleFlip}
+                    className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden"
+                    variants={backCardVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    {/* Decorative elements */}
+                    <motion.div
+                      className="absolute top-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-secondary/20 rounded-full -ml-12 sm:-ml-16 -mt-12 sm:-mt-16"
+                      animate={{
+                        scale: [1, 1.05, 1],
+                        rotate: [0, -5, 0],
+                      }}
+                      transition={{
+                        duration: 8,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                      }}
+                    />
+                    <motion.div
+                      className="absolute bottom-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-secondary/20 rounded-full -mr-8 sm:-mr-12 -mb-8 sm:-mb-12"
+                      animate={{
+                        scale: [1, 1.1, 1],
+                        rotate: [0, 5, 0],
+                      }}
+                      transition={{
+                        duration: 7,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                        delay: 1,
+                      }}
+                    />
 
-                      {/* Rating feedback animation */}
-                      <AnimatePresence>
-                        {ratingAnimation && (
-                          <motion.div
-                            key={`rating-${currentCard?.id}-${ratingAnimation}`}
-                            variants={ratingFeedbackVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            className={`absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20 ${
-                              ratingAnimation === "correct" ? "bg-primary/10" : "bg-destructive/10"
-                            }`}
+                    {/* Answer text */}
+                    <div className="text-base sm:text-lg md:text-xl text-center text-foreground z-10 max-w-full sm:max-w-md leading-relaxed overflow-auto max-h-[150px] sm:max-h-[180px] md:max-h-[220px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-2">
+                      {currentCard?.answer}
+                    </div>
+
+                    {/* Self-rating buttons */}
+                    <div className="mt-6 md:mt-8 flex flex-col gap-2 sm:gap-3 w-full max-w-xs z-10">
+                      <p className="text-xs sm:text-sm text-center text-muted-foreground mb-1 sm:mb-2 font-medium">
+                        How well did you know this?
+                      </p>
+                      <div className="flex justify-center gap-4">
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant={selfRating[currentCard?.id || ""] === "correct" ? "default" : "outline"}
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (currentCard?.id) {
+                                handleSelfRating(currentCard.id.toString(), "correct")
+                              }
+                            }}
+                            className="flex items-center gap-2 relative overflow-hidden h-10 px-4"
                           >
-                            <div className={ratingAnimation === "correct" ? "text-primary" : "text-destructive"}>
-                              {ratingAnimation === "correct" ? (
-                                <Check className="h-12 w-12 sm:h-16 sm:w-16" />
-                              ) : (
-                                <ThumbsDown className="h-12 w-12 sm:h-16 sm:w-16" />
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                            <ThumbsUp className="h-4 w-4" />
+                            <span>Got it</span>
+                          </Button>
+                        </motion.div>
+
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant={selfRating[currentCard?.id || ""] === "incorrect" ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (currentCard?.id) {
+                                handleSelfRating(currentCard.id.toString(), "incorrect")
+                              }
+                            }}
+                            className="flex items-center gap-2 relative overflow-hidden h-10 px-4"
+                          >
+                            <ThumbsDown className="h-4 w-4" />
+                            <span>Still learning</span>
+                          </Button>
+                        </motion.div>
+                      </div>
+
+                      <motion.span
+                        className="mt-4 text-xs text-muted-foreground text-center"
+                        animate={{
+                          opacity: [0.7, 1, 0.7],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Number.POSITIVE_INFINITY,
+                          repeatType: "reverse",
+                        }}
+                      >
+                        {autoAdvance ? "Will advance automatically after rating" : "Tap to see question"}
+                      </motion.span>
+                    </div>
+
+                    {/* Rating feedback animation */}
+                    <AnimatePresence>
+                      {ratingAnimation && (
+                        <motion.div
+                          key={`rating-${currentCard?.id}-${ratingAnimation}`}
+                          variants={ratingFeedbackVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          className={`absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20 ${
+                            ratingAnimation === "correct" ? "bg-primary/10" : "bg-destructive/10"
+                          }`}
+                        >
+                          <div className={ratingAnimation === "correct" ? "text-primary" : "text-destructive"}>
+                            {ratingAnimation === "correct" ? (
+                              <Check className="h-16 w-16" />
+                            ) : (
+                              <ThumbsDown className="h-16 w-16" />
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
+              </motion.div>
             </div>
 
-            {/* Improved responsive layout for card actions */}
-            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 sm:mt-6 md:mt-8 gap-3 sm:gap-0">
+            {/* Card actions */}
+            <div className="flex justify-between items-center mt-6">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="outline"
@@ -627,7 +914,7 @@ export function FlashCardComponent({
                     e.stopPropagation()
                     handleSaveCard()
                   }}
-                  className="flex items-center gap-2 h-8 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
+                  className="flex items-center gap-2 h-9 px-3"
                 >
                   <motion.span
                     animate={
@@ -640,102 +927,43 @@ export function FlashCardComponent({
                     }
                     transition={{ duration: 0.5 }}
                   >
-                    {isSaved ? (
-                      <BookmarkCheck className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                    ) : (
-                      <Bookmark className="h-3 w-3 sm:h-4 sm:w-4" />
-                    )}
+                    {isSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
                   </motion.span>
                   <span>{isSaved ? "Saved" : "Save Card"}</span>
                 </Button>
               </motion.div>
 
-              <motion.span
-                className="text-xs sm:text-sm text-muted-foreground"
-                animate={{
-                  opacity: [0.7, 1, 0.7],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Number.POSITIVE_INFINITY,
-                  repeatType: "reverse",
-                }}
-              >
-                {flipped ? "Tap to see question" : "Tap to see answer"}
-              </motion.span>
-            </div>
-          </div>
+              {/* Progress indicator */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {currentQuestionIndex + 1}/{reviewMode ? reviewCards.length : cards.length}
+                </span>
+                <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    className={`h-full rounded-full ${reviewMode ? "bg-destructive" : "bg-primary"}`}
+                    style={{ width: `${progress}%` }}
+                    initial={{
+                      width: `${(currentQuestionIndex / (reviewMode ? reviewCards.length : cards.length)) * 100}%`,
+                    }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  ></motion.div>
+                </div>
+              </div>
 
-          {/* Navigation with improved responsive layout */}
-          <div className="p-4 sm:p-6 md:p-8">
-            <div className="flex justify-between items-center">
+              {/* Skip button for quick navigation */}
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  onClick={handlePrevCard}
-                  disabled={state.currentQuestionIndex === 0 || !exitComplete}
-                  className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
-                >
-                  <ChevronLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="whitespace-nowrap">Previous</span>
-                </Button>
-              </motion.div>
-
-              {reviewMode && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleExitReviewMode}
-                  className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+                  onClick={moveToNextCard}
+                  disabled={currentQuestionIndex >= cards.length - 1}
+                  className="flex items-center gap-1 h-9 px-3"
                 >
-                  Exit Review Mode
-                </Button>
-              )}
-
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  onClick={handleNextCard}
-                  disabled={!exitComplete}
-                  className="flex items-center h-8 sm:h-10 md:h-11 px-3 sm:px-4 md:px-5 text-xs sm:text-sm"
-                >
-                  {(
-                    reviewMode
-                      ? state.currentQuestionIndex < reviewCards.length - 1
-                      : state.currentQuestionIndex < cards.length - 1
-                  ) ? (
-                    <>
-                      <span className="whitespace-nowrap">Next</span>
-                      <ChevronRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-                    </>
-                  ) : (
-                    <>
-                      <span className="whitespace-nowrap">Complete</span>
-                      <Check className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-                    </>
-                  )}
+                  <span>Skip</span>
+                  <X className="h-3 w-3" />
                 </Button>
               </motion.div>
-            </div>
-
-            {/* Enhanced progress indicator with animation */}
-            <div className="mt-4 sm:mt-6 md:mt-8 px-1">
-              <div className="h-1.5 sm:h-2 w-full bg-muted rounded-full overflow-hidden">
-                <motion.div
-                  className={`h-full rounded-full ${reviewMode ? "bg-destructive" : "bg-primary"}`}
-                  style={{
-                    width: `${progress}%`,
-                  }}
-                  initial={{
-                    width: `${(state.currentQuestionIndex / (reviewMode ? reviewCards.length : cards.length)) * 100}%`,
-                  }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                ></motion.div>
-              </div>
-              <div className="flex justify-between mt-1 sm:mt-2 text-xs text-muted-foreground">
-                <span>Card {state.currentQuestionIndex + 1}</span>
-                <span>{reviewMode ? reviewCards.length : cards.length} Cards</span>
-              </div>
             </div>
           </div>
         </div>

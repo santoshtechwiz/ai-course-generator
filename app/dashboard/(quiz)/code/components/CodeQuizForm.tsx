@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
 import { codeQuizSchema } from "@/schema/schema"
@@ -31,6 +31,7 @@ import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
+import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string
@@ -73,7 +74,11 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
-  const { subscriptionStatus } = useSubscriptionStore()
+
+  const { status: subscriptionStatus } = useSubscription()
+
+
+
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
 
   const [formData, setFormData] = usePersistentState<CodeQuizFormData>("codeQuizFormData", {

@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+
 
 import type { QueryParams } from "@/app/types/types"
 import CreateQuizForm from "./CreateQuizForm"
@@ -15,6 +15,7 @@ import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/Bla
 import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
 import OpenEndedQuizForm from "@/app/dashboard/(quiz)/openended/components/OpenEndedQuizForm"
 import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm"
+import { useSubscription } from "../../subscription/hooks/use-subscription"
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code" | "flashcard"
 
@@ -24,7 +25,7 @@ interface QuizCourseWrapperProps {
 }
 
 export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
-  const { subscriptionStatus } = useSubscriptionStore()
+  const { data:subscriptionStatus } = useSubscription()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
 

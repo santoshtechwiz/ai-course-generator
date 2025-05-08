@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { getQuiz } from "@/app/actions/getQuiz"
 import { generateBreadcrumbStructuredData, generatePageMetadata, generateQuizStructuredData } from "@/lib/seo-utils"
 import { JsonLd } from "@/components/json-ld"

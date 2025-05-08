@@ -1,17 +1,17 @@
 import type React from "react"
 
 // Convert QuizType to an enum
-export const QuizType = {
-  MCQ: "mcq",
-  CODE: "code",
-  BLANKS: "blanks",
-  OPENENDED: "openended",
-  FLASHCARD: "flashcard",
-  DOCUMENT: "document",
-} as const;
+// export const QuizType = {
+//   MCQ: "mcq",
+//   CODE: "code",
+//   BLANKS: "blanks",
+//   OPENENDED: "openended",
+//   FLASHCARD: "flashcard",
+//   DOCUMENT: "document",
+// } as const
 
-export type QuizType = typeof QuizType[keyof typeof QuizType];
-
+// export type QuizType = (typeof QuizType)[keyof typeof QuizType]
+export type QuizType = "mcq" | "blanks" | "code" | "openended" | "flashcard" | "document"
 
 // Base question interface
 export interface BaseQuestion {
@@ -68,18 +68,28 @@ export interface FlashcardQuestion extends BaseQuestion {
 
 // Document question
 export interface DocumentQuestion extends BaseQuestion {
-  documentUrl: string
+  documentUrl?: string
   pageNumber?: number
 }
 
 // Union type for all question types
-export type QuizQuestion =
-  | McqQuestion
-  | CodeQuestion
-  | BlankQuestion
-  | OpenEndedQuestion
-  | FlashcardQuestion
-  | DocumentQuestion
+// export type QuizQuestion =
+//   | McqQuestion
+//   | CodeQuestion
+//   | BlankQuestion
+//   | OpenEndedQuestion
+//   | FlashcardQuestion
+//   | DocumentQuestion
+
+export interface QuizQuestion {
+  id: string | number
+  question: string
+  answer: string
+  option1?: string
+  option2?: string
+  option3?: string
+  options?: string[]
+}
 
 // Quiz metadata
 export interface QuizMetadata {
@@ -121,14 +131,22 @@ export interface QuizData {
 }
 
 // Consolidated QuizAnswer interface - making isCorrect optional to match quiz-service usage
+// export interface QuizAnswer {
+//   answer: string | string[]
+//   userAnswer?: string | string[]
+//   isCorrect: boolean
+//   timeSpent: number
+//   similarity?: number
+//   language?: string
+//   codeSnippet?: string
+// }
+
 export interface QuizAnswer {
-  answer: string | string[]
-  userAnswer?: string | string[]
+  answer: string
+  userAnswer: string
   isCorrect: boolean
   timeSpent: number
-  similarity?: number
-  language?: string
-  codeSnippet?: string
+  questionId?: string | number
 }
 
 // Add the missing BlanksQuizAnswer interface
@@ -311,15 +329,33 @@ export interface StoredQuizState {
 }
 
 // Define a quiz result type
+// export interface QuizResult {
+//   quizId: string
+//   slug: string
+//   type: QuizType | string
+//   score: number
+//   answers: (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer)[]
+//   totalTime: number
+//   totalQuestions: number
+//   completedAt?: string
+// }
+
 export interface QuizResult {
   quizId: string
   slug: string
-  type: QuizType | string
   score: number
-  answers: (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer)[]
-  totalTime: number
   totalQuestions: number
-  completedAt?: string
+  correctAnswers: number
+  totalTimeSpent: number | string
+  completedAt: string
+  answers: Array<{
+    questionId: string | number
+    question: string
+    selectedOption: string
+    correctOption: string
+    isCorrect: boolean
+    timeSpent: number
+  }>
 }
 
 // Add a utility type for API responses

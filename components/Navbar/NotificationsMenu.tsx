@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+
+import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
 
 interface NotificationsMenuProps {
   initialCount?: number
@@ -23,7 +24,7 @@ interface NotificationsMenuProps {
 export default function NotificationsMenu({ initialCount = 0, refreshCredits }: NotificationsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [creditCount, setCreditCount] = useState(initialCount)
-  const { data, setRefreshing } = useSubscriptionStore()
+  const { data, setRefreshing } = useSubscription()
   const [isClient, setIsClient] = useState(false)
 
   // Set isClient to true when component mounts (client-side only)

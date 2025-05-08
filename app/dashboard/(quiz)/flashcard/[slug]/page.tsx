@@ -1,4 +1,4 @@
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 import FlashCardsPageClient from "../components/FlashCardsPageClient"
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"

@@ -9,11 +9,11 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscription } from "../hooks/use-subscription"
+
 
 export function SubscriptionRefresher() {
-  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
-  const fetchSubscriptionDetails = useSubscriptionStore((state) => state.fetchSubscriptionDetails)
+  const { subscription, fetchStatus, details } = useSubscription();
   const lastFetchRef = useRef<number>(0)
   const isRefreshingRef = useRef<boolean>(false)
 
@@ -31,7 +31,7 @@ export function SubscriptionRefresher() {
 
     // Fetch data with a slight delay to prevent race conditions
     const timeoutId = setTimeout(() => {
-      Promise.all([fetchSubscriptionStatus(false), fetchSubscriptionDetails(false)]).finally(() => {
+      Promise.all([fetchStatus(false), details(false)]).finally(() => {
         isRefreshingRef.current = false
       })
     }, 100)
@@ -48,7 +48,7 @@ export function SubscriptionRefresher() {
       isRefreshingRef.current = true
       lastFetchRef.current = now
 
-      Promise.all([fetchSubscriptionStatus(true), fetchSubscriptionDetails(true)]).finally(() => {
+      Promise.all([fetchStatus(true), details(true)]).finally(() => {
         isRefreshingRef.current = false
       })
     }
@@ -59,7 +59,7 @@ export function SubscriptionRefresher() {
       clearTimeout(timeoutId)
       window.removeEventListener("subscription-changed", handleSubscriptionChange)
     }
-  }, [fetchSubscriptionStatus, fetchSubscriptionDetails])
+  }, [fetchStatus, details])
 
   // Refresh data periodically with debouncing
   useEffect(() => {
@@ -75,7 +75,7 @@ export function SubscriptionRefresher() {
         isRefreshingRef.current = true
         lastFetchRef.current = now
 
-        fetchSubscriptionStatus(false).finally(() => {
+        fetchStatus(false).finally(() => {
           isRefreshingRef.current = false
         })
       },
@@ -83,7 +83,7 @@ export function SubscriptionRefresher() {
     ) // Refresh every 5 minutes
 
     return () => clearInterval(intervalId)
-  }, [fetchSubscriptionStatus])
+  }, [fetchStatus])
 
   return null
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma, { slugToId } from "@/lib/db"
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 
 export async function POST(req: Request) {
   const session = await getAuthSession()

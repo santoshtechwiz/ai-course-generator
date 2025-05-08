@@ -1,5 +1,5 @@
 import { getUserStats } from "@/app/actions/userDashboard"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
 

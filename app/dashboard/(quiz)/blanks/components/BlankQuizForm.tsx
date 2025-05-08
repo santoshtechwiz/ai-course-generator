@@ -15,11 +15,11 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import PlanAwareButton from "../../components/PlanAwareButton"
+import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
 
 // Define schema with zod for consistent validation
 const fillInTheBlankQuizSchema = z.object({
@@ -39,9 +39,9 @@ interface FillInTheBlankQuizFormProps {
 function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: FillInTheBlankQuizFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const { subscriptionStatus } = useSubscriptionStore()
+  const { data: subscriptionData } = useSubscription()
 
-  const credits = subscriptionStatus?.credits || 0
+  const credits = subscriptionData?.credits || 0
 
   const {
     control,

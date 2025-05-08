@@ -12,7 +12,7 @@ import { ReferralSystem } from "./ReferralSystem"
 import { CreditCard, User, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscriptionStore } from "@/app/store/subscription-provider"
 
 export function AccountOverview({ userId }: { userId: string }) {
   const { data: session, status } = useSession()

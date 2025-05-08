@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, memo } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { signIn, signOut, useSession } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown, X, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -19,15 +19,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAuth } from "@/providers/unified-auth-provider"
+
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import { ThemeToggle } from "./ThemeToggle"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
 
-// Fix 1: Remove window reference in component definition
+import { useAuth } from "@/hooks/use-auth"
+import { useSubscription } from "@/store/subscription-provider"
+
+// NavItems component with proper memoization
 const NavItems = memo(() => {
-  // Fix 2: Use useState + useEffect pattern instead of direct window check
   const [currentPath, setCurrentPath] = useState("")
   const pathname = usePathname()
 
@@ -67,116 +68,71 @@ const NavItems = memo(() => {
 NavItems.displayName = "NavItems"
 
 export default function MainNavbar() {
-  const { data: session, status } = useSession()
-  const { isAuthenticated, user, credits } = useAuth()
+  // Use Redux-based auth hook
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
+
+  // Use Redux-based subscription hook
+  const { subscription, isLoading: subscriptionLoading } = useSubscription()
+
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-
-  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
-  const subscriptionStatus = useSubscriptionStore((state) => state.data)
-  const isLoadingSubscription = useSubscriptionStore((state) => state.isLoading)
-  const isError = useSubscriptionStore((state) => state.isError)
-
-  // Fix 3: Use useState + useEffect pattern for pathname
   const [currentPath, setCurrentPath] = useState("")
   const pathname = usePathname()
-
   const [creditScore, setCreditScore] = useState(0)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  const isAdmin = session?.user?.isAdmin || user?.isAdmin || false
-  const userName = session?.user?.name || user?.name || ""
-  const userEmail = session?.user?.email || user?.email || ""
-  const userAuthenticated = status === "authenticated" || isAuthenticated
+  // Extract user data from Redux auth state
+  const isAdmin = user?.isAdmin || false
+  const userName = user?.name || ""
+  const userEmail = user?.email || ""
 
-  // Fix 4: Simplify scroll handler to avoid closure issues
+  // Scroll handler with proper debouncing
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 20)
   }, [])
 
-  // Fix 5: Update pathname in useEffect
+  // Update pathname in useEffect
   useEffect(() => {
     setCurrentPath(pathname || "")
   }, [pathname])
 
+  // Add scroll listener with cleanup
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Fix 6: Use debounced scroll handler
-      const scrollListener = () => {
-        const debounced = setTimeout(() => {
-          setScrolled(window.scrollY > 20)
-        }, 10)
-        return () => clearTimeout(debounced)
-      }
-
-      window.addEventListener("scroll", handleScroll, { passive: true })
-      return () => window.removeEventListener("scroll", handleScroll)
+      const debouncedScroll = debounce(handleScroll, 10)
+      window.addEventListener("scroll", debouncedScroll, { passive: true })
+      return () => window.removeEventListener("scroll", debouncedScroll)
     }
   }, [handleScroll])
 
+  // Set initial load timeout
   useEffect(() => {
-    if (userAuthenticated) {
-      const initialLoadTimer = setTimeout(() => {
-        setIsInitialLoad(false)
-      }, 3000)
+    if (!isAuthenticated) return
 
-      fetchSubscriptionStatus(true)
+    const initialLoadTimer = setTimeout(() => {
+      setIsInitialLoad(false)
+    }, 3000)
 
-      const quickInitialRefresh = setTimeout(() => {
-        fetchSubscriptionStatus(true)
-      }, 1000)
-
-      let interval = 30000
-      const intervalId = setInterval(() => {
-        if (isError) {
-          interval = Math.min(interval * 1.5, 120000)
-        } else {
-          interval = Math.max(interval * 0.9, 30000)
-        }
-        fetchSubscriptionStatus()
-      }, interval)
-
-      return () => {
-        clearTimeout(initialLoadTimer)
-        clearTimeout(quickInitialRefresh)
-        clearInterval(intervalId)
-      }
+    return () => {
+      clearTimeout(initialLoadTimer)
     }
-  }, [fetchSubscriptionStatus, userAuthenticated, isError])
+  }, [isAuthenticated])
 
+  // Update credit score from subscription data
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      if (subscriptionStatus?.credits !== undefined) {
-        setCreditScore(subscriptionStatus.credits)
-      } else if (credits !== undefined) {
-        setCreditScore(credits)
-      } else if (session?.user?.credits !== undefined) {
-        setCreditScore(session.user.credits)
+      if (subscription?.data?.credits !== undefined) {
+        setCreditScore(subscription.data.credits)
+      } else if (user?.credits !== undefined) {
+        setCreditScore(user.credits)
       }
     }, 100)
 
     return () => clearTimeout(debounceTimer)
-  }, [subscriptionStatus, session?.user?.credits, credits])
+  }, [subscription?.data?.credits, user?.credits])
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const handleUserActivity = () => {
-        if (userAuthenticated && !isLoadingSubscription) {
-          fetchSubscriptionStatus()
-        }
-      }
-
-      window.addEventListener("mousemove", handleUserActivity, { passive: true, once: true })
-      window.addEventListener("touchstart", handleUserActivity, { passive: true, once: true })
-
-      return () => {
-        window.removeEventListener("mousemove", handleUserActivity)
-        window.removeEventListener("touchstart", handleUserActivity)
-      }
-    }
-  }, [userAuthenticated, isLoadingSubscription, fetchSubscriptionStatus])
-
+  // Animation variants
   const headerVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: {
@@ -186,8 +142,18 @@ export default function MainNavbar() {
     },
   }
 
-  const subscriptionPlan = subscriptionStatus?.subscriptionPlan || "FREE"
-  const showLoading = isInitialLoad && isLoadingSubscription && userAuthenticated
+  // Determine subscription plan from Redux state
+  const subscriptionPlan = subscription?.data?.currentPlan || "FREE"
+  const showLoading = isInitialLoad && subscriptionLoading && isAuthenticated
+
+  // Simple debounce function
+  function debounce(fn: Function, ms = 300) {
+    let timeoutId: ReturnType<typeof setTimeout>
+    return function (this: any, ...args: any[]) {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => fn.apply(this, args), ms)
+    }
+  }
 
   return (
     <motion.header
@@ -230,7 +196,7 @@ export default function MainNavbar() {
             </Button>
           </motion.div>
 
-          {userAuthenticated &&
+          {isAuthenticated &&
             (showLoading ? (
               <Skeleton className="h-8 w-8 rounded-full" />
             ) : (
@@ -247,14 +213,13 @@ export default function MainNavbar() {
             <ThemeToggle />
           </motion.div>
 
-          {userAuthenticated ? (
+          {isAuthenticated ? (
             showLoading ? (
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </Button>
             ) : (
               <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
-                {/* Fix 7: Properly structure DropdownMenu components */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
@@ -263,7 +228,7 @@ export default function MainNavbar() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56 rounded-xl p-2 shadow-lg">
                     <div className="p-2 space-y-1">
-                      {isLoadingSubscription ? (
+                      {subscriptionLoading ? (
                         <>
                           <Skeleton className="h-5 w-24" />
                           <Skeleton className="h-4 w-32" />
@@ -274,7 +239,7 @@ export default function MainNavbar() {
                           <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
                         </>
                       )}
-                      {isLoadingSubscription ? (
+                      {subscriptionLoading ? (
                         <Skeleton className="h-5 w-16 mt-1" />
                       ) : (
                         subscriptionPlan && <Badge className="mt-1">{subscriptionPlan}</Badge>
@@ -301,10 +266,7 @@ export default function MainNavbar() {
                         Account Settings
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => signOut({ callbackUrl: "/dashboard/explore" })}
-                      className="cursor-pointer text-destructive"
-                    >
+                    <DropdownMenuItem onClick={() => logout()} className="cursor-pointer text-destructive">
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
                     </DropdownMenuItem>
@@ -391,7 +353,7 @@ export default function MainNavbar() {
             </nav>
 
             <div className="pt-4 border-t">
-              {userAuthenticated ? (
+              {isAuthenticated ? (
                 <div className="space-y-4">
                   <motion.div
                     className="p-2 rounded-lg bg-accent"
@@ -399,7 +361,7 @@ export default function MainNavbar() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.3 }}
                   >
-                    {isLoadingSubscription ? (
+                    {subscriptionLoading ? (
                       <>
                         <Skeleton className="h-5 w-24 mb-1" />
                         <Skeleton className="h-4 w-32" />
@@ -421,7 +383,7 @@ export default function MainNavbar() {
                       variant="destructive"
                       className="w-full"
                       onClick={() => {
-                        signOut({ callbackUrl: "/" })
+                        logout()
                         setIsMobileMenuOpen(false)
                       }}
                     >

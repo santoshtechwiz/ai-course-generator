@@ -1,6 +1,6 @@
 import { getProviders } from "next-auth/react"
 import Link from "next/link"
-import { authOptions } from "@/lib/authOptions"
+import { authOptions } from "@/lib/auth"
 import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"

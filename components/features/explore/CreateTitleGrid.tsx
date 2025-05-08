@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
 
 interface CreateTileGridProps {
   icon: LucideIcon
@@ -141,7 +141,7 @@ const tiles = [
 function Tile({ icon: Icon, title, description, url, index, quotes, color, isPremium }: CreateTileGridProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentQuote, setCurrentQuote] = useState(0)
-  const {data} = useSubscriptionStore();
+  const {data} = useSubscription();
 
   const quoteInterval = useMemo(() => {
     if (isOpen) {

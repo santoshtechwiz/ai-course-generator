@@ -5,7 +5,7 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Lock, CheckCircle, User, Loader2, CreditCard } from "lucide-react"
-import { useSubscriptionStore } from "@/app/store/subscriptionStore"
+import { useSubscription } from "../../subscription/hooks/use-subscription"
 
 export interface PlanAwareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string
@@ -79,7 +79,7 @@ export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
   ...props
 }) => {
   const [internalIsLoading, setInternalIsLoading] = useState(false)
-  const { subscriptionStatus } = useSubscriptionStore()
+  const { data:subscriptionStatus } = useSubscription()
 
   const isLoading = externalIsLoading || internalIsLoading
 

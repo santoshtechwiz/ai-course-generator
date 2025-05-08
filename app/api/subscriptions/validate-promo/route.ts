@@ -5,7 +5,7 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 
 // Define valid promo codes and their discounts
 const VALID_PROMO_CODES: Record<string, { discount: number; expiresAt?: Date }> = {

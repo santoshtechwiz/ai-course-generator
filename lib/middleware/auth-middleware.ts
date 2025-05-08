@@ -1,5 +1,5 @@
 import type { NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/authOptions"
+import { getAuthSession } from "@/lib/auth"
 import { formatApiError } from "@/lib/api-utils"
 
 /**
