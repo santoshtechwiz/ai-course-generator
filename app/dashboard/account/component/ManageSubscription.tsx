@@ -24,7 +24,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
 import { PaymentMethodForm } from "./PaymentMethod"
 import { StatusBadge } from "./status-badge"
-import { useSubscriptionStore } from "@/app/store/subscription-provider"
+
 
 interface ManageSubscriptionProps {
   userId: string

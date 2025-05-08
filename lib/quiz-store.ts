@@ -151,7 +151,7 @@ export interface Question {
       })
     }
   
-    async getQuizById(id: string): Promise<Quiz | null> {
+    async getQuiz(id: string): Promise<Quiz | null> {
       await this.ensureDBReady()
   
       return new Promise((resolve, reject) => {
@@ -189,6 +189,6 @@ export interface Question {
   }
   
   // Create a singleton instance
-  export const indexedDBStore = new IndexedDBStore()
+  export const quizStore = new IndexedDBStore()
   
   
