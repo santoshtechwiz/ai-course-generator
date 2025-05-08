@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, XCircle, Clock, Award, ArrowRight, Share2, Printer } from "lucide-react"
+import { CheckCircle, XCircle, Clock, Award, ArrowRight } from "lucide-react"
 import { calculatePerformanceLevel, formatQuizTime } from "@/lib/utils/quiz-performance"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -32,6 +32,7 @@ interface McqQuizResultProps {
       timeSpent: number
     }>
   }
+  [key: string]: any
 }
 
 // Helper function to determine difficulty color
@@ -48,37 +49,38 @@ const getDifficultyColor = (difficulty: string): string => {
   }
 }
 
-export default function McqQuizResult({ result }: McqQuizResultProps) {
-  const [showAnswers, setShowAnswers] = useState(false)
+export default function McqQuizResult({ result, ...props }: McqQuizResultProps) {
   const [activeTab, setActiveTab] = useState("summary")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
 
-  // Validate result data and provide defaults
-  const safeResult = {
-    quizId: result?.quizId || "",
-    slug: result?.slug || "",
-    score: result?.score || 0,
-    totalQuestions: result?.totalQuestions || 0,
-    correctAnswers: result?.correctAnswers || 0,
-    totalTimeSpent: result?.totalTimeSpent || 0,
-    formattedTimeSpent: result?.formattedTimeSpent || formatQuizTime(result?.totalTimeSpent || 0),
-    completedAt: result?.completedAt || new Date().toISOString(),
-    answers: result?.answers || [],
-  }
-
-  // Get performance level based on score
-  const performanceLevel = calculatePerformanceLevel(safeResult.score)
-
-  // Get color for performance level
-  const performanceColor = getDifficultyColor(
-    safeResult.score >= 90 ? "easy" : safeResult.score >= 60 ? "medium" : "hard",
+  // Ensure we have a valid result object with default values for tests
+  const safeResult = useMemo(
+    () => ({
+      quizId: result?.quizId || "",
+      slug: result?.slug || "",
+      score: typeof result?.score === "number" ? result.score : 0,
+      totalQuestions: result?.totalQuestions || 0,
+      correctAnswers: result?.correctAnswers || 0,
+      totalTimeSpent: result?.totalTimeSpent || 0,
+      formattedTimeSpent: result?.formattedTimeSpent || formatQuizTime(result?.totalTimeSpent || 0),
+      completedAt: result?.completedAt || new Date().toISOString(),
+      answers: Array.isArray(result?.answers) ? result.answers : [],
+    }),
+    [result],
   )
 
-  // Handle sharing results
-  const handleShare = async () => {
+  // Memoize the performance level and color calculations
+  const performanceLevel = useMemo(() => calculatePerformanceLevel(safeResult.score), [safeResult.score])
+  const performanceColor = useMemo(
+    () => getDifficultyColor(safeResult.score >= 90 ? "easy" : safeResult.score >= 60 ? "medium" : "hard"),
+    [safeResult.score],
+  )
+
+  // Simplified handleShare function
+  const handleShare = useCallback(async () => {
     try {
       if (navigator.share) {
         await navigator.share({
@@ -86,59 +88,66 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
           text: `I scored ${safeResult.score}% on the ${safeResult.slug} quiz!`,
           url: window.location.href,
         })
-      } else {
+      } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(window.location.href)
         toast({
           title: "Link copied!",
           description: "Share your results with friends",
         })
+      } else {
+        console.warn("Sharing is not supported in this browser.")
       }
     } catch (error) {
       console.error("Error sharing:", error)
     }
-  }
+  }, [safeResult.score, safeResult.slug, toast])
 
-  // Handle printing results
-  const handlePrint = () => {
-    window.print()
-  }
+  // Optimize the handleTryAgain function
+  const handleTryAgain = useCallback(() => {
+    if (isLoading) return; // Prevent multiple triggers
 
-  // Handle try again
-  const handleTryAgain = () => {
-    setIsLoading(true)
+    setIsLoading(true);
 
-    // Reset the quiz state in Redux
-    dispatch(resetQuiz())
+    dispatch(resetQuiz());
 
-    // Add a timestamp parameter to force a fresh load
-    const timestamp = new Date().getTime()
+    const timestamp = new Date().getTime();
+    router.push(`/dashboard/mcq/${safeResult.slug}?reset=true&t=${timestamp}`);
+  }, [isLoading, dispatch, router, safeResult.slug])
 
-    // Navigate to the quiz page with reset=true parameter to ensure it reloads
-    router.push(`/dashboard/mcq/${safeResult.slug}?reset=true&t=${timestamp}`)
-  }
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
+  // Memoized animation variants
+  const containerVariants = useMemo(
+    () => ({
+      hidden: { opacity: 0 },
+      visible: {
+        opacity: 1,
+        transition: {
+          staggerChildren: 0.1,
+        },
       },
-    },
-  }
+    }),
+    [],
+  )
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 },
-  }
+  const itemVariants = useMemo(
+    () => ({
+      hidden: { y: 20, opacity: 0 },
+      visible: { y: 0, opacity: 1 },
+    }),
+    [],
+  )
 
   return (
-    <motion.div className="space-y-6" initial="hidden" animate="visible" variants={containerVariants}>
+    <motion.div
+      data-testid="quiz-results"
+      className="space-y-6"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
       <Card className="w-full print:shadow-none">
         <CardHeader className="text-center">
           <motion.div variants={itemVariants}>
-            <CardTitle className="text-2xl">Quiz Results</CardTitle>
+            <CardTitle className="text-2xl">MCQ Quiz Results</CardTitle>
             <CardDescription>Completed on {new Date(safeResult.completedAt).toLocaleDateString()}</CardDescription>
           </motion.div>
         </CardHeader>
@@ -155,7 +164,9 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
                 <motion.div variants={itemVariants} className="flex flex-col items-center p-4 border rounded-lg">
                   <Award className="h-8 w-8 text-primary mb-2" />
                   <p className="text-sm text-muted-foreground">Score</p>
-                  <p className={`text-2xl font-bold ${performanceColor}`}>{safeResult.score}%</p>
+                  <p data-testid="quiz-score" className={`text-2xl font-bold ${performanceColor}`}>
+                    {safeResult.score}%
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">{performanceLevel}</p>
                 </motion.div>
 
@@ -166,7 +177,7 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
                     {safeResult.correctAnswers}/{safeResult.totalQuestions}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {Math.round((safeResult.correctAnswers / safeResult.totalQuestions) * 100)}% accuracy
+                    {Math.round((safeResult.correctAnswers / (safeResult.totalQuestions || 1)) * 100)}% accuracy
                   </p>
                 </motion.div>
 
@@ -178,7 +189,8 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {Math.round(
-                      ((safeResult.totalQuestions - safeResult.correctAnswers) / safeResult.totalQuestions) * 100,
+                      ((safeResult.totalQuestions - safeResult.correctAnswers) / (safeResult.totalQuestions || 1)) *
+                        100,
                     )}
                     % error rate
                   </p>
@@ -191,7 +203,7 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
                     {safeResult.formattedTimeSpent || formatQuizTime(safeResult.totalTimeSpent)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {Math.round(safeResult.totalTimeSpent / safeResult.totalQuestions)} sec/question
+                    {Math.round(safeResult.totalTimeSpent / (safeResult.totalQuestions || 1))} sec/question
                   </p>
                 </motion.div>
               </motion.div>
@@ -211,11 +223,11 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
                     <div className="flex justify-between mb-1">
                       <span className="text-sm font-medium">Accuracy</span>
                       <span className="text-sm font-medium">
-                        {Math.round((safeResult.correctAnswers / safeResult.totalQuestions) * 100)}%
+                        {Math.round((safeResult.correctAnswers / (safeResult.totalQuestions || 1)) * 100)}%
                       </span>
                     </div>
                     <Progress
-                      value={Math.round((safeResult.correctAnswers / safeResult.totalQuestions) * 100)}
+                      value={Math.round((safeResult.correctAnswers / (safeResult.totalQuestions || 1)) * 100)}
                       className="h-2 bg-gray-200"
                     />
                   </div>
@@ -291,15 +303,6 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
                   Try Again <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
-            </Button>
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={handleShare} title="Share Results">
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={handlePrint} title="Print Results">
-              <Printer className="h-4 w-4" />
             </Button>
           </div>
         </CardFooter>

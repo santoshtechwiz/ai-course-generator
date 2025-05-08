@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, XCircle, Clock, Award, ArrowRight, Share2, Printer } from "lucide-react"
+import { CheckCircle, XCircle, Clock, Award, ArrowRight } from "lucide-react"
 import { calculatePerformanceLevel, formatQuizTime } from "@/lib/utils/quiz-performance"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,6 +14,9 @@ import { useAppDispatch } from "@/store"
 import { resetQuiz } from "@/store/slices/quizSlice"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
+
+// Local storage key prefix for quiz state
+const QUIZ_STATE_STORAGE_KEY = "quiz_state_"
 
 interface CodeQuizResultProps {
   result: {
@@ -38,6 +41,7 @@ interface CodeQuizResultProps {
       language?: string
     }>
   }
+  [key: string]: any
 }
 
 // Helper function to determine difficulty color
@@ -54,36 +58,62 @@ const getDifficultyColor = (difficulty: string): string => {
   }
 }
 
-export default function CodeQuizResult({ result }: CodeQuizResultProps) {
+export default function CodeQuizResult({ result, ...props }: CodeQuizResultProps) {
   const [activeTab, setActiveTab] = useState("summary")
   const [isLoading, setIsLoading] = useState(false)
+  const [hasLoadedResult, setHasLoadedResult] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
 
-  // Validate result data and provide defaults
-  const safeResult = {
-    quizId: result?.quizId || "",
-    slug: result?.slug || "",
-    score: result?.score || 0,
-    totalQuestions: result?.totalQuestions || 0,
-    correctAnswers: result?.correctAnswers || 0,
-    totalTimeSpent: result?.totalTimeSpent || 0,
-    formattedTimeSpent: result?.formattedTimeSpent || formatQuizTime(result?.totalTimeSpent || 0),
-    completedAt: result?.completedAt || new Date().toISOString(),
-    answers: result?.answers || [],
-  }
-
-  // Get performance level based on score
-  const performanceLevel = calculatePerformanceLevel(safeResult.score)
-
-  // Get color for performance level
-  const performanceColor = getDifficultyColor(
-    safeResult.score >= 90 ? "easy" : safeResult.score >= 60 ? "medium" : "hard",
+  // Ensure we have a valid result object with default values for tests
+  const safeResult = useMemo(
+    () => ({
+      quizId: result?.quizId || "",
+      slug: result?.slug || "",
+      score: typeof result?.score === "number" ? result.score : 0,
+      totalQuestions: result?.totalQuestions || 0,
+      correctAnswers: result?.correctAnswers || 0,
+      totalTimeSpent: result?.totalTimeSpent || 0,
+      formattedTimeSpent: result?.formattedTimeSpent || formatQuizTime(result?.totalTimeSpent || 0),
+      completedAt: result?.completedAt || new Date().toISOString(),
+      answers: Array.isArray(result?.answers) ? result.answers : [],
+    }),
+    [result],
   )
 
-  // Handle sharing results
-  const handleShare = async () => {
+  // Check localStorage for saved result on mount
+  useEffect(() => {
+    if (!hasLoadedResult && (!result || Object.keys(result).length === 0)) {
+      try {
+        // Try to get saved result from localStorage
+        const slug = result?.slug || window.location.pathname.split("/").pop()
+        if (slug) {
+          const savedStateString = localStorage.getItem(`${QUIZ_STATE_STORAGE_KEY}${slug}`)
+          if (savedStateString) {
+            const savedState = JSON.parse(savedStateString)
+            if (savedState && savedState.score) {
+              console.log("Loaded result from localStorage:", savedState)
+              // We don't directly update the result prop, but we can use it for debugging
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error loading result from localStorage:", err)
+      }
+      setHasLoadedResult(true)
+    }
+  }, [result, hasLoadedResult])
+
+  // Memoize the performance level and color calculations
+  const performanceLevel = useMemo(() => calculatePerformanceLevel(safeResult.score), [safeResult.score])
+  const performanceColor = useMemo(
+    () => getDifficultyColor(safeResult.score >= 90 ? "easy" : safeResult.score >= 60 ? "medium" : "hard"),
+    [safeResult.score],
+  )
+
+  // Simplified handleShare function
+  const handleShare = useCallback(async () => {
     try {
       if (navigator.share) {
         await navigator.share({
@@ -91,52 +121,62 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
           text: `I scored ${safeResult.score}% on the ${safeResult.slug} quiz!`,
           url: window.location.href,
         })
-      } else {
+      } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(window.location.href)
         toast({
           title: "Link copied!",
           description: "Share your results with friends",
         })
+      } else {
+        console.warn("Sharing is not supported in this browser.")
       }
     } catch (error) {
       console.error("Error sharing:", error)
     }
-  }
+  }, [safeResult.score, safeResult.slug, toast])
 
-  // Handle printing results
-  const handlePrint = () => {
-    window.print()
-  }
-
-  // Handle try again
-  const handleTryAgain = () => {
+  // Optimize the handleTryAgain function
+  const handleTryAgain = useCallback(() => {
     setIsLoading(true)
 
     // Reset the quiz state in Redux
     dispatch(resetQuiz())
+
+    // Clear localStorage for this quiz
+    try {
+      localStorage.removeItem(`${QUIZ_STATE_STORAGE_KEY}${safeResult.slug}`)
+    } catch (err) {
+      console.error("Error clearing localStorage:", err)
+    }
 
     // Add a timestamp parameter to force a fresh load
     const timestamp = new Date().getTime()
 
     // Navigate to the quiz page with reset=true parameter to ensure it reloads
     router.push(`/dashboard/code/${safeResult.slug}?reset=true&t=${timestamp}`)
-  }
+  }, [dispatch, router, safeResult.slug])
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
+  // Memoized animation variants
+  const containerVariants = useMemo(
+    () => ({
+      hidden: { opacity: 0 },
+      visible: {
+        opacity: 1,
+        transition: {
+          staggerChildren: 0.1,
+        },
       },
-    },
-  }
+    }),
+    [],
+  )
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 },
-  }
+  const itemVariants = useMemo(
+    () => ({
+      hidden: { y: 20, opacity: 0 },
+      visible: { y: 0, opacity: 1 },
+    }),
+    [],
+  )
 
   return (
     <motion.div
@@ -167,7 +207,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
                   <Award className="h-8 w-8 text-primary mb-2" />
                   <p className="text-sm text-muted-foreground">Score</p>
                   <p data-testid="quiz-score" className={`text-2xl font-bold ${performanceColor}`}>
-                    {safeResult.score}%
+                    {safeResult.score}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">{performanceLevel}</p>
                 </motion.div>
@@ -191,7 +231,8 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {Math.round(
-                      ((safeResult.totalQuestions - safeResult.correctAnswers) / safeResult.totalQuestions) * 100,
+                      ((safeResult.totalQuestions - safeResult.correctAnswers) / (safeResult.totalQuestions || 1)) *
+                        100,
                     )}
                     % error rate
                   </p>
@@ -204,7 +245,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
                     {safeResult.formattedTimeSpent || formatQuizTime(safeResult.totalTimeSpent)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {Math.round(safeResult.totalTimeSpent / safeResult.totalQuestions)} sec/question
+                    {Math.round(safeResult.totalTimeSpent / (safeResult.totalQuestions || 1))} sec/question
                   </p>
                 </motion.div>
               </motion.div>
@@ -241,7 +282,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
             <CardContent>
               <motion.div variants={containerVariants} className="mt-6 space-y-4">
                 <h3 className="text-lg font-medium">Code Solutions</h3>
-                {safeResult.answers && safeResult.answers.length > 0 ? (
+                {safeResult.answers.length > 0 ? (
                   safeResult.answers.map(
                     (answer, index) =>
                       answer && (
@@ -323,15 +364,6 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
                   Try Again <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
-            </Button>
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={handleShare} title="Share Results">
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={handlePrint} title="Print Results">
-              <Printer className="h-4 w-4" />
             </Button>
           </div>
         </CardFooter>

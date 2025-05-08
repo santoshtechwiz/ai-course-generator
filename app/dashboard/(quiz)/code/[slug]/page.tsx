@@ -4,14 +4,12 @@ import type { Metadata } from "next"
 
 import { authOptions } from "@/lib/auth"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import { QuizType } from "@/app/types/quiz-types"
 import type { CodeQuizApiResponse } from "@/app/types/code-quiz-types"
 
 import type { BreadcrumbItem } from "@/app/types/types"
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
 import { QuizProvider } from "@/app/context/QuizContext"
-
 
 interface PageParams {
   params: Promise<{ slug: string }>
@@ -32,7 +30,7 @@ async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
       console.error(`Failed to fetch quiz data: ${response.statusText}`)
       return null
     }
-   
+
     return await response.json()
   } catch (error) {
     console.error("Error fetching quiz data:", error)
@@ -95,31 +93,31 @@ const CodePage = async (props: PageParams) => {
   ]
 
   return (
-    <QuizProvider>
-    <QuizDetailsPageWithContext
-      title={result.quizData.title}
-      description={`Test your coding skills on ${result.quizData.title} with interactive programming challenges`}
-      slug={slug}
-      quizType="code"
-      questionCount={questionCount}
-      estimatedTime={estimatedTime}
-      breadcrumbItems={breadcrumbItems}
-      quizId={result.quizId}
-      authorId={result.ownerId}
-      isPublic={result.isPublic || false}
-      isFavorite={result.isFavorite || false}
-    >
-      <CodeQuizWrapper
-        quizData={result.quizData}
+
+      <QuizDetailsPageWithContext
+        title={result.quizData.title}
+        description={`Test your coding skills on ${result.quizData.title} with interactive programming challenges`}
         slug={slug}
-        userId={currentUserId}
+        quizType="code"
+        questionCount={questionCount}
+        estimatedTime={estimatedTime}
+        breadcrumbItems={breadcrumbItems}
         quizId={result.quizId}
-        isPublic={result.isPublic}
-        isFavorite={result.isFavorite}
-        ownerId={result.ownerId}
-      />
-    </QuizDetailsPageWithContext>
-    </QuizProvider>
+        authorId={result.ownerId}
+        isPublic={result.isPublic || false}
+        isFavorite={result.isFavorite || false}
+      >
+        <CodeQuizWrapper
+          quizData={result.quizData}
+          slug={slug}
+          userId={currentUserId}
+          quizId={result.quizId}
+          isPublic={result.isPublic}
+          isFavorite={result.isFavorite}
+          ownerId={result.ownerId}
+        />
+      </QuizDetailsPageWithContext>
+
   )
 }
 

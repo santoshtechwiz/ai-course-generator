@@ -132,7 +132,7 @@ const CodePage = async (props: PageParams) => {
         isPublic={result.isPublic || false}
         isFavorite={result.isFavorite || false}
       >
-        <CodeQuizWrapper quizData={result.quizData} slug={slug}  />
+       <CodeQuizWrapper quizData={result.quizData} slug={slug} quizId={""} />
       </QuizDetailsPageWithContext>
     </>
   )

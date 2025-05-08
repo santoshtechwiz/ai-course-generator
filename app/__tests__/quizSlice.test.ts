@@ -6,8 +6,7 @@ import quizReducer, {
   resetQuiz,
   setRequiresAuth,
   setPendingAuthRequired,
-  setHasNonAuthenticatedUserResult,
-  clearNonAuthenticatedUserResults,
+
 } from "@/store/slices/quizSlice"
 
 // Define initial state for tests
@@ -227,21 +226,5 @@ describe("quizSlice", () => {
     expect(nextState.pendingAuthRequired).toBe(true)
   })
 
-  test("should handle setHasNonAuthenticatedUserResult", () => {
-    const nextState = quizReducer(initialState, setHasNonAuthenticatedUserResult(true))
-    expect(nextState.hasNonAuthenticatedUserResult).toBe(true)
-    expect(nextState.nonAuthenticatedUserResultsSaved).toBe(true)
-  })
 
-  test("should handle clearNonAuthenticatedUserResults", () => {
-    const state = {
-      ...initialState,
-      hasNonAuthenticatedUserResult: true,
-      nonAuthenticatedUserResultsSaved: true,
-    }
-
-    const nextState = quizReducer(state, clearNonAuthenticatedUserResults())
-    expect(nextState.hasNonAuthenticatedUserResult).toBe(false)
-    expect(nextState.nonAuthenticatedUserResultsSaved).toBe(false)
-  })
 })

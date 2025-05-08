@@ -15,7 +15,6 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
-import { useQuizState } from "@/hooks/useQuizState"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,6 +29,7 @@ import RandomQuote from "@/components/RandomQuote"
 import { cn } from "@/lib/utils/utils"
 import QuizActions from "./QuizActions"
 import type { QuizType } from "@/app/types/quiz-types"
+import { useQuiz } from "@/hooks/useQuizState"
 
 interface QuizDetailsPageProps {
   title: string
@@ -79,7 +79,7 @@ const QUIZ_TYPE_STYLES = {
   flashcard: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800",
 }
 
-export default function QuizDetailsPageWithContext({
+export default function QuizDetailsPage({
   title,
   description,
   slug,
@@ -102,8 +102,8 @@ export default function QuizDetailsPageWithContext({
   const [isBookmarked, setIsBookmarked] = useState(isFavorite)
   const [showConfetti, setShowConfetti] = useState(false)
 
-  // Use the quiz state hook directly
-  const { initializeQuiz } = useQuizState()
+  // Use the quiz hook from our Redux implementation
+  const { initialize } = useQuiz()
 
   // Use a ref to track initialization
   const initialized = useRef(false)
@@ -114,26 +114,25 @@ export default function QuizDetailsPageWithContext({
     if (initialized.current) return
     initialized.current = true
 
-    if (initializeQuiz) {
-      initializeQuiz({
-        quizId: quizId || "",
-        title,
-        description,
-        quizType,
-        questions: [],
-        questionCount,
-        estimatedTime,
-        difficulty,
-        authorId,
-        isFavorite,
-        isPublic,
-        category,
-        tags,
-        slug,
-      })
-    }
+    // Initialize the quiz with Redux
+    initialize({
+      id: quizId || "",
+      slug,
+      title,
+      description,
+      quizType,
+      questions: [],
+      questionCount,
+      estimatedTime,
+      difficulty,
+      authorId,
+      isFavorite,
+      isPublic,
+      category,
+      tags,
+    })
   }, [
-    initializeQuiz,
+    initialize,
     quizId,
     title,
     description,
@@ -251,7 +250,7 @@ export default function QuizDetailsPageWithContext({
               <CardHeader className="bg-gradient-to-r from-muted/30 to-muted/10 border-b space-y-4">
                 <div className="flex items-center justify-between">
                   <Button variant="ghost" size="sm" asChild className="gap-1 -ml-2 hover:bg-background/50">
-                    <Link href="/dashboard//quizzes">
+                    <Link href="/dashboard/quizzes">
                       <ArrowLeft className="h-4 w-4" />
                       <span>Back</span>
                     </Link>

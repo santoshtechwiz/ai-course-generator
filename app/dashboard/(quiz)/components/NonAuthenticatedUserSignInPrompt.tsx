@@ -2,36 +2,35 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { LogIn, Save, User } from "lucide-react"
+import { LogIn, Save, User, Shield } from "lucide-react"
+import { motion } from "framer-motion"
 
 interface NonAuthenticatedUserSignInPromptProps {
   onSignIn: () => void
-
-  onContinueAsNonAuthenticatedUser?: () => void
-
+  onContinueAsGuest?: () => void
   showSaveMessage?: boolean
   quizType?: string
 }
 
 export default function NonAuthenticatedUserSignInPrompt({
   onSignIn,
-  onContinueAsNonAuthenticatedUser,
- 
-
+  onContinueAsGuest,
   showSaveMessage = false,
   quizType = "quiz",
 }: NonAuthenticatedUserSignInPromptProps) {
-  // Use the appropriate continue handler
-  const handleContinueAsGuest = () => {
-   
-      onContinueAsNonAuthenticatedUser?.()
-  
-  }
-
   return (
-    <div data-testid="guest-sign-in-prompt" className="max-w-md mx-auto">
-      <Card className="border-primary/20">
+    <motion.div
+      data-testid="guest-sign-in-prompt"
+      className="max-w-md mx-auto"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-primary/20 shadow-md">
         <CardHeader className="text-center pb-2">
+          <div className="mx-auto bg-primary/10 p-3 rounded-full mb-2">
+            <Shield className="h-6 w-6 text-primary" />
+          </div>
           <CardTitle className="text-xl">Sign In Required</CardTitle>
           <CardDescription>
             You've completed the {quizType}. Sign in to save your results and track your progress.
@@ -57,13 +56,27 @@ export default function NonAuthenticatedUserSignInPrompt({
               <LogIn className="mr-2 h-4 w-4" />
               Sign In to Save Results
             </Button>
-           
+
+            {onContinueAsGuest && (
+              <Button
+                data-testid="continue-as-guest"
+                onClick={onContinueAsGuest}
+                variant="outline"
+                className="w-full"
+                size="lg"
+              >
+                <User className="mr-2 h-4 w-4" />
+                Continue Without Signing In
+              </Button>
+            )}
           </div>
         </CardContent>
         <CardFooter className="text-xs text-center text-muted-foreground flex justify-center">
-          <p className="max-w-xs">Note: Guest results will not be saved and will be lost when you leave this page.</p>
+          <p className="max-w-xs">
+            Note: Results will not be saved and will be lost when you leave this page unless you sign in.
+          </p>
         </CardFooter>
       </Card>
-    </div>
+    </motion.div>
   )
 }
