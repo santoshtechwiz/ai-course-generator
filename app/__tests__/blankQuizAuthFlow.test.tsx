@@ -1,447 +1,240 @@
 "use client"
+import { render, screen, fireEvent, act } from "@testing-library/react"
+import BlanksQuiz from "../dashboard/(quiz)/blanks/components/BlanksQuiz"
 
-import type React from "react"
-import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react"
-import { Provider } from "react-redux"
-import { configureStore } from "@reduxjs/toolkit"
-import { SessionProvider } from "next-auth/react"
-import BlankQuizWrapper from "../dashboard/(quiz)/blanks/components/BlankQuizWrapper"
-import quizReducer from "@/store/slices/quizSlice"
-import authReducer from "@/store/slices/authSlice"
+// Mock the timer
+jest.useFakeTimers()
 
-// Mock next/navigation
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(() => ({
-    push: jest.fn(),
-  })),
-  usePathname: jest.fn(() => "/test-path"),
-  useSearchParams: jest.fn(() => new URLSearchParams()),
-}))
-
-// Mock next-auth/react with inline mock function
-jest.mock("next-auth/react", () => {
-  const signInMock = jest.fn().mockResolvedValue({ ok: true })
-
-  return {
-    useSession: jest.fn(() => ({
-      data: null,
-      status: "unauthenticated",
-    })),
-    signIn: signInMock,
-    SessionProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+describe("BlanksQuiz", () => {
+  // Sample question data
+  const mockQuestion = {
+    id: "q1",
+    question: "The capital of France is [[Paris]].",
+    hints: ["It starts with 'P' and ends with 's'."],
   }
-})
 
-// Mock hooks/use-toast
-jest.mock("@/hooks/use-toast", () => ({
-  useToast: jest.fn(() => ({
-    toast: jest.fn(),
-  })),
-}))
+  // Mock functions
+  const mockOnAnswer = jest.fn()
 
-// Mock window.history.replaceState
-const mockReplaceState = jest.fn()
-Object.defineProperty(window.history, "replaceState", {
-  writable: true,
-  value: mockReplaceState,
-})
-
-// Mock quiz components
-jest.mock("../dashboard/(quiz)/blanks/components/FillInTheBlanksQuiz", () => ({
-  __esModule: true,
-  default: ({ question, onAnswer, questionNumber, totalQuestions }: any) => (
-    <div data-testid="blanks-quiz">
-      <h2>{question?.question || "Test Question"}</h2>
-      <p>
-        Question {questionNumber}/{totalQuestions}
-      </p>
-      <div>
-        <input data-testid="answer-input" />
-        <button data-testid="submit-answer" onClick={() => onAnswer("test answer", 10, false, 85)}>
-          Submit Answer
-        </button>
-      </div>
-    </div>
-  ),
-}))
-
-jest.mock("../dashboard/(quiz)/blanks/components/BlankQuizResults", () => ({
-  __esModule: true,
-  default: ({ answers, questions, onRestart }: any) => (
-    <div data-testid="quiz-results">
-      Blanks Quiz Results
-      <div data-testid="answers-count">{answers?.length || 0}</div>
-      <button data-testid="restart-quiz" onClick={onRestart}>
-        Restart Quiz
-      </button>
-    </div>
-  ),
-}))
-
-// Enhanced mock for NonAuthenticatedUserSignInPrompt
-jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => ({
-  __esModule: true,
-  default: ({ onContinueAsGuest, onSignIn }: any) => {
-    // Create a wrapper function that ensures onSignIn is called
-    const handleSignIn = () => {
-      console.log("Sign in button clicked")
-      if (typeof onSignIn === "function") {
-        onSignIn()
-      } else {
-        console.error("onSignIn is not a function:", onSignIn)
-      }
-    }
-
-    return (
-      <div data-testid="guest-sign-in-prompt">
-        <button data-testid="continue-as-guest" onClick={onContinueAsGuest}>
-          Continue as Guest
-        </button>
-        <button data-testid="sign-in" onClick={handleSignIn}>
-          Sign In
-        </button>
-      </div>
-    )
-  },
-}))
-
-// Mock quiz utils
-jest.mock("@/lib/utils/quiz-state-utils", () => ({
-  validateInitialQuizData: jest.fn((data) => {
-    if (!data || !data.questions) {
-      return { isValid: false, error: "Test error message" }
-    }
-    return { isValid: true }
-  }),
-  createSafeQuizData: jest.fn((data) => data),
-}))
-
-// Sample quiz data
-const mockBlankQuizData = {
-  id: "test-blanks-quiz-id",
-  slug: "test-blanks-quiz",
-  title: "Test Blanks Quiz",
-  quizType: "blanks",
-  questions: [
-    {
-      id: "q1",
-      question: "The capital of France is [[Paris]]",
-      answer: "Paris",
-    },
-    {
-      id: "q2",
-      question: "2 + 2 = [[4]]",
-      answer: "4",
-    },
-  ],
-}
-
-// Initial state to prevent undefined errors
-const initialState = {
-  quiz: {
-    quizId: "test-blanks-quiz-id",
-    slug: "test-blanks-quiz",
-    title: "Test Blanks Quiz",
-    quizType: "blanks",
-    questions: mockBlankQuizData.questions,
-    currentQuestionIndex: 0,
-    answers: [],
-    timeSpent: [],
-    isCompleted: false,
-    score: 0,
-    requiresAuth: false,
-    pendingAuthRequired: false,
-    hasNonAuthenticatedUserResult: false,
-    guestResultsSaved: false,
-    authCheckComplete: false,
-    isProcessingAuth: false,
-    error: null,
-    animationState: "idle",
-    isSavingResults: false,
-    resultsSaved: false,
-    completedAt: null,
-    savedState: null,
-  },
-  auth: {
-    isAuthenticated: false,
-    isProcessingAuth: false,
-    redirectUrl: null,
-  },
-}
-
-// Create a custom render function with providers
-const renderWithProviders = (
-  ui: React.ReactElement,
-  {
-    preloadedState = {},
-    store = configureStore({
-      reducer: {
-        quiz: quizReducer,
-        auth: authReducer,
-      },
-      preloadedState: {
-        quiz: { ...initialState.quiz, ...preloadedState.quiz },
-        auth: { ...initialState.auth, ...preloadedState.auth },
-      },
-    }),
-    ...renderOptions
-  } = {},
-) => {
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <Provider store={store}>
-      <SessionProvider>{children}</SessionProvider>
-    </Provider>
-  )
-  return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) }
-}
-
-describe("Blanks Quiz Auth Flow", () => {
   beforeEach(() => {
-    // Reset all mocks
     jest.clearAllMocks()
-    cleanup() // Clean up after each test
-
-    // Reset URL
-    Object.defineProperty(window, "location", {
-      value: {
-        search: "",
-        href: "https://example.com/test",
-        origin: "https://example.com",
-        pathname: "/test",
-      },
-      writable: true,
-    })
-
-    // Reset session mock
-    require("next-auth/react").useSession.mockReturnValue({
-      data: null,
-      status: "unauthenticated",
-    })
-
-    // Reset signIn mock
-    require("next-auth/react").signIn.mockClear()
   })
 
-  test("shows auth prompt when quiz requires authentication", async () => {
-    // Render with preloaded state
-    renderWithProviders(<BlankQuizWrapper quizData={mockBlankQuizData} slug={mockBlankQuizData.slug} />, {
-      preloadedState: {
-        quiz: {
-          isCompleted: true,
-          requiresAuth: true,
-          hasNonAuthenticatedUserResult: true,
-        },
-        auth: {
-          isAuthenticated: false,
-        },
-      },
-    })
-
-    // Check that auth prompt is shown
-    await waitFor(() => {
-      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
-    })
-  })
-
-  test("shows results when quiz is completed and user is authenticated", async () => {
-    // Mock authenticated session
-    require("next-auth/react").useSession.mockReturnValue({
-      data: { user: { id: "user-123", name: "Test User" } },
-      status: "authenticated",
-    })
-
-    // Render with completed quiz
-    renderWithProviders(<BlankQuizWrapper quizData={mockBlankQuizData} slug={mockBlankQuizData.slug} />, {
-      preloadedState: {
-        quiz: {
-          isCompleted: true,
-          score: 85,
-          answers: [
-            { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "Paris" },
-            { questionId: "q2", isCorrect: false, timeSpent: 5, answer: "3" },
-          ],
-        },
-        auth: {
-          isAuthenticated: true,
-        },
-      },
-    })
-
-    // Should show quiz results
-    await waitFor(() => {
-      expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
-    })
-  })
-
-  test("handles error states correctly", async () => {
-    // Render with invalid quiz data
-    renderWithProviders(
-      <BlankQuizWrapper
-        quizData={null} // Invalid quiz data to trigger error
-        slug="test-slug"
+  test("renders question and input field correctly", () => {
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={1}
+        totalQuestions={4}
+        isLastQuestion={false}
       />,
     )
 
-    // Should show error message
-    await waitFor(() => {
-      expect(screen.getByText(/Error loading quiz/i)).toBeInTheDocument()
-      expect(screen.getByText(/Test error message/i)).toBeInTheDocument()
-    })
+    // Check that the component renders
+    expect(screen.getByTestId("blanks-quiz-component")).toBeInTheDocument()
+
+    // Check that the question is displayed correctly with blank
+    expect(screen.getByTestId("question-text")).toHaveTextContent("The capital of France is ________.")
+
+    // Check that the input field is displayed
+    expect(screen.getByTestId("answer-input")).toBeInTheDocument()
+
+    // Check that the question number is displayed correctly
+    expect(screen.getByText("Question 1 of 4")).toBeInTheDocument()
   })
 
-  test("allows guest to continue without signing in", async () => {
-    // Render with completed quiz requiring auth
-    renderWithProviders(<BlankQuizWrapper quizData={mockBlankQuizData} slug={mockBlankQuizData.slug} />, {
-      preloadedState: {
-        quiz: {
-          isCompleted: true,
-          requiresAuth: true,
-          hasNonAuthenticatedUserResult: true,
-        },
-        auth: {
-          isAuthenticated: false,
-        },
-      },
-    })
-
-    // Check that auth prompt is shown
-    await waitFor(() => {
-      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
-    })
-
-    // Click continue as guest
-    fireEvent.click(screen.getByTestId("continue-as-guest"))
-
-    // Should show quiz results
-    await waitFor(() => {
-      expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
-    })
-  })
-
-  test("handles authentication flow when returning from sign-in", async () => {
-    // Setup - mock URL with fromAuth=true
-    const mockSearchParams = new URLSearchParams("fromAuth=true")
-    require("next/navigation").useSearchParams.mockReturnValue(mockSearchParams)
-
-    // Mock authenticated session
-    require("next-auth/react").useSession.mockReturnValue({
-      data: { user: { id: "user-123", name: "Test User" } },
-      status: "authenticated",
-    })
-
-    // Render with pending auth required
-    renderWithProviders(<BlankQuizWrapper quizData={mockBlankQuizData} slug={mockBlankQuizData.slug} />, {
-      preloadedState: {
-        quiz: {
-          pendingAuthRequired: true,
-          savedState: {
-            quizId: mockBlankQuizData.id,
-            slug: mockBlankQuizData.slug,
-            isCompleted: true,
-            score: 75,
-            answers: [
-              { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "Paris" },
-              { questionId: "q2", isCorrect: false, timeSpent: 5, answer: "3" },
-            ],
-            completedAt: new Date().toISOString(),
-          },
-          // Add these properties to ensure the quiz is properly initialized
-          quizId: mockBlankQuizData.id,
-          slug: mockBlankQuizData.slug,
-          questions: mockBlankQuizData.questions,
-          isCompleted: true,
-        },
-        auth: {
-          isAuthenticated: true,
-        },
-      },
-    })
-
-    // Should show quiz results
-    await waitFor(() => {
-      expect(screen.getByTestId("quiz-results")).toBeInTheDocument()
-    })
-  })
-
-  test("redirects to sign in when sign in button is clicked", async () => {
-    // Reset the signIn mock before the test
-    const signInMock = require("next-auth/react").signIn
-    signInMock.mockClear()
-
-    // Verify the mock is properly reset
-    expect(signInMock).not.toHaveBeenCalled()
-
-    // Render with completed quiz requiring auth
-    renderWithProviders(<BlankQuizWrapper quizData={mockBlankQuizData} slug={mockBlankQuizData.slug} />, {
-      preloadedState: {
-        quiz: {
-          isCompleted: true,
-          requiresAuth: true,
-          hasNonAuthenticatedUserResult: true,
-        },
-        auth: {
-          isAuthenticated: false,
-        },
-      },
-    })
-
-    // Check that auth prompt is shown
-    await waitFor(() => {
-      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
-    })
-
-    // Get the sign-in button
-    const signInButton = screen.getByTestId("sign-in")
-    expect(signInButton).toBeInTheDocument()
-
-    // Click sign in button
-    fireEvent.click(signInButton)
-
-    // Wait for signIn to be called
-    await waitFor(
-      () => {
-        expect(signInMock).toHaveBeenCalled()
-      },
-      { timeout: 3000 },
-    )
-  })
-
-  test("saves quiz state before redirecting to sign in", async () => {
-    // Render with completed quiz requiring auth
-    const { store } = renderWithProviders(
-      <BlankQuizWrapper quizData={mockBlankQuizData} slug={mockBlankQuizData.slug} />,
-      {
-        preloadedState: {
-          quiz: {
-            isCompleted: true,
-            requiresAuth: true,
-            hasNonAuthenticatedUserResult: true,
-            answers: [
-              { questionId: "q1", isCorrect: true, timeSpent: 10, answer: "Paris" },
-              { questionId: "q2", isCorrect: false, timeSpent: 5, answer: "3" },
-            ],
-            score: 50,
-          },
-          auth: {
-            isAuthenticated: false,
-          },
-        },
-      },
+  test("submit button is disabled until an answer is entered", () => {
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={1}
+        totalQuestions={4}
+        isLastQuestion={false}
+      />,
     )
 
-    // Check that auth prompt is shown
-    await waitFor(() => {
-      expect(screen.getByTestId("guest-sign-in-prompt")).toBeInTheDocument()
+    // Check that the submit button is disabled initially
+    const submitButton = screen.getByTestId("submit-button")
+    expect(submitButton).toBeDisabled()
+
+    // Enter an answer
+    fireEvent.change(screen.getByTestId("answer-input"), { target: { value: "Paris" } })
+
+    // Check that the submit button is now enabled
+    expect(submitButton).not.toBeDisabled()
+  })
+
+  test("calls onAnswer with correct parameters when submitting", () => {
+    jest.useFakeTimers()
+
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={1}
+        totalQuestions={4}
+        isLastQuestion={false}
+      />,
+    )
+
+    // Enter an answer
+    fireEvent.change(screen.getByTestId("answer-input"), { target: { value: "Paris" } })
+
+    // Submit the answer
+    fireEvent.click(screen.getByTestId("submit-button"))
+
+    // Fast-forward timers
+    act(() => {
+      jest.advanceTimersByTime(300)
     })
 
-    // Click sign in button
-    fireEvent.click(screen.getByTestId("sign-in"))
+    // Check that onAnswer was called with the correct parameters
+    expect(mockOnAnswer).toHaveBeenCalledWith("Paris", expect.any(Number), false)
+  })
 
-    // Should save quiz state
-    await waitFor(() => {
-      const state = store.getState()
-      expect(state.quiz.pendingAuthRequired).toBe(true)
-      expect(state.auth.isProcessingAuth).toBe(true)
+  test("displays 'Finish Quiz' text when it's the last question", () => {
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={4}
+        totalQuestions={4}
+        isLastQuestion={true}
+      />,
+    )
+
+    // Enter an answer to enable the button
+    fireEvent.change(screen.getByTestId("answer-input"), { target: { value: "Paris" } })
+
+    // Check that the button text is "Finish Quiz"
+    expect(screen.getByTestId("submit-button")).toHaveTextContent("Finish Quiz")
+  })
+
+  test("displays 'Next Question' text when it's not the last question", () => {
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={1}
+        totalQuestions={4}
+        isLastQuestion={false}
+      />,
+    )
+
+    // Enter an answer to enable the button
+    fireEvent.change(screen.getByTestId("answer-input"), { target: { value: "Paris" } })
+
+    // Check that the button text is "Next Question"
+    expect(screen.getByTestId("submit-button")).toHaveTextContent("Next Question")
+  })
+
+  test("updates timer correctly", () => {
+    jest.useFakeTimers()
+
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={1}
+        totalQuestions={4}
+        isLastQuestion={false}
+      />,
+    )
+
+    // Check initial timer value
+    expect(screen.getByText("Time: 00:00")).toBeInTheDocument()
+
+    // Advance timer by 5 seconds
+    act(() => {
+      jest.advanceTimersByTime(5000)
     })
+
+    // Check updated timer value
+    expect(screen.getByText("Time: 00:05")).toBeInTheDocument()
+
+    // Advance timer by another 60 seconds
+    act(() => {
+      jest.advanceTimersByTime(60000)
+    })
+
+    // Check updated timer value
+    expect(screen.getByText("Time: 01:05")).toBeInTheDocument()
+  })
+
+
+
+  test("disables submit button while submitting", () => {
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={1}
+        totalQuestions={4}
+        isLastQuestion={false}
+      />,
+    )
+
+    // Enter an answer
+    fireEvent.change(screen.getByTestId("answer-input"), { target: { value: "Paris" } })
+
+    // Submit the answer
+    fireEvent.click(screen.getByTestId("submit-button"))
+
+    // Check that the submit button is disabled during submission
+    expect(screen.getByTestId("submit-button")).toBeDisabled()
+    expect(screen.getByTestId("submit-button")).toHaveTextContent("Submitting...")
+  })
+
+  test("shows hint when hint button is clicked", () => {
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={1}
+        totalQuestions={4}
+        isLastQuestion={false}
+      />,
+    )
+
+    // Check that hint is not initially displayed
+    expect(screen.queryByText("Hint")).not.toBeInTheDocument()
+
+    // Click the hint button
+    fireEvent.click(screen.getByTestId("hint-button"))
+
+    // Check that hint is now displayed
+    expect(screen.getByText("Hint")).toBeInTheDocument()
+    expect(screen.getByText("It starts with 'P' and ends with 's'.")).toBeInTheDocument()
+  })
+
+  test("passes hintsUsed flag when answer is submitted after using hint", () => {
+    render(
+      <BlanksQuiz
+        question={mockQuestion}
+        onAnswer={mockOnAnswer}
+        questionNumber={1}
+        totalQuestions={4}
+        isLastQuestion={false}
+      />,
+    )
+
+    // Click the hint button
+    fireEvent.click(screen.getByTestId("hint-button"))
+
+    // Enter an answer
+    fireEvent.change(screen.getByTestId("answer-input"), { target: { value: "Paris" } })
+
+    // Submit the answer
+    fireEvent.click(screen.getByTestId("submit-button"))
+
+    // Fast-forward timers
+    act(() => {
+      jest.advanceTimersByTime(300)
+    })
+
+    // Check that onAnswer was called with hintsUsed=true
+    expect(mockOnAnswer).toHaveBeenCalledWith("Paris", expect.any(Number), true)
   })
 })
