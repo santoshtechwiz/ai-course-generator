@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 
-import { getAuthSession } from ' "@/lib/auth"'
 import { prisma } from '@/lib/db';
 import { generateSlug } from '@/lib/utils';
 import { generateOpenEndedFillIntheBlanks } from '@/lib/chatgpt/userMcqQuiz';
+import { getAuthSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {

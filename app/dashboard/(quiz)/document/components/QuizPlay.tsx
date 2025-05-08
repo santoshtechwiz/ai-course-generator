@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Home, RotateCcw } from "lucide-react"
 
 import { quizStore } from "@/lib/quiz-store"
-import { Quiz } from "@/lib/indexed-db-store"
+import { Quiz } from "@/lib/quiz-store"
 
 interface QuizPlayerProps {
   quizId: string

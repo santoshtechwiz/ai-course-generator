@@ -12,45 +12,38 @@ import { ReferralSystem } from "./ReferralSystem"
 import { CreditCard, User, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
-import { useSubscriptionStore } from "@/app/store/subscription-provider"
+import { useSubscription } from "../../subscription/hooks/use-subscription"
 
 export function AccountOverview({ userId }: { userId: string }) {
   const { data: session, status } = useSession()
-  const [isLoading, setIsLoading] = useState(true)
+  const { 
+    subscription, 
+    details, 
+    tokenUsage, 
+    isLoading, 
+    error, 
+    fetchStatus 
+  } = useSubscription()
   const router = useRouter()
 
-  // Use the subscription store instead of direct API calls
-  const fetchSubscriptionStatus = useSubscriptionStore((state) => state.fetchSubscriptionStatus)
-  const subscriptionData = useSubscriptionStore((state) => state.data)
-
   useEffect(() => {
-    async function loadData() {
-      try {
-        await fetchSubscriptionStatus(false)
-      } catch (error) {
-        console.error("Error fetching subscription data:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadData()
-  }, [fetchSubscriptionStatus])
+    fetchStatus()
+  }, [fetchStatus])
 
   const handleManageSubscription = () => {
     router.push("/dashboard/subscription")
   }
 
-  if (isLoading || status === "loading") {
+  if (isLoading) {
     return <AccountOverviewSkeleton />
   }
 
-  const tokenUsagePercentage = subscriptionData?.credits
-    ? (subscriptionData.tokensUsed / subscriptionData.credits) * 100
+  const tokenUsagePercentage = tokenUsage?.credits
+    ? (tokenUsage.remaining / tokenUsage.total) * 100
     : 0
 
-  const formattedExpirationDate = subscriptionData?.expirationDate
-    ? new Date(subscriptionData.expirationDate).toLocaleDateString("en-US", {
+  const formattedExpirationDate = details?.expirationDate
+    ? new Date(details.expirationDate).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -88,21 +81,21 @@ export function AccountOverview({ userId }: { userId: string }) {
               </div>
             </div>
 
-            {/* Subscription Summary - Ensure consistent styling */}
+            {/* Subscription Summary */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Subscription</h3>
-                <PlanBadge plan={subscriptionData?.subscriptionPlan || "FREE"} />
+                <PlanBadge plan={details?.subscriptionPlan || "FREE"} />
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center">
                     <StatusBadge
-                      status={subscriptionData?.status || (subscriptionData?.isSubscribed ? "ACTIVE" : "INACTIVE")}
+                      status={details?.status || (subscription?.isSubscribed ? "ACTIVE" : "INACTIVE")}
                     />
                     <span className="ml-2">
-                      {subscriptionData?.isSubscribed ? "Active Subscription" : "No Active Subscription"}
+                      {subscription?.isSubscribed ? "Active Subscription" : "No Active Subscription"}
                     </span>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleManageSubscription}>
@@ -120,7 +113,7 @@ export function AccountOverview({ userId }: { userId: string }) {
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">Available Credits</span>
                   <span className="font-medium">
-                    {subscriptionData?.tokensUsed || 0} / {subscriptionData?.credits || 0}
+                    {tokenUsage?.tokensUsed || 0} / {tokenUsage?.credits || 0}
                   </span>
                 </div>
                 <Progress value={tokenUsagePercentage} className="h-2" />

@@ -37,13 +37,13 @@ export async function POST(req: Request) {
       // Add difficulty to each quiz (in a real scenario, you'd have different quizzes for each difficulty)
       quizzes = quizzes.map((quiz) => ({ ...quiz, difficulty }))
 
-      await createQuestions(quizzes, userQuiz.id,QuizType.CODE);
+      await createQuestions(quizzes, userQuiz.id,"code");
 
       // 4. Update topic count
       await updateTopicCount(language);
 
       // 5. Only deduct credits if everything else succeeded
-      await updateUserCredits(session.user.id,QuizType.CODE);
+      await updateUserCredits(session.user.id,"code");
 
       return NextResponse.json({
         userQuizId: userQuiz.id,

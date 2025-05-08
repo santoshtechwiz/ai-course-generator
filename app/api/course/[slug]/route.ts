@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getAuthSession } from ' "@/lib/auth"';
+
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
 
 const updateSchema = z.object({
   title: z.string().optional(),

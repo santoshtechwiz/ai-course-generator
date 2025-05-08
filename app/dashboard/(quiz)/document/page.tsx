@@ -8,18 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Save } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-
-// Import the quiz store
-
-
-import { useSubscriptionStore } from "@/app/store/subscription-provider"
 import { useSession } from "next-auth/react"
 import { SUBSCRIPTION_PLANS } from "../../subscription/components/subscription-plans"
 import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
 import PlanAwareButton from "../components/PlanAwareButton"
-import { Question, Quiz } from "@/lib/indexed-db-store"
+import { Question, Quiz } from "@/lib/quiz-store"
+import { useSubscription } from "../../subscription/hooks/use-subscription" // Updated import
 
 interface QuizOptionsType {
   numberOfQuestions: number
@@ -42,10 +38,10 @@ export default function DocumentQuizPage() {
   const [savedQuizId, setSavedQuizId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null)
-  const { subscriptionStatus } = useSubscriptionStore()
+  const { subscription, fetchStatus } = useSubscription() // Updated hook usage
   const { data: session, status } = useSession()
 
-  const subscriptionPlan = subscriptionStatus ? subscriptionStatus.subscriptionPlan : "FREE"
+  const subscriptionPlan = subscription?.plan || "FREE" // Updated to use subscription hook
   const plan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionPlan)
 
   // Load saved quizzes on component mount
@@ -66,6 +62,10 @@ export default function DocumentQuizPage() {
   useEffect(() => {
     loadSavedQuizzes()
   }, [])
+
+  useEffect(() => {
+    fetchStatus() // Fetch subscription status on mount
+  }, [fetchStatus])
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile)
