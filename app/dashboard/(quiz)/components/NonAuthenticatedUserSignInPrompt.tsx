@@ -6,26 +6,26 @@ import { LogIn, Save, User } from "lucide-react"
 
 interface NonAuthenticatedUserSignInPromptProps {
   onSignIn: () => void
-  onContinueAsGuest?: () => void
+
   onContinueAsNonAuthenticatedUser?: () => void
-  quizType?: string
+
   showSaveMessage?: boolean
+  quizType?: string
 }
 
 export default function NonAuthenticatedUserSignInPrompt({
   onSignIn,
-  onContinueAsGuest,
   onContinueAsNonAuthenticatedUser,
-  quizType = "quiz",
+ 
+
   showSaveMessage = false,
+  quizType = "quiz",
 }: NonAuthenticatedUserSignInPromptProps) {
   // Use the appropriate continue handler
   const handleContinueAsGuest = () => {
-    if (onContinueAsGuest) {
-      onContinueAsGuest()
-    } else if (onContinueAsNonAuthenticatedUser) {
-      onContinueAsNonAuthenticatedUser()
-    }
+   
+      onContinueAsNonAuthenticatedUser?.()
+  
   }
 
   return (
@@ -57,16 +57,7 @@ export default function NonAuthenticatedUserSignInPrompt({
               <LogIn className="mr-2 h-4 w-4" />
               Sign In to Save Results
             </Button>
-            <Button
-              data-testid="continue-as-guest"
-              onClick={handleContinueAsGuest}
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
-              <User className="mr-2 h-4 w-4" />
-              Continue as Guest
-            </Button>
+           
           </div>
         </CardContent>
         <CardFooter className="text-xs text-center text-muted-foreground flex justify-center">
