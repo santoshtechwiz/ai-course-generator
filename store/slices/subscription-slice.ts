@@ -1,8 +1,9 @@
 "use client"
 
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
-import type { SubscriptionData, SubscriptionDetails, TokenUsage } from "@/types/types"
+
 import { fetchWithAuth } from "@/lib/utils/fetch-utils"
+import { SubscriptionData, SubscriptionDetails, TokenUsage } from "@/app/types/types"
 
 // Define the subscription state type
 export interface SubscriptionState {
