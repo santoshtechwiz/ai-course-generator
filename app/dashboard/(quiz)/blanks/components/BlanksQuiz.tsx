@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,7 +24,7 @@ interface BlanksQuizProps {
   [key: string]: any
 }
 
-export default function BlanksQuiz({
+function BlanksQuizComponent({
   question,
   onAnswer,
   questionNumber,
@@ -252,3 +252,16 @@ export default function BlanksQuiz({
     </motion.div>
   )
 }
+
+// Custom comparison function for memoization
+function arePropsEqual(prevProps: BlanksQuizProps, nextProps: BlanksQuizProps) {
+  // Only re-render if the question ID changes or if the question number changes
+  return (
+    prevProps.question.id === nextProps.question.id &&
+    prevProps.questionNumber === nextProps.questionNumber &&
+    prevProps.isLastQuestion === nextProps.isLastQuestion
+  )
+}
+
+// Export memoized component with custom comparison
+export default memo(BlanksQuizComponent, arePropsEqual)

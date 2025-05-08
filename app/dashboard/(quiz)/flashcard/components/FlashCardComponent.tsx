@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback, memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown, Settings, X } from "lucide-react"
 import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
@@ -35,7 +35,7 @@ interface FlashCardComponentProps {
   savedCardIds?: string[]
 }
 
-export function FlashCardComponent({
+function FlashCardComponentInner({
   cards,
   quizId,
   slug,
@@ -1003,3 +1003,17 @@ export function FlashCardComponent({
     </>
   )
 }
+
+// Custom comparison function for memoization
+function arePropsEqual(prevProps: FlashCardComponentProps, nextProps: FlashCardComponentProps) {
+  return (
+    prevProps.quizId === nextProps.quizId &&
+    prevProps.cards.length === nextProps.cards.length &&
+    prevProps.slug === nextProps.slug &&
+    prevProps.title === nextProps.title &&
+    prevProps.savedCardIds?.length === nextProps.savedCardIds?.length
+  )
+}
+
+// Export memoized component with custom comparison
+export const FlashCardComponent = memo(FlashCardComponentInner, arePropsEqual)
