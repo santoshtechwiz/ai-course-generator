@@ -41,15 +41,6 @@ import { SUBSCRIPTION_PLANS } from "./subscription-plans"
 import { calculateSavings } from "../utils/subscription-utils"
 import { useSubscription } from "../hooks/use-subscription"
 
-// Add these imports at the top
-import { useMediaQuery } from "@/hooks/use-media-query"
-import { CancellationDialog } from "./cancellation-dialog"
-import { SUBSCRIPTION_EVENTS, dispatchSubscriptionEvent } from "../utils/events"
-import { handleSubscriptionError } from "../utils/error-handler"
-
-// Update the import for FeatureComparison
-import { FeatureComparison } from "./FeatureComparison"
-
 interface PricingPageProps {
   userId: string | null
   currentPlan?: SubscriptionPlanType | null
@@ -136,7 +127,23 @@ export function PricingPage({
   // Replace the validatePromoCode function with this improved version
   const validatePromoCode = useCallback(
     async (code: string) => {
-      if (!code) return false
+      if (!code) {
+        toast({
+          title: "Promo Code Required",
+          description: "Please enter a promo code to apply",
+          variant: "destructive",
+        })
+        return false
+      }
+
+      if (isPromoValid) {
+        toast({
+          title: "Promo Code Already Applied",
+          description: `Your ${promoDiscount}% discount is already active`,
+          variant: "default",
+        })
+        return true
+      }
 
       setIsApplyingPromo(true)
       try {
@@ -185,20 +192,25 @@ export function PricingPage({
 
         setIsPromoValid(false)
         setPromoDiscount(0)
-        setHasShownPromoToast(false)
+
+        toast({
+          title: "Validation Error",
+          description: "Failed to validate promo code. Please try again.",
+          variant: "destructive",
+        })
+
         return false
       } finally {
         setIsApplyingPromo(false)
       }
     },
-    [toast, hasShownPromoToast],
+    [toast, isPromoValid, promoDiscount],
   )
 
   // Use the subscription hook with options
   const {
     handleSubscribe: hookHandleSubscribe,
-    cancelSubscription,
-    resumeSubscription,
+
     canSubscribeToPlan,
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
@@ -243,6 +255,7 @@ export function PricingPage({
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
     // Set loading state for the specific plan
     setLoading(planName)
+    setSubscriptionError(null)
 
     try {
       // Check if user is authenticated
@@ -299,25 +312,84 @@ export function PricingPage({
 
       // For free plan, handle activation directly
       if (planName === "FREE") {
-        const result = await hookHandleSubscribe(planName, duration)
+        try {
+          const result = await hookHandleSubscribe(planName, duration)
 
-        if (!result.success) {
-          setSubscriptionError(result.message || "Failed to activate free plan")
+          if (!result.success) {
+            setSubscriptionError(result.message || "Failed to activate free plan")
+            toast({
+              title: "Activation Error",
+              description: result.message || "Failed to activate free plan",
+              variant: "destructive",
+            })
+          } else {
+            toast({
+              title: "Free Plan Activated",
+              description: result.message || "Free plan activated successfully",
+              variant: "default",
+            })
+
+            // Refresh the page after a short delay to show updated subscription
+            setTimeout(() => {
+              window.location.reload()
+            }, 1500)
+          }
+        } catch (freeActivationError) {
+          console.error("Error activating free plan:", freeActivationError)
+          setSubscriptionError(
+            freeActivationError instanceof Error ? freeActivationError.message : "Failed to activate free plan",
+          )
+          toast({
+            title: "Activation Error",
+            description:
+              freeActivationError instanceof Error ? freeActivationError.message : "Failed to activate free plan",
+            variant: "destructive",
+          })
         }
         return
       }
 
       // For paid plans, use the subscription hook
-      const result = await hookHandleSubscribe(
-        planName,
-        duration,
-        isPromoValid ? promoCode : undefined,
-        isPromoValid ? promoDiscount : undefined,
-        referralCode ?? undefined, // Pass referral code if available
-      )
+      try {
+        const result = await hookHandleSubscribe(
+          planName,
+          duration,
+          isPromoValid ? promoCode : undefined,
+          isPromoValid ? promoDiscount : undefined,
+          referralCode ?? undefined, // Pass referral code if available
+        )
 
-      if (!result.success) {
-        setSubscriptionError(result.message || "Failed to subscribe to plan")
+        if (!result.success) {
+          setSubscriptionError(result.message || "Failed to subscribe to plan")
+          toast({
+            title: "Subscription Failed",
+            description: result.message || "Failed to subscribe to plan",
+            variant: "destructive",
+          })
+        } else if (!result.redirectUrl) {
+          // For successful subscription without redirect (like free plan)
+          toast({
+            title: "Success!",
+            description: result.message || "Your subscription has been updated.",
+            variant: "default",
+          })
+
+          // Refresh the page after a short delay to show updated subscription
+          setTimeout(() => {
+            window.location.reload()
+          }, 1500)
+        }
+        // If there's a redirectUrl, the hook will handle the redirect
+      } catch (subscriptionError) {
+        console.error("Error subscribing to plan:", subscriptionError)
+        setSubscriptionError(
+          subscriptionError instanceof Error ? subscriptionError.message : "Failed to subscribe to plan",
+        )
+        toast({
+          title: "Subscription Failed",
+          description: subscriptionError instanceof Error ? subscriptionError.message : "Failed to subscribe to plan",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Error subscribing to plan:", error)
@@ -408,6 +480,11 @@ export function PricingPage({
       }
     } catch (error) {
       console.error("Error applying promo code:", error)
+      toast({
+        title: "Application Error",
+        description: "Failed to apply promo code. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsApplyingPromo(false)
     }

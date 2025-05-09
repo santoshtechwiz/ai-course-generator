@@ -1,153 +1,108 @@
 "use client"
 
 import type React from "react"
-import { useState, useMemo } from "react"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Lock, CheckCircle, User, Loader2, CreditCard } from "lucide-react"
-import { useSubscription } from "../../subscription/hooks/use-subscription"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import useSubscriptionStore from "@/store/useSubscriptionStore"
+import type { ButtonProps } from "@/components/ui/button"
 
-export interface PlanAwareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  label: string
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => Promise<void> | void
-  isLoggedIn?: boolean
-  isEnabled?: boolean
-  hasCredits?: boolean
-  loadingLabel?: string
-  disableInternalCreditCheck?: boolean
-  isLoading?: boolean
-  customStates?: {
-    default?: Partial<ButtonState>
-    loading?: Partial<ButtonState>
-    notLoggedIn?: Partial<ButtonState>
-    noCredits?: Partial<ButtonState>
-    notEnabled?: Partial<ButtonState>
-  }
+interface PlanAwareButtonProps extends ButtonProps {
+  requiredPlan?: "FREE" | "BASIC" | "PRO" | "ULTIMATE"
+  fallbackHref?: string
+  onPlanRequired?: () => void
+  children: React.ReactNode
 }
 
-interface ButtonState {
-  label: string
-  icon: React.ReactNode
-  variant: "default" | "secondary" | "destructive" | "outline" | "ghost" | "link"
-  tooltip: string
-}
-
-const defaultStates: Record<string, ButtonState> = {
-  default: {
-    label: "Create",
-    icon: <CheckCircle className="h-4 w-4 mr-2" />,
-    variant: "default",
-    tooltip: "Ready to go!",
-  },
-  loading: {
-    label: "Processing...",
-    icon: <Loader2 className="h-4 w-4 animate-spin mr-2" />,
-    variant: "outline",
-    tooltip: "Action in progress, please wait.",
-  },
-  notLoggedIn: {
-    label: "Sign in to create",
-    icon: <User className="h-4 w-4 mr-2" />,
-    variant: "secondary",
-    tooltip: "You must sign in to create or use this feature.",
-  },
-  noCredits: {
-    label: "Subscribe or buy more",
-    icon: <CreditCard className="h-4 w-4 mr-2" />,
-    variant: "destructive",
-    tooltip: "You've used up all your credits. Upgrade or buy more to continue.",
-  },
-  notEnabled: {
-    label: "Upgrade to unlock",
-    icon: <Lock className="h-4 w-4 mr-2" />,
-    variant: "outline",
-    tooltip: "This feature is not available on your current plan. Please upgrade.",
-  },
-}
-
-export const PlanAwareButton: React.FC<PlanAwareButtonProps> = ({
-  label,
-  onClick,
-  isLoggedIn,
-  isEnabled = true,
-  hasCredits,
-  loadingLabel = "Processing...",
-  disableInternalCreditCheck = false,
-  isLoading: externalIsLoading = false,
-  customStates = {},
-  className = "",
+export default function PlanAwareButton({
+  requiredPlan = "FREE",
+  fallbackHref = "/dashboard/subscription",
+  onPlanRequired,
+  children,
   ...props
-}) => {
-  const [internalIsLoading, setInternalIsLoading] = useState(false)
-  const { data:subscriptionStatus } = useSubscription()
+}: PlanAwareButtonProps) {
+  const { data: session } = useSession()
+  const { subscriptionStatus } = useSubscriptionStore()
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
+  const router = useRouter()
 
-  const isLoading = externalIsLoading || internalIsLoading
+  // Function to check if the user's plan meets the requirements
+  const meetsRequirement = () => {
+    if (!session?.user) return false
 
-  const currentState = useMemo(() => {
-    if (isLoading) return { ...defaultStates.loading, ...customStates.loading }
-    if (isLoggedIn === false) return { ...defaultStates.notLoggedIn, ...customStates.notLoggedIn }
-    if (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0) {
-      return { ...defaultStates.noCredits, ...customStates.noCredits }
+    // If no subscription status is available, default to not meeting requirements
+    if (!subscriptionStatus) return requiredPlan === "FREE"
+
+    const currentPlan = subscriptionStatus.subscriptionPlan
+    const isActive = subscriptionStatus.isSubscribed
+
+    // If the subscription is not active, only allow FREE features
+    if (!isActive && requiredPlan !== "FREE") return false
+
+    // Plan hierarchy for comparison
+    const planHierarchy = {
+      FREE: 0,
+      BASIC: 1,
+      PRO: 2,
+      ULTIMATE: 3,
     }
-    if (hasCredits === false) return { ...defaultStates.noCredits, ...customStates.noCredits }
-    if (!isEnabled) return { ...defaultStates.notEnabled, ...customStates.notEnabled }
-    return { ...defaultStates.default, ...customStates.default, label }
-  }, [
-    isLoading,
-    isLoggedIn,
-    hasCredits,
-    isEnabled,
-    label,
-    customStates,
-    subscriptionStatus,
-    disableInternalCreditCheck,
-  ])
 
-  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    if (isLoading || isLoggedIn === false || !isEnabled || hasCredits === false || !onClick) return
-    if (!disableInternalCreditCheck && subscriptionStatus && subscriptionStatus.credits <= 0) return
-
-    setInternalIsLoading(true)
-    try {
-      await onClick(e)
-    } catch (error) {
-      console.error("Error in PlanAwareButton handleClick:", error)
-    } finally {
-      setInternalIsLoading(false)
-    }
+    // Check if current plan is sufficient
+    return planHierarchy[currentPlan] >= planHierarchy[requiredPlan]
   }
 
-  const isDisabled: boolean =
-    isLoading ||
-    isLoggedIn === false ||
-    !isEnabled ||
-    hasCredits === false ||
-    (!disableInternalCreditCheck && subscriptionStatus?.credits !== undefined && subscriptionStatus.credits <= 0)
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!session?.user) {
+      e.preventDefault()
+      setIsLoading(true)
+
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to access this feature",
+        variant: "destructive",
+      })
+
+      setTimeout(() => {
+        router.push("/api/auth/signin")
+        setIsLoading(false)
+      }, 1500)
+      return
+    }
+
+    if (!meetsRequirement()) {
+      e.preventDefault()
+      setIsLoading(true)
+
+      if (onPlanRequired) {
+        onPlanRequired()
+      } else {
+        toast({
+          title: "Plan Upgrade Required",
+          description: `This feature requires the ${requiredPlan} plan or higher`,
+          variant: "destructive",
+        })
+
+        setTimeout(() => {
+          router.push(fallbackHref)
+          setIsLoading(false)
+        }, 1500)
+      }
+      return
+    }
+
+    // If the original button had an onClick handler, call it
+    if (props.onClick) {
+      props.onClick(e)
+    }
+  }
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            className={`w-full justify-center py-2 px-4 text-sm sm:text-base md:text-lg lg:py-3 lg:px-6 ${className}`}
-            onClick={handleClick}
-            variant={currentState.variant as any}
-            disabled={isDisabled}
-            {...props}
-          >
-            {currentState.icon}
-            {isLoading ? loadingLabel : currentState.label}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-sm">{currentState.tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Button {...props} onClick={handleClick} disabled={isLoading || props.disabled}>
+      {children}
+    </Button>
   )
 }
-
-PlanAwareButton.displayName = "PlanAwareButton"
-
-export default PlanAwareButton
