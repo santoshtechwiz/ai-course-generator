@@ -11,10 +11,9 @@ import { Providers } from "@/providers/provider"
 import { getAuthSession } from "@/lib/authOptions"
 
 import TrialModal from "@/components/TrialModal"
-
-import MainNavbar from "@/components/shared/MainNavbar"
 import { ThemeProvider } from "next-themes"
 import { SubscriptionService } from "./dashboard/subscription/services/subscription-service"
+import { Suspense } from "react"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -115,12 +114,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   if (userId) {
     try {
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
-      const plan = subscriptionStatus?.subscriptionPlan
-      const status = subscriptionStatus?.isActive ? "ACTIVE" : "INACTIVE"
-      isSubscribed = status === "ACTIVE"
-      currentPlan = plan
+      isSubscribed = subscriptionStatus.isSubscribed
+      currentPlan = subscriptionStatus.subscriptionPlan
     } catch (error) {
       console.error("Error fetching subscription status:", error)
+      // Default to free plan if there's an error
+      isSubscribed = false
+      currentPlan = "FREE"
     }
   }
 
@@ -154,7 +154,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     {
       question: "Can I share my content with others?",
       answer:
-        "Absolutely! You can easily share your courses, quizzes, or flashcards with students, peers, or the public using shareable links or through your dashboard.",
+        "You can easily share your courses, quizzes, or flashcards with students, peers, or the public using shareable links or through your dashboard.",
     },
     {
       question: "Can I track learner progress?",
@@ -176,16 +176,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
-        
-          {/* Place the TrialModal here, inside the Providers */}
-          <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
+            {/* Place the TrialModal here, inside the Providers */}
+            <Suspense fallback={<div>Loading...</div>}>
+              <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} user={null} />
+            </Suspense>
 
-          <JsonLd type="default" />
-          {/* <JsonLd type="faq" data={faqItems} /> */}
+            <JsonLd type="default" />
+            {/* <JsonLd type="faq" data={faqItems} /> */}
 
-          <main className="flex-1 flex flex-col pt-16">{children}</main>
-          <Analytics />
-          <Footer />
+            <main className="flex-1 flex flex-col pt-16">{children}</main>
+            <Analytics />
+            <Footer />
           </ThemeProvider>
         </Providers>
       </body>

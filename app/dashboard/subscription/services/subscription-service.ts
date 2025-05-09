@@ -11,13 +11,12 @@
  * - User credits (current balance of available tokens)
  */
 
-import { SUBSCRIPTION_PLANS, VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
+import { VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
 import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
 import { prisma } from "@/lib/db"
 import type { SubscriptionStatus } from "@/store/useSubscriptionStore"
 import type { TokenUsage } from "@langchain/core/language_models/base"
 import { getPaymentGateway } from "./payment-gateway-factory"
-import type { PaymentOptions } from "./payment-gateway-factory"
 
 /**
  * Service for managing user subscriptions and token transactions
@@ -82,7 +81,7 @@ export class SubscriptionService {
           existingSubscription.status === "ACTIVE"
         ) {
           throw new Error(
-            "User already has an active paid subscription. Please cancel it before activating the free plan.",
+            "You already have an active paid subscription. Please cancel it before activating the free plan.",
           )
         }
 
@@ -154,93 +153,6 @@ export class SubscriptionService {
   }
 
   /**
-   * Create a checkout session for a subscription
-   *
-   * @param userId - The ID of the user
-   * @param planName - The name of the plan to subscribe to
-   * @param duration - The duration of the subscription in months
-   * @param referralCode - Optional referral code
-   * @param promoCode - Optional promo code
-   * @param promoDiscount - Optional promo discount percentage
-   * @returns Object with the session ID and checkout URL
-   */
-  static async createCheckoutSession(
-    userId: string,
-    planName: string,
-    duration: number,
-    referralCode?: string,
-    promoCode?: string,
-    promoDiscount?: number,
-  ): Promise<{ sessionId: string; url: string }> {
-    try {
-      // Validate inputs
-      if (!userId) throw new Error("User ID is required")
-      if (!planName) throw new Error("Plan name is required")
-      if (!duration || duration <= 0) throw new Error("Valid duration is required")
-
-      console.log(`Creating checkout session for user ${userId}, plan ${planName}, duration ${duration}`)
-
-      // Verify user exists before proceeding
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true },
-      })
-
-      if (!user) {
-        throw new Error(`User with ID ${userId} not found`)
-      }
-
-      const paymentGateway = getPaymentGateway()
-      const options: PaymentOptions = {}
-
-      if (referralCode) {
-        // Validate referral code before applying
-        const isValidReferral = await this.validateReferralCode(referralCode)
-        if (isValidReferral) {
-          options.referralCode = referralCode
-          console.log(`Applied referral code: ${referralCode}`)
-        } else {
-          console.warn(`Invalid referral code attempted: ${referralCode}`)
-        }
-      }
-
-      if (promoCode && promoDiscount) {
-        // Validate promo code before applying
-        const promoValidation = await this.validatePromoCode(promoCode)
-        if (promoValidation.valid) {
-          options.promoCode = promoCode
-          options.promoDiscount = promoDiscount
-          console.log(`Applied promo code: ${promoCode} with discount: ${promoDiscount}%`)
-        } else {
-          console.warn(`Invalid promo code attempted: ${promoCode}`)
-        }
-      }
-
-      const result = await paymentGateway.createCheckoutSession(userId, planName, duration, options)
-
-      // Log the result for debugging
-      console.log("Payment gateway checkout session created:", {
-        sessionId: result.sessionId,
-        hasUrl: !!result.url,
-      })
-
-      // Ensure we have a URL
-      if (!result.url) {
-        console.error("No checkout URL returned from payment gateway")
-        throw new Error("No checkout URL returned from payment gateway")
-      }
-
-      return {
-        sessionId: result.sessionId,
-        url: result.url,
-      }
-    } catch (error) {
-      console.error(`Error creating checkout session:`, error)
-      throw new Error(`Failed to create checkout session: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
-
-  /**
    * Get the subscription status for a user
    *
    * @param userId - The ID of the user
@@ -266,7 +178,7 @@ export class SubscriptionService {
       const user = await prisma.user
         .findUnique({
           where: { id: userId },
-          select: { credits: true },
+          select: { credits: true, creditsUsed: true },
         })
         .catch((error) => {
           console.error("Database error fetching user credits:", error)
@@ -277,8 +189,10 @@ export class SubscriptionService {
       if (!userSubscription) {
         return {
           credits: user?.credits || 0,
+          tokensUsed: user?.creditsUsed || 0,
           isSubscribed: false,
           subscriptionPlan: "FREE",
+          status: "INACTIVE",
         }
       }
 
@@ -292,17 +206,21 @@ export class SubscriptionService {
 
       return {
         credits: user?.credits || 0,
+        tokensUsed: user?.creditsUsed || 0,
         isSubscribed,
         subscriptionPlan: userSubscription.planId as SubscriptionPlanType,
         expirationDate,
+        status: userSubscription.status,
       }
     } catch (error) {
       console.error("Error getting subscription status:", error)
       // Return default values in case of error
       return {
         credits: 0,
+        tokensUsed: 0,
         isSubscribed: false,
         subscriptionPlan: "FREE",
+        status: "INACTIVE",
       }
     }
   }
@@ -336,10 +254,10 @@ export class SubscriptionService {
       }
 
       // Get the user's subscription to determine token limit
-      const subscription = await this.getSubscriptionStatus(userId)
+      // const subscription = await this.getSubscriptionStatus(userId);
 
       // Find the plan to get the token limit
-      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === subscription.subscriptionPlan)
+      // const plan = SUBSCRIPTION_PLANS.find((p) => p.id === subscription.subscriptionPlan);
 
       // Use the actual credits from the user record as the total available
       const totalTokens = user.credits || 0
@@ -749,6 +667,48 @@ export class SubscriptionService {
     } catch (error) {
       console.error(`Error updating user credits: ${error instanceof Error ? error.message : String(error)}`)
       throw new Error(`Failed to update user credits: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  }
+
+  // Add a new method to efficiently check if a user can perform a token-consuming action
+  static async canPerformTokenAction(
+    userId: string,
+    requiredTokens: number,
+  ): Promise<{
+    canPerform: boolean
+    reason?: string
+    currentCredits: number
+  }> {
+    try {
+      if (!userId) {
+        return { canPerform: false, reason: "User ID is required", currentCredits: 0 }
+      }
+
+      // Get user's current credits
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { credits: true },
+      })
+
+      if (!user) {
+        return { canPerform: false, reason: "User not found", currentCredits: 0 }
+      }
+
+      const currentCredits = user.credits || 0
+
+      // Check if user has enough tokens
+      if (currentCredits < requiredTokens) {
+        return {
+          canPerform: false,
+          reason: `Insufficient tokens. You need ${requiredTokens} tokens but have ${currentCredits}.`,
+          currentCredits,
+        }
+      }
+
+      return { canPerform: true, currentCredits }
+    } catch (error) {
+      console.error("Error checking if user can perform token action:", error)
+      return { canPerform: false, reason: "An error occurred while checking token availability", currentCredits: 0 }
     }
   }
 }

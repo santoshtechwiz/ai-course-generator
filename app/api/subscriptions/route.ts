@@ -5,6 +5,12 @@ import { z } from "zod"
 import { authOptions } from "@/lib/authOptions"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
+// Define cache control constants for better performance
+const CACHE_CONTROL = {
+  PRODUCTION: "max-age=60, s-maxage=120, stale-while-revalidate=300",
+  DEVELOPMENT: "no-cache, no-store",
+}
+
 // Adding consistent error handling and better typed responses
 export async function GET(req: NextRequest) {
   try {
@@ -13,6 +19,7 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json(
         {
+          success: false,
           error: "Unauthorized",
           message: "You must be logged in to access subscription details",
           code: "AUTH_REQUIRED",
@@ -24,10 +31,7 @@ export async function GET(req: NextRequest) {
     const userId = session.user.id
 
     // Define cache control for better performance
-    const cacheControl =
-      process.env.NODE_ENV === "production"
-        ? "max-age=60, s-maxage=120, stale-while-revalidate=300"
-        : "no-cache, no-store"
+    const cacheControl = process.env.NODE_ENV === "production" ? CACHE_CONTROL.PRODUCTION : CACHE_CONTROL.DEVELOPMENT
 
     const headers = new Headers({
       "Cache-Control": cacheControl,
@@ -35,9 +39,11 @@ export async function GET(req: NextRequest) {
     })
 
     try {
-      // Get subscription data
-      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
-      const tokenData = await SubscriptionService.getTokensUsed(userId)
+      // Get subscription data and token usage in parallel for better performance
+      const [subscriptionStatus, tokenData] = await Promise.all([
+        SubscriptionService.getSubscriptionStatus(userId),
+        SubscriptionService.getTokensUsed(userId),
+      ])
 
       // Return structured response with consistent fields
       return NextResponse.json(
@@ -53,6 +59,7 @@ export async function GET(req: NextRequest) {
       console.error("Service error fetching subscription:", serviceError)
       return NextResponse.json(
         {
+          success: false,
           error: "Service Error",
           message: "Failed to fetch subscription data",
           details: serviceError.message,
@@ -65,6 +72,7 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching subscription:", error)
     return NextResponse.json(
       {
+        success: false,
         error: "Server Error",
         message: "An unexpected error occurred",
         details: error.message,
@@ -81,6 +89,7 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json(
         {
+          success: false,
           error: "Unauthorized",
           message: "You must be logged in to perform this action",
           code: "AUTH_REQUIRED",
@@ -97,6 +106,7 @@ export async function POST(req: NextRequest) {
     } catch (parseError) {
       return NextResponse.json(
         {
+          success: false,
           error: "Invalid Request",
           message: "Request body must be valid JSON",
           code: "INVALID_JSON",
@@ -115,6 +125,7 @@ export async function POST(req: NextRequest) {
     } catch (validationError) {
       return NextResponse.json(
         {
+          success: false,
           error: "Validation Error",
           message: "Invalid request data",
           details: (validationError as z.ZodError).errors,
@@ -126,19 +137,34 @@ export async function POST(req: NextRequest) {
 
     // Handle token purchase action with improved response
     if (validatedData.action === "purchase_tokens") {
-      // This would be implemented in a real application
-      return NextResponse.json(
-        {
-          error: "Not Implemented",
-          message: "Token purchase is not implemented yet",
-          code: "NOT_IMPLEMENTED",
-        },
-        { status: 501 },
-      )
+      try {
+        // This would be implemented in a real application
+        // For now, return a not implemented response
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Not Implemented",
+            message: "Token purchase is not implemented yet",
+            code: "NOT_IMPLEMENTED",
+          },
+          { status: 501 },
+        )
+      } catch (purchaseError: any) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Purchase Error",
+            message: purchaseError.message || "Failed to purchase tokens",
+            code: "PURCHASE_ERROR",
+          },
+          { status: 500 },
+        )
+      }
     }
 
     return NextResponse.json(
       {
+        success: false,
         error: "Invalid Action",
         message: "The requested action is not supported",
         code: "INVALID_ACTION",
@@ -149,6 +175,7 @@ export async function POST(req: NextRequest) {
     console.error("Error processing subscription action:", error)
     return NextResponse.json(
       {
+        success: false,
         error: "Server Error",
         message: "An unexpected error occurred while processing your request",
         details: error.message,

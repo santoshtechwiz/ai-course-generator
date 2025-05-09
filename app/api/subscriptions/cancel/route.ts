@@ -1,12 +1,11 @@
 /**
  * API Route: /api/subscriptions/cancel
  *
- * This route cancels a user's subscription.
+ * This route cancels a user's subscription with improved error handling and feedback.
  */
 
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-
 
 import { authOptions } from "@/lib/authOptions"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
@@ -17,27 +16,61 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ message: "Authentication required" }, { status: 401 })
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Authentication required",
+          code: "AUTHENTICATION_REQUIRED",
+        },
+        { status: 401 },
+      )
     }
 
     // Cancel the subscription
-    const success = await SubscriptionService.cancelSubscription(session.user.id)
+    try {
+      const success = await SubscriptionService.cancelSubscription(session.user.id)
 
-    if (!success) {
-      return NextResponse.json({ message: "Failed to cancel subscription" }, { status: 400 })
+      if (!success) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Failed to cancel subscription",
+            code: "CANCELLATION_FAILED",
+          },
+          { status: 400 },
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Subscription cancelled successfully",
+        code: "CANCELLATION_SUCCESS",
+      })
+    } catch (serviceError) {
+      console.error("Error in subscription service:", serviceError)
+
+      // Provide more specific error messages based on the error type
+      const errorMessage = serviceError instanceof Error ? serviceError.message : "Failed to cancel subscription"
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: errorMessage,
+          code: "SERVICE_ERROR",
+        },
+        { status: 500 },
+      )
     }
-
-    return NextResponse.json({
-      success: true,
-      message: "Subscription cancelled successfully",
-    })
   } catch (error) {
     console.error("Error cancelling subscription:", error)
 
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Failed to cancel subscription" },
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to cancel subscription",
+        code: "SERVER_ERROR",
+      },
       { status: 500 },
     )
   }
 }
-
