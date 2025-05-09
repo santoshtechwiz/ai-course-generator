@@ -9,55 +9,32 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useSubscription } from "../hooks/use-subscription"
-
+import useSubscriptionStore from "@/store/useSubscriptionStore"
 
 export function SubscriptionRefresher() {
-  const { subscription, fetchStatus, details } = useSubscription();
-  const lastFetchRef = useRef<number>(0)
-  const isRefreshingRef = useRef<boolean>(false)
+  const { refreshSubscription, clearCache } = useSubscriptionStore()
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const initialRefreshDoneRef = useRef(false)
 
   // Initial fetch on mount
   useEffect(() => {
-    const now = Date.now()
-
-    // Prevent multiple fetches within a short time period
-    if (now - lastFetchRef.current < 10000 || isRefreshingRef.current) {
-      return
+    // Only clear cache and force refresh once on initial mount
+    if (!initialRefreshDoneRef.current) {
+      clearCache()
+      refreshSubscription(true) // Force refresh to get real-time data
+      initialRefreshDoneRef.current = true
     }
 
-    isRefreshingRef.current = true
-    lastFetchRef.current = now
-
-    // Fetch data with a slight delay to prevent race conditions
-    const timeoutId = setTimeout(() => {
-      Promise.all([fetchStatus(false), details(false)]).finally(() => {
-        isRefreshingRef.current = false
-      })
-    }, 100)
-
-    // Set up event listener for subscription changes
-    const handleSubscriptionChange = () => {
-      const now = Date.now()
-
-      // Prevent multiple fetches within a short time period
-      if (now - lastFetchRef.current < 5000 || isRefreshingRef.current) {
-        return
-      }
-
-      isRefreshingRef.current = true
-      lastFetchRef.current = now
-
-      Promise.all([fetchStatus(true), details(true)]).finally(() => {
-        isRefreshingRef.current = false
-      })
-    }
-
-    window.addEventListener("subscription-changed", handleSubscriptionChange)
+    // Set up an interval to refresh the subscription data frequently for real-time updates
+    refreshIntervalRef.current = setInterval(() => {
+      refreshSubscription(false) // Use the cached data if it's fresh enough
+    }, 30000) // Refresh every 30 seconds to keep credit data current
 
     return () => {
-      clearTimeout(timeoutId)
-      window.removeEventListener("subscription-changed", handleSubscriptionChange)
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+        refreshIntervalRef.current = null
+      }
     }
   }, [fetchStatus, details])
 

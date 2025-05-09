@@ -15,15 +15,6 @@ import { VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subsc
 import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
 import { prisma } from "@/lib/db"
 import { getPaymentGateway } from "./payment-gateway-factory"
-import type { PaymentOptions } from "./payment-gateway-interface"
-import { createLogger } from "@/lib/logger"
-
-// Initialize logger
-const logger = createLogger("subscription-service")
-
-// Cache for subscription status to reduce database queries
-const subscriptionCache = new Map<string, { data: any; timestamp: number }>()
-const CACHE_TTL = 60 * 1000 // 60 seconds
 
 /**
  * Service for managing user subscriptions and token transactions
@@ -88,7 +79,7 @@ export class SubscriptionService {
           existingSubscription.status === "ACTIVE"
         ) {
           throw new Error(
-            "User already has an active paid subscription. Please cancel it before activating the free plan.",
+            "You already have an active paid subscription. Please cancel it before activating the free plan.",
           )
         }
 
@@ -163,99 +154,6 @@ export class SubscriptionService {
   }
 
   /**
-   * Create a checkout session for a subscription
-   *
-   * @param userId - The ID of the user
-   * @param planName - The name of the plan to subscribe to
-   * @param duration - The duration of the subscription in months
-   * @param referralCode - Optional referral code
-   * @param promoCode - Optional promo code
-   * @param promoDiscount - Optional promo discount percentage
-   * @returns Object with the session ID and checkout URL
-   */
-  static async createCheckoutSession(
-    userId: string,
-    planName: string,
-    duration: number,
-    referralCode?: string,
-    promoCode?: string,
-    promoDiscount?: number,
-  ): Promise<{ sessionId: string; url: string }> {
-    try {
-      // Validate inputs
-      if (!userId) throw new Error("User ID is required")
-      if (!planName) throw new Error("Plan name is required")
-      if (!duration || duration <= 0) throw new Error("Valid duration is required")
-
-      logger.info(`Creating checkout session for user ${userId}, plan ${planName}, duration ${duration}`)
-
-      // Verify user exists before proceeding
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, email: true, name: true },
-      })
-
-      if (!user) {
-        throw new Error(`User with ID ${userId} not found`)
-      }
-
-      const paymentGateway = getPaymentGateway()
-      const options: PaymentOptions = {
-        customerEmail: user.email,
-        customerName: user.name || undefined,
-      }
-
-      if (referralCode) {
-        // Validate referral code before applying
-        const isValidReferral = await this.validateReferralCode(referralCode)
-        if (isValidReferral) {
-          options.referralCode = referralCode
-          logger.info(`Applied referral code: ${referralCode}`)
-        } else {
-          logger.warn(`Invalid referral code attempted: ${referralCode}`)
-        }
-      }
-
-      if (promoCode && promoDiscount) {
-        // Validate promo code before applying
-        const promoValidation = await this.validatePromoCode(promoCode)
-        if (promoValidation.valid) {
-          options.promoCode = promoCode
-          options.promoDiscount = promoDiscount
-          logger.info(`Applied promo code: ${promoCode} with discount: ${promoDiscount}%`)
-        } else {
-          logger.warn(`Invalid promo code attempted: ${promoCode}`)
-        }
-      }
-
-      // Clear cache for this user
-      this.clearUserCache(userId)
-
-      const result = await paymentGateway.createCheckoutSession(userId, planName, duration, options)
-
-      // Log the result for debugging
-      logger.info("Payment gateway checkout session created:", {
-        sessionId: result.sessionId,
-        hasUrl: !!result.url,
-      })
-
-      // Ensure we have a URL
-      if (!result.url) {
-        logger.error("No checkout URL returned from payment gateway")
-        throw new Error("No checkout URL returned from payment gateway")
-      }
-
-      return {
-        sessionId: result.sessionId,
-        url: result.url,
-      }
-    } catch (error) {
-      logger.error(`Error creating checkout session:`, error)
-      throw new Error(`Failed to create checkout session: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
-
-  /**
    * Get the subscription status for a user
    *
    * @param userId - The ID of the user
@@ -303,7 +201,8 @@ export class SubscriptionService {
           credits: user?.credits || 0,
           tokensUsed: user?.creditsUsed || 0,
           isSubscribed: false,
-          subscriptionPlan: "FREE" as SubscriptionPlanType,
+          subscriptionPlan: "FREE",
+          status: "INACTIVE",
         }
 
         // Cache the result
@@ -326,7 +225,6 @@ export class SubscriptionService {
         isSubscribed,
         subscriptionPlan: userSubscription.planId as SubscriptionPlanType,
         expirationDate,
-        cancelAtPeriodEnd: userSubscription.cancelAtPeriodEnd || false,
         status: userSubscription.status,
       }
 
@@ -342,6 +240,7 @@ export class SubscriptionService {
         tokensUsed: 0,
         isSubscribed: false,
         subscriptionPlan: "FREE",
+        status: "INACTIVE",
       }
     }
   }
@@ -383,7 +282,13 @@ export class SubscriptionService {
         return { used: 0, total: 0 }
       }
 
-      // Use the actual credits from the user record
+      // Get the user's subscription to determine token limit
+      // const subscription = await this.getSubscriptionStatus(userId);
+
+      // Find the plan to get the token limit
+      // const plan = SUBSCRIPTION_PLANS.find((p) => p.id === subscription.subscriptionPlan);
+
+      // Use the actual credits from the user record as the total available
       const totalTokens = user.credits || 0
       const tokensUsed = user.creditsUsed || 0
 
@@ -826,47 +731,45 @@ export class SubscriptionService {
     }
   }
 
-  /**
-   * Check if a user can download PDF files based on their subscription
-   *
-   * @param userId - The ID of the user
-   * @returns Boolean indicating if the user can download PDFs
-   */
-  static async canDownloadPDF(userId: string): Promise<boolean> {
+  // Add a new method to efficiently check if a user can perform a token-consuming action
+  static async canPerformTokenAction(
+    userId: string,
+    requiredTokens: number,
+  ): Promise<{
+    canPerform: boolean
+    reason?: string
+    currentCredits: number
+  }> {
     try {
       if (!userId) {
-        return false
+        return { canPerform: false, reason: "User ID is required", currentCredits: 0 }
       }
 
-      const subscriptionStatus = await this.getSubscriptionStatus(userId)
+      // Get user's current credits
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { credits: true },
+      })
 
-      // Users can download PDFs if they have a paid subscription
-      return subscriptionStatus.isSubscribed || subscriptionStatus.subscriptionPlan !== "FREE"
+      if (!user) {
+        return { canPerform: false, reason: "User not found", currentCredits: 0 }
+      }
+
+      const currentCredits = user.credits || 0
+
+      // Check if user has enough tokens
+      if (currentCredits < requiredTokens) {
+        return {
+          canPerform: false,
+          reason: `Insufficient tokens. You need ${requiredTokens} tokens but have ${currentCredits}.`,
+          currentCredits,
+        }
+      }
+
+      return { canPerform: true, currentCredits }
     } catch (error) {
-      logger.error(`Error checking PDF download permission: ${error instanceof Error ? error.message : String(error)}`)
-      return false
+      console.error("Error checking if user can perform token action:", error)
+      return { canPerform: false, reason: "An error occurred while checking token availability", currentCredits: 0 }
     }
-  }
-
-  /**
-   * Clear cache for a specific user
-   * @private
-   */
-  private static clearUserCache(userId: string): void {
-    const keysToDelete = [`subscription_${userId}`, `tokens_${userId}`, `billing_${userId}`]
-
-    keysToDelete.forEach((key) => {
-      if (subscriptionCache.has(key)) {
-        subscriptionCache.delete(key)
-      }
-    })
-  }
-
-  /**
-   * Clear all cache
-   */
-  static clearAllCache(): void {
-    subscriptionCache.clear()
-    logger.info("Cleared all subscription cache")
   }
 }
