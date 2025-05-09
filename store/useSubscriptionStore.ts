@@ -13,6 +13,7 @@ export interface SubscriptionStatus {
   expirationDate?: string
   isActive?: boolean
   lastFetched?: number
+  status?: "ACTIVE" | "INACTIVE" | "PAST_DUE" | "CANCELED" | null
 }
 
 interface SubscriptionState {
@@ -62,6 +63,7 @@ const fetchSubscriptionStatus = async (): Promise<SubscriptionStatus> => {
       subscriptionPlan: ((data.subscriptionPlan || data.plan) as SubscriptionPlanType) || "FREE",
       expirationDate: data.expirationDate || data.expiresAt,
       isActive: isActive,
+      status: data.status,
       lastFetched: Date.now(),
     }
   } catch (error) {
@@ -117,7 +119,7 @@ const useSubscriptionStore = create<SubscriptionState>()(
         const { subscriptionStatus, isLoading } = get()
         if (isLoading) return false
         if (!subscriptionStatus || !subscriptionStatus.lastFetched) return true
-        return Date.now() - subscriptionStatus.lastFetched > 30000
+        return Date.now() - (subscriptionStatus.lastFetched || 0) > 30000
       },
 
       // Replace the refreshSubscription method in the Zustand store with this optimized version
@@ -137,8 +139,6 @@ const useSubscriptionStore = create<SubscriptionState>()(
             isLoading: false,
             error: null,
           })
-
-          return subscriptionStatus
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : "An unknown error occurred",

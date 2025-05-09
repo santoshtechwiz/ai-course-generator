@@ -2,18 +2,17 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { z } from "zod"
 
-
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/authOptions"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
-// Define validation schema for request body
+// Define validation schema for request body with improved type checking
 const subscriptionSchema = z.object({
-  planName: z.string(),
-  duration: z.number().int().positive(),
+  planName: z.enum(["FREE", "BASIC", "PRO", "ULTIMATE"]),
+  duration: z.number().int().positive().lte(12),
   referralCode: z.string().optional(),
   promoCode: z.string().optional(),
-  promoDiscount: z.number().optional(),
+  promoDiscount: z.number().min(0).max(100).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -23,6 +22,7 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json(
         {
+          success: false,
           error: "Unauthorized",
           message: "You must be logged in to create a subscription",
           errorType: "AUTHENTICATION_REQUIRED",
@@ -32,17 +32,31 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse and validate request body
-    const body = await req.json()
+    let body
+    try {
+      body = await req.json()
+    } catch (parseError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid Request",
+          message: "Request body must be valid JSON",
+          errorType: "INVALID_JSON",
+        },
+        { status: 400 },
+      )
+    }
 
     try {
       var validatedData = subscriptionSchema.parse(body)
     } catch (validationError) {
       return NextResponse.json(
         {
+          success: false,
           error: "Validation Error",
           message: "Invalid request data",
           details: (validationError as z.ZodError).errors,
-          errorType: "SERVER_ERROR",
+          errorType: "VALIDATION_ERROR",
         },
         { status: 400 },
       )
@@ -59,6 +73,7 @@ export async function POST(req: NextRequest) {
     if (existingSubscription && existingSubscription.status === "ACTIVE" && existingSubscription.planId !== "FREE") {
       return NextResponse.json(
         {
+          success: false,
           error: "Subscription Change Restricted",
           message: "You cannot change your subscription until your current plan expires",
           errorType: "PLAN_CHANGE_RESTRICTED",
@@ -73,9 +88,10 @@ export async function POST(req: NextRequest) {
       if (!isValidReferral) {
         return NextResponse.json(
           {
+            success: false,
             error: "Invalid Referral",
             message: "The provided referral code is invalid or expired",
-            errorType: "SERVER_ERROR",
+            errorType: "INVALID_REFERRAL",
           },
           { status: 400 },
         )
@@ -88,9 +104,10 @@ export async function POST(req: NextRequest) {
       if (!promoValidation.valid) {
         return NextResponse.json(
           {
+            success: false,
             error: "Invalid Promo Code",
             message: "The provided promo code is invalid or expired",
-            errorType: "SERVER_ERROR",
+            errorType: "INVALID_PROMO",
           },
           { status: 400 },
         )
@@ -120,26 +137,41 @@ export async function POST(req: NextRequest) {
     }
 
     // Create checkout session
-    const result = await SubscriptionService.createCheckoutSession(
-      userId,
-      validatedData.planName,
-      validatedData.duration,
-      validatedData.referralCode,
-      validatedData.promoCode,
-      validatedData.promoDiscount,
-    )
+    try {
+      const result = await SubscriptionService.createCheckoutSession(
+        userId,
+        validatedData.planName,
+        validatedData.duration,
+        validatedData.referralCode,
+        validatedData.promoCode,
+        validatedData.promoDiscount,
+      )
 
-    return NextResponse.json({
-      sessionId: result.sessionId,
-      url: result.url,
-      success: true,
-    })
+      return NextResponse.json({
+        success: true,
+        sessionId: result.sessionId,
+        url: result.url,
+      })
+    } catch (checkoutError: any) {
+      console.error("Error creating checkout session:", checkoutError)
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Checkout Error",
+          message: checkoutError.message || "Failed to create checkout session",
+          errorType: "CHECKOUT_ERROR",
+        },
+        { status: 500 },
+      )
+    }
   } catch (error: any) {
     console.error("Error creating subscription:", error)
 
     if (error.message === "User already has an active subscription") {
       return NextResponse.json(
         {
+          success: false,
           error: "Subscription conflict",
           message: "You already have an active subscription",
           details: error.message,
@@ -151,6 +183,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       {
+        success: false,
         error: "Failed to create subscription",
         message: "An error occurred while creating your subscription",
         details: error.message,

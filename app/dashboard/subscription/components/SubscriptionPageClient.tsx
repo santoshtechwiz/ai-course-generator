@@ -3,6 +3,7 @@
  *
  * This component handles the client-side logic for the subscription page,
  * including fetching subscription data and rendering the appropriate UI.
+ * Improved with better error handling, loading states, and performance optimizations.
  */
 
 "use client"
@@ -22,11 +23,17 @@ import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 import TrialModal from "@/components/TrialModal"
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
 
-// Lazy load the PricingPage component
+// Lazy load the PricingPage component for better performance
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))
 const StripeSecureCheckout = lazy(() =>
   import("./StripeSecureCheckout").then((mod) => ({ default: mod.StripeSecureCheckout })),
 )
+
+// Define retry configuration for better UX
+const RETRY_CONFIG = {
+  MAX_RETRIES: 3,
+  RETRY_DELAY: 2000, // 2 seconds
+}
 
 /**
  * Client component for the subscription page with enhanced error handling and performance
@@ -55,6 +62,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const [showReferralBanner, setShowReferralBanner] = useState(true)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [pendingSubscriptionData, setPendingSubscriptionData] = useState<any>(null)
+  const [isRetrying, setIsRetrying] = useState(false)
 
   const isProd = process.env.NODE_ENV === "production"
   const { data: session, status: sessionStatus } = useSession()
@@ -137,24 +145,50 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         expirationDate: subscriptionResult.expirationDate,
       })
       setIsSubscribed(subscriptionResult.isSubscribed)
+
+      // Reset retry count on successful fetch
+      setRetryCount(0)
     } catch (error) {
       console.error("Error fetching subscription data:", error)
       setFetchError(error instanceof Error ? error.message : "Failed to fetch subscription data")
+
+      // Set default values on error
       setSubscriptionData({
         currentPlan: "FREE",
         subscriptionStatus: null,
         tokensUsed: 0,
         credits: 0,
       })
+
+      // Increment retry count for automatic retry
+      setRetryCount((prev) => prev + 1)
     } finally {
       setIsLoading(false)
       setIsDataFetched(true)
+      setIsRetrying(false)
     }
   }, [id, sessionStatus])
 
-  // Handle retry logic
+  // Automatic retry logic with exponential backoff
+  useEffect(() => {
+    if (fetchError && retryCount < RETRY_CONFIG.MAX_RETRIES && !isRetrying) {
+      setIsRetrying(true)
+      const timer = setTimeout(
+        () => {
+          console.log(`Retrying subscription data fetch (${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES})...`)
+          fetchSubscriptionData()
+        },
+        RETRY_CONFIG.RETRY_DELAY * Math.pow(2, retryCount - 1),
+      )
+
+      return () => clearTimeout(timer)
+    }
+  }, [fetchError, retryCount, fetchSubscriptionData, isRetrying])
+
+  // Handle manual retry
   const handleRetry = useCallback(() => {
-    setRetryCount((prev) => prev + 1)
+    setRetryCount(0) // Reset retry count for manual retry
+    setIsRetrying(true)
     fetchSubscriptionData()
   }, [fetchSubscriptionData])
 
@@ -164,7 +198,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     if (sessionStatus !== "loading") {
       fetchSubscriptionData()
     }
-  }, [id, sessionStatus, fetchSubscriptionData, retryCount])
+  }, [id, sessionStatus, fetchSubscriptionData])
 
   // Add event listener for subscription changes
   useEffect(() => {
@@ -215,8 +249,15 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
             <AlertTitle>Error loading subscription data</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
               <p>{fetchError}</p>
-              <Button variant="outline" size="sm" onClick={handleRetry} className="w-fit mt-2">
-                Retry
+              <Button variant="outline" size="sm" onClick={handleRetry} className="w-fit mt-2" disabled={isRetrying}>
+                {isRetrying ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Retrying...
+                  </>
+                ) : (
+                  "Retry"
+                )}
               </Button>
             </AlertDescription>
           </Alert>

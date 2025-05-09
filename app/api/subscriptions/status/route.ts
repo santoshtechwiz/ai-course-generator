@@ -30,19 +30,13 @@ export async function GET(req: NextRequest) {
         },
       },
     })
-    
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     const subscription = user.subscription
     const isActive = subscription?.status.toLowerCase() === "active"
-
-    console.log("Database user:", {
-      id: user.id,
-      credits: user.credits,
-      subscription,
-    })
 
     const credits = typeof user.credits === "number" ? user.credits : 0
     const tokensUsed = typeof user.creditsUsed === "number" ? user.creditsUsed : 0
@@ -58,9 +52,8 @@ export async function GET(req: NextRequest) {
       plan: subscription?.planId || "FREE",
       status: subscription?.status || null,
       expiresAt: subscription?.currentPeriodEnd || null,
+      cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
     }
-
-    console.log("API response:", response)
 
     const headers = new Headers()
     if (!skipCache) {

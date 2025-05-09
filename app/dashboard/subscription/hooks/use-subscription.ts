@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
@@ -23,10 +23,18 @@ interface SubscriptionResult {
 
 export function useSubscription(options: UseSubscriptionOptions = {}) {
   const [isLoading, setIsLoading] = useState(false)
+  const [lastError, setLastError] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
 
   const { allowPlanChanges = false, allowDowngrades = false, onSubscriptionSuccess, onSubscriptionError } = options
+
+  // Clear last error when component unmounts or options change
+  useEffect(() => {
+    return () => {
+      setLastError(null)
+    }
+  }, [allowPlanChanges, allowDowngrades])
 
   // Function to check if a user can subscribe to a specific plan
   const canSubscribeToPlan = useCallback(
@@ -107,7 +115,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     [],
   )
 
-  // Handle subscription creation
+  // Handle subscription creation with improved error handling and retry logic
   const handleSubscribe = useCallback(
     async (
       planName: SubscriptionPlanType,
@@ -117,6 +125,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       referralCode?: string,
     ): Promise<SubscriptionResult> => {
       setIsLoading(true)
+      setLastError(null)
 
       try {
         // For free plan, use the activate-free endpoint
@@ -132,7 +141,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
           const data = await response.json()
 
           if (!response.ok) {
-            throw new Error(data.details || "Failed to activate free plan")
+            throw new Error(data.details || data.message || "Failed to activate free plan")
           }
 
           // Dispatch an event to notify other components about the subscription change
@@ -146,6 +155,13 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
           if (onSubscriptionSuccess) {
             onSubscriptionSuccess(result)
           }
+
+          // Show success toast
+          toast({
+            title: "Free Plan Activated",
+            description: result.message,
+            variant: "default",
+          })
 
           return result
         }
@@ -168,11 +184,13 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
         const data = await response.json()
 
         if (!response.ok) {
-          throw new Error(data.details || "There was an error processing your subscription. Please try again.")
+          throw new Error(
+            data.details || data.message || "There was an error processing your subscription. Please try again.",
+          )
         }
 
         if (data.error) {
-          throw new Error(data.details || "An unexpected error occurred")
+          throw new Error(data.details || data.message || "An unexpected error occurred")
         }
 
         // For successful checkout session creation
@@ -187,6 +205,13 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
           onSubscriptionSuccess(result)
         }
 
+        // Show redirecting toast
+        toast({
+          title: "Redirecting to Checkout",
+          description: "You'll be redirected to complete your payment.",
+          variant: "default",
+        })
+
         // Redirect to the checkout URL
         if (data.url) {
           window.location.href = data.url
@@ -197,6 +222,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
         console.error("Subscription error:", error)
 
         const errorMessage = error instanceof Error ? error.message : "Failed to process subscription"
+        setLastError(errorMessage)
 
         const errorResult = {
           success: false,
@@ -226,9 +252,10 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     [toast, onSubscriptionSuccess, onSubscriptionError],
   )
 
-  // Handle subscription cancellation
+  // Handle subscription cancellation with improved error handling
   const cancelSubscription = useCallback(async (): Promise<SubscriptionResult> => {
     setIsLoading(true)
+    setLastError(null)
 
     try {
       const response = await fetch("/api/subscriptions/cancel", {
@@ -241,7 +268,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.details || "Failed to cancel subscription")
+        throw new Error(data.details || data.message || "Failed to cancel subscription")
       }
 
       // Dispatch an event to notify other components about the subscription change
@@ -249,19 +276,20 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
 
       toast({
         title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled and will end at the current billing period.",
+        description: data.message || "Your subscription has been cancelled and will end at the current billing period.",
       })
 
       router.refresh()
 
       return {
         success: true,
-        message: "Subscription cancelled successfully",
+        message: data.message || "Subscription cancelled successfully",
       }
     } catch (error) {
       console.error("Cancellation error:", error)
 
       const errorMessage = error instanceof Error ? error.message : "Failed to cancel subscription"
+      setLastError(errorMessage)
 
       toast({
         title: "Cancellation Error",
@@ -279,9 +307,10 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     }
   }, [toast, router])
 
-  // Handle subscription resumption
+  // Handle subscription resumption with improved error handling
   const resumeSubscription = useCallback(async (): Promise<SubscriptionResult> => {
     setIsLoading(true)
+    setLastError(null)
 
     try {
       const response = await fetch("/api/subscriptions/resume", {
@@ -294,7 +323,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.details || "Failed to resume subscription")
+        throw new Error(data.details || data.message || "Failed to resume subscription")
       }
 
       // Dispatch an event to notify other components about the subscription change
@@ -302,19 +331,20 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
 
       toast({
         title: "Subscription Resumed",
-        description: "Your subscription has been resumed successfully.",
+        description: data.message || "Your subscription has been resumed successfully.",
       })
 
       router.refresh()
 
       return {
         success: true,
-        message: "Subscription resumed successfully",
+        message: data.message || "Subscription resumed successfully",
       }
     } catch (error) {
       console.error("Resume error:", error)
 
       const errorMessage = error instanceof Error ? error.message : "Failed to resume subscription"
+      setLastError(errorMessage)
 
       toast({
         title: "Resume Error",
@@ -334,6 +364,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
 
   return {
     isLoading,
+    lastError,
     handleSubscribe,
     cancelSubscription,
     resumeSubscription,
