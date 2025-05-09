@@ -2,19 +2,20 @@
 
 import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, XCircle, ArrowRight, Share2 } from "lucide-react"
+import { CheckCircle, XCircle, Clock, Brain, ArrowRight, Share2, Trophy } from "lucide-react"
 import { formatQuizTime } from "@/lib/utils/quiz-performance"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { motion } from "framer-motion"
 import { useAppDispatch } from "@/store"
 import { resetQuiz } from "@/store/slices/quizSlice"
-import { Badge } from "@/components/ui/badge"
-import { SimilarityBadge } from "@/components/ui/similarity-badge"
-import { QuizResultsSummary } from "@/components/ui/quiz-results-summary"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { StatCard } from "@/components/ui/stat-card"
+import { PerformanceChart } from "@/components/ui/performance-chart"
+import { AnswerReviewItem } from "@/components/ui/answer-review-item"
+import { QuizResultHeader } from "@/components/ui/quiz-result-header"
 
 interface BlanksQuizResultProps {
   result: {
@@ -36,6 +37,7 @@ interface BlanksQuizResultProps {
       timeSpent: number
       similarity?: number
       hintsUsed?: boolean
+      index: number
     }>
   }
   [key: string]: any
@@ -66,13 +68,26 @@ export default function BlanksQuizResult({ result, ...props }: BlanksQuizResultP
 
   // Process answers to add similarity scores if not already present
   const processedAnswers = useMemo(() => {
-    return safeResult.answers.map((answer) => {
-      if (answer.similarity === undefined && answer.userAnswer && answer.correctAnswer) {
-        // Calculate similarity using the edit distance algorithm
-        const similarity = getBestSimilarityScore(answer.userAnswer, answer.correctAnswer)
-        return { ...answer, similarity }
+    return safeResult.answers.map((answer, idx) => {
+      // Ensure correctAnswer is a string
+      const correctAnswer = answer.correctAnswer || answer.answer || ""
+      const userAnswer = answer.userAnswer || ""
+
+      // Calculate similarity if not already present and we have both answers
+      let similarity = answer.similarity
+      if (similarity === undefined && userAnswer && correctAnswer) {
+        similarity = getBestSimilarityScore(userAnswer, correctAnswer)
       }
-      return answer
+
+      // Ensure similarity is at least 0
+      similarity = typeof similarity === "number" ? Math.max(0, similarity) : 0
+
+      return {
+        ...answer,
+        correctAnswer,
+        similarity,
+        index: answer.index || idx,
+      }
     })
   }, [safeResult.answers])
 
@@ -81,6 +96,20 @@ export default function BlanksQuizResult({ result, ...props }: BlanksQuizResultP
     const validAnswers = processedAnswers.filter((a) => a && typeof a === "object")
     const hintsUsedCount = validAnswers.filter((a) => a.hintsUsed).length
     const answersWithSimilarity = validAnswers.filter((a) => typeof a.similarity === "number")
+    const fastestAnswer =
+      validAnswers.length > 0
+        ? validAnswers.reduce(
+            (fastest, current) => (current.timeSpent < fastest.timeSpent ? current : fastest),
+            validAnswers[0],
+          )
+        : null
+    const slowestAnswer =
+      validAnswers.length > 0
+        ? validAnswers.reduce(
+            (slowest, current) => (current.timeSpent > slowest.timeSpent ? current : slowest),
+            validAnswers[0],
+          )
+        : null
 
     const averageSimilarity =
       answersWithSimilarity.length > 0
@@ -89,13 +118,59 @@ export default function BlanksQuizResult({ result, ...props }: BlanksQuizResultP
           )
         : 0
 
+    const averageTimePerQuestion = Math.round(safeResult.totalTimeSpent / safeResult.totalQuestions)
+
     return {
       hintsUsedCount,
       hintsUsedPercentage:
         safeResult.totalQuestions > 0 ? Math.round((hintsUsedCount / safeResult.totalQuestions) * 100) : 0,
       averageSimilarity,
+      fastestAnswer,
+      slowestAnswer,
+      averageTimePerQuestion,
     }
-  }, [processedAnswers, safeResult.totalQuestions])
+  }, [processedAnswers, safeResult.totalQuestions, safeResult.totalTimeSpent])
+
+  // Performance metrics for chart
+  const performanceMetrics = useMemo(
+    () => [
+      {
+        label: "Overall Score",
+        value: safeResult.score,
+        color: "bg-primary",
+      },
+      {
+        label: "Accuracy",
+        value: Math.round((safeResult.correctAnswers / safeResult.totalQuestions) * 100),
+        color: "bg-green-500",
+        description: `${safeResult.correctAnswers} out of ${safeResult.totalQuestions} questions answered correctly`,
+      },
+      {
+        label: "Answer Similarity",
+        value: stats.averageSimilarity,
+        color: "bg-blue-500",
+        description: "Average similarity between your answers and correct answers",
+      },
+      ...(stats.hintsUsedCount > 0
+        ? [
+            {
+              label: "Hints Used",
+              value: stats.hintsUsedPercentage,
+              color: "bg-amber-500",
+              description: `Used hints on ${stats.hintsUsedCount} out of ${safeResult.totalQuestions} questions`,
+            },
+          ]
+        : []),
+    ],
+    [
+      safeResult.score,
+      safeResult.correctAnswers,
+      safeResult.totalQuestions,
+      stats.averageSimilarity,
+      stats.hintsUsedCount,
+      stats.hintsUsedPercentage,
+    ],
+  )
 
   // Simplified handleShare function
   const handleShare = useCallback(async () => {
@@ -155,183 +230,253 @@ export default function BlanksQuizResult({ result, ...props }: BlanksQuizResultP
     return () => clearTimeout(timeoutId)
   }, [dispatch, router, safeResult.slug, isLoading])
 
-  // Memoized animation variants
-  const containerVariants = useMemo(
-    () => ({
-      hidden: { opacity: 0 },
-      visible: {
-        opacity: 1,
-        transition: {
-          staggerChildren: 0.1,
-        },
-      },
-    }),
-    [],
-  )
-
-  const itemVariants = useMemo(
-    () => ({
-      hidden: { y: 20, opacity: 0 },
-      visible: { y: 0, opacity: 1 },
-    }),
-    [],
-  )
-
   // Format question text to show the blank
   const formatQuestionText = useCallback((questionText: string) => {
     return questionText.replace(/\[\[(.*?)\]\]/g, (_, p1) => {
-      return `<span class="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">________</span>`
+      return `<span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">________</span>`
     })
   }, [])
 
   return (
-    <motion.div
-      data-testid="quiz-results"
-      className="space-y-6"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-      <Card className="w-full print:shadow-none">
-        <CardHeader className="text-center">
-          <motion.div variants={itemVariants}>
-            <CardTitle className="text-2xl">Fill in the Blanks Quiz Results</CardTitle>
-            <CardDescription>Completed on {new Date(safeResult.completedAt).toLocaleDateString()}</CardDescription>
+    <div className="container max-w-4xl mx-auto px-4 py-8">
+      <QuizResultHeader
+        score={safeResult.score}
+        title="Fill in the Blanks Quiz Results"
+        completedAt={safeResult.completedAt}
+      />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full max-w-md mx-auto grid grid-cols-2 mb-8">
+          <TabsTrigger value="summary" className="text-base py-3">
+            Summary
+          </TabsTrigger>
+          <TabsTrigger value="details" className="text-base py-3">
+            Answer Details
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary" className="space-y-8 animate-in fade-in-50 duration-500">
+          <motion.div
+            className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <StatCard
+              icon={<Trophy className="h-8 w-8" />}
+              label="Score"
+              value={`${safeResult.score}%`}
+              color="primary"
+            />
+
+            <StatCard
+              icon={<CheckCircle className="h-8 w-8" />}
+              label="Correct Answers"
+              value={safeResult.correctAnswers}
+              subValue={`of ${safeResult.totalQuestions}`}
+              color="success"
+              trend="up"
+              trendValue={`${Math.round((safeResult.correctAnswers / safeResult.totalQuestions) * 100)}%`}
+            />
+
+            <StatCard
+              icon={<XCircle className="h-8 w-8" />}
+              label="Incorrect Answers"
+              value={safeResult.totalQuestions - safeResult.correctAnswers}
+              subValue={`of ${safeResult.totalQuestions}`}
+              color="danger"
+            />
+
+            <StatCard
+              icon={<Clock className="h-8 w-8" />}
+              label="Time Spent"
+              value={safeResult.formattedTimeSpent}
+              subValue={`${stats.averageTimePerQuestion}s per question`}
+              color="info"
+            />
           </motion.div>
-        </CardHeader>
 
-        {process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_DEBUG_MODE === "true" && (
-          <div className="bg-slate-50 border border-slate-200 p-3 rounded-md mx-6 mb-4">
-            <h3 className="text-sm text-slate-700">Result Debug</h3>
-            <pre className="text-xs bg-slate-100 p-2 rounded overflow-auto max-h-60 mt-2">
-              {JSON.stringify(result, null, 2)}
-            </pre>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Performance Overview</h3>
+                <PerformanceChart metrics={performanceMetrics} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Time Analysis</h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Fastest Answer</h4>
+                    {stats.fastestAnswer ? (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium">
+                            Question {processedAnswers.indexOf(stats.fastestAnswer) + 1}
+                          </span>
+                          <span className="text-xs bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-full">
+                            {formatQuizTime(stats.fastestAnswer.timeSpent)}
+                          </span>
+                        </div>
+                        <p
+                          className="text-xs text-muted-foreground"
+                          dangerouslySetInnerHTML={{
+                            __html: formatQuestionText(stats.fastestAnswer.question).substring(0, 100) + "...",
+                          }}
+                        ></p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No data available</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Slowest Answer</h4>
+                    {stats.slowestAnswer ? (
+                      <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium">
+                            Question {processedAnswers.indexOf(stats.slowestAnswer) + 1}
+                          </span>
+                          <span className="text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
+                            {formatQuizTime(stats.slowestAnswer.timeSpent)}
+                          </span>
+                        </div>
+                        <p
+                          className="text-xs text-muted-foreground"
+                          dangerouslySetInnerHTML={{
+                            __html: formatQuestionText(stats.slowestAnswer.question).substring(0, 100) + "...",
+                          }}
+                        ></p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No data available</p>
+                    )}
+                  </div>
+
+                  <div className="pt-2">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Average Time</h4>
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mr-3">
+                        <Clock className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold">{formatQuizTime(stats.averageTimePerQuestion)}</p>
+                        <p className="text-xs text-muted-foreground">per question</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="summary">Summary</TabsTrigger>
-            <TabsTrigger value="details">Answer Details</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="summary" className="pt-4">
-            <CardContent>
-              <QuizResultsSummary
-                score={safeResult.score}
-                correctAnswers={safeResult.correctAnswers}
-                totalQuestions={safeResult.totalQuestions}
-                totalTimeSpent={safeResult.totalTimeSpent}
-                formattedTimeSpent={safeResult.formattedTimeSpent || formatQuizTime(safeResult.totalTimeSpent)}
-                averageSimilarity={stats.averageSimilarity}
-                hintsUsed={stats.hintsUsedCount}
-                quizType="blanks"
-              />
-            </CardContent>
-          </TabsContent>
-
-          <TabsContent value="details">
-            <CardContent>
-              <motion.div variants={containerVariants} className="mt-6 space-y-4">
-                <h3 className="text-lg font-medium">Answer Review</h3>
-                {processedAnswers.length > 0 ? (
-                  processedAnswers.map(
-                    (answer, index) =>
-                      answer && (
-                        <motion.div key={index} variants={itemVariants}>
-                          <Card
-                            className={`border-l-4 ${answer.isCorrect ? "border-l-green-500" : "border-l-red-500"} ${answer.isCorrect ? "bg-green-50/50 dark:bg-green-950/20" : "bg-red-50/50 dark:bg-red-950/20"}`}
-                          >
-                            <CardContent className="pt-6">
-                              <div className="flex items-start gap-2">
-                                {answer.isCorrect ? (
-                                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                                ) : (
-                                  <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                                )}
-                                <div className="w-full">
-                                  <p className="font-medium">Question {index + 1}</p>
-                                  <p
-                                    className="text-sm mt-1"
-                                    dangerouslySetInnerHTML={{ __html: formatQuestionText(answer.question) }}
-                                  ></p>
-                                  <div className="mt-3">
-                                    <p className="text-sm">
-                                      Your answer:{" "}
-                                      <span
-                                        className={
-                                          answer.isCorrect ? "text-green-600 font-medium" : "text-red-600 font-medium"
-                                        }
-                                      >
-                                        {answer.userAnswer || "No answer provided"}
-                                      </span>
-                                      {answer.similarity !== undefined && (
-                                        <span className="ml-2">
-                                          <SimilarityBadge similarity={answer.similarity} />
-                                        </span>
-                                      )}
-                                      {answer.hintsUsed && (
-                                        <Badge
-                                          variant="outline"
-                                          className="ml-2 text-xs bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800"
-                                        >
-                                          Hint used
-                                        </Badge>
-                                      )}
-                                    </p>
-                                  </div>
-                                  {!answer.isCorrect && (
-                                    <div className="mt-2 p-2 bg-green-50 border border-green-100 rounded-md dark:bg-green-950/30 dark:border-green-900">
-                                      <p className="text-sm">
-                                        Correct answer:{" "}
-                                        <span className="text-green-600 font-medium">{answer.correctAnswer}</span>
-                                      </p>
-                                    </div>
-                                  )}
-                                  <p className="text-xs text-muted-foreground mt-3">
-                                    Time spent: {formatQuizTime(answer.timeSpent)}
-                                  </p>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
-                      ),
-                  )
+          <div className="flex flex-wrap justify-between gap-4 pt-4">
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/dashboard/quizzes")}
+                className="flex-1 sm:flex-initial"
+              >
+                Return to Quizzes
+              </Button>
+              <Button onClick={handleTryAgain} disabled={isLoading} className="flex-1 sm:flex-initial">
+                {isLoading ? (
+                  <>
+                    <span className="animate-spin mr-2">⟳</span> Loading...
+                  </>
                 ) : (
-                  <p className="text-muted-foreground">No answer details available.</p>
+                  <>
+                    Try Again <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
                 )}
-              </motion.div>
-            </CardContent>
-          </TabsContent>
-        </Tabs>
+              </Button>
+            </div>
 
-        <CardFooter className="flex flex-wrap justify-between gap-4 pt-6">
-          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/dashboard/quizzes")}
-              className="flex-1 sm:flex-initial"
-            >
-              Return to Quizzes
-            </Button>
-            <Button onClick={handleTryAgain} disabled={isLoading} className="flex-1 sm:flex-initial">
-              {isLoading ? (
-                <>
-                  <span className="animate-spin mr-2">⟳</span> Loading...
-                </>
-              ) : (
-                <>
-                  Try Again <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
+            {(navigator.share || navigator.clipboard) && (
+              <Button variant="ghost" size="sm" onClick={handleShare} className="flex items-center gap-1">
+                <Share2 className="h-4 w-4 mr-1" />
+                Share
+              </Button>
+            )}
           </div>
-          <Button variant="outline" size="icon" onClick={handleShare} title="Share Results">
-            <Share2 className="h-4 w-4" />
-          </Button>
-        </CardFooter>
-      </Card>
-    </motion.div>
+        </TabsContent>
+
+        <TabsContent value="details" className="space-y-6 animate-in fade-in-50 duration-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-medium">Answer Review</h3>
+            <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center">
+                <div className="h-3 w-3 rounded-full bg-green-500 mr-1"></div>
+                <span className="text-muted-foreground">Correct</span>
+              </div>
+              <div className="flex items-center ml-3">
+                <div className="h-3 w-3 rounded-full bg-red-500 mr-1"></div>
+                <span className="text-muted-foreground">Incorrect</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {processedAnswers.length > 0 ? (
+              processedAnswers.map((answer, index) => (
+                <AnswerReviewItem
+                  key={index}
+                  index={answer.index || index}
+                  question={answer.question}
+                  userAnswer={answer.userAnswer || "No answer provided"}
+                  correctAnswer={answer.correctAnswer || answer.answer || ""}
+                  isCorrect={answer.isCorrect}
+                  timeSpent={answer.timeSpent}
+                  similarity={answer.similarity}
+                  hintsUsed={answer.hintsUsed}
+                  formatQuestionText={formatQuestionText}
+                  delay={index * 0.05}
+                  showSimilarityDetails={true}
+                />
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+                <p className="text-muted-foreground">No answer details available.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap justify-between gap-4 pt-4">
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/dashboard/quizzes")}
+                className="flex-1 sm:flex-initial"
+              >
+                Return to Quizzes
+              </Button>
+              <Button onClick={handleTryAgain} disabled={isLoading} className="flex-1 sm:flex-initial">
+                {isLoading ? (
+                  <>
+                    <span className="animate-spin mr-2">⟳</span> Loading...
+                  </>
+                ) : (
+                  <>
+                    Try Again <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {(navigator.share || navigator.clipboard) && (
+              <Button variant="ghost" size="sm" onClick={handleShare} className="flex items-center gap-1">
+                <Share2 className="h-4 w-4 mr-1" />
+                Share
+              </Button>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }

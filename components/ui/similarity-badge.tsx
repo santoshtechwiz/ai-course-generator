@@ -1,6 +1,6 @@
 import { Badge, type BadgeProps } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getSimilarityCategory } from "@/lib/utils/text-similarity"
+import { getSimilarityLevel } from "@/lib/utils/text-similarity"
 
 interface SimilarityBadgeProps extends Omit<BadgeProps, "variant"> {
   similarity: number
@@ -15,7 +15,7 @@ export function SimilarityBadge({
   className,
   ...props
 }: SimilarityBadgeProps) {
-  const { category, color } = getSimilarityCategory(similarity)
+  const { category, color } = getSimilarityLevel(similarity)
 
   // Determine variant based on similarity category
   const getVariant = (): BadgeProps["variant"] => {
