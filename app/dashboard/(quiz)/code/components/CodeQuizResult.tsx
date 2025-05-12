@@ -31,8 +31,8 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 import { useResponsive } from "@/hooks"
 
-// Local storage key prefix for quiz state
-const QUIZ_STATE_STORAGE_KEY = "quiz_state_"
+// Update the QUIZ_STATE_STORAGE_KEY constant to be more specific
+const QUIZ_STATE_STORAGE_KEY = "quiz_state_code_"
 
 interface CodeQuizResultProps {
   result: {
@@ -61,10 +61,10 @@ interface CodeQuizResultProps {
 }
 
 export default function CodeQuizResult({ result, ...props }: CodeQuizResultProps) {
-  const [activeTab, setActiveTab] = useState("summary")
-  const [isLoading, setIsLoading] = useState(false)
-  const [hasLoadedResult, setHasLoadedResult] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
+  const [activeTab, setActiveTab] = useState<"summary" | "details">("summary")
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [hasLoadedResult, setHasLoadedResult] = useState<boolean>(false)
+  const [showConfetti, setShowConfetti] = useState<boolean>(false)
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()

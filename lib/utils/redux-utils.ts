@@ -2,6 +2,7 @@
 import { useSelector } from "react-redux"
 import type { TypedUseSelectorHook } from "react-redux"
 import type { RootState } from "@/store"
+import type { PersistPartial } from "redux-persist/es/persistReducer"
 
 /**
  * Type-safe selector hook for accessing Redux state
@@ -46,4 +47,15 @@ export function createSelector<TState, TSelected>(
  */
 export function createAction<T extends string, P>(type: T) {
   return (payload: P) => ({ type, payload })
+}
+
+/**
+ * Helper function to unwrap persist partial from redux-persist
+ * @param state Persisted state
+ * @returns The unwrapped state
+ */
+export function unwrapPersistedState<T>(state: T & PersistPartial): T {
+  // This is a type assertion to help TypeScript understand
+  // that we are handling the PersistPartial
+  return state as unknown as T
 }

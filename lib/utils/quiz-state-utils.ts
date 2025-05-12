@@ -1,92 +1,126 @@
-import type { QuizState } from "@/store/slices/quizSlice"
+import type { QuizType, QuizAnswer, BlanksQuizAnswer, CodeQuizAnswer, StoredQuizState } from "@/app/types/quiz-types"
+import type { Answer, QuizState } from "@/store/slices/quizSlice"
 
-/**
- * Utility functions for managing quiz state transitions
- */
+// Function to initialize quiz state
+export function initializeQuizState(
+  quizId: string,
+  slug: string,
+  quizType: QuizType | string,
+  questionCount: number,
+): StoredQuizState {
+  return {
+    quizId,
+    slug,
+    type: quizType,
+    currentQuestion: 0,
+    totalQuestions: questionCount,
+    startTime: Date.now(),
+    isCompleted: false,
+    answers: Array(questionCount).fill(null),
+    timeSpentPerQuestion: Array(questionCount).fill(0),
+  }
+}
 
-/**
- * Determine the display state based on quiz state
- */
-export function determineDisplayState(
-  state: QuizState,
-  isAuthenticated: boolean,
-  isReturningFromAuth: boolean,
-): "quiz" | "results" | "auth" | "loading" | "saving" | "preparing" {
-  // Processing auth return
-  if (state.isProcessingAuth || isReturningFromAuth) {
-    return "preparing"
+// Function to update quiz state with a new answer
+export function updateQuizStateWithAnswer(
+  state: StoredQuizState,
+  questionIndex: number,
+  answer: QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer,
+): StoredQuizState {
+  if (!state || questionIndex < 0 || questionIndex >= state.totalQuestions) {
+    throw new Error("Invalid state or question index")
   }
 
-  // Loading state
-  if (state.isLoading || state.isLoadingResults) {
-    return "loading"
+  const newAnswers = [...state.answers]
+  newAnswers[questionIndex] = answer
+
+  const newTimeSpent = [...state.timeSpentPerQuestion]
+  newTimeSpent[questionIndex] = answer.timeSpent
+
+  return {
+    ...state,
+    answers: newAnswers,
+    timeSpentPerQuestion: newTimeSpent,
+  }
+}
+
+// Function to mark quiz as completed
+export function completeQuizState(state: StoredQuizState): StoredQuizState {
+  if (!state) {
+    throw new Error("Invalid quiz state")
   }
 
-  // Saving results
-  if (state.savingResults) {
-    return "saving"
+  return {
+    ...state,
+    isCompleted: true,
+  }
+}
+
+// Function to convert Redux state to StoredQuizState
+export function convertReduxStateToStoredState(reduxState: QuizState, quizType: QuizType | string): StoredQuizState {
+  return {
+    quizId: reduxState.quizId,
+    slug: reduxState.slug,
+    type: quizType,
+    currentQuestion: reduxState.currentQuestionIndex,
+    totalQuestions: reduxState.questions.length,
+    startTime: reduxState.startTime,
+    isCompleted: reduxState.isCompleted,
+    answers: reduxState.answers as (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer | null)[],
+    timeSpentPerQuestion: reduxState.timeSpent,
+  }
+}
+
+// Function to convert StoredQuizState to Redux Answer format
+export function convertStoredAnswersToReduxAnswers(
+  storedAnswers: (QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer | null)[],
+): Answer[] {
+  if (!Array.isArray(storedAnswers)) {
+    return []
   }
 
-  // Completed quiz states
-  if (state.isCompleted) {
-    // If user is authenticated, always show results
-    if (isAuthenticated) {
-      return "results"
+  return storedAnswers.map((answer, index) => {
+    if (!answer) {
+      return {
+        answer: "",
+        timeSpent: 0,
+        isCorrect: false,
+        index,
+      }
     }
 
-    // For guest users, require authentication to view results
-    return "auth"
-  }
-
-  // Default to quiz
-  return "quiz"
-}
-
-/**
- * Calculate quiz score from answers
- */
-export function calculateQuizScore(answers: any[], totalQuestions: number): number {
-  const correctAnswers = answers.filter((a) => a?.isCorrect).length
-  return totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
-}
-
-/**
- * Calculate total time spent on quiz
- */
-export function calculateTotalTime(answers: any[]): number {
-  return answers.reduce((acc, curr) => acc + (curr?.timeSpent || 0), 0)
-}
-
-/**
- * Validate quiz data is complete and ready for initialization
- */
-export function validateInitialQuizData(quizData: any): { isValid: boolean; error?: string } {
-  if (!quizData) {
-    return { isValid: false, error: "Quiz data is missing" }
-  }
-
-  if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
-    return { isValid: false, error: "Quiz questions are missing or invalid" }
-  }
-
-  return { isValid: true }
-}
-
-/**
- * Create a safe quiz data object with defaults for missing values
- */
-export function createSafeQuizData(quizData: any, slug: string, quizType: string): any {
-  return {
-    id: quizData?.id || quizData?.quizId || "unknown",
-    quizId: quizData?.id || quizData?.quizId || "unknown",
-    title: quizData?.title || "Quiz",
-    slug: slug || "unknown",
-    quizType: quizType || "mcq",
-    description: quizData?.description || "",
-    questions: quizData?.questions || [],
-    isPublic: quizData?.isPublic || false,
-    isFavorite: quizData?.isFavorite || false,
-    userId: quizData?.userId || "",
-    difficulty: quizData?.difficulty || "medium",
-  }
+    // Handle different answer types
+    if ("codeSnippet" in answer) {
+      // CodeQuizAnswer
+      return {
+        answer: answer.answer,
+        userAnswer: answer.userAnswer,
+        timeSpent: answer.timeSpent,
+        isCorrect: answer.isCorrect,
+        codeSnippet: answer.codeSnippet,
+        language: answer.language,
+        index,
+      }
+    } else if ("hintsUsed" in answer) {
+      // BlanksQuizAnswer
+      return {
+        answer: "",
+        userAnswer: answer.userAnswer,
+        timeSpent: answer.timeSpent,
+        isCorrect: false, // We don't have this info in BlanksQuizAnswer
+        hintsUsed: answer.hintsUsed,
+        index,
+      }
+    } else {
+      // Standard QuizAnswer
+      return {
+        answer: answer.answer,
+        userAnswer: answer.userAnswer,
+        timeSpent: answer.timeSpent,
+        isCorrect: answer.isCorrect,
+        questionId: "questionId" in answer ? answer.questionId : undefined,
+        index,
+      }
+    }
+  })
 }

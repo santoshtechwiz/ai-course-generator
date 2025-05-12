@@ -30,6 +30,7 @@ interface CodingQuizProps {
   isLastQuestion: boolean
 }
 
+// Update the component props type definition
 function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
@@ -73,31 +74,31 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
   }, [])
 
   const handleSubmit = useCallback(() => {
-    if (isSubmitting) return;
+    if (isSubmitting) return
 
-    const answerTime = Date.now() - startTime;
+    const answerTime = Date.now() - startTime
     if (isTooFastAnswer(startTime, 1)) {
-      setTooFastWarning(true);
-      return;
+      setTooFastWarning(true)
+      return
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
 
-    const answer = options.length > 0 && selectedOption ? selectedOption : userCode;
-    let isCorrect = false;
+    const answer = options.length > 0 && selectedOption ? selectedOption : userCode
+    let isCorrect = false
 
     if (question.answer || question.correctAnswer) {
-      const correctAnswer = question.answer || question.correctAnswer || "";
-      isCorrect = options.length > 0 ? selectedOption === correctAnswer : answer.includes(correctAnswer);
+      const correctAnswer = question.answer || question.correctAnswer || ""
+      isCorrect = options.length > 0 ? selectedOption === correctAnswer : answer.includes(correctAnswer)
     }
 
-    const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000)
 
     setTimeout(() => {
-      onAnswer(answer, timeSpent, isCorrect);
-      setIsSubmitting(false);
-    }, 300);
-  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption]);
+      onAnswer(answer, timeSpent, isCorrect)
+      setIsSubmitting(false)
+    }, 300)
+  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption])
 
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null

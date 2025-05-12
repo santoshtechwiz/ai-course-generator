@@ -1,5 +1,5 @@
 import type { QuizType } from "@/app/types/quiz-types"
-import { Question } from "@/lib/quiz-store"
+import type { Question } from "@/lib/quiz-store"
 import { quizApi } from "@/lib/utils/quiz-index"
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 
@@ -47,6 +47,7 @@ export interface QuizState {
     score?: number
     completedAt?: string
   } | null
+  isLoading: boolean
 }
 
 // Define initial state
@@ -71,15 +72,30 @@ const initialState: QuizState = {
   completedAt: null,
   startTime: Date.now(),
   savedState: null,
+  isLoading: true,
+}
+
+// Define types for thunk arguments
+interface FetchQuizResultsArgs {
+  quizId: string
+  slug: string
+  quizType: QuizType | string
+}
+
+interface SubmitQuizResultsArgs {
+  quizId: string
+  slug: string
+  quizType: string
+  answers: Answer[]
+  score: number
+  totalTime: number
+  totalQuestions: number
 }
 
 // Async thunks
-export const fetchQuizResults = createAsyncThunk(
+export const fetchQuizResults = createAsyncThunk<any, FetchQuizResultsArgs, { rejectValue: any }>(
   "quiz/fetchResults",
-  async (
-    { quizId, slug, quizType }: { quizId: string; slug: string; quizType: QuizType | string },
-    { rejectWithValue },
-  ) => {
+  async ({ quizId, slug, quizType }, { rejectWithValue }) => {
     try {
       const result = await quizApi.getQuizData(slug, quizType)
       return result
@@ -89,28 +105,9 @@ export const fetchQuizResults = createAsyncThunk(
   },
 )
 
-export const submitQuizResults = createAsyncThunk(
+export const submitQuizResults = createAsyncThunk<any, SubmitQuizResultsArgs, { rejectValue: string }>(
   "quiz/submitResults",
-  async (
-    {
-      quizId,
-      slug,
-      quizType,
-      answers,
-      score,
-      totalTime,
-      totalQuestions,
-    }: {
-      quizId: string
-      slug: string
-      quizType: string
-      answers: Answer[]
-      score: number
-      totalTime: number
-      totalQuestions: number
-    },
-    { rejectWithValue },
-  ) => {
+  async ({ quizId, slug, quizType, answers, score, totalTime, totalQuestions }, { rejectWithValue }) => {
     try {
       const result = await quizApi.submitQuiz(quizId, slug, quizType, answers, score, totalTime, totalQuestions)
       return result
@@ -121,12 +118,46 @@ export const submitQuizResults = createAsyncThunk(
   },
 )
 
+// Define types for action payloads
+interface InitQuizPayload {
+  id?: string
+  quizId?: string
+  slug?: string
+  title?: string
+  quizType?: QuizType | string
+  questions?: Question[]
+  initialAnswers?: Answer[]
+  initialTimeSpent?: number[]
+  isCompleted?: boolean
+  score?: number
+  requiresAuth?: boolean
+  pendingAuthRequired?: boolean
+  authCheckComplete?: boolean
+}
+
+interface CompleteQuizPayload {
+  answers?: Answer[]
+  score?: number
+  completedAt?: string
+}
+
+interface SaveStateBeforeAuthPayload {
+  quizId?: string
+  slug?: string
+  quizType?: string
+  currentQuestionIndex?: number
+  answers?: Answer[]
+  isCompleted?: boolean
+  score?: number
+  completedAt?: string
+}
+
 // Create slice
 const quizSlice = createSlice({
   name: "quiz",
   initialState,
   reducers: {
-    initQuiz: (state, action: PayloadAction<any>) => {
+    initQuiz: (state, action: PayloadAction<InitQuizPayload>) => {
       const questionCount = action.payload.questions?.length || 0
 
       // Use a more immutable approach to state updates
@@ -146,6 +177,7 @@ const quizSlice = createSlice({
         requiresAuth: action.payload.requiresAuth || false,
         pendingAuthRequired: action.payload.pendingAuthRequired || false,
         authCheckComplete: action.payload.authCheckComplete || true,
+        isLoading: false, // Set to false after initialization
       }
     },
     submitAnswer: (state, action: PayloadAction<Answer>) => {
@@ -179,6 +211,7 @@ const quizSlice = createSlice({
         answers: newAnswers,
         timeSpent: newTimeSpent,
         animationState: "answering",
+        isLoading: false,
       }
     },
     nextQuestion: (state) => {
@@ -187,14 +220,12 @@ const quizSlice = createSlice({
           ...state,
           currentQuestionIndex: state.currentQuestionIndex + 1,
           animationState: "idle",
+          isLoading: false,
         }
       }
       return state
     },
-    completeQuiz: (
-      state,
-      action: PayloadAction<{ answers?: Answer[]; score?: number; completedAt?: string }> = { payload: {} },
-    ) => {
+    completeQuiz: (state, action: PayloadAction<CompleteQuizPayload> = { payload: {} }) => {
       // Calculate score if not provided
       let calculatedScore = action.payload?.score
 
@@ -211,6 +242,7 @@ const quizSlice = createSlice({
         score: calculatedScore || 0,
         completedAt: action.payload?.completedAt || new Date().toISOString(),
         animationState: "completed",
+        isLoading: false,
         // If answers are provided, update them
         answers:
           Array.isArray(action.payload?.answers) && action.payload.answers.length > 0
@@ -232,6 +264,7 @@ const quizSlice = createSlice({
         pendingAuthRequired: false,
         authCheckComplete: true,
         startTime: Date.now(),
+        isLoading: false,
       }
     },
     setRequiresAuth: (state, action: PayloadAction<boolean>) => {
@@ -256,6 +289,7 @@ const quizSlice = createSlice({
       return {
         ...state,
         error: action.payload,
+        isLoading: false,
       }
     },
     setAnimationState: (state, action: PayloadAction<"idle" | "answering" | "completed">) => {
@@ -264,19 +298,7 @@ const quizSlice = createSlice({
         animationState: action.payload,
       }
     },
-    saveStateBeforeAuth: (
-      state,
-      action: PayloadAction<{
-        quizId?: string
-        slug?: string
-        quizType?: string
-        currentQuestionIndex?: number
-        answers?: Answer[]
-        isCompleted?: boolean
-        score?: number
-        completedAt?: string
-      }>,
-    ) => {
+    saveStateBeforeAuth: (state, action: PayloadAction<SaveStateBeforeAuthPayload>) => {
       return {
         ...state,
         savedState: action.payload,
@@ -310,6 +332,7 @@ const quizSlice = createSlice({
         error: null,
         pendingAuthRequired: false,
         savedState: null, // Clear saved state after restoration
+        isLoading: false,
       }
 
       return restoredState
@@ -331,6 +354,12 @@ const quizSlice = createSlice({
       }
       return state
     },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      return {
+        ...state,
+        isLoading: action.payload,
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -338,6 +367,7 @@ const quizSlice = createSlice({
         return {
           ...state,
           isCompleted: true,
+          isLoading: false,
         }
       })
       .addCase(fetchQuizResults.pending, (state) => {
@@ -345,6 +375,7 @@ const quizSlice = createSlice({
           ...state,
           isSavingResults: true,
           error: null,
+          isLoading: true,
         }
       })
       .addCase(fetchQuizResults.fulfilled, (state, action) => {
@@ -352,6 +383,7 @@ const quizSlice = createSlice({
           return {
             ...state,
             isSavingResults: false,
+            isLoading: false,
           }
         }
 
@@ -362,6 +394,7 @@ const quizSlice = createSlice({
           isCompleted: true,
           completedAt: action.payload.completedAt || new Date().toISOString(),
           resultsSaved: true,
+          isLoading: false,
         }
       })
       .addCase(fetchQuizResults.rejected, (state, action) => {
@@ -369,6 +402,7 @@ const quizSlice = createSlice({
           ...state,
           isSavingResults: false,
           error: action.error.message || "Failed to fetch quiz results",
+          isLoading: false,
         }
       })
       .addCase(submitQuizResults.pending, (state) => {
@@ -383,6 +417,7 @@ const quizSlice = createSlice({
           ...state,
           isSavingResults: false,
           resultsSaved: true,
+          isLoading: false,
         }
       })
       .addCase(submitQuizResults.rejected, (state, action) => {
@@ -390,6 +425,7 @@ const quizSlice = createSlice({
           ...state,
           isSavingResults: false,
           error: action.error.message || "Failed to submit quiz results",
+          isLoading: false,
         }
       })
   },
@@ -412,6 +448,7 @@ export const {
   restoreFromSavedState,
   setCurrentQuestion,
   prevQuestion,
+  setLoading,
 } = quizSlice.actions
 
 // Export reducer
