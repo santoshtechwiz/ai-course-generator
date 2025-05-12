@@ -1,6 +1,6 @@
-import type { NextConfig } from "next"
 
-const nextConfig: NextConfig = {
+
+const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
   poweredByHeader: false, // Remove X-Powered-By header for security
