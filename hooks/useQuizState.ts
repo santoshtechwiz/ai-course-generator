@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -29,8 +29,19 @@ export function useQuiz() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
+
   // Update authentication state based on session
   useEffect(() => {
+    if (!isMounted.current) return
+
     const isAuthenticated = status === "authenticated" && !!session?.user
     dispatch(setIsAuthenticated(isAuthenticated))
 
@@ -47,10 +58,12 @@ export function useQuiz() {
   // Initialize the quiz with data
   const initialize = useCallback(
     (quizData: any) => {
+      if (!isMounted.current) return
+
       dispatch(
         initQuiz({
           ...quizData,
-          requiresAuth: true, // Always require auth for code quizzes
+          requiresAuth: quizData.requiresAuth ?? true, // Use provided value or default to true
         }),
       )
     },
@@ -60,6 +73,8 @@ export function useQuiz() {
   // Submit an answer for the current question
   const submitQuizAnswer = useCallback(
     (answerData: Answer) => {
+      if (!isMounted.current) return
+
       dispatch(submitAnswer(answerData))
     },
     [dispatch],
@@ -67,12 +82,16 @@ export function useQuiz() {
 
   // Move to the next question
   const goToNextQuestion = useCallback(() => {
+    if (!isMounted.current) return
+
     dispatch(nextQuestion())
   }, [dispatch])
 
   // Complete the quiz and calculate score
   const completeQuizWithAnswers = useCallback(
-    (data?: { answers?: Answer[]; score?: number; completedAt?: string }) => {
+    async (data?: { answers?: Answer[]; score?: number; completedAt?: string }) => {
+      if (!isMounted.current) return false
+
       try {
         // Ensure we have a valid payload
         const payload = {
@@ -86,14 +105,12 @@ export function useQuiz() {
 
         // If user is authenticated and we have a quizId, submit results
         if (isAuthenticated && quizState.quizId) {
-          submitResults({
+          await submitResults({
             quizId: quizState.quizId,
             slug: quizState.slug || "test-quiz",
             quizType: quizState.quizType || "code",
             answers: payload.answers,
             score: payload.score,
-          }).catch((err) => {
-            console.error("Failed to submit quiz results:", err)
           })
         }
 
@@ -122,6 +139,8 @@ export function useQuiz() {
       answers: Answer[]
       score: number
     }) => {
+      if (!isMounted.current) return
+
       const totalTime = calculateTotalTime(answers)
       const totalQuestions = answers.length
 
@@ -142,13 +161,17 @@ export function useQuiz() {
 
   // Restart the quiz
   const restartQuiz = useCallback(() => {
+    if (!isMounted.current) return
+
     dispatch(resetQuiz())
   }, [dispatch])
 
   // Handle authentication flow
   const requireAuthentication = useCallback(
     (redirectUrl: string) => {
-      // Save current quiz state
+      if (!isMounted.current) return
+
+      // Save current quiz state in Redux
       dispatch(
         saveStateBeforeAuth({
           quizId: quizState.quizId,
@@ -176,6 +199,8 @@ export function useQuiz() {
 
   // Restore state after authentication
   const restoreState = useCallback(() => {
+    if (!isMounted.current) return
+
     dispatch(restoreFromSavedState())
 
     // If the quiz was completed before auth, force it to be completed again
@@ -195,6 +220,8 @@ export function useQuiz() {
 
   // Check for auth return and restore state if needed
   useEffect(() => {
+    if (!isMounted.current) return
+
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search)
       const fromAuth = urlParams.get("fromAuth") === "true"

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 
 import { useState } from "react"
 import { SiAdobe } from "react-icons/si"
-import { useSubscription } from "@/store/subscription-provider"
+import useSubscription from "@/hooks/use-subscription"
+
 
 // Register a font with multiple weights
 Font.register({
@@ -156,7 +157,7 @@ const PDFDocument = ({ content, chapterName }: { content: string; chapterName: s
 
 const PDFGenerator = ({ markdown, chapterName }: { markdown: string; chapterName: string }) => {
   const [isDownloading, setIsDownloading] = useState(false)
-  const { subscription: data } = useSubscription()
+  const { data:data } = useSubscription()
 
   const handleDownload = async () => {
     setIsDownloading(true)

@@ -1,4 +1,5 @@
 import type { QuizType } from "@/app/types/quiz-types"
+import { Question } from "@/lib/quiz-store"
 import { quizApi } from "@/lib/utils/quiz-index"
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 
@@ -21,7 +22,7 @@ export interface QuizState {
   slug: string
   title: string
   quizType: QuizType | string
-  questions: any[]
+  questions: Question[]
   currentQuestionIndex: number
   answers: Answer[]
   timeSpent: number[]

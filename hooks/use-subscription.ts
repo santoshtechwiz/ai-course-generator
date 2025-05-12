@@ -87,7 +87,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
 
   const isSubscribedToAnyPaidPlan = !!subscriptionState.data?.isSubscribed && !!subscriptionState.data?.isPaidPlan
   const isSubscribedToAllPlans = subscriptionState.data?.isEnterprise ?? false
-
+  const canDownloadPDF = isSubscribedToAnyPaidPlan || isSubscribedToAllPlans;
   return {
     ...subscriptionState,
     isSubscribed,
@@ -97,6 +97,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     usagePercentage,
     hasExceededLimit,
     isLoading,
+    canDownloadPDF,
     refreshSubscription,
     onSubscriptionSuccess,
 

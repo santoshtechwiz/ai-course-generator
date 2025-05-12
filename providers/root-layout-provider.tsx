@@ -50,7 +50,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
         <SessionProvider session={session}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
             <SubscriptionProvider>
-               <LoadingProvider>
+               {/* <LoadingProvider> */}
               <AnimationProvider>
                 <SessionSync />
                 <MainNavbar />
@@ -61,7 +61,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
                 <Toaster position="top-right" closeButton richColors />
                 {mounted && children}
               </AnimationProvider>
-              </LoadingProvider>
+              {/* </LoadingProvider> */}
             </SubscriptionProvider>
           </ThemeProvider>
         </SessionProvider>
