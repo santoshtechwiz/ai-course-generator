@@ -34,8 +34,11 @@ import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/su
 import { SUBSCRIPTION_PLANS } from "./subscription-plans"
 
 import { calculateSavings } from "../utils/subscription-utils"
-import { useSubscription } from "../hooks/use-subscription"
+
 import { useMediaQuery } from "@/hooks"
+import useSubscription from "@/hooks/use-subscription"
+import FeatureComparison from "./FeatureComparison"
+import { CancellationDialog } from "./cancellation-dialog"
 
 
 
