@@ -15,7 +15,7 @@ import { StatCard } from "@/components/ui/stat-card"
 import { ResultCard } from "@/components/ui/result-card"
 import { QuizResultHeader } from "@/components/ui/quiz-result-header"
 import { PerformanceChart } from "@/components/ui/performance-chart"
-import { useWindowSize } from "@/hooks/use-window-size"
+import { useResponsive } from "@/hooks"
 
 interface McqQuizResultProps {
   result: {
@@ -47,7 +47,7 @@ export default function McqQuizResult({ result, ...props }: McqQuizResultProps) 
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
-  const windowSize = useWindowSize()
+  const windowSize = useResponsive()
 
   // Ensure we have a valid result object with default values
   const safeResult = useMemo(

@@ -156,9 +156,15 @@ export async function getQuizzes({
 }
 
 // Add a function to invalidate cache when quizzes are updated
-export const invalidateQuizCache = (slug?: string) => {
+export const invalidateQuizCache = async (slug?: string) => {
   if (slug) {
-    quizCache.del(`quiz_${slug}`)
+    // Invalidate all cache entries that might include the quiz with the given slug
+    const keys = quizCache.keys()
+    keys.forEach((key) => {
+      if (key.includes(slug)) {
+        quizCache.del(key)
+      }
+    })
   }
   // Delete all quiz cache entries
   const keys = quizCache.keys()

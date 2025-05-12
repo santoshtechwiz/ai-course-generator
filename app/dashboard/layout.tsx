@@ -5,7 +5,6 @@ import { getAuthSession } from "@/lib/auth"
 import { Chatbot } from "@/components/features/chat/Chatbot"
 import { NavigationEvents } from "./NavigationEvents"
 import { FullPageLoader } from "@/components/ui/loader"
-import { SubscriptionRefresher } from "@/app/dashboard/subscription/components/SubscriptionRefresher"
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
 
 export default async function DashboardLayout({
@@ -19,7 +18,6 @@ export default async function DashboardLayout({
   return (
     <DashboardShell>
       {/* Only render SubscriptionRefresher if user is authenticated */}
-      {session?.user?.id && <SubscriptionRefresher />}
       <NavigationEvents />
 
       <main className="flex-grow flex flex-col">
