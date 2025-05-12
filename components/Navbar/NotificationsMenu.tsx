@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 
-import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 
 interface NotificationsMenuProps {
   initialCount?: number

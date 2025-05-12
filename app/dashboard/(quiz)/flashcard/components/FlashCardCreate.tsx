@@ -26,7 +26,7 @@ import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
-import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 import PlanAwareButton from "../../components/PlanAwareButton"
 
 const flashcardSchema = z.object({

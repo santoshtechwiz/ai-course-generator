@@ -23,7 +23,8 @@ import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
-import { useSubscription } from "../../subscription/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
+
 
 interface CourseCreationFormProps {
   maxQuestions: number
