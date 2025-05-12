@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 
 import { useSession } from "next-auth/react"
 import useSubscription from "@/hooks/use-subscription"
-import useSubscription from "@/hooks/use-subscription"
+
 
 export default function TrialModal() {
   const { data: session } = useSession()
