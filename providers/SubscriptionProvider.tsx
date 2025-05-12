@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useCallback } from "react"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { fetchSubscription } from "@/store/slices/subscription-slice"
 
@@ -14,7 +14,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const initialFetchDoneRef = useRef(false)
 
-  useEffect(() => {
+  // Memoize the fetch function to prevent unnecessary re-renders
+  const fetchSubscriptionData = useCallback(() => {
     // Only fetch if not already loading/fetching and data is stale or doesn't exist
     if (!isLoading && !isFetching && (!lastFetched || Date.now() - lastFetched > 5 * 60 * 1000)) {
       if (!initialFetchDoneRef.current) {
@@ -32,15 +33,20 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         }, 300)
       }
     }
+  }, [dispatch, lastFetched, isLoading, isFetching])
+
+  useEffect(() => {
+    fetchSubscriptionData()
 
     return () => {
       if (fetchTimeoutRef.current) {
         clearTimeout(fetchTimeoutRef.current)
       }
     }
-  }, [dispatch, lastFetched, isLoading, isFetching])
+  }, [fetchSubscriptionData])
 
-  return <>{children}</>
+  // Simply render children without any wrapper to avoid unnecessary DOM nesting
+  return children
 }
 
 export default SubscriptionProvider

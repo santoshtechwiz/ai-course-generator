@@ -9,10 +9,13 @@ import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
 import { useAppSelector, useAppDispatch } from "@/store"
 import {
-  selectSubscription,
+  selectSubscriptionData,
   fetchSubscription,
   selectSubscriptionLoading,
   selectSubscriptionError,
+  selectIsSubscribed,
+  selectIsCancelled,
+  selectSubscriptionPlan,
 } from "@/store/slices/subscription-slice"
 
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
@@ -38,9 +41,12 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
 
   const dispatch = useAppDispatch()
-  const subscription = useAppSelector(selectSubscription)
+  const subscription = useAppSelector(selectSubscriptionData)
   const isLoading = useAppSelector(selectSubscriptionLoading)
   const error = useAppSelector(selectSubscriptionError)
+  const isSubscribed = useAppSelector(selectIsSubscribed)
+  const isCancelled = useAppSelector(selectIsCancelled)
+  const subscriptionPlan = useAppSelector(selectSubscriptionPlan)
 
   const isProd = process.env.NODE_ENV === "production"
   const { data: session, status: sessionStatus } = useSession()
@@ -49,7 +55,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
-  const isSubscribed = subscription?.isSubscribed || false
+  // const isSubscribed = subscription?.isSubscribed || false
 
   // Extract referral code from URL parameters
   useEffect(() => {
@@ -109,14 +115,14 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   )
 
   const handleManageSubscription = useCallback(() => {
-    if (subscription?.cancelAtPeriodEnd) {
+    if (isCancelled) {
       // If subscription is already cancelled, redirect to account page
       router.push("/dashboard/account")
     } else {
       // Otherwise show cancellation dialog
       setShowCancellationDialog(true)
     }
-  }, [subscription?.cancelAtPeriodEnd, router])
+  }, [isCancelled, router])
 
   // Handle retry
   const handleRetry = () => {

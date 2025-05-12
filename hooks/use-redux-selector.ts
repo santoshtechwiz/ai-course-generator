@@ -1,7 +1,7 @@
 import { useSelector } from "react-redux"
 import type { TypedUseSelectorHook } from "react-redux"
 import type { RootState } from "@/store"
-import { createSelector } from "../lib/utils/redux-utils"
+import { createSelector } from "@reduxjs/toolkit"
 
 /**
  * @deprecated Use useAppSelector from @/store instead
@@ -18,7 +18,9 @@ export function useMemoSelector<TSelected>(
   selector: (state: RootState) => TSelected,
   equalityFn?: (left: TSelected, right: TSelected) => boolean,
 ) {
-  const memoizedSelector = createSelector(selector, equalityFn)
+  // Use createSelector from Redux Toolkit for proper memoization
+  const memoizedSelector = createSelector([(state: RootState) => state], (state) => selector(state))
+
   return useSelector(memoizedSelector)
 }
 

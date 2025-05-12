@@ -231,14 +231,20 @@ const subscriptionSlice = createSlice({
 // Export actions and reducer
 export const { clearSubscriptionData } = subscriptionSlice.actions
 
-// Export selectors
-export const selectSubscription = (state: RootState) => state.subscription.data
+// Memoized selectors using createSelector for better performance
+import { createSelector } from "@reduxjs/toolkit"
+
+// Base selectors
+const getSubscriptionState = (state: RootState) => state.subscription
+export const selectSubscriptionData = (state: RootState) => state.subscription.data
 export const selectSubscriptionLoading = (state: RootState) => state.subscription.isLoading
 export const selectSubscriptionError = (state: RootState) => state.subscription.error
 
-// Token usage selector
-export const selectTokenUsage = (state: RootState) => {
-  const subscription = state.subscription.data
+// Memoized derived selectors
+export const selectSubscription = createSelector([selectSubscriptionData], (data) => data)
+
+// Token usage selector with memoization
+export const selectTokenUsage = createSelector([selectSubscriptionData], (subscription) => {
   if (!subscription) return null
 
   const tokensUsed = subscription.tokensUsed || 0
@@ -251,6 +257,18 @@ export const selectTokenUsage = (state: RootState) => {
     percentage: totalTokens > 0 ? Math.min((tokensUsed / totalTokens) * 100, 100) : 0,
     hasExceededLimit: tokensUsed > totalTokens,
   }
-}
+})
+
+// Additional memoized selectors for commonly used subscription properties
+export const selectIsSubscribed = createSelector([selectSubscriptionData], (data) => data?.isSubscribed ?? false)
+
+export const selectSubscriptionPlan = createSelector(
+  [selectSubscriptionData],
+  (data) => data?.subscriptionPlan ?? "FREE",
+)
+
+export const selectSubscriptionStatus = createSelector([selectSubscriptionData], (data) => data?.status)
+
+export const selectIsCancelled = createSelector([selectSubscriptionData], (data) => data?.cancelAtPeriodEnd ?? false)
 
 export default subscriptionSlice.reducer

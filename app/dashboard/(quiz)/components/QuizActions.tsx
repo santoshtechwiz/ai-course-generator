@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import type { QuizType } from "@/app/types/quiz-types"
-import { useSubscription } from "../../subscription/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 
 interface QuizActionsProps {
   quizId: string

@@ -1,11 +1,19 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useAppSelector, useAppDispatch } from "@/store"
-import { fetchSubscription } from "@/store/slices/subscription-slice"
+import {
+  fetchSubscription,
+  selectSubscriptionData,
+  selectSubscriptionLoading,
+  selectTokenUsage,
+  selectIsSubscribed,
+  selectSubscriptionPlan,
+  selectIsCancelled,
+} from "@/store/slices/subscription-slice"
 
 const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
-// fix onSubscriptionSuccess
+
 type UseSubscriptionOptions = {
   allowPlanChanges?: boolean
   allowDowngrades?: boolean
@@ -14,15 +22,19 @@ type UseSubscriptionOptions = {
 }
 
 export function useSubscription(options: UseSubscriptionOptions = {}) {
-  const {
-    allowPlanChanges = false,
-    allowDowngrades = false,
-    onSubscriptionSuccess,
-    onSubscriptionError,
-  } = options
+  const { allowPlanChanges = false, allowDowngrades = false, onSubscriptionSuccess, onSubscriptionError } = options
 
   const dispatch = useAppDispatch()
-  const subscriptionState = useAppSelector((state) => state.subscription)
+
+  // Use memoized selectors for better performance
+  const subscriptionData = useAppSelector(selectSubscriptionData)
+  const isLoading = useAppSelector(selectSubscriptionLoading)
+  const tokenUsageData = useAppSelector(selectTokenUsage)
+  const isSubscribed = useAppSelector(selectIsSubscribed)
+  const subscriptionPlan = useAppSelector(selectSubscriptionPlan)
+  const isCancelled = useAppSelector(selectIsCancelled)
+  const canDownloadPDF = useAppSelector((state) => state.subscription.data?.canDownloadPDF)
+
   const [isInitialized, setIsInitialized] = useState(false)
 
   const refreshSubscription = useCallback(() => {
@@ -48,50 +60,64 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     return () => clearInterval(interval)
   }, [refreshSubscription, isInitialized])
 
-  // Derived subscription values
-  const isSubscribed = subscriptionState.data?.isSubscribed ?? false
-  const tokenUsage = subscriptionState.data?.tokensUsed ?? 0
-  const totalTokens = subscriptionState.data?.credits ?? 0
-  const remainingTokens = Math.max(totalTokens - tokenUsage, 0)
-  const usagePercentage = totalTokens > 0 ? Math.min((tokenUsage / totalTokens) * 100, 100) : 0
-  const hasExceededLimit = tokenUsage > totalTokens
-  const isLoading = subscriptionState.loading ?? false
+  // Derive values from tokenUsageData to avoid recalculations
+  const {
+    tokensUsed = 0,
+    total: totalTokens = 0,
+    remaining: remainingTokens = 0,
+    percentage: usagePercentage = 0,
+    hasExceededLimit = false,
+  } = tokenUsageData || {}
 
-  // === Custom callbacks and helpers ===
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleSubscribe = useCallback(
+    async (planId?: string) => {
+      try {
+        const response = await fetch("/api/subscribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ planId }),
+        })
 
-  const handleSubscribe = useCallback(async (planId?: string) => {
-    try {
-      const response = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ planId }),
-      })
+        const result = await response.json()
 
-      const result = await response.json()
-
-      if (result.redirectUrl) {
-        window.location.href = result.redirectUrl
-      } else {
-        onSubscriptionSuccess?.(result)
+        if (result.redirectUrl) {
+          window.location.href = result.redirectUrl
+        } else {
+          onSubscriptionSuccess?.(result)
+        }
+      } catch (error: any) {
+        onSubscriptionError?.(error)
       }
-    } catch (error: any) {
-      onSubscriptionError?.(error)
-    }
-  }, [onSubscriptionSuccess, onSubscriptionError])
+    },
+    [onSubscriptionSuccess, onSubscriptionError],
+  )
 
-  const canSubscribeToPlan = useCallback((planId: string) => {
-    return subscriptionState.data?.planId !== planId
-  }, [subscriptionState.data?.planId])
+  const canSubscribeToPlan = useCallback(
+    (planId: string) => {
+      return subscriptionData?.planId !== planId
+    },
+    [subscriptionData?.planId],
+  )
 
-  const isSubscribedToAnyPaidPlan = !!subscriptionState.data?.isSubscribed && !!subscriptionState.data?.isPaidPlan
-  const isSubscribedToAllPlans = subscriptionState.data?.isEnterprise ?? false
+  // Memoize derived values
+  const isSubscribedToAnyPaidPlan = useMemo(
+    () => !!isSubscribed && !!subscriptionData?.isPaidPlan,
+    [isSubscribed, subscriptionData?.isPaidPlan],
+  )
+
+  const isSubscribedToAllPlans = useMemo(
+    () => subscriptionData?.isEnterprise ?? false,
+    [subscriptionData?.isEnterprise],
+  )
 
   return {
-    ...subscriptionState,
+    data: subscriptionData,
     isSubscribed,
-    tokenUsage,
+    tokenUsage: tokensUsed,
+    canDownloadPDF,
     totalTokens,
     remainingTokens,
     usagePercentage,
@@ -99,6 +125,8 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     isLoading,
     refreshSubscription,
     onSubscriptionSuccess,
+    subscriptionPlan,
+    isCancelled,
 
     // Config flags
     allowPlanChanges,

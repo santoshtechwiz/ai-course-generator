@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback, memo } from "react"
+import { useState, useEffect, useCallback, memo, useMemo } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronDown, Search } from "lucide-react"
 import { motion } from "framer-motion"
 import { navItems } from "@/constants/navItems"
-
 
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
 
@@ -15,20 +14,17 @@ import MobileMenu from "@/components/layout/navigation/MobileMenu"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
 import SearchModal from "@/components/layout/navigation/SearchModal"
 import { useSession } from "next-auth/react"
-import { useAppDispatch, useAppSelector } from "@/store"
-import { fetchSubscription, selectSubscription, selectTokenUsage } from "@/store/slices/subscription-slice"
 import { Button } from "@/components/ui/button"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
+import useSubscription from "@/hooks/use-subscription"
 
 // NavItems component with proper memoization
 const NavItems = memo(() => {
-  const [currentPath, setCurrentPath] = useState("")
   const pathname = usePathname()
 
-  useEffect(() => {
-    setCurrentPath(pathname || "")
-  }, [pathname])
+  // Use useMemo to prevent unnecessary recalculations
+  const currentPath = useMemo(() => pathname || "", [pathname])
 
   return (
     <nav className="mx-6 hidden items-center space-x-8 md:flex">
@@ -61,38 +57,44 @@ const NavItems = memo(() => {
 })
 NavItems.displayName = "NavItems"
 
+// Simple debounce function
+function debounce(fn: Function, ms = 300) {
+  let timeoutId: ReturnType<typeof setTimeout>
+  return function (this: any, ...args: any[]) {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn.apply(this, args), ms)
+  }
+}
+
 export default function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session, status: sessionStatus } = useSession()
-  const dispatch = useAppDispatch()
-
-  // Use Redux for auth and subscription
-  const { user, isAuthenticated, isLoading: authLoading, signOutUser } = useAuth()
-  const subscription = useAppSelector(selectSubscription)
-  const tokenUsage = useAppSelector(selectTokenUsage)
-  const isSubscriptionLoading = useAppSelector((state) => state.subscription.isLoading)
+  const { data: session } = useSession()
+  const { user, isAuthenticated } = useAuth()
+  const {
+    isSubscribed,
+    totalTokens,
+    tokenUsage,
+    subscriptionPlan,
+    isLoading: isSubscriptionLoading,
+  } = useSubscription()
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [currentPath, setCurrentPath] = useState("")
-  const [creditScore, setCreditScore] = useState(0)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Extract user data from Redux auth state
-  const isAdmin = user?.isAdmin || false
-  const userName = user?.name || ""
-  const userEmail = user?.email || ""
+  // Memoize derived values to prevent unnecessary re-renders
+  const currentPath = useMemo(() => pathname || "", [pathname])
+  const creditScore = useMemo(() => totalTokens || user?.credits || 0, [totalTokens, user?.credits])
+  const showLoading = useMemo(
+    () => isInitialLoad && isSubscriptionLoading && isAuthenticated,
+    [isInitialLoad, isSubscriptionLoading, isAuthenticated],
+  )
 
   // Scroll handler with proper debouncing
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 20)
   }, [])
-
-  // Update pathname in useEffect
-  useEffect(() => {
-    setCurrentPath(pathname || "")
-  }, [pathname])
 
   // Add scroll listener with cleanup
   useEffect(() => {
@@ -103,16 +105,12 @@ export default function MainNavbar() {
     }
   }, [handleScroll])
 
-  // Fetch subscription data when session changes
-  useEffect(() => {
-    if (sessionStatus === "authenticated" && session?.user?.id) {
-      dispatch(fetchSubscription())
-    }
-  }, [sessionStatus, session?.user?.id, dispatch])
-
   // Set initial load timeout
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      setIsInitialLoad(false) // Ensure state is updated correctly when not authenticated
+      return
+    }
 
     const initialLoadTimer = setTimeout(() => {
       setIsInitialLoad(false)
@@ -121,54 +119,33 @@ export default function MainNavbar() {
     return () => {
       clearTimeout(initialLoadTimer)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated]) // Ensure dependency array only includes `isAuthenticated`
 
-  // Update credit score from subscription data
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (subscription?.credits !== undefined) {
-        setCreditScore(subscription.credits)
-      } else if (user?.credits !== undefined) {
-        setCreditScore(user.credits)
-      }
-    }, 100)
-
-    return () => clearTimeout(debounceTimer)
-  }, [subscription?.credits, user?.credits])
-
-  // Handle search modal
-  const handleSearchOpen = () => {
+  // Handle search modal - memoize to prevent unnecessary re-renders
+  const handleSearchOpen = useCallback(() => {
     setIsSearchModalOpen(true)
-  }
+  }, [])
 
-  const handleResultClick = (url: string) => {
-    router.push(url)
-    setIsSearchModalOpen(false)
-  }
-
-  // Simple debounce function
-  function debounce(fn: Function, ms = 300) {
-    let timeoutId: ReturnType<typeof setTimeout>
-    return function (this: any, ...args: any[]) {
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(() => fn.apply(this, args), ms)
-    }
-  }
-
-  // Animation variants
-  const headerVariants = {
-    hidden: { opacity: 0, y: -20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { type: "spring", stiffness: 300, damping: 30 },
+  const handleResultClick = useCallback(
+    (url: string) => {
+      router.push(url)
+      setIsSearchModalOpen(false)
     },
-  }
+    [router],
+  )
 
-  // Determine subscription plan from Redux state
-  const subscriptionPlan = subscription?.subscriptionPlan || "FREE"
-  const tokensUsed = subscription?.tokensUsed || 0
-  const showLoading = isInitialLoad && isSubscriptionLoading && isAuthenticated
+  // Animation variants - memoize to prevent recreation on each render
+  const headerVariants = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: -20 },
+      visible: {
+        opacity: 1,
+        y: 0,
+        transition: { type: "spring", stiffness: 300, damping: 30 },
+      },
+    }),
+    [],
+  )
 
   return (
     <motion.header
@@ -195,7 +172,7 @@ export default function MainNavbar() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                Credits: {creditScore - tokensUsed}
+                Credits: {creditScore - tokenUsage}
               </motion.div>
               {subscriptionPlan !== "FREE" && (
                 <motion.span

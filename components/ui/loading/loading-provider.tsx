@@ -70,8 +70,14 @@ export function LoadingProvider({ children, initialState = false }: LoadingProvi
 
     if (loadingCountRef.current === 0) {
       setIsLoading(false)
+
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+
       // Keep the status for a moment before clearing
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setStatus(null)
         setMessage("")
       }, 300)
