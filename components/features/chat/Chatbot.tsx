@@ -16,7 +16,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/tailwindUtils"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import useSubscription from "@/hooks/use-subscription"
+
 
 
 // Improve the animation variants for smoother transitions
@@ -106,7 +107,7 @@ export function Chatbot({ userId }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const { data, isLoading: isSubscriptionLoading } = useSubscriptionStore()
+  const { data, isLoading: isSubscriptionLoading } = useSubscription()
   const [remainingQuestions, setRemainingQuestions] = useState(5)
   const [lastQuestionTime, setLastQuestionTime] = useState(Date.now())
   const [showTooltip, setShowTooltip] = useState(false)

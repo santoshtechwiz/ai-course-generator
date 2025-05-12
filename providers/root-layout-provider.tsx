@@ -14,6 +14,7 @@ import TrialModal from "@/components/features/subscription/TrialModal"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import SubscriptionProvider from "./SubscriptionProvider"
 import { SessionSync } from "./session-provider"
+import { LoadingProvider } from "@/components/ui/loading/loading-provider"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -49,6 +50,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
         <SessionProvider session={session}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
             <SubscriptionProvider>
+               <LoadingProvider>
               <AnimationProvider>
                 <SessionSync />
                 <MainNavbar />
@@ -59,6 +61,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
                 <Toaster position="top-right" closeButton richColors />
                 {mounted && children}
               </AnimationProvider>
+              </LoadingProvider>
             </SubscriptionProvider>
           </ThemeProvider>
         </SessionProvider>

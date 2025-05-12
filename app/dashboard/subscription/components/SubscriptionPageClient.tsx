@@ -20,8 +20,9 @@ import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/su
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 import TrialModal from "@/components/TrialModal"
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
-import { useMediaQuery } from "@/hooks/use-media-query"
+
 import { CancellationDialog } from "./cancellation-dialog"
+import { useMediaQuery } from "@/hooks"
 
 // Lazy load components
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))

@@ -265,3 +265,7 @@ export function useTokenUsage(): TokenUsage {
     remaining: Math.max(totalTokens - tokensUsed, 0),
   }
 }
+
+// Re-export the hook from the centralized location
+export { useSubscription as useSubscriptionHook }
+export default useSubscription

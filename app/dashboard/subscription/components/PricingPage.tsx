@@ -35,9 +35,9 @@ import { SUBSCRIPTION_PLANS } from "./subscription-plans"
 
 import { calculateSavings } from "../utils/subscription-utils"
 import { useSubscription } from "../hooks/use-subscription"
-import { useMediaQuery } from "@/hooks/use-media-query"
-import { FeatureComparison } from "./subscription-status/FeatureComparison"
-import { CancellationDialog } from "./subscription-status/CancellationDialog"
+import { useMediaQuery } from "@/hooks"
+
+
 
 interface PricingPageProps {
   userId: string | null

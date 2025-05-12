@@ -1,42 +1,49 @@
 "use client"
 
-import { useEffect } from "react"
-import { useAppDispatch, useAppSelector } from "@/store"
-import {
-  fetchSubscription,
-  selectSubscription,
-  selectSubscriptionLoading,
-  selectSubscriptionError,
-} from "@/store/slices/subscription-slice"
+import { useEffect, useState, useCallback } from "react"
+import { useAppSelector, useAppDispatch } from "@/store"
+import { fetchSubscription } from "@/store/slices/subscription-slice"
+
+const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
 
 export function useSubscription() {
   const dispatch = useAppDispatch()
-  const subscription = useAppSelector(selectSubscription)
-  const isLoading = useAppSelector(selectSubscriptionLoading)
-  const error = useAppSelector(selectSubscriptionError)
-  const lastFetched = useAppSelector((state) => state.subscription.lastFetched)
+  const subscriptionState = useAppSelector((state) => state.subscription)
+  const [isInitialized, setIsInitialized] = useState(false)
 
+  const refreshSubscription = useCallback(() => {
+    dispatch(fetchSubscription())
+  }, [dispatch])
+
+  // Initialize subscription data and set up refresh interval
   useEffect(() => {
-    // Fetch if not already fetched or if data is stale (older than 5 minutes)
-    if (!lastFetched || Date.now() - lastFetched > 5 * 60 * 1000) {
-      dispatch(fetchSubscription())
+    if (!isInitialized) {
+      refreshSubscription()
+      setIsInitialized(true)
     }
-  }, [dispatch, lastFetched])
 
-  const refetch = () => {
-    return dispatch(fetchSubscription())
-  }
+    const interval = setInterval(refreshSubscription, REFRESH_INTERVAL)
+    return () => clearInterval(interval)
+  }, [refreshSubscription, isInitialized])
+
+  // Calculate derived state
+  const isSubscribed = subscriptionState.data?.isSubscribed ?? false
+  const tokenUsage = subscriptionState.data?.tokensUsed ?? 0
+  const totalTokens = subscriptionState.data?.credits ?? 0
+  const remainingTokens = Math.max(totalTokens - tokenUsage, 0)
+  const usagePercentage = totalTokens > 0 ? Math.min((tokenUsage / totalTokens) * 100, 100) : 0
+  const hasExceededLimit = tokenUsage > totalTokens
 
   return {
-    subscription,
-    isLoading,
-    error,
-    refetch,
+    ...subscriptionState,
+    isSubscribed,
+    tokenUsage,
+    totalTokens,
+    remainingTokens,
+    usagePercentage,
+    hasExceededLimit,
+    refreshSubscription,
   }
 }
 
-// Helper function to check if user can download PDF
-export function useCanDownloadPDF() {
-  const subscription = useAppSelector(selectSubscription)
-  return subscription?.subscriptionPlan !== "FREE"
-}
+export default useSubscription
