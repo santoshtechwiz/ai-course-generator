@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import type { ReactNode } from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { signOut, useSession } from "next-auth/react"
 
@@ -36,7 +36,10 @@ export function UserMenu({ children }: UserMenuProps) {
   const isLoading = status === "loading"
   const user = session?.user
 
-  // Refresh subscription data when menu is opened
+  // Use ref to prevent multiple fetch calls
+  const hasInitializedRef = useRef(false)
+
+  // Refresh subscription data when menu is opened - this avoids the infinite loop
   const handleMenuOpen = (open: boolean) => {
     setIsMenuOpen(open)
     if (open && isAuthenticated && !isLoadingSubscription) {
@@ -44,12 +47,13 @@ export function UserMenu({ children }: UserMenuProps) {
     }
   }
 
-  // Refresh subscription data on mount and when session changes
+  // Fetch subscription data only ONCE on initial mount
   useEffect(() => {
-    if (isAuthenticated && !isLoadingSubscription) {
+    if (isAuthenticated && !hasInitializedRef.current) {
+      hasInitializedRef.current = true
       dispatch(fetchSubscription())
     }
-  }, [isAuthenticated, isLoadingSubscription, dispatch])
+  }, [isAuthenticated, dispatch])
 
   const handleSignOut = async () => {
     const currentUrl = window.location.pathname

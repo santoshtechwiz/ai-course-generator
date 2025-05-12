@@ -26,9 +26,10 @@ import { StatCard } from "@/components/ui/stat-card"
 import { ResultCard } from "@/components/ui/result-card"
 import { QuizResultHeader } from "@/components/ui/quiz-result-header"
 import { PerformanceChart } from "@/components/ui/performance-chart"
-import { useWindowSize } from "@/hooks/use-window-size"
+
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
+import { useResponsive } from "@/hooks"
 
 // Local storage key prefix for quiz state
 const QUIZ_STATE_STORAGE_KEY = "quiz_state_"
@@ -67,7 +68,7 @@ export default function CodeQuizResult({ result, ...props }: CodeQuizResultProps
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
-  const windowSize = useWindowSize()
+  const windowSize = useResponsive()
 
   // Ensure we have a valid result object with default values for tests
   const safeResult = useMemo(

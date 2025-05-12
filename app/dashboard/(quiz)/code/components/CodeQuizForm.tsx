@@ -30,7 +30,7 @@ import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
-import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string

@@ -1,88 +1,77 @@
-// import type { Middleware } from "redux"
-// import { completeQuiz, submitAnswer, resetQuiz, setIsAuthenticated, setForceShowResults } from "../slices/quizSlice"
+import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit"
+import { initQuiz, submitAnswer, nextQuestion, completeQuiz, resetQuiz, type QuizState } from "../slices/quizSlice"
 
-// // Define a key for the persisted quiz state
-// const PERSISTED_QUIZ_KEY = "persisted_quiz_state"
+// Create a listener middleware
+const listenerMiddleware = createListenerMiddleware()
 
-// // Create middleware to persist quiz state
-// export const persistQuizMiddleware: Middleware = (store) => (next) => (action) => {
-//   // Process the action first
-//   const result = next(action)
+// Define a key for localStorage
+const QUIZ_STATE_KEY = "quiz_state"
 
-//   // Get the current state
-//   const state = store.getState()
+// Add a listener that will be called when any of the specified actions are dispatched
+listenerMiddleware.startListening({
+  matcher: isAnyOf(initQuiz, submitAnswer, nextQuestion, completeQuiz, resetQuiz),
+  effect: (action, listenerApi) => {
+    // Get the current state
+    const state = listenerApi.getState() as { quiz: QuizState }
 
-//   // Check if we need to persist the state based on the action type
-//   if (
-//     action.type === completeQuiz.type ||
-//     action.type === submitAnswer.type ||
-//     action.type === setIsAuthenticated.type
-//   ) {
-//     try {
-//       // Only persist if we have a valid quiz
-//       if (state.quiz.quizId && state.quiz.slug) {
-//         // Create a simplified version of the state to persist
-//         const persistedState = {
-//           quizId: state.quiz.quizId,
-//           slug: state.quiz.slug,
-//           quizType: state.quiz.quizType,
-//           title: state.quiz.title,
-//           currentQuestionIndex: state.quiz.currentQuestionIndex,
-//           answers: state.quiz.answers,
-//           score: state.quiz.score,
-//           isCompleted: state.quiz.isCompleted,
-//           completedAt: state.quiz.completedAt,
-//           savedAt: Date.now(),
-//         }
+    // Don't persist if we're in a server environment
+    if (typeof window === "undefined") return
 
-//         // Save to localStorage
-//         localStorage.setItem(PERSISTED_QUIZ_KEY, JSON.stringify(persistedState))
+    // Create a simplified version of the state to persist
+    // Only include essential data to avoid storage bloat
+    const persistedState = {
+      quizId: state.quiz.quizId,
+      slug: state.quiz.slug,
+      quizType: state.quiz.quizType,
+      currentQuestionIndex: state.quiz.currentQuestionIndex,
+      answers: state.quiz.answers,
+      isCompleted: state.quiz.isCompleted,
+      score: state.quiz.score,
+      completedAt: state.quiz.completedAt,
+    }
 
-//         // Also save to a slug-specific key for better retrieval
-//         if (state.quiz.slug) {
-//           localStorage.setItem(`quiz_state_${state.quiz.slug}`, JSON.stringify(persistedState))
-//         }
+    try {
+      // Use requestIdleCallback if available for better performance
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(() => {
+          localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(persistedState))
+        })
+      } else {
+        // Fallback to setTimeout
+        setTimeout(() => {
+          localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(persistedState))
+        }, 0)
+      }
+    } catch (error) {
+      console.error("Failed to persist quiz state:", error)
+    }
+  },
+})
 
-//         console.log("Quiz state persisted after action:", action.type)
-//       }
-//     } catch (error) {
-//       console.error("Failed to persist quiz state:", error)
-//     }
-//   }
+// Function to load persisted state
+export const loadPersistedQuizState = (): Partial<QuizState> | undefined => {
+  if (typeof window === "undefined") return undefined
 
-//   // Clear persisted state on reset
-//   if (action.type === resetQuiz.type) {
-//     try {
-//       localStorage.removeItem(PERSISTED_QUIZ_KEY)
+  try {
+    const persistedStateJSON = localStorage.getItem(QUIZ_STATE_KEY)
+    if (!persistedStateJSON) return undefined
 
-//       // Also remove slug-specific state if available
-//       if (state.quiz.slug) {
-//         localStorage.removeItem(`quiz_state_${state.quiz.slug}`)
-//       }
+    return JSON.parse(persistedStateJSON)
+  } catch (error) {
+    console.error("Failed to load persisted quiz state:", error)
+    return undefined
+  }
+}
 
-//       console.log("Persisted quiz state cleared")
-//     } catch (error) {
-//       console.error("Failed to clear persisted quiz state:", error)
-//     }
-//   }
+// Function to clear persisted state
+export const clearPersistedQuizState = (): void => {
+  if (typeof window === "undefined") return
 
-//   // Handle authentication state change - if becoming authenticated and there's a pending redirect
-//   if (action.type === setIsAuthenticated.type && action.payload === true && state.quiz.pendingAuthRedirect) {
-//     // Force show results
-//     store.dispatch(setForceShowResults(true))
+  try {
+    localStorage.removeItem(QUIZ_STATE_KEY)
+  } catch (error) {
+    console.error("Failed to clear persisted quiz state:", error)
+  }
+}
 
-//     // Try to restore state from storage
-//     try {
-//       const persistedStateJson =
-//         localStorage.getItem(`quiz_state_${state.quiz.slug}`) || localStorage.getItem(PERSISTED_QUIZ_KEY)
-
-//       if (persistedStateJson) {
-//         console.log("Found persisted state after authentication")
-//       }
-//     } catch (error) {
-//       console.error("Failed to check for persisted state:", error)
-//     }
-//   }
-
-//   return result
-// }
+export default listenerMiddleware
