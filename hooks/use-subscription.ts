@@ -123,6 +123,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     usagePercentage,
     hasExceededLimit,
     isLoading,
+    canDownloadPDF,
     refreshSubscription,
     onSubscriptionSuccess,
     subscriptionPlan,

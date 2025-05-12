@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 
 import { useSession } from "next-auth/react"
 import useSubscription from "@/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 
 export default function TrialModal() {
   const { data: session } = useSession()
@@ -28,7 +29,7 @@ export default function TrialModal() {
     isLoading,
   } = useSubscription()
   const router = useRouter()
-
+  const {data:subscription} = useSubscription();
   const currentMonth = new Date().toLocaleString("default", { month: "long" })
 
   useEffect(() => {
