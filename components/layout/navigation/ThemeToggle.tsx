@@ -2,12 +2,38 @@
 import { Moon, Sun, Monitor } from "lucide-react"
 import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
+import { useCallback, useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  // Add mounted state to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false)
+
+  // Only render the dropdown after component has mounted to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Memoize theme change handler to prevent unnecessary re-renders
+  const handleThemeChange = useCallback(
+    (newTheme: string) => {
+      setTheme(newTheme)
+    },
+    [setTheme],
+  )
+
+  // Don't render anything until mounted to prevent hydration issues
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent hover:text-accent-foreground">
+        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    )
+  }
 
   return (
     <DropdownMenu>
@@ -20,7 +46,7 @@ export function ThemeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[8rem]">
         <DropdownMenuItem
-          onClick={() => setTheme("light")}
+          onClick={() => handleThemeChange("light")}
           className="flex items-center gap-2 cursor-pointer rounded-md"
         >
           <Sun className="h-4 w-4" />
@@ -36,7 +62,7 @@ export function ThemeToggle() {
           )}
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => setTheme("dark")}
+          onClick={() => handleThemeChange("dark")}
           className="flex items-center gap-2 cursor-pointer rounded-md"
         >
           <Moon className="h-4 w-4" />
@@ -52,7 +78,7 @@ export function ThemeToggle() {
           )}
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => setTheme("system")}
+          onClick={() => handleThemeChange("system")}
           className="flex items-center gap-2 cursor-pointer rounded-md"
         >
           <Monitor className="h-4 w-4" />

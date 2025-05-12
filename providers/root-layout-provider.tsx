@@ -1,16 +1,15 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
-import { Suspense, useState, useEffect } from "react"
+import { Suspense, useState, useEffect, useMemo } from "react"
 import { AnimationProvider } from "./animation-provider"
 import { ReduxProvider } from "./redux-provider"
 
 import { SessionProvider } from "next-auth/react"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
-import TrialModal from "@/components/features/subscription/TrialModal"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import SubscriptionProvider from "./SubscriptionProvider"
 import { SessionSync } from "./session-provider"
@@ -35,7 +34,7 @@ interface RootLayoutProviderProps {
 }
 
 export function RootLayoutProvider({ children, session }: RootLayoutProviderProps) {
-  // Create QueryClient in a client component
+  // Create QueryClient with proper initialization
   const [queryClient] = useState(() => createQueryClient())
   const [mounted, setMounted] = useState(false)
 
@@ -44,28 +43,43 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
     setMounted(true)
   }, [])
 
+  // Memoize the navbar to prevent unnecessary re-renders
+  const navbar = useMemo(() => <MainNavbar />, [])
+
+  // Memoize more components that don't need to re-render frequently
+  const jsonLd = useMemo(() => <JsonLd type="default" />, [])
+  const sessionSync = useMemo(() => <SessionSync />, [])
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ReduxProvider>
-        <SessionProvider session={session}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
-            <SubscriptionProvider>
-               <LoadingProvider>
-              <AnimationProvider>
-                <SessionSync />
-                <MainNavbar />
-                <Suspense fallback={<div>Loading...</div>}>
-                 
-                </Suspense>
-                <JsonLd type="default" />
-                <Toaster position="top-right" closeButton richColors />
-                {mounted && children}
-              </AnimationProvider>
-              </LoadingProvider>
-            </SubscriptionProvider>
-          </ThemeProvider>
-        </SessionProvider>
-      </ReduxProvider>
-    </QueryClientProvider>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ReduxProvider>
+          <SessionProvider session={session}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem={true}
+              disableTransitionOnChange
+              // Add these props to fix hydration issues
+              storageKey="course-ai-theme"
+              enableColorScheme={true}
+            >
+              <SubscriptionProvider>
+                <LoadingProvider>
+                  <AnimationProvider>
+                    {sessionSync}
+                    {navbar}
+                    <Suspense fallback={<div>Loading...</div>}></Suspense>
+                    {jsonLd}
+                    <Toaster position="top-right" closeButton richColors />
+                    {mounted && children}
+                  </AnimationProvider>
+                </LoadingProvider>
+              </SubscriptionProvider>
+            </ThemeProvider>
+          </SessionProvider>
+        </ReduxProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   )
 }

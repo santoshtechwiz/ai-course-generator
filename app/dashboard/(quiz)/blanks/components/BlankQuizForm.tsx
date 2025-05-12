@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import PlanAwareButton from "../../components/PlanAwareButton"
-import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 
 // Define schema with zod for consistent validation
 const fillInTheBlankQuizSchema = z.object({

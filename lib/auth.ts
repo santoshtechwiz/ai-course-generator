@@ -45,6 +45,9 @@ declare module "next-auth/jwt" {
 
 // Track active refreshes to prevent duplicates
 const activeRefreshes = new Map<string, number>()
+// Cache to reduce DB load
+const userCache = new Map<string, { data: any; timestamp: number }>()
+const USER_CACHE_TTL = 2 * 60 * 1000 // 2 minutes
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -102,12 +105,28 @@ export const authOptions: NextAuthOptions = {
           // Increment refresh count to prevent infinite loops
           token.refreshCount = refreshCount + 1
 
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id },
-            include: {
-              subscription: true,
-            },
-          })
+          // Check cache first
+          const cachedUser = userCache.get(userId)
+          let dbUser
+
+          if (cachedUser && now - cachedUser.timestamp < USER_CACHE_TTL) {
+            dbUser = cachedUser.data
+          } else {
+            dbUser = await prisma.user.findUnique({
+              where: { id: token.id },
+              include: {
+                subscription: true,
+              },
+            })
+
+            // Update cache
+            if (dbUser) {
+              userCache.set(userId, {
+                data: dbUser,
+                timestamp: now,
+              })
+            }
+          }
 
           if (dbUser) {
             token.credits = dbUser.credits
@@ -250,7 +269,31 @@ export const authOptions: NextAuthOptions = {
 
 // Improved session caching with proper invalidation
 const SESSION_CACHE = new Map<string, { session: any; timestamp: number }>()
-const SESSION_CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes (increased cache duration for fewer calls)
+const SESSION_CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes
+
+// Function to clear caches periodically
+const clearCaches = () => {
+  const now = Date.now()
+  // Clear expired session cache entries
+  for (const [key, entry] of SESSION_CACHE.entries()) {
+    if (now - entry.timestamp > SESSION_CACHE_MAX_AGE) {
+      SESSION_CACHE.delete(key)
+    }
+  }
+
+  // Clear expired user cache entries
+  for (const [key, entry] of userCache.entries()) {
+    if (now - entry.timestamp > USER_CACHE_TTL) {
+      userCache.delete(key)
+    }
+  }
+}
+
+// Set up periodic cache cleaning
+if (typeof window === "undefined") {
+  // Only run on server
+  setInterval(clearCaches, 5 * 60 * 1000) // Clean every 5 minutes
+}
 
 export const getAuthSession = async () => {
   const cacheKey = "global"
@@ -330,8 +373,9 @@ export async function updateUserData(userId: string, data: any) {
       data,
     })
 
-    // Invalidate session cache to ensure fresh data
+    // Invalidate caches to ensure fresh data
     invalidateSessionCache()
+    userCache.delete(userId)
   } catch (error) {
     console.error("Error updating user data:", error)
     throw error

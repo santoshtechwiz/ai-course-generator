@@ -14,7 +14,7 @@ import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/Bla
 import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
 import OpenEndedQuizForm from "@/app/dashboard/(quiz)/openended/components/OpenEndedQuizForm"
 import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm"
-import { useSubscription } from "../../subscription/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code" | "flashcard"
 

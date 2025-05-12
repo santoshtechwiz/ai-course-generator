@@ -3,8 +3,9 @@
 import type React from "react"
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
-import { store, persistor } from "@/store"
+
 import { Loader2 } from "lucide-react"
+import { persistor, store } from "@/store"
 
 export function ReduxProvider({ children }: { children: React.ReactNode }) {
   return (
