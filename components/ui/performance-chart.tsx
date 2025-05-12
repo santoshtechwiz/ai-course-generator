@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react"
 import { useTheme } from "next-themes"
-import { useWindowSize } from "@/hooks/use-window-size"
+
 import { motion } from "framer-motion"
+import { useResponsive } from "@/hooks"
 
 interface ChartData {
   name: string
@@ -18,7 +19,7 @@ interface PerformanceChartProps {
 export function PerformanceChart({ data, className }: PerformanceChartProps) {
   const chartRef = useRef<HTMLDivElement>(null)
   const { theme } = useTheme()
-  const windowSize = useWindowSize()
+  const windowSize = useResponsive()
 
   // Colors based on theme
   const getColors = () => {

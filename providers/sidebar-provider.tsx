@@ -1,7 +1,8 @@
 "use client"
 
+import { useMediaQuery } from "@/hooks"
 import * as React from "react"
-import { useMediaQuery } from "@/hooks/use-media-query"
+
 
 type SidebarContext = {
   open: boolean

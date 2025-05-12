@@ -8,7 +8,7 @@
 
 "use client"
 
-import { useEffect, useState, useCallback, Suspense, lazy, useMemo } from "react"
+import { useEffect, useState, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -22,24 +22,17 @@ import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/su
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 import TrialModal from "@/components/TrialModal"
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
-import { useMediaQuery } from "@/hooks/use-media-query"
+import { useMediaQuery } from "@/hooks/use-responsive"
 import { CancellationDialog } from "./cancellation-dialog"
-import { useSubscription } from "../hooks/use-subscription"
+import { useSubscription } from "@/store/hooks/use-subscription"
 
 import { SubscriptionRefresher } from "./SubscriptionRefresher"
-import { useSubscriptionData } from "../store/hooks"
 
 // Lazy load the PricingPage component for better performance
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))
 const StripeSecureCheckout = lazy(() =>
   import("./StripeSecureCheckout").then((mod) => ({ default: mod.StripeSecureCheckout })),
 )
-
-// Define retry configuration for better UX
-const RETRY_CONFIG = {
-  MAX_RETRIES: 3,
-  RETRY_DELAY: 2000, // 2 seconds
-}
 
 /**
  * Client component for the subscription page with enhanced error handling and performance
@@ -50,7 +43,8 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const [showReferralBanner, setShowReferralBanner] = useState(true)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [pendingSubscriptionData, setPendingSubscriptionData] = useState<any>(null)
-  const [isRetrying, setIsRetrying] = useState(false)
+  const [referralCode, setReferralCode] = useState<string | null>(refCode)
+  const [showCancellationDialog, setShowCancellationDialog] = useState(false)
 
   const isProd = process.env.NODE_ENV === "production"
   const { data: session, status: sessionStatus } = useSession()
@@ -59,48 +53,30 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
-  // Use our custom hook for subscription data
-  const { subscription, refreshData, isLoading, isError, error } = useSubscriptionData({
-    refreshInterval: 120000, // 2 minutes
-    initialFetch: !!id, // Only fetch initially if user is logged in
-  })
-
-  const subscriptionData = subscription.data
-  const isDataFetched = subscription.status === "succeeded" || subscription.status === "failed"
+  // Use our subscription hook
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchStatus,
+    cancelSubscription,
+    currentPlan,
+    status: subscriptionStatus,
+    tokensUsed,
+    totalTokens,
+    expirationDate,
+    cancelAtPeriodEnd,
+    isSubscribed,
+  } = useSubscription()
 
   // Handle subscription cancellation
-  const { cancelSubscription } = useSubscription()
-
   const handleCancelSubscription = async (reason: string) => {
-    const result = await cancelSubscription(reason)
-    if (result.success) {
-      refreshData(true) // Force refresh after cancellation
-    }
-    return
+    await cancelSubscription(reason)
+    setShowCancellationDialog(false)
+    // Force refresh data
+    fetchStatus(true)
   }
-
-  // Transform the Redux data to match the expected format
-  const transformedData = useMemo(() => {
-    if (!subscriptionData) {
-      return {
-        currentPlan: null,
-        subscriptionStatus: null,
-        tokensUsed: 0,
-        credits: 0,
-      }
-    }
-
-    return {
-      currentPlan: subscriptionData.subscriptionPlan,
-      subscriptionStatus: subscriptionData.status || (subscriptionData.isSubscribed ? "ACTIVE" : "INACTIVE"),
-      tokensUsed: subscriptionData.tokensUsed || 0,
-      credits: subscriptionData.credits || 0,
-      expirationDate: subscriptionData.expirationDate,
-      cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
-    }
-  }, [subscriptionData])
-
-  const isSubscribed = subscriptionData?.isSubscribed || false
 
   // Extract referral code from URL parameters
   useEffect(() => {
@@ -133,112 +109,19 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [])
 
-  // Memoize the fetch function to prevent unnecessary re-renders
-  const fetchSubscriptionData = useCallback(async () => {
-    if (!id || sessionStatus !== "authenticated") {
-      setIsLoading(false)
-      setIsDataFetched(true)
-      return
-    }
-
-    setIsLoading(true)
-    setFetchError(null)
-
-    try {
-      setUserId(id)
-
-      // Fetch subscription status with improved error handling
-      const response = await fetch("/api/subscriptions/status")
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Failed to fetch subscription data: ${response.statusText}`)
-      }
-
-      const subscriptionResult = await response.json()
-
-      if (subscriptionResult.error) {
-        throw new Error(subscriptionResult.details || "Failed to fetch subscription data")
-      }
-
-      // Update this part to correctly set the subscription status
-      setSubscriptionData({
-        currentPlan: subscriptionResult.subscriptionPlan as SubscriptionPlanType,
-        // Use the actual status from the API if available, otherwise derive from isSubscribed
-        subscriptionStatus: subscriptionResult.status || (subscriptionResult.isSubscribed ? "ACTIVE" : "INACTIVE"),
-        tokensUsed: subscriptionResult.tokensUsed || 0,
-        credits: subscriptionResult.credits || 0,
-        expirationDate: subscriptionResult.expirationDate,
-      })
-      setIsSubscribed(subscriptionResult.isSubscribed)
-
-      // Reset retry count on successful fetch
-      setRetryCount(0)
-    } catch (error) {
-      console.error("Error fetching subscription data:", error)
-      setFetchError(error instanceof Error ? error.message : "Failed to fetch subscription data")
-
-      // Set default values on error
-      setSubscriptionData({
-        currentPlan: "FREE",
-        subscriptionStatus: null,
-        tokensUsed: 0,
-        credits: 0,
-      })
-
-      // Increment retry count for automatic retry
-      setRetryCount((prev) => prev + 1)
-    } finally {
-      setIsLoading(false)
-      setIsDataFetched(true)
-      setIsRetrying(false)
-    }
-  }, [session])
-
-  // Automatic retry logic with exponential backoff
+  // Effect to set userId when session changes
   useEffect(() => {
-    if (fetchError && retryCount < RETRY_CONFIG.MAX_RETRIES && !isRetrying) {
-      setIsRetrying(true)
-      const timer = setTimeout(
-        () => {
-          console.log(`Retrying subscription data fetch (${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES})...`)
-          fetchSubscriptionData()
-        },
-        RETRY_CONFIG.RETRY_DELAY * Math.pow(2, retryCount - 1),
-      )
-
-      return () => clearTimeout(timer)
+    if (sessionStatus === "authenticated" && id) {
+      setUserId(id)
+      // Fetch subscription data when user is authenticated
+      fetchStatus(true)
     }
-  }, [fetchError, retryCount, fetchSubscriptionData, isRetrying])
+  }, [id, sessionStatus, fetchStatus])
 
   // Handle manual retry
   const handleRetry = useCallback(() => {
-    setRetryCount(0) // Reset retry count for manual retry
-    setIsRetrying(true)
-    fetchSubscriptionData()
-  }, [fetchSubscriptionData])
-
-  // Effect to fetch data when session changes
-  useEffect(() => {
-    // Only fetch data if session is loaded
-    if (sessionStatus !== "loading") {
-      fetchSubscriptionData()
-    }
-  }, [id, sessionStatus, fetchSubscriptionData])
-
-  // Add event listener for subscription changes
-  useEffect(() => {
-    const handleSubscriptionChange = () => {
-      // Refresh subscription data when subscription changes
-      fetchSubscriptionData()
-    }
-
-    window.addEventListener("subscription-changed", handleSubscriptionChange)
-
-    return () => {
-      window.removeEventListener("subscription-changed", handleSubscriptionChange)
-    }
-  }, [fetchSubscriptionData])
+    fetchStatus(true)
+  }, [fetchStatus])
 
   // Handle subscription button click for unauthenticated users
   const handleUnauthenticatedSubscribe = useCallback(
@@ -260,18 +143,18 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   )
 
   const handleManageSubscription = useCallback(() => {
-    if (transformedData.cancelAtPeriodEnd) {
+    if (cancelAtPeriodEnd) {
       // If subscription is already cancelled, offer to resume
       router.push("/dashboard/account")
     } else {
       // Otherwise show cancellation dialog
       setShowCancellationDialog(true)
     }
-  }, [transformedData.cancelAtPeriodEnd, router])
+  }, [cancelAtPeriodEnd, router])
 
   const renderContent = () => {
     // Show skeleton only during initial session loading
-    if (sessionStatus === "loading" && !isDataFetched) {
+    if (sessionStatus === "loading" && !data) {
       return <SubscriptionSkeleton />
     }
 
@@ -282,9 +165,9 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
             <AlertTriangle className="h-5 w-5" />
             <AlertTitle>Error loading subscription data</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
-              <p>{fetchError}</p>
-              <Button variant="outline" size="sm" onClick={handleRetry} className="w-fit mt-2" disabled={isRetrying}>
-                {isRetrying ? (
+              <p>{error}</p>
+              <Button variant="outline" size="sm" onClick={handleRetry} className="w-fit mt-2" disabled={isLoading}>
+                {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Retrying...
@@ -334,15 +217,15 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           {/* When rendering the PricingPage component, ensure userId is passed */}
           <PricingPage
             userId={userId}
-            currentPlan={transformedData.currentPlan}
-            subscriptionStatus={transformedData.subscriptionStatus}
-            tokensUsed={transformedData.tokensUsed}
-            credits={transformedData.credits}
+            currentPlan={currentPlan}
+            subscriptionStatus={subscriptionStatus}
+            tokensUsed={tokensUsed}
+            credits={totalTokens}
             isProd={isProd}
-            expirationDate={transformedData.expirationDate}
+            expirationDate={expirationDate}
             referralCode={referralCode}
             onUnauthenticatedSubscribe={handleUnauthenticatedSubscribe}
-            cancelAtPeriodEnd={transformedData.cancelAtPeriodEnd}
+            cancelAtPeriodEnd={cancelAtPeriodEnd}
             onManageSubscription={handleManageSubscription}
             isMobile={isMobile}
           />
@@ -362,9 +245,9 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
       {/* Include the SubscriptionRefresher component to handle background refreshes */}
       <SubscriptionRefresher />
 
-      {!isLoading && isDataFetched && (
+      {!isLoading && data && (
         <Suspense fallback={null}>
-          <TrialModal isSubscribed={isSubscribed} currentPlan={transformedData.currentPlan} />
+          <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} />
         </Suspense>
       )}
 
@@ -391,8 +274,8 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         isOpen={showCancellationDialog}
         onClose={() => setShowCancellationDialog(false)}
         onConfirm={handleCancelSubscription}
-        expirationDate={transformedData.expirationDate || null}
-        planName={transformedData.currentPlan || ""}
+        expirationDate={expirationDate || null}
+        planName={currentPlan || ""}
       />
     </div>
   )
