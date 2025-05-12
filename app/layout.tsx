@@ -1,20 +1,14 @@
 import type React from "react"
 import type { Metadata } from "next"
-import "./globals.css"
+import "../globals.css"
 import { JsonLd } from "@/app/schema/components/json-ld"
 
-import { Suspense } from "react"
 import { Inter } from "next/font/google"
-import { ReduxProvider } from "@/providers/redux-provider"
-import { SessionProvider } from "next-auth/react"
-import { ThemeProvider } from "next-themes"
-import { AnimationProvider } from "@/providers/animation-provider"
-import MainNavbar from "@/components/layout/navigation/MainNavbar"
-import Footer from "@/components/shared/Footer"
+import { RootLayoutProvider } from "@/providers/root-layout-provider"
 
-import { Toaster } from "sonner"
-import { getAuthSession } from "./lib/auth"
-import { SessionSync } from "./providers/session-provider"
+import Footer from "@/components/shared/Footer"
+import { getAuthSession } from "@/lib/auth"
+
 
 const inter = Inter({
   subsets: ["latin"],
@@ -61,21 +55,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
       <body className={`font-sans antialiased min-h-screen flex flex-col`}>
-        <ReduxProvider>
-          <SessionProvider session={session}>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              <AnimationProvider>
-                <SessionSync />
-                <MainNavbar />
-                <Suspense fallback={<div>Loading...</div>}>
-                  <main className="flex-1 flex flex-col pt-16">{children}</main>
-                </Suspense>
-                <Footer />
-                <Toaster position="top-right" closeButton richColors />
-              </AnimationProvider>
-            </ThemeProvider>
-          </SessionProvider>
-        </ReduxProvider>
+        <RootLayoutProvider session={session}>
+          <main className="flex-1 flex flex-col pt-16">{children}</main>
+          <Footer />
+        </RootLayoutProvider>
 
         <JsonLd
           data={{

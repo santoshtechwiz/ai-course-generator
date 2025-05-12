@@ -17,7 +17,6 @@ export const metadata: Metadata = generatePageMetadata({
     "CourseAI",
     "free learning platform",
     "custom course generation",
-    "programming education",
     "coding quizzes",
     "developer learning",
     "tech education",

@@ -67,9 +67,9 @@ export const authOptions: NextAuthOptions = {
 
       // Force refresh token on session update, but only if explicitly requested
       if (trigger === "update") {
-        // Don't reset updatedAt here - we'll handle the refresh below
-        // with proper throttling
-        token.refreshCount = 0 // Reset refresh count on explicit update
+        // Reset refresh count on explicit update
+        token.refreshCount = 0
+        token.updatedAt = 0 // Force refresh by setting updatedAt to 0
       }
 
       // On every JWT refresh, get the latest user data

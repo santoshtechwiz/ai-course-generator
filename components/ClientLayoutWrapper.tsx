@@ -1,5 +1,8 @@
 "use client"
 
+import { store } from "@/store";
+import { Provider } from "react-redux";
+import { SessionProvider } from "next-auth/react";
 import type React from "react"
 
 interface ClientLayoutWrapperProps {
@@ -7,5 +10,13 @@ interface ClientLayoutWrapperProps {
 }
 
 export function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
-  return <>{children}</>
+
+
+  return (
+    <SessionProvider>
+      <Provider store={store}>
+        {children}
+      </Provider>
+    </SessionProvider>
+  );
 }

@@ -8,11 +8,12 @@ import { Suspense, useState, useEffect } from "react"
 import { AnimationProvider } from "./animation-provider"
 import { ReduxProvider } from "./redux-provider"
 
-import { SessionProvider } from "./session-provider"
+import { SessionProvider } from "next-auth/react"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import TrialModal from "@/components/features/subscription/TrialModal"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import SubscriptionProvider from "./SubscriptionProvider"
+import { SessionSync } from "./session-provider"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -42,23 +43,14 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
     setMounted(true)
   }, [])
 
-  // Session options
-  const sessionOptions = {
-    refetchInterval: 5 * 60, // 5 minutes in seconds
-    refetchOnWindowFocus: false,
-    refetchWhenOffline: false,
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <ReduxProvider>
-        <SessionProvider
-          session={session}
-         
-        >
+        <SessionProvider session={session}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
             <SubscriptionProvider>
               <AnimationProvider>
+                <SessionSync />
                 <MainNavbar />
                 <Suspense fallback={<div>Loading...</div>}>
                   <TrialModal />
