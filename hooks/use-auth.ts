@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from "react"
 import { useSession, signIn, signOut } from "next-auth/react"
-import { useAppDispatch, useAppSelector } from "@/lib/utils/redux-utils"
+import { useAppSelector } from "@/lib/utils/redux-utils"
 import {
   clearAuthState,
   setIsAuthenticated,
@@ -10,6 +10,7 @@ import {
   setRedirectUrl,
   setUser,
 } from "@/store/slices/authSlice"
+import { useAppDispatch } from "@/store"
 
 /**
  * Hook for handling authentication state and actions

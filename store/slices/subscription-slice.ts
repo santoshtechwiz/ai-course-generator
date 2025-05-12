@@ -1,7 +1,7 @@
 "use client"
 
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
-import type { RootState } from "@/store/store"
+import type { RootState } from "@/store"
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
 // Define types
@@ -15,11 +15,13 @@ export interface SubscriptionData {
   cancelAtPeriodEnd?: boolean
 }
 
-export interface SubscriptionState {
-  data: SubscriptionData | null
+// Define the subscription state interface
+interface SubscriptionState {
+  data: any | null
   isLoading: boolean
   error: string | null
   lastFetched: number | null
+  isFetching: boolean
 }
 
 // Initial state
@@ -28,28 +30,52 @@ const initialState: SubscriptionState = {
   isLoading: false,
   error: null,
   lastFetched: null,
+  isFetching: false,
 }
 
-// Async thunk for fetching subscription data
-export const fetchSubscription = createAsyncThunk("subscription/fetch", async (_, { rejectWithValue }) => {
-  try {
-    const response = await fetch("/api/subscriptions/status", {
-      credentials: "include",
-      headers: {
-        "Cache-Control": "no-cache",
-      },
-    })
+// Create the async thunk for fetching subscription data
+export const fetchSubscription = createAsyncThunk(
+  "subscription/fetchStatus",
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState() as RootState
 
-    if (!response.ok) {
-      return rejectWithValue("Failed to fetch subscription data")
+    // Check if we're already fetching or if the data is fresh (less than 30 seconds old)
+    if (
+      state.subscription.isFetching ||
+      (state.subscription.lastFetched && Date.now() - state.subscription.lastFetched < 30000)
+    ) {
+      // Return existing data if it's fresh enough
+      return state.subscription.data
     }
 
-    const data = await response.json()
-    return data
-  } catch (error) {
-    return rejectWithValue((error as Error).message)
-  }
-})
+    try {
+      // Add cache control headers to prevent browser caching
+      const response = await fetch("/api/subscriptions/status", {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch subscription data")
+    }
+  },
+  {
+    // Only allow one pending fetchSubscription operation at a time
+    condition: (_, { getState }) => {
+      const state = getState() as RootState
+      return !state.subscription.isFetching
+    },
+  },
+)
 
 // Async thunk for canceling subscription
 export const cancelSubscription = createAsyncThunk(
@@ -112,27 +138,32 @@ export const activateFreeTrial = createAsyncThunk("subscription/activateTrial", 
   }
 })
 
-// Subscription slice
+// Create the subscription slice
 const subscriptionSlice = createSlice({
   name: "subscription",
   initialState,
   reducers: {
-    clearSubscription: () => initialState,
+    clearSubscriptionData: (state) => {
+      state.data = null
+      state.lastFetched = null
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch subscription
       .addCase(fetchSubscription.pending, (state) => {
         state.isLoading = true
+        state.isFetching = true
         state.error = null
       })
-      .addCase(fetchSubscription.fulfilled, (state, action: PayloadAction<SubscriptionData>) => {
+      .addCase(fetchSubscription.fulfilled, (state, action: PayloadAction<any>) => {
         state.isLoading = false
+        state.isFetching = false
         state.data = action.payload
         state.lastFetched = Date.now()
       })
       .addCase(fetchSubscription.rejected, (state, action) => {
         state.isLoading = false
+        state.isFetching = false
         state.error = action.payload as string
       })
 
@@ -197,8 +228,8 @@ const subscriptionSlice = createSlice({
   },
 })
 
-// Export actions
-export const { clearSubscription } = subscriptionSlice.actions
+// Export actions and reducer
+export const { clearSubscriptionData } = subscriptionSlice.actions
 
 // Export selectors
 export const selectSubscription = (state: RootState) => state.subscription.data
@@ -222,5 +253,4 @@ export const selectTokenUsage = (state: RootState) => {
   }
 }
 
-// Export reducer
 export default subscriptionSlice.reducer

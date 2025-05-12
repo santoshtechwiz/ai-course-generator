@@ -18,8 +18,9 @@ import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { signOut, useSession } from "next-auth/react"
-import { useAppSelector, useAppDispatch } from "@/lib/utils/redux-utils"
+
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
+import { useAppDispatch, useAppSelector } from "@/store"
 
 interface UserMenuProps {
   children?: ReactNode

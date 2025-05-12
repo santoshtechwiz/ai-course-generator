@@ -1,9 +1,12 @@
-import { useDispatch, useSelector } from "react-redux"
+// This file is now simplified as most functionality is moved to store/index.ts
+import { useSelector } from "react-redux"
 import type { TypedUseSelectorHook } from "react-redux"
-import type { RootState, AppDispatch } from "@/store"
+import type { RootState } from "@/store"
 
-// Use throughout your app instead of plain `useDispatch` and `useSelector`
-export const useAppDispatch = () => useDispatch<AppDispatch>()
+/**
+ * Type-safe selector hook for accessing Redux state
+ * @deprecated Use useAppSelector from @/store instead
+ */
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 
 /**
