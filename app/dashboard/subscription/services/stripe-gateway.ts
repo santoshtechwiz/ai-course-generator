@@ -16,7 +16,7 @@ import { createLogger } from "@/lib/logger"
 const logger = createLogger("stripe-gateway")
 
 // Initialize Stripe with the API key and proper configuration
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe("sk_test_51OiXtSCZXk4IQirdWlR6xQFyIV5eNYeUqMclwdjAxQ3UbMX0Tgi7LRBOvSCEXaPdWZySWyXbYCxm3LVmR8B4dmCY00F74ryT64", {
   apiVersion: "2024-10-28.acacia",
   timeout: 30000, // 30 second timeout for API requests
   maxNetworkRetries: 3, // Automatically retry failed requests

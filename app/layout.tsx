@@ -4,18 +4,18 @@ import "./globals.css"
 
 import { Analytics } from "@/app/analytics"
 import { JsonLd } from "@/app/schema/components/json-ld"
-import Footer from "@/components/shared/Footer"
-import { Providers } from "@/providers/provider"
-
+import { getAuthSession } from "@/lib/auth"
 import { Suspense } from "react"
 import { Inter } from "next/font/google"
-import { getAuthSession } from "@/lib/auth"
 
-// const inter = Inter({
-//   subsets: ["latin"],
-//   display: "swap",
-//   variable: "--font-sans",
-// })
+import Footer from "@/components/shared/Footer"
+import { RootLayoutProvider } from "@/providers/root-layout-provider"
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
@@ -45,7 +45,6 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-    generator: 'v0.dev'
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -57,13 +56,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
       <body className={` antialiased min-h-screen flex flex-col`}>
-        <Providers session={session}>
-          <Suspense>
+        <RootLayoutProvider session={session}>
+          <Suspense fallback={<div>Loading...</div>}>
             <main className="flex-1 flex flex-col pt-16">{children}</main>
           </Suspense>
           <Analytics />
           <Footer />
-        </Providers>
+        </RootLayoutProvider>
 
         <JsonLd
           data={{

@@ -13,8 +13,9 @@ import HowItWorksSection from "./sections/HowItWorksSection"
 import ProductGallery from "./sections/ShowCase"
 import TestimonialsSlider from "./sections/TestimonialsSlider"
 import HeroSection from "./sections/HeroSection"
-import { useMobile } from "@/hooks/use-mobile"
+
 import { useRouter } from "next/navigation"
+import { useMobile } from "@/hooks/use-mobile"
 
 // Apple-inspired easing function for smoother animations
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]

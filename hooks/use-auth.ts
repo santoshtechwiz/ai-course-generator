@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useEffect } from "react"
 import { useSession, signIn, signOut } from "next-auth/react"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { useAppDispatch, useAppSelector } from "@/lib/utils/redux-utils"
 import {
   clearAuthState,
   setIsAuthenticated,
@@ -11,11 +11,28 @@ import {
   setUser,
 } from "@/store/slices/authSlice"
 
+/**
+ * Hook for handling authentication state and actions
+ * @returns Authentication state and methods
+ */
 export function useAuth() {
   const dispatch = useAppDispatch()
   const { data: session, status, update: updateSession } = useSession()
   const authState = useAppSelector((state) => state.auth)
 
+  // Update authentication state based on session
+  useEffect(() => {
+    const isAuthenticated = status === "authenticated" && !!session?.user
+
+    if (isAuthenticated && session?.user) {
+      dispatch(setUser(session.user))
+      dispatch(setIsAuthenticated(true))
+    } else if (status === "unauthenticated" && authState.isAuthenticated) {
+      dispatch(clearAuthState())
+    }
+  }, [dispatch, session, status, authState.isAuthenticated])
+
+  // Login method with optional redirect
   const login = useCallback(
     (redirectUrl?: string) => {
       if (redirectUrl) {
@@ -29,32 +46,20 @@ export function useAuth() {
     [dispatch],
   )
 
+  // Logout method
   const logout = useCallback(() => {
     dispatch(clearAuthState())
     signOut({ callbackUrl: "/dashboard/explore" })
   }, [dispatch])
 
-  // Add a throttled refresh function to prevent excessive refreshes
+  // Refresh user data
   const refreshUserData = useCallback(() => {
-    // Use the session update function from next-auth
-    // This will trigger a controlled refresh of the session
     return updateSession()
   }, [updateSession])
 
-  const isAuthenticated = status === "authenticated" && !!session?.user
-
-  // Sync session with Redux state
-  if (status === "authenticated" && session?.user && !authState.isAuthenticated) {
-    dispatch(setUser(session.user))
-    dispatch(setIsAuthenticated(true))
-  } else if (status === "unauthenticated" && authState.isAuthenticated) {
-    dispatch(setUser(null))
-    dispatch(setIsAuthenticated(false))
-  }
-
   return {
     user: session?.user || null,
-    isAuthenticated,
+    isAuthenticated: status === "authenticated" && !!session?.user,
     isLoading: status === "loading",
     login,
     logout,

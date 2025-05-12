@@ -8,7 +8,7 @@ import { Search, LogIn, User, LogOut, Menu, ChevronDown, Crown, X, Loader2 } fro
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { navItems } from "@/constants/navItems"
-import { SearchModal } from "@/components/layout/navigation/SearchModal"
+
 import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
@@ -20,12 +20,13 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { Logo } from "@/components/layout/navigation/Logo"
-import { NotificationsMenu } from "@/components/layout/navigation/NotificationsMenu"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
 
 import { useAuth } from "@/hooks/use-auth"
 import { useSubscription } from "@/store/subscription-provider"
+import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
+import SearchModal from "@/components/Navbar/SearchModal"
+import Logo from "@/components/Navbar/Logo"
 
 // NavItems component with proper memoization
 const NavItems = memo(() => {

@@ -242,8 +242,7 @@ export default function BlanksQuizResult({ result, ...props }: BlanksQuizResultP
       <QuizResultHeader
         score={safeResult.score}
         title="Fill in the Blanks Quiz Results"
-        completedAt={safeResult.completedAt}
-      />
+        completedAt={safeResult.completedAt} feedbackMessage={""}      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full max-w-md mx-auto grid grid-cols-2 mb-8">
