@@ -59,6 +59,9 @@ export const store = configureStore({
 // Create persistor
 export const persistor = persistStore(store)
 
+// Define RootState to include PersistPartial
+import type { PersistPartial } from "redux-persist/es/persistReducer"
+
 // Export types
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
@@ -66,3 +69,31 @@ export type AppDispatch = typeof store.dispatch
 // Use these typed hooks throughout the app instead of plain useDispatch/useSelector
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
+
+// Typed selectors for specific slices with PersistPartial handling
+export const useQuizState = () => {
+  return useAppSelector((state) => state.quiz) as typeof quizReducer extends (state: infer S, action: any) => any
+    ? S & PersistPartial
+    : never
+}
+
+export const useAuthState = () => {
+  return useAppSelector((state) => state.auth) as typeof authReducer extends (state: infer S, action: any) => any
+    ? S & PersistPartial
+    : never
+}
+
+export const useSubscriptionState = () => {
+  return useAppSelector((state) => state.subscription) as typeof subscriptionReducer extends (
+    state: infer S,
+    action: any,
+  ) => any
+    ? S & PersistPartial
+    : never
+}
+
+export const useUserState = () => {
+  return useAppSelector((state) => state.user) as typeof userReducer extends (state: infer S, action: any) => any
+    ? S & PersistPartial
+    : never
+}

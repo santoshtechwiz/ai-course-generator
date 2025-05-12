@@ -38,6 +38,7 @@ export interface CodeQuizQuestion {
 // Props for the CodeQuizWrapper component
 export interface CodeQuizWrapperProps {
   quizData: {
+    quizId: string
     id: string
     title: string
     slug: string

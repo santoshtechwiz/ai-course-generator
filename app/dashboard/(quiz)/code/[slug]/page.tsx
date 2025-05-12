@@ -30,7 +30,14 @@ async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
       return null
     }
 
-    return await response.json()
+    const data = await response.json()
+    console.log("API response:", {
+      quizId: data.quizId,
+      hasNestedData: Boolean(data.quizData),
+      questionCount: data.quizData?.questions?.length || 0,
+    })
+
+    return data
   } catch (error) {
     console.error("Error fetching quiz data:", error)
     return null
@@ -51,12 +58,14 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     })
   }
 
+  const title = quiz.quizData?.title || "Code Challenge"
+
   return generatePageMetadata({
-    title: `${quiz.quizData.title} | Programming Code Challenge`,
-    description: `Test your coding skills with this ${quiz.quizData.title?.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
+    title: `${title} | Programming Code Challenge`,
+    description: `Test your coding skills with this ${title.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
     path: `/dashboard/code/${slug}`,
     keywords: [
-      `${quiz.quizData.title?.toLowerCase()} challenge`,
+      `${title.toLowerCase()} challenge`,
       "programming exercise",
       "coding practice",
       "developer skills test",
@@ -71,16 +80,22 @@ const CodePage = async (props: PageParams) => {
   const { slug } = params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
+  // Get the current user session
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id || ""
 
+  // Fetch quiz data
   const result = await getQuizData(slug)
   if (!result) {
     notFound()
   }
 
+  // Extract data from the nested structure
+  const title = result.quizData?.title || "Code Quiz"
+  const questions = result.quizData?.questions || []
+
   // Calculate estimated time based on question count and complexity
-  const questionCount = result.quizData.questions?.length || 3
+  const questionCount = questions.length || 0
   const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M` // 10 minutes per coding question, minimum 15 minutes
 
   // Create breadcrumb items
@@ -88,13 +103,13 @@ const CodePage = async (props: PageParams) => {
     { name: "Home", href: baseUrl },
     { name: "Dashboard", href: `${baseUrl}/dashboard` },
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
-    { name: result.quizData.title, href: `${baseUrl}/dashboard/code/${slug}` },
+    { name: title, href: `${baseUrl}/dashboard/code/${slug}` },
   ]
 
   return (
     <QuizDetailsPageWithContext
-      title={result.quizData.title}
-      description={`Test your coding skills on ${result.quizData.title} with interactive programming challenges`}
+      title={title}
+      description={`Test your coding skills on ${title} with interactive programming challenges`}
       slug={slug}
       quizType="code"
       questionCount={questionCount}
@@ -106,7 +121,7 @@ const CodePage = async (props: PageParams) => {
       isFavorite={result.isFavorite || false}
     >
       <CodeQuizWrapper
-        quizData={result.quizData}
+        quizData={result}
         slug={slug}
         userId={currentUserId}
         quizId={result.quizId}
