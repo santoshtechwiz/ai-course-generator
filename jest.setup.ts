@@ -1,9 +1,11 @@
 import "@testing-library/jest-dom"
-import { TextEncoder } from "util"
+import { TextEncoder, TextDecoder } from "util"
 import { jest } from "@jest/globals"
 
 // Polyfill for TextEncoder/TextDecoder which Next.js needs
 global.TextEncoder = TextEncoder
+// Add TextDecoder which was missing
+global.TextDecoder = TextDecoder as any
 
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {
@@ -69,3 +71,107 @@ const sessionStorageMock = (() => {
 
 Object.defineProperty(window, "localStorage", { value: localStorageMock })
 Object.defineProperty(window, "sessionStorage", { value: sessionStorageMock })
+
+// Mock ResizeObserver
+class ResizeObserverMock {
+  observe = jest.fn()
+  unobserve = jest.fn()
+  disconnect = jest.fn()
+}
+
+global.ResizeObserver = ResizeObserverMock as any
+
+// Mock requestAnimationFrame
+global.requestAnimationFrame = (callback) => setTimeout(callback, 0)
+
+// Mock scrollTo
+window.scrollTo = jest.fn()
+
+// Mock URL.createObjectURL
+global.URL.createObjectURL = jest.fn(() => "mock-url")
+
+// Mock fetch
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve(""),
+    ok: true,
+  }),
+) as jest.Mock
+
+// Mock next/router
+jest.mock("next/router", () => ({
+  useRouter: () => ({
+    route: "/",
+    pathname: "",
+    query: {},
+    asPath: "",
+    push: jest.fn(),
+    replace: jest.fn(),
+    reload: jest.fn(),
+    back: jest.fn(),
+    prefetch: jest.fn(),
+    beforePopState: jest.fn(),
+    events: {
+      on: jest.fn(),
+      off: jest.fn(),
+      emit: jest.fn(),
+    },
+    isFallback: false,
+  }),
+}))
+
+// Mock next-auth
+jest.mock("next-auth/react", () => ({
+  useSession: jest.fn(() => ({
+    data: null,
+    status: "unauthenticated",
+  })),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+  getSession: jest.fn(() => null),
+}))
+
+// Mock HTMLCanvasElement
+class MockHTMLCanvasElement {
+  getContext() {
+    return {
+      fillRect: jest.fn(),
+      clearRect: jest.fn(),
+      getImageData: jest.fn(() => ({
+        data: new Uint8ClampedArray(0),
+      })),
+      putImageData: jest.fn(),
+      createImageData: jest.fn(() => []),
+      setTransform: jest.fn(),
+      drawImage: jest.fn(),
+      save: jest.fn(),
+      fillText: jest.fn(),
+      restore: jest.fn(),
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      closePath: jest.fn(),
+      stroke: jest.fn(),
+      translate: jest.fn(),
+      scale: jest.fn(),
+      rotate: jest.fn(),
+      arc: jest.fn(),
+      fill: jest.fn(),
+      measureText: jest.fn(() => ({
+        width: 0,
+      })),
+      transform: jest.fn(),
+      rect: jest.fn(),
+      clip: jest.fn(),
+    }
+  }
+  toDataURL() {
+    return ""
+  }
+  toBlob() {
+    return null
+  }
+}
+
+global.HTMLCanvasElement = MockHTMLCanvasElement as any

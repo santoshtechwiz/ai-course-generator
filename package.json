@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "jest --config jest.config.ts",
+    "test:watch": "jest --watch --config jest.config.js",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
@@ -74,6 +74,7 @@
     "ai": "^4.1.44",
     "autoprefixer": "^10.4.20",
     "axios": "^1.7.7",
+    "canvas": "^3.1.0",
     "canvas-confetti": "^1.9.3",
     "cheerio": "^1.0.0",
     "class-variance-authority": "^0.7.1",
@@ -185,6 +186,23 @@
     "jest-environment-jsdom": "^29.7.0",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "jsdom",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/.next/"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ]
   },
   "overrides": {
     "prettier": "3.5.3"
