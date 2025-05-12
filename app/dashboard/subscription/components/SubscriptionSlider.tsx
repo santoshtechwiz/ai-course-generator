@@ -9,7 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Lock, Unlock } from "lucide-react"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
-import { useSubscription } from "../hooks/use-subscription"
+import { useAppSelector } from "@/store"
+import { selectSubscription } from "@/store/slices/subscription-slice"
 
 interface SubscriptionSliderProps {
   value: number
@@ -22,10 +23,11 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
   onValueChange,
   ariaLabel = "Select number of questions",
 }) => {
-  const { data: subscriptionStatus } = useSubscription()
+  // Use Redux selector to get subscription data
+  const subscription = useAppSelector(selectSubscription)
 
   const currentPlan =
-    SUBSCRIPTION_PLANS.find((plan) => plan.id === subscriptionStatus?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
+    SUBSCRIPTION_PLANS.find((plan) => plan.id === subscription?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
   const maxQuestions = currentPlan.limits.maxQuestionsPerQuiz
   const isMaxPlan = currentPlan.name === "ULTIMATE"
 

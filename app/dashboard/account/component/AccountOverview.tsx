@@ -1,4 +1,3 @@
-// Create a new AccountOverview component
 "use client"
 
 import { useEffect } from "react"
@@ -12,16 +11,23 @@ import { ReferralSystem } from "./ReferralSystem"
 import { CreditCard, User, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
-import { useSubscription } from "../../subscription/hooks/use-subscription"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { fetchSubscription, selectSubscription, selectTokenUsage } from "@/store/slices/subscription-slice"
 
 export function AccountOverview({ userId }: { userId: string }) {
   const { data: session, status } = useSession()
-  const { subscription, details, tokenUsage, isLoading, error, fetchStatus } = useSubscription()
+  const dispatch = useAppDispatch()
+  const subscription = useAppSelector(selectSubscription)
+  const tokenUsage = useAppSelector(selectTokenUsage)
+  const isLoading = useAppSelector((state) => state.subscription.isLoading)
+  const error = useAppSelector((state) => state.subscription.error)
   const router = useRouter()
 
   useEffect(() => {
-    fetchStatus()
-  }, [fetchStatus])
+    if (userId) {
+      dispatch(fetchSubscription())
+    }
+  }, [dispatch, userId])
 
   const handleManageSubscription = () => {
     router.push("/dashboard/subscription")
@@ -31,10 +37,10 @@ export function AccountOverview({ userId }: { userId: string }) {
     return <AccountOverviewSkeleton />
   }
 
-  const tokenUsagePercentage = tokenUsage?.credits ? (tokenUsage.remaining / tokenUsage.total) * 100 : 0
+  const tokenUsagePercentage = tokenUsage?.percentage || 0
 
-  const formattedExpirationDate = details?.expirationDate
-    ? new Date(details.expirationDate).toLocaleDateString("en-US", {
+  const formattedExpirationDate = subscription?.expirationDate
+    ? new Date(subscription.expirationDate).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -76,13 +82,13 @@ export function AccountOverview({ userId }: { userId: string }) {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Subscription</h3>
-                <PlanBadge plan={details?.subscriptionPlan || "FREE"} />
+                <PlanBadge plan={subscription?.subscriptionPlan || "FREE"} />
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center">
-                    <StatusBadge status={details?.status || (subscription?.isSubscribed ? "ACTIVE" : "INACTIVE")} />
+                    <StatusBadge status={subscription?.status || "INACTIVE"} />
                     <span className="ml-2">
                       {subscription?.isSubscribed ? "Active Subscription" : "No Active Subscription"}
                     </span>
@@ -102,7 +108,7 @@ export function AccountOverview({ userId }: { userId: string }) {
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">Available Credits</span>
                   <span className="font-medium">
-                    {tokenUsage?.tokensUsed || 0} / {tokenUsage?.credits || 0}
+                    {tokenUsage?.tokensUsed || 0} / {tokenUsage?.total || 0}
                   </span>
                 </div>
                 <Progress value={tokenUsagePercentage} className="h-2" />

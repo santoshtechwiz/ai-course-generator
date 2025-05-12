@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button"
 import { CalendarIcon } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
-import type { UserSubscription } from "@/app/types/types"
+import { useAppSelector } from "@/store"
+import { selectSubscription } from "@/store/slices/subscription-slice"
 
-export default function SubscriptionStatus({ subscription }: { subscription: UserSubscription }) {
-  if (!subscription) {
+export default function SubscriptionStatus() {
+  const subscription = useAppSelector(selectSubscription)
+
+  if (!subscription || subscription.subscriptionPlan === "FREE") {
     return (
       <Card>
         <CardHeader>
@@ -29,9 +32,9 @@ export default function SubscriptionStatus({ subscription }: { subscription: Use
   }
 
   const isActive = subscription.status === "ACTIVE"
-  const timeUntilExpiry = formatDistanceToNow(new Date(subscription.currentPeriodEnd), {
-    addSuffix: true,
-  })
+  const timeUntilExpiry = subscription.expirationDate
+    ? formatDistanceToNow(new Date(subscription.expirationDate), { addSuffix: true })
+    : "Unknown"
 
   return (
     <Card>

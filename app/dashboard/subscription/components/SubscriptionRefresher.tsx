@@ -9,25 +9,30 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { fetchSubscription } from "@/store/slices/subscription-slice"
 
 export function SubscriptionRefresher() {
-  const { refreshSubscription, clearCache } = useSubscriptionStore()
+  const dispatch = useAppDispatch()
+  const lastFetched = useAppSelector((state) => state.subscription.lastFetched)
+  const isLoading = useAppSelector((state) => state.subscription.isLoading)
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const initialRefreshDoneRef = useRef(false)
 
   // Initial fetch on mount
   useEffect(() => {
-    // Only clear cache and force refresh once on initial mount
+    // Only force refresh once on initial mount
     if (!initialRefreshDoneRef.current) {
-      clearCache()
-      refreshSubscription(true) // Force refresh to get real-time data
+      dispatch(fetchSubscription())
       initialRefreshDoneRef.current = true
     }
 
-    // Set up an interval to refresh the subscription data frequently for real-time updates
+    // Set up an interval to refresh the subscription data
     refreshIntervalRef.current = setInterval(() => {
-      refreshSubscription(false) // Use the cached data if it's fresh enough
+      // Don't refresh if already loading or if we've fetched recently (within 30 seconds)
+      if (!isLoading && (!lastFetched || Date.now() - lastFetched > 30000)) {
+        dispatch(fetchSubscription())
+      }
     }, 30000) // Refresh every 30 seconds to keep credit data current
 
     return () => {
@@ -36,31 +41,9 @@ export function SubscriptionRefresher() {
         refreshIntervalRef.current = null
       }
     }
-  }, [fetchStatus, details])
-
-  // Refresh data periodically with debouncing
-  useEffect(() => {
-    const intervalId = setInterval(
-      () => {
-        const now = Date.now()
-
-        // Skip if we've fetched recently or are currently refreshing
-        if (now - lastFetchRef.current < 60000 || isRefreshingRef.current) {
-          return
-        }
-
-        isRefreshingRef.current = true
-        lastFetchRef.current = now
-
-        fetchStatus(false).finally(() => {
-          isRefreshingRef.current = false
-        })
-      },
-      5 * 60 * 1000,
-    ) // Refresh every 5 minutes
-
-    return () => clearInterval(intervalId)
-  }, [fetchStatus])
+  }, [dispatch, lastFetched, isLoading])
 
   return null
 }
+
+export default SubscriptionRefresher

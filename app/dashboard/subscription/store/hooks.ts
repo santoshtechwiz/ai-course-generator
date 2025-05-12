@@ -1,21 +1,19 @@
 "use client"
 
 /**
- * Custom hooks for subscription data management
- *
- * This file provides hooks that components can use to access subscription data
- * in a standardized way, leveraging the Zustand store.
+ * @deprecated Use hooks/use-subscription.ts instead
+ * This file is maintained for backwards compatibility
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect } from "react"
+import { useAppSelector, useAppDispatch } from "@/store"
+import {
+  fetchSubscription,
+  selectSubscription,
+  selectSubscriptionLoading,
+  selectSubscriptionError,
+} from "@/store/slices/subscription-slice"
 
-import type { SubscriptionData, TokenUsage } from "../types/subscription"
-import { useSubscription } from "../hooks/use-subscription"
-
-/**
- * Custom hook to access subscription data from the Zustand store
- * with additional functionality for refreshing and tracking loading state
- */
 export function useSubscriptionData({
   refreshInterval = 0,
   initialFetch = true,
@@ -23,109 +21,74 @@ export function useSubscriptionData({
   refreshInterval?: number
   initialFetch?: boolean
 } = {}) {
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const dispatch = useAppDispatch()
+  const subscription = useAppSelector(selectSubscription)
+  const isLoading = useAppSelector(selectSubscriptionLoading)
+  const error = useAppSelector(selectSubscriptionError)
 
-  // Get state from the Zustand store using individual selectors to prevent infinite loops
-  // const data = useSubscriptionStore((state) => state.data)
-  // const status = useSubscriptionStore((state) => state.status)
-  // const error = useSubscriptionStore((state) => state.error)
-
-  const { data, status, error, isLoading, isError } = useSubscription()
-
-  // Memoize the subscription object to prevent recreating it on each render
-  const subscription = useMemo<{
-    data: SubscriptionData | null
-    status: string
-    error: string | null
-  }>(() => ({ data, status, error }), [data, status, error])
-
-  // Get actions from the store
-  const { fetchSubscriptionStatus, fetchSubscriptionDetails, clearSubscriptionCache } = useSubscription()
-
-  // Function to refresh data with optional force parameter
-  const refreshData = useCallback(
-    (force = false) => {
-      setIsRefreshing(true)
-
-      // Use Promise.all to fetch both status and details in parallel
-      return Promise.all([fetchSubscriptionStatus(force), fetchSubscriptionDetails(force)])
-        .catch((err) => {
-          console.error("Error refreshing subscription data:", err)
-        })
-        .finally(() => {
-          setIsRefreshing(false)
-        })
-    },
-    [fetchSubscriptionStatus, fetchSubscriptionDetails],
-  )
-
-  // Initial fetch on mount if enabled
+  // Initial fetch
   useEffect(() => {
     if (initialFetch) {
-      refreshData(false)
+      dispatch(fetchSubscription())
     }
-  }, [initialFetch, refreshData])
+  }, [dispatch, initialFetch])
 
-  // Set up interval for periodic refreshes if specified
+  // Periodic refresh
   useEffect(() => {
     if (refreshInterval > 0) {
       const intervalId = setInterval(() => {
-        refreshData(false)
+        dispatch(fetchSubscription())
       }, refreshInterval)
 
       return () => clearInterval(intervalId)
     }
-  }, [refreshInterval, refreshData])
+  }, [dispatch, refreshInterval])
 
   return {
-    subscription,
-    refreshData,
-    isRefreshing,
+    subscription: { data: subscription, status: subscription?.status || "NONE", error },
+    refreshData: () => dispatch(fetchSubscription()),
     isLoading,
-    isError,
+    isError: !!error,
     error,
-    clearCache: clearSubscriptionCache,
   }
 }
 
-/**
- * Hook for accessing subscription plan information
- */
 export function useSubscriptionPlan() {
-  // Use shallow comparison to prevent unnecessary rerenders
-  const { data: subscriptionData } = useSubscription()
+  const subscription = useAppSelector(selectSubscription)
 
-  const isSubscribed = subscriptionData?.data?.isSubscribed || false
-  const currentPlan = subscriptionData?.data?.subscriptionPlan || "FREE"
-  const expirationDate = subscriptionData?.data?.expirationDate
-  const cancelAtPeriodEnd = subscriptionData?.data?.cancelAtPeriodEnd || false
-  const status = subscriptionData?.status || "NONE"
+  if (!subscription) {
+    return {
+      isSubscribed: false,
+      currentPlan: "FREE",
+      status: "NONE",
+      isActive: false,
+      isCancelled: false,
+      isPastDue: false,
+      isFree: true,
+    }
+  }
+
+  const isActive = subscription.status === "ACTIVE"
 
   return {
-    isSubscribed,
-    currentPlan,
-    expirationDate,
-    cancelAtPeriodEnd,
-    status,
-    isActive: status === "ACTIVE",
-    isCancelled: status === "CANCELED" || cancelAtPeriodEnd,
-    isPastDue: status === "PAST_DUE",
-    isFree: currentPlan === "FREE",
+    isSubscribed: subscription.isSubscribed,
+    currentPlan: subscription.subscriptionPlan,
+    expirationDate: subscription.expirationDate,
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    status: subscription.status,
+    isActive,
+    isCancelled: subscription.status === "CANCELED" || subscription.cancelAtPeriodEnd,
+    isPastDue: subscription.status === "PAST_DUE",
+    isFree: subscription.subscriptionPlan === "FREE",
   }
 }
 
-/**
- * Hook for accessing token usage information
- */
-export function useTokenUsage(): TokenUsage {
-  // Use shallow comparison to prevent unnecessary rerenders
-  const { subscription: subscriptionData } = useSubscription()
+export function useTokenUsage() {
+  const subscription = useAppSelector(selectSubscription)
 
-  const tokensUsed = subscriptionData?.tokensUsed || 0
-  const totalTokens = subscriptionData?.credits || 0
-
+  const tokensUsed = subscription?.tokensUsed || 0
+  const totalTokens = subscription?.credits || 0
   const tokenUsagePercentage = totalTokens > 0 ? Math.min((tokensUsed / totalTokens) * 100, 100) : 0
-
   const hasExceededLimit = tokensUsed > 0 && tokensUsed > totalTokens
 
   return {

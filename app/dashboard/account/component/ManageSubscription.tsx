@@ -24,6 +24,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
 import { PaymentMethodForm } from "./PaymentMethod"
 import { StatusBadge } from "./status-badge"
+import { useAppDispatch, useAppSelector } from "@/store"
+import {
+  cancelSubscription,
+  resumeSubscription,
+  selectSubscription,
+  selectTokenUsage,
+} from "@/store/slices/subscription-slice"
 
 interface ManageSubscriptionProps {
   userId: string
@@ -46,9 +53,10 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const session = useSession()
   const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [], totalTokens } = subscriptionData
 
-  // Use the subscription store for actions
-  const cancelSubscription = useSubscriptionStore((state) => state.cancelSubscription)
-  const resumeSubscription = useSubscriptionStore((state) => state.resumeSubscription)
+  // Use Redux for subscription actions
+  const dispatch = useAppDispatch()
+  const subscription = useAppSelector(selectSubscription)
+  const tokenUsage = useAppSelector(selectTokenUsage)
 
   // Memoize plan details to avoid recalculation on every render
   const planDetails = useMemo(() => {
@@ -82,7 +90,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const handleResumeSubscription = useCallback(async () => {
     setIsLoading(true)
     try {
-      await resumeSubscription()
+      await dispatch(resumeSubscription()).unwrap()
 
       toast({
         title: "Subscription Resumed",
@@ -106,7 +114,37 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
     } finally {
       setIsLoading(false)
     }
-  }, [toast, router, resumeSubscription])
+  }, [toast, router, dispatch])
+
+  const handleCancelSubscription = useCallback(
+    async (reason: string) => {
+      setIsLoading(true)
+      try {
+        await dispatch(cancelSubscription(reason)).unwrap()
+
+        toast({
+          title: "Subscription Cancelled",
+          description: "Your subscription has been cancelled successfully.",
+          variant: "default",
+        })
+
+        router.refresh()
+
+        const event = new CustomEvent("subscription-changed")
+        window.dispatchEvent(event)
+      } catch (error) {
+        console.error("Error cancelling subscription:", error)
+        toast({
+          title: "Error",
+          description: "Failed to cancel your subscription. Please try again or contact support.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [toast, router, dispatch],
+  )
 
   const handleUpgradeSubscription = useCallback(() => {
     // Use router.push to navigate to the subscription page

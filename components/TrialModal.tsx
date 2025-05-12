@@ -13,53 +13,30 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
-import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 import { useSession } from "next-auth/react"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { activateFreeTrial, selectSubscription } from "@/store/slices/subscription-slice"
 
 export default function TrialModal() {
   const { data: session } = useSession()
-  const [isSubscribed, setIsSubscribed] = useState(false)
-  const [currentPlan, setCurrentPlan] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const dispatch = useAppDispatch()
+  const subscription = useAppSelector(selectSubscription)
+  const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const { handleSubscribe } = useSubscription()
   const router = useRouter()
 
   const currentMonth = new Date().toLocaleString("default", { month: "long" })
 
   useEffect(() => {
-    async function loadSubscriptionData() {
-      if (session?.user?.id) {
-        try {
-          const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(session.user.id)
-          setIsSubscribed(subscriptionStatus.isSubscribed)
-          setCurrentPlan(subscriptionStatus.subscriptionPlan)
-        } catch (error) {
-          console.error("Error fetching subscription status:", error)
-          setIsSubscribed(false)
-          setCurrentPlan("FREE")
-        }
-      } else {
-        setIsSubscribed(false)
-        setCurrentPlan("FREE")
-      }
-      setIsLoading(false)
-    }
-
-    loadSubscriptionData()
-  }, [session])
-
-  useEffect(() => {
     const hasSeenTrialModal = localStorage.getItem("hasSeenTrialModal") === "true"
-    if (!hasSeenTrialModal && (!isSubscribed || currentPlan === "FREE")) {
+    if (!hasSeenTrialModal && (!subscription?.isSubscribed || subscription?.subscriptionPlan === "FREE")) {
       const timer = setTimeout(() => setIsOpen(true), 3000)
       return () => clearTimeout(timer)
     }
-  }, [isSubscribed, currentPlan])
+  }, [subscription])
 
-  if (isLoading) return null
+  if (!subscription) return null
 
   const handleClose = () => {
     setIsOpen(false)
@@ -72,8 +49,16 @@ export default function TrialModal() {
       router.push("/dashboard/subscription")
       return
     }
-    const success = await handleSubscribe("FREE", 5, "", 0)
-    if (success) handleClose()
+
+    setIsLoading(true)
+    try {
+      await dispatch(activateFreeTrial()).unwrap()
+      handleClose()
+    } catch (error) {
+      console.error("Failed to activate trial:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCopyCode = () => {

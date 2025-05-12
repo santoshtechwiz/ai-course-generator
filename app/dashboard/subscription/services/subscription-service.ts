@@ -15,12 +15,33 @@ import { VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subsc
 import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
 import { prisma } from "@/lib/db"
 import { getPaymentGateway } from "./payment-gateway-factory"
+import { createLogger } from "@/lib/logger"
 
+// Create a dedicated logger for subscription service
+const logger = createLogger("subscription-service")
 /**
  * Service for managing user subscriptions and token transactions
  */
+
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes cache TTL
+const subscriptionCache = new Map<string, { data: any; timestamp: number }>()
 export class SubscriptionService {
+
   /**
+   * Clear cache for a specific user
+   * @param userId - The ID of the user
+   */
+  static clearUserCache(userId: string): void {
+    if (!userId) return
+
+    const keysToDelete = [`subscription_${userId}`, `tokens_${userId}`, `billing_${userId}`]
+
+    keysToDelete.forEach((key) => subscriptionCache.delete(key))
+    logger.debug(`Cleared cache for user ${userId}`)
+  }
+  /**
+   * 
    * Activate the free plan for a user
    *
    * @param userId - The ID of the user
