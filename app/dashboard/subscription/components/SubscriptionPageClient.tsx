@@ -21,11 +21,12 @@ import {
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
-import TrialModal from "@/components/TrialModal"
+
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
 
 import { CancellationDialog } from "./cancellation-dialog"
 import { useMediaQuery } from "@/hooks"
+import TrialModal from "@/components/features/subscription/TrialModal"
 
 // Lazy load components
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))
@@ -213,7 +214,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     <div className="container mx-auto px-4 py-8">
       {!isLoading && subscription && (
         <Suspense fallback={null}>
-          <TrialModal isSubscribed={isSubscribed} currentPlan={subscription.subscriptionPlan} />
+          <TrialModal />
         </Suspense>
       )}
 
