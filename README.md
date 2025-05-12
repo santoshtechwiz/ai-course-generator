@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quiz Module Refactoring Changelog
 
-## Getting Started
+## Overview
 
-First, run the development server:
+This refactoring centralizes quiz logic, improves error handling, enhances testing, and standardizes guest user handling across all quiz types. The changes maintain backward compatibility with the existing API while modernizing the internal architecture.
 
-\`\`\`bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-\`\`\`
+## Key Changes
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### State Management
+- Migrated from mixed Context/localStorage to Redux-based state management
+- Created a central quiz slice with standardized actions and reducers
+- Maintained backward compatibility through the QuizContext wrapper
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Utility Functions
+- Extracted common logic into reusable utility modules:
+  - `quiz-performance.ts`: Score calculation, formatting, and performance metrics
+  - `quiz-options.ts`: Option shuffling, validation, and similarity checking
+  - `quiz-validation.ts`: Input validation and garbage detection
+  - `quiz-error-handling.ts`: Standardized error handling and recovery
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Error Handling
+- Implemented comprehensive error handling with recovery strategies
+- Added fallback mechanisms for critical operations
+- Standardized error types and messages
 
-## Learn More
+### Testing
+- Added unit tests for Redux slice, hooks, and utility functions
+- Improved test coverage for edge cases
+- Standardized mocking approach
 
-To learn more about Next.js, take a look at the following resources:
+### Guest User Handling
+- Implemented consistent approach for guest users across all quiz types
+- Improved guest sign-in prompt with standardized UI
+- Added clear separation between guest and authenticated user flows
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Migration Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### For Developers
+- No changes required for components using the QuizContext
+- The QuizProvider API remains unchanged
+- All existing hooks, context providers, action names, and selectors continue to work as before
 
-## Deploy on Vercel
+### Internal Changes
+- Quiz state is now managed by Redux instead of React Context directly
+- localStorage usage is now centralized in the Redux middleware
+- Authentication status is tracked in Redux state
+- Logic is separated from UI components
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Future Improvements
+- Further optimize performance with memoization
+- Add more comprehensive analytics tracking
+- Implement offline support with service workers
+- Enhance accessibility features

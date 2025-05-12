@@ -1,20 +1,26 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
-
-import { Analytics } from "@/app/analytics"
 import { JsonLd } from "@/app/schema/components/json-ld"
-import { getAuthSession } from "@/lib/auth"
+
 import { Suspense } from "react"
 import { Inter } from "next/font/google"
-import { RootLayoutProvider } from "@/providers/root-layout-provider"
+import { ReduxProvider } from "@/providers/redux-provider"
+import { SessionProvider } from "next-auth/react"
+import { ThemeProvider } from "next-themes"
+import { AnimationProvider } from "@/providers/animation-provider"
+import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import Footer from "@/components/shared/Footer"
 
-// const inter = Inter({
-//   subsets: ["latin"],
-//   display: "swap",
-//   variable: "--font-sans",
-// })
+import { Toaster } from "sonner"
+import { getAuthSession } from "./lib/auth"
+import { SessionSync } from "./providers/session-provider"
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
@@ -50,18 +56,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getAuthSession()
 
   return (
-    <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} scroll-smooth`}>
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
       <body className={`font-sans antialiased min-h-screen flex flex-col`}>
-        <RootLayoutProvider session={session}>
-          <Suspense fallback={<div>Loading...</div>}>
-            <main className="flex-1 flex flex-col pt-16">{children}</main>
-          </Suspense>
-          <Analytics />
-          <Footer />
-        </RootLayoutProvider>
+        <ReduxProvider>
+          <SessionProvider session={session}>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <AnimationProvider>
+                <SessionSync />
+                <MainNavbar />
+                <Suspense fallback={<div>Loading...</div>}>
+                  <main className="flex-1 flex flex-col pt-16">{children}</main>
+                </Suspense>
+                <Footer />
+                <Toaster position="top-right" closeButton richColors />
+              </AnimationProvider>
+            </ThemeProvider>
+          </SessionProvider>
+        </ReduxProvider>
 
         <JsonLd
           data={{

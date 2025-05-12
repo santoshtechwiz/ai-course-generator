@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 
 
+
 interface DashboardShellProps {
   children: React.ReactNode
 }
@@ -14,7 +15,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <ClientLayoutWrapper>
+
       <div className="flex min-h-screen flex-col container mx-auto">{children}</div>
+
     </ClientLayoutWrapper>
   )
 }
