@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-
 interface AuthRequiredModalProps {
   isOpen: boolean
   onClose: () => void

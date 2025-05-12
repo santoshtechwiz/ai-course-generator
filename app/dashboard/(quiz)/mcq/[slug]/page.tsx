@@ -9,8 +9,6 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
 import McqQuizWrapper from "../components/McqQuizWrapper"
 
-
-
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const quiz = await getMcqQuestions(slug)
@@ -70,28 +68,26 @@ const McqPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
   // IMPORTANT: Remove the onAuthRequired function prop
   return (
-   
-      <QuizDetailsPageWithContext
-        title={result.title}
-        description={`Test your coding knowledge on ${result.title} with multiple choice questions`}
-        slug={slug}
-        quizType="mcq"
-        questionCount={questionCount}
-        estimatedTime={estimatedTime}
-        breadcrumbItems={breadcrumbItems}
-        quizId={result.id.toString()}
-        authorId={result.userId}
-        isPublic={result.isPublic || false}
-        isFavorite={result.isFavorite || false}
-        difficulty={
-          ["easy", "medium", "hard"].includes(result.difficulty || "")
-            ? (result.difficulty as "easy" | "medium" | "hard")
-            : "medium"
-        }
-      >
-        <McqQuizWrapper quizData={result} slug={slug} />
-      </QuizDetailsPageWithContext>
-
+    <QuizDetailsPageWithContext
+      title={result.title}
+      description={`Test your coding knowledge on ${result.title} with multiple choice questions`}
+      slug={slug}
+      quizType="mcq"
+      questionCount={questionCount}
+      estimatedTime={estimatedTime}
+      breadcrumbItems={breadcrumbItems}
+      quizId={result.id.toString()}
+      authorId={result.userId}
+      isPublic={result.isPublic || false}
+      isFavorite={result.isFavorite || false}
+      difficulty={
+        ["easy", "medium", "hard"].includes(result.difficulty || "")
+          ? (result.difficulty as "easy" | "medium" | "hard")
+          : "medium"
+      }
+    >
+      <McqQuizWrapper quizData={result} slug={slug} />
+    </QuizDetailsPageWithContext>
   )
 }
 

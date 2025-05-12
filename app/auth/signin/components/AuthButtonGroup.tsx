@@ -1,6 +1,4 @@
 "use client"
-
-import Image from "next/image"
 import { AuthButton } from "./authButton"
 
 const GithubLogo = "/github.png"

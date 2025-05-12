@@ -51,9 +51,7 @@ export function RootProvider({ children, session, ...sessionProps }: RootProvide
   return (
     <QueryClientProvider client={queryClient}>
       <ReduxProvider>
-        
         <SessionProvider
-        
           refetchInterval={sessionOptions.refetchInterval}
           refetchOnWindowFocus={sessionOptions.refetchOnWindowFocus}
           refetchWhenOffline={sessionOptions.refetchWhenOffline}
@@ -61,16 +59,14 @@ export function RootProvider({ children, session, ...sessionProps }: RootProvide
         >
           <MainNavbar></MainNavbar>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
-         
-              {/* SubscriptionProvider must come after SessionProvider */}
-              <SubscriptionProvider>
-                <AnimationProvider>
-                  {mounted && <Suspense fallback={null}>{/* Subscription status component removed */}</Suspense>}
-                  <Toaster position="top-right" closeButton richColors />
-                  {children}
-                </AnimationProvider>
-              </SubscriptionProvider>
-           
+            {/* SubscriptionProvider must come after SessionProvider */}
+            <SubscriptionProvider>
+              <AnimationProvider>
+                {mounted && <Suspense fallback={null}>{/* Subscription status component removed */}</Suspense>}
+                <Toaster position="top-right" closeButton richColors />
+                {children}
+              </AnimationProvider>
+            </SubscriptionProvider>
           </ThemeProvider>
         </SessionProvider>
       </ReduxProvider>

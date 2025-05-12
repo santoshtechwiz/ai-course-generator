@@ -1,9 +1,8 @@
-
 import prisma from "@/lib/db"
 import { NextResponse } from "next/server"
 
-export async function GET(_: Request, props: { params: Promise< { slug: string }> }): Promise<NextResponse> {
-  const { slug } = await (props.params);
+export async function GET(_: Request, props: { params: Promise<{ slug: string }> }): Promise<NextResponse> {
+  const { slug } = await props.params
   if (!slug) {
     return NextResponse.json({ error: "Slug is required" }, { status: 400 })
   }
@@ -61,4 +60,3 @@ export async function GET(_: Request, props: { params: Promise< { slug: string }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-

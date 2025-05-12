@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import PlanAwareButton from "../../components/PlanAwareButton"

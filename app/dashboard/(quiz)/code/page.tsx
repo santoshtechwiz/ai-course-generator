@@ -10,7 +10,6 @@ import { JsonLd } from "@/components/json-ld"
 import QuizDetailsPageWithContext from "../components/QuizDetailsPageWithContext"
 import CodeQuizWrapper from "./components/CodeQuizWrapper"
 
-
 interface PageParams {
   params: Promise<{ slug: string }>
 }
@@ -132,7 +131,7 @@ const CodePage = async (props: PageParams) => {
         isPublic={result.isPublic || false}
         isFavorite={result.isFavorite || false}
       >
-       <CodeQuizWrapper quizData={result.quizData} slug={slug} quizId={""} />
+        <CodeQuizWrapper quizData={result.quizData} slug={slug} quizId={""} />
       </QuizDetailsPageWithContext>
     </>
   )

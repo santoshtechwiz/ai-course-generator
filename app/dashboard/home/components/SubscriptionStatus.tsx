@@ -1,17 +1,14 @@
-'use client'
+"use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
-import { UserSubscription } from "@/app/types/types"
+import type { UserSubscription } from "@/app/types/types"
 
-
-
-
-export default function SubscriptionStatus({ subscription }: { subscription: UserSubscription}) {
+export default function SubscriptionStatus({ subscription }: { subscription: UserSubscription }) {
   if (!subscription) {
     return (
       <Card>
@@ -22,9 +19,7 @@ export default function SubscriptionStatus({ subscription }: { subscription: Use
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            No active subscription found
-          </p>
+          <p className="text-sm text-muted-foreground">No active subscription found</p>
           <Button asChild className="w-full">
             <Link href="/dashboard/subscription">Subscribe Now</Link>
           </Button>
@@ -33,7 +28,7 @@ export default function SubscriptionStatus({ subscription }: { subscription: Use
     )
   }
 
-  const isActive = subscription.status === 'ACTIVE'
+  const isActive = subscription.status === "ACTIVE"
   const timeUntilExpiry = formatDistanceToNow(new Date(subscription.currentPeriodEnd), {
     addSuffix: true,
   })
@@ -43,9 +38,7 @@ export default function SubscriptionStatus({ subscription }: { subscription: Use
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Subscription</span>
-          <Badge variant={isActive ? "default" : "destructive"}>
-            {subscription.status}
-          </Badge>
+          <Badge variant={isActive ? "default" : "destructive"}>{subscription.status}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -54,12 +47,9 @@ export default function SubscriptionStatus({ subscription }: { subscription: Use
           Renews {timeUntilExpiry}
         </div>
         <Button asChild className="w-full">
-          <Link href="/dashboard/subscription">
-            {isActive ? 'Manage Subscription' : 'Renew Subscription'}
-          </Link>
+          <Link href="/dashboard/subscription">{isActive ? "Manage Subscription" : "Renew Subscription"}</Link>
         </Button>
       </CardContent>
     </Card>
   )
 }
-

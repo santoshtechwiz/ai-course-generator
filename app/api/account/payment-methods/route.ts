@@ -3,7 +3,6 @@ import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
-
 export async function GET() {
   const session = await getServerSession(authOptions)
 
@@ -21,4 +20,3 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch payment methods" }, { status: 500 })
   }
 }
-

@@ -26,9 +26,9 @@ function SessionSync() {
   return null
 }
 
-export function SessionProvider({ children }: { children: React.ReactNode }) {
+export function SessionProvider({ children, ...props }: React.ComponentProps<typeof NextAuthSessionProvider>) {
   return (
-    <NextAuthSessionProvider>
+    <NextAuthSessionProvider {...props}>
       <SessionSync />
       {children}
     </NextAuthSessionProvider>

@@ -1,13 +1,13 @@
-import { CodeChallenge } from "@/app/types/types";
-import OpenAI from "openai";
+import type { CodeChallenge } from "@/app/types/types"
+import OpenAI from "openai"
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function generateCodingMCQs(
   language: string,
   title: string,
   difficulty: string,
-  amount:number
+  amount: number,
 ): Promise<CodeChallenge[]> {
   try {
     const response = await openai.chat.completions.create({
@@ -73,12 +73,12 @@ export async function generateCodingMCQs(
         },
       ],
       function_call: { name: "create_coding_mcqs" },
-    });
+    })
 
-    const functionCall = response.choices[0].message.function_call;
-    if (!functionCall) throw new Error("Function call failed");
+    const functionCall = response.choices[0].message.function_call
+    if (!functionCall) throw new Error("Function call failed")
 
-    const quizData: { quizzes: CodeChallenge[] } = JSON.parse(functionCall.arguments);
+    const quizData: { quizzes: CodeChallenge[] } = JSON.parse(functionCall.arguments)
 
     return quizData.quizzes.map((q) => ({
       question: q.question, // Include the title field
@@ -86,9 +86,9 @@ export async function generateCodingMCQs(
       options: q.options,
       language: language,
       correctAnswer: q.correctAnswer,
-    }));
+    }))
   } catch (error) {
-    console.error("MCQ generation failed:", error);
-    return [];
+    console.error("MCQ generation failed:", error)
+    return []
   }
 }

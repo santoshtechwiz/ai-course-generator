@@ -1,16 +1,17 @@
-"use client";
+"use client"
 
-import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useInterval } from "@/hooks/useInterval";
+import React from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useInterval } from "@/hooks/useInterval"
 
 const benefits = [
   {
     title: "Create Complete Courses Instantly",
-    description: "Generate full-featured courses from any topic or video transcript with built-in MCQs, open-ended questions, fill-in-the-blanks, document uploads, PDF downloads, and AI-powered quizzes.",
+    description:
+      "Generate full-featured courses from any topic or video transcript with built-in MCQs, open-ended questions, fill-in-the-blanks, document uploads, PDF downloads, and AI-powered quizzes.",
     icon: "📚",
   },
- 
+
   {
     title: "Custom Quiz Creation",
     description: "Easily design quizzes tailored to your content to reinforce learning effectively.",
@@ -38,14 +39,12 @@ const benefits = [
   },
 ]
 
-
-
 export const BenefitsCarousel: React.FC = () => {
-  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [currentIndex, setCurrentIndex] = React.useState(0)
 
   useInterval(() => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % benefits.length);
-  }, 5000);
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % benefits.length)
+  }, 5000)
 
   return (
     <div className="w-full h-full flex items-center justify-center p-8">
@@ -73,5 +72,5 @@ export const BenefitsCarousel: React.FC = () => {
         </AnimatePresence>
       </div>
     </div>
-  );
-};
+  )
+}

@@ -3,9 +3,9 @@ import { Share2, Facebook, Twitter, Check, LinkIcon, Linkedin } from "lucide-rea
 import { useState } from "react";
 import { Button } from "./ui/button";
 
-import { buildQuizUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { QuizType } from "@/app/types/quiz-types";
+import { buildQuizUrl } from "@/lib/utils/utils";
 
 export function ShareButton({ slug, title, type }: { slug: string; title: string, type: QuizType }) {
   const [isLinkCopied, setIsLinkCopied] = useState(false);

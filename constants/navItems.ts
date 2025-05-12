@@ -22,4 +22,3 @@ export const navItems: NavItem[] = [
   { name: "Create", href: "/dashboard/explore", icon: PlusCircle, subItems: [] },
   { name: "Membership", href: "/dashboard/subscription", icon: CreditCard, subItems: [] },
 ]
-

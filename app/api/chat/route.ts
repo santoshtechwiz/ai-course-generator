@@ -9,10 +9,13 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory"
 import { Document } from "langchain/document"
 
 const CONFIG = {
-  URL: process.env.NEXT_PUBLIC_URL,
+  URL: process.env.NEXT_PUBLIC_URL || "http://localhost:3000",
   MAX_RESULTS: 3, // Reduced from 5 to 3
+  MEMORY_LIMIT: 3, // Limit chat history to last 3 messages
+  MAX_TOKENS: 100, // Reduced token limit for responses
 }
 
+// Use a singleton pattern for the vector store to avoid reinitializing
 let vectorStore: MemoryVectorStore | null = null
 
 export async function POST(req: NextRequest) {
@@ -36,8 +39,8 @@ export async function POST(req: NextRequest) {
       maxTokens: 300, // Reduced from 500
     })
 
-    // Get conversation history (last 3 messages only)
-    const chatHistory = (await memory.getMessages()).slice(-3)
+    // Get conversation history (limited to last few messages)
+    const chatHistory = (await memory.getMessages()).slice(-CONFIG.MEMORY_LIMIT)
 
     // Add current message to history
     await memory.addMessage({
@@ -62,7 +65,7 @@ export async function POST(req: NextRequest) {
       model: openai("gpt-3.5-turbo"),
       messages: [{ role: "system", content: systemMessage }, ...chatHistory, ...messages],
       temperature: 0.7,
-      maxTokens: 100, // Reduced from 250
+      maxTokens: CONFIG.MAX_TOKENS,
     })
 
     // Add AI response to memory
@@ -76,39 +79,51 @@ export async function POST(req: NextRequest) {
 
     return result.toDataStreamResponse()
   } catch (error) {
+    console.error("Chat API error:", error)
     return new Response("Internal Server Error", { status: 500 })
   }
 }
 
 async function initializeVectorStore(): Promise<MemoryVectorStore> {
-  const [allCourses, allQuizzes] = await Promise.all([
-    prisma.course.findMany({
-      select: { title: true, slug: true, description: true },
-    }),
-    prisma.userQuiz.findMany({
-      select: { title: true, slug: true, quizType: true },
-    }),
-  ])
+  try {
+    const [allCourses, allQuizzes] = await Promise.all([
+      prisma.course.findMany({
+        select: { title: true, slug: true, description: true },
+        where: { isPublic: true }, // Only index public courses
+        take: 100, // Limit the number of courses to index
+      }),
+      prisma.userQuiz.findMany({
+        select: { title: true, slug: true, quizType: true },
+        where: { isPublic: true }, // Only index public quizzes
+        take: 100, // Limit the number of quizzes to index
+      }),
+    ])
 
-  const documents: Document[] = [
-    ...allCourses.map(
-      (course) =>
-        new Document({
-          pageContent: `Course: ${course.title}\n${course.description || ""}`,
-          metadata: { type: "course", slug: course.slug },
-        }),
-    ),
-    ...allQuizzes.map(
-      (quiz) =>
-        new Document({
-          pageContent: `Quiz: ${quiz.title}`,
-          metadata: { type: "quiz", slug: quiz.slug, quizType: quiz.quizType },
-        }),
-    ),
-  ]
+    const documents: Document[] = [
+      ...allCourses.map(
+        (course) =>
+          new Document({
+            pageContent: `Course: ${course.title}\n${course.description || ""}`,
+            metadata: { type: "course", slug: course.slug },
+          }),
+      ),
+      ...allQuizzes.map(
+        (quiz) =>
+          new Document({
+            pageContent: `Quiz: ${quiz.title}`,
+            metadata: { type: "quiz", slug: quiz.slug, quizType: quiz.quizType },
+          }),
+      ),
+    ]
 
-  const embeddings = new OpenAIEmbeddings()
-  return await MemoryVectorStore.fromDocuments(documents, embeddings)
+    const embeddings = new OpenAIEmbeddings()
+    return await MemoryVectorStore.fromDocuments(documents, embeddings)
+  } catch (error) {
+    console.error("Error initializing vector store:", error)
+    // Return an empty vector store as fallback
+    const embeddings = new OpenAIEmbeddings()
+    return new MemoryVectorStore(embeddings)
+  }
 }
 
 function buildSystemMessage(similarDocs: Document[]): string {
@@ -134,4 +149,3 @@ Be helpful and brief. Don't provide external info. For specific course details, 
 
   return message
 }
-

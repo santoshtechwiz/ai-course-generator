@@ -17,7 +17,6 @@ interface SeoProps {
   additionalMetaTags?: Array<{ name: string; content: string }>
 }
 
-
 interface PageMetadataProps {
   title: string
   description: string
@@ -233,7 +232,6 @@ export const defaultSEO = {
   ],
 }
 
-
 // Helper function to generate structured data markup for pages
 export function generateStructuredData(type: string, data: any): string {
   try {
@@ -386,4 +384,3 @@ export function extractKeywords(content: string, maxKeywords = 10): string[] {
     .slice(0, maxKeywords)
     .map(([word]) => word)
 }
-

@@ -1,6 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@radix-ui/react-accordion";
-import { FAQ_ITEMS } from "../subscription-plans";
+"use client"
+
+import { Button } from "@/components/ui/button"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@radix-ui/react-accordion"
+import { FAQ_ITEMS } from "../subscription-plans"
 
 // Redesigned FAQSection component
 export default function FAQSection() {

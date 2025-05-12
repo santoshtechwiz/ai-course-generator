@@ -24,18 +24,12 @@ export async function POST(request: Request) {
       await sendEmail(email, name)
     } else if (type === "contact-response") {
       if (!subject || !responseMessage) {
-        return NextResponse.json(
-          { error: "Missing required fields: subject or responseMessage" },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: "Missing required fields: subject or responseMessage" }, { status: 400 })
       }
       await sendContactResponse(email, name, subject, responseMessage)
     } else if (type === "admin-notification") {
       if (!subject || !originalMessage) {
-        return NextResponse.json(
-          { error: "Missing required fields: subject or originalMessage" },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: "Missing required fields: subject or originalMessage" }, { status: 400 })
       }
       await sendAdminNotification(subject, name, email, originalMessage)
     } else {
@@ -53,8 +47,7 @@ export async function POST(request: Request) {
         error: "Failed to send email",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
-

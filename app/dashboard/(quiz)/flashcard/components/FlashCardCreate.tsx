@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
-import { signIn, useSession } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import { Layers, HelpCircle, Timer } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -18,7 +18,6 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
 
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
@@ -53,7 +52,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
 
-  const { data:subscriptionStatus } = useSubscription()
+  const { data: subscriptionStatus } = useSubscription()
 
   // Use a ref to track if component is mounted
   const isMounted = React.useRef(false)

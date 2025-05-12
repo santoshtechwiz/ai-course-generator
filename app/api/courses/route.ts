@@ -11,6 +11,20 @@ const coursesCache = new NodeCache({
   maxKeys: 1000, // Limit cache size
 })
 
+// Reuse the determineDifficulty function
+function determineDifficulty(lessonCount: number, quizCount: number): string {
+  const totalItems = lessonCount + quizCount
+  if (totalItems < 15) return "Beginner"
+  if (totalItems < 30) return "Intermediate"
+  return "Advanced"
+}
+
+// Add this helper function to calculate average rating
+function calculateAverageRating(ratings: { rating: number }[]): number {
+  if (!ratings || ratings.length === 0) return 0
+  return Number.parseFloat((ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1))
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const search = searchParams.get("search") || undefined
@@ -145,16 +159,13 @@ export async function GET(req: NextRequest) {
       prisma.course.count({ where }),
     ])
 
-    // After fetching courses, filter by rating if minRating is specified
+    // In the GET function, replace the course formatting logic with this more efficient version:
     const formattedCourses = courses
       .map((course) => {
         // Calculate average rating
-        const ratings = course.ratings || []
-        const avgRating = ratings.length
-          ? Number.parseFloat((ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1))
-          : 0
+        const avgRating = calculateAverageRating(course.ratings || [])
 
-        // Calculate total lessons and quizzes
+        // Calculate total lessons and quizzes more efficiently
         const lessonCount = course.courseUnits.reduce((acc, unit) => acc + unit._count.chapters, 0)
         const quizCount = course.courseUnits.reduce(
           (acc, unit) =>
@@ -211,12 +222,4 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching courses:", error)
     return NextResponse.json({ error: "Failed to fetch courses", details: error }, { status: 500 })
   }
-}
-
-// Helper function to determine course difficulty based on content
-function determineDifficulty(lessonCount: number, quizCount: number): string {
-  const totalItems = lessonCount + quizCount
-  if (totalItems < 15) return "Beginner"
-  if (totalItems < 30) return "Intermediate"
-  return "Advanced"
 }

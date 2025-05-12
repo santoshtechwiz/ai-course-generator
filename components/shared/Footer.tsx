@@ -2,9 +2,10 @@
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import Logo from "./Logo"
+
 import { Twitter, Facebook, Linkedin, Instagram } from "lucide-react"
 import { NewsletterForm } from "../newsletter-form"
+import Logo from "../Navbar/Logo"
 
 const footerLinks = [
   {
@@ -21,8 +22,6 @@ const footerLinks = [
     links: [
       { name: "Learning Path", href: "/dashboard/dashboard" },
       { name: "Membership", href: "/dashboard/subscription" },
-    
-    
     ],
   },
   {
@@ -164,4 +163,3 @@ export default function Footer() {
     </footer>
   )
 }
-

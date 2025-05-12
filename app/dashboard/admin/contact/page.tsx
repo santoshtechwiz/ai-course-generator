@@ -8,10 +8,9 @@ export default async function AdminContactPage() {
   const session = await getServerSession(authOptions)
 
   // If no session or user is not an admin, redirect to the homepage
-  if (!session || !session.user || session.user.isAdmin!== true) {
+  if (!session || !session.user || session.user.isAdmin !== true) {
     redirect("/")
   }
 
   return <ContactManagement />
 }
-

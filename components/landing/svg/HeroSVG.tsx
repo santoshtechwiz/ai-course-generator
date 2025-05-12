@@ -3,8 +3,6 @@
 import AnimatedSVGPath from "@/components/animations/AnimatedSVGPath"
 import { motion } from "framer-motion"
 
-
-
 const HeroSVG = () => {
   return (
     <svg
@@ -147,7 +145,6 @@ const HeroSVG = () => {
           <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.8" />
           <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.2" />
         </linearGradient>
-    
 
         <linearGradient id="heroStroke" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.1" />
@@ -179,7 +176,7 @@ const HeroSVG = () => {
           <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.5" />
         </linearGradient>
       </defs>
-  </svg>
+    </svg>
   )
 }
 

@@ -3,7 +3,6 @@
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 
-
 import type { QueryParams } from "@/app/types/types"
 import CreateQuizForm from "./CreateQuizForm"
 
@@ -25,7 +24,7 @@ interface QuizCourseWrapperProps {
 }
 
 export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
-  const { data:subscriptionStatus } = useSubscription()
+  const { data: subscriptionStatus } = useSubscription()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
 

@@ -7,7 +7,6 @@ import { useState } from "react"
 import { SiAdobe } from "react-icons/si"
 import { useSubscription } from "@/store/subscription-provider"
 
-
 // Register a font with multiple weights
 Font.register({
   family: "Roboto",
@@ -157,7 +156,7 @@ const PDFDocument = ({ content, chapterName }: { content: string; chapterName: s
 
 const PDFGenerator = ({ markdown, chapterName }: { markdown: string; chapterName: string }) => {
   const [isDownloading, setIsDownloading] = useState(false)
-  const { subscription:data } = useSubscription()
+  const { subscription: data } = useSubscription()
 
   const handleDownload = async () => {
     setIsDownloading(true)
@@ -181,10 +180,7 @@ const PDFGenerator = ({ markdown, chapterName }: { markdown: string; chapterName
     }
   }
 
-  const isDisabled =
-    !data ||
-    data.currentPlan === "FREE" ||
-    data.currentPlan === "BASIC"
+  const isDisabled = !data || data.currentPlan === "FREE" || data.currentPlan === "BASIC"
 
   return (
     <div className="flex justify-end mt-4">
@@ -206,4 +202,3 @@ const PDFGenerator = ({ markdown, chapterName }: { markdown: string; chapterName
 }
 
 export default PDFGenerator
-

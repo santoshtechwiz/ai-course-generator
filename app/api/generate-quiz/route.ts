@@ -81,4 +81,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 })
   }
 }
-

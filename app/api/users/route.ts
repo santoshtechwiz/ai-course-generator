@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/db"
 
-
 export async function GET(req: NextRequest) {
   try {
     // Authenticate admin user
@@ -160,7 +159,6 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    
     return NextResponse.json({
       id: user.id,
       name: user.name,
@@ -180,4 +178,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

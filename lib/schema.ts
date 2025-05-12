@@ -373,7 +373,7 @@ export function generateCourseSchema(course: CourseData): Schema {
       : defaultProvider,
     educationalLevel: course.difficulty || "Beginner",
     timeRequired: course.estimatedHours ? `PT${course.estimatedHours}H` : undefined,
-      category: "Programming",
+    category: "Programming",
     dateCreated: course.createdAt,
     hasCourseInstance: {
       "@type": "CourseInstance",
@@ -696,4 +696,3 @@ export function validateSchema(schema: Schema): boolean {
     return false
   }
 }
-

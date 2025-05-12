@@ -1,4 +1,6 @@
-"use server"
+'use server'
+import type React from "react"
+
 
 import { Resend } from "resend"
 import WelcomeEmail from "@/app/dashboard/admin/components/templates/welcome-email"
@@ -15,7 +17,7 @@ type EmailResponse = {
 
 export async function sendEmail(email: string, name: string, html?: string): Promise<EmailResponse> {
   try {
-    const emailHtml = html || await render(WelcomeEmail({ name }))
+    const emailHtml = html || (await render(WelcomeEmail({ name })))
 
     const response = await resend.emails.send({
       from: process.env.EMAIL_FROM || "no-reply@courseai.io",
@@ -32,9 +34,9 @@ export async function sendEmail(email: string, name: string, html?: string): Pro
     return { success: true, messageId: response.data.id }
   } catch (error) {
     console.error("Error sending welcome email:", error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : "Unknown error" 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
     }
   }
 }
@@ -43,7 +45,7 @@ export async function sendEmail(email: string, name: string, html?: string): Pro
 export async function sendContactResponse(email: string, name: string, subject: string, message: string) {
   try {
     // Use the ContactResponseEmail template
-    const emailHtml = await render(ContactResponseEmail({name,subject,message}) as React.ReactElement);
+    const emailHtml = await render(ContactResponseEmail({ name, subject, message }) as React.ReactElement)
 
     const response = await resend.emails.send({
       from: process.env.EMAIL_FROM || "support@courseai.io",
@@ -60,10 +62,4 @@ export async function sendContactResponse(email: string, name: string, subject: 
   }
 }
 
-
-export async function sendAdminNotification(subject: string, name: string, email: string, originalMessage: string) {
-
-  
-
-}
-  
+export async function sendAdminNotification(subject: string, name: string, email: string, originalMessage: string) {}

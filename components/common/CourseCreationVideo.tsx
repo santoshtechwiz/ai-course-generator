@@ -1,8 +1,8 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, Lightbulb, BookOpen, Sparkles, Play } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ChevronRight, Lightbulb, BookOpen, Sparkles, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -31,8 +31,8 @@ const TypeWriter = ({ text, setValue, delay = 50 }) => {
 
 const CourseCreationVideo = () => {
   const [step, setStep] = useState(0)
-  const [courseTitle, setCourseTitle] = useState('')
-  const [courseDescription, setCourseDescription] = useState('')
+  const [courseTitle, setCourseTitle] = useState("")
+  const [courseDescription, setCourseDescription] = useState("")
   const [triggerTypeEffect, setTriggerTypeEffect] = useState(false)
 
   const steps = [
@@ -52,8 +52,8 @@ const CourseCreationVideo = () => {
 
   useEffect(() => {
     if (step === 0) {
-      setCourseTitle('')
-      setCourseDescription('')
+      setCourseTitle("")
+      setCourseDescription("")
       setTriggerTypeEffect(true)
     }
   }, [step])
@@ -87,7 +87,7 @@ const CourseCreationVideo = () => {
             {steps.map((s, index) => (
               <div key={index} className="flex flex-col items-center">
                 <motion.div
-                  className={`rounded-full p-3 ${step >= index ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+                  className={`rounded-full p-3 ${step >= index ? "bg-primary text-primary-foreground" : "bg-muted"}`}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: index * 0.2 }}
@@ -117,24 +117,24 @@ const CourseCreationVideo = () => {
                 {step === 0 && (
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <Label htmlFor="courseTitle" className="font-medium">Course Title</Label>
+                      <Label htmlFor="courseTitle" className="font-medium">
+                        Course Title
+                      </Label>
                       <Input
                         id="courseTitle"
                         placeholder="Enter your course title"
-                        value={courseTitle} 
+                        value={courseTitle}
                         readOnly
                         onChange={(e) => setCourseTitle(e.target.value)}
                       />
                       {triggerTypeEffect && (
-                        <TypeWriter
-                          text="AI Generated Course Title"
-                          setValue={setCourseTitle}
-                          delay={75}
-                        />
+                        <TypeWriter text="AI Generated Course Title" setValue={setCourseTitle} delay={75} />
                       )}
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="courseDescription" className="font-medium">Course Description</Label>
+                      <Label htmlFor="courseDescription" className="font-medium">
+                        Course Description
+                      </Label>
                       <Textarea
                         id="courseDescription"
                         placeholder="Briefly describe your course"
@@ -162,7 +162,7 @@ const CourseCreationVideo = () => {
                       transition={{
                         duration: 2,
                         ease: "easeInOut",
-                        repeat: Infinity,
+                        repeat: Number.POSITIVE_INFINITY,
                       }}
                     >
                       <Sparkles className="w-16 h-16 mx-auto text-primary" />
@@ -179,7 +179,7 @@ const CourseCreationVideo = () => {
                       transition={{
                         duration: 1,
                         ease: "easeInOut",
-                        repeat: Infinity,
+                        repeat: Number.POSITIVE_INFINITY,
                       }}
                     >
                       <Play className="w-16 h-16 mx-auto text-primary" />
@@ -191,11 +191,7 @@ const CourseCreationVideo = () => {
             </AnimatePresence>
           </div>
 
-          <Button
-            onClick={() => {}}
-            className="w-full mt-8"
-            disabled={step !== steps.length - 1}
-          >
+          <Button onClick={() => {}} className="w-full mt-8" disabled={step !== steps.length - 1}>
             {step === steps.length - 1 ? "Finish" : "Next"}
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
@@ -208,7 +204,11 @@ const CourseCreationVideo = () => {
         </CardHeader>
         <CardContent>
           <ul className="space-y-3">
-            {["Keep your title concise and catchy", "Use AI to generate engaging content", "Include interactive quizzes for better learning"].map((tip, index) => (
+            {[
+              "Keep your title concise and catchy",
+              "Use AI to generate engaging content",
+              "Include interactive quizzes for better learning",
+            ].map((tip, index) => (
               <motion.li
                 key={index}
                 className="flex items-center space-x-3"
@@ -228,4 +228,3 @@ const CourseCreationVideo = () => {
 }
 
 export default CourseCreationVideo
-

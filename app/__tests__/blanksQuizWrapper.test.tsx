@@ -9,7 +9,6 @@ import { SessionProvider } from "next-auth/react"
 import quizReducer from "@/store/slices/quizSlice"
 import authReducer from "@/store/slices/authSlice"
 import BlanksQuizWrapper from "../dashboard/(quiz)/blanks/components/BlankQuizWrapper"
-import BlanksQuizResult from "../dashboard/(quiz)/blanks/components/BlankQuizResults"
 // Mock next/navigation
 jest.mock("next/navigation", () => {
   const mockSearchParams = new URLSearchParams()

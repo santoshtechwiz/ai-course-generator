@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
-import { FileQuestion, BookOpen, PenTool, AlignLeft, Code, FileText, Puzzle, Brain } from "lucide-react"
+import { FileQuestion, BookOpen, PenTool, AlignLeft, Code, FileText, Brain } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -34,7 +34,8 @@ const tiles = [
   {
     icon: FileQuestion,
     title: "AI-Enhanced MCQs",
-    description: "Transform your quizzes with AI-generated multiple-choice questions that adapt to each learner's performance.",
+    description:
+      "Transform your quizzes with AI-generated multiple-choice questions that adapt to each learner's performance.",
     url: "/dashboard/mcq",
     color: "blue",
     quotes: [
@@ -64,7 +65,8 @@ const tiles = [
   {
     icon: PenTool,
     title: "Essay Question Creator",
-    description: "Spark critical thinking with AI-generated open-ended questions designed to inspire in-depth analysis.",
+    description:
+      "Spark critical thinking with AI-generated open-ended questions designed to inspire in-depth analysis.",
     url: "/dashboard/openended",
     color: "green",
     quotes: [
@@ -94,7 +96,8 @@ const tiles = [
   {
     icon: BookOpen,
     title: "Dynamic Course Builder",
-    description: "Leverage AI to structure comprehensive courses with personalized content and adaptive learning paths.",
+    description:
+      "Leverage AI to structure comprehensive courses with personalized content and adaptive learning paths.",
     url: "/dashboard/create",
     color: "purple",
     quotes: [
@@ -141,7 +144,7 @@ const tiles = [
 function Tile({ icon: Icon, title, description, url, index, quotes, color, isPremium }: CreateTileGridProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentQuote, setCurrentQuote] = useState(0)
-  const {data} = useSubscription();
+  const { data } = useSubscription()
 
   const quoteInterval = useMemo(() => {
     if (isOpen) {
@@ -158,8 +161,7 @@ function Tile({ icon: Icon, title, description, url, index, quotes, color, isPre
     }
   }, [quoteInterval])
 
-  const isDisabled =
-    isPremium && (data?.subscriptionPlan === "BASIC" || data?.subscriptionPlan === "FREE")
+  const isDisabled = isPremium && (data?.subscriptionPlan === "BASIC" || data?.subscriptionPlan === "FREE")
 
   return (
     <>

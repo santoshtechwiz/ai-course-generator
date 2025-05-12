@@ -1,10 +1,9 @@
 import "@testing-library/jest-dom"
-import { TextEncoder, TextDecoder } from "util"
+import { TextEncoder } from "util"
 import { jest } from "@jest/globals"
 
 // Polyfill for TextEncoder/TextDecoder which Next.js needs
 global.TextEncoder = TextEncoder
-
 
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {

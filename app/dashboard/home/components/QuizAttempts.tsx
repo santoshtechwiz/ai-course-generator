@@ -279,4 +279,3 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
     </motion.div>
   )
 }
-

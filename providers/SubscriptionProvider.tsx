@@ -4,7 +4,7 @@ import type React from "react"
 import { useEffect } from "react"
 import { useSession } from "next-auth/react"
 import useSubscriptionStore from "@/store/useSubscriptionStore"
-import { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()

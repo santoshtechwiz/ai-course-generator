@@ -1,11 +1,11 @@
-import { SubscriptionState } from "@/store/slices/subscription-slice"
+import type { SubscriptionState } from "@/store/slices/subscription-slice"
 
 // Define the missing SubscriptionPlanType enum
 export enum SubscriptionPlanType {
   FREE = "free",
   BASIC = "basic",
   PRO = "pro",
-  PREMIUM = "premium"
+  PREMIUM = "premium",
 }
 
 // Define the SubscriptionStatus enum if it's not properly imported
@@ -14,7 +14,7 @@ export enum SubscriptionStatus {
   INACTIVE = "inactive",
   CANCELED = "canceled",
   PAST_DUE = "past_due",
-  PENDING = "pending"
+  PENDING = "pending",
 }
 
 /**
@@ -44,7 +44,7 @@ export function parseSubscriptionData(data: string | null): Partial<Subscription
     return null
   }
 }
-export function calculateSavings (subscription: SubscriptionState | null): number {
+export function calculateSavings(subscription: SubscriptionState | null): number {
   if (!subscription) return 0
 
   // Calculate savings based on subscription plan

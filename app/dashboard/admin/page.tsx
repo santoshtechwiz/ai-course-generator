@@ -29,7 +29,7 @@ export default async function AdminDashboard() {
       icon: <Inbox className="h-8 w-8 text-primary" />,
       link: "/dashboard/admin/contact",
     },
-    
+
     {
       title: "Email Management",
       description: "View and respond to user inquiries from the contact form",
@@ -63,4 +63,3 @@ export default async function AdminDashboard() {
     </div>
   )
 }
-

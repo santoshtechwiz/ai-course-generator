@@ -22,7 +22,6 @@ import { Switch } from "@/components/ui/switch"
 
 import { useToast } from "@/hooks/use-toast"
 
-
 const USER_TYPES = [
   { value: "FREE", label: "Free" },
   { value: "BASIC", label: "Basic" },
@@ -30,9 +29,6 @@ const USER_TYPES = [
   { value: "PREMIUM", label: "Premium" },
   { value: "ULTIMATE", label: "Ultimate" },
 ] as const
-
-
-
 
 // Define the form schema
 const createUserSchema = z.object({
@@ -283,4 +279,3 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
     </Dialog>
   )
 }
-

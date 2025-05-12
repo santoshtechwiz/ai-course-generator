@@ -163,8 +163,6 @@ describe("BlanksQuiz", () => {
     expect(screen.getByText("Time: 01:05")).toBeInTheDocument()
   })
 
-
-
   test("disables submit button while submitting", () => {
     render(
       <BlanksQuiz

@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
@@ -136,4 +138,3 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
 
   return { status, loading, handleAction, handleRating, fetchCourseStatus }
 }
-

@@ -3,7 +3,6 @@
 import AnimatedSVGPath from "@/components/animations/AnimatedSVGPath"
 import { motion } from "framer-motion"
 
-
 const FeaturesSVG = () => {
   return (
     <svg

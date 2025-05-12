@@ -1,8 +1,8 @@
 "use client"
 
-import React from "react"
+import type React from "react"
 import { motion } from "framer-motion"
-import { Loader2 } from 'lucide-react'
+import { Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 interface QuizLoaderProps {
@@ -11,11 +11,7 @@ interface QuizLoaderProps {
   size?: "sm" | "md" | "lg"
 }
 
-export const QuizLoader: React.FC<QuizLoaderProps> = ({
-  message = "Loading...",
-  subMessage,
-  size = "md",
-}) => {
+export const QuizLoader: React.FC<QuizLoaderProps> = ({ message = "Loading...", subMessage, size = "md" }) => {
   const sizeClasses = {
     sm: "w-6 h-6",
     md: "w-8 h-8",
@@ -31,7 +27,7 @@ export const QuizLoader: React.FC<QuizLoaderProps> = ({
           }}
           transition={{
             duration: 1.5,
-            repeat: Infinity,
+            repeat: Number.POSITIVE_INFINITY,
             ease: "linear",
           }}
           className="mb-4"

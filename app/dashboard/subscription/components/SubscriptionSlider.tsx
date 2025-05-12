@@ -22,7 +22,7 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
   onValueChange,
   ariaLabel = "Select number of questions",
 }) => {
-  const { data:subscriptionStatus } = useSubscription()
+  const { data: subscriptionStatus } = useSubscription()
 
   const currentPlan =
     SUBSCRIPTION_PLANS.find((plan) => plan.id === subscriptionStatus?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]

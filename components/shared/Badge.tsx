@@ -1,27 +1,29 @@
-import { motion } from 'framer-motion';
+"use client"
+
+import { motion } from "framer-motion"
 
 interface BadgeProps {
-  text: string;
-  type: 'difficulty' | 'questions' | 'trending';
+  text: string
+  type: "difficulty" | "questions" | "trending"
 }
 const badgeVariants = {
   initial: { scale: 0.8, opacity: 0 },
   animate: { scale: 1, opacity: 1 },
-};
+}
 
 export const Badge = ({ text, type }: BadgeProps) => {
   const getColorClass = () => {
     switch (type) {
-      case 'difficulty':
-        return 'bg-yellow-500 text-yellow-900';
-      case 'questions':
-        return 'bg-blue-500 text-blue-900';
-      case 'trending':
-        return 'bg-red-500 text-red-900';
+      case "difficulty":
+        return "bg-yellow-500 text-yellow-900"
+      case "questions":
+        return "bg-blue-500 text-blue-900"
+      case "trending":
+        return "bg-red-500 text-red-900"
       default:
-        return 'bg-gray-500 text-gray-900';
+        return "bg-gray-500 text-gray-900"
     }
-  };
+  }
 
   return (
     <motion.span
@@ -33,6 +35,5 @@ export const Badge = ({ text, type }: BadgeProps) => {
     >
       {text}
     </motion.span>
-  );
-};
-
+  )
+}

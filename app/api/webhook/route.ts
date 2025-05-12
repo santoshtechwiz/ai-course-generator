@@ -140,7 +140,6 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
             },
           }),
         ])
-        
       }
 
       // Process referral if applicable
@@ -268,7 +267,7 @@ async function processReferralBenefits(session: any) {
         data: {
           userId: referrerId,
           credits: REFERRER_BONUS,
-          amount:0,
+          amount: 0,
           type: "REFERRAL",
           description: `Referral bonus for user ${userId} subscribing to ${session.metadata.planName || "subscription"} plan`,
         },
@@ -335,7 +334,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
           })
 
           // Log the token addition for renewal
-            await prisma.tokenTransaction.create({
+          await prisma.tokenTransaction.create({
             data: {
               userId: userSubscription.userId,
               credits: plan.tokens,
@@ -343,7 +342,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
               type: "RENEWAL",
               description: `Added ${plan.tokens} tokens from ${planId} plan renewal`,
             },
-            })
+          })
         }
       }
     }

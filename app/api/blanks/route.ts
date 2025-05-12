@@ -1,23 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server"
 
-import { prisma } from '@/lib/db';
-import { generateSlug } from '@/lib/utils';
-import { generateOpenEndedFillIntheBlanks } from '@/lib/chatgpt/userMcqQuiz';
-import { getAuthSession } from '@/lib/auth';
+import { prisma } from "@/lib/db"
+import { generateSlug } from "@/lib/utils"
+import { generateOpenEndedFillIntheBlanks } from "@/lib/chatgpt/userMcqQuiz"
+import { getAuthSession } from "@/lib/auth"
 
 export async function POST(req: Request) {
   try {
-    const session = await getAuthSession();
+    const session = await getAuthSession()
     const { title, questionCount } = await req.json()
-    const userId = session?.user.id;
+    const userId = session?.user.id
 
     if (!userId) {
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
     }
-    const creditDeduction = questionCount > 5 ? 2 : 1;
+    const creditDeduction = questionCount > 5 ? 2 : 1
 
     if (session.user.credits < creditDeduction) {
-      return { error: 'Insufficient credits', status: 403 };
+      return { error: "Insufficient credits", status: 403 }
     }
 
     const quiz = await generateOpenEndedFillIntheBlanks(title, questionCount)
@@ -27,28 +27,36 @@ export async function POST(req: Request) {
       await tx.user.update({
         where: { id: userId },
         data: { credits: { decrement: creditDeduction } },
-      });
+      })
 
       return await tx.userQuiz.create({
         data: {
           userId,
           title,
           timeStarted: new Date(),
-          quizType: 'fill-blanks',
+          quizType: "fill-blanks",
           slug: slug,
           questions: {
-            create: quiz.questions.map((q: { question: string; correct_answer: string; hints: string[]; difficulty: string; tags: string[] }) => ({
-              question: q.question,
-              answer: q.correct_answer,
-              questionType: 'fill-blanks',
-              openEndedQuestion: {
-                create: {
-                  hints: q.hints.join('|'),
-                  difficulty: q.difficulty,
-                  tags: q.tags.join('|'),
+            create: quiz.questions.map(
+              (q: {
+                question: string
+                correct_answer: string
+                hints: string[]
+                difficulty: string
+                tags: string[]
+              }) => ({
+                question: q.question,
+                answer: q.correct_answer,
+                questionType: "fill-blanks",
+                openEndedQuestion: {
+                  create: {
+                    hints: q.hints.join("|"),
+                    difficulty: q.difficulty,
+                    tags: q.tags.join("|"),
+                  },
                 },
-              },
-            })),
+              }),
+            ),
           },
         },
         include: {
@@ -58,13 +66,12 @@ export async function POST(req: Request) {
             },
           },
         },
-      });
-    });
+      })
+    })
 
     return NextResponse.json({ quizId: userQuiz.id, slug: userQuiz.slug })
   } catch (error) {
-    console.error('Error generating quiz:', error)
-    return NextResponse.json({ error: 'Failed to generate quiz' }, { status: 500 })
+    console.error("Error generating quiz:", error)
+    return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 })
   }
 }
-

@@ -61,31 +61,26 @@ const faqSchema = {
   mainEntity: [
     {
       question: "How does CourseAI generate educational content?",
-     answer: "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses. The AI understands educational best practices and creates content that is accurate, engaging, and pedagogically sound.",
-
+      answer:
+        "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses. The AI understands educational best practices and creates content that is accurate, engaging, and pedagogically sound.",
     },
     {
-
       question: "Can I create programming quizzes with CourseAI?",
 
-
-      answer: "Yes! CourseAI specializes in creating programming-related educational content. You can generate coding MCQs, algorithm challenges, code completion exercises, and debugging questions for languages including JavaScript, Python, Java, C++, and many others.",
-
+      answer:
+        "Yes! CourseAI specializes in creating programming-related educational content. You can generate coding MCQs, algorithm challenges, code completion exercises, and debugging questions for languages including JavaScript, Python, Java, C++, and many others.",
     },
     {
       question: "How accurate is the AI-generated content?",
 
-
-      answer: "CourseAI's content generation is highly accurate, especially for technical and programming topics. However, we always recommend reviewing AI-generated content before publishing. Our tools allow you to easily edit and refine the generated content to ensure it meets your specific requirements.",
-
+      answer:
+        "CourseAI's content generation is highly accurate, especially for technical and programming topics. However, we always recommend reviewing AI-generated content before publishing. Our tools allow you to easily edit and refine the generated content to ensure it meets your specific requirements.",
     },
     {
-
       name: "Can I customize the difficulty level of generated questions?",
 
-
-      answer: "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives.",
-
+      answer:
+        "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives.",
     },
   ],
 }
@@ -119,4 +114,3 @@ export default function ExplorePage() {
     </>
   )
 }
-

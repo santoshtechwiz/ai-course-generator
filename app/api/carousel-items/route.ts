@@ -1,41 +1,44 @@
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
-type QuizType = 'mcq' | 'openended' | 'fill-blanks' | 'code';
+type QuizType = "mcq" | "openended" | "fill-blanks" | "code"
 
 interface Quiz {
-  id: string;
-  title: string;
-  slug: string;
-  quizType: QuizType;
-}
-function generateCourseDescription(course: any) {
-  const descriptions = [
-    `Enhance your ${course.name} skills with our project-based learning approach.`,
-    `Learn ${course.name} through hands-on exercises and real-world applications.`,
-    `Discover the practical aspects of ${course.name} in this comprehensive course.`,
-    `Gain valuable insights into ${course.name} with our expert-led tutorials and projects.`,
-    `Explore the intricacies of ${course.name} and apply your knowledge to solve real problems.`,
-  ]
-  return descriptions[Math.floor(Math.random() * descriptions.length)]
+  id: string
+  title: string
+  slug: string
+  quizType: QuizType
 }
 
+// Use a more efficient approach with a single function for descriptions
+function generateDescription(item: any, type: "course" | "quiz"): string {
+  const templates =
+    type === "course"
+      ? [
+          `Enhance your ${item.title} skills with our project-based learning approach.`,
+          `Learn ${item.title} through hands-on exercises and real-world applications.`,
+          `Discover the practical aspects of ${item.title} in this comprehensive course.`,
+          `Gain valuable insights into ${item.title} with our expert-led tutorials and projects.`,
+          `Explore the intricacies of ${item.title} and apply your knowledge to solve real problems.`,
+        ]
+      : [
+          `Assess your understanding of ${item.title} with our carefully crafted ${getQuizTypeDescription(item.quizType)}.`,
+          `Put your ${item.title} knowledge to the test in this engaging quiz format.`,
+          `Reinforce your learning with practical ${getQuizTypeDescription(item.quizType)} on ${item.title}.`,
+          `Challenge yourself and identify areas for improvement in ${item.title} with this interactive quiz.`,
+          `Validate your expertise in ${item.title} through our comprehensive set of ${getQuizTypeDescription(item.quizType)}.`,
+        ]
 
+  return templates[Math.floor(Math.random() * templates.length)]
+}
 
-function generateQuizDescription(quiz: Quiz) {
-  const quizTypeDescriptions = {
+function getQuizTypeDescription(quizType: QuizType): string {
+  const descriptions = {
     mcq: "multiple-choice questions",
     openended: "open-ended questions",
     "fill-blanks": "fill-in-the-blank exercises",
     code: "coding challenges",
   }
-  const descriptions = [
-    `Assess your understanding of ${quiz.title} with our carefully crafted ${quizTypeDescriptions[quiz.quizType]}.`,
-    `Put your ${quiz.title} knowledge to the test in this engaging quiz format.`,
-    `Reinforce your learning with practical ${quizTypeDescriptions[quiz.quizType]} on ${quiz.title}.`,
-    `Challenge yourself and identify areas for improvement in ${quiz.title} with this interactive quiz.`,
-    `Validate your expertise in ${quiz.title} through our comprehensive set of ${quizTypeDescriptions[quiz.quizType]}.`,
-  ]
-  return descriptions[Math.floor(Math.random() * descriptions.length)]
+  return descriptions[quizType] || "interactive questions"
 }
 
 export async function GET() {
@@ -69,7 +72,7 @@ export async function GET() {
         name: course.title,
         slug: course.slug,
         quizType: "course",
-        description: course.description || generateCourseDescription(course),
+        description: course.description || generateDescription(course, "course"),
         tagline: `Master ${course.title} through practical exercises`,
         type: "course" as const,
       })),
@@ -77,7 +80,7 @@ export async function GET() {
         id: quiz.id,
         name: quiz.title,
         slug: quiz.slug,
-        description: generateQuizDescription(quiz),
+        description: generateDescription(quiz, "quiz"),
         tagline: `Evaluate your ${quiz.title} proficiency`,
         quizType: quiz.quizType,
         type: "quiz" as const,
@@ -90,4 +93,3 @@ export async function GET() {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }
-

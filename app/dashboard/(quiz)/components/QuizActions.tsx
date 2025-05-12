@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-import { QuizType } from "@/app/types/quiz-types"
+import type { QuizType } from "@/app/types/quiz-types"
 import { useSubscription } from "../../subscription/hooks/use-subscription"
 
 interface QuizActionsProps {

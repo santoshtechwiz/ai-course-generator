@@ -3,7 +3,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 
 import { fetchWithAuth } from "@/lib/utils/fetch-utils"
-import { SubscriptionData, SubscriptionDetails, TokenUsage } from "@/app/types/types"
+import type { SubscriptionData, SubscriptionDetails, TokenUsage } from "@/app/types/types"
 
 // Define the subscription state type
 export interface SubscriptionState {

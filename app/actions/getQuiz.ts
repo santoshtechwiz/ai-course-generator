@@ -1,7 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/db"
-import { QuestionOpenEnded } from "../types/types"
+import type { QuestionOpenEnded } from "../types/types"
 
 type Result = {
   id: number

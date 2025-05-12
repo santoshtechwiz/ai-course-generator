@@ -29,4 +29,3 @@ export function useScrollDirection() {
 
   return { scrollDirection, visible }
 }
-

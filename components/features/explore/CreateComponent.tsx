@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { motion } from "framer-motion";
-import { CreateTileGrid } from "./CreateTitleGrid";
-import { WavyBackground } from "./WavyBackground";
-import { FloatingShapes } from "./FloatingShapes";
+import { motion } from "framer-motion"
+import { CreateTileGrid } from "./CreateTitleGrid"
+import { WavyBackground } from "./WavyBackground"
+import { FloatingShapes } from "./FloatingShapes"
 
 export function CreateComponent() {
   return (
@@ -21,7 +21,6 @@ export function CreateComponent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-           
           Welcome to Your Learning Journey
         </motion.h1>
 
@@ -41,5 +40,5 @@ export function CreateComponent() {
         </div>
       </main>
     </div>
-  );
+  )
 }

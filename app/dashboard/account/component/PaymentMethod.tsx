@@ -185,4 +185,3 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
     </form>
   )
 }
-

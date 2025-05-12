@@ -1,61 +1,65 @@
-import { OpenAIMessage, Quiz } from "@/app/types/types";
+import type { OpenAIMessage, Quiz } from "@/app/types/types"
 
-import openai, { generateQuizFlexible } from "./openaiUtils";
+import openai, { generateQuizFlexible } from "./openaiUtils"
 
-
-export const generateMcqForUserInput = async (title: string, amount: number, difficulty: string = 'hard', userType:string) => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "gpt-3.5-turbo-1106";
+export const generateMcqForUserInput = async (title: string, amount: number, difficulty = "hard", userType: string) => {
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "gpt-3.5-turbo-1106"
   const functions = [
     {
-      name: 'createMCQ',
-      description: 'Create multiple MCQ questions',
+      name: "createMCQ",
+      description: "Create multiple MCQ questions",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           questions: {
-            type: 'array',
+            type: "array",
             items: {
-              type: 'object',
+              type: "object",
               properties: {
-                question: { type: 'string' },
-                answer: { type: 'string', description: 'Correct answer, max 15 words' },
-                option1: { type: 'string', description: 'Incorrect option, max 15 words' },
-                option2: { type: 'string', description: 'Incorrect option, max 15 words' },
-                option3: { type: 'string', description: 'Incorrect option, max 15 words' },
+                question: { type: "string" },
+                answer: { type: "string", description: "Correct answer, max 15 words" },
+                option1: { type: "string", description: "Incorrect option, max 15 words" },
+                option2: { type: "string", description: "Incorrect option, max 15 words" },
+                option3: { type: "string", description: "Incorrect option, max 15 words" },
               },
-              required: ['question', 'answer', 'option1', 'option2', 'option3'],
+              required: ["question", "answer", "option1", "option2", "option3"],
             },
           },
         },
-        required: ['questions'],
+        required: ["questions"],
       },
     },
-  ];
+  ]
 
   const response = await openai.chat.completions.create({
     model: model,
     messages: [
-      { role: 'system', content: 'You are an AI that generates multiple-choice questions.' },
+      { role: "system", content: "You are an AI that generates multiple-choice questions." },
       {
-        role: 'user',
+        role: "user",
         content: `Generate ${amount} ${difficulty} multiple-choice questions about ${title}. Each question should have one correct answer and three incorrect options.`,
       },
     ],
     functions,
-    function_call: { name: 'createMCQ' },
-  });
+    function_call: { name: "createMCQ" },
+  })
 
-  const result = JSON.parse(response.choices[0].message?.function_call?.arguments || '{}');
+  const result = JSON.parse(response.choices[0].message?.function_call?.arguments || "{}")
 
   if (!result.questions || !Array.isArray(result.questions)) {
-    throw new Error('Invalid response format: questions array is missing.');
+    throw new Error("Invalid response format: questions array is missing.")
   }
 
-  return result.questions;
-};
+  return result.questions
+}
 
-export const generateOpenEndedQuiz = async (title: string, amount = 5, difficulty = "medium", userType = "FREE"): Promise<Quiz> => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini";
+export const generateOpenEndedQuiz = async (
+  title: string,
+  amount = 5,
+  difficulty = "medium",
+  userType = "FREE",
+): Promise<Quiz> => {
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini"
   const functions = [
     {
       name: "createOpenEndedQuiz",
@@ -104,7 +108,7 @@ export const generateOpenEndedQuiz = async (title: string, amount = 5, difficult
     },
   ]
 
-  const messages:OpenAIMessage[] = [
+  const messages: OpenAIMessage[] = [
     {
       role: "system",
       content:
@@ -114,7 +118,7 @@ export const generateOpenEndedQuiz = async (title: string, amount = 5, difficult
       role: "user",
       content: `Generate a concise open-ended quiz about ${title} with ${amount} questions. The quiz should have a short title. Each question should be brief (max 150 words) with a concise answer (max 200 words), two short hints (max 8 words each), a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions. Prioritize questions that can be answered with a single word or a very short phrase.`,
     },
-  ];
+  ]
 
   return generateQuizFlexible({
     model,
@@ -127,12 +131,10 @@ export const generateOpenEndedQuiz = async (title: string, amount = 5, difficult
 export const generateOpenEndedFillIntheBlanks = async (
   title: string,
   amount: number,
-  userType: string = "FREE"
+  userType = "FREE",
 ): Promise<Quiz> => {
- 
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini";
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini"
 
- 
   const functions = [
     {
       name: "createBlankQuiz",
@@ -170,8 +172,8 @@ export const generateOpenEndedFillIntheBlanks = async (
         required: ["quiz_title", "questions"],
       },
     },
-  ];
-  const messages:OpenAIMessage[]= [
+  ]
+  const messages: OpenAIMessage[] = [
     {
       role: "system",
       content:
@@ -181,12 +183,12 @@ export const generateOpenEndedFillIntheBlanks = async (
       role: "user",
       content: `Generate a quiz on ${title} with ${amount} fill-in-the-blank questions.`,
     },
-  ];
-  
+  ]
+
   return generateQuizFlexible({
     model,
     messages,
     functions,
     functionCall: { name: "createBlankQuiz" },
   })
-};
+}

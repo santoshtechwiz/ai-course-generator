@@ -2,7 +2,6 @@ import { LLMChain } from "langchain/chains"
 import { OpenAI } from "@langchain/openai"
 import { PromptTemplate } from "@langchain/core/prompts"
 
-
 export interface Recommendation {
   type: "next" | "review" | "practice"
   message: string
@@ -16,7 +15,7 @@ export class LangChain {
   private chain: LLMChain
 
   constructor() {
-    this.llm = new OpenAI({apiKey:process.env.OPENAI_API_KEY })
+    this.llm = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
     const prompt = new PromptTemplate({
       template: `Analyze the following user data and provide personalized course and quiz recommendations. 
       For each recommendation, include the type (next, review, or practice), a message, courseId, chapterId, and slug.
@@ -66,4 +65,3 @@ export class LangChain {
     return recommendations
   }
 }
-

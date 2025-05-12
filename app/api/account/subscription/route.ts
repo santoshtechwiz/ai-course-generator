@@ -3,7 +3,6 @@ import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
-
 export async function GET() {
   const session = await getServerSession(authOptions)
 
@@ -15,12 +14,12 @@ export async function GET() {
 
   try {
     // Fetch subscription data
-    const  status = await SubscriptionService.getSubscriptionStatus(userId)
+    const status = await SubscriptionService.getSubscriptionStatus(userId)
     const tokensUsed = await SubscriptionService.getTokensUsed(userId)
 
     return NextResponse.json({
       credits: tokensUsed,
-      isSubscribed: status.isActive  ? true : false,
+      isSubscribed: status.isActive ? true : false,
       subscriptionPlan: status.subscriptionPlan || "FREE",
       expirationDate: status.expirationDate instanceof Date ? status.expirationDate.toISOString() : undefined,
     })
@@ -29,4 +28,3 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch subscription data" }, { status: 500 })
   }
 }
-

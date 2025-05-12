@@ -1,14 +1,11 @@
-
 import { viewCountQueue } from "@/lib/viewCountQueue"
 import { NextResponse } from "next/server"
 
-export  async function POST(req: Request) {
-
-
-  const { slug } =await req.json()
+export async function POST(req: Request) {
+  const { slug } = await req.json()
 
   if (!slug) {
-    return NextResponse.json({ status: 400})
+    return NextResponse.json({ status: 400 })
   }
 
   try {
@@ -21,4 +18,3 @@ export  async function POST(req: Request) {
     return NextResponse.json({ status: 400 })
   }
 }
-

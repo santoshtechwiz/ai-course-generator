@@ -9,7 +9,6 @@ import EmailCampaignManager from "../components/email/email-campaign-manager"
 import EmailTemplateSystem from "../components/email/email-template-system"
 import { LoadingSkeleton } from "@/components/ui/loader"
 
-
 export const metadata = {
   title: "Email Management",
   description: "Manage email templates and campaigns",

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
 import prisma from "@/lib/db"
 import { getAuthSession } from "@/lib/auth"
-
 
 export async function GET() {
   const session = await getAuthSession()
@@ -40,4 +38,3 @@ export async function GET() {
 
   return NextResponse.json(courses)
 }
-

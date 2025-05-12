@@ -6,7 +6,6 @@ import quizReducer, {
   resetQuiz,
   setRequiresAuth,
   setPendingAuthRequired,
-
 } from "@/store/slices/quizSlice"
 
 // Define initial state for tests
@@ -225,6 +224,4 @@ describe("quizSlice", () => {
     const nextState = quizReducer(initialState, setPendingAuthRequired(true))
     expect(nextState.pendingAuthRequired).toBe(true)
   })
-
-
 })

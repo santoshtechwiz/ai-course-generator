@@ -22,4 +22,3 @@ export const useChapterSummary = (chapterId: number) => {
     refetchInterval: false, // Disable automatic refetching
   })
 }
-

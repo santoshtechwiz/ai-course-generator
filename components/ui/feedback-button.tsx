@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 
@@ -9,7 +11,7 @@ import { cn } from "@/lib/tailwindUtils"
 export type FeedbackState = "idle" | "loading" | "success" | "error"
 
 // Ensure ButtonProps is imported or defined
-import { Button, ButtonProps } from "@/components/ui/button" // Adjust the path as needed
+import { Button, type ButtonProps } from "@/components/ui/button" // Adjust the path as needed
 
 interface FeedbackButtonProps extends ButtonProps {
   loadingText?: React.ReactNode
@@ -142,7 +144,7 @@ export function FeedbackButton({
         className={cn(
           "transition-colors duration-200", // Smooth color transitions
           getButtonStyles(),
-          className
+          className,
         )}
         disabled={disabled || feedbackState === "loading"}
         onClick={handleClick}

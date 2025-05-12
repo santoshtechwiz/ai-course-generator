@@ -66,4 +66,3 @@ export const schemaRegistry = SchemaRegistryService.getInstance()
 //     description: data?.description || "A custom schema example",
 //   };
 // });
-

@@ -1,5 +1,7 @@
 "use server"
 import prisma from "@/lib/db"
+// Add proper import for Metadata type
+import type { Metadata } from "next"
 
 export interface ProcessedQuestion {
   id: string
@@ -9,7 +11,6 @@ export interface ProcessedQuestion {
 }
 
 export interface McqQuestionsResponse {
-
   id: string
   title: string
   slug: string
@@ -58,7 +59,6 @@ export default async function getMcqQuestions(slug: string): Promise<McqQuestion
     })
 
     return {
-
       id: String(result.id),
       title: result.title,
       slug: result.slug,
@@ -76,7 +76,7 @@ export default async function getMcqQuestions(slug: string): Promise<McqQuestion
 }
 
 /**
- * Generates metadata for the quiz page
+ * Generates metadata for the quiz page with improved SEO
  */
 export async function generateMetadata(props: { params: { slug: string } }): Promise<Metadata> {
   const { slug } = props.params
@@ -88,6 +88,7 @@ export async function generateMetadata(props: { params: { slug: string } }): Pro
         id: true,
         title: true,
         questions: true,
+        quizType: true,
         user: { select: { name: true } },
       },
     })
@@ -98,12 +99,17 @@ export async function generateMetadata(props: { params: { slug: string } }): Pro
       return {
         title: "Quiz Not Found",
         description: "The requested quiz could not be found.",
+        robots: { index: false, follow: false },
       }
     }
 
-    const title = `${quiz.title} Quiz`
-    const description = `Test your knowledge with this ${quiz.title} quiz${quiz.user?.name ? ` created by ${quiz.user.name}` : ""
-      }. Challenge yourself and learn something new!`
+    const quizTypeLabel = getQuizTypeLabel(quiz.quizType)
+    const questionCount = quiz.questions?.length || 0
+
+    const title = `${quiz.title} ${quizTypeLabel} Quiz`
+    const description = `Test your knowledge with this ${quiz.title} ${quizTypeLabel} quiz${
+      quiz.user?.name ? ` created by ${quiz.user.name}` : ""
+    }. Challenge yourself with ${questionCount} questions and learn something new!`
 
     return {
       title,
@@ -115,7 +121,7 @@ export async function generateMetadata(props: { params: { slug: string } }): Pro
         type: "website",
         images: [
           {
-            url: `${websiteUrl}/api/og?title=${encodeURIComponent(quiz.title)}`,
+            url: `${websiteUrl}/api/og?title=${encodeURIComponent(quiz.title)}&type=${quiz.quizType}`,
             width: 1200,
             height: 630,
             alt: `${quiz.title} Quiz Thumbnail`,
@@ -126,11 +132,12 @@ export async function generateMetadata(props: { params: { slug: string } }): Pro
         card: "summary_large_image",
         title,
         description,
-        images: [`${websiteUrl}/api/og?title=${encodeURIComponent(quiz.title)}`],
+        images: [`${websiteUrl}/api/og?title=${encodeURIComponent(quiz.title)}&type=${quiz.quizType}`],
       },
       alternates: {
         canonical: `${websiteUrl}/quiz/${slug}`,
       },
+      keywords: [quiz.title, quizTypeLabel, "quiz", "learning", "education", "test", "assessment"],
     }
   } catch (error) {
     console.error("Error generating metadata:", error)
@@ -138,5 +145,23 @@ export async function generateMetadata(props: { params: { slug: string } }): Pro
       title: "Quiz",
       description: "Take this interactive quiz to test your knowledge.",
     }
+  }
+}
+
+// Helper function to get a user-friendly quiz type label
+function getQuizTypeLabel(quizType?: string): string {
+  switch (quizType) {
+    case "mcq":
+      return "Multiple Choice"
+    case "openended":
+      return "Open-Ended"
+    case "fill-blanks":
+      return "Fill-in-the-Blanks"
+    case "code":
+      return "Coding"
+    case "flashcard":
+      return "Flashcard"
+    default:
+      return ""
   }
 }

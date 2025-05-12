@@ -79,10 +79,10 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = React.memo(({ icon: Icon
         <TooltipContent>
           <p>{getStatusDescription(status, message)}</p>
         </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-  );
-});
+      </Tooltip>
+    </TooltipProvider>
+  )
+})
 
 StatusIndicator.displayName = "StatusIndicator"
 
@@ -115,24 +115,24 @@ const ActionButton: React.FC<ActionButtonProps> = React.memo(
     const status = generationStatus?.status || (isSuccess ? "success" : isProcessing ? "processing" : "idle")
 
     // Add a timeout to prevent infinite loading
-    const [isTimeout, setIsTimeout] = useState(false);
-    
+    const [isTimeout, setIsTimeout] = useState(false)
+
     useEffect(() => {
-      let timeoutId: NodeJS.Timeout;
-      
+      let timeoutId: NodeJS.Timeout
+
       if (status === "processing") {
         // Set a timeout of 30 seconds for processing
         timeoutId = setTimeout(() => {
-          setIsTimeout(true);
-        }, 30000);
+          setIsTimeout(true)
+        }, 30000)
       } else {
-        setIsTimeout(false);
+        setIsTimeout(false)
       }
-      
+
       return () => {
-        if (timeoutId) clearTimeout(timeoutId);
-      };
-    }, [status]);
+        if (timeoutId) clearTimeout(timeoutId)
+      }
+    }, [status])
 
     if (status === "success") {
       return (

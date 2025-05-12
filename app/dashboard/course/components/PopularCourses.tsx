@@ -19,7 +19,7 @@ export default function PopularCourses({ courseDetails = [] }: PopularCoursesPro
   // If no courses, show a message
   if (!courseDetails || courseDetails.length === 0) {
     return (
-      <motion.div 
+      <motion.div
         className="space-y-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -32,9 +32,9 @@ export default function PopularCourses({ courseDetails = [] }: PopularCoursesPro
         <Card className="border-dashed border-muted hover:border-primary/20 transition-colors">
           <CardContent className="p-6 text-center">
             <motion.div
-              animate={{ 
+              animate={{
                 rotate: [0, 5, -5, 0],
-                transition: { repeat: Infinity, duration: 2 }
+                transition: { repeat: Number.POSITIVE_INFINITY, duration: 2 },
               }}
             >
               <BookOpen className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
@@ -47,13 +47,11 @@ export default function PopularCourses({ courseDetails = [] }: PopularCoursesPro
   }
 
   // Sort courses by viewCount (descending)
-  const sortedCourses = [...courseDetails]
-    .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
-    .slice(0, 5)
+  const sortedCourses = [...courseDetails].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 5)
 
   return (
     <div className="space-y-4">
-      <motion.h2 
+      <motion.h2
         className="text-xl font-semibold flex items-center"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
@@ -79,7 +77,7 @@ export default function PopularCourses({ courseDetails = [] }: PopularCoursesPro
             <Link href={`/dashboard/course/${course.slug}`} className="block">
               <Card className="overflow-hidden border-border/50 hover:border-primary/20 transition-colors group">
                 <div className="flex items-center p-3">
-                  <motion.div 
+                  <motion.div
                     className="relative h-14 w-14 rounded-lg overflow-hidden flex-shrink-0 mr-3 bg-muted"
                     whileHover={{ scale: 1.05 }}
                   >
@@ -99,7 +97,7 @@ export default function PopularCourses({ courseDetails = [] }: PopularCoursesPro
                     )}
                     <AnimatePresence>
                       {hoveredIndex === index && (
-                        <motion.div 
+                        <motion.div
                           className="absolute inset-0 bg-black/20"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -162,9 +160,9 @@ export default function PopularCourses({ courseDetails = [] }: PopularCoursesPro
                   </div>
 
                   <motion.div
-                    animate={{ 
+                    animate={{
                       x: hoveredIndex === index ? 5 : 0,
-                      color: hoveredIndex === index ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"
+                      color: hoveredIndex === index ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
                     }}
                     transition={{ type: "spring", stiffness: 500 }}
                   >

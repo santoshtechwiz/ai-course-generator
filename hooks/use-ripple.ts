@@ -1,3 +1,7 @@
+"use client"
+
+import type React from "react"
+
 // hooks/use-ripple.ts
 import { useState } from "react"
 

@@ -9,7 +9,6 @@ import { motion } from "framer-motion"
 import { signIn } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 
-
 interface AuthButtonProps {
   provider: string
   logo: string | StaticImageData

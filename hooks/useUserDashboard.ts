@@ -17,10 +17,9 @@
 //   })
 // }
 
-
 "use client"
 
-import { DashboardUser, UserStats } from "@/app/types/types"
+import type { DashboardUser, UserStats } from "@/app/types/types"
 import useSWR from "swr"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())

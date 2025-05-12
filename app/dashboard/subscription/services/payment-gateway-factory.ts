@@ -20,4 +20,3 @@ export function getPaymentGateway(): PaymentGateway {
 
 // Re-export the types from the interface
 export type { PaymentOptions } from "./payment-gateway-interface"
-

@@ -8,7 +8,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { shallow } from "zustand/shallow"
 
 import type { SubscriptionData, TokenUsage } from "../types/subscription"
 import { useSubscription } from "../hooks/use-subscription"
@@ -31,7 +30,7 @@ export function useSubscriptionData({
   // const status = useSubscriptionStore((state) => state.status)
   // const error = useSubscriptionStore((state) => state.error)
 
-  const { data,status,error,isLoading,isError,} = useSubscription();
+  const { data, status, error, isLoading, isError } = useSubscription()
 
   // Memoize the subscription object to prevent recreating it on each render
   const subscription = useMemo<{
@@ -42,7 +41,6 @@ export function useSubscriptionData({
 
   // Get actions from the store
   const { fetchSubscriptionStatus, fetchSubscriptionDetails, clearSubscriptionCache } = useSubscription()
-
 
   // Function to refresh data with optional force parameter
   const refreshData = useCallback(

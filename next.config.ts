@@ -61,7 +61,6 @@ const nextConfig: NextConfig = {
   // Performance optimizations
   compress: true,
 
-
   // // Experimental features
   // experimental: {
   //   optimizeCss: true, // Optimize CSS
