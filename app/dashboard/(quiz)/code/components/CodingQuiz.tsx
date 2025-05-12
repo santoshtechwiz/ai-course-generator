@@ -73,46 +73,31 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
   }, [])
 
   const handleSubmit = useCallback(() => {
-    if (isSubmitting) return
+    if (isSubmitting) return;
 
-    // Check if answer was submitted too quickly (potential cheating)
-    const answerTime = Date.now() - startTime
+    const answerTime = Date.now() - startTime;
     if (isTooFastAnswer(startTime, 1)) {
-      setTooFastWarning(true)
-      return
+      setTooFastWarning(true);
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
-    // For code quizzes, we need to evaluate the code against the expected answer
-    const answer = options.length > 0 && selectedOption ? selectedOption : userCode
-
-    // Improved answer validation - check if the answer contains the expected solution
-    // or if the selected option matches the correct answer
-    let isCorrect = false
+    const answer = options.length > 0 && selectedOption ? selectedOption : userCode;
+    let isCorrect = false;
 
     if (question.answer || question.correctAnswer) {
-      const correctAnswer = question.answer || question.correctAnswer || ""
-
-      // If we have options and a selected option, check if it matches
-      if (options.length > 0 && selectedOption) {
-        isCorrect = selectedOption === correctAnswer
-      } else {
-        // For code answers, check if the user's code contains the expected solution
-        // This is a simple check - in production you'd want more sophisticated validation
-        isCorrect = answer.includes(correctAnswer)
-      }
+      const correctAnswer = question.answer || question.correctAnswer || "";
+      isCorrect = options.length > 0 ? selectedOption === correctAnswer : answer.includes(correctAnswer);
     }
 
-    // Calculate time spent
-    const timeSpent = Math.floor((Date.now() - startTime) / 1000)
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000);
 
-    // Submit the answer with a small delay for better UX
     setTimeout(() => {
-      onAnswer(answer, timeSpent, isCorrect)
-      setIsSubmitting(false)
-    }, 300)
-  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption])
+      onAnswer(answer, timeSpent, isCorrect);
+      setIsSubmitting(false);
+    }, 300);
+  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption]);
 
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null

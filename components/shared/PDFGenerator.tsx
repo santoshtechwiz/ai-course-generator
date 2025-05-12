@@ -7,6 +7,8 @@ import { useState } from "react"
 import { SiAdobe } from "react-icons/si"
 import useSubscription from "@/hooks/use-subscription"
 
+import useSubscription from "@/hooks/use-subscription"
+
 
 // Register a font with multiple weights
 Font.register({

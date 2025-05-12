@@ -55,7 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
       <body className={`font-sans antialiased min-h-screen flex flex-col`}>
-        <RootLayoutProvider session={session}>
+        <RootLayoutProvider children={undefined} session={undefined}>
           <main className="flex-1 flex flex-col pt-16">{children}</main>
           <Footer />
         </RootLayoutProvider>

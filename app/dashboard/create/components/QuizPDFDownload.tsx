@@ -11,6 +11,7 @@ import { Download, FileText, Lock } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import useSubscription from "@/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 
 interface QuizPDFDownloadProps extends QuizPDFProps {
   config?: {

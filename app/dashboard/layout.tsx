@@ -12,8 +12,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Get the session here at the layout level
-  const session = await getAuthSession()
+
 
   return (
     <DashboardShell>
@@ -26,7 +25,7 @@ export default async function DashboardLayout({
         </div>
       </main>
       <Toaster />
-      <Chatbot userId={session?.user?.id || ""} />
+     
     </DashboardShell>
   )
 }
