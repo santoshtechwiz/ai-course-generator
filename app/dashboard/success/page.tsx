@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
 import { SubscriptionService } from "../subscription/services/subscription-service"
 
-
 export default async function PaymentSuccessPage({
   searchParams,
 }: {
@@ -148,4 +147,3 @@ async function SuccessPageContent({
     </div>
   )
 }
-

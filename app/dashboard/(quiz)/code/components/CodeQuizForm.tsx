@@ -21,7 +21,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 
-
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
 import { codeQuizSchema } from "@/schema/schema"
@@ -76,8 +75,6 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   const { data: session, status } = useSession()
 
   const { status: subscriptionStatus } = useSubscription()
-
-
 
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
 

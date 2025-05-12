@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import MainNavbar from "@/components/Navbar/MainNavbar"
 
-
 export default function NotFound() {
   const router = useRouter()
 
@@ -113,4 +112,3 @@ export default function NotFound() {
     </div>
   )
 }
-

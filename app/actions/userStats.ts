@@ -2,6 +2,11 @@
 import { prisma } from "@/lib/db"
 import type { UserStats } from "../types/types"
 
+// Add this helper function at the top of the file
+function safeAverage(total: number, count: number): number {
+  return count > 0 ? total / count : 0
+}
+
 // Replace the entire getUserStats function with this improved implementation
 export async function getUserStats(userId: string): Promise<UserStats> {
   try {
@@ -182,17 +187,17 @@ export async function getUserStats(userId: string): Promise<UserStats> {
   }
 }
 
-// Helper function to calculate consistency score
+// Optimize the calculateConsistencyScore function
 function calculateConsistencyScore(attempts: any[], user?: { lastActiveAt: Date } | null): number {
   if (!attempts.length) return 0
   if (attempts.length === 1) return 50
 
   // Sort attempts by date
   const sortedAttempts = [...attempts].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  const oneDayMs = 24 * 60 * 60 * 1000
 
   // Calculate average days between attempts
   let totalDaysDiff = 0
-  const oneDayMs = 24 * 60 * 60 * 1000
 
   for (let i = 1; i < sortedAttempts.length; i++) {
     const currentDate = new Date(sortedAttempts[i].createdAt)
@@ -212,7 +217,6 @@ function calculateConsistencyScore(attempts: any[], user?: { lastActiveAt: Date 
   }
 
   const averageDaysBetweenAttempts = sortedAttempts.length > 1 ? totalDaysDiff / (sortedAttempts.length - 1) : 7
-
   const baseConsistencyScore = Math.max(0, 100 - (averageDaysBetweenAttempts / 7) * 100)
   const frequencyBonus = Math.min(20, attempts.length / 2)
 
@@ -288,18 +292,11 @@ function calculateEngagementScore(attempts: any[], user?: { lastActiveAt: Date }
   return frequencyScore * 0.4 + recencyScore * 0.3 + completionRate * 0.3
 }
 
-// Helper function to count quizzes by time of day
+// Optimize the countQuizzesByTimeOfDay function
 function countQuizzesByTimeOfDay(attempts: any[], startHour: number, endHour: number): number {
   return attempts.filter((attempt) => {
-    const date = new Date(attempt.createdAt)
-    const hour = date.getHours()
-
-    if (startHour < endHour) {
-      return hour >= startHour && hour < endHour
-    } else {
-      // Handle overnight periods (e.g., 22-5)
-      return hour >= startHour || hour < endHour
-    }
+    const hour = new Date(attempt.createdAt).getHours()
+    return startHour < endHour ? hour >= startHour && hour < endHour : hour >= startHour || hour < endHour // Handle overnight periods
   }).length
 }
 
@@ -320,7 +317,7 @@ function identifyImprovementAreas(
 ): string[] {
   return Object.entries(topicPerformance)
     .filter(([_, data]) => data.attempts >= 2 && data.totalScore / data.attempts < 70)
-    .sort((a, b) => a[1].totalScore / a[1].attempts - b[1].totalScore / b[1].attempts)
+    .sort((a, b) => a[1].totalScore / a[1].attempts - b[1].totalScore / a[1].attempts)
     .slice(0, 3)
     .map(([topic]) => topic)
 }

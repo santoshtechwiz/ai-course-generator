@@ -19,38 +19,25 @@ interface FlashCardData {
   answer: string
 }
 
-// Generate a unique slug with better performance
+// Optimize the generateUniqueSlug function
 async function generateUniqueSlug(title: string): Promise<string> {
   const baseSlug = titleToSlug(title)
 
-  // Check if slug exists with a more efficient query
+  // First try with the base slug
   const existingCount = await prisma.userQuiz.count({
     where: { slug: baseSlug },
   })
 
   if (existingCount === 0) return baseSlug
 
-  // If slug exists, try with a random suffix
-  const randomSuffix = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, "0")
-  const newSlug = `${baseSlug}-${randomSuffix}`
-
-  // Double-check the new slug doesn't exist
-  const newSlugExists = await prisma.userQuiz.count({
-    where: { slug: newSlug },
-  })
-
-  // In the rare case of a collision, use timestamp as fallback
-  if (newSlugExists > 0) {
-    const timestamp = Date.now().toString().slice(-6)
-    return `${baseSlug}-${timestamp}`
-  }
+  // Try with a timestamp suffix for uniqueness
+  const timestamp = Date.now().toString().slice(-6)
+  const newSlug = `${baseSlug}-${timestamp}`
 
   return newSlug
 }
 
-// Centralized error response handler
+// Optimize the error handling function
 function handleError(error: unknown, defaultMessage = "Internal server error") {
   console.error("API Error:", error)
 
@@ -58,28 +45,26 @@ function handleError(error: unknown, defaultMessage = "Internal server error") {
     return NextResponse.json({ error: "Validation error", details: error.format() }, { status: 400 })
   }
 
+  const errorMap: Record<string, { status: number; message: string }> = {
+    "Authentication required": { status: 401, message: "Authentication required" },
+    "User not found": { status: 404, message: "User not found" },
+    "Flashcard set not found": { status: 404, message: "Flashcard set not found" },
+    "Failed to generate flashcards": { status: 500, message: "Failed to generate flashcards" },
+    "Insufficient credits": {
+      status: 403,
+      message: "Insufficient credits. You need at least 1 credit to generate flashcards",
+    },
+  }
+
   if (error instanceof Error) {
-    // Handle specific error types
-    if (error.message.includes("Authentication required")) {
-      return NextResponse.json({ error: error.message }, { status: 401 })
+    // Check for known error messages
+    for (const [key, value] of Object.entries(errorMap)) {
+      if (error.message.includes(key)) {
+        return NextResponse.json({ error: value.message }, { status: value.status })
+      }
     }
 
-    if (error.message.includes("AI service")) {
-      return NextResponse.json({ error: "AI service error", message: error.message }, { status: 503 })
-    }
-
-    if (error.message.includes("credits")) {
-      return NextResponse.json({ error: "Credit operation failed", message: error.message }, { status: 400 })
-    }
-
-    if (error.message.includes("not found")) {
-      return NextResponse.json({ error: error.message }, { status: 404 })
-    }
-
-    if (error.message.includes("Insufficient")) {
-      return NextResponse.json({ error: error.message }, { status: 403 })
-    }
-
+    // Generic error handling
     return NextResponse.json({ error: defaultMessage, message: error.message }, { status: 500 })
   }
 
@@ -134,9 +119,9 @@ export async function POST(req: Request) {
 
     const flashcards = useDummyData
       ? ([
-        { question: "What is AI?", answer: "Artificial Intelligence" },
-        { question: "What is ML?", answer: "Machine Learning" },
-      ] as FlashCardData[])
+          { question: "What is AI?", answer: "Artificial Intelligence" },
+          { question: "What is ML?", answer: "Machine Learning" },
+        ] as FlashCardData[])
       : ((await generateFlashCards(title, count)) as FlashCardData[])
 
     if (!flashcards || flashcards.length === 0) {
@@ -186,7 +171,7 @@ export async function POST(req: Request) {
       {
         success: true,
         data: result,
-        slug:slug,
+        slug: slug,
         message: "Flashcards created successfully. 1 credit has been deducted.",
       },
       { status: 201 },
@@ -290,4 +275,3 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Failed to update flashcard" }, { status: 500 })
   }
 }
-

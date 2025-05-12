@@ -1,12 +1,10 @@
-import { prisma } from '@/lib/db'
-import { NextApiRequest, NextApiResponse } from 'next'
-
-
+import { prisma } from "@/lib/db"
+import type { NextApiRequest, NextApiResponse } from "next"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { courseId } = req.query
 
-  if (req.method === 'GET') {
+  if (req.method === "GET") {
     try {
       const chapters = await prisma.chapter.findMany({
         where: {
@@ -20,17 +18,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           youtubeSearchQuery: true,
         },
         orderBy: {
-          id: 'asc',
+          id: "asc",
         },
       })
 
       res.status(200).json(chapters)
     } catch (error) {
-      res.status(500).json({ message: 'Error fetching chapters', error })
+      res.status(500).json({ message: "Error fetching chapters", error })
     }
   } else {
-    res.setHeader('Allow', ['GET'])
+    res.setHeader("Allow", ["GET"])
     res.status(405).end(`Method ${req.method} Not Allowed`)
   }
 }
-

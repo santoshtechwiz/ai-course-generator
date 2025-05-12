@@ -119,7 +119,7 @@ class YoutubeService {
     }
   }
 
-   static async fetchTranscript(videoId: string): Promise<TranscriptResult> {
+  static async fetchTranscript(videoId: string): Promise<TranscriptResult> {
     const methods = [this.getYtTranscript, this.getLangchainTranscript, this.getSupadataTranscript]
 
     for (const method of methods) {
@@ -182,4 +182,3 @@ class YoutubeService {
 }
 
 export default YoutubeService
-

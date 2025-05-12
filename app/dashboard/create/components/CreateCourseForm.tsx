@@ -35,7 +35,7 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
 
-  const {data: subscriptionStatus } = useSubscription()
+  const { data: subscriptionStatus } = useSubscription()
   const { data: session, status: authStatus } = useSession()
   const router = useRouter()
   const { toast } = useToast()

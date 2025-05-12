@@ -89,7 +89,9 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
         >
-          CourseAI simplifies the process of designing comprehensive online courses by automatically generating lessons and quizzes from a simple topic input. Focus on delivering quality education while our platform handles the content structure.
+          CourseAI simplifies the process of designing comprehensive online courses by automatically generating lessons
+          and quizzes from a simple topic input. Focus on delivering quality education while our platform handles the
+          content structure.
         </motion.p>
       </div>
 
@@ -133,9 +135,27 @@ const AboutSection = () => {
             <RevealAnimation key={value.title} delay={0.9 + index * 0.1}>
               <div className="bg-card/30 backdrop-blur-sm rounded-xl p-6 border border-border/10 h-full flex flex-col items-center hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
                 <div className={`p-4 rounded-full bg-gradient-to-br ${value.color} text-white mb-4 shadow-lg`}>
-                  {value.icon === "sparkles" && <motion.div><svg className="w-8 h-8"><Sparkles className="w-8 h-8" /></svg></motion.div>}
-                  {value.icon === "users" && <motion.div><svg className="w-8 h-8"><Users className="w-8 h-8" /></svg></motion.div>}
-                  {value.icon === "star" && <motion.div><svg className="w-8 h-8"><Star className="w-8 h-8" /></svg></motion.div>}
+                  {value.icon === "sparkles" && (
+                    <motion.div>
+                      <svg className="w-8 h-8">
+                        <Sparkles className="w-8 h-8" />
+                      </svg>
+                    </motion.div>
+                  )}
+                  {value.icon === "users" && (
+                    <motion.div>
+                      <svg className="w-8 h-8">
+                        <Users className="w-8 h-8" />
+                      </svg>
+                    </motion.div>
+                  )}
+                  {value.icon === "star" && (
+                    <motion.div>
+                      <svg className="w-8 h-8">
+                        <Star className="w-8 h-8" />
+                      </svg>
+                    </motion.div>
+                  )}
                 </div>
                 <h4 className="text-xl font-semibold mb-2">{value.title}</h4>
                 <p className="text-muted-foreground">{value.description}</p>

@@ -4,8 +4,7 @@ import { authOptions } from "@/lib/auth"
 
 import { prisma } from "@/lib/db" // Adjust the path based on your project structure
 
-const formatApiError = (message:string,statusCode?:number) => {
-  
+const formatApiError = (message: string, statusCode?: number) => {
   return new Response(JSON.stringify({ message }), {
     status: statusCode,
     headers: {
@@ -16,7 +15,7 @@ const formatApiError = (message:string,statusCode?:number) => {
     },
   })
 }
-const formatApiResponse = (data:any,statusCode?:number) => {
+const formatApiResponse = (data: any, statusCode?: number) => {
   return new Response(JSON.stringify(data), {
     status: statusCode,
     headers: {
@@ -53,7 +52,6 @@ export async function GET(request: NextRequest) {
           slug: true,
           quizType: true,
           difficulty: true,
-         
         },
         take: 3,
       }),

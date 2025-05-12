@@ -1,8 +1,11 @@
 "use server"
 
 import { prisma } from "@/lib/db"
-import { QuizType } from "../types/types"
+import type { QuizType } from "../types/types"
+import NodeCache from "node-cache"
 
+// Add a simple cache to improve performance
+const quizCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }) // 5 minute cache
 
 interface GetQuizzesParams {
   page?: number
@@ -30,6 +33,15 @@ export async function getQuizzes({
   categories = [],
 }: GetQuizzesParams) {
   try {
+    // Create a cache key based on the parameters
+    const cacheKey = `quizzes_${page}_${limit}_${searchTerm}_${userId || ""}_${quizTypes?.join(",") || ""}_${minQuestions}_${maxQuestions}_${publicOnly}_${tab}_${categories.join(",")}`
+
+    // Check if we have a cached result
+    const cachedResult = quizCache.get(cacheKey)
+    if (cachedResult) {
+      return cachedResult
+    }
+
     // Build the where clause
     const where: any = {}
 
@@ -121,11 +133,16 @@ export async function getQuizzes({
     // Calculate next cursor for infinite loading
     const nextCursor = page < Math.ceil(totalCount / limit) ? page + 1 : null
 
-    return {
+    const result = {
       quizzes: transformedQuizzes,
       totalCount,
       nextCursor,
     }
+
+    // Cache the result
+    quizCache.set(cacheKey, result)
+
+    return result
   } catch (error) {
     console.error("Error fetching quizzes:", error)
     // Return empty data instead of throwing to allow graceful error handling
@@ -136,4 +153,18 @@ export async function getQuizzes({
       error: "Failed to fetch quizzes",
     }
   }
+}
+
+// Add a function to invalidate cache when quizzes are updated
+export const invalidateQuizCache = (slug?: string) => {
+  if (slug) {
+    quizCache.del(`quiz_${slug}`)
+  }
+  // Delete all quiz cache entries
+  const keys = quizCache.keys()
+  keys.forEach((key) => {
+    if (key.startsWith("quizzes_")) {
+      quizCache.del(key)
+    }
+  })
 }

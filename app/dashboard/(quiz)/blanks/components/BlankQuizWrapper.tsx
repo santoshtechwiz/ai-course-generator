@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from "react"
 
-
 import BlanksQuiz from "./BlanksQuiz"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 import {
@@ -17,7 +16,7 @@ import { useToast } from "@/hooks"
 import { calculateTotalTime } from "@/lib/utils/quiz-index"
 import { quizUtils } from "@/lib/utils/quiz-utils"
 import { useQuiz } from "@/hooks/useQuizState"
-import { BlanksQuizContentProps, BlanksQuizWrapperProps } from "../blanks-quiz-types"
+import type { BlanksQuizContentProps, BlanksQuizWrapperProps } from "../blanks-quiz-types"
 import BlanksQuizResult from "./BlankQuizResults"
 
 // Session storage key prefix for quiz state
@@ -545,7 +544,7 @@ export default function BlanksQuizWrapper({
     return <InitializingDisplay data-testid="initializing-display" />
   }
 
-  if ( !slug) {
+  if (!slug) {
     return <QuizNotFoundDisplay data-testid="not-found-display" onReturn={() => router.push("/dashboard/quizzes")} />
   }
 

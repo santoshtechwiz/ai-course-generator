@@ -14,14 +14,14 @@ class ViewCountQueue {
   increment(slug: string): void {
     // Only increment if slug is provided
     if (!slug) return
-    
+
     this.queue.set(slug, (this.queue.get(slug) || 0) + 1)
     this.cache.set(slug, (this.cache.get(slug) || 0) + 1)
   }
 
   async getViewCount(slug: string): Promise<number> {
     if (!slug) return 0
-    
+
     if (this.cache.has(slug)) {
       return this.cache.get(slug)!
     }
@@ -55,15 +55,15 @@ class ViewCountQueue {
         where: { slug: { in: slugs } },
         select: { slug: true },
       })
-      
-      const existingSlugs = new Set(existingCourses.map(course => course.slug))
-      
+
+      const existingSlugs = new Set(existingCourses.map((course) => course.slug))
+
       // Log which slugs don't exist
-      const nonExistentSlugs = slugs.filter(slug => !existingSlugs.has(slug))
+      const nonExistentSlugs = slugs.filter((slug) => !existingSlugs.has(slug))
       if (nonExistentSlugs.length > 0) {
-        console.warn(`Skipping updates for non-existent courses: ${nonExistentSlugs.join(', ')}`)
+        console.warn(`Skipping updates for non-existent courses: ${nonExistentSlugs.join(", ")}`)
       }
-      
+
       // Only update courses that exist
       if (existingSlugs.size > 0) {
         await prisma.$transaction(
@@ -73,10 +73,10 @@ class ViewCountQueue {
               prisma.course.update({
                 where: { slug },
                 data: { viewCount: { increment } },
-              })
-            )
+              }),
+            ),
         )
-        
+
         console.log(`Processed ${existingSlugs.size} view count updates`)
       }
     } catch (error) {
@@ -95,19 +95,19 @@ class ViewCountQueue {
       setTimeout(() => this.processQueue(), 1000)
     }
   }
-  
+
   // Method to clear invalid entries (for maintenance)
   async clearInvalidEntries(): Promise<void> {
     const slugs = Array.from(this.queue.keys())
     if (slugs.length === 0) return
-    
+
     const existingCourses = await prisma.course.findMany({
       where: { slug: { in: slugs } },
       select: { slug: true },
     })
-    
-    const existingSlugs = new Set(existingCourses.map(course => course.slug))
-    
+
+    const existingSlugs = new Set(existingCourses.map((course) => course.slug))
+
     // Remove non-existent slugs from queue and cache
     for (const slug of slugs) {
       if (!existingSlugs.has(slug)) {

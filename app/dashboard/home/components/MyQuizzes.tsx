@@ -75,7 +75,11 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
     <ScrollArea className="h-[400px] pr-4">
       <div className="space-y-4">
         {quizzesToRender.map((quiz, index) => (
-          <Link href={`/dashboard/${buildQuizSlug(quiz.quizType as QuizType)}/${quiz.slug}`} key={quiz.id} className="block">
+          <Link
+            href={`/dashboard/${buildQuizSlug(quiz.quizType as QuizType)}/${quiz.slug}`}
+            key={quiz.id}
+            className="block"
+          >
             <Card className="hover:shadow-md transition-all duration-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -199,4 +203,3 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
     </Card>
   )
 }
-

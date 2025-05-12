@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/db"
 import { generateSlug } from "@/lib/utils"
-
 
 interface Question {
   id?: string
@@ -24,47 +23,35 @@ export async function POST(req: NextRequest) {
   try {
     // Get the authenticated user
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: "You must be logged in to save a quiz" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "You must be logged in to save a quiz" }, { status: 401 })
     }
-    
+
     // Get the user from the database
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     })
-    
+
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
-    
+
     // Parse the request body
     const body: SaveQuizRequest = await req.json()
     const { quiz, title, quizType = "MCQ", difficulty = "Medium", isPublic = false } = body
-    
+
     if (!quiz || !Array.isArray(quiz) || quiz.length === 0) {
-      return NextResponse.json(
-        { error: "Invalid quiz data" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid quiz data" }, { status: 400 })
     }
-    
+
     if (!title) {
-      return NextResponse.json(
-        { error: "Quiz title is required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Quiz title is required" }, { status: 400 })
     }
-    
+
     // Generate a unique slug for the quiz
     const slug = generateSlug(title)
-    
+
     // Create the quiz in the database
     const userQuiz = await prisma.userQuiz.create({
       data: {
@@ -76,28 +63,25 @@ export async function POST(req: NextRequest) {
         slug,
         timeStarted: new Date(),
         questions: {
-          create: quiz.map(q => ({
+          create: quiz.map((q) => ({
             question: q.question,
             answer: q.correctAnswer.toString(),
             options: JSON.stringify(q.options),
-            questionType: "MCQ"
-          }))
-        }
+            questionType: "MCQ",
+          })),
+        },
       },
       include: {
-        questions: true
-      }
+        questions: true,
+      },
     })
-    
+
     return NextResponse.json({
       success: true,
-      quiz: userQuiz
+      quiz: userQuiz,
     })
   } catch (error) {
     console.error("Error saving quiz:", error)
-    return NextResponse.json(
-      { error: "Failed to save quiz" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to save quiz" }, { status: 500 })
   }
 }

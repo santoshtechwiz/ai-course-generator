@@ -48,10 +48,7 @@ export function CourseProgressList({ courses }: CourseProgressListProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    Last:{" "}
-                    {course?.lastAccessedAt
-                      ? new Date(course.lastAccessedAt).toLocaleDateString()
-                      : "N/A"}
+                    Last: {course?.lastAccessedAt ? new Date(course.lastAccessedAt).toLocaleDateString() : "N/A"}
                   </span>
                   <span>Time: {Math.round((course?.timeSpent || 0) / 3600)}h</span>
                 </div>
@@ -70,4 +67,3 @@ export function CourseProgressList({ courses }: CourseProgressListProps) {
     </ScrollArea>
   )
 }
-

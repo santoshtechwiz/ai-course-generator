@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import AdminNav from "./components/admin-nav"
 
-
 export default async function AdminLayout({
   children,
 }: {

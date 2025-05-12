@@ -1,7 +1,7 @@
 "use server"
 
 import prisma from "@/lib/db"
-import { QuizType } from "../types/types"
+import type { QuizType } from "../types/types"
 
 interface QuizDetails {
   id: string

@@ -49,7 +49,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
-  const { status:subscriptionStatus } = useSubscription()
+  const { status: subscriptionStatus } = useSubscription()
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     title: params?.title || "",

@@ -1,6 +1,5 @@
-import { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { Badge } from "@/components/ui/badge"
-
 
 interface PlanBadgeProps {
   plan: SubscriptionPlanType | string | null
@@ -50,4 +49,3 @@ export function PlanBadge({ plan, className = "" }: PlanBadgeProps) {
       )
   }
 }
-

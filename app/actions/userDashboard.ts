@@ -213,7 +213,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       ),
       credits: user.credits || 0,
     }
-    
+
     return dashboardUser
   } catch (error) {
     console.error("Error fetching user data:", error)
@@ -371,17 +371,13 @@ export async function getRecommendedCourses(userId: string): Promise<Course[]> {
   }
 }
 
-// Helper functions with proper typing and optimizations
+// Optimize the helper functions at the bottom of the file to avoid duplication
+
+// Replace the existing helper functions with these optimized versions:
 
 function calculateEngagementScore(user: any): number {
   const quizAttempts = user.userQuizAttempts.length
-
-  // Optimize reduce operation
-  let totalProgress = 0
-  for (const course of user.courseProgress) {
-    totalProgress += course.progress ?? 0
-  }
-
+  const totalProgress = user.courseProgress.reduce((acc: number, course: any) => acc + (course.progress ?? 0), 0)
   const favorites = user.favorites.length
 
   return Math.min((quizAttempts * 2 + totalProgress + favorites) / 10, 100)
@@ -393,9 +389,9 @@ function calculateStreakDays(attempts: Array<Partial<UserQuizAttempt> & { create
   // Sort attempts by date for accurate streak calculation
   const sortedAttempts = [...attempts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
+  const oneDayMs = 24 * 60 * 60 * 1000
   let streakDays = 1
   let currentDate = new Date(sortedAttempts[0].createdAt)
-  const oneDayMs = 24 * 60 * 60 * 1000
 
   for (let i = 1; i < sortedAttempts.length; i++) {
     const attemptDate = new Date(sortedAttempts[i].createdAt)
@@ -415,74 +411,60 @@ function calculateStreakDays(attempts: Array<Partial<UserQuizAttempt> & { create
 function getLastStreakDate(attempts: Array<Partial<UserQuizAttempt> & { createdAt: Date }>): Date | null {
   if (attempts.length === 0) return null
 
-  // Find the most recent attempt
+  // Find the most recent attempt date
   return attempts.reduce((latest, attempt) => {
     const attemptDate = new Date(attempt.createdAt)
     return latest > attemptDate ? latest : attemptDate
   }, new Date(0))
 }
 
+// Optimize the performance calculation functions
 function calculateTopicPerformance(
   scores: { title: string; percentageCorrect: number; timeSpent: number }[],
 ): Record<string, { totalScore: number; attempts: number; totalTimeSpent: number }> {
-  // Use a Map for better performance with large datasets
-  const performanceMap = new Map<string, { totalScore: number; attempts: number; totalTimeSpent: number }>()
+  return scores.reduce(
+    (acc, score) => {
+      if (!acc[score.title]) {
+        acc[score.title] = { totalScore: 0, attempts: 0, totalTimeSpent: 0 }
+      }
 
-  for (const score of scores) {
-    const existing = performanceMap.get(score.title)
-    if (existing) {
-      existing.totalScore += score.percentageCorrect
-      existing.attempts += 1
-      existing.totalTimeSpent += score.timeSpent
-    } else {
-      performanceMap.set(score.title, {
-        totalScore: score.percentageCorrect,
-        attempts: 1,
-        totalTimeSpent: score.timeSpent,
-      })
-    }
-  }
+      acc[score.title].totalScore += score.percentageCorrect
+      acc[score.title].attempts += 1
+      acc[score.title].totalTimeSpent += score.timeSpent
 
-  // Convert Map back to object
-  return Object.fromEntries(performanceMap.entries())
+      return acc
+    },
+    {} as Record<string, { totalScore: number; attempts: number; totalTimeSpent: number }>,
+  )
 }
 
 function getTopPerformingTopics(
   topicPerformance: Record<string, { totalScore: number; attempts: number; totalTimeSpent: number }>,
 ): TopicPerformance[] {
-  // Optimize by pre-allocating array size and using direct indexing
-  const entries = Object.entries(topicPerformance)
-  const result = new Array(entries.length)
-
-  for (let i = 0; i < entries.length; i++) {
-    const [topic, data] = entries[i]
-    result[i] = {
+  return Object.entries(topicPerformance)
+    .map(([topic, data]) => ({
       topic,
       averageScore: data.attempts > 0 ? data.totalScore / data.attempts : 0,
       attempts: data.attempts,
       averageTimeSpent: data.attempts > 0 ? data.totalTimeSpent / data.attempts : 0,
-    }
-  }
-
-  // Sort and slice in one operation
-  return result.sort((a, b) => b.averageScore - a.averageScore).slice(0, 5)
+    }))
+    .sort((a, b) => b.averageScore - a.averageScore)
+    .slice(0, 5)
 }
 
 function calculateRecentImprovement(recentAttempts: UserQuizAttempt[]): number {
   if (recentAttempts.length < 10) return 0
 
-  // Optimize by calculating sums in a single pass
-  let firstHalfSum = 0
-  let secondHalfSum = 0
+  const firstHalf = recentAttempts.slice(5, 10)
+  const secondHalf = recentAttempts.slice(0, 5)
 
-  for (let i = 0; i < 5; i++) {
-    firstHalfSum += recentAttempts[i].score ?? 0
-    secondHalfSum += recentAttempts[i + 5].score ?? 0
-  }
+  const firstHalfAvg = firstHalf.reduce((sum, attempt) => sum + (attempt.score ?? 0), 0) / 5
+  const secondHalfAvg = secondHalf.reduce((sum, attempt) => sum + (attempt.score ?? 0), 0) / 5
 
-  return secondHalfSum / 5 - firstHalfSum / 5
+  return secondHalfAvg - firstHalfAvg
 }
 
+// Keep the remaining helper functions as they are
 function calculateConsistencyScore(attempts: Array<Partial<UserQuizAttempt> & { createdAt: Date }>): number {
   if (!attempts.length) return 0
 

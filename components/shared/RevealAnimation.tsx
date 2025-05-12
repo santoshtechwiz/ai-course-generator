@@ -1,3 +1,7 @@
+"use client"
+
+import type React from "react"
+
 import { useInView, motion } from "framer-motion"
 import { useRef } from "react"
 const APPLE_EASING = [0.22, 0.61, 0.36, 1]

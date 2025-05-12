@@ -1,5 +1,5 @@
-'use server'
-import prisma from "@/lib/db";
+"use server"
+import prisma from "@/lib/db"
 
 // Fetch course details
 export async function getCourseDetails(): Promise<any[]> {
@@ -20,15 +20,15 @@ export async function getCourseDetails(): Promise<any[]> {
       },
     },
     take: 5,
-  });
+  })
 
   // Map through courses to structure the result
   return courses.map((course) => {
-    const totalUnits = (course.courseUnits || []).length;
+    const totalUnits = (course.courseUnits || []).length
     const totalChapters = (course.courseUnits || []).reduce(
       (sum: number, section: { chapters: { id: number }[] }) => sum + section.chapters.length,
-      0
-    );
+      0,
+    )
 
     return {
       id: course.id,
@@ -37,6 +37,6 @@ export async function getCourseDetails(): Promise<any[]> {
       totalChapters,
       category: course.category?.name || null,
       slug: course.slug || "",
-    };
-  });
+    }
+  })
 }

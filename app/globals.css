@@ -88,8 +88,7 @@
 @layer utilities {
   /* Base animations */
   .video-wrapper {
-    @apply
-      relative
+    @apply relative
       w-full
       aspect-video
       rounded-lg

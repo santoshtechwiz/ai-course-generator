@@ -3,8 +3,9 @@
 import { useRef, useState, useEffect } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "framer-motion"
 import { ChevronDown, ArrowRight, Play } from "lucide-react"
-import { useMobile } from "@/hooks/use-mobile"
+
 import { FeedbackButton } from "@/components/ui/feedback-button"
+import { useMobile } from "@/hooks/use-mobile"
 
 interface HeroSectionProps {
   scrollToFeatures: () => void

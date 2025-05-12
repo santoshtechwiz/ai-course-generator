@@ -1,20 +1,16 @@
-import openai from "./openaiUtils";
-
+import openai from "./openaiUtils"
 
 interface Chapter {
-  chapter_title: string;
-  youtube_search_query: string;
+  chapter_title: string
+  youtube_search_query: string
 }
 
 interface UnitContent {
-  title: string;
-  chapters: Chapter[];
+  title: string
+  chapters: Chapter[]
 }
 
-export async function generateCourseContent(
-  title: string,
-  units: string[]
-): Promise<UnitContent[]> {
+export async function generateCourseContent(title: string, units: string[]): Promise<UnitContent[]> {
   const functions = [
     {
       name: "createCourseContent",
@@ -38,9 +34,9 @@ export async function generateCourseContent(
         required: ["title", "chapters"],
       },
     },
-  ];
+  ]
 
-  const unitContent: UnitContent[] = [];
+  const unitContent: UnitContent[] = []
 
   for (const unit of units) {
     const response = await openai.chat.completions.create({
@@ -58,13 +54,11 @@ export async function generateCourseContent(
       ],
       functions,
       function_call: { name: "createCourseContent" },
-    });
+    })
 
-    const result: UnitContent = JSON.parse(
-      response.choices[0].message?.function_call?.arguments || "{}"
-    );
-    unitContent.push(result);
+    const result: UnitContent = JSON.parse(response.choices[0].message?.function_call?.arguments || "{}")
+    unitContent.push(result)
   }
 
-  return unitContent;
+  return unitContent
 }

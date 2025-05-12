@@ -1,13 +1,10 @@
-
-
 import { NextResponse } from "next/server"
 
 import { prisma } from "@/lib/db"
 
-
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    const slug = (await params).slug;
+    const slug = (await params).slug
 
     if (!slug) {
       return NextResponse.json({ error: "Quiz slug is required" }, { status: 400 })
@@ -21,8 +18,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     if (!quiz) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
-
-
 
     const result = await prisma.userQuiz.findFirst({
       where: {
@@ -60,10 +55,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       answer: question.answer,
       openEndedQuestion: question.openEndedQuestion
         ? {
-          hints: question.openEndedQuestion.hints.split("|"),
-          difficulty: question.openEndedQuestion.difficulty,
-          tags: question.openEndedQuestion.tags.split("|"),
-        }
+            hints: question.openEndedQuestion.hints.split("|"),
+            difficulty: question.openEndedQuestion.difficulty,
+            tags: question.openEndedQuestion.tags.split("|"),
+          }
         : null,
     }))
 
@@ -87,4 +82,3 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-

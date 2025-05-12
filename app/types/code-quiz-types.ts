@@ -9,14 +9,14 @@ export interface CodeQuizApiResponse {
   userId: string
   ownerId: string
   quizData: {
-    id: string;
-    title: string;
-    slug: string;
-    isPublic: boolean;
-    isFavorite: boolean;
-    userId?: string;
-    ownerId?: string;
-    difficulty?: string;
+    id: string
+    title: string
+    slug: string
+    isPublic: boolean
+    isFavorite: boolean
+    userId?: string
+    ownerId?: string
+    difficulty?: string
     questions: CodeQuizQuestion[]
   }
 }

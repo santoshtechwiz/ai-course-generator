@@ -14,7 +14,7 @@ import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
 import PlanAwareButton from "../components/PlanAwareButton"
-import { Question, Quiz } from "@/lib/quiz-store"
+import type { Question, Quiz } from "@/lib/quiz-store"
 import { useSubscription } from "../../subscription/hooks/use-subscription" // Updated import
 
 interface QuizOptionsType {

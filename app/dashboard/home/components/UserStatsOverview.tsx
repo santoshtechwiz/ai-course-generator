@@ -115,4 +115,3 @@ export function UserStatsOverview({ stats }: UserStatsOverviewProps) {
     </Card>
   )
 }
-

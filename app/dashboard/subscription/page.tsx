@@ -1,8 +1,6 @@
-
 import { generatePageMetadata } from "@/lib/seo-utils"
 import SubscriptionPageClient from "./components/SubscriptionPageClient"
-import { Metadata } from "next";
-
+import type { Metadata } from "next"
 
 export const metadata: Metadata = generatePageMetadata({
   title: "Subscription Plans ",
@@ -21,10 +19,9 @@ export const metadata: Metadata = generatePageMetadata({
 })
 
 const Page = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) => {
-  const referralCode = (await searchParams).ref ?? null;
+  const referralCode = (await searchParams).ref ?? null
 
-  return <SubscriptionPageClient refCode={referralCode} />;
-};
+  return <SubscriptionPageClient refCode={referralCode} />
+}
 
-export default Page;
-
+export default Page

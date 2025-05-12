@@ -156,4 +156,3 @@ export function JsonLd({ type = "default", data }: JsonLdProps) {
     )
   }
 }
-

@@ -12,18 +12,10 @@
   },
   "aliases": {
     "components": "@/components",
-    "page-components": "@/app/**/components",
+    "utils": "@/lib/utils",
     "ui": "@/components/ui",
     "lib": "@/lib",
-    "utils": "@/utils",
-    "hooks": "@/hooks",
-    "types": "@/types",
-    "features": "@/features",
-    "config": "@/config",
-    "services": "@/services",
-    "store": "@/store",
-    "dashboard": "@/dashboard",
-    "context": "@/context"
+    "hooks": "@/hooks"
   },
   "iconLibrary": "lucide"
 }

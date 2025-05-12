@@ -97,7 +97,7 @@ async function fetchAndGenerateSummary(videoId: string): Promise<string | null> 
   }
 
   try {
-    return await generateVideoSummary(transcriptResponse.transcript.slice(0, 10000));
+    return await generateVideoSummary(transcriptResponse.transcript.slice(0, 10000))
   } catch (error) {
     console.error(`Error generating summary for video ID ${videoId}:`, error)
     return null
@@ -120,4 +120,3 @@ async function updateChapterSummaryStatus(
     data: { summaryStatus: status },
   })
 }
-

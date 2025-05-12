@@ -59,4 +59,3 @@ export function SchemaRenderer({ type, data, showValidation = false }: SchemaRen
     )
   }
 }
-

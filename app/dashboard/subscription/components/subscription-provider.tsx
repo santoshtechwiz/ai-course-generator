@@ -3,9 +3,8 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useAppDispatch } from "@/store"
-import { SubscriptionState, fetchSubscriptionStatus } from "@/store/slices/subscription-slice"
+import { type SubscriptionState, fetchSubscriptionStatus } from "@/store/slices/subscription-slice"
 import useSubscription from "../hooks/use-subscription"
-
 
 // Create context with safe default values
 interface SubscriptionContextType {

@@ -9,7 +9,6 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
-
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -85,4 +84,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

@@ -25,7 +25,6 @@ import { PlanBadge } from "../../subscription/components/subscription-status/pla
 import { PaymentMethodForm } from "./PaymentMethod"
 import { StatusBadge } from "./status-badge"
 
-
 interface ManageSubscriptionProps {
   userId: string
   subscriptionData: {

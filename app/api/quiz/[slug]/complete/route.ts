@@ -42,15 +42,14 @@ function validateSubmissionData(body: any): { isValid: boolean; error?: string; 
     }
   }
 
-  // Log the entire body for debugging
-  console.log("Full request body:", JSON.stringify(body, null, 2))
-
   // Check if required fields exist
-  const missingFields = []
-  if (!body.quizId) missingFields.push("quizId")
-  if (typeof body.totalTime !== "number") missingFields.push("totalTime")
-  if (typeof body.score !== "number") missingFields.push("score")
-  if (!body.type) missingFields.push("type")
+  const requiredFields = ["quizId", "totalTime", "score", "type"]
+  const missingFields = requiredFields.filter((field) => {
+    if (field === "totalTime" || field === "score") {
+      return typeof body[field] !== "number"
+    }
+    return !body[field]
+  })
 
   if (missingFields.length > 0) {
     return {
@@ -64,13 +63,13 @@ function validateSubmissionData(body: any): { isValid: boolean; error?: string; 
   if (!body.answers) {
     // If answers is missing but we have totalQuestions, create dummy answers
     if (body.totalQuestions && body.totalQuestions > 0) {
+      const avgTimePerQuestion = Math.floor(body.totalTime / body.totalQuestions)
       body.answers = Array(body.totalQuestions).fill({
         isCorrect: false,
-        timeSpent: Math.floor(body.totalTime / body.totalQuestions),
+        timeSpent: avgTimePerQuestion,
         answer: "",
         userAnswer: "",
       })
-      console.log("Created dummy answers array:", body.answers)
     } else {
       return {
         isValid: false,
@@ -87,13 +86,13 @@ function validateSubmissionData(body: any): { isValid: boolean; error?: string; 
   } else if (body.answers.length === 0) {
     // If answers array is empty but we have totalQuestions, create dummy answers
     if (body.totalQuestions && body.totalQuestions > 0) {
+      const avgTimePerQuestion = Math.floor(body.totalTime / body.totalQuestions)
       body.answers = Array(body.totalQuestions).fill({
         isCorrect: false,
-        timeSpent: Math.floor(body.totalTime / body.totalQuestions),
+        timeSpent: avgTimePerQuestion,
         answer: "",
         userAnswer: "",
       })
-      console.log("Created dummy answers array for empty answers:", body.answers)
     } else {
       return {
         isValid: false,
@@ -110,12 +109,11 @@ function validateSubmissionData(body: any): { isValid: boolean; error?: string; 
 function extractUserAnswer(answer: any): string | string[] {
   if (!answer) return ""
 
-  if (typeof answer.userAnswer !== "undefined") {
-    return answer.userAnswer
-  } else if (typeof answer.answer !== "undefined") {
-    return answer.answer
-  }
-  return ""
+  return typeof answer.userAnswer !== "undefined"
+    ? answer.userAnswer
+    : typeof answer.answer !== "undefined"
+      ? answer.answer
+      : ""
 }
 
 function validateAnswersFormat(
@@ -202,16 +200,16 @@ function validateAnswersFormat(
   return { isValid: true }
 }
 
+// Optimize the calculatePercentageScore function
 function calculatePercentageScore(score: number, totalQuestions: number, type: QuizType): number {
   // For open-ended and fill-blanks quizzes, the score is already a percentage
   if (type === "openended" || type === "blanks") {
     // Ensure the score is within 0-100 range
     return Math.min(100, Math.max(0, score))
   }
+
   // For other quiz types, calculate percentage based on correct answers
-  else {
-    return (score / Math.max(1, totalQuestions)) * 100
-  }
+  return (score / Math.max(1, totalQuestions)) * 100
 }
 
 // Database operations

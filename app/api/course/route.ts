@@ -239,19 +239,7 @@ function determineDifficulty(lessonCount: number, quizCount: number): string {
   return "Advanced"
 }
 
-async function validateUserCredits(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { credits: true },
-  })
-
-  if (!user || user.credits <= 0) {
-    throw new Error("Insufficient credits")
-  }
-
-  return user
-}
-
+// Optimize the createCategory function to use async/await properly
 async function createCategory(category: string) {
   const cacheKey = `category_${category}`
   const cachedCategory = coursesCache.get<number>(cacheKey)
@@ -277,6 +265,51 @@ async function createCategory(category: string) {
   return createdCategory.id
 }
 
+// Optimize the removeDuplicate function
+const removeDuplicate = (data: OutputUnits): OutputUnits => {
+  const uniqueData: OutputUnits = []
+  const uniqueUnits = new Set<string>()
+
+  for (const item of data) {
+    const unitIdentifier = item.title
+    if (!uniqueUnits.has(unitIdentifier)) {
+      uniqueUnits.add(unitIdentifier)
+
+      // Create a map of normalized queries to avoid O(n²) complexity
+      const uniqueQueries = new Map<string, boolean>()
+      const uniqueChapters = []
+
+      for (const chapter of item.chapters) {
+        const normalizedQuery = chapter.youtube_search_query.trim().toLowerCase()
+        if (!uniqueQueries.has(normalizedQuery)) {
+          uniqueQueries.set(normalizedQuery, true)
+          uniqueChapters.push(chapter)
+        }
+      }
+
+      uniqueData.push({
+        ...item,
+        chapters: uniqueChapters,
+      })
+    }
+  }
+
+  return uniqueData
+}
+
+async function validateUserCredits(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { credits: true },
+  })
+
+  if (!user || user.credits <= 0) {
+    throw new Error("Insufficient credits")
+  }
+
+  return user
+}
+
 async function generateUniqueSlug(title: string) {
   let slug = generateSlug(title)
   let counter = 1
@@ -300,37 +333,6 @@ type OutputUnits = {
     chapter_title: string
   }[]
 }[]
-
-const removeDuplicate = (data: OutputUnits): OutputUnits => {
-  const uniqueData = []
-  const uniqueUnits = new Set()
-
-  for (const item of data) {
-    const unitIdentifier = item.title
-    if (!uniqueUnits.has(unitIdentifier)) {
-      uniqueUnits.add(unitIdentifier)
-      const uniqueItem = {
-        ...item,
-        chapters: item.chapters.reduce(
-          (accChapters, chapter) => {
-            const normalizedQuery = chapter.youtube_search_query.trim()?.toLowerCase()
-            const existingChapter = accChapters.find(
-              (c) => c.youtube_search_query.trim()?.toLowerCase() === normalizedQuery,
-            )
-            if (!existingChapter) {
-              accChapters.push(chapter)
-            }
-            return accChapters
-          },
-          [] as (typeof item)["chapters"],
-        ),
-      }
-      uniqueData.push(uniqueItem)
-    }
-  }
-
-  return uniqueData
-}
 
 async function createCourseWithUnits(
   courseData: {

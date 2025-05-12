@@ -240,7 +240,6 @@ const OpenEndedQuizContent = memo(function OpenEndedQuizContent({
                 quizResults: savedState,
               })
               setIsRestoringState(false)
-
             } catch (err) {
               console.error("Error completing quiz:", err)
               setError("Failed to restore quiz state. Please try again.")

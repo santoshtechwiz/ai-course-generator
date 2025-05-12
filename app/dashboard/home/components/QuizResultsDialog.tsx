@@ -16,9 +16,9 @@ import { CheckCircle, XCircle, Clock, AlertCircle, BarChart3 } from "lucide-reac
 import type { UserQuizAttempt } from "@/app/types/types"
 
 interface QuestionListProps {
-  questions: UserQuizAttempt["attemptQuestions"];
-  attempt: UserQuizAttempt;
-  type: string;
+  questions: UserQuizAttempt["attemptQuestions"]
+  attempt: UserQuizAttempt
+  type: string
 }
 interface QuizResultsDialogProps {
   attempt: UserQuizAttempt
@@ -94,7 +94,7 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
                 fillBlanksQuestions.length === 0 &&
                 codeQuestions.length === 0 && <TabsTrigger value="all">All Questions</TabsTrigger>}
             </TabsList>
-          
+
             <ScrollArea className="flex-1 w-full max-h-[60vh] overflow-auto">
               <div className="space-y-6 p-1">
                 {mcqQuestions.length > 0 && (
@@ -131,17 +131,16 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
                   )}
               </div>
             </ScrollArea>
-            </Tabs>
+          </Tabs>
 
-            <DialogFooter className="mt-4">
-              <Button onClick={onClose}>Close</Button>
-            </DialogFooter>
+          <DialogFooter className="mt-4">
+            <Button onClick={onClose}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
   )
 }
-
 
 function QuestionList({ questions, attempt, type }: QuestionListProps) {
   if (questions.length === 0) {
@@ -164,17 +163,19 @@ function QuestionList({ questions, attempt, type }: QuestionListProps) {
         return (
           <div
             key={question.id}
-            className={`p-4 rounded-lg border ${isCorrect
+            className={`p-4 rounded-lg border ${
+              isCorrect
                 ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900"
                 : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-900"
-              }`}
+            }`}
           >
             <div className="flex items-center gap-2 mb-3">
               <div
-                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${isCorrect
+                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                  isCorrect
                     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
                     : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100"
-                  }`}
+                }`}
               >
                 {index + 1}
               </div>

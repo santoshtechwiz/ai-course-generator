@@ -4,10 +4,9 @@ import type React from "react"
 import { createContext, useContext } from "react"
 import { useSession } from "next-auth/react"
 import { useQuery } from "@tanstack/react-query"
-import { SubscriptionData, SubscriptionDetails } from "@/app/types/types"
+import type { SubscriptionData, SubscriptionDetails } from "@/app/types/types"
 
 // Import existing subscription types
-
 
 interface SubscriptionContextType {
   subscription: SubscriptionData | null

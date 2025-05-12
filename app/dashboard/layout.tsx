@@ -1,12 +1,11 @@
 import type React from "react"
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
-import { getAuthSession } from "@/lib/authOptions"
-import { Chatbot } from "@/components/Chatbot"
-import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
+
 import { NavigationEvents } from "./NavigationEvents"
 import { FullPageLoader } from "@/components/ui/loader"
 import { SubscriptionRefresher } from "@/app/dashboard/subscription/components/SubscriptionRefresher"
+import { getAuthSession } from "@/lib/auth"
 
 export default async function DashboardLayout({
   children,

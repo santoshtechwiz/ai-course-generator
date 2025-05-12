@@ -4,13 +4,11 @@ import { useCallback } from "react"
 import { useSession, signIn, signOut } from "next-auth/react"
 import { useAppDispatch, useAppSelector } from "@/store"
 import {
-
   clearAuthState,
   setIsAuthenticated,
   setIsProcessingAuth,
   setRedirectUrl,
   setUser,
-
 } from "@/store/slices/authSlice"
 
 export function useAuth() {

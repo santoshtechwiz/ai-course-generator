@@ -22,4 +22,3 @@ export function Rating({ value = 0, onValueChange, className = "" }: RatingProps
     </div>
   )
 }
-

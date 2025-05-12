@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/db"
 
-
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check if user is authenticated and is an admin
@@ -46,7 +45,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     // Check if user is authenticated and is an admin
     const session = await getServerSession(authOptions)
 
-    if (!session || !session.user || session.user.isAdmin!== true) {
+    if (!session || !session.user || session.user.isAdmin !== true) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -115,28 +114,28 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) { 
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions)
 
     if (!session || !session.user || session.user.isAdmin !== true) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = (await params).id;
+    const userId = (await params).id
 
     // Check if user exists
     const user = await prisma.user.findUnique({
       where: {
         id: userId,
       },
-    });
+    })
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const body = await request.json();
+    const body = await request.json()
 
     // Update user data
     const updatedUser = await prisma.user.update({
@@ -148,13 +147,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         isAdmin: body.isAdmin,
         credits: body.credits,
       },
-    });
+    })
 
     // Check if subscription exists before updating
     if (body.userType) {
       const userSubscription = await prisma.userSubscription.findUnique({
         where: { userId },
-      });
+      })
 
       if (userSubscription) {
         await prisma.userSubscription.update({
@@ -164,15 +163,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           data: {
             planId: body.userType,
           },
-        });
+        })
       }
-
-     
     }
 
-    return NextResponse.json(updatedUser);
+    return NextResponse.json(updatedUser)
   } catch (error) {
-    console.error("Error updating user:", error);
-    return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
+    console.error("Error updating user:", error)
+    return NextResponse.json({ error: "Failed to update user" }, { status: 500 })
   }
 }

@@ -10,12 +10,12 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#fff",
     theme_color: "#fff",
-    "icons": [
+    icons: [
       {
-        "src": "/favicon.ico",
-        "sizes": "64x64 32x32 24x24 16x16",
-        "type": "image/x-icon"
-      }
+        src: "/favicon.ico",
+        sizes: "64x64 32x32 24x24 16x16",
+        type: "image/x-icon",
+      },
     ],
     categories: ["education", "technology", "programming", "development"],
     related_applications: [
@@ -47,4 +47,3 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
   }
 }
-

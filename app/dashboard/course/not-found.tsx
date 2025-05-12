@@ -1,6 +1,6 @@
-import Link from 'next/link'
-import { FileQuestion } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Link from "next/link"
+import { FileQuestion } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default function NotFound() {
   return (
@@ -13,21 +13,14 @@ export default function NotFound() {
         </p>
         <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 justify-center">
           <Button asChild variant="default">
-            <Link href="/dashboard">
-              Back to Dashboard
-            </Link>
+            <Link href="/dashboard">Back to Dashboard</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/dashboard">
-              View All Courses
-            </Link>
+            <Link href="/dashboard">View All Courses</Link>
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
-          If you believe this is an error, please contact support.
-        </p>
+        <p className="text-sm text-muted-foreground">If you believe this is an error, please contact support.</p>
       </div>
     </div>
   )
 }
-

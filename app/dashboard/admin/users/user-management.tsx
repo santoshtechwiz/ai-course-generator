@@ -535,7 +535,6 @@ export const UserManagement = () => {
                 <Trash className="h-4 w-4 mr-2" />
                 Delete Selected
               </Button>
-             
             </div>
           </CardFooter>
         )}

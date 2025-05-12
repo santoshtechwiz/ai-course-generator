@@ -40,4 +40,3 @@ export default async function SubscriptionDetails({
   // Otherwise, show the subscription management interface
   return <ManageSubscription userId={userId} subscriptionData={subscriptionData} />
 }
-

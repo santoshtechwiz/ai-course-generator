@@ -3,9 +3,8 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { getAuthSession } from "@/lib/auth"
 
-
 export async function GET() {
- const session = await getAuthSession()
+  const session = await getAuthSession()
   if (!session || !session.user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
   }
@@ -39,4 +38,3 @@ export async function GET() {
     lastStreakDate: user.lastStreakDate,
   })
 }
-

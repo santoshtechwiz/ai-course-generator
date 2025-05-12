@@ -1,5 +1,4 @@
-import language from "react-syntax-highlighter/dist/esm/languages/hljs/1c";
-import { z } from "zod";
+import { z } from "zod"
 
 const updateSchema = z.object({
   name: z.string().optional(),
@@ -13,10 +12,13 @@ const updateSchema = z.object({
   isFavorite: z.boolean().optional(),
 })
 const codeQuizSchema = z.object({
-  title: z.string().min(3, "Topic must be at least 3 characters long").max(100, "Topic must be at most 100 characters long"),
+  title: z
+    .string()
+    .min(3, "Topic must be at least 3 characters long")
+    .max(100, "Topic must be at most 100 characters long"),
   amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  language:z.string().default("javascript"),
+  language: z.string().default("javascript"),
 })
 const createCourseSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be less than 100 characters"),
@@ -26,20 +28,20 @@ const createCourseSchema = z.object({
 })
 
 const quizSchema = z.object({
-    title: z.string().min(3, "Topic must be at least 3 characters long").max(100, "Topic must be at most 100 characters long"),
-    amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
-    difficulty: z.enum(["easy", "medium", "hard"]),
-   
-  });
-
-
+  title: z
+    .string()
+    .min(3, "Topic must be at least 3 characters long")
+    .max(100, "Topic must be at most 100 characters long"),
+  amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+})
 
 export const createChaptersSchema = z.object({
   title: z.string().min(1).max(100),
   units: z.array(z.string()),
   category: z.string().nonempty("Must Select Category"),
   description: z.string().min(1).max(1000),
-});
+})
 
 export const quizCreationSchema = z.object({
   title: z
@@ -54,25 +56,23 @@ export const quizCreationSchema = z.object({
   amount: z.number().min(1).max(15),
   difficulty: z.enum(["easy", "medium", "hard"]),
   userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
-});
+})
 export const getQuestionsSchema = z.object({
   title: z.string(),
   amount: z.number().int().positive().min(1).max(20),
   type: z.enum(["mcq", "open_ended"]),
   difficulty: z.enum(["easy", "medium", "hard"]),
   userType: z.enum(["FREE", "BASIC", "PRO"]).default("FREE").optional(),
-});
+})
 
 export const checkAnswerSchema = z.object({
   userInput: z.string(),
   questionId: z.string(),
-});
+})
 
 export const endGameSchema = z.object({
   gameId: z.string(),
-});
-
+})
 
 export type CreateCourseInput = z.infer<typeof createCourseSchema>
-export { updateSchema, createCourseSchema , quizSchema,codeQuizSchema};
-
+export { updateSchema, createCourseSchema, quizSchema, codeQuizSchema }

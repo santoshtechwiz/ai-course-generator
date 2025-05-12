@@ -2,16 +2,6 @@
 
 # dependencies
 /node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
 
 # next.js
 /.next/
@@ -20,16 +10,13 @@
 # production
 /build
 
-# misc
-.DS_Store
-*.pem
-
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 
 # vercel
@@ -38,22 +25,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-# add dev.db to .gitignore
-dev.db
-/prisma/dev.db
-y.js
-docker-compose.yaml
-/app/dashboard/blanks/components
-/app/dashboard/deep.js
-migrate.mjs
-/app/api/public/course
-a.html
-a.mjs
-.vscode/settings.json
-/components/shared
-src.zip
-/.build
-/next.config.ts
-next.config.ts
-/.nex1t
-copy.ps1

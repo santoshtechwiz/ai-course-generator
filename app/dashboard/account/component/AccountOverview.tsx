@@ -1,7 +1,7 @@
 // Create a new AccountOverview component
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,14 +16,7 @@ import { useSubscription } from "../../subscription/hooks/use-subscription"
 
 export function AccountOverview({ userId }: { userId: string }) {
   const { data: session, status } = useSession()
-  const { 
-    subscription, 
-    details, 
-    tokenUsage, 
-    isLoading, 
-    error, 
-    fetchStatus 
-  } = useSubscription()
+  const { subscription, details, tokenUsage, isLoading, error, fetchStatus } = useSubscription()
   const router = useRouter()
 
   useEffect(() => {
@@ -38,9 +31,7 @@ export function AccountOverview({ userId }: { userId: string }) {
     return <AccountOverviewSkeleton />
   }
 
-  const tokenUsagePercentage = tokenUsage?.credits
-    ? (tokenUsage.remaining / tokenUsage.total) * 100
-    : 0
+  const tokenUsagePercentage = tokenUsage?.credits ? (tokenUsage.remaining / tokenUsage.total) * 100 : 0
 
   const formattedExpirationDate = details?.expirationDate
     ? new Date(details.expirationDate).toLocaleDateString("en-US", {
@@ -91,9 +82,7 @@ export function AccountOverview({ userId }: { userId: string }) {
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center">
-                    <StatusBadge
-                      status={details?.status || (subscription?.isSubscribed ? "ACTIVE" : "INACTIVE")}
-                    />
+                    <StatusBadge status={details?.status || (subscription?.isSubscribed ? "ACTIVE" : "INACTIVE")} />
                     <span className="ml-2">
                       {subscription?.isSubscribed ? "Active Subscription" : "No Active Subscription"}
                     </span>

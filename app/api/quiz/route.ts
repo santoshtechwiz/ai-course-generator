@@ -1,19 +1,19 @@
-import { generateQuestions } from '@/lib/chatgpt/generateQuestions';
-import { getQuestionsSchema } from '@/schema/schema';
+import { generateQuestions } from "@/lib/chatgpt/generateQuestions"
+import { getQuestionsSchema } from "@/schema/schema"
 
-import { NextResponse } from 'next/server';
-import { ZodError } from 'zod';
+import { NextResponse } from "next/server"
+import { ZodError } from "zod"
 
 export async function POST(req: Request) {
   try {
-    const { amount, title, type,difficulty,userType} = getQuestionsSchema.parse(await req.json());
-    const  questions = await generateQuestions({ amount, title, type,difficulty,userType });
+    const { amount, title, type, difficulty, userType } = getQuestionsSchema.parse(await req.json())
+    const questions = await generateQuestions({ amount, title, type, difficulty, userType })
 
-    return NextResponse.json(questions);
+    return NextResponse.json(questions)
   } catch (error) {
     if (error instanceof ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 })
     }
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 })
   }
 }

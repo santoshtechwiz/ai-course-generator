@@ -12,8 +12,6 @@ import axios from "axios"
 import QuizActions from "../../components/QuizActions"
 import { FlashCardWrapper } from "./FlashCardWrapper"
 
-
-
 interface FlashCardsPageClientProps {
   slug: string
   userId: string

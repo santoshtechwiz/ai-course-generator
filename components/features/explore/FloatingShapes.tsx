@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 export function FloatingShapes() {
   return (
@@ -14,5 +14,5 @@ export function FloatingShapes() {
       <rect x="300" y="300" width="40" height="40" fill="currentColor" fillOpacity="0.1" />
       <polygon points="1300,100 1320,150 1280,150" fill="currentColor" fillOpacity="0.1" />
     </svg>
-  );
+  )
 }

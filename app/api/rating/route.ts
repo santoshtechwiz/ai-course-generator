@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from "next/server"
 import prisma, { slugToId } from "@/lib/db"
 import { getAuthSession } from "@/lib/auth"
 
@@ -17,23 +17,23 @@ export async function POST(req: Request) {
   try {
     let result
 
-    if (type === 'quiz') {
+    if (type === "quiz") {
       result = await prisma.userQuizRating.upsert({
         where: {
           userId_userQuizId: {
             userId: session.user.id,
-            userQuizId: parseInt(id),
+            userQuizId: Number.parseInt(id),
           },
         },
         update: { rating },
         create: {
           userId: session.user.id,
-          userQuizId: parseInt(id),
+          userQuizId: Number.parseInt(id),
           rating,
         },
       })
-    } else if (type === 'course') {
-      const courseId=await slugToId(id);
+    } else if (type === "course") {
+      const courseId = await slugToId(id)
       result = await prisma.courseRating.upsert({
         where: {
           userId_courseId: {
@@ -66,8 +66,8 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url)
-  const type = searchParams.get('type')
-  const id = searchParams.get('id')
+  const type = searchParams.get("type")
+  const id = searchParams.get("id")
 
   if (!type || !id) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -76,21 +76,21 @@ export async function GET(req: NextRequest) {
   try {
     let rating
 
-    if (type === 'quiz') {
+    if (type === "quiz") {
       rating = await prisma.userQuizRating.findUnique({
         where: {
           userId_userQuizId: {
             userId: session.user.id,
-            userQuizId: parseInt(id),
+            userQuizId: Number.parseInt(id),
           },
         },
       })
-    } else if (type === 'course') {
+    } else if (type === "course") {
       rating = await prisma.courseRating.findUnique({
         where: {
           userId_courseId: {
             userId: session.user.id,
-            courseId: parseInt(id),
+            courseId: Number.parseInt(id),
           },
         },
       })
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid type" }, { status: 400 })
     }
 
-    return NextResponse.json({ success: true, data: rating||0 })
+    return NextResponse.json({ success: true, data: rating || 0 })
   } catch (error) {
     console.error("Error fetching rating:", error)
     return NextResponse.json({ error: "Failed to fetch rating" }, { status: 500 })

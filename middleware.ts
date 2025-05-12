@@ -63,13 +63,13 @@ function setupGitHubCredentials(req: NextRequest) {
 
   const credentials = host.includes("courseai.dev")
     ? {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    }
+        clientId: process.env.GITHUB_CLIENT_ID!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      }
     : {
-      clientId: process.env.GITHUB_CLIENT_ID_IO!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET_IO!,
-    }
+        clientId: process.env.GITHUB_CLIENT_ID_IO!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET_IO!,
+      }
 
   process.env.GITHUB_CLIENT_ID = credentials.clientId
   process.env.GITHUB_CLIENT_SECRET = credentials.clientSecret
@@ -159,13 +159,12 @@ export async function middleware(req: NextRequest) {
     // Handle site-wide redirect to courseai.io (added this line)
     const siteWideRedirect = handleSiteWideRedirect(req)
     if (siteWideRedirect) return siteWideRedirect
-
   }
 
   // Protect admin routes - only check admin routes
   const adminResponse = await protectAdminRoutes(req)
   if (adminResponse) return adminResponse
-  
+
   const authResponse = await protectAuthenticatedRoutes(req)
   if (authResponse) return authResponse
   // Setup GitHub credentials
@@ -175,8 +174,6 @@ export async function middleware(req: NextRequest) {
   const redirectResponse = await handleRedirects(req)
   if (redirectResponse) return redirectResponse
 
-
-
   // Increment course view count
   incrementCourseViewCount(req)
 
@@ -184,4 +181,3 @@ export async function middleware(req: NextRequest) {
   const response = NextResponse.next()
   return setCacheHeaders(response)
 }
-

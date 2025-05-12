@@ -421,7 +421,6 @@ describe("QuizResultsOpenEnded Component", () => {
     expect(screen.getByText("Total Time")).toBeInTheDocument()
     expect(screen.getByText("Avg. Time/Question")).toBeInTheDocument()
   })
-
 })
 
 describe("OpenEndedQuizWrapper Component", () => {

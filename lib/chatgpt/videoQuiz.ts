@@ -1,49 +1,48 @@
-import { MultipleChoiceQuestion } from "@/app/types/types";
-import openai from "./openaiUtils";
-
-
+import type { MultipleChoiceQuestion } from "@/app/types/types"
+import openai from "./openaiUtils"
 
 interface FunctionDefinition {
-  name: string;
-  description: string;
+  name: string
+  description: string
   parameters: {
-    type: string;
+    type: string
     properties: {
       mcqs: {
-        type: string;
+        type: string
         items: {
-          type: string;
+          type: string
           properties: {
-            question: { type: string };
-            answer: { type: string };
+            question: { type: string }
+            answer: { type: string }
             options: {
-              type: string;
-              items: { type: string };
-            };
-          };
-          required: string[];
-        };
-      };
-    };
-    required: string[];
-  };
+              type: string
+              items: { type: string }
+            }
+          }
+          required: string[]
+        }
+      }
+    }
+    required: string[]
+  }
 }
 
 export default async function generateMultipleChoiceQuestions(
   courseTitle: string,
   transcript: string,
-  numQuestions: number = 5,
-  userType: string = "FREE"
+  numQuestions = 5,
+  userType = "FREE",
 ): Promise<MultipleChoiceQuestion[]> {
   if (!courseTitle || !transcript) {
-    throw new Error("Course title and transcript are required");
+    throw new Error("Course title and transcript are required")
   }
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini";
+  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini"
 
   const functions: FunctionDefinition[] = [
     {
       name: "formatMCQs",
-      description: "Generates multiple-choice questions for a course transcript, each with 4 options (1 correct, 3 incorrect).",
+      description:
+        "Generates multiple-choice questions for a course transcript, each with 4 options (1 correct, 3 incorrect).",
       parameters: {
         type: "object",
         properties: {
@@ -66,7 +65,7 @@ export default async function generateMultipleChoiceQuestions(
         required: ["mcqs"],
       },
     },
-  ];
+  ]
 
   try {
     const response = await openai.chat.completions.create({
@@ -80,15 +79,15 @@ export default async function generateMultipleChoiceQuestions(
       ],
       functions,
       function_call: { name: "formatMCQs" },
-    });
+    })
 
-    const result = response?.choices[0]?.message?.function_call?.arguments;
+    const result = response?.choices[0]?.message?.function_call?.arguments
     if (!result) {
-      throw new Error("No result returned from OpenAI");
+      throw new Error("No result returned from OpenAI")
     }
-    return JSON.parse(result).mcqs;
+    return JSON.parse(result).mcqs
   } catch (error) {
-    console.error("Error generating MCQs:", error);
-    throw new Error("Failed to generate MCQs");
+    console.error("Error generating MCQs:", error)
+    throw new Error("Failed to generate MCQs")
   }
 }

@@ -3,7 +3,6 @@
 import TrialModal from "@/components/TrialModal"
 import { useSubscription } from "@/store/subscription-provider"
 
-
 export function SubscriptionStatus() {
   const { subscription, isLoading } = useSubscription()
 
