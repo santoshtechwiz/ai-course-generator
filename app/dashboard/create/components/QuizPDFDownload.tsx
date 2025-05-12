@@ -10,7 +10,7 @@ import { Download, FileText, Lock } from "lucide-react"
 
 import { cn } from "@/lib/tailwindUtils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useSubscription } from "../../subscription/hooks/use-subscription"
+import useSubscription from "@/hooks/use-subscription"
 
 interface QuizPDFDownloadProps extends QuizPDFProps {
   config?: {
@@ -33,7 +33,7 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
 }) => {
   const [isClient, setIsClient] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
-  const { status, canDownloadPDF, isLoading } = useSubscription()
+  const { data:status, canDownloadPDF, isLoading } = useSubscription()
   const shadowPulse = "shadow-md hover:shadow-lg transition-shadow duration-200"
 
   useEffect(() => {

@@ -55,7 +55,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
                 <SessionSync />
                 <MainNavbar />
                 <Suspense fallback={<div>Loading...</div>}>
-                  <TrialModal />
+                 
                 </Suspense>
                 <JsonLd type="default" />
                 <Toaster position="top-right" closeButton richColors />
