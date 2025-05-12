@@ -7,11 +7,12 @@ import { Toaster } from "sonner"
 import { Suspense, useState, useEffect } from "react"
 import { AnimationProvider } from "./animation-provider"
 import { ReduxProvider } from "./redux-provider"
-import { SubscriptionProvider } from "@/store/subscription-provider"
+
 import { SessionProvider } from "./session-provider"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import TrialModal from "@/components/features/subscription/TrialModal"
 import { JsonLd } from "@/app/schema/components/json-ld"
+import SubscriptionProvider from "./SubscriptionProvider"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>

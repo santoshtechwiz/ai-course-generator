@@ -1,82 +1,54 @@
-/**
- * Client Component: SubscriptionPageClient
- *
- * This component handles the client-side logic for the subscription page,
- * including fetching subscription data and rendering the appropriate UI.
- * Improved with better error handling, loading states, and performance optimizations.
- */
-
 "use client"
 
 import { useEffect, useState, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, AlertTriangle, Info, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
 import { ReferralBanner } from "@/components/ReferralBanner"
+import { useAppSelector, useAppDispatch } from "@/store"
+import {
+  selectSubscription,
+  fetchSubscription,
+  selectSubscriptionLoading,
+  selectSubscriptionError,
+} from "@/store/slices/subscription-slice"
 
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 import TrialModal from "@/components/TrialModal"
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
-import { useMediaQuery } from "@/hooks/use-responsive"
+import { useMediaQuery } from "@/hooks/use-media-query"
 import { CancellationDialog } from "./cancellation-dialog"
-import { useSubscription } from "@/store/hooks/use-subscription"
 
-import { SubscriptionRefresher } from "./SubscriptionRefresher"
-
-// Lazy load the PricingPage component for better performance
+// Lazy load components
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))
 const StripeSecureCheckout = lazy(() =>
   import("./StripeSecureCheckout").then((mod) => ({ default: mod.StripeSecureCheckout })),
 )
 
-/**
- * Client component for the subscription page with enhanced error handling and performance
- */
 export default function SubscriptionPageClient({ refCode }: { refCode: string | null }) {
-  // Ensure userId is properly set and passed to PricingPage
-  const [userId, setUserId] = useState<string | null>(null)
   const [showReferralBanner, setShowReferralBanner] = useState(true)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [pendingSubscriptionData, setPendingSubscriptionData] = useState<any>(null)
   const [referralCode, setReferralCode] = useState<string | null>(refCode)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
 
+  const dispatch = useAppDispatch()
+  const subscription = useAppSelector(selectSubscription)
+  const isLoading = useAppSelector(selectSubscriptionLoading)
+  const error = useAppSelector(selectSubscriptionError)
+
   const isProd = process.env.NODE_ENV === "production"
   const { data: session, status: sessionStatus } = useSession()
-  const id = session?.user?.id ?? null
+  const userId = session?.user?.id ?? null
   const router = useRouter()
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
-  // Use our subscription hook
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    fetchStatus,
-    cancelSubscription,
-    currentPlan,
-    status: subscriptionStatus,
-    tokensUsed,
-    totalTokens,
-    expirationDate,
-    cancelAtPeriodEnd,
-    isSubscribed,
-  } = useSubscription()
-
-  // Handle subscription cancellation
-  const handleCancelSubscription = async (reason: string) => {
-    await cancelSubscription(reason)
-    setShowCancellationDialog(false)
-    // Force refresh data
-    fetchStatus(true)
-  }
+  const isSubscribed = subscription?.isSubscribed || false
 
   // Extract referral code from URL parameters
   useEffect(() => {
@@ -109,25 +81,18 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [])
 
-  // Effect to set userId when session changes
+  // Fetch subscription data when session changes
   useEffect(() => {
-    if (sessionStatus === "authenticated" && id) {
-      setUserId(id)
-      // Fetch subscription data when user is authenticated
-      fetchStatus(true)
+    if (sessionStatus === "authenticated" && userId) {
+      dispatch(fetchSubscription())
     }
-  }, [id, sessionStatus, fetchStatus])
-
-  // Handle manual retry
-  const handleRetry = useCallback(() => {
-    fetchStatus(true)
-  }, [fetchStatus])
+  }, [userId, sessionStatus, dispatch])
 
   // Handle subscription button click for unauthenticated users
   const handleUnauthenticatedSubscribe = useCallback(
     (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => {
       // Only show login modal if user is definitely not authenticated
-      if (sessionStatus != "loading" && sessionStatus === "unauthenticated") {
+      if (sessionStatus !== "loading" && sessionStatus === "unauthenticated") {
         const subscriptionData = {
           planName,
           duration,
@@ -143,24 +108,29 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   )
 
   const handleManageSubscription = useCallback(() => {
-    if (cancelAtPeriodEnd) {
-      // If subscription is already cancelled, offer to resume
+    if (subscription?.cancelAtPeriodEnd) {
+      // If subscription is already cancelled, redirect to account page
       router.push("/dashboard/account")
     } else {
       // Otherwise show cancellation dialog
       setShowCancellationDialog(true)
     }
-  }, [cancelAtPeriodEnd, router])
+  }, [subscription?.cancelAtPeriodEnd, router])
+
+  // Handle retry
+  const handleRetry = () => {
+    dispatch(fetchSubscription())
+  }
 
   const renderContent = () => {
-    // Show skeleton only during initial session loading
-    if (sessionStatus === "loading" && !data) {
+    // Show skeleton during initial session loading
+    if (sessionStatus === "loading" && !subscription) {
       return <SubscriptionSkeleton />
     }
 
     return (
       <div className="space-y-8">
-        {isError && (
+        {error && (
           <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
             <AlertTriangle className="h-5 w-5" />
             <AlertTitle>Error loading subscription data</AlertTitle>
@@ -184,7 +154,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           <ReferralBanner referralCode={referralCode} onDismiss={() => setShowReferralBanner(false)} />
         )}
 
-        {pendingSubscriptionData && id && (
+        {pendingSubscriptionData && userId && (
           <Alert className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 animate-in fade-in slide-in-from-top-5 duration-300">
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <AlertTitle>Pending Subscription</AlertTitle>
@@ -195,7 +165,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           </Alert>
         )}
 
-        {id && (
+        {userId && (
           <Alert className="mb-6 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 animate-in fade-in slide-in-from-top-5 duration-300">
             <Info className="h-5 w-5 text-slate-600 dark:text-slate-400" />
             <AlertTitle>Manage Your Subscription</AlertTitle>
@@ -214,18 +184,10 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         )}
 
         <Suspense fallback={<SubscriptionSkeleton />}>
-          {/* When rendering the PricingPage component, ensure userId is passed */}
           <PricingPage
             userId={userId}
-            currentPlan={currentPlan}
-            subscriptionStatus={subscriptionStatus}
-            tokensUsed={tokensUsed}
-            credits={totalTokens}
             isProd={isProd}
-            expirationDate={expirationDate}
-            referralCode={referralCode}
             onUnauthenticatedSubscribe={handleUnauthenticatedSubscribe}
-            cancelAtPeriodEnd={cancelAtPeriodEnd}
             onManageSubscription={handleManageSubscription}
             isMobile={isMobile}
           />
@@ -242,12 +204,9 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Include the SubscriptionRefresher component to handle background refreshes */}
-      <SubscriptionRefresher />
-
-      {!isLoading && data && (
+      {!isLoading && subscription && (
         <Suspense fallback={null}>
-          <TrialModal isSubscribed={isSubscribed} currentPlan={currentPlan} />
+          <TrialModal isSubscribed={isSubscribed} currentPlan={subscription.subscriptionPlan} />
         </Suspense>
       )}
 
@@ -263,7 +222,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
       {renderContent()}
 
-      {isLoading && sessionStatus === "authenticated" && id && (
+      {isLoading && sessionStatus === "authenticated" && userId && (
         <div className="fixed bottom-4 right-4 bg-background border rounded-full shadow-lg p-2 flex items-center animate-in fade-in slide-in-from-bottom-5 duration-300">
           <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
           <span className="text-sm">Loading your data...</span>
@@ -273,9 +232,12 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
       <CancellationDialog
         isOpen={showCancellationDialog}
         onClose={() => setShowCancellationDialog(false)}
-        onConfirm={handleCancelSubscription}
-        expirationDate={expirationDate || null}
-        planName={currentPlan || ""}
+        onConfirm={(reason) => {
+          // Handle cancellation logic
+          setShowCancellationDialog(false)
+        }}
+        expirationDate={subscription?.expirationDate || null}
+        planName={subscription?.subscriptionPlan || ""}
       />
     </div>
   )

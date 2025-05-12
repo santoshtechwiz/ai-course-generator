@@ -1,10 +1,3 @@
-/**
- * PricingPage Component
- *
- * This component displays subscription plans and handles user interactions
- * for subscribing to plans.
- */
-
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
@@ -29,28 +22,26 @@ import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import { useAppSelector, useAppDispatch } from "@/store"
+import { selectSubscription, fetchSubscription } from "@/store/slices/subscription-slice"
 
 import PlanCards from "./subscription-status/PlanCard"
 import DevModeBanner from "./subscription-status/DevModeBanner"
 import FAQSection from "./subscription-status/FaqSection"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
 import { SUBSCRIPTION_PLANS } from "./subscription-plans"
 
 import { calculateSavings } from "../utils/subscription-utils"
 import { useSubscription } from "../hooks/use-subscription"
+import { useMediaQuery } from "@/hooks/use-media-query"
+import { FeatureComparison } from "./subscription-status/FeatureComparison"
+import { CancellationDialog } from "./subscription-status/CancellationDialog"
 
 interface PricingPageProps {
   userId: string | null
-  currentPlan?: SubscriptionPlanType | null
-  subscriptionStatus?: SubscriptionStatusType | null
   isProd?: boolean
-  tokensUsed?: number
-  credits?: number
-  expirationDate?: string | null
-  referralCode?: string | null
-  cancelAtPeriodEnd?: boolean
   onUnauthenticatedSubscribe?: (
     planName: SubscriptionPlanType,
     duration: number,
@@ -63,23 +54,29 @@ interface PricingPageProps {
 
 export function PricingPage({
   userId,
-  currentPlan = "FREE",
-  subscriptionStatus = null,
   isProd = false,
-  tokensUsed = 0,
-  credits = 0,
-  expirationDate = null,
-  referralCode = null,
-  cancelAtPeriodEnd = false,
   onUnauthenticatedSubscribe,
   onManageSubscription,
+  isMobile: propIsMobile,
 }: PricingPageProps) {
   const [loading, setLoading] = useState<SubscriptionPlanType | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<1 | 6>(1)
   const [showPromotion, setShowPromotion] = useState(true)
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null)
   const { toast } = useToast()
+  const dispatch = useAppDispatch()
+
+  // Get subscription data from Redux
+  const subscriptionData = useAppSelector(selectSubscription)
   const isAuthenticated = !!userId
+
+  // Extract subscription info
+  const currentPlan = subscriptionData?.subscriptionPlan || "FREE"
+  const subscriptionStatus = subscriptionData?.status || null
+  const expirationDate = subscriptionData?.expirationDate || null
+  const cancelAtPeriodEnd = subscriptionData?.cancelAtPeriodEnd || false
+  const tokensUsed = subscriptionData?.tokensUsed || 0
+  const credits = subscriptionData?.credits || 0
 
   // Add state for promo code
   const [promoCode, setPromoCode] = useState<string>("")
@@ -92,37 +89,29 @@ export function PricingPage({
   const [promoInputFocused, setPromoInputFocused] = useState(false)
   const [showPromoHint, setShowPromoHint] = useState(false)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
-  const isMobile = useMediaQuery("(max-width: 768px)")
+  const isMobile = propIsMobile || useMediaQuery("(max-width: 768px)")
 
   // Normalize subscription status for case-insensitive comparison
   const normalizedStatus = subscriptionStatus?.toUpperCase() as "ACTIVE" | "CANCELED" | null
-  const isSubscribed = currentPlan && normalizedStatus === "ACTIVE"
+  const isSubscribed = currentPlan !== "FREE" && normalizedStatus === "ACTIVE"
 
   // Format expiration date for display
-  const formattedExpirationDate = useMemo(() => {
-    if (!expirationDate) return null
-    return new Date(expirationDate).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }, [expirationDate])
+  const formattedExpirationDate = expirationDate
+    ? new Date(expirationDate).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null
 
   // Calculate days until expiration
-  const daysUntilExpiration = useMemo(() => {
-    if (!expirationDate) return null
-    const expDate = new Date(expirationDate)
-    const today = new Date()
-    const diffTime = expDate.getTime() - today.getTime()
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  }, [expirationDate])
+  const daysUntilExpiration = expirationDate
+    ? Math.ceil((new Date(expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : null
 
   // Get user plan details
   const userPlan = SUBSCRIPTION_PLANS.find((plan) => plan.id === currentPlan) || SUBSCRIPTION_PLANS[0]
-  const tokenUsagePercentage = useMemo(() => {
-    if (!tokensUsed || !credits || credits === 0) return 0
-    return (tokensUsed / credits) * 100
-  }, [tokensUsed, credits])
+  const tokenUsagePercentage = credits ? (tokensUsed / credits) * 100 : 0
 
   // Replace the validatePromoCode function with this improved version
   const validatePromoCode = useCallback(
@@ -184,11 +173,11 @@ export function PricingPage({
       } catch (error) {
         console.error("Error validating promo code:", error)
 
-        handleSubscriptionError(error, "VALIDATION_ERROR", {
-          notify: true,
-          log: true,
-          details: "Failed to validate promo code. Please try again.",
-        })
+        // handleSubscriptionError(error, "VALIDATION_ERROR", {
+        //   notify: true,
+        //   log: true,
+        //   details: "Failed to validate promo code. Please try again.",
+        // })
 
         setIsPromoValid(false)
         setPromoDiscount(0)
@@ -204,7 +193,7 @@ export function PricingPage({
         setIsApplyingPromo(false)
       }
     },
-    [toast, isPromoValid, promoDiscount],
+    [toast, isPromoValid, promoDiscount, hasShownPromoToast],
   )
 
   // Use the subscription hook with options
@@ -285,7 +274,7 @@ export function PricingPage({
                 duration,
                 promoCode: isPromoValid ? promoCode : undefined,
                 promoDiscount: promoDiscount,
-                referralCode: referralCode || null,
+                // referralCode: referralCode || null,
               }),
             )
           }
@@ -356,7 +345,7 @@ export function PricingPage({
           duration,
           isPromoValid ? promoCode : undefined,
           isPromoValid ? promoDiscount : undefined,
-          referralCode ?? undefined, // Pass referral code if available
+          // referralCode ?? undefined, // Pass referral code if available
         )
 
         if (!result.success) {
@@ -413,43 +402,44 @@ export function PricingPage({
 
   // Handle subscription management
   const handleManageSubscription = useCallback(() => {
-    if (cancelAtPeriodEnd) {
-      // If subscription is already cancelled, show resume option
-      toast({
-        title: "Resume Subscription?",
-        description: "Your subscription is currently set to cancel at the end of the billing period.",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              try {
-                await resumeSubscription()
-                toast({
-                  title: "Subscription Resumed",
-                  description: "Your subscription will now continue automatically.",
-                })
-              } catch (error) {
-                toast({
-                  title: "Error",
-                  description: "Failed to resume subscription. Please try again.",
-                  variant: "destructive",
-                })
-              }
-            }}
-          >
-            Resume
-          </Button>
-        ),
-      })
-    } else if (normalizedStatus === "ACTIVE") {
+    // if (cancelAtPeriodEnd) {
+    //   // If subscription is already cancelled, show resume option
+    //   toast({
+    //     title: "Resume Subscription?",
+    //     description: "Your subscription is currently set to cancel at the end of the billing period.",
+    //     action: (
+    //       <Button
+    //         variant="outline"
+    //         size="sm"
+    //         onClick={async () => {
+    //           try {
+    //             await resumeSubscription()
+    //             toast({
+    //               title: "Subscription Resumed",
+    //               description: "Your subscription will now continue automatically.",
+    //             })
+    //           } catch (error) {
+    //             toast({
+    //               title: "Error",
+    //               description: "Failed to resume subscription. Please try again.",
+    //               variant: "destructive",
+    //             })
+    //           }
+    //         }}
+    //       >
+    //         Resume
+    //       </Button>
+    //     ),
+    //   })
+    // } else
+    if (normalizedStatus === "ACTIVE") {
       // Show cancellation dialog for active subscriptions
       setShowCancellationDialog(true)
     } else {
       // Otherwise redirect to account page
       window.location.href = "/dashboard/account"
     }
-  }, [cancelAtPeriodEnd, normalizedStatus, resumeSubscription, toast])
+  }, [cancelAtPeriodEnd, normalizedStatus, toast])
 
   // Enhanced promo code validation with better feedback
   const handleApplyPromoCode = useCallback(async () => {
@@ -562,6 +552,18 @@ export function PricingPage({
     },
     [isAuthenticated, hasAnyPaidPlan, hasAllPlans, canSubscribeToPlan, currentPlan, normalizedStatus],
   )
+
+  // Add a refresh function to update subscription data
+  const refreshSubscription = useCallback(() => {
+    dispatch(fetchSubscription())
+  }, [dispatch])
+
+  // Update the component when subscription data changes
+  useEffect(() => {
+    if (isAuthenticated && !subscriptionData) {
+      dispatch(fetchSubscription())
+    }
+  }, [isAuthenticated, subscriptionData, dispatch])
 
   return (
     <div className="container max-w-6xl space-y-8 px-4 sm:px-6 animate-in fade-in duration-500">
@@ -954,25 +956,23 @@ export function PricingPage({
           isOpen={showCancellationDialog}
           onClose={() => setShowCancellationDialog(false)}
           onConfirm={async (reason) => {
-            try {
-              await cancelSubscription()
-              toast({
-                title: "Subscription Cancelled",
-                description: "Your subscription has been cancelled and will end at the current billing period.",
-              })
-
-              // Dispatch an event to notify other components
-              dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.CANCELED, { reason })
-
-              // Close the dialog
-              setShowCancellationDialog(false)
-            } catch (error) {
-              toast({
-                title: "Error",
-                description: "Failed to cancel subscription. Please try again.",
-                variant: "destructive",
-              })
-            }
+            // try {
+            //   await cancelSubscription()
+            //   toast({
+            //     title: "Subscription Cancelled",
+            //     description: "Your subscription has been cancelled and will end at the current billing period.",
+            //   })
+            //   // Dispatch an event to notify other components
+            //   dispatchSubscriptionEvent(SUBSCRIPTION_EVENTS.CANCELED, { reason })
+            //   // Close the dialog
+            //   setShowCancellationDialog(false)
+            // } catch (error) {
+            //   toast({
+            //     title: "Error",
+            //     description: "Failed to cancel subscription. Please try again.",
+            //     variant: "destructive",
+            //   })
+            // }
           }}
           expirationDate={formattedExpirationDate}
           planName={currentPlan || ""}

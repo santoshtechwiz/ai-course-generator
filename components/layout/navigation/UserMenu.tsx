@@ -17,36 +17,42 @@ import { Badge } from "@/components/ui/badge"
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAuth } from "@/providers/unified-auth-provider"
-import { useSubscriptionStore } from "@/app/store/subscription-provider"
+import { signOut, useSession } from "next-auth/react"
+import { useAppSelector, useAppDispatch } from "@/lib/utils/redux-utils"
+import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
 
 interface UserMenuProps {
   children?: ReactNode
 }
 
 export function UserMenu({ children }: UserMenuProps) {
-  const { user, isLoading: isLoadingAuth, isAuthenticated, signOutUser } = useAuth()
-  const { data, isLoading: isLoadingSubscription, setRefreshing } = useSubscriptionStore()
+  const { data: session, status } = useSession()
+  const dispatch = useAppDispatch()
+  const subscriptionData = useAppSelector(selectSubscription)
+  const isLoadingSubscription = useAppSelector(selectSubscriptionLoading)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const isAuthenticated = status === "authenticated"
+  const isLoading = status === "loading"
+  const user = session?.user
 
   // Refresh subscription data when menu is opened
   const handleMenuOpen = (open: boolean) => {
     setIsMenuOpen(open)
     if (open && isAuthenticated && !isLoadingSubscription) {
-      setRefreshing(true) // Refresh only if not already loading
+      dispatch(fetchSubscription())
     }
   }
 
   // Refresh subscription data on mount and when session changes
   useEffect(() => {
     if (isAuthenticated && !isLoadingSubscription) {
-      setRefreshing(true) // Refresh only if not already loading
+      dispatch(fetchSubscription())
     }
-  }, [isAuthenticated, isLoadingSubscription])
+  }, [isAuthenticated, isLoadingSubscription, dispatch])
 
   const handleSignOut = async () => {
     const currentUrl = window.location.pathname
-    await signOutUser(currentUrl)
+    await signOut({ callbackUrl: currentUrl })
   }
 
   // Improved subscription badge display with loading state
@@ -59,7 +65,7 @@ export function UserMenu({ children }: UserMenuProps) {
       )
     }
 
-    const plan = data?.subscriptionPlan || "FREE"
+    const plan = subscriptionData?.subscriptionPlan || "FREE"
 
     const variants = {
       PRO: "default",
@@ -81,12 +87,12 @@ export function UserMenu({ children }: UserMenuProps) {
       return <Skeleton className="h-4 w-12 ml-1" />
     }
 
-    const credits = data?.credits ?? 0
+    const credits = subscriptionData?.credits ?? 0
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 
   // Show loading state when auth is loading
-  if (isLoadingAuth) {
+  if (isLoading) {
     return (
       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
         <Loader2 className="h-5 w-5 animate-spin" />

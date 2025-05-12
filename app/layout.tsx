@@ -7,15 +7,14 @@ import { JsonLd } from "@/app/schema/components/json-ld"
 import { getAuthSession } from "@/lib/auth"
 import { Suspense } from "react"
 import { Inter } from "next/font/google"
-
-import Footer from "@/components/shared/Footer"
 import { RootLayoutProvider } from "@/providers/root-layout-provider"
+import Footer from "@/components/shared/Footer"
 
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-sans",
-})
+// const inter = Inter({
+//   subsets: ["latin"],
+//   display: "swap",
+//   variable: "--font-sans",
+// })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
@@ -51,11 +50,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getAuthSession()
 
   return (
-    <html lang="en" suppressHydrationWarning className="scroll-smooth">
+    <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
-      <body className={` antialiased min-h-screen flex flex-col`}>
+      <body className={`font-sans antialiased min-h-screen flex flex-col`}>
         <RootLayoutProvider session={session}>
           <Suspense fallback={<div>Loading...</div>}>
             <main className="flex-1 flex flex-col pt-16">{children}</main>

@@ -1,42 +1,24 @@
 "use client"
 
 import type React from "react"
+
 import { useEffect } from "react"
-import { useSession } from "next-auth/react"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
-import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { fetchSubscription } from "@/store/slices/subscription-slice"
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession()
-  const { setSubscriptionStatus, setIsLoading } = useSubscriptionStore()
+  const dispatch = useAppDispatch()
+  const lastFetched = useAppSelector((state) => state.subscription.lastFetched)
+  const isLoading = useAppSelector((state) => state.subscription.isLoading)
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user) {
-      const credits = session.user.credits ?? 0
-      const subscriptionPlan = (session.user.subscriptionPlan as SubscriptionPlanType) || "FREE"
-      const subscriptionStatus = session.user.subscriptionStatus || null
-
-      setSubscriptionStatus({
-        credits,
-        isSubscribed: subscriptionPlan !== "FREE",
-        subscriptionPlan,
-        expirationDate: session.user.subscriptionExpirationDate,
-        status: subscriptionStatus,
-      })
-      setIsLoading(false)
-    } else if (status === "unauthenticated") {
-      setSubscriptionStatus({
-        credits: 0,
-        isSubscribed: false,
-        subscriptionPlan: "FREE",
-        status: "INACTIVE",
-      })
-      setIsLoading(false)
-    } else {
-      setSubscriptionStatus(null)
-      setIsLoading(true)
+    // Only fetch if not already loading and data is stale or doesn't exist
+    if (!isLoading && (!lastFetched || Date.now() - lastFetched > 2 * 60 * 1000)) {
+      dispatch(fetchSubscription())
     }
-  }, [session, status, setSubscriptionStatus, setIsLoading])
+  }, [dispatch, lastFetched, isLoading])
 
   return <>{children}</>
 }
+
+export default SubscriptionProvider

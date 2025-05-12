@@ -7,6 +7,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { FEATURES, PLAN_FEATURES, FeatureCategory } from "./subscription-plans"
 import type { SubscriptionPlanType } from "../types/subscription"
 import { useMemo } from "react"
+import { useAppSelector } from "@/store"
+import { selectSubscription } from "@/store/slices/subscription-slice"
 
 /**
  * FeatureCategoryList Component
@@ -88,6 +90,9 @@ export function FeatureCategoryList({ planId }: { planId: SubscriptionPlanType }
  * Displays a comparison table of features across all subscription plans
  */
 export function FeatureComparison() {
+  // Get current subscription from Redux
+  const subscription = useAppSelector(selectSubscription)
+
   // Get all unique categories
   const categories = Object.values(FeatureCategory)
 

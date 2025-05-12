@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import useSubscriptionStore from "@/store/useSubscriptionStore"
+import { useAppSelector } from "@/store"
+import { selectSubscription } from "@/store/slices/subscription-slice"
 import type { ButtonProps } from "@/components/ui/button"
 
 interface PlanAwareButtonProps extends ButtonProps {
@@ -25,7 +26,7 @@ export default function PlanAwareButton({
   ...props
 }: PlanAwareButtonProps) {
   const { data: session } = useSession()
-  const { subscriptionStatus } = useSubscriptionStore()
+  const subscription = useAppSelector(selectSubscription)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
@@ -34,11 +35,11 @@ export default function PlanAwareButton({
   const meetsRequirement = () => {
     if (!session?.user) return false
 
-    // If no subscription status is available, default to not meeting requirements
-    if (!subscriptionStatus) return requiredPlan === "FREE"
+    // If no subscription data is available, default to not meeting requirements
+    if (!subscription) return requiredPlan === "FREE"
 
-    const currentPlan = subscriptionStatus.subscriptionPlan
-    const isActive = subscriptionStatus.isSubscribed
+    const currentPlan = subscription.subscriptionPlan as keyof typeof planHierarchy
+    const isActive = subscription.isSubscribed
 
     // If the subscription is not active, only allow FREE features
     if (!isActive && requiredPlan !== "FREE") return false

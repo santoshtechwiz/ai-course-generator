@@ -4,7 +4,8 @@ import { Home, PlusCircle, Compass, HelpCircle, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { motion } from "framer-motion"
-import MainNavbar from "@/components/Navbar/MainNavbar"
+import MainNavbar from "@/components/layout/navigation/MainNavbar"
+
 
 export default function NotFound() {
   const router = useRouter()
