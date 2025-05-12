@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2, Gift, Zap, Rocket, CheckCircle2, Star, Sparkles } from "lucide-react"
+import { X, Loader2, Gift, Zap, Rocket, CheckCircle2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import {
@@ -13,24 +13,43 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { useSubscription } from "@/app/dashboard/subscription/hooks/use-subscription"
+import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
+import { useSession } from "next-auth/react"
 
-export default function TrialModal({
-  isSubscribed,
-  currentPlan,
-  user,
-}: {
-  isSubscribed: boolean
-  currentPlan: SubscriptionPlanType | null
-  user?: { id: string } | null
-}) {
+export default function TrialModal() {
+  const { data: session } = useSession()
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [currentPlan, setCurrentPlan] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const { handleSubscribe, isLoading } = useSubscription()
+  const { handleSubscribe } = useSubscription()
   const router = useRouter()
 
   const currentMonth = new Date().toLocaleString("default", { month: "long" })
+
+  useEffect(() => {
+    async function loadSubscriptionData() {
+      if (session?.user?.id) {
+        try {
+          const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(session.user.id)
+          setIsSubscribed(subscriptionStatus.isSubscribed)
+          setCurrentPlan(subscriptionStatus.subscriptionPlan)
+        } catch (error) {
+          console.error("Error fetching subscription status:", error)
+          setIsSubscribed(false)
+          setCurrentPlan("FREE")
+        }
+      } else {
+        setIsSubscribed(false)
+        setCurrentPlan("FREE")
+      }
+      setIsLoading(false)
+    }
+
+    loadSubscriptionData()
+  }, [session])
 
   useEffect(() => {
     const hasSeenTrialModal = localStorage.getItem("hasSeenTrialModal") === "true"
@@ -40,13 +59,15 @@ export default function TrialModal({
     }
   }, [isSubscribed, currentPlan])
 
+  if (isLoading) return null
+
   const handleClose = () => {
     setIsOpen(false)
     localStorage.setItem("hasSeenTrialModal", "true")
   }
 
   const handleStartTrial = async () => {
-    if (!user) {
+    if (!session?.user) {
       handleClose()
       router.push("/dashboard/subscription")
       return
@@ -89,12 +110,8 @@ export default function TrialModal({
               <Gift className="h-6 w-6" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold text-gray-900">
-                Unlock Premium Features
-              </DialogTitle>
-              <DialogDescription className="text-gray-600">
-                Try our PRO plan with 5 FREE credits
-              </DialogDescription>
+              <DialogTitle className="text-xl font-bold text-gray-900">Unlock Premium Features</DialogTitle>
+              <DialogDescription className="text-gray-600">Try our PRO plan with 5 FREE credits</DialogDescription>
             </div>
           </div>
           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none">
@@ -177,18 +194,10 @@ export default function TrialModal({
               Join thousands of satisfied users who have upgraded to PRO!
             </p>
             <div className="flex gap-3 w-full">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleClose}
-              >
+              <Button variant="outline" className="w-full" onClick={handleClose}>
                 Maybe Later
               </Button>
-              <Button
-                onClick={handleStartTrial}
-                disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
+              <Button onClick={handleStartTrial} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700">
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

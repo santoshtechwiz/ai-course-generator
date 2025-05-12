@@ -1,18 +1,17 @@
 "use client"
 
-import type * as React from "react"
+import type React from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
 import { Suspense, useState, useEffect } from "react"
-
 import { AnimationProvider } from "./animation-provider"
 import { ReduxProvider } from "./redux-provider"
 import { SubscriptionProvider } from "@/store/subscription-provider"
 import { SessionProvider } from "./session-provider"
-import type { SessionProviderProps } from "next-auth/react"
-import MainNavbar from "@/components/Navbar/MainNavbar"
+import MainNavbar from "@/components/layout/navigation/MainNavbar"
+import TrialModal from "@/components/features/subscription/TrialModal"
+import { JsonLd } from "@/app/schema/components/json-ld"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -27,11 +26,12 @@ const createQueryClient = () =>
     },
   })
 
-interface RootProviderProps extends Omit<SessionProviderProps, "children"> {
+interface RootLayoutProviderProps {
   children: React.ReactNode
+  session: any
 }
 
-export function RootProvider({ children, session, ...sessionProps }: RootProviderProps) {
+export function RootLayoutProvider({ children, session }: RootLayoutProviderProps) {
   // Create QueryClient in a client component
   const [queryClient] = useState(() => createQueryClient())
   const [mounted, setMounted] = useState(false)
@@ -52,19 +52,19 @@ export function RootProvider({ children, session, ...sessionProps }: RootProvide
     <QueryClientProvider client={queryClient}>
       <ReduxProvider>
         <SessionProvider
-          refetchInterval={sessionOptions.refetchInterval}
-          refetchOnWindowFocus={sessionOptions.refetchOnWindowFocus}
-          refetchWhenOffline={sessionOptions.refetchWhenOffline}
-          {...sessionProps}
+          session={session}
+         
         >
-          <MainNavbar></MainNavbar>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
-            {/* SubscriptionProvider must come after SessionProvider */}
             <SubscriptionProvider>
               <AnimationProvider>
-                {mounted && <Suspense fallback={null}>{/* Subscription status component removed */}</Suspense>}
+                <MainNavbar />
+                <Suspense fallback={<div>Loading...</div>}>
+                  <TrialModal />
+                </Suspense>
+                <JsonLd type="default" />
                 <Toaster position="top-right" closeButton richColors />
-                {children}
+                {mounted && children}
               </AnimationProvider>
             </SubscriptionProvider>
           </ThemeProvider>

@@ -1,3 +1,7 @@
+"use client"
+
+import { useMemo } from "react"
+
 // Calculate similarity between two strings
 export function calculateSimilarity(str1: string, str2: string): number {
   const normalize = (str: string) => str.replace(/\s+/g, " ").trim()?.toLowerCase()
@@ -44,4 +48,14 @@ export function calculateSimilarity(str1: string, str2: string): number {
 
   const editDistance = levenshteinDistance(longer, shorter)
   return Math.round(Math.max(0, Math.min(100, (1 - editDistance / longerLength) * 100)))
+}
+
+/**
+ * Hook to calculate similarity between two strings
+ * @param str1 First string to compare
+ * @param str2 Second string to compare
+ * @returns Similarity percentage (0-100)
+ */
+export function useSimilarity(str1: string, str2: string): number {
+  return useMemo(() => calculateSimilarity(str1, str2), [str1, str2])
 }
