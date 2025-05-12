@@ -40,6 +40,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, slug, userId, qu
   const startTimeRef = useRef<number>(Date.now())
   const isReset = searchParams.get("reset") === "true"
   const fromAuth = searchParams.get("fromAuth") === "true"
+  const hasAttemptedRestoration = useRef(false)
 
   const quizQuestions = useMemo(
     () => quizData?.questions || quizState?.questions || [],
@@ -109,31 +110,8 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, slug, userId, qu
 
   const handleSignIn = useCallback(() => {
     const redirectUrl = `/dashboard/mcq/${slug}?fromAuth=true`
-
-    // Save current state before redirecting
-    if (quizUIState.quizResults) {
-      // Save to Redux state for restoration after auth
-      const stateToSave = {
-        quizId: quizUIState.quizResults.quizId,
-        slug,
-        isCompleted: true,
-        score: quizUIState.quizResults.score,
-        answers: quizUIState.quizResults.answers,
-        completedAt: quizUIState.quizResults.completedAt,
-      }
-
-      // Use the saveState function from useQuiz to persist the state
-      // This ensures the state is available after authentication
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(`mcq_quiz_state_${slug}`, JSON.stringify(stateToSave))
-      }
-    }
-
     requireAuthentication?.(redirectUrl)
-  }, [requireAuthentication, slug, quizUIState.quizResults])
-
-  // Ref to track if we've already attempted restoration
-  const hasAttemptedRestoration = useRef(false)
+  }, [requireAuthentication, slug])
 
   useEffect(() => {
     if (fromAuth && isAuthenticated && !hasAttemptedRestoration.current) {
@@ -154,53 +132,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, slug, userId, qu
           setIsRestoringState(false)
         }, 0)
       } else {
-        // Check if we have state in sessionStorage as fallback
-        try {
-          const savedStateString = sessionStorage.getItem(`mcq_quiz_state_${slug}`)
-          if (savedStateString) {
-            const savedState = JSON.parse(savedStateString)
-            if (savedState && savedState.isCompleted) {
-              // Manually set the quiz state as completed
-              try {
-                const completeQuizResult = completeQuiz({
-                  answers: savedState.answers || [],
-                  score: savedState.score || 0,
-                  completedAt: savedState.completedAt || new Date().toISOString(),
-                })
-
-                // Handle both Promise and non-Promise return types
-                if (completeQuizResult && typeof completeQuizResult.then === "function") {
-                  completeQuizResult
-                    .then(() => {
-                      setQuizUIState({
-                        showResults: true,
-                        showAuthPrompt: false,
-                        quizResults: savedState,
-                      })
-                    })
-                    .catch((err) => {
-                      console.error("Error completing quiz:", err)
-                      setError("Failed to restore quiz state. Please try again.")
-                    })
-                } else {
-                  // If not a Promise, update UI immediately
-                  setQuizUIState({
-                    showResults: true,
-                    showAuthPrompt: false,
-                    quizResults: savedState,
-                  })
-                }
-              } catch (err) {
-                console.error("Error completing quiz:", err)
-                setError("Failed to restore quiz state. Please try again.")
-              }
-            }
-          }
-          setIsRestoringState(false)
-        } catch (err) {
-          console.error("Error restoring state:", err)
-          setIsRestoringState(false)
-        }
+        setIsRestoringState(false)
       }
 
       // Clean up URL params
@@ -210,7 +142,7 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, slug, userId, qu
         window.history.replaceState({}, "", url.toString())
       }
     }
-  }, [isAuthenticated, quizState.savedState, restoreState, fromAuth, createResultObject, slug, completeQuiz])
+  }, [isAuthenticated, quizState.savedState, restoreState, fromAuth, createResultObject])
 
   const currentQuestion = useMemo(() => quizQuestions[currentQuestionIndex], [quizQuestions, currentQuestionIndex])
   const isLastQuestion = useMemo(
@@ -252,16 +184,11 @@ const McqQuizContent = memo(function McqQuizContent({ quizData, slug, userId, qu
         }
 
         try {
-          const completeQuizResult = completeQuiz({
+          await completeQuiz({
             answers: finalAnswers,
             score,
             completedAt: result.completedAt,
           })
-
-          // Handle both Promise and non-Promise return types
-          if (completeQuizResult && typeof completeQuizResult.then === "function") {
-            await completeQuizResult
-          }
         } catch (err) {
           console.error("Error completing quiz:", err)
           setError("Failed to complete the quiz. Please try again.")

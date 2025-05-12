@@ -15,9 +15,10 @@ import { StatCard } from "@/components/ui/stat-card"
 import { ResultCard } from "@/components/ui/result-card"
 import { QuizResultHeader } from "@/components/ui/quiz-result-header"
 import { PerformanceChart } from "@/components/ui/performance-chart"
-import { useWindowSize } from "@/hooks/use-window-size"
+
 // Add the import for getBestSimilarityScore at the top of the file
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { useResponsive } from "@/hooks"
 
 interface QuizResultsOpenEndedProps {
   result?: {
@@ -41,7 +42,7 @@ export default function QuizResultsOpenEnded({ result, onRestart, onSignIn, ...p
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
-  const windowSize = useWindowSize()
+  const windowSize = useResponsive()
 
   // Get state from Redux
   const { isAuthenticated } = useAppSelector((state) => state.auth)

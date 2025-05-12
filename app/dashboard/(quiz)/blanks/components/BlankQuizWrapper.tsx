@@ -19,9 +19,6 @@ import { useQuiz } from "@/hooks/useQuizState"
 import type { BlanksQuizContentProps, BlanksQuizWrapperProps } from "../blanks-quiz-types"
 import BlanksQuizResult from "./BlankQuizResults"
 
-// Session storage key prefix for quiz state
-const QUIZ_STATE_STORAGE_KEY = "blanks_quiz_state_"
-
 // Separate the content component for better memoization
 const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, userId, quizId }: BlanksQuizContentProps) {
   const router = useRouter()
@@ -54,32 +51,6 @@ const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, user
     () => quizData?.questions || quizState?.questions || [],
     [quizData?.questions, quizState?.questions],
   )
-
-  // Save state to sessionStorage for persistence
-  const saveState = useCallback(
-    (state: any) => {
-      try {
-        sessionStorage.setItem(`${QUIZ_STATE_STORAGE_KEY}${slug}`, JSON.stringify(state))
-        console.log("State saved to sessionStorage", state)
-      } catch (err) {
-        console.error("Error saving state to sessionStorage:", err)
-      }
-    },
-    [slug],
-  )
-
-  // Load state from sessionStorage
-  const loadState = useCallback(() => {
-    try {
-      const savedState = sessionStorage.getItem(`${QUIZ_STATE_STORAGE_KEY}${slug}`)
-      if (savedState) {
-        return JSON.parse(savedState)
-      }
-    } catch (err) {
-      console.error("Error loading state from sessionStorage:", err)
-    }
-    return null
-  }, [slug])
 
   // Initialize quiz only once when data is available
   useEffect(() => {
@@ -164,24 +135,8 @@ const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, user
   // Handle sign in with proper redirect
   const handleSignIn = useCallback(() => {
     const redirectUrl = `/dashboard/blanks/${slug}?fromAuth=true`
-
-    // Save current state before redirecting
-    if (quizUIState.quizResults) {
-      // Save to sessionStorage for restoration after auth
-      const stateToSave = {
-        quizId: quizUIState.quizResults.quizId,
-        slug,
-        isCompleted: true,
-        score: quizUIState.quizResults.score,
-        answers: quizUIState.quizResults.answers,
-        completedAt: quizUIState.quizResults.completedAt,
-      }
-
-      saveState(stateToSave)
-    }
-
     requireAuthentication?.(redirectUrl)
-  }, [requireAuthentication, slug, quizUIState.quizResults, saveState])
+  }, [requireAuthentication, slug])
 
   // Restore state after authentication
   useEffect(() => {
@@ -203,53 +158,7 @@ const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, user
           setIsRestoringState(false)
         }, 0)
       } else {
-        // Check if we have state in sessionStorage as fallback
-        try {
-          const savedStateString = sessionStorage.getItem(`${QUIZ_STATE_STORAGE_KEY}${slug}`)
-          if (savedStateString) {
-            const savedState = JSON.parse(savedStateString)
-            if (savedState && savedState.isCompleted) {
-              // Manually set the quiz state as completed
-              try {
-                const completeQuizResult = completeQuiz({
-                  answers: savedState.answers || [],
-                  score: savedState.score || 0,
-                  completedAt: savedState.completedAt || new Date().toISOString(),
-                })
-
-                // Handle both Promise and non-Promise return types
-                if (completeQuizResult && typeof completeQuizResult.then === "function") {
-                  completeQuizResult
-                    .then(() => {
-                      setQuizUIState({
-                        showResults: true,
-                        showAuthPrompt: false,
-                        quizResults: savedState,
-                      })
-                    })
-                    .catch((err) => {
-                      console.error("Error completing quiz:", err)
-                      setError("Failed to restore quiz state. Please try again.")
-                    })
-                } else {
-                  // If not a Promise, update UI immediately
-                  setQuizUIState({
-                    showResults: true,
-                    showAuthPrompt: false,
-                    quizResults: savedState,
-                  })
-                }
-              } catch (err) {
-                console.error("Error completing quiz:", err)
-                setError("Failed to restore quiz state. Please try again.")
-              }
-            }
-          }
-          setIsRestoringState(false)
-        } catch (err) {
-          console.error("Error restoring state:", err)
-          setIsRestoringState(false)
-        }
+        setIsRestoringState(false)
       }
 
       // Clean up URL params
@@ -259,7 +168,7 @@ const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, user
         window.history.replaceState({}, "", url.toString())
       }
     }
-  }, [isAuthenticated, quizState.savedState, restoreState, fromAuth, createResultObject, slug, completeQuiz])
+  }, [isAuthenticated, quizState.savedState, restoreState, fromAuth, createResultObject])
 
   // Memoize current question and last question status
   const currentQuestion = useMemo(() => quizQuestions[currentQuestionIndex], [quizQuestions, currentQuestionIndex])
@@ -331,9 +240,6 @@ const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, user
           elapsedTime,
         }
 
-        // Save state to sessionStorage for persistence
-        saveState(result)
-
         setQuizUIState({
           showResults: isAuthenticated,
           showAuthPrompt: !isAuthenticated,
@@ -378,8 +284,6 @@ const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, user
       quizState?.quizId,
       toast,
       completeQuiz,
-      saveState,
-      calculateSimilarity,
     ],
   )
 
@@ -497,7 +401,7 @@ const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, user
 })
 
 // Main wrapper component with proper initialization handling
-export default function BlanksQuizWrapper({
+export default function BlankQuizWrapper({
   quizData,
   slug,
   userId,
@@ -523,21 +427,6 @@ export default function BlanksQuizWrapper({
     const timer = setTimeout(() => setIsInitializing(false), 500)
     return () => clearTimeout(timer)
   }, [isReset])
-
-  // Check for saved state in sessionStorage on initial load
-  useEffect(() => {
-    if (fromAuth && isAuthenticated && !quizState.savedState) {
-      try {
-        const savedStateString = sessionStorage.getItem(`${QUIZ_STATE_STORAGE_KEY}${slug}`)
-        if (savedStateString) {
-          // We have state in sessionStorage, but we'll let the BlanksQuizContent handle it
-          console.log("Found saved state in sessionStorage")
-        }
-      } catch (err) {
-        console.error("Error checking sessionStorage for saved state:", err)
-      }
-    }
-  }, [fromAuth, isAuthenticated, quizState.savedState, slug])
 
   // Render appropriate UI based on initialization state
   if (isInitializing) {
