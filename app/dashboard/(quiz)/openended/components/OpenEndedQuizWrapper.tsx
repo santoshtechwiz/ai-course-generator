@@ -6,16 +6,11 @@ import { memo, useState, useEffect, useCallback, useMemo, useRef } from "react"
 import QuizResultsOpenEnded from "./QuizResultsOpenEnded"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
-import {
-  ErrorDisplay,
-  LoadingDisplay,
-  InitializingDisplay,
-  QuizNotFoundDisplay,
-  EmptyQuestionsDisplay,
-} from "@/app/dashboard/components/QuizStateDisplay"
+
 import { useToast } from "@/hooks"
 import { calculateTotalTime } from "@/lib/utils/quiz-index"
 import { useQuiz } from "@/hooks/useQuizState"
+import { ErrorDisplay, LoadingDisplay, InitializingDisplay, QuizNotFoundDisplay, EmptyQuestionsDisplay } from "../../components/QuizStateDisplay"
 
 // Session storage key prefix for quiz state
 const QUIZ_STATE_STORAGE_KEY = "openended_quiz_state_"

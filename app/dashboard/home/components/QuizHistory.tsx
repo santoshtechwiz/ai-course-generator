@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Clock, ExternalLink, XCircle } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
+import type { QuizType } from "@/app/types/quiz-types"
 
 interface Quiz {
   id: string
@@ -16,7 +17,7 @@ interface Quiz {
   score?: number
   completedAt?: string
   status: "completed" | "failed" | "in-progress"
-  type?: string
+  type?: QuizType
 }
 
 interface QuizHistoryProps {

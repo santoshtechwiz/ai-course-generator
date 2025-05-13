@@ -234,14 +234,10 @@ export function PricingPage({
   })
 
   // Check if user is subscribed to any paid plan
-  const hasAnyPaidPlan = useMemo(() => {
-    return isSubscribedToAnyPaidPlan(currentPlan, normalizedStatus)
-  }, [currentPlan, normalizedStatus, isSubscribedToAnyPaidPlan])
+  const hasAnyPaidPlan = isSubscribedToAnyPaidPlan;
 
   // Check if user is subscribed to all plans
-  const hasAllPlans = useMemo(() => {
-    return isSubscribedToAllPlans(currentPlan, normalizedStatus)
-  }, [currentPlan, normalizedStatus, isSubscribedToAllPlans])
+  const hasAllPlans = isSubscribedToAllPlans;
 
   // Enhanced subscription handler with authentication check
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {

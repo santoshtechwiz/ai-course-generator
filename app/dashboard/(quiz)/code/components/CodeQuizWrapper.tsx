@@ -73,7 +73,6 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     }
 
     submitAnswer({
-     
       questionId: currentQuestion.id || String(quizState.currentQuestionIndex),
       answer,
       isCorrect,
@@ -83,7 +82,12 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       language: currentQuestion.language || "javascript",
     })
 
-    if (quizState.currentQuestionIndex === (quizState.questions?.length || 0) - 1) {
+    // Use local variables to determine if this is the last question
+    const totalQuestions = quizState.questions?.length || 0
+    const nextIndex = quizState.currentQuestionIndex + 1
+    const isLast = nextIndex >= totalQuestions
+
+    if (isLast) {
       // Last question, complete the quiz
       const answersArray = [
         ...((quizState.answers as Answer[]) || []),
@@ -100,7 +104,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       ]
 
       const correctAnswers = answersArray.filter((a) => a?.isCorrect).length
-      const score = Math.round((correctAnswers / (quizState.questions?.length || 1)) * 100)
+      const score = Math.round((correctAnswers / totalQuestions) * 100)
 
       completeQuiz({
         answers: answersArray,
@@ -108,8 +112,10 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
         completedAt: new Date().toISOString(),
       })
     } else {
-      // Move to next question
-      nextQuestion()
+      // Move to next question after state updates
+      setTimeout(() => {
+        nextQuestion()
+      }, 0)
     }
   }
 
@@ -132,7 +138,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       completedAt: quizState.completedAt || new Date().toISOString(),
       answers: answersArray.filter(Boolean).map((answer) => ({
         questionId: answer?.questionId || "",
-        question: answer?.question || "",
+       
         answer: answer?.answer || "",
         isCorrect: answer?.isCorrect || false,
         timeSpent: answer?.timeSpent || 0,
@@ -144,7 +150,14 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
 
   // Get current question
   const currentQuestion = useMemo(() => {
-    if (!quizState.questions || quizState.questions.length === 0) return null
+    if (
+      !quizState.questions ||
+      quizState.questions.length === 0 ||
+      quizState.currentQuestionIndex < 0 ||
+      quizState.currentQuestionIndex >= quizState.questions.length
+    ) {
+      return null
+    }
     return quizState.questions[quizState.currentQuestionIndex] as unknown as CodeQuizQuestion | null
   }, [quizState.questions, quizState.currentQuestionIndex])
 
@@ -153,6 +166,9 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     return quizState.currentQuestionIndex === (quizState.questions?.length || 0) - 1
   }, [quizState.currentQuestionIndex, quizState.questions])
 
+
+    console.log("Quiz state is",quizState);
+ 
   // Render based on state
   if (isInitializing) {
     return <InitializingDisplay data-testid="initializing-display" />

@@ -47,7 +47,7 @@ export default function DashboardSidebar({
       icon: GraduationCap,
       label: "My Quizzes",
       value: "quizzes",
-      count: userData.userQuizzes.length,
+      count: userData.userQuizzes?.length || 0, // Added null check for userQuizzes
     },
     {
       icon: BarChart3,

@@ -18,17 +18,17 @@ interface MyQuizzesProps {
 const buildQuizSlug = (quizType: QuizType) => {
   switch (quizType) {
     case "mcq":
-      return "mcq"
+      return "mcq";
     case "openended":
-      return "openended"
+      return "open-ended"; // Fixed slug for open-ended quizzes
     case "fill-blanks":
-      return "blanks"
+      return "fill-blanks";
     case "code":
-      return "code"
+      return "code";
     default:
-      return "quiz"
+      return "quiz";
   }
-}
+};
 
 const getQuizTypeLabel = (quizType: QuizType) => {
   switch (quizType) {

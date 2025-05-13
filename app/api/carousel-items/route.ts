@@ -1,15 +1,14 @@
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
-type QuizType = "mcq" | "openended" | "fill-blanks" | "code"
+import type { QuizType } from "@/app/types/quiz-types"
 
 interface Quiz {
-  id: string
-  title: string
-  slug: string
-  quizType: QuizType
+  id: string;
+  title: string;
+  slug: string;
+  quizType: QuizType;
 }
 
-// Use a more efficient approach with a single function for descriptions
 function generateDescription(item: any, type: "course" | "quiz"): string {
   const templates =
     type === "course"
