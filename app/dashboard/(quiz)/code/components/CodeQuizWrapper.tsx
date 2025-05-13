@@ -37,15 +37,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     nextQuestion,
     completeQuiz,
     restoreState,
-  } = useQuiz({
-    quizData: {
-      ...quizData,
-      questions: quizData.questions.map((q) => ({
-        ...q,
-        correctAnswer: q.correctAnswer ?? 0, // Provide a default value if missing
-      })),
-    },
-  })
+  } = useQuiz()
 
   // Handle quiz init or restore
   useEffect(() => {
@@ -109,7 +101,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
         {
           questionId: currentQuestion.id || String(quizState.currentQuestionIndex),
           question: currentQuestion.question || "",
-          answer,
+          userAnswer: answer,
           isCorrect,
           timeSpent,
           index: quizState.currentQuestionIndex,
@@ -122,7 +114,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       const score = Math.round((correctAnswers / answersArray.length) * 100)
 
       completeQuiz({
-        answers: answersArray,
+        answers: answersArray.filter((a): a is Answer => a !== null),
         score,
         completedAt: new Date().toISOString(),
       })

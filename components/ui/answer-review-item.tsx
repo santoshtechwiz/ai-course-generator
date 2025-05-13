@@ -3,6 +3,8 @@ import { motion } from "framer-motion"
 import { formatQuizTime } from "@/lib/utils/quiz-performance"
 import { CheckCircle, XCircle, Clock, HelpCircle } from "lucide-react"
 import { getSimilarityLevel } from "@/lib/utils/text-similarity"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
 interface AnswerReviewItemProps {
   index: number
@@ -13,6 +15,7 @@ interface AnswerReviewItemProps {
   timeSpent: number
   similarity?: number
   hintsUsed?: boolean
+  language?: string
   formatQuestionText?: (text: string) => string
   delay?: number
   showSimilarityDetails?: boolean
@@ -27,12 +30,38 @@ export function AnswerReviewItem({
   timeSpent,
   similarity,
   hintsUsed,
+  language = "javascript",
   formatQuestionText,
   delay = 0,
   showSimilarityDetails = false,
 }: AnswerReviewItemProps) {
   const formattedQuestion = formatQuestionText ? formatQuestionText(question) : question
   const similarityLevel = similarity !== undefined ? getSimilarityLevel(similarity) : undefined
+
+  // Determine if this is a code answer
+  const isCodeAnswer = language && language.toLowerCase() !== "text" && language.toLowerCase() !== "plaintext"
+
+  // Render code with syntax highlighting
+  const renderCode = (code: string, lang: string) => {
+    if (!code) return <span className="text-muted-foreground italic">No code provided</span>
+
+    return (
+      <SyntaxHighlighter
+        language={lang}
+        style={vscDarkPlus}
+        customStyle={{
+          margin: 0,
+          padding: "1rem",
+          fontSize: "0.9rem",
+          borderRadius: "0.375rem",
+          maxHeight: "200px",
+        }}
+        showLineNumbers={true}
+      >
+        {code}
+      </SyntaxHighlighter>
+    )
+  }
 
   return (
     <motion.div
@@ -81,24 +110,36 @@ export function AnswerReviewItem({
               dangerouslySetInnerHTML={{ __html: formattedQuestion }}
             ></div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
                 <p className="text-sm font-medium mb-1">Your answer:</p>
                 <div
-                  className={`p-2 rounded-md text-sm ${
+                  className={`rounded-md text-sm ${
                     isCorrect
                       ? "bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900"
                       : "bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900"
                   }`}
                 >
-                  {userAnswer || <span className="text-muted-foreground italic">No answer provided</span>}
+                  {isCodeAnswer ? (
+                    renderCode(userAnswer, language)
+                  ) : (
+                    <div className="p-2">
+                      {userAnswer || <span className="text-muted-foreground italic">No answer provided</span>}
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div>
                 <p className="text-sm font-medium mb-1">Correct answer:</p>
-                <div className="p-2 rounded-md text-sm bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900">
-                  {correctAnswer || <span className="text-muted-foreground italic">No answer available</span>}
+                <div className="rounded-md text-sm bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900">
+                  {isCodeAnswer ? (
+                    renderCode(correctAnswer, language)
+                  ) : (
+                    <div className="p-2">
+                      {correctAnswer || <span className="text-muted-foreground italic">No answer available</span>}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
