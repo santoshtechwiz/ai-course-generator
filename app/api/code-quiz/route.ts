@@ -1,65 +1,69 @@
-import prisma from "@/lib/db"
-import { NextResponse } from "next/server"
 
-export async function GET(_: Request, props: { params: Promise<{ slug: string }> }): Promise<NextResponse> {
-  const { slug } = await props.params
-  if (!slug) {
-    return NextResponse.json({ error: "Slug is required" }, { status: 400 })
+import { getAuthSession } from "@/lib/auth";
+import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
+import { titleSubTopicToSlug } from "@/lib/slug";
+import { NextResponse } from "next/server";
+import { generateCodingMCQs } from "./quizGenerator";
+
+
+export async function POST(req: Request) {
+  let { language, title, difficulty,  amount } = await req.json();
+  const session = await getAuthSession();
+  if (!session?.user) {
+    return NextResponse.json(
+      { error: "You must be logged in to create a quiz." },
+      { status: 401 }
+    );
   }
+
 
   try {
-    const result = await prisma.userQuiz.findUnique({
-      where: {
-        slug: slug,
-      },
-      select: {
-        id: true,
-        userId: true,
-        isFavorite: true,
-        isPublic: true,
-        title: true,
-        slug: true,
-        questions: {
-          select: {
-            id: true,
-            question: true,
-            options: true,
-            codeSnippet: true,
-            answer: true,
-            questionType: true,
-          },
-        },
-      },
-    })
+    const slug = titleSubTopicToSlug(language, title);
+    const userQuiz = await createUserQuiz(session.user.id, `${language} ${title}`, 'code', slug);
+   
+    try {
+    
 
-    if (!result) {
-      return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
+      let quizzes = await generateCodingMCQs(language, title, difficulty, amount);  //dummyQuizzes[language] || dummyQuizzes["JavaScript"]
+      if(quizzes.length === 0){
+        return NextResponse.json({
+          error: "No quizzes available for the selected topic"
+        }, { status: 404 });
+      }
+      
+      quizzes = quizzes.sort(() => 0.5 - Math.random());
+  
+      // Add difficulty to each quiz (in a real scenario, you'd have different quizzes for each difficulty)
+      quizzes = quizzes.map((quiz) => ({ ...quiz, difficulty }))
+
+      await createQuestions(quizzes, userQuiz.id,"code");
+
+      // 4. Update topic count
+      await updateTopicCount(language);
+
+      // 5. Only deduct credits if everything else succeeded
+      await updateUserCredits(session.user.id,"code");
+
+      return NextResponse.json({
+        userQuizId: userQuiz.id,
+        slug: userQuiz.slug
+      }, { status: 200 });
+    } catch (error) {
+      // If anything fails after quiz creation, try to delete the quiz
+      await prisma.userQuiz.delete({
+        where: { id: userQuiz.id }
+      }).catch(() => {
+        // Ignore deletion errors
+        console.error('Failed to cleanup quiz after error:', userQuiz.id);
+      });
+      throw error;
     }
-
-    // Return the data in the original nested format since that's what the client expects
-    const quizData = {
-      isFavorite: result.isFavorite ?? false,
-      isPublic: result.isPublic ?? false,
-      slug: slug,
-      quizId: result.id,
-      userId: result.userId,
-      ownerId: result.userId,
-      quizData: {
-        title: result.title,
-        questions: result.questions.map((q) => ({
-          id: q.id,
-          question: q.question,
-          options: q.options ? JSON.parse(q.options) : [],
-          codeSnippet: q.codeSnippet ?? "",
-          language: q.questionType === "code" ? "javascript" : "javascript",
-          correctAnswer: q.answer,
-        })),
-      },
-    }
-
-    return NextResponse.json(quizData)
+    //  return Response.json(quizzes)
   } catch (error) {
-    console.error("Error fetching quiz:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error(error)
+    return Response.json({ error: "Failed to generate quizzes" }, { status: 500 })
   }
 }
+
+
+
