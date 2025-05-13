@@ -1,12 +1,12 @@
-import type { QuizType } from "@/app/types/quiz-types"
+import type { QuizType, QuizQuestion } from "@/app/types/quiz-types"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"
 
 export interface Quiz {
-  slug: string
-  title: string
-  description: string
-  questions: Question[]
+  slug: string;
+  title: string;
+  description: string;
+  questions: QuizQuestion[];
 }
 
 export interface Question {

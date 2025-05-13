@@ -9,16 +9,7 @@ import type { QuizType } from "@/app/types/types"
 import { motion } from "framer-motion"
 import { buildQuizUrl } from "@/lib/utils"
 import { getSimilarQuiz } from "@/app/actions/getSimilarQuiz"
-
-const QUIZ_DIFFICULTY_COLORS = {
-  beginner: "bg-green-100 text-green-800",
-  easy: "bg-green-100 text-green-800",
-  intermediate: "bg-blue-100 text-blue-800",
-  medium: "bg-blue-100 text-blue-800",
-  advanced: "bg-purple-100 text-purple-800",
-  hard: "bg-purple-100 text-purple-800",
-  expert: "bg-red-100 text-red-800",
-} as const
+import { QUIZ_DIFFICULTY_COLORS } from "@/lib/constants/quiz-constants"
 
 interface SimilarQuiz {
   id: string

@@ -1,18 +1,19 @@
 // A persistent storage solution using IndexedDB
+import type { QuizQuestion } from "@/app/types/quiz-types";
 
-export interface Question {
-  id: string
-  question: string
-  options: string[]
-  correctAnswer: number
-  codeSnippet?: string
+export interface Question extends QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  codeSnippet?: string;
 }
 
 export interface Quiz {
-  id: string
-  title: string
-  questions: Question[]
-  createdAt: number
+  id: string;
+  title: string;
+  questions: Question[];
+  createdAt: number;
 }
 
 const DB_NAME = "quizAppDB"

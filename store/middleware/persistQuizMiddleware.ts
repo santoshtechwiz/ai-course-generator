@@ -1,11 +1,12 @@
 import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit"
 import { initQuiz, submitAnswer, nextQuestion, completeQuiz, resetQuiz, type QuizState } from "../slices/quizSlice"
+import { QUIZ_STORAGE_KEYS } from "@/lib/constants/quiz-constants"
 
 // Create a listener middleware
 const listenerMiddleware = createListenerMiddleware()
 
-// Define a key for localStorage
-const QUIZ_STATE_KEY = "quiz_state"
+// Define a key for localStorage using the constant
+const QUIZ_STATE_KEY = QUIZ_STORAGE_KEYS.GLOBAL
 
 // Add a listener that will be called when any of the specified actions are dispatched
 listenerMiddleware.startListening({
