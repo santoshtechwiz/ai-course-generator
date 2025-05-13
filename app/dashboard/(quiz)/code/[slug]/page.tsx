@@ -16,10 +16,9 @@ interface PageParams {
 
 async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
   try {
-    // Use absolute URL for server-side fetching
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || "http://localhost:3000"
     const response = await fetch(`${baseUrl}/api/code-quiz/${slug}`, {
-      cache: "no-store", // Ensure we get fresh data
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
       },
@@ -35,6 +34,9 @@ async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
       quizId: data.quizId,
       hasNestedData: Boolean(data.quizData),
       questionCount: data.quizData?.questions?.length || 0,
+      firstQuestion: data.quizData?.questions?.[0]
+        ? JSON.stringify(data.quizData.questions[0]).substring(0, 100) + "..."
+        : "No questions",
     })
 
     return data
@@ -87,6 +89,13 @@ const CodePage = async (props: PageParams) => {
   // Fetch quiz data
   const result = await getQuizData(slug)
   if (!result) {
+    console.error("Quiz data not found for slug:", slug)
+    notFound()
+  }
+
+  // Validate quiz data structure
+  if (!result.quizData || !Array.isArray(result.quizData.questions) || result.quizData.questions.length === 0) {
+    console.error("Invalid or empty quiz data structure:", JSON.stringify(result).substring(0, 200) + "...")
     notFound()
   }
 
@@ -94,9 +103,16 @@ const CodePage = async (props: PageParams) => {
   const title = result.quizData?.title || "Code Quiz"
   const questions = result.quizData?.questions || []
 
+  // Log detailed information about the questions
+  console.log("Questions data:", {
+    count: questions.length,
+    hasQuestions: questions.length > 0,
+    firstQuestion: questions.length > 0 ? JSON.stringify(questions[0]).substring(0, 100) + "..." : "No questions",
+  })
+
   // Calculate estimated time based on question count and complexity
   const questionCount = questions.length || 0
-  const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M` // 10 minutes per coding question, minimum 15 minutes
+  const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M`
 
   // Create breadcrumb items
   const breadcrumbItems: BreadcrumbItem[] = [
@@ -121,7 +137,18 @@ const CodePage = async (props: PageParams) => {
       isFavorite={result.isFavorite || false}
     >
       <CodeQuizWrapper
-        quizData={result}
+        quizData={{
+         
+          id: result.quizData?.id || "",
+          title: result.quizData?.title || "",
+          slug: slug,
+          isPublic: result.isPublic || false,
+          isFavorite: result.isFavorite || false,
+          userId: currentUserId,
+          ownerId: result.ownerId || "",
+          difficulty: result.quizData?.difficulty,
+          questions: questions, // Ensure questions are passed correctly
+        }}
         slug={slug}
         userId={currentUserId}
         quizId={result.quizId}

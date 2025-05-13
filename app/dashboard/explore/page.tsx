@@ -5,7 +5,7 @@ import type { Metadata } from "next"
 
 // Enhanced metadata for better SEO
 export const metadata: Metadata = {
-  title: "AI-Powered Course Creation Tools | Generate MCQs, Quizzes & Learning Materials",
+  title: "Explore AI-Powered Quizzes | Create and Learn", // Updated title for better context
   description:
     "Create professional-quality educational content in minutes with our AI tools. Generate MCQs, open-ended questions, fill-in-the-blank exercises, and complete courses for any subject. Perfect for educators, trainers, and content creators.",
   keywords: [

@@ -92,7 +92,7 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
                     key={plan.name}
                     className={`text-center ${plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
                   >
-                    {plan.limits.maxQuestionsPerQuiz}
+                    {plan.limits.maxQuestionsPerQuiz || "N/A"}
                   </TableCell>
                 ))}
               </motion.tr>

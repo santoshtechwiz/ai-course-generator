@@ -75,7 +75,7 @@ export const FEATURES: Record<
   CODE_QUIZ: {
     id: "code-quiz",
     name: "Code Quiz",
-    description: "Create coding challenges and quizzes",
+    description: "Create and solve coding challenges and quizzes",
     category: FeatureCategory.CONTENT,
     icon: "Code",
   },

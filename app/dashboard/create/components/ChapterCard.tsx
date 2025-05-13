@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input"
 import VideoPlayer from "./VideoPlayer"
 import type { ChapterGenerationStatus } from "../hooks/useCourseEditor"
 import { Badge } from "@/components/ui/badge"
-import { useToast, useChapterProcessing } from "@/hooks"
+import { useChapterProcessing } from "../hooks/useChapterProcessing"
+import { useToast } from "@/hooks"
+
 
 type Props = {
   chapter: Chapter

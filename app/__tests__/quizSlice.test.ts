@@ -120,7 +120,7 @@ describe("quizSlice", () => {
       currentQuestionIndex: 0,
     }
 
-    const nextState = quizReducer(state, nextQuestion(state))
+    const nextState = quizReducer(state, nextQuestion())
 
     expect(nextState.currentQuestionIndex).toBe(1)
     expect(nextState.animationState).toBe("idle")
@@ -133,7 +133,7 @@ describe("quizSlice", () => {
       currentQuestionIndex: 1, // Last question
     }
 
-    const nextState = quizReducer(state, nextQuestion(state))
+    const nextState = quizReducer(state, nextQuestion())
 
     expect(nextState.currentQuestionIndex).toBe(1) // Should not increment
   })

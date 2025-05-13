@@ -39,6 +39,16 @@ export interface TopicPerformance {
   difficulty?: string
 }
 
+export interface UserQuiz {
+  id: number;
+  title: string;
+  slug: string;
+  quizType: string; // Ensure this matches the QuizType enum
+  bestScore?: number;
+  progress?: number;
+  timeEnded?: Date | null;
+}
+
 // Make sure your UserQuizAttempt type includes these fields
 export interface UserQuizAttempt {
   id: number

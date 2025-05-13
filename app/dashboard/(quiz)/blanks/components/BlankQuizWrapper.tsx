@@ -5,19 +5,15 @@ import { memo, useState, useEffect, useCallback, useMemo, useRef } from "react"
 
 import BlanksQuiz from "./BlanksQuiz"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
-import {
-  ErrorDisplay,
-  LoadingDisplay,
-  InitializingDisplay,
-  QuizNotFoundDisplay,
-  EmptyQuestionsDisplay,
-} from "@/app/dashboard/components/QuizStateDisplay"
+
 import { useToast } from "@/hooks"
 import { calculateTotalTime } from "@/lib/utils/quiz-index"
-import { quizUtils } from "@/lib/utils/quiz-utils"
+
 import { useQuiz } from "@/hooks/useQuizState"
 import type { BlanksQuizContentProps, BlanksQuizWrapperProps } from "../blanks-quiz-types"
 import BlanksQuizResult from "./BlankQuizResults"
+import { quizUtils } from "@/lib/utils/quiz-utils"
+import { ErrorDisplay } from "../../components/QuizStateDisplay"
 
 // Separate the content component for better memoization
 const BlanksQuizContent = memo(function BlanksQuizContent({ quizData, slug, userId, quizId }: BlanksQuizContentProps) {

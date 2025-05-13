@@ -113,7 +113,7 @@ jest.mock("@/lib/utils/quiz-index", () => ({
 }))
 
 // Mock QuizStateDisplay component
-jest.mock("@/app/dashboard/components/QuizStateDisplay", () => ({
+jest.mock("../dashboard/(quiz)/components/QuizStateDisplay", () => ({
   ErrorDisplay: ({ error }: any) => <div data-testid="error-display">{error || "Unknown error"}</div>,
   LoadingDisplay: () => <div data-testid="loading-display">Loading...</div>,
   InitializingDisplay: () => <div data-testid="initializing-display">Initializing...</div>,
