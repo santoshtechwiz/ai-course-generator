@@ -6,18 +6,13 @@ import { memo, useState, useEffect, useCallback, useMemo, useRef } from "react"
 import McqQuizResult from "./McqQuizResult"
 import McqQuiz from "./McqQuiz"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
-import {
-  ErrorDisplay,
-  LoadingDisplay,
-  InitializingDisplay,
-  QuizNotFoundDisplay,
-  EmptyQuestionsDisplay,
-} from "@/app/dashboard/components/QuizStateDisplay"
+
 import { useToast } from "@/hooks"
 import { calculateTotalTime } from "@/lib/utils/quiz-index"
-import { quizUtils } from "@/lib/utils/quiz-utils"
+
 import { useQuiz } from "@/hooks/useQuizState"
 import type { McqQuizWrapperProps } from "./types"
+import { EmptyQuestionsDisplay, InitializingDisplay, QuizNotFoundDisplay } from "../../components/QuizStateDisplay"
 
 const McqQuizContent = memo(function McqQuizContent({ quizData, slug, userId, quizId }: McqQuizWrapperProps) {
   const router = useRouter()
