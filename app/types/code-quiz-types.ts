@@ -124,3 +124,25 @@ export interface CodeQuizContentProps {
   isFavorite?: boolean
   ownerId?: string
 }
+
+export interface CodeQuizResultData {
+  quizId: string
+  slug: string
+  score: number
+  totalQuestions: number
+  correctAnswers: number
+  incorrectAnswers: number
+  totalTimeSpent: number
+  formattedTimeSpent: string
+  completedAt: string,
+  answers: Array<{
+    questionId: string
+    question: string
+    userAnswer?: string
+    correctAnswer?: string
+    isCorrect: boolean
+    timeSpent: number
+    codeSnippet?: string
+    language?: string
+  }>
+}
