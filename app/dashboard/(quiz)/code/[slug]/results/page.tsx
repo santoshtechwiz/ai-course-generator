@@ -8,7 +8,7 @@ import type { CodeQuizApiResponse } from "@/app/types/code-quiz-types"
 import CodeQuizResultsPageWrapper from "../../components/CodeQuizResultsPageWrapper"
 
 interface PageParams {
-  params: Promise<{ slug: string }>
+  params: { slug: string }
 }
 
 /**
@@ -45,7 +45,7 @@ async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
  * Generates metadata for the results page
  */
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
-  const { slug } = await params
+  const { slug } = params
   const quiz = await getQuizData(slug)
 
   if (!quiz) {

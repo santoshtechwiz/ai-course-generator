@@ -137,10 +137,7 @@ export function useQuiz({ quizData }: UseQuizParams = {}): UseQuizReturn {
           throw new Error("No quiz data provided")
         }
 
-        if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
-          throw new Error("Invalid quiz data: questions array is empty or invalid")
-        }
-
+    
         if (!quizData.title) {
           throw new Error("Invalid quiz data: title is required")
         }
