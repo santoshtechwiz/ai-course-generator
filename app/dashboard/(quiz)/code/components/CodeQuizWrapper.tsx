@@ -114,7 +114,6 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       const score = Math.round((correctAnswers / answersArray.length) * 100)
 
       completeQuiz({
-        answers: answersArray.filter((a): a is Answer => a !== null),
         score,
         completedAt: new Date().toISOString(),
       })
