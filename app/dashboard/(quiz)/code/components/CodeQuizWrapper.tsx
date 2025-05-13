@@ -139,15 +139,17 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       totalTimeSpent,
       formattedTimeSpent: formatQuizTime(totalTimeSpent),
       completedAt: quizState.completedAt || new Date().toISOString(),
-      answers: answersArray.map((a) => ({
-        questionId: a.questionId || "",
-        question: a.question || "",
-        answer: a.answer || "",
-        isCorrect: a.isCorrect || false,
-        timeSpent: a.timeSpent || 0,
-        codeSnippet: a.codeSnippet || "",
-        language: a.language || "javascript",
-      })),
+      answers: answersArray
+        .filter(Boolean) // Filter out null/undefined answers
+        .map((a) => ({
+          questionId: a.questionId || "",
+          question: a.question || "",
+          answer: a.answer || "",
+          isCorrect: a.isCorrect || false,
+          timeSpent: a.timeSpent || 0,
+          codeSnippet: a.codeSnippet || "",
+          language: a.language || "javascript",
+        })),
     }
   }, [quizState, quizId, slug])
 
@@ -156,6 +158,36 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     const idx = quizState.currentQuestionIndex
     return quizState.questions?.[idx] as CodeQuizQuestion
   }, [quizState.questions, quizState.currentQuestionIndex])
+
+  // === Attempt to restore state if currentQuestion is invalid ===
+  useEffect(() => {
+    if (
+      hasInitialized &&
+      (!currentQuestion ||
+        quizState.currentQuestionIndex < 0 ||
+        (quizData &&
+          Array.isArray(quizData.questions) &&
+          quizState.currentQuestionIndex >= quizData.questions.length)) &&
+      !quizState.isCompleted &&
+      typeof restoreState === "function"
+    ) {
+      restoreState()
+    }
+  }, [
+    hasInitialized,
+    currentQuestion,
+    quizState.currentQuestionIndex,
+    quizData,
+    quizState.isCompleted,
+    restoreState,
+  ])
+
+  // === Redirect to results page after completion (if authenticated or fromAuth) ===
+  useEffect(() => {
+    if (quizState.isCompleted && (isAuthenticated || fromAuth)) {
+      router.replace(`/dashboard/code/${slug}/results`)
+    }
+  }, [quizState.isCompleted, isAuthenticated, fromAuth, router, slug])
 
   // === UI RENDER HANDLING ===
 
@@ -167,8 +199,14 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     return <QuizNotFoundDisplay onReturn={() => router.push("/dashboard/quizzes")} />
   }
 
-  if (!quizData?.questions?.length) {
-    return <EmptyQuestionsDisplay onReturn={() => router.push("/dashboard/quizzes")} />
+  // Defensive: quizData must exist and have questions as a non-empty array
+  if (!quizData || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
+    return (
+      <EmptyQuestionsDisplay
+        onReturn={() => router.push("/dashboard/quizzes")}
+        message="No quiz questions found. Please check the quiz configuration."
+      />
+    )
   }
 
   if (quizState.error) {
@@ -193,14 +231,15 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     )
   }
 
-  if (quizState.isCompleted && resultObject) {
-    return <CodeQuizResult result={resultObject} />
-  }
-
-  if (!currentQuestion) {
+  // Defensive: check currentQuestion and quizData.questions index
+  if (
+    !currentQuestion ||
+    quizState.currentQuestionIndex < 0 ||
+    quizState.currentQuestionIndex >= quizData.questions.length
+  ) {
     return (
       <ErrorDisplay
-        error="Failed to load quiz questions. Please try again."
+        error="Failed to load quiz questions. Please try again or contact support if the problem persists."
         onRetry={() => window.location.reload()}
         onReturn={() => router.push("/dashboard/quizzes")}
       />

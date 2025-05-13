@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import type { CodeQuizApiResponse } from "@/app/types/code-quiz-types"
 import CodeQuizResultsPageWrapper from "../../components/CodeQuizResultsPageWrapper"
+import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
 
 interface PageParams {
   params: { slug: string }
@@ -81,6 +82,20 @@ export default async function CodeQuizResultsPage({ params }: { params: { slug: 
   // Get the current user session
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id || ""
+
+  // If not authenticated, show sign-in prompt
+  if (!session) {
+    return (
+      <NonAuthenticatedUserSignInPrompt
+        onSignIn={() => {
+          // Redirect to sign in and return to this page after
+          window.location.href = `/api/auth/signin?callbackUrl=/dashboard/code/${slug}/results`
+        }}
+        quizType="code quiz results"
+        showSaveMessage={false}
+      />
+    )
+  }
 
   // Fetch quiz data for metadata
   const quizData = await getQuizData(slug)
