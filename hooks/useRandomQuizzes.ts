@@ -2,16 +2,17 @@
 
 import axios from "axios"
 import { useState, useEffect } from "react"
+import type { QuizType, QuizDifficulty } from "@/app/types/quiz-types"
 
 export interface Quiz {
-  id: number
-  title: string
-  quizType: string
-  difficulty: string | null
-  bestScore: number | null
-  slug: string
-  duration: number // in minutes
-  completionRate?: number // percentage, optional
+  id: number;
+  title: string;
+  quizType: QuizType;
+  difficulty: QuizDifficulty | null;
+  bestScore: number | null;
+  slug: string;
+  duration: number; // in minutes
+  completionRate?: number; // percentage, optional
 }
 
 export const useRandomQuizzes = (count = 3) => {

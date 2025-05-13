@@ -27,7 +27,8 @@ import React from "react"
 
 // SVG Background Pattern Component
 const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => {
-  const patterns = {
+  // Extract the patterns to an object with proper typing
+  const patterns: Record<string, React.ReactNode> = {
     "fill-blanks": (
       <path
         d="M10 10L50 50M30 10L70 50M50 10L90 50M70 10L110 50M90 10L130 50M10 30L50 70M30 30L70 70M50 30L90 70M70 30L110 70M90 30L130 70"

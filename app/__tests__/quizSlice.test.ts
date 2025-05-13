@@ -22,9 +22,7 @@ const initialState = {
   score: 0,
   requiresAuth: false,
   pendingAuthRequired: false,
-  hasNonAuthenticatedUserResult: false,
-  nonAuthenticatedUserResultsSaved: false,
-  authCheckComplete: false,
+  authCheckComplete: false, // match slice
   error: null,
   animationState: "idle",
   isSavingResults: false,
@@ -32,8 +30,7 @@ const initialState = {
   completedAt: null,
   startTime: expect.any(Number),
   savedState: null,
-  isProcessingAuth: false,
-  redirectUrl: null,
+  isLoading: false, // match slice
 }
 
 // Mock data
@@ -123,7 +120,7 @@ describe("quizSlice", () => {
       currentQuestionIndex: 0,
     }
 
-    const nextState = quizReducer(state, nextQuestion())
+    const nextState = quizReducer(state, nextQuestion(state))
 
     expect(nextState.currentQuestionIndex).toBe(1)
     expect(nextState.animationState).toBe("idle")
@@ -136,7 +133,7 @@ describe("quizSlice", () => {
       currentQuestionIndex: 1, // Last question
     }
 
-    const nextState = quizReducer(state, nextQuestion())
+    const nextState = quizReducer(state, nextQuestion(state))
 
     expect(nextState.currentQuestionIndex).toBe(1) // Should not increment
   })
@@ -175,7 +172,7 @@ describe("quizSlice", () => {
       ],
     }
 
-    const nextState = quizReducer(state, completeQuiz())
+    const nextState = quizReducer(state, completeQuiz(state))
 
     expect(nextState.isCompleted).toBe(true)
     expect(nextState.score).toBe(100) // 2/2 correct = 100%
@@ -201,7 +198,7 @@ describe("quizSlice", () => {
       resultsSaved: true,
     }
 
-    const nextState = quizReducer(state, resetQuiz())
+    const nextState = quizReducer(state, resetQuiz(state))
 
     expect(nextState.currentQuestionIndex).toBe(0)
     expect(nextState.answers).toEqual([])
