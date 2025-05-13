@@ -94,8 +94,11 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
 
     const timeSpent = Math.floor((Date.now() - startTime) / 1000)
 
+    // Call onAnswer with the selected option or code
+    onAnswer(answer, timeSpent, isCorrect)
+
+    // Reset submission state after a short delay
     setTimeout(() => {
-      onAnswer(answer, timeSpent, isCorrect)
       setIsSubmitting(false)
     }, 300)
   }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption])

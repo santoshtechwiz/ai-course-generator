@@ -135,7 +135,7 @@ interface InitQuizPayload {
   authCheckComplete?: boolean
 }
 
-interface CompleteQuizPayload {
+export interface CompleteQuizPayload {
   answers?: Answer[]
   score?: number
   completedAt?: string
@@ -167,36 +167,37 @@ const quizSlice = createSlice({
 
       const questionCount = questions.length
 
-      return {
-        ...initialState,
-        quizId: action.payload.id || action.payload.quizId || "",
-        slug: action.payload.slug || "",
-        title: action.payload.title || "",
-        quizType: action.payload.quizType || "",
-        questions,
-        currentQuestionIndex: 0,
-        startTime: Date.now(),
-        answers: action.payload.initialAnswers || Array(questionCount).fill(null),
-        timeSpent: action.payload.initialTimeSpent || Array(questionCount).fill(0),
-        isCompleted: action.payload.isCompleted || false,
-        score: action.payload.score || 0,
-        requiresAuth: action.payload.requiresAuth || false,
-        pendingAuthRequired: action.payload.pendingAuthRequired || false,
-        authCheckComplete: action.payload.authCheckComplete || true,
-        isLoading: false,
-      }
+      state.quizId = action.payload.id || action.payload.quizId || ""
+      state.slug = action.payload.slug || ""
+      state.title = action.payload.title || ""
+      state.quizType = action.payload.quizType || ""
+      state.questions = questions
+      state.currentQuestionIndex = 0
+      state.startTime = Date.now()
+      state.answers = action.payload.initialAnswers || Array(questionCount).fill(null)
+      state.timeSpent = action.payload.initialTimeSpent || Array(questionCount).fill(0)
+      state.isCompleted = action.payload.isCompleted || false
+      state.score = action.payload.score || 0
+      state.requiresAuth = action.payload.requiresAuth || false
+      state.pendingAuthRequired = action.payload.pendingAuthRequired || false
+      state.authCheckComplete = action.payload.authCheckComplete || true
+      state.isLoading = false
+      state.error = null
+      state.animationState = "idle"
+      state.isSavingResults = false
+      state.resultsSaved = false
+      state.completedAt = null
+      state.savedState = null
     },
     submitAnswer: (state, action: PayloadAction<Answer>) => {
-      // Get the index to update (either from the action payload or use currentQuestionIndex)
       const indexToUpdate = action.payload.index !== undefined ? action.payload.index : state.currentQuestionIndex
-
-      // Create new arrays instead of mutating existing ones
-      const newAnswers = Array.isArray(state.answers) ? [...state.answers] : Array(state.questions.length).fill(null)
-
-      const newTimeSpent = Array.isArray(state.timeSpent) ? [...state.timeSpent] : Array(state.questions.length).fill(0)
-
-      // Update the answer at the specified index
-      newAnswers[indexToUpdate] = {
+      if (!Array.isArray(state.answers) || state.answers.length !== state.questions.length) {
+        state.answers = Array(state.questions.length).fill(null)
+      }
+      if (!Array.isArray(state.timeSpent) || state.timeSpent.length !== state.questions.length) {
+        state.timeSpent = Array(state.questions.length).fill(0)
+      }
+      state.answers[indexToUpdate] = {
         answer: action.payload.answer,
         userAnswer: action.payload.userAnswer || action.payload.answer,
         isCorrect: action.payload.isCorrect,
@@ -207,32 +208,18 @@ const quizSlice = createSlice({
         codeSnippet: action.payload.codeSnippet,
         language: action.payload.language,
       }
-
-      // Update the timeSpent at the specified index
-      newTimeSpent[indexToUpdate] = action.payload.timeSpent
-
-      // Return a new state object
-      return {
-        ...state,
-        answers: newAnswers,
-        timeSpent: newTimeSpent,
-        animationState: "answering",
-        isLoading: false,
-      }
+      state.timeSpent[indexToUpdate] = action.payload.timeSpent
+      state.animationState = "answering"
+      state.isLoading = false
     },
     nextQuestion: (state) => {
       if (state.currentQuestionIndex < state.questions.length - 1) {
-        return {
-          ...state,
-          currentQuestionIndex: state.currentQuestionIndex + 1,
-          animationState: "idle",
-          isLoading: false,
-        }
+        state.currentQuestionIndex += 1
+        state.animationState = "idle"
+        state.isLoading = false
       }
-      return state
     },
     completeQuiz: (state, action: PayloadAction<CompleteQuizPayload> = { payload: {}, type: "" }) => {
-      // Defensive: Only use payload if it's a plain object with expected keys
       const isEmptyPayload =
         !action.payload ||
         (typeof action.payload === "object" &&
@@ -246,7 +233,6 @@ const quizSlice = createSlice({
         Array.isArray(state.answers) &&
         state.answers.length > 0
       ) {
-        // Only count non-null answers for scoring
         const validAnswers = state.answers.filter((a) => a != null)
         const correctAnswers = validAnswers.filter((a) => a && a.isCorrect).length
         const totalQuestions = validAnswers.length > 0 ? validAnswers.length : 1
@@ -255,129 +241,86 @@ const quizSlice = createSlice({
         calculatedScore = action.payload.score
       }
 
-      return {
-        ...state,
-        isCompleted: true,
-        score: calculatedScore ?? 0,
-        completedAt: !isEmptyPayload && action.payload.completedAt
-          ? action.payload.completedAt
-          : new Date().toISOString(),
-        animationState: "completed",
-        isLoading: false,
-        answers:
-          !isEmptyPayload && Array.isArray(action.payload.answers) && action.payload.answers.length > 0
-            ? action.payload.answers
-            : state.answers,
-        pendingAuthRequired: state.requiresAuth ? true : state.pendingAuthRequired,
+      state.isCompleted = true
+      state.score = calculatedScore ?? 0
+      state.completedAt = !isEmptyPayload && action.payload.completedAt
+        ? action.payload.completedAt
+        : new Date().toISOString()
+      state.animationState = "completed"
+      state.isLoading = false
+      if (!isEmptyPayload && Array.isArray(action.payload.answers) && action.payload.answers.length > 0) {
+        state.answers = action.payload.answers
       }
+      state.pendingAuthRequired = state.requiresAuth ? true : state.pendingAuthRequired
     },
     resetQuiz: (state) => {
-      return {
-        ...initialState,
-        quizId: state.quizId,
-        slug: state.slug,
-        title: state.title,
-        quizType: state.quizType,
-        questions: state.questions,
-        requiresAuth: state.requiresAuth,
-        pendingAuthRequired: false,
-        authCheckComplete: true,
-        startTime: Date.now(),
-        isLoading: false,
-      }
+      const prev = { ...state }
+      Object.assign(state, initialState)
+      state.quizId = prev.quizId
+      state.slug = prev.slug
+      state.title = prev.title
+      state.quizType = prev.quizType
+      state.questions = prev.questions
+      state.requiresAuth = prev.requiresAuth
+      state.pendingAuthRequired = false
+      state.authCheckComplete = true
+      state.startTime = Date.now()
+      state.isLoading = false
     },
     setRequiresAuth: (state, action: PayloadAction<boolean>) => {
-      return {
-        ...state,
-        requiresAuth: action.payload,
-      }
+      state.requiresAuth = action.payload
     },
     setPendingAuthRequired: (state, action: PayloadAction<boolean>) => {
-      return {
-        ...state,
-        pendingAuthRequired: action.payload,
-      }
+      state.pendingAuthRequired = action.payload
     },
     setAuthCheckComplete: (state, action: PayloadAction<boolean>) => {
-      return {
-        ...state,
-        authCheckComplete: action.payload,
-      }
+      state.authCheckComplete = action.payload
     },
     setError: (state, action: PayloadAction<string | null>) => {
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false,
-      }
+      state.error = action.payload
+      state.isLoading = false
     },
     setAnimationState: (state, action: PayloadAction<"idle" | "answering" | "completed">) => {
-      return {
-        ...state,
-        animationState: action.payload,
-      }
+      state.animationState = action.payload
     },
     saveStateBeforeAuth: (state, action: PayloadAction<SaveStateBeforeAuthPayload>) => {
-      return {
-        ...state,
-        savedState: action.payload,
-      }
+      state.savedState = action.payload
     },
     clearSavedState: (state) => {
-      return {
-        ...state,
-        savedState: null,
-        pendingAuthRequired: false,
-      }
+      state.savedState = null
+      state.pendingAuthRequired = false
     },
     restoreFromSavedState: (state) => {
-      if (!state.savedState) return state
-
-      // Create a new state object with restored values
-      const restoredState = {
-        ...state,
-        quizId: state.savedState.quizId || state.quizId,
-        slug: state.savedState.slug || state.slug,
-        quizType: state.savedState.quizType || state.quizType,
-        currentQuestionIndex:
-          state.savedState.currentQuestionIndex !== undefined
-            ? state.savedState.currentQuestionIndex
-            : state.currentQuestionIndex,
-        answers: state.savedState.answers || state.answers,
-        isCompleted: state.savedState.isCompleted !== undefined ? state.savedState.isCompleted : state.isCompleted,
-        score: state.savedState.score !== undefined ? state.savedState.score : state.score,
-        completedAt: state.savedState.completedAt || state.completedAt,
-        animationState: state.savedState.isCompleted ? "completed" : "idle",
-        error: null,
-        pendingAuthRequired: false,
-        savedState: null, // Clear saved state after restoration
-        isLoading: false,
-      }
-
-      return restoredState
+      if (!state.savedState) return
+      state.quizId = state.savedState.quizId || state.quizId
+      state.slug = state.savedState.slug || state.slug
+      state.quizType = state.savedState.quizType || state.quizType
+      state.currentQuestionIndex =
+        state.savedState.currentQuestionIndex !== undefined
+          ? state.savedState.currentQuestionIndex
+          : state.currentQuestionIndex
+      state.answers = state.savedState.answers || state.answers
+      state.isCompleted = state.savedState.isCompleted !== undefined ? state.savedState.isCompleted : state.isCompleted
+      state.score = state.savedState.score !== undefined ? state.savedState.score : state.score
+      state.completedAt = state.savedState.completedAt || state.completedAt
+      state.animationState = state.savedState.isCompleted ? "completed" : "idle"
+      state.error = null
+      state.pendingAuthRequired = false
+      state.savedState = null
+      state.isLoading = false
     },
     setCurrentQuestion: (state, action: PayloadAction<number>) => {
-      return {
-        ...state,
-        currentQuestionIndex: action.payload,
-        animationState: "idle",
-      }
+      state.currentQuestionIndex = action.payload
+      state.animationState = "idle"
     },
     prevQuestion: (state) => {
       if (state.currentQuestionIndex > 0) {
-        return {
-          ...state,
-          currentQuestionIndex: state.currentQuestionIndex - 1,
-          animationState: "idle",
-        }
+        state.currentQuestionIndex -= 1
+        state.animationState = "idle"
       }
-      return state
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
-      return {
-        ...state,
-        isLoading: action.payload,
-      }
+      state.isLoading = action.payload
     },
   },
   extraReducers: (builder) => {

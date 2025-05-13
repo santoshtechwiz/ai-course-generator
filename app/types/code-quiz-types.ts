@@ -2,63 +2,65 @@ import type React from "react"
 
 // API response structure from code-quiz endpoint
 export interface CodeQuizApiResponse {
-  quizId: string;
-  quizData: CodeQuizData;
-  isPublic: boolean;
-  isFavorite: boolean;
-  ownerId: string;
+  quizId: string
+  quizData: CodeQuizData
+  isPublic: boolean
+  isFavorite: boolean
+  ownerId: string
 }
 
 // Structure for a code quiz question
 export interface CodeQuizQuestion {
-  id: string;
-  question: string;
-  codeSnippet: string;
-  answer: string;
-  language: string;
+  id: string
+  question: string
+  codeSnippet: string
+  answer: string
+  language: string
+  options?: string[] // Make sure options is explicitly defined
   testCases?: Array<{
-    input: string;
-    expectedOutput: string;
-  }>;
-  hints?: string[];
-  explanation?: string;
-  timeLimit?: number;
+    input: string
+    expectedOutput: string
+  }>
+  hints?: string[]
+  explanation?: string
+  timeLimit?: number
 }
 
 // Structure for code quiz data
 export interface CodeQuizData {
-  id: string;
-  title: string;
-  slug: string;
-  isPublic: boolean;
-  isFavorite: boolean;
-  userId: string;
-  ownerId: string;
-  difficulty?: string;
-  questions: CodeQuizQuestion[];
+  id: string
+  title: string
+  slug: string
+  isPublic: boolean
+  isFavorite: boolean
+  userId: string
+  ownerId: string
+  difficulty?: string
+  questions: CodeQuizQuestion[]
 }
 
 // Props for the CodeQuizWrapper component
 export interface CodeQuizWrapperProps {
-  quizData: CodeQuizData;
-  slug: string;
-  userId?: string;
-  quizId: string;
-  isPublic?: boolean;
-  isFavorite?: boolean;
-  ownerId?: string;
+  quizData: CodeQuizData
+  slug: string
+  userId?: string
+  quizId: string
+  isPublic?: boolean
+  isFavorite?: boolean
+  ownerId?: string
 }
 
 // Add validation helper
 export const isValidCodeQuizQuestion = (question: any): question is CodeQuizQuestion => {
   return (
-    typeof question === 'object' &&
-    typeof question.question === 'string' &&
-    typeof question.answer === 'string' &&
-    (!question.language || typeof question.language === 'string') &&
-    (!question.codeSnippet || typeof question.codeSnippet === 'string')
-  );
-};
+    typeof question === "object" &&
+    typeof question.question === "string" &&
+    typeof question.answer === "string" &&
+    (!question.language || typeof question.language === "string") &&
+    (!question.codeSnippet || typeof question.codeSnippet === "string") &&
+    (!question.options || Array.isArray(question.options))
+  )
+}
 
 // Props for the CodingQuiz component
 export interface CodingQuizProps {

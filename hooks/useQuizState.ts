@@ -19,6 +19,7 @@ import {
   clearSavedState,
   type Answer,
   type QuizState,
+  CompleteQuizPayload,
 } from "@/store/slices/quizSlice"
 import { setIsAuthenticated, setIsProcessingAuth, setRedirectUrl, setUser } from "@/store/slices/authSlice"
 import { calculateTotalTime } from "@/lib/utils/quiz-index"
@@ -127,7 +128,6 @@ export function useQuiz(): UseQuizReturn {
         dispatch(
           initQuiz({
             ...quizData,
-            questions: quizData.questions || [], // always ensure questions is set
             requiresAuth: quizData.requiresAuth ?? true, // Use provided value or default to true
           }),
         )
@@ -229,7 +229,7 @@ export function useQuiz(): UseQuizReturn {
     if (!isMounted.current) return
 
     setIsLoading(true)
-    dispatch(resetQuiz(quizState))
+    dispatch(resetQuiz())
 
     // Set loading to false after a short delay to ensure state is updated
     setTimeout(() => {
@@ -278,16 +278,16 @@ export function useQuiz(): UseQuizReturn {
     if (!isMounted.current) return
 
     setIsLoading(true)
-    dispatch(restoreFromSavedState(quizState.savedState || quizState))
+    dispatch(restoreFromSavedState())
 
     // If the quiz was completed before auth, force it to be completed again
     if (quizState.savedState?.isCompleted) {
       dispatch(
         completeQuiz({
-          answers: quizState.savedState.answers || [],
-          score: quizState.savedState.score || 0,
-          completedAt: quizState.savedState.completedAt || new Date().toISOString(),
-        }),
+          answers: quizState.savedState?.answers || [],
+          score: quizState.savedState?.score || 0,
+          completedAt: quizState.savedState?.completedAt || new Date().toISOString(),
+        } as CompleteQuizPayload),
       )
     }
 
@@ -316,7 +316,7 @@ export function useQuiz(): UseQuizReturn {
         // Clean up URL
         const url = new URL(window.location.href)
         url.searchParams.delete("fromAuth")
-        window.history.replaceState(quizState, "", url.toString())
+        window.history.replaceState({}, "", url.toString())
       }
     }
   }, [isAuthenticated, quizState.savedState, restoreState])
