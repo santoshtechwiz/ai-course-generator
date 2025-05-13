@@ -21,61 +21,70 @@ import type { Answer } from "@/store/slices/quizSlice"
 export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: CodeQuizWrapperProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [isInitializing, setIsInitializing] = useState<boolean>(true)
-  const [hasInitialized, setHasInitialized] = useState<boolean>(false) // <-- add this
 
-  const { quizState, isAuthenticated, initialize, 
-    requireAuthentication, submitAnswer, nextQuestion, completeQuiz 
-    ,restoreState
-  
-  } =
-    useQuiz()
+  const [isInitializing, setIsInitializing] = useState(true)
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   const isReset = searchParams.get("reset") === "true"
   const fromAuth = searchParams.get("fromAuth") === "true"
 
- // Initialize quiz
+  const {
+    quizState,
+    isAuthenticated,
+    initialize,
+    requireAuthentication,
+    submitAnswer,
+    nextQuestion,
+    completeQuiz,
+    restoreState,
+  } = useQuiz({
+    quizData: {
+      ...quizData,
+      questions: quizData.questions.map((q) => ({
+        ...q,
+        correctAnswer: q.correctAnswer ?? 0, // Provide a default value if missing
+      })),
+    },
+  })
+
+  // Handle quiz init or restore
   useEffect(() => {
-    if (!hasInitialized) {
+    if (hasInitialized) return
+
+    const run = async () => {
       if (fromAuth && isAuthenticated) {
-        restoreState()
-        setHasInitialized(true)
-      } else if (quizData && !isReset) {
-        try {
-          initialize({
-            id: quizData.id || quizId,
-            slug,
-            title: quizData.title || "Code Quiz",
-            quizType: "code",
-            questions: quizData.questions || [],
-            requiresAuth: true,
-          })
-          setHasInitialized(true)
-        } catch (error) {
-          console.error("Failed to initialize quiz:", error)
-        }
+        await restoreState()
+      } else if (!fromAuth && quizData && !isReset) {
+        initialize({
+          id: quizData.id || quizId,
+          slug,
+          title: quizData.title || "Code Quiz",
+          quizType: "code",
+          questions: quizData.questions || [],
+          requiresAuth: true,
+        })
       }
-    }
 
-    if (process.env.NODE_ENV === "test") {
+      setHasInitialized(true)
       setIsInitializing(false)
-      return
     }
 
-    const timer = setTimeout(() => setIsInitializing(false), 500)
-    return () => clearTimeout(timer)
-  }, [quizData, quizId, slug, isReset, fromAuth, isAuthenticated, restoreState, initialize, hasInitialized])
+    run()
+  }, [
+    hasInitialized,
+    fromAuth,
+    isAuthenticated,
+    quizData,
+    isReset,
+    quizId,
+    slug,
+    initialize,
+    restoreState,
+  ])
 
-
-  // Handle sign in
-  const handleSignIn = () => {
-    const redirectUrl = `/dashboard/code/${slug}?fromAuth=true`
-    requireAuthentication(redirectUrl)
-  }
-
-  // Handle answer submission
+  // Handle submission of answer
   const handleAnswer = (answer: string, timeSpent: number, isCorrect: boolean) => {
-    const currentQuestion = quizState.questions?.[quizState.currentQuestionIndex] as unknown as CodeQuizQuestion | undefined
+    const currentQuestion = quizState.questions?.[quizState.currentQuestionIndex] as CodeQuizQuestion
 
     if (!currentQuestion) {
       console.error("Current question is undefined")
@@ -92,15 +101,11 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       language: currentQuestion.language || "javascript",
     })
 
-    // Use local variables to determine if this is the last question
-    const totalQuestions = quizState.questions?.length || 0
-    const nextIndex = quizState.currentQuestionIndex + 1
-    const isLast = nextIndex >= totalQuestions
+    const isLast = quizState.currentQuestionIndex + 1 >= (quizState.questions?.length || 0)
 
     if (isLast) {
-      // Last question, complete the quiz
       const answersArray = [
-        ...((quizState.answers as Answer[]) || []),
+        ...(quizState.answers || []),
         {
           questionId: currentQuestion.id || String(quizState.currentQuestionIndex),
           question: currentQuestion.question || "",
@@ -114,7 +119,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       ]
 
       const correctAnswers = answersArray.filter((a) => a?.isCorrect).length
-      const score = Math.round((correctAnswers / totalQuestions) * 100)
+      const score = Math.round((correctAnswers / answersArray.length) * 100)
 
       completeQuiz({
         answers: answersArray,
@@ -122,20 +127,17 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
         completedAt: new Date().toISOString(),
       })
     } else {
-      // Move to next question after state updates
-      setTimeout(() => {
-        nextQuestion()
-      }, 0)
+      nextQuestion()
     }
   }
 
-  // Create result object for CodeQuizResult component
+  // Prepare result object
   const resultObject = useMemo(() => {
     if (!quizState.isCompleted) return null
 
-    const answersArray = (quizState.answers as Answer[]) || []
+    const answersArray = (quizState.answers || []) as Answer[]
     const correctAnswers = answersArray.filter((a) => a?.isCorrect).length
-    const totalTimeSpent = calculateTotalTime(answersArray.filter(Boolean))
+    const totalTimeSpent = calculateTotalTime(answersArray)
 
     return {
       quizId: quizId || quizState.quizId || "",
@@ -146,55 +148,41 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       totalTimeSpent,
       formattedTimeSpent: formatQuizTime(totalTimeSpent),
       completedAt: quizState.completedAt || new Date().toISOString(),
-      answers: answersArray.filter(Boolean).map((answer) => ({
-        questionId: answer?.questionId || "",
-        question: answer?.question || "", // Add the missing 'question' property
-        answer: answer?.answer || "",
-        isCorrect: answer?.isCorrect || false,
-        timeSpent: answer?.timeSpent || 0,
-        codeSnippet: answer?.codeSnippet || "",
-        language: answer?.language || "javascript",
+      answers: answersArray.map((a) => ({
+        questionId: a.questionId || "",
+        question: a.question || "",
+        answer: a.answer || "",
+        isCorrect: a.isCorrect || false,
+        timeSpent: a.timeSpent || 0,
+        codeSnippet: a.codeSnippet || "",
+        language: a.language || "javascript",
       })),
     }
   }, [quizState, quizId, slug])
 
   // Get current question
   const currentQuestion = useMemo(() => {
-    if (
-      !quizState.questions ||
-      quizState.questions.length === 0 ||
-      quizState.currentQuestionIndex < 0 ||
-      quizState.currentQuestionIndex >= quizState.questions.length
-    ) {
-      return null
-    }
-    return quizState.questions[quizState.currentQuestionIndex] as unknown as CodeQuizQuestion | null
+    const idx = quizState.currentQuestionIndex
+    return quizState.questions?.[idx] as CodeQuizQuestion
   }, [quizState.questions, quizState.currentQuestionIndex])
 
-  // Determine if this is the last question
-  const isLastQuestion = useMemo(() => {
-    return quizState.currentQuestionIndex === (quizState.questions?.length || 0) - 1
-  }, [quizState.currentQuestionIndex, quizState.questions])
+  // === UI RENDER HANDLING ===
 
-  // Render based on state
-  if (isInitializing) {
+  if (isInitializing || !hasInitialized) {
     return <InitializingDisplay data-testid="initializing-display" />
   }
 
   if (!slug) {
-    return <QuizNotFoundDisplay data-testid="not-found-display" onReturn={() => router.push("/dashboard/quizzes")} />
+    return <QuizNotFoundDisplay onReturn={() => router.push("/dashboard/quizzes")} />
   }
 
-  if (!quizData?.questions || quizData.questions.length === 0) {
-    return (
-      <EmptyQuestionsDisplay data-testid="empty-questions-display" onReturn={() => router.push("/dashboard/quizzes")} />
-    )
+  if (!quizData?.questions?.length) {
+    return <EmptyQuestionsDisplay onReturn={() => router.push("/dashboard/quizzes")} />
   }
 
   if (quizState.error) {
     return (
       <ErrorDisplay
-        data-testid="error-display"
         error={quizState.error}
         onRetry={() => window.location.reload()}
         onReturn={() => router.push("/dashboard/quizzes")}
@@ -205,8 +193,9 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
   if (quizState.isCompleted && !isAuthenticated && !fromAuth) {
     return (
       <NonAuthenticatedUserSignInPrompt
-        data-testid="guest-sign-in-prompt"
-        onSignIn={handleSignIn}
+        onSignIn={() =>
+          requireAuthentication(`/dashboard/code/${slug}?fromAuth=true`)
+        }
         quizType="code quiz"
         showSaveMessage
       />
@@ -214,13 +203,12 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
   }
 
   if (quizState.isCompleted && resultObject) {
-    return <CodeQuizResult data-testid="quiz-results" result={resultObject} />
+    return <CodeQuizResult result={resultObject} />
   }
 
   if (!currentQuestion) {
     return (
       <ErrorDisplay
-        data-testid="question-error-display"
         error="Failed to load quiz questions. Please try again."
         onRetry={() => window.location.reload()}
         onReturn={() => router.push("/dashboard/quizzes")}
@@ -230,7 +218,6 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
 
   return (
     <CodingQuiz
-      data-testid="coding-quiz"
       question={{
         ...quizData.questions[quizState.currentQuestionIndex],
         id: quizData.questions[quizState.currentQuestionIndex]?.id || "unknown-id",
@@ -238,7 +225,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       onAnswer={handleAnswer}
       questionNumber={quizState.currentQuestionIndex + 1}
       totalQuestions={quizState.questions?.length || 0}
-      isLastQuestion={isLastQuestion}
+      isLastQuestion={quizState.currentQuestionIndex === (quizState.questions?.length || 1) - 1}
     />
   )
 }

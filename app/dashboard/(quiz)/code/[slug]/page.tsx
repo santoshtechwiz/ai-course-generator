@@ -138,7 +138,7 @@ const CodePage = async (props: PageParams) => {
     >
       <CodeQuizWrapper
         quizData={{
-         
+          quizId: result?.quizData.id,
           id: result.quizData?.id || "",
           title: result.quizData?.title || "",
           slug: slug,
