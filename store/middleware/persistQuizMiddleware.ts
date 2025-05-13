@@ -1,25 +1,29 @@
 import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit"
-import { initQuiz, submitAnswer, nextQuestion, completeQuiz, resetQuiz, type QuizState } from "../slices/quizSlice"
+import {
+  initQuiz,
+  submitAnswer,
+  nextQuestion,
+  completeQuiz,
+  resetQuiz,
+  type QuizState,
+} from "../slices/quizSlice"
 import { QUIZ_STORAGE_KEYS } from "@/lib/constants/quiz-constants"
 
-// Create a listener middleware
 const listenerMiddleware = createListenerMiddleware()
-
-// Define a key for localStorage using the constant
 const QUIZ_STATE_KEY = QUIZ_STORAGE_KEYS.GLOBAL
 
-// Add a listener that will be called when any of the specified actions are dispatched
 listenerMiddleware.startListening({
   matcher: isAnyOf(initQuiz, submitAnswer, nextQuestion, completeQuiz, resetQuiz),
   effect: (action, listenerApi) => {
-    // Get the current state
     const state = listenerApi.getState() as { quiz: QuizState }
 
-    // Don't persist if we're in a server environment
     if (typeof window === "undefined") return
 
-    // Create a simplified version of the state to persist
-    // Only include essential data to avoid storage bloat
+    if (state.quiz.isCompleted) {
+      localStorage.removeItem(QUIZ_STATE_KEY)
+      return
+    }
+
     const persistedState = {
       quizId: state.quiz.quizId,
       slug: state.quiz.slug,
@@ -29,16 +33,15 @@ listenerMiddleware.startListening({
       isCompleted: state.quiz.isCompleted,
       score: state.quiz.score,
       completedAt: state.quiz.completedAt,
+      questions: state.quiz.questions, // ✅ Include questions
     }
 
     try {
-      // Use requestIdleCallback if available for better performance
       if (window.requestIdleCallback) {
         window.requestIdleCallback(() => {
           localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(persistedState))
         })
       } else {
-        // Fallback to setTimeout
         setTimeout(() => {
           localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(persistedState))
         }, 0)
@@ -49,25 +52,21 @@ listenerMiddleware.startListening({
   },
 })
 
-// Function to load persisted state
 export const loadPersistedQuizState = (): Partial<QuizState> | undefined => {
   if (typeof window === "undefined") return undefined
 
   try {
-    const persistedStateJSON = localStorage.getItem(QUIZ_STATE_KEY)
-    if (!persistedStateJSON) return undefined
-
-    return JSON.parse(persistedStateJSON)
+    const json = localStorage.getItem(QUIZ_STATE_KEY)
+    if (!json) return undefined
+    return JSON.parse(json)
   } catch (error) {
     console.error("Failed to load persisted quiz state:", error)
     return undefined
   }
 }
 
-// Function to clear persisted state
 export const clearPersistedQuizState = (): void => {
   if (typeof window === "undefined") return
-
   try {
     localStorage.removeItem(QUIZ_STATE_KEY)
   } catch (error) {
