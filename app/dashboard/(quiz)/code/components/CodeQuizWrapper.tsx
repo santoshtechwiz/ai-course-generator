@@ -9,10 +9,11 @@ import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedU
 import {
   InitializingDisplay,
   QuizNotFoundDisplay,
-  EmptyQuestionsDisplay,
   ErrorDisplay,
   LoadingDisplay,
+  EmptyQuestionsDisplay,
 } from "../../components/QuizStateDisplay"
+
 import type { CodeQuizWrapperProps, CodeQuizQuestion } from "@/app/types/code-quiz-types"
 import { calculateTotalTime } from "@/lib/utils/quiz-index"
 import { formatQuizTime } from "@/lib/utils/quiz-performance"

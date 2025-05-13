@@ -60,13 +60,14 @@ const nextConfig = {
 
   // Performance optimizations
   compress: true,
-
-  // // Experimental features
-  // experimental: {
-  //   optimizeCss: true, // Optimize CSS
-  //   optimizePackageImports: [],
-
-  // },
+ experimental: {
+   turbo: {
+     resolveAlias: {
+       underscore: "lodash",
+     },
+     resolveExtensions: [".mdx", ".tsx", ".ts", ".jsx", ".js", ".json"],
+   },
+ },
 }
 
 export default nextConfig
