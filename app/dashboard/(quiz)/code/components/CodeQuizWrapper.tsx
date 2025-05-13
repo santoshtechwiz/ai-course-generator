@@ -10,7 +10,6 @@ import {
   InitializingDisplay,
   QuizNotFoundDisplay,
   ErrorDisplay,
-  LoadingDisplay,
   EmptyQuestionsDisplay,
 } from "../../components/QuizStateDisplay"
 
@@ -23,31 +22,41 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isInitializing, setIsInitializing] = useState<boolean>(true)
+  const [hasInitialized, setHasInitialized] = useState<boolean>(false) // <-- add this
 
-  const { quizState, isAuthenticated, initialize, requireAuthentication, submitAnswer, nextQuestion, completeQuiz } =
+  const { quizState, isAuthenticated, initialize, 
+    requireAuthentication, submitAnswer, nextQuestion, completeQuiz 
+    ,restoreState
+  
+  } =
     useQuiz()
 
   const isReset = searchParams.get("reset") === "true"
   const fromAuth = searchParams.get("fromAuth") === "true"
 
-  // Initialize quiz
+ // Initialize quiz
   useEffect(() => {
-    if (quizData && !isReset) {
-      try {
-        initialize({
-          id: quizData.id || quizId,
-          slug,
-          title: quizData.title || "Code Quiz",
-          quizType: "code",
-          questions: quizData.questions || [],
-          requiresAuth: true,
-        })
-      } catch (error) {
-        console.error("Failed to initialize quiz:", error)
+    if (!hasInitialized) {
+      if (fromAuth && isAuthenticated) {
+        restoreState()
+        setHasInitialized(true)
+      } else if (quizData && !isReset) {
+        try {
+          initialize({
+            id: quizData.id || quizId,
+            slug,
+            title: quizData.title || "Code Quiz",
+            quizType: "code",
+            questions: quizData.questions || [],
+            requiresAuth: true,
+          })
+          setHasInitialized(true)
+        } catch (error) {
+          console.error("Failed to initialize quiz:", error)
+        }
       }
     }
 
-    // Skip initialization delay in test environment
     if (process.env.NODE_ENV === "test") {
       setIsInitializing(false)
       return
@@ -55,7 +64,8 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
 
     const timer = setTimeout(() => setIsInitializing(false), 500)
     return () => clearTimeout(timer)
-  }, [initialize, quizData, quizId, slug, isReset])
+  }, [quizData, quizId, slug, isReset, fromAuth, isAuthenticated, restoreState, initialize, hasInitialized])
+
 
   // Handle sign in
   const handleSignIn = () => {
@@ -138,7 +148,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
       completedAt: quizState.completedAt || new Date().toISOString(),
       answers: answersArray.filter(Boolean).map((answer) => ({
         questionId: answer?.questionId || "",
-       
+        question: answer?.question || "", // Add the missing 'question' property
         answer: answer?.answer || "",
         isCorrect: answer?.isCorrect || false,
         timeSpent: answer?.timeSpent || 0,
@@ -166,9 +176,6 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     return quizState.currentQuestionIndex === (quizState.questions?.length || 0) - 1
   }, [quizState.currentQuestionIndex, quizState.questions])
 
-
-    console.log("Quiz state is",quizState);
- 
   // Render based on state
   if (isInitializing) {
     return <InitializingDisplay data-testid="initializing-display" />

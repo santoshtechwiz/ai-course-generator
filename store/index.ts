@@ -4,6 +4,7 @@ import storage from "redux-persist/lib/storage"
 import { combineReducers } from "redux"
 import type { TypedUseSelectorHook } from "react-redux"
 import { useDispatch, useSelector } from "react-redux"
+import persistQuizMiddleware from "./middleware/persistQuizMiddleware"
 
 // Import reducers
 import authReducer from "./slices/authSlice"
@@ -52,7 +53,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }),
+    }).prepend(persistQuizMiddleware.middleware),
   devTools: process.env.NODE_ENV !== "production",
 })
 
