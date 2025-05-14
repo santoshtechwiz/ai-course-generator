@@ -75,53 +75,6 @@ export default function QuizDetailsPage({
   const [isBookmarked, setIsBookmarked] = useState(isFavorite)
   const [showConfetti, setShowConfetti] = useState(false)
 
-  // Use the quiz hook from our Redux implementation
-  const { initialize } = useQuiz()
-
-  // Use a ref to track initialization
-  const initialized = useRef(false)
-
-  // Initialize quiz data when component mounts
-  useEffect(() => {
-    // Only initialize once
-    if (initialized.current) return
-    initialized.current = true
-
-    // Initialize the quiz with Redux
-    initialize({
-      id: quizId || "",
-      slug,
-      title,
-      description,
-      quizType,
-      questions: [],
-      questionCount,
-      estimatedTime,
-      difficulty,
-      authorId,
-      isFavorite,
-      isPublic,
-      category,
-      tags,
-    })
-  }, [
-    initialize,
-    quizId,
-    title,
-    description,
-    quizType,
-    questionCount,
-    estimatedTime,
-    difficulty,
-    authorId,
-    isFavorite,
-    isPublic,
-    category,
-    tags,
-    slug,
-  ])
-
-  // Memoize values that don't need to be recalculated on every render
   const quizTypeLabels = useMemo(
     () => ({
       mcq: "Multiple Choice",

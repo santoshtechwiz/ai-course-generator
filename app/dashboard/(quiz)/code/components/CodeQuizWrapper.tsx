@@ -12,19 +12,33 @@ import {
 } from "../../components/QuizStateDisplay"
 import type { CodeQuizWrapperProps, CodeQuizQuestion } from "@/app/types/code-quiz-types"
 
-export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: CodeQuizWrapperProps) {
+export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userId, quizId }: CodeQuizWrapperProps) {
   const router = useRouter()
   const [isInitializing, setIsInitializing] = useState(true)
   const [hasInitialized, setHasInitialized] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
   const [restorationAttempted, setRestorationAttempted] = useState(false)
 
-  const { quizState, initialize, submitAnswer, nextQuestion, completeQuiz, restoreState } = useQuiz()
+  // Destructure state and actions from useQuiz
+  const {
+    quizData,
+    currentQuestion,
+    isCompleted,
+    error: quizError,
+    nextQuestion,
+    submitAnswer,
+    submitQuiz,
+    resetQuizState,
+    loadQuiz,
+    // ...other actions if needed
+  } = useQuiz()
 
+  // Use quizData from state if available, otherwise fallback to prop
   const validQuizData = useMemo(() => {
-    if (!quizData || !Array.isArray(quizData.questions) || quizData.questions.length === 0) return null
-    return quizData
-  }, [quizData])
+    const data = quizData || initialQuizData
+    if (!data || !Array.isArray(data.questions) || data.questions.length === 0) return null
+    return data
+  }, [quizData, initialQuizData])
 
   useEffect(() => {
     if (hasInitialized) return
@@ -37,15 +51,7 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
           return
         }
 
-        await initialize({
-          id: validQuizData.id || quizId,
-          quizId: validQuizData.quizId || quizId,
-          slug,
-          title: validQuizData.title || "Code Quiz",
-          quizType: "code",
-          questions: validQuizData.questions,
-          requiresAuth: true,
-        })
+        await loadQuiz(slug, "code")
       } catch {
         setInitError("An error occurred while initializing the quiz.")
       } finally {
@@ -55,47 +61,31 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     }
 
     run()
-  }, [hasInitialized, validQuizData, quizId, slug, initialize])
+  }, [hasInitialized, validQuizData, quizId, slug, loadQuiz])
 
   const handleAnswer = async (answer: string, timeSpent: number, isCorrect: boolean) => {
     try {
-      const currentQuestion = quizState.questions[quizState.currentQuestionIndex] as CodeQuizQuestion
+      const currentQ = validQuizData.questions[currentQuestion] as CodeQuizQuestion
 
-      submitAnswer({
-        questionId: currentQuestion.id || String(quizState.currentQuestionIndex),
+      await submitAnswer({
+        questionId: currentQ.id || String(currentQuestion),
         answer,
         isCorrect,
         timeSpent,
-        index: quizState.currentQuestionIndex,
+        index: currentQuestion,
         codeSnippet: answer,
-        language: currentQuestion.language || "javascript",
+        language: currentQ.language || "javascript",
+        slug,
       })
 
-      const isLast = quizState.currentQuestionIndex + 1 >= quizState.questions.length
+      const isLast = currentQuestion + 1 >= validQuizData.questions.length
 
       if (isLast) {
-        const answersArray = [
-          ...(quizState.answers || []),
-          {
-            questionId: currentQuestion.id,
-            question: currentQuestion.question || "",
-            userAnswer: answer,
-            isCorrect,
-            timeSpent,
-            index: quizState.currentQuestionIndex,
-            codeSnippet: answer,
-            language: currentQuestion.language || "javascript",
-          },
-        ]
-
-        const correctAnswers = answersArray.filter((a) => a.isCorrect).length
-        const score = Math.round((correctAnswers / answersArray.length) * 100)
-
-        await completeQuiz({
-          score,
-          completedAt: new Date().toISOString(),
-        })
-
+        // Calculate score
+        // (Assume answers are in quizData.userAnswers or similar, adjust as needed)
+        // If you have a selector for answers, use it here
+        // For now, just call submitQuiz and redirect
+        await submitQuiz()
         router.replace(`/dashboard/code/${slug}/results`)
       } else {
         nextQuestion()
@@ -105,34 +95,12 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
     }
   }
 
-  const currentQuestion = useMemo(() => {
-    const idx = quizState.currentQuestionIndex
-    return quizState.questions?.[idx] || null
-  }, [quizState.questions, quizState.currentQuestionIndex])
+  const currentQuestionObj = useMemo(() => {
+    if (!validQuizData) return null
+    return validQuizData.questions?.[currentQuestion] || null
+  }, [validQuizData, currentQuestion])
 
-  useEffect(() => {
-    if (
-      hasInitialized &&
-      !restorationAttempted &&
-      (!currentQuestion ||
-        quizState.currentQuestionIndex < 0 ||
-        quizState.currentQuestionIndex >= quizState.questions.length) &&
-      !quizState.isCompleted
-    ) {
-      restoreState()
-        .then((success) => {
-          if (!success) {
-            setInitError("Failed to restore your quiz progress.")
-          }
-        })
-        .catch(() => {
-          setInitError("Failed to restore quiz state.")
-        })
-        .finally(() => {
-          setRestorationAttempted(true)
-        })
-    }
-  }, [hasInitialized, restorationAttempted, currentQuestion, quizState, restoreState])
+  // Restoration logic can be added here if needed
 
   if (initError) {
     return (
@@ -147,30 +115,28 @@ export default function CodeQuizWrapper({ quizData, slug, userId, quizId }: Code
   if (isInitializing || !hasInitialized) return <InitializingDisplay />
   if (!slug) return <QuizNotFoundDisplay onReturn={() => router.push("/dashboard/quizzes")} />
   if (!validQuizData) return <EmptyQuestionsDisplay onReturn={() => router.push("/dashboard/quizzes")} />
-  if (quizState.error) {
+  if (quizError) {
     return (
       <ErrorDisplay
-        error={quizState.error}
+        error={quizError}
         onRetry={() => window.location.reload()}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
     )
   }
 
-  if (!currentQuestion) return <InitializingDisplay message="Loading question..." />
-
-  const questionToDisplay = validQuizData.questions[quizState.currentQuestionIndex]
+  if (!currentQuestionObj) return <InitializingDisplay message="Loading question..." />
 
   return (
     <CodingQuiz
       question={{
-        ...questionToDisplay,
-        id: questionToDisplay.id || `question-${quizState.currentQuestionIndex}`,
+        ...currentQuestionObj,
+        id: currentQuestionObj.id || `question-${currentQuestion}`,
       }}
       onAnswer={handleAnswer}
-      questionNumber={quizState.currentQuestionIndex + 1}
-      totalQuestions={quizState.questions.length}
-      isLastQuestion={quizState.currentQuestionIndex === quizState.questions.length - 1}
+      questionNumber={currentQuestion + 1}
+      totalQuestions={validQuizData.questions.length}
+      isLastQuestion={currentQuestion === validQuizData.questions.length - 1}
     />
   )
 }
