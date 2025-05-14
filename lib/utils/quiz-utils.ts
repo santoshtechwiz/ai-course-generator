@@ -374,3 +374,16 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
     timeout = setTimeout(later, wait)
   }
 }
+export function formatQuizTime(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds} seconds`
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes} minutes ${remainingSeconds} seconds`
+  } else {
+    const hours = Math.floor(seconds / 3600)
+    const remainingMinutes = Math.floor((seconds % 3600) / 60)
+    return `${hours} hours ${remainingMinutes} minutes`
+  }
+}
