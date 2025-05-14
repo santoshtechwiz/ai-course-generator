@@ -175,3 +175,9 @@ class MockHTMLCanvasElement {
 }
 
 global.HTMLCanvasElement = MockHTMLCanvasElement as any
+
+// Mock requestIdleCallback
+window.requestIdleCallback = jest.fn((callback) => {
+  callback({} as IdleDeadline)
+  return 0
+})

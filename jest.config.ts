@@ -25,6 +25,10 @@ const config: Config = {
   collectCoverageFrom: ["**/*.{js,jsx,ts,tsx}", "!**/*.d.ts", "!**/node_modules/**", "!**/.next/**", "!**/coverage/**"],
   // Add reasonable timeout for tests
   testTimeout: 10000,
+  transformIgnorePatterns: [
+    // Transform ES modules in node_modules
+    "node_modules/(?!(nanoid)/)",
+  ],
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
