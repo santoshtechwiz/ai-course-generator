@@ -9,7 +9,7 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
-import { formatQuizTime, isTooFastAnswer } from "@/lib/utils/quiz-performance"
+
 import CodeQuizEditor from "./CodeQuizEditor"
 import { cn } from "@/lib/tailwindUtils"
 
