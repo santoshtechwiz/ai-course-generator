@@ -17,9 +17,7 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
   const [isInitializing, setIsInitializing] = useState(true)
   const [hasInitialized, setHasInitialized] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
-  const [restorationAttempted, setRestorationAttempted] = useState(false)
 
-  // Destructure state and actions from useQuiz
   const {
     quizData,
     currentQuestion,
@@ -28,12 +26,10 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
     nextQuestion,
     submitAnswer,
     submitQuiz,
-    resetQuizState,
     loadQuiz,
-    // ...other actions if needed
   } = useQuiz()
 
-  // Use quizData from state if available, otherwise fallback to prop
+  // Prefer quizData from state, fallback to initialQuizData
   const validQuizData = useMemo(() => {
     const data = quizData || initialQuizData
     if (!data || !Array.isArray(data.questions) || data.questions.length === 0) return null
@@ -46,12 +42,14 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
     const run = async () => {
       try {
         setInitError(null)
-        if (!validQuizData) {
-          setInitError("This quiz has no valid questions.")
-          return
+        // Only load if quizData is not present
+        if (!quizData) {
+          if (!initialQuizData || !Array.isArray(initialQuizData.questions) || initialQuizData.questions.length === 0) {
+            setInitError("This quiz has no valid questions.")
+            return
+          }
+          await loadQuiz(slug, "code")
         }
-
-        await loadQuiz(slug, "code")
       } catch {
         setInitError("An error occurred while initializing the quiz.")
       } finally {
@@ -61,7 +59,8 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
     }
 
     run()
-  }, [hasInitialized, validQuizData, quizId, slug, loadQuiz])
+    // Only run when quizData, initialQuizData, slug, or loadQuiz changes
+  }, [hasInitialized, quizData, initialQuizData, slug, loadQuiz])
 
   const handleAnswer = async (answer: string, timeSpent: number, isCorrect: boolean) => {
     try {
@@ -81,10 +80,6 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
       const isLast = currentQuestion + 1 >= validQuizData.questions.length
 
       if (isLast) {
-        // Calculate score
-        // (Assume answers are in quizData.userAnswers or similar, adjust as needed)
-        // If you have a selector for answers, use it here
-        // For now, just call submitQuiz and redirect
         await submitQuiz()
         router.replace(`/dashboard/code/${slug}/results`)
       } else {
@@ -100,8 +95,6 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
     return validQuizData.questions?.[currentQuestion] || null
   }, [validQuizData, currentQuestion])
 
-  // Restoration logic can be added here if needed
-
   if (initError) {
     return (
       <ErrorDisplay
@@ -114,7 +107,15 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
 
   if (isInitializing || !hasInitialized) return <InitializingDisplay />
   if (!slug) return <QuizNotFoundDisplay onReturn={() => router.push("/dashboard/quizzes")} />
-  if (!validQuizData) return <EmptyQuestionsDisplay onReturn={() => router.push("/dashboard/quizzes")} />
+  if (!validQuizData) {
+    return (
+      <EmptyQuestionsDisplay
+        message="No Questions Available"
+        description="We couldn't find any questions for this quiz. This could be because the quiz is still being generated or there was an error."
+        onReturn={() => router.push("/dashboard/quizzes")}
+      />
+    )
+  }
   if (quizError) {
     return (
       <ErrorDisplay
