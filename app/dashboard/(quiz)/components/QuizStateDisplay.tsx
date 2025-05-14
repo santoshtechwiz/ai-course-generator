@@ -148,9 +148,15 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ error, onRetry, onRe
 
 interface EmptyQuestionsDisplayProps {
   onReturn: () => void
+  message?: string
+  description?: string
 }
 
-export const EmptyQuestionsDisplay: React.FC<EmptyQuestionsDisplayProps> = ({ onReturn }) => (
+export const EmptyQuestionsDisplay: React.FC<EmptyQuestionsDisplayProps> = ({
+  onReturn,
+  message = "No Questions Available",
+  description = "We couldn't find any questions for this quiz. This could be because the quiz is still being generated or there was an error.",
+}) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -158,10 +164,9 @@ export const EmptyQuestionsDisplay: React.FC<EmptyQuestionsDisplayProps> = ({ on
     role="alert"
   >
     <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-    <h3 className="text-xl font-semibold mb-2">No Questions Available</h3>
+    <h3 className="text-xl font-semibold mb-2">{message}</h3>
     <p className="text-muted-foreground text-center max-w-md">
-      We couldn't find any questions for this quiz. This could be because the quiz is still being generated or there was
-      an error.
+      {description}
     </p>
     <Button onClick={onReturn} className="mt-6">
       <ArrowLeft className="h-4 w-4 mr-2" />
