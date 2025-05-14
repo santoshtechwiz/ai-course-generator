@@ -28,9 +28,10 @@ import { RandomQuiz } from "./RandomQuiz"
 import RandomQuote from "@/components/RandomQuote"
 import { cn } from "@/lib/utils/utils"
 import QuizActions from "./QuizActions"
-import type { QuizType } from "@/app/types/quiz-types"
+
 import { useQuiz } from "@/hooks/useQuizState"
 import { DIFFICULTY_STYLES, QUIZ_TYPE_STYLES } from "@/lib/constants/quiz-constants"
+import { QuizType } from "@/app/types/slice-type"
 
 interface QuizDetailsPageProps {
   title: string

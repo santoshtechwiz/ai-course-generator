@@ -1,29 +1,32 @@
 import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit"
-import {
-  initQuiz,
-  submitAnswer,
-  nextQuestion,
-  completeQuiz,
-  resetQuiz,
-  type QuizState,
-} from "../slices/quizSlice"
+import { initQuiz, submitAnswer, nextQuestion, completeQuiz, resetQuiz, type QuizState } from "../slices/quizSlice"
 import { QUIZ_STORAGE_KEYS } from "@/lib/constants/quiz-constants"
 
 const listenerMiddleware = createListenerMiddleware()
 const QUIZ_STATE_KEY = QUIZ_STORAGE_KEYS.GLOBAL
 
+/**
+ * Middleware that persists quiz state to localStorage when specific actions are dispatched
+ */
 listenerMiddleware.startListening({
   matcher: isAnyOf(initQuiz, submitAnswer, nextQuestion, completeQuiz, resetQuiz),
   effect: (action, listenerApi) => {
     const state = listenerApi.getState() as { quiz: QuizState }
 
+    // Skip if running on server
     if (typeof window === "undefined") return
 
+    // If quiz is completed, remove from localStorage
     if (state.quiz.isCompleted) {
-      localStorage.removeItem(QUIZ_STATE_KEY)
+      try {
+        localStorage.removeItem(QUIZ_STATE_KEY)
+      } catch (error) {
+        console.error("Failed to remove completed quiz state:", error)
+      }
       return
     }
 
+    // Extract only the necessary state to persist
     const persistedState = {
       quizId: state.quiz.quizId,
       slug: state.quiz.slug,
@@ -33,9 +36,10 @@ listenerMiddleware.startListening({
       isCompleted: state.quiz.isCompleted,
       score: state.quiz.score,
       completedAt: state.quiz.completedAt,
-      questions: state.quiz.questions, // ✅ Include questions
+      questions: state.quiz.questions, // Include questions
     }
 
+    // Save to localStorage using requestIdleCallback when available
     try {
       if (window.requestIdleCallback) {
         window.requestIdleCallback(() => {
@@ -52,6 +56,10 @@ listenerMiddleware.startListening({
   },
 })
 
+/**
+ * Loads persisted quiz state from localStorage
+ * @returns The persisted quiz state or undefined if not found
+ */
 export const loadPersistedQuizState = (): Partial<QuizState> | undefined => {
   if (typeof window === "undefined") return undefined
 
@@ -65,6 +73,9 @@ export const loadPersistedQuizState = (): Partial<QuizState> | undefined => {
   }
 }
 
+/**
+ * Clears persisted quiz state from localStorage
+ */
 export const clearPersistedQuizState = (): void => {
   if (typeof window === "undefined") return
   try {

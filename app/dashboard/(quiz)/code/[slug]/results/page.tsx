@@ -1,108 +1,101 @@
-import { notFound } from "next/navigation"
-import { getServerSession } from "next-auth"
-import type { Metadata } from "next"
+"use client"
 
-import { authOptions } from "@/lib/auth"
-import { generatePageMetadata } from "@/lib/seo-utils"
-import type { CodeQuizApiResponse } from "@/app/types/code-quiz-types"
-import CodeQuizResultsPageWrapper from "../../components/CodeQuizResultsPageWrapper"
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { useAppSelector } from "@/store"
+import { useQuiz } from "@/hooks/useQuizState"
+import CodeQuizResult from "../../components/CodeQuizResult"
 import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
+import { ErrorDisplay, LoadingDisplay } from "../../../components/QuizStateDisplay"
+import type { CodeQuizResultData } from "@/app/types/code-quiz-types"
 
-interface PageParams {
-  params: { slug: string }
-}
+export default function CodeQuizResultsPage() {
+  const router = useRouter()
+  const { slug } = useParams() as { slug: string }
 
-/**
- * Fetches quiz data from the API
- */
-async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
-  try {
-    if (!slug) {
-      console.error("Invalid slug provided to getQuizData")
-      return null
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [resultData, setResultData] = useState<CodeQuizResultData | null>(null)
+
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === "authenticated" && !!session?.user
+
+  const quizState = useAppSelector((state) => state.quiz)
+  const { resultsData, isCompleted } = quizState
+
+  const { getResultsData, requireAuthentication } = useQuiz()
+
+  // Handle sign-in redirect
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      requireAuthentication(`/dashboard/code/${slug}/results`)
+    }
+  }, [status, requireAuthentication, slug])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setIsLoading(false)
+      return
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || "http://localhost:3000"
-    const response = await fetch(`${baseUrl}/api/code-quiz/${slug}`, {
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+    try {
+      const result = getResultsData()
 
-    if (!response.ok) {
-      console.error(`Failed to fetch quiz data: ${response.status} ${response.statusText}`)
-      return null
+      if (result) {
+        setResultData(result)
+        setError(null)
+      } else if (isCompleted && resultsData) {
+        setResultData(resultsData)
+        setError(null)
+      } else if (!isCompleted) {
+        router.replace(`/dashboard/code/${slug}`)
+        return
+      } else {
+        setError("Could not load quiz results.")
+      }
+    } catch (err) {
+      setError("An unexpected error occurred while loading results.")
+    } finally {
+      setIsLoading(false)
     }
+  }, [isAuthenticated, getResultsData, resultsData, isCompleted, slug, router])
 
-    return await response.json()
-  } catch (error) {
-    console.error("Error fetching quiz data:", error)
-    return null
-  }
-}
-
-/**
- * Generates metadata for the results page
- */
-export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
-  const { slug } = params
-  const quiz = await getQuizData(slug)
-
-  if (!quiz) {
-    return generatePageMetadata({
-      title: "Quiz Results Not Found | CourseAI",
-      description: "The requested quiz results could not be found.",
-      path: `/dashboard/code/${slug}/results`,
-      noIndex: true,
-    })
+  const handleRetry = () => {
+    setError(null)
+    setIsLoading(true)
+    window.location.reload()
   }
 
-  const title = quiz.quizData?.title || "Code Quiz"
-
-  return generatePageMetadata({
-    title: `${title} Results | CourseAI`,
-    description: `View your results for the ${title} coding challenge.`,
-    path: `/dashboard/code/${slug}/results`,
-    keywords: ["quiz results", "coding challenge", "performance review", title.toLowerCase()],
-    ogType: "article",
-  })
-}
-
-/**
- * Results page component
- */
-export default async function CodeQuizResultsPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
-
-  if (!slug) {
-    notFound()
+  const handleReturn = () => {
+    router.push(`/dashboard/code/${slug}`)
   }
 
-  // Get the current user session
-  const session = await getServerSession(authOptions)
-  const currentUserId = session?.user?.id || ""
+  // === UI STATES ===
+  if (status === "loading" || isLoading) {
+    return <LoadingDisplay message="Loading your quiz results..." />
+  }
 
-  // If not authenticated, show sign-in prompt
-  if (!session) {
+  if (!isAuthenticated) {
     return (
       <NonAuthenticatedUserSignInPrompt
-        onSignIn={() => {
-          // Redirect to sign in and return to this page after
-          window.location.href = `/api/auth/signin?callbackUrl=/dashboard/code/${slug}/results`
-        }}
+        onSignIn={() => requireAuthentication(`/dashboard/code/${slug}/results`)}
         quizType="code quiz results"
-        showSaveMessage={false}
+        showSaveMessage
+        error={error}
       />
     )
   }
 
-  // Fetch quiz data for metadata
-  const quizData = await getQuizData(slug)
-
-  if (!quizData) {
-    notFound()
+  if (error || !resultData) {
+    return (
+      <ErrorDisplay
+        error={error || "Could not load quiz results. Please try again."}
+        onRetry={handleRetry}
+        onReturn={handleReturn}
+      />
+    )
   }
 
-  return <CodeQuizResultsPageWrapper slug={slug} userId={currentUserId} quizId={quizData.quizId} />
+  return <CodeQuizResult result={resultData} />
 }

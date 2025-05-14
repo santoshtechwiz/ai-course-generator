@@ -77,6 +77,9 @@ export interface InitQuizPayload {
 }
 
 export interface CompleteQuizPayload {
+  quizId?: string
+  slug?: string
+  quizType?: string
   answers?: Answer[]
   score?: number
   completedAt?: string
