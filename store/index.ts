@@ -1,51 +1,46 @@
-import { configureStore } from "@reduxjs/toolkit"
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist"
+import { configureStore, combineReducers } from "@reduxjs/toolkit"
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist"
 import storage from "redux-persist/lib/storage"
-import { combineReducers } from "redux"
 import type { TypedUseSelectorHook } from "react-redux"
 import { useDispatch, useSelector } from "react-redux"
+import type { PersistPartial } from "redux-persist/es/persistReducer"
+
+// Middlewares
 import persistQuizMiddleware from "./middleware/persistQuizMiddleware"
 
-// Import reducers
+// Reducers
 import authReducer from "./slices/authSlice"
 import quizReducer from "./slices/quizSlice"
 import subscriptionReducer from "./slices/subscription-slice"
 import userReducer from "./slices/userSlice"
 
-// Configure persist for each reducer
-const authPersistConfig = {
-  key: "auth",
+// === PERSIST CONFIGS ===
+const makePersistConfig = (key: string, whitelist: string[]) => ({
+  key,
   storage,
-  whitelist: ["user", "isAuthenticated", "token"],
-}
-
-const quizPersistConfig = {
-  key: "quiz",
-  storage,
-  whitelist: ["quizzes", "currentQuiz", "results", "progress"],
-}
-
-const subscriptionPersistConfig = {
-  key: "subscription",
-  storage,
-  whitelist: ["data", "details", "tokenUsage", "lastFetched"],
-}
-
-const userPersistConfig = {
-  key: "user",
-  storage,
-  whitelist: ["profile", "preferences", "statistics"],
-}
-
-// Combine reducers
-const rootReducer = combineReducers({
-  auth: persistReducer(authPersistConfig, authReducer),
-  quiz: persistReducer(quizPersistConfig, quizReducer),
-  subscription: persistReducer(subscriptionPersistConfig, subscriptionReducer),
-  user: persistReducer(userPersistConfig, userReducer),
+  whitelist,
 })
 
-// Configure store with middleware options
+const rootReducer = combineReducers({
+  auth: persistReducer(makePersistConfig("auth", ["user", "isAuthenticated", "token"]), authReducer),
+  quiz: persistReducer(makePersistConfig("quiz", ["quizzes", "currentQuiz", "results", "progress"]), quizReducer),
+  subscription: persistReducer(
+    makePersistConfig("subscription", ["data", "details", "tokenUsage", "lastFetched"]),
+    subscriptionReducer
+  ),
+  user: persistReducer(makePersistConfig("user", ["profile", "preferences", "statistics"]), userReducer),
+})
+
+// === STORE ===
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
@@ -57,44 +52,21 @@ export const store = configureStore({
   devTools: process.env.NODE_ENV !== "production",
 })
 
-// Create persistor
 export const persistor = persistStore(store)
 
-// Define RootState to include PersistPartial
-import type { PersistPartial } from "redux-persist/es/persistReducer"
-
-// Export types
+// === TYPES ===
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
-// Use these typed hooks throughout the app instead of plain useDispatch/useSelector
+// === HOOKS ===
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 
-// Typed selectors for specific slices with PersistPartial handling
-export const useQuizState = () => {
-  return useAppSelector((state) => state.quiz) as typeof quizReducer extends (state: infer S, action: any) => any
-    ? S & PersistPartial
-    : never
-}
+// === SLICE SELECTORS WITH PERSIST TYPES ===
+const createTypedSliceSelector = <T>(selector: (state: RootState) => T) =>
+  useAppSelector(selector) as T & PersistPartial
 
-export const useAuthState = () => {
-  return useAppSelector((state) => state.auth) as typeof authReducer extends (state: infer S, action: any) => any
-    ? S & PersistPartial
-    : never
-}
-
-export const useSubscriptionState = () => {
-  return useAppSelector((state) => state.subscription) as typeof subscriptionReducer extends (
-    state: infer S,
-    action: any,
-  ) => any
-    ? S & PersistPartial
-    : never
-}
-
-export const useUserState = () => {
-  return useAppSelector((state) => state.user) as typeof userReducer extends (state: infer S, action: any) => any
-    ? S & PersistPartial
-    : never
-}
+export const useQuizState = () => createTypedSliceSelector((state) => state.quiz)
+export const useAuthState = () => createTypedSliceSelector((state) => state.auth)
+export const useSubscriptionState = () => createTypedSliceSelector((state) => state.subscription)
+export const useUserState = () => createTypedSliceSelector((state) => state.user)

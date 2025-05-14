@@ -4,7 +4,7 @@ import type { Metadata } from "next"
 
 import { authOptions } from "@/lib/auth"
 import { generatePageMetadata } from "@/lib/seo-utils"
-import type { CodeQuizApiResponse } from "@/app/types/code-quiz-types"
+import type { CodeQuizApiResponse, CodeQuizQuestion } from "@/app/types/code-quiz-types"
 
 import type { BreadcrumbItem } from "@/app/types/types"
 import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
@@ -12,6 +12,20 @@ import CodeQuizWrapper from "../components/CodeQuizWrapper"
 
 interface PageParams {
   params: Promise<{ slug: string }>
+}
+
+// Improved type safety for quiz data
+interface ValidatedQuizData {
+  id: string
+  quizId: string
+  title: string
+  slug: string
+  isPublic: boolean
+  isFavorite: boolean
+  userId: string
+  ownerId: string
+  difficulty?: string
+  questions: CodeQuizQuestion[]
 }
 
 async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
@@ -30,13 +44,18 @@ async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
     }
 
     const data = await response.json()
-    console.log("API response:", {
+
+    // Log detailed information about the response
+    console.log("API response details:", {
       quizId: data.quizId,
-      hasNestedData: Boolean(data.quizData),
-      questionCount: data.quizData?.questions?.length || 0,
+      hasQuizData: Boolean(data.quizData),
+      hasQuestions: Boolean(data.quizData?.questions),
+      questionsIsArray: Array.isArray(data.quizData?.questions),
+      questionCount: Array.isArray(data.quizData?.questions) ? data.quizData.questions.length : 0,
       firstQuestion: data.quizData?.questions?.[0]
         ? JSON.stringify(data.quizData.questions[0]).substring(0, 100) + "..."
         : "No questions",
+      dataStructure: JSON.stringify(Object.keys(data)).substring(0, 100) + "...",
     })
 
     return data
@@ -88,20 +107,44 @@ const CodePage = async (props: PageParams) => {
 
   // Fetch quiz data
   const result = await getQuizData(slug)
+
+  // Handle missing quiz data
   if (!result) {
     console.error("Quiz data not found for slug:", slug)
     notFound()
   }
 
-  // Validate quiz data structure
-  if (!result.quizData || !Array.isArray(result.quizData.questions) || result.quizData.questions.length === 0) {
-    console.error("Invalid or empty quiz data structure:", JSON.stringify(result).substring(0, 200) + "...")
+  // Validate quiz data structure with detailed logging
+  if (!result.quizData) {
+    console.error("Invalid quiz data structure: quizData is missing")
+    notFound()
+  }
+
+  // Validate questions array with detailed logging
+  if (!Array.isArray(result.quizData.questions)) {
+    console.error("Invalid quiz data: questions is not an array", {
+      questionsType: typeof result.quizData.questions,
+      quizDataKeys: Object.keys(result.quizData),
+    })
+    notFound()
+  }
+
+  // Check if questions array is empty
+  if (result.quizData.questions.length === 0) {
+    console.error("Invalid quiz data: questions array is empty")
+    notFound()
+  }
+
+  // Validate each question has required properties
+  const invalidQuestions = result.quizData.questions.filter((q) => !q.question)
+  if (invalidQuestions.length > 0) {
+    console.error(`Found ${invalidQuestions.length} invalid questions without 'question' property`)
     notFound()
   }
 
   // Extract data from the nested structure
-  const title = result.quizData?.title || "Code Quiz"
-  const questions = result.quizData?.questions || []
+  const title = result.quizData.title || "Code Quiz"
+  const questions = result.quizData.questions
 
   // Log detailed information about the questions
   console.log("Questions data:", {
@@ -111,7 +154,7 @@ const CodePage = async (props: PageParams) => {
   })
 
   // Calculate estimated time based on question count and complexity
-  const questionCount = questions.length || 0
+  const questionCount = questions.length
   const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M`
 
   // Create breadcrumb items
@@ -121,6 +164,35 @@ const CodePage = async (props: PageParams) => {
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
     { name: title, href: `${baseUrl}/dashboard/code/${slug}` },
   ]
+
+  // Create a validated quiz data object with strict typing
+  const validatedQuizData: ValidatedQuizData = {
+    id: result.quizData.id || "",
+    quizId: result.quizId || "",
+    title: title,
+    slug: slug,
+    isPublic: Boolean(result.isPublic),
+    isFavorite: Boolean(result.isFavorite),
+    userId: currentUserId,
+    ownerId: result.ownerId || "",
+    difficulty: result.quizData.difficulty,
+    // Ensure questions is a non-empty array
+    questions: questions.map((q) => ({
+      id: q.id || `question-${Math.random().toString(36).substring(2, 9)}`,
+      question: q.question || "",
+      codeSnippet: q.codeSnippet || "",
+      options: Array.isArray(q.options) ? q.options : [],
+      answer: q.answer || "",
+      correctAnswer: q.correctAnswer || q.answer || "",
+      language: q.language || "javascript",
+    })),
+  }
+
+  // Final validation check before rendering
+  if (validatedQuizData.questions.length === 0) {
+    console.error("Validation failed: questions array is still empty after processing")
+    notFound()
+  }
 
   return (
     <QuizDetailsPageWithContext
@@ -133,27 +205,16 @@ const CodePage = async (props: PageParams) => {
       breadcrumbItems={breadcrumbItems}
       quizId={result.quizId}
       authorId={result.ownerId}
-      isPublic={result.isPublic || false}
-      isFavorite={result.isFavorite || false}
+      isPublic={Boolean(result.isPublic)}
+      isFavorite={Boolean(result.isFavorite)}
     >
       <CodeQuizWrapper
-        quizData={{
-      
-          id: result.quizData?.id || "",
-          title: result.quizData?.title || "",
-          slug: slug,
-          isPublic: result.isPublic || false,
-          isFavorite: result.isFavorite || false,
-          userId: currentUserId,
-          ownerId: result.ownerId || "",
-          difficulty: result.quizData?.difficulty,
-          questions: questions, // Ensure questions are passed correctly
-        }}
+        quizData={validatedQuizData}
         slug={slug}
         userId={currentUserId}
         quizId={result.quizId}
-        isPublic={result.isPublic}
-        isFavorite={result.isFavorite}
+        isPublic={Boolean(result.isPublic)}
+        isFavorite={Boolean(result.isFavorite)}
         ownerId={result.ownerId}
       />
     </QuizDetailsPageWithContext>

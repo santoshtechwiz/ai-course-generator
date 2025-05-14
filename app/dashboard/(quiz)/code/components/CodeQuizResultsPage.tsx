@@ -24,26 +24,13 @@ export default function CodeQuizResultsPage({ result, onRestart, onShare, onRetu
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
 
-  // Calculate metrics
-  const totalQuestions = result.totalQuestions
-  const correctAnswers = result.correctAnswers
+  const { totalQuestions, correctAnswers, score, totalTimeSpent } = result
   const incorrectAnswers = totalQuestions - correctAnswers
-  const score = result.score
-  const totalTimeSpent = result.totalTimeSpent
   const formattedTimeSpent = result.formattedTimeSpent || formatQuizTime(totalTimeSpent)
-  const averageTimePerQuestion = Math.round(totalTimeSpent / totalQuestions)
 
-  // Determine performance level
-  const getPerformanceLevel = (score: number) => {
-    if (score >= 90) return "Excellent"
-    if (score >= 75) return "Good"
-    if (score >= 60) return "Satisfactory"
-    return "Needs Improvement"
-  }
+  const performanceLevel =
+    score >= 90 ? "Excellent" : score >= 75 ? "Good" : score >= 60 ? "Satisfactory" : "Needs Improvement"
 
-  const performanceLevel = getPerformanceLevel(score)
-
-  // Show confetti for high scores
   useEffect(() => {
     if (score >= 80) {
       setShowConfetti(true)
@@ -52,47 +39,20 @@ export default function CodeQuizResultsPage({ result, onRestart, onShare, onRetu
     }
   }, [score])
 
-  // Handle navigation
-  const handleReturn = () => {
-    if (onReturn) {
-      onReturn()
-    } else {
-      router.push("/dashboard/quizzes")
-    }
-  }
-
-  // Handle restart
-  const handleRestart = () => {
-    if (onRestart) {
-      onRestart()
-    } else {
-      router.push(`/dashboard/code/${result.slug}?reset=true`)
-    }
-  }
-
-  // Handle share
+  const handleReturn = () => onReturn?.() ?? router.push("/dashboard/quizzes")
+  const handleRestart = () => onRestart?.() ?? router.push(`/dashboard/code/${result.slug}?reset=true`)
   const handleShare = () => {
-    if (onShare) {
-      onShare()
+    if (onShare) return onShare()
+    if (navigator.share) {
+      navigator.share({
+        title: `My Code Quiz Result: ${score}%`,
+        text: `I scored ${score}% on the coding quiz!`,
+        url: window.location.href,
+      })
     } else {
-      // Default share implementation
-      if (navigator.share) {
-        navigator
-          .share({
-            title: `My Code Quiz Result: ${score}%`,
-            text: `I scored ${score}% on the coding quiz!`,
-            url: window.location.href,
-          })
-          .catch((err) => console.error("Error sharing:", err))
-      } else {
-        // Fallback - copy to clipboard
-        navigator.clipboard
-          .writeText(`I scored ${score}% on the coding quiz! Check it out: ${window.location.href}`)
-          .then(() => {
-            alert("Result link copied to clipboard!")
-          })
-          .catch((err) => console.error("Error copying to clipboard:", err))
-      }
+      navigator.clipboard
+        .writeText(`I scored ${score}% on the coding quiz! Check it out: ${window.location.href}`)
+        .then(() => alert("Result link copied to clipboard!"))
     }
   }
 
@@ -114,7 +74,6 @@ export default function CodeQuizResultsPage({ result, onRestart, onShare, onRetu
               {new Date(result.completedAt).toLocaleTimeString()}
             </p>
           </div>
-
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRestart}>
               <RotateCcw className="h-4 w-4 mr-2" />
@@ -155,55 +114,21 @@ export default function CodeQuizResultsPage({ result, onRestart, onShare, onRetu
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
-          {result.answers.map((answer, index) => (
-            <AnswerReviewItem
-              key={`answer-${index}`}
-              index={index}
-              question={answer.question}
-              userAnswer={answer.codeSnippet || answer.answer}
-              correctAnswer={answer.correctAnswer || ""}
-              isCorrect={answer.isCorrect}
-              timeSpent={answer.timeSpent}
-              language={answer.language}
-              delay={index * 0.1}
-            />
+          {result.answers.map((a, i) => (
+            <AnswerReviewItem key={`a-${i}`} index={i} {...a} delay={i * 0.1} />
           ))}
         </TabsContent>
 
         <TabsContent value="correct" className="space-y-4">
-          {result.answers
-            .filter((answer) => answer.isCorrect)
-            .map((answer, index) => (
-              <AnswerReviewItem
-                key={`correct-${index}`}
-                index={result.answers.findIndex((a) => a.questionId === answer.questionId)}
-                question={answer.question}
-                userAnswer={answer.codeSnippet || answer.answer}
-                correctAnswer={answer.correctAnswer || ""}
-                isCorrect={true}
-                timeSpent={answer.timeSpent}
-                language={answer.language}
-                delay={index * 0.1}
-              />
-            ))}
+          {result.answers.filter(a => a.isCorrect).map((a, i) => (
+            <AnswerReviewItem key={`c-${i}`} index={result.answers.findIndex(b => b.questionId === a.questionId)} {...a} isCorrect delay={i * 0.1} />
+          ))}
         </TabsContent>
 
         <TabsContent value="incorrect" className="space-y-4">
-          {result.answers
-            .filter((answer) => !answer.isCorrect)
-            .map((answer, index) => (
-              <AnswerReviewItem
-                key={`incorrect-${index}`}
-                index={result.answers.findIndex((a) => a.questionId === answer.questionId)}
-                question={answer.question}
-                userAnswer={answer.codeSnippet || answer.answer}
-                correctAnswer={answer.correctAnswer || ""}
-                isCorrect={false}
-                timeSpent={answer.timeSpent}
-                language={answer.language}
-                delay={index * 0.1}
-              />
-            ))}
+          {result.answers.filter(a => !a.isCorrect).map((a, i) => (
+            <AnswerReviewItem key={`i-${i}`} index={result.answers.findIndex(b => b.questionId === a.questionId)} {...a} isCorrect={false} delay={i * 0.1} />
+          ))}
         </TabsContent>
       </Tabs>
 

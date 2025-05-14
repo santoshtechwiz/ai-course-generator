@@ -288,14 +288,17 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
   )
 }
 
-// Custom comparison function for memoization
-function arePropsEqual(prevProps: CodingQuizProps, nextProps: CodingQuizProps) {
+// Replace the arePropsEqual function with this updated version:
+function arePropsEqual(prev: CodingQuizProps, next: CodingQuizProps) {
   return (
-    prevProps.question.id === nextProps.question.id &&
-    prevProps.questionNumber === nextProps.questionNumber &&
-    prevProps.isLastQuestion === nextProps.isLastQuestion
+    prev.question.id === next.question.id &&
+    prev.question.question === next.question.question &&
+    prev.questionNumber === next.questionNumber &&
+    prev.isLastQuestion === next.isLastQuestion &&
+    prev.totalQuestions === next.totalQuestions
   )
 }
+
 
 // Export memoized component with custom comparison
 export default memo(CodingQuizComponent, arePropsEqual)
