@@ -94,6 +94,7 @@ describe("useQuiz Hook Authentication Flow", () => {
         await result.current.loadQuiz("test-quiz", "mcq")
       } catch (error) {
         // Expected error
+        // The signIn call is now handled inside loadQuiz
       }
     })
 
@@ -211,77 +212,4 @@ describe("useQuiz Hook Authentication Flow", () => {
     expect(result.current.userAnswers[1].questionId).toBe("q2")
     expect(result.current.userAnswers[1].answer).toBe("answer2")
   })
-
-  // test("clears persisted state after successful quiz submission", async () => {
-  //   // Set up initial quiz state
-  //   const initialState = {
-  //     quizData: {
-  //       id: "test-quiz",
-  //       title: "Test Quiz",
-  //       description: "Test",
-  //       type: "mcq" as const,
-  //       difficulty: "medium" as const,
-  //       questions: [{ id: "q1", question: "Question 1", type: "mcq" }],
-  //       slug: "test-quiz",
-  //     },
-  //     currentQuestion: 0,
-  //     userAnswers: [{ questionId: "q1", answer: "test" }],
-  //     isLoading: false,
-  //     isSubmitting: false,
-  //     error: null,
-  //     results: null,
-  //     isCompleted: false,
-  //     quizHistory: [],
-  //     currentQuizId: "test-quiz",
-  //     timeRemaining: null,
-  //     timerActive: false,
-  //   }
-
-  //   // Create a mock result object
-  //   const mockResult = {
-  //     quizId: "test-quiz",
-  //     userId: "user-1",
-  //     score: 80,
-  //     maxScore: 100,
-  //     percentage: 80,
-  //     answers: [],
-  //     submittedAt: new Date().toISOString(),
-  //   }
-
-  //   // Mock successful quiz submission
-  //   ;(global.fetch as jest.Mock).mockImplementationOnce(() =>
-  //     Promise.resolve({
-  //       ok: true,
-  //       json: () => Promise.resolve(mockResult),
-  //     }),
-  //   )
-
-  //   // Create a store with the initial state
-  //   const store = configureStore({
-  //     reducer: {
-  //       quiz: quizReducer,
-  //     },
-  //     preloadedState: {
-  //       quiz: initialState,
-  //     },
-  //   })
-
-  //   // Render the hook with the store
-  //   const { result } = renderHook(() => useQuiz(), {
-  //     wrapper: ({ children }) => <Provider store={store}>{children}</Provider>,
-  //   })
-
-  //   // Submit the quiz
-  //   let submitResult
-  //   await act(async () => {
-  //     submitResult = await result.current.submitQuiz()
-  //   })
-
-  //   // Verify the submission was successful
-  //   expect(submitResult).toEqual(mockResult)
-
-  //   // Verify the state was updated correctly
-  //   expect(result.current.isCompleted).toBe(true)
-  //   expect(result.current.results).toEqual(mockResult)
-  // })
 })

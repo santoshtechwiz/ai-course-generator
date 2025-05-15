@@ -29,14 +29,15 @@ jest.mock("@/hooks/useQuizState", () => ({
 }))
 
 // Mock components
-jest.mock("./components/CodingQuiz", () => {
-  return jest.fn(({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }) => (
+jest.mock("../dashboard/(quiz)/code/components/CodingQuiz", () => {
+  return jest.fn(({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion, existingAnswer }) => (
     <div data-testid="coding-quiz">
       <h2>
         Question {questionNumber}/{totalQuestions}
       </h2>
       <div data-testid="question-text">{question.question}</div>
       {question.codeSnippet && <pre data-testid="code-snippet">{question.codeSnippet}</pre>}
+      {existingAnswer && <div data-testid="existing-answer">{existingAnswer}</div>}
       {question.options && (
         <div data-testid="options">
           {question.options.map((option: string, index: number) => (
@@ -122,6 +123,8 @@ const mockUseQuiz = {
   error: null,
   results: null,
   isCompleted: false,
+  timeRemaining: null,
+  timerActive: false,
   loadQuiz: jest.fn().mockResolvedValue(mockQuizData),
   resetQuizState: jest.fn(),
   nextQuestion: jest.fn(),
@@ -129,6 +132,7 @@ const mockUseQuiz = {
   saveAnswer: jest.fn(),
   submitQuiz: jest.fn().mockResolvedValue({}),
   getResults: jest.fn(),
+  saveQuizState: jest.fn(),
 }
 
 // Setup test store
@@ -342,8 +346,35 @@ describe("Code Quiz Integration Tests", () => {
     })
 
     // The existing answer should be passed to the CodingQuiz component
-    // We can't directly test this since we're mocking the component,
-    // but we can verify that the component was rendered with the correct props
-    expect(require("./components/CodingQuiz").mock.calls[0][0].question.id).toBe("q1")
+    expect(require("../dashboard/(quiz)/code/components/CodingQuiz").mock.calls[0][0].question.id).toBe("q1")
+    expect(require("../dashboard/(quiz)/code/components/CodingQuiz").mock.calls[0][0].existingAnswer).toBe("2")
+  })
+
+  test("should handle state persistence between sessions", async () => {
+    // Start with quiz data already loaded and an existing answer
+    const existingAnswer = "console.log(2);"
+    const useQuizWithDataAndAnswer = {
+      ...mockUseQuiz,
+      quizData: mockQuizData,
+      userAnswers: [{ questionId: "q1", answer: existingAnswer }],
+    }
+
+    renderWithProviders(<CodeQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />, {
+      useQuizMock: useQuizWithDataAndAnswer,
+    })
+
+    // Should show the first question
+    await waitFor(() => {
+      expect(screen.getByTestId("coding-quiz")).toBeInTheDocument()
+      expect(screen.getByText("Question 1/2")).toBeInTheDocument()
+    })
+
+    // Simulate visibility change (tab switching)
+    const visibilityChangeEvent = new Event("visibilitychange")
+    Object.defineProperty(document, "visibilityState", { value: "visible", writable: true })
+    document.dispatchEvent(visibilityChangeEvent)
+
+    // Verify saveQuizState was called
+    expect(useQuizWithDataAndAnswer.saveQuizState).toHaveBeenCalled()
   })
 })
