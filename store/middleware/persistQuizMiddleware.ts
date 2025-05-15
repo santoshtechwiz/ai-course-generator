@@ -60,12 +60,13 @@ listenerMiddleware.startListening({
         const persistedState = {
           quizData: state.quiz.quizData
             ? {
-                id: state.quiz.quizData.id,
-                title: state.quiz.quizData.title,
-                type: state.quiz.quizData.type,
-                slug: state.quiz.quizData.slug,
-              }
+              id: state.quiz.quizData.id,
+              title: state.quiz.quizData.title,
+              type: state.quiz.quizData.type || "code", // ✅ fallback
+              slug: state.quiz.quizData.slug,
+            }
             : null,
+
           currentQuestion: state.quiz.currentQuestion,
           userAnswers: state.quiz.userAnswers,
           currentQuizId: state.quiz.currentQuizId,
@@ -85,12 +86,13 @@ listenerMiddleware.startListening({
     const persistedState = {
       quizData: state.quiz.quizData
         ? {
-            id: state.quiz.quizData.id,
-            title: state.quiz.quizData.title,
-            type: state.quiz.quizData.type,
-            slug: state.quiz.quizData.slug,
-          }
+          id: state.quiz.quizData.id,
+          title: state.quiz.quizData.title,
+          type: state.quiz.quizData.type || "code", // ✅ fallback
+          slug: state.quiz.quizData.slug,
+        }
         : null,
+
       currentQuestion: state.quiz.currentQuestion,
       userAnswers: state.quiz.userAnswers,
       currentQuizId: state.quiz.currentQuizId,
