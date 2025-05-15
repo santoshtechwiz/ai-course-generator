@@ -1,4 +1,5 @@
-import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
+// store/slices/quizSlice.ts
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
 import type { QuizData, UserAnswer, QuizResult, QuizHistoryItem, QuizType } from "@/app/types/quiz-types"
 
 export const API_ENDPOINTS: Record<QuizType, string> = {
@@ -8,7 +9,6 @@ export const API_ENDPOINTS: Record<QuizType, string> = {
   openended: "/api/quizzes/openended",
 }
 
-// Helpers
 const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => ({
   id: raw.quizId || raw.id || "",
   title: raw.quizData?.title || "Quiz",
@@ -25,13 +25,15 @@ const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => 
         language: q.language || "javascript",
       }))
     : [],
-  isPublic: Boolean(raw.isPublic),
-  isFavorite: Boolean(raw.isFavorite),
+  isPublic: !!raw.isPublic,
+  isFavorite: !!raw.isFavorite,
   ownerId: raw.ownerId || "",
   timeLimit: raw.quizData?.timeLimit || null,
 })
 
-// State
+// -----------------------------------------
+// Initial State
+// -----------------------------------------
 interface QuizState {
   quizData: QuizData | null
   currentQuestion: number
@@ -45,7 +47,6 @@ interface QuizState {
   results: QuizResult | null
   quizHistory: QuizHistoryItem[]
 
-  // Errors
   quizError: string | null
   submissionError: string | null
   resultsError: string | null
@@ -70,14 +71,15 @@ const initialState: QuizState = {
   historyError: null,
 }
 
+// -----------------------------------------
 // Async Thunks
-
+// -----------------------------------------
 export const fetchQuiz = createAsyncThunk(
   "quiz/fetchQuiz",
   async ({ slug, type }: { slug: string; type: QuizType }, { rejectWithValue }) => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
-      const endpoint = API_ENDPOINTS[type] || `/api/quizzes/${type}`
+      const endpoint = API_ENDPOINTS[type]
       const url = new URL(`${endpoint}/${slug}`, baseUrl).toString()
 
       const response = await fetch(url)
@@ -88,41 +90,22 @@ export const fetchQuiz = createAsyncThunk(
 
       const data = await response.json()
       return normalizeQuizData(data, slug, type)
-    } catch (err) {
-      return rejectWithValue("Failed to load quiz. Please try again.")
-    }
-  },
-)
-
-export const submitAnswer = createAsyncThunk(
-  "quiz/submitAnswer",
-  async (
-    { slug, questionId, answer }: { slug: string; questionId: string; answer: string | Record<string, string> },
-    { rejectWithValue },
-  ) => {
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
-      const res = await fetch(`${baseUrl}/api/quizzes/common/${slug}/complete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, questionId, answer }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        return rejectWithValue(errorData.message || "Failed to submit answer")
-      }
-
-      return await res.json()
     } catch {
-      return rejectWithValue("Network error submitting answer.")
+      return rejectWithValue("Failed to load quiz. Please try again.")
     }
   },
 )
 
 export const submitQuiz = createAsyncThunk(
   "quiz/submitQuiz",
-  async ({ slug, answers, timeTaken }: { slug: string; answers: UserAnswer[]; timeTaken?: number }, { rejectWithValue }) => {
+  async (
+    {
+      slug,
+      answers,
+      timeTaken,
+    }: { slug: string; answers: UserAnswer[]; timeTaken?: number },
+    { rejectWithValue },
+  ) => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
       const response = await fetch(`${baseUrl}/api/quizzes/common/${slug}/complete`, {
@@ -178,8 +161,9 @@ export const fetchQuizHistory = createAsyncThunk("quiz/fetchQuizHistory", async 
   }
 })
 
+// -----------------------------------------
 // Slice
-
+// -----------------------------------------
 const quizSlice = createSlice({
   name: "quiz",
   initialState,
@@ -232,26 +216,12 @@ const quizSlice = createSlice({
         state.userAnswers = []
         state.currentQuestion = 0
         state.isLoading = false
-        state.quizError = null
-        state.results = null
         state.isCompleted = false
         state.timeRemaining = action.payload.timeLimit ? action.payload.timeLimit * 60 : null
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         state.isLoading = false
         state.quizError = action.payload as string
-      })
-
-      .addCase(submitAnswer.pending, (state) => {
-        state.isSubmitting = true
-        state.submissionError = null
-      })
-      .addCase(submitAnswer.fulfilled, (state) => {
-        state.isSubmitting = false
-      })
-      .addCase(submitAnswer.rejected, (state, action) => {
-        state.isSubmitting = false
-        state.submissionError = action.payload as string
       })
 
       .addCase(submitQuiz.pending, (state) => {

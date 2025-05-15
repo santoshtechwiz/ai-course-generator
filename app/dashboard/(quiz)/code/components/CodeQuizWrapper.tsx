@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react"
 import { useQuiz } from "@/hooks/useQuizState"
 import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
 import CodingQuiz from "./CodingQuiz"
+import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 
 interface CodeQuizWrapperProps {
   slug: string
@@ -45,28 +46,46 @@ export default function CodeQuizWrapper({
     resetQuizState,
   } = useQuiz()
 
-  // Auth check
   useEffect(() => {
     if (status === "unauthenticated") {
       sessionStorage.setItem("quizRedirectPath", window.location.pathname)
-      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
     } else if (status === "authenticated") {
       setAuthChecked(true)
     }
-  }, [status, router])
+  }, [status])
 
-  // Load quiz only if not already loaded
+  // ✅ Fix: Ensure proper normalized quizData shape
   useEffect(() => {
     if (authChecked && !quizState && !isLoading && !error) {
-      const source = quizData ?? undefined
-      loadQuiz(slug, "code", source).catch((err) => {
-        console.error("Error loading quiz:", err)
-        setErrorMessage("Failed to load quiz")
-      })
+      if (quizData && Array.isArray(quizData?.questions)) {
+        loadQuiz(slug, "code", {
+          id: quizId,
+          title: quizData.title,
+          slug,
+          type: "code",
+          questions: quizData.questions,
+          isPublic: isPublic ?? false,
+          isFavorite: isFavorite ?? false,
+          ownerId: ownerId ?? "",
+          timeLimit: quizData.timeLimit ?? null,
+        })
+      }
     }
-  }, [authChecked, slug, quizData, quizState, isLoading, error, loadQuiz])
 
-  // Cleanup quiz state on unmount or navigation
+    }, [
+      authChecked,
+      slug,
+      quizId,
+      quizData,
+      isPublic,
+      isFavorite,
+      ownerId,
+      quizState,
+      isLoading,
+      error,
+      loadQuiz,
+    ])
+
   useEffect(() => {
     return () => {
       if (!window.location.pathname.includes(`/dashboard/code/${slug}`)) {
@@ -75,20 +94,16 @@ export default function CodeQuizWrapper({
     }
   }, [resetQuizState, slug])
 
-  // Always read from quizState (Redux)
-  const effectiveQuizData = quizState
-  const questions = effectiveQuizData?.questions || []
+  const questions = quizState?.questions || []
   const totalQuestions = questions.length
   const currentQuestionData = questions[currentQuestion] || null
   const isLastQuestion = currentQuestion === totalQuestions - 1
 
-  // Answer handler
   const handleAnswer = useCallback(
     async (answer: string, elapsedTime: number, isCorrect: boolean) => {
       try {
         const question = questions[currentQuestion]
-
-        if (!question || !question.id) {
+        if (!question?.id) {
           setErrorMessage("Invalid question data")
           return
         }
@@ -97,7 +112,10 @@ export default function CodeQuizWrapper({
 
         if (isLastQuestion) {
           await submitQuiz(slug)
-          router.replace(`/dashboard/code/${slug}/results`)
+
+          if (userId) {
+            router.replace(`/dashboard/code/${slug}/results`)
+          }
         } else {
           nextQuestion()
         }
@@ -106,7 +124,7 @@ export default function CodeQuizWrapper({
         setErrorMessage("Failed to submit answer")
       }
     },
-    [questions, currentQuestion, saveAnswer, submitQuiz, router, slug, isLastQuestion, nextQuestion],
+    [questions, currentQuestion, saveAnswer, submitQuiz, router, slug, isLastQuestion, nextQuestion, userId]
   )
 
   const handleReturn = useCallback(() => {
@@ -117,23 +135,25 @@ export default function CodeQuizWrapper({
     window.location.reload()
   }, [])
 
-  // Handle auth state
-  if (status === "unauthenticated") {
+  const handleSignIn = useCallback(() => {
+    sessionStorage.setItem("quizRedirectPath", `/dashboard/code/${slug}/results`)
+    router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/code/${slug}/results`)}`)
+  }, [router, slug])
+
+  if (status === "unauthenticated" && !authChecked) {
     return (
       <ErrorDisplay
         error="Please sign in to access this quiz"
-        onRetry={() => router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)}
+        onRetry={handleSignIn}
         onReturn={handleReturn}
       />
     )
   }
 
-  // Show loading state
   if (isLoading || status === "loading" || !authChecked) {
     return <InitializingDisplay />
   }
 
-  // Show error state
   if (error || errorMessage) {
     return (
       <ErrorDisplay
@@ -144,12 +164,25 @@ export default function CodeQuizWrapper({
     )
   }
 
-  // Empty quiz
   if (!questions.length) {
     return <EmptyQuestionsDisplay onReturn={handleReturn} />
   }
 
-  // Show quiz
+  if (isCompleted) {
+    if (userId) {
+      router.replace(`/dashboard/code/${slug}/results`)
+      return null
+    }
+
+    return (
+      <NonAuthenticatedUserSignInPrompt
+        quizType="code"
+        onSignIn={handleSignIn}
+        showSaveMessage
+      />
+    )
+  }
+
   if (currentQuestionData) {
     return (
       <CodingQuiz

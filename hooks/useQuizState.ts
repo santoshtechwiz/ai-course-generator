@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store"
 import {
   fetchQuiz,
-  submitAnswer,
   submitQuiz,
   getQuizResults,
   fetchQuizHistory,
@@ -17,7 +16,8 @@ import {
   resumeTimer,
   decrementTimer,
 } from "@/store/slices/quizSlice"
-import type { QuizType } from "@/app/types/quiz-types"
+
+import type { QuizData, QuizType, UserAnswer } from "@/app/types/quiz-types"
 import { signIn } from "next-auth/react"
 import { loadPersistedQuizState, hasAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
 import { formatTime } from "@/lib/utils/quiz-utils"
@@ -26,6 +26,7 @@ export function useQuiz() {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const quizState = useAppSelector((state) => state.quiz)
+
   const [isAuthRedirect, setIsAuthRedirect] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -36,7 +37,7 @@ export function useQuiz() {
     }
   }, [])
 
-  // Timer effect
+  // Start countdown timer
   useEffect(() => {
     if (quizState.timerActive && quizState.timeRemaining !== null) {
       if (!timerRef.current) {
@@ -52,7 +53,7 @@ export function useQuiz() {
     }
   }, [quizState.timerActive, quizState.timeRemaining, dispatch])
 
-  // Auto-submit when timer hits 0
+  // Auto-submit when time runs out
   useEffect(() => {
     if (
       quizState.timeRemaining === 0 &&
@@ -64,7 +65,7 @@ export function useQuiz() {
     }
   }, [quizState.timeRemaining, quizState.isCompleted, quizState.quizData, quizState.userAnswers])
 
-  // Restore after auth redirect
+  // Auth redirect state restore
   useEffect(() => {
     if (typeof window !== "undefined") {
       setIsAuthRedirect(hasAuthRedirectState())
@@ -82,7 +83,7 @@ export function useQuiz() {
 
     const { quizData, currentQuestion, userAnswers, timerActive, timeRemaining } = persisted
 
-    void dispatch(fetchQuiz.fulfilled(quizData, "", {} as any)) // Manually inject quiz data into Redux
+    void dispatch(fetchQuiz.fulfilled(quizData, "", {} as any))
 
     if (typeof currentQuestion === "number") dispatch(setCurrentQuestion(currentQuestion))
     if (Array.isArray(userAnswers)) userAnswers.forEach((ans) => dispatch(setUserAnswer(ans)))
@@ -97,9 +98,14 @@ export function useQuiz() {
   }, [])
 
 const loadQuiz = useCallback(
-  async (slug: string, type: QuizType = "mcq", initialData = null) => {
-    if (initialData) {
-      dispatch(fetchQuiz.fulfilled(initialData, "", { slug, type })) // ✅ hydrate Redux state
+  async (slug: string, type: QuizType = "mcq", initialData?: QuizData) => {
+    if (initialData && Array.isArray(initialData.questions)) {
+      // 🔐 Check for required fields
+      if (!initialData.id || !initialData.type) {
+        console.warn("initialData missing id or type:", initialData)
+      }
+
+      dispatch(fetchQuiz.fulfilled(initialData, "", { slug, type }))
       return initialData
     }
 
@@ -115,15 +121,14 @@ const loadQuiz = useCallback(
 )
 
 
-const nextQuestion = useCallback(() => {
-  const questions = quizState.quizData?.questions
-  if (questions && quizState.currentQuestion < questions.length - 1) {
-    dispatch(setCurrentQuestion(quizState.currentQuestion + 1))
-    return true
-  }
-  return false
-}, [dispatch, quizState.currentQuestion, quizState.quizData])
-
+  const nextQuestion = useCallback(() => {
+    const questions = quizState.quizData?.questions
+    if (questions && quizState.currentQuestion < questions.length - 1) {
+      dispatch(setCurrentQuestion(quizState.currentQuestion + 1))
+      return true
+    }
+    return false
+  }, [dispatch, quizState.currentQuestion, quizState.quizData])
 
   const previousQuestion = useCallback(() => {
     if (quizState.currentQuestion <= 0) return false
@@ -145,54 +150,42 @@ const nextQuestion = useCallback(() => {
     [dispatch],
   )
 
-  const handleSubmitAnswer = useCallback(
-    async ({ slug, questionId, answer }: { slug: string; questionId: string; answer: string | Record<string, string> }) => {
+  const handleSubmitQuiz = useCallback(
+    async (slug: string) => {
+      if (!quizState.userAnswers.length) {
+        throw new Error("No answers to submit")
+      }
+      console.log("Submitting quiz with answers:", quizState);
+      const quizMeta = quizState.quizData
+
+      if (!quizMeta || !quizMeta.id || !quizMeta.type) {
+        throw new Error("Missing quiz metadata for submission")
+      }
+
+      const payload = {
+        slug,
+        quizId: quizMeta.id,
+        type: quizMeta.type,
+        answers: quizState.userAnswers.map((a) => ({
+          questionId: a.questionId,
+          answer: a.answer,
+        })),
+        timeTaken:
+          quizMeta.timeLimit && quizState.timeRemaining != null
+            ? quizMeta.timeLimit * 60 - quizState.timeRemaining
+            : undefined,
+      }
+
       try {
-        return await dispatch(submitAnswer({ slug, questionId, answer })).unwrap()
-      } catch (err) {
-        console.error("Answer submission error:", err)
-        throw new Error("Failed to submit answer.")
+        const result = await dispatch(submitQuiz(payload)).unwrap()
+        return result
+      } catch (error) {
+        console.error("Error submitting quiz:", error)
+        throw error
       }
     },
-    [dispatch],
+    [dispatch, quizState.userAnswers, quizState.quizData, quizState.timeRemaining],
   )
-
-const handleSubmitQuiz = useCallback(
-  async (slug: string) => {
-    if (!quizState.userAnswers.length) {
-      throw new Error("No answers to submit")
-    }
-
-    const quizMeta = quizState.quizData
-    if (!quizMeta || !quizMeta.id || !quizMeta.type) {
-      throw new Error("Missing quiz metadata for submission")
-    }
-
-    const payload = {
-      slug,
-      quizId: quizMeta.id,
-      type: quizMeta.type,
-      answers: quizState.userAnswers.map((a) => ({
-        questionId: a.questionId,
-        answer: a.answer,
-      })),
-      timeTaken:
-        quizMeta.timeLimit && quizState.timeRemaining != null
-          ? quizMeta.timeLimit * 60 - quizState.timeRemaining
-          : undefined,
-    }
-
-    try {
-      const result = await dispatch(submitQuiz(payload)).unwrap()
-      return result
-    } catch (error) {
-      console.error("Error submitting quiz:", error)
-      throw error
-    }
-  },
-  [dispatch, quizState.userAnswers, quizState.quizData, quizState.timeRemaining],
-)
-
 
   const startQuizTimer = useCallback(() => dispatch(startTimer()), [dispatch])
   const pauseQuizTimer = useCallback(() => dispatch(pauseTimer()), [dispatch])
@@ -216,9 +209,7 @@ const handleSubmitQuiz = useCallback(
   }, [getCurrentQuestion, quizState.userAnswers])
 
   const areAllQuestionsAnswered = useCallback(() => {
-    return (
-      quizState.quizData?.questions?.length === quizState.userAnswers.length
-    )
+    return quizState.quizData?.questions?.length === quizState.userAnswers.length
   }, [quizState.quizData, quizState.userAnswers])
 
   const navigateToResults = useCallback(
@@ -252,9 +243,8 @@ const handleSubmitQuiz = useCallback(
     previousQuestion,
     isLastQuestion,
     saveAnswer,
-    setUserAnswer: saveAnswer,
-    submitAnswer: handleSubmitAnswer,
-    submitQuiz: handleSubmitQuiz,
+    setUserAnswer: saveAnswer, // backward compatible
+    submitQuiz: handleSubmitQuiz, // renamed but backward compatible
     startTimer: startQuizTimer,
     pauseTimer: pauseQuizTimer,
     resumeTimer: resumeQuizTimer,
