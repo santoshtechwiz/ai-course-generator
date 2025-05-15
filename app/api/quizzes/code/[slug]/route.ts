@@ -35,22 +35,43 @@ export async function GET(_: Request, props: { params: Promise<{ slug: string }>
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
 
-    const quizData: any = {
-      isFavorite: result.isFavorite ?? false,
-      isPublic: result.isPublic ?? false,
+    // Process questions to ensure they're serializable
+    const processedQuestions = result.questions.map((q, index) => {
+      // Parse options if they're stored as a JSON string
+      let options = []
+      if (typeof q.options === "string") {
+        try {
+          options = JSON.parse(q.options)
+        } catch (e) {
+          console.error("Failed to parse options:", e)
+          options = []
+        }
+      } else if (Array.isArray(q.options)) {
+        options = [...q.options]
+      }
+
+      return {
+        id: `question-${index}-${Math.random().toString(36).substring(2, 9)}`,
+        question: q.question || "",
+        codeSnippet: q.codeSnippet || "",
+        options: options,
+        answer: q.answer || "",
+        language: q.questionType === "code" ? "javascript" : undefined,
+      }
+    })
+
+    // Create a serializable response object
+    const quizData = {
+      isFavorite: Boolean(result.isFavorite),
+      isPublic: Boolean(result.isPublic),
       slug: slug,
-      quizId: result.id,
+      quizId: result.id.toString(),
       userId: result.userId,
       ownerId: result.userId, // Assuming the owner is the same as the user who created the quiz
       quizData: {
+        id: result.id.toString(),
         title: result.title,
-        questions: result.questions.map((q) => ({
-          question: q.question,
-          options: q.options ? JSON.parse(q.options) : [],
-          codeSnippet: q.codeSnippet ?? undefined,
-          language: q.questionType === "code" ? "javascript" : undefined, // Assuming 'code' type questions use JavaScript
-          correctAnswer: q.answer,
-        })),
+        questions: processedQuestions,
       },
     }
 

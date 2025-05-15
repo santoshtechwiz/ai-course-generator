@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+
 import { useQuiz } from "@/hooks/useQuizState"
 import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
 import CodingQuiz from "./CodingQuiz"
@@ -11,17 +12,28 @@ interface CodeQuizWrapperProps {
   slug: string
   quizId: string
   userId: string | null
+  quizData?: any
+  isPublic?: boolean
+  isFavorite?: boolean
+  ownerId?: string
 }
 
-export default function CodeQuizWrapper({ slug }: CodeQuizWrapperProps) {
+export default function CodeQuizWrapper({
+  slug,
+  quizId,
+  userId,
+  quizData,
+  isPublic,
+  isFavorite,
+  ownerId,
+}: CodeQuizWrapperProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [authChecked, setAuthChecked] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Redux quiz state/actions
   const {
-    quizData,
+    quizData: quizState,
     currentQuestion,
     isCompleted,
     error,
@@ -30,12 +42,10 @@ export default function CodeQuizWrapper({ slug }: CodeQuizWrapperProps) {
     saveAnswer,
     submitQuiz,
     nextQuestion,
-    previousQuestion,
     resetQuizState,
-    userAnswers,
   } = useQuiz()
 
-  // Redirect to login if not authenticated
+  // Auth check
   useEffect(() => {
     if (status === "unauthenticated") {
       sessionStorage.setItem("quizRedirectPath", window.location.pathname)
@@ -45,16 +55,18 @@ export default function CodeQuizWrapper({ slug }: CodeQuizWrapperProps) {
     }
   }, [status, router])
 
-  // Load quiz data if not loaded
+  // Load quiz only if not already loaded
   useEffect(() => {
-    if (authChecked && !quizData && !isLoading && !error) {
-      loadQuiz(slug, "code").catch((err) => {
+    if (authChecked && !quizState && !isLoading && !error) {
+      const source = quizData ?? undefined
+      loadQuiz(slug, "code", source).catch((err) => {
+        console.error("Error loading quiz:", err)
         setErrorMessage("Failed to load quiz")
       })
     }
-  }, [authChecked, quizData, slug, loadQuiz, isLoading, error])
+  }, [authChecked, slug, quizData, quizState, isLoading, error, loadQuiz])
 
-  // Clean up on unmount or when navigating away
+  // Cleanup quiz state on unmount or navigation
   useEffect(() => {
     return () => {
       if (!window.location.pathname.includes(`/dashboard/code/${slug}`)) {
@@ -63,33 +75,49 @@ export default function CodeQuizWrapper({ slug }: CodeQuizWrapperProps) {
     }
   }, [resetQuizState, slug])
 
-  // Handle answer submission (for MCQ/code quiz)
+  // Always read from quizState (Redux)
+  const effectiveQuizData = quizState
+  const questions = effectiveQuizData?.questions || []
+  const totalQuestions = questions.length
+  const currentQuestionData = questions[currentQuestion] || null
+  const isLastQuestion = currentQuestion === totalQuestions - 1
+
+  // Answer handler
   const handleAnswer = useCallback(
-    (answer: string, elapsedTime: number, isCorrect: boolean) => {
-      if (!quizData || currentQuestion === undefined) return
-      const currentQuestionData = quizData.questions[currentQuestion]
-      saveAnswer(currentQuestionData.id, answer)
-      const isLastQuestion = currentQuestion === quizData.questions.length - 1
-      if (isLastQuestion) {
-        submitQuiz(quizData.slug)
-        router.replace(`/dashboard/code/${slug}/results`)
-      } else {
-        nextQuestion()
+    async (answer: string, elapsedTime: number, isCorrect: boolean) => {
+      try {
+        const question = questions[currentQuestion]
+
+        if (!question || !question.id) {
+          setErrorMessage("Invalid question data")
+          return
+        }
+
+        await saveAnswer(question.id, answer)
+
+        if (isLastQuestion) {
+          await submitQuiz(slug)
+          router.replace(`/dashboard/code/${slug}/results`)
+        } else {
+          nextQuestion()
+        }
+      } catch (err) {
+        console.error("Error handling answer:", err)
+        setErrorMessage("Failed to submit answer")
       }
     },
-    [quizData, currentQuestion, saveAnswer, submitQuiz, router, slug, nextQuestion],
+    [questions, currentQuestion, saveAnswer, submitQuiz, router, slug, isLastQuestion, nextQuestion],
   )
 
-  // Handle returning to quizzes page
   const handleReturn = useCallback(() => {
     router.push("/dashboard/quizzes")
   }, [router])
 
-  // Handle retry loading
   const handleRetry = useCallback(() => {
     window.location.reload()
   }, [])
 
+  // Handle auth state
   if (status === "unauthenticated") {
     return (
       <ErrorDisplay
@@ -100,29 +128,29 @@ export default function CodeQuizWrapper({ slug }: CodeQuizWrapperProps) {
     )
   }
 
+  // Show loading state
   if (isLoading || status === "loading" || !authChecked) {
     return <InitializingDisplay />
   }
 
+  // Show error state
   if (error || errorMessage) {
     return (
       <ErrorDisplay
-        error={error || errorMessage || "An error occurred"}
+        error={errorMessage || error || "An error occurred"}
         onRetry={handleRetry}
         onReturn={handleReturn}
       />
     )
   }
 
-  if (quizData && (!quizData.questions || quizData.questions.length === 0)) {
+  // Empty quiz
+  if (!questions.length) {
     return <EmptyQuestionsDisplay onReturn={handleReturn} />
   }
 
-  if (quizData && quizData.questions && quizData.questions.length > 0) {
-    const currentQuestionData = quizData.questions[currentQuestion]
-    const totalQuestions = quizData.questions.length
-    const isLastQuestion = currentQuestion === totalQuestions - 1
-
+  // Show quiz
+  if (currentQuestionData) {
     return (
       <CodingQuiz
         question={currentQuestionData}
@@ -130,7 +158,6 @@ export default function CodeQuizWrapper({ slug }: CodeQuizWrapperProps) {
         questionNumber={currentQuestion + 1}
         totalQuestions={totalQuestions}
         isLastQuestion={isLastQuestion}
-        prevQuestion={previousQuestion}
       />
     )
   }

@@ -47,20 +47,7 @@ async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
     }
 
     const data = await response.json()
-
-    // Log detailed information about the response
-    console.log("API response details:", {
-      quizId: data.quizId,
-      hasQuizData: Boolean(data.quizData),
-      hasQuestions: Boolean(data.quizData?.questions),
-      questionsIsArray: Array.isArray(data.quizData?.questions),
-      questionCount: Array.isArray(data.quizData?.questions) ? data.quizData.questions.length : 0,
-      firstQuestion: data.quizData?.questions?.[0]
-        ? JSON.stringify(data.quizData.questions[0]).substring(0, 100) + "..."
-        : "No questions",
-      dataStructure: JSON.stringify(Object.keys(data)).substring(0, 100) + "...",
-    })
-
+ 
     return data
   } catch (error) {
     console.error("Error fetching quiz data:", error)
@@ -112,6 +99,7 @@ const CodePage = async (props: PageParams) => {
 
   // Fetch quiz data
   const result = await getQuizData(slug)
+  console.log("Fetched quiz data:", result);
 
   // Handle missing quiz data
   if (!result) {
@@ -184,15 +172,15 @@ const CodePage = async (props: PageParams) => {
       isPublic={Boolean(result.isPublic)}
       isFavorite={Boolean(result.isFavorite)}
     >
-      <CodeQuizWrapper
-        quizData={result}
-        slug={slug}
-        userId={currentUserId}
-        quizId={result.quizId}
-        isPublic={Boolean(result.isPublic)}
-        isFavorite={Boolean(result.isFavorite)}
-        ownerId={result.ownerId}
-      />
+    <CodeQuizWrapper
+  quizData={result.quizData} // ✅ This now contains `questions`, `title`, etc.
+  slug={slug}
+  userId={currentUserId}
+  quizId={result.quizId}
+  isPublic={Boolean(result.isPublic)}
+  isFavorite={Boolean(result.isFavorite)}
+  ownerId={result.ownerId}
+/>
     </QuizDetailsPageWithContext>
   )
 }

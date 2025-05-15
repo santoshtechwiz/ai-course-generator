@@ -9,11 +9,10 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
-import { useQuiz } from "@/hooks/useQuizState"
 
 import CodeQuizEditor from "./CodeQuizEditor"
 import { cn } from "@/lib/tailwindUtils"
-import { ErrorDisplay } from "../../components/QuizStateDisplay"
+import { isTooFastAnswer, formatQuizTime } from "@/lib/utils/quiz-utils"
 
 // Define types for props
 interface CodingQuizProps {
@@ -32,66 +31,24 @@ interface CodingQuizProps {
   isLastQuestion: boolean
 }
 
-// Helper function to check if the answer was submitted too quickly (potential cheating/spam)
-function isTooFastAnswer(startTime: number, minimumTimeInSeconds: number): boolean {
-  const elapsedTimeInSeconds = (Date.now() - startTime) / 1000
-  return elapsedTimeInSeconds < minimumTimeInSeconds
-}
-
-// Helper function to format time for display
-function formatQuizTime(seconds: number): string {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
-}
-
 // Update the component props type definition
-function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion, prevQuestion }: CodingQuizProps & { prevQuestion?: () => void }) {
+function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
-  const { userAnswers, timeRemaining, timerActive, saveAnswer } = useQuiz()
-
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>(question?.codeSnippet || "")
   const [elapsedTime, setElapsedTime] = useState<number>(0)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [startTime, setStartTime] = useState<number>(Date.now())
+  const [startTime] = useState<number>(Date.now())
   const [tooFastWarning, setTooFastWarning] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-
-  // Get existing answer from Redux state if available
-  useEffect(() => {
-    const existingAnswer = userAnswers.find((a) => a.questionId === question.id)
-    if (existingAnswer && typeof existingAnswer.answer === "string") {
-      if (question.options && question.options.includes(existingAnswer.answer)) {
-        setSelectedOption(existingAnswer.answer)
-      } else {
-        setUserCode(existingAnswer.answer)
-      }
-    }
-  }, [question.id, question.options, userAnswers])
 
   // Reset state when question changes
   useEffect(() => {
-    // Reset all state variables when the question changes
     setUserCode(question?.codeSnippet || "")
     setSelectedOption(null)
     setElapsedTime(0)
     setTooFastWarning(false)
-    setStartTime(Date.now()) // Reset the start time for the new question
-    setIsSubmitting(false)
-    setError(null)
-
-    // Check for existing answer in Redux state
-    const existingAnswer = userAnswers.find((a) => a.questionId === question.id)
-    if (existingAnswer && typeof existingAnswer.answer === "string") {
-      if (question.options && question.options.includes(existingAnswer.answer)) {
-        setSelectedOption(existingAnswer.answer)
-      } else {
-        setUserCode(existingAnswer.answer)
-      }
-    }
-  }, [question?.id, question?.codeSnippet, userAnswers])
+  }, [question?.id, question?.codeSnippet])
 
   // Update elapsed time
   useEffect(() => {
@@ -108,14 +65,12 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
   const handleSelectOption = useCallback((option: string) => {
     setSelectedOption(option)
     setTooFastWarning(false)
-    setError(null)
   }, [])
 
   const handleCodeChange = useCallback((code: string | undefined) => {
     if (code !== undefined) {
       setUserCode(code)
       setTooFastWarning(false)
-      setError(null)
     }
   }, [])
 
@@ -129,37 +84,25 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
     }
 
     setIsSubmitting(true)
-    setError(null)
 
-    try {
-      const answer = options.length > 0 && selectedOption ? selectedOption : userCode
-      let isCorrect = false
+    const answer = options.length > 0 && selectedOption ? selectedOption : userCode
+    let isCorrect = false
 
-      if (question.answer || question.correctAnswer) {
-        const correctAnswer = question.answer || question.correctAnswer || ""
-        isCorrect = options.length > 0 ? selectedOption === correctAnswer : answer.includes(correctAnswer)
-      }
-
-      const timeSpent = Math.floor((Date.now() - startTime) / 1000)
-
-      // Save answer to Redux
-      saveAnswer(question.id, answer)
-      // Call onAnswer for navigation
-      onAnswer(answer, timeSpent, isCorrect)
-    } catch (err) {
-      console.error("Error submitting answer:", err)
-      setError("Failed to submit answer. Please try again.")
-    } finally {
-      setTimeout(() => {
-        setIsSubmitting(false)
-      }, 300)
+    if (question.answer || question.correctAnswer) {
+      const correctAnswer = question.answer || question.correctAnswer || ""
+      isCorrect = options.length > 0 ? selectedOption === correctAnswer : answer.includes(correctAnswer)
     }
-  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption, saveAnswer])
 
-  const handleRetry = useCallback(() => {
-    setError(null)
-    setIsSubmitting(false)
-  }, [])
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000)
+
+    // Call onAnswer with the selected option or code
+    onAnswer(answer, timeSpent, isCorrect)
+
+    // Reset submission state after a short delay
+    setTimeout(() => {
+      setIsSubmitting(false)
+    }, 300)
+  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption])
 
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null
@@ -309,12 +252,6 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
         </MotionTransition>
       </CardContent>
 
-      {error && (
-        <div className="mx-6 mb-4">
-          <ErrorDisplay error={error} onRetry={handleRetry} className="p-0 w-full" />
-        </div>
-      )}
-
       {tooFastWarning && (
         <div className="mb-4 p-2 mx-6 bg-amber-50 border border-amber-200 rounded text-amber-600 text-sm">
           Please take time to read the question carefully before answering.
@@ -325,7 +262,6 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Clock className="h-3.5 w-3.5" />
           <span>{formatQuizTime(elapsedTime)}</span>
-          {timeRemaining !== null && <span className="ml-2">Time remaining: {formatQuizTime(timeRemaining)}</span>}
         </div>
 
         <Button
@@ -364,5 +300,7 @@ function arePropsEqual(prev: CodingQuizProps, next: CodingQuizProps) {
   )
 }
 
-// Export memoized component with custom comparison
-export default memo(CodingQuizComponent, arePropsEqual)
+export default memo(CodingQuizComponent, arePropsEqual);
+
+
+
