@@ -1,22 +1,31 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useQuiz } from "@/hooks/useQuizState"
+import { useSession } from "next-auth/react"
 import CodingQuiz from "./CodingQuiz"
-import {
-  InitializingDisplay,
-  QuizNotFoundDisplay,
-  ErrorDisplay,
-  EmptyQuestionsDisplay,
-} from "../../components/QuizStateDisplay"
+
 import type { CodeQuizWrapperProps, CodeQuizQuestion } from "@/app/types/code-quiz-types"
+import { LoadingDisplay, ErrorDisplay, InitializingDisplay, QuizNotFoundDisplay, EmptyQuestionsDisplay } from "../../components/QuizStateDisplay"
 
 export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userId, quizId }: CodeQuizWrapperProps) {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [isInitializing, setIsInitializing] = useState(true)
   const [hasInitialized, setHasInitialized] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
+  const [localQuizData, setLocalQuizData] = useState(initialQuizData)
+  const [localCurrentQuestion, setLocalCurrentQuestion] = useState(0)
+  const [submissionError, setSubmissionError] = useState<string | null>(null)
+  const [localAnswers, setLocalAnswers] = useState<
+    Array<{
+      questionId: string
+      answer: string
+      isCorrect: boolean
+      timeSpent: number
+    }>
+  >([])
 
   const {
     quizData,
@@ -24,17 +33,39 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
     isCompleted,
     error: quizError,
     nextQuestion,
-    submitAnswer,
+    saveAnswer,
     submitQuiz,
     loadQuiz,
   } = useQuiz()
 
-  // Prefer quizData from state, fallback to initialQuizData
+  // Check authentication
+  useEffect(() => {
+    if (status === "loading") return
+
+    if (!session && typeof window !== "undefined") {
+      // Store current path for redirect after login
+      sessionStorage.setItem("quizRedirectPath", window.location.pathname)
+      // Redirect to login if not authenticated
+      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
+    }
+  }, [session, status, router])
+
+  // Prefer quizData from state, fallback to initialQuizData or localQuizData
   const validQuizData = useMemo(() => {
-    const data = quizData || initialQuizData
-    if (!data || !Array.isArray(data.questions) || data.questions.length === 0) return null
+    const data = quizData || localQuizData || initialQuizData
+
+    if (!data) {
+      console.error("No quiz data available")
+      return null
+    }
+
+    if (!Array.isArray(data.questions) || data.questions.length === 0) {
+      console.error("Quiz has no questions:", data)
+      return null
+    }
+
     return data
-  }, [quizData, initialQuizData])
+  }, [quizData, localQuizData, initialQuizData])
 
   useEffect(() => {
     if (hasInitialized) return
@@ -42,15 +73,41 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
     const run = async () => {
       try {
         setInitError(null)
-        // Only load if quizData is not present
-        if (!quizData) {
-          if (!initialQuizData || !Array.isArray(initialQuizData.questions) || initialQuizData.questions.length === 0) {
-            setInitError("This quiz has no valid questions.")
-            return
-          }
-          await loadQuiz(slug, "code")
+        setSubmissionError(null)
+
+        // If we already have valid initial data, use it
+        if (initialQuizData && Array.isArray(initialQuizData.questions) && initialQuizData.questions.length > 0) {
+          console.log("Using initial quiz data with", initialQuizData.questions.length, "questions")
+          setLocalQuizData(initialQuizData)
+          setHasInitialized(true)
+          setIsInitializing(false)
+          return
         }
-      } catch {
+
+        // Otherwise load from API
+        console.log("Loading quiz data for slug:", slug)
+        if (!slug) {
+          setInitError("Quiz ID is missing")
+          setHasInitialized(true)
+          setIsInitializing(false)
+          return
+        }
+
+        try {
+          const result = await loadQuiz(slug, "code")
+          if (result) {
+            console.log("Quiz loaded successfully with", result.questions?.length, "questions")
+            setLocalQuizData(result)
+          } else {
+            console.error("Failed to load quiz data")
+            setInitError("Failed to load quiz data. Please try again.")
+          }
+        } catch (error) {
+          console.error("Error loading quiz:", error)
+          setInitError("Failed to load quiz. Please try again.")
+        }
+      } catch (error) {
+        console.error("Error initializing quiz:", error)
         setInitError("An error occurred while initializing the quiz.")
       } finally {
         setHasInitialized(true)
@@ -59,41 +116,117 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
     }
 
     run()
-    // Only run when quizData, initialQuizData, slug, or loadQuiz changes
-  }, [hasInitialized, quizData, initialQuizData, slug, loadQuiz])
+  }, [hasInitialized, initialQuizData, slug, loadQuiz])
 
-  const handleAnswer = async (answer: string, timeSpent: number, isCorrect: boolean) => {
-    try {
-      const currentQ = validQuizData.questions[currentQuestion] as CodeQuizQuestion
+  const handleAnswer = useCallback(
+    async (answer: string, timeSpent: number, isCorrect: boolean) => {
+      try {
+        setSubmissionError(null)
 
-      await submitAnswer({
-        questionId: currentQ.id || String(currentQuestion),
-        answer,
-        isCorrect,
-        timeSpent,
-        index: currentQuestion,
-        codeSnippet: answer,
-        language: currentQ.language || "javascript",
-        slug,
-      })
+        if (!validQuizData) {
+          setInitError("Quiz data is not available")
+          return
+        }
 
-      const isLast = currentQuestion + 1 >= validQuizData.questions.length
+        // Use local state for current question
+        const currentQ = validQuizData.questions[localCurrentQuestion] as CodeQuizQuestion
 
-      if (isLast) {
-        await submitQuiz()
-        router.replace(`/dashboard/code/${slug}/results`)
-      } else {
-        nextQuestion()
+        if (!currentQ) {
+          console.error("Current question not found:", { currentQuestion: localCurrentQuestion })
+          setInitError("Current question not found")
+          return
+        }
+
+        console.log("Processing answer for question", localCurrentQuestion + 1, "of", validQuizData.questions.length)
+
+        // Store answer in local state
+        const questionId = currentQ.id || String(localCurrentQuestion)
+        const newAnswer = {
+          questionId,
+          answer,
+          isCorrect,
+          timeSpent,
+        }
+
+        // Update local answers array
+        setLocalAnswers((prev) => {
+          const existingIndex = prev.findIndex((a) => a.questionId === questionId)
+          if (existingIndex >= 0) {
+            // Replace existing answer
+            const updated = [...prev]
+            updated[existingIndex] = newAnswer
+            return updated
+          } else {
+            // Add new answer
+            return [...prev, newAnswer]
+          }
+        })
+
+        // Save answer to Redux store (but don't submit to API yet)
+        saveAnswer(questionId, answer)
+
+        const isLast = localCurrentQuestion + 1 >= validQuizData.questions.length
+
+        if (isLast) {
+          console.log("Last question answered, submitting quiz")
+          try {
+            // Only submit the quiz at the end
+            if (session) {
+              // If user is authenticated, submit to database
+              await submitQuiz()
+            }
+            // Navigate to results page
+            router.replace(`/dashboard/code/${slug}/results`)
+          } catch (error) {
+            console.error("Error submitting quiz:", error)
+            setSubmissionError("Failed to submit quiz. Please try again.")
+          }
+        } else {
+          console.log("Moving to next question:", localCurrentQuestion + 1)
+          // Just move to the next question without submitting to API
+          setLocalCurrentQuestion((prev) => prev + 1)
+          nextQuestion()
+        }
+      } catch (error) {
+        console.error("Error in handleAnswer:", error)
+        setSubmissionError("Failed to process your answer. Please try again.")
       }
-    } catch {
-      setInitError("Failed to submit your answer. Please try again.")
-    }
-  }
+    },
+    [validQuizData, localCurrentQuestion, saveAnswer, submitQuiz, nextQuestion, router, slug, session],
+  )
+
+  const handleRetrySubmission = useCallback(() => {
+    setSubmissionError(null)
+  }, [])
 
   const currentQuestionObj = useMemo(() => {
     if (!validQuizData) return null
-    return validQuizData.questions?.[currentQuestion] || null
-  }, [validQuizData, currentQuestion])
+
+    // Use local state for current question
+    const question = validQuizData.questions[localCurrentQuestion]
+    if (!question) {
+      console.error("Question not found at index:", localCurrentQuestion)
+      return null
+    }
+
+    return question
+  }, [validQuizData, localCurrentQuestion])
+
+  // Handle authentication loading state
+  if (status === "loading") {
+    return <LoadingDisplay message="Checking authentication..." />
+  }
+
+  // Handle authentication errors
+  if (status === "unauthenticated") {
+    return (
+      <ErrorDisplay
+        error="Please sign in to access this quiz"
+        onRetry={() => router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)}
+        onReturn={() => router.push("/dashboard/quizzes")}
+      />
+    )
+  }
 
   if (initError) {
     return (
@@ -106,7 +239,9 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
   }
 
   if (isInitializing || !hasInitialized) return <InitializingDisplay />
+
   if (!slug) return <QuizNotFoundDisplay onReturn={() => router.push("/dashboard/quizzes")} />
+
   if (!validQuizData) {
     return (
       <EmptyQuestionsDisplay
@@ -116,28 +251,31 @@ export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userI
       />
     )
   }
-  if (quizError) {
+
+  if (quizError || submissionError) {
     return (
       <ErrorDisplay
-        error={quizError}
-        onRetry={() => window.location.reload()}
+        error={submissionError || quizError}
+        onRetry={submissionError ? handleRetrySubmission : () => window.location.reload()}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
     )
   }
 
-  if (!currentQuestionObj) return <InitializingDisplay message="Loading question..." />
+  if (!currentQuestionObj) {
+    return <InitializingDisplay message="Loading question..." />
+  }
 
   return (
     <CodingQuiz
       question={{
         ...currentQuestionObj,
-        id: currentQuestionObj.id || `question-${currentQuestion}`,
+        id: currentQuestionObj.id || `question-${localCurrentQuestion}`,
       }}
       onAnswer={handleAnswer}
-      questionNumber={currentQuestion + 1}
+      questionNumber={localCurrentQuestion + 1}
       totalQuestions={validQuizData.questions.length}
-      isLastQuestion={currentQuestion === validQuizData.questions.length - 1}
+      isLastQuestion={localCurrentQuestion === validQuizData.questions.length - 1}
     />
   )
 }

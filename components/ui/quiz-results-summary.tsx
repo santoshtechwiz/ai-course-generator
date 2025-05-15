@@ -2,8 +2,9 @@
 import { motion } from "framer-motion"
 import { Progress } from "@/components/ui/progress"
 import { Award, CheckCircle, XCircle, Clock, HelpCircle, Brain, Target } from "lucide-react"
-import { calculatePerformanceLevel } from "@/lib/utils/quiz-performance"
+
 import { QuizConfetti } from "@/components/ui/quiz-confetti"
+import { calculatePerformanceLevel } from "@/lib/utils/quiz-utils"
 
 interface QuizResultsSummaryProps {
   score: number

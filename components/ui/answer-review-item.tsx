@@ -1,8 +1,9 @@
 "use client"
+import { formatQuizTime, getSimilarityLevel } from "@/lib/utils/quiz-utils"
 import { motion } from "framer-motion"
-import { formatQuizTime } from "@/lib/utils/quiz-performance"
+
 import { CheckCircle, XCircle, Clock, HelpCircle } from "lucide-react"
-import { getSimilarityLevel } from "@/lib/utils/text-similarity"
+
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 

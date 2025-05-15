@@ -304,4 +304,82 @@ describe("useQuiz Hook", () => {
 
     expect(signIn).toHaveBeenCalledWith(undefined, { callbackUrl: "/dashboard/quiz/test-quiz" })
   })
+
+  test("should handle undefined quiz data", () => {
+    const mockStore = configureStore({
+      reducer: {
+        quiz: quizReducer,
+      },
+      preloadedState: {
+        quiz: {
+          quizData: undefined,
+          currentQuestion: 0,
+          userAnswers: [],
+          isLoading: false,
+          isSubmitting: false,
+          error: null,
+          results: null,
+          isCompleted: false,
+          quizHistory: [],
+          currentQuizId: null,
+          timeRemaining: null,
+          timerActive: false,
+        },
+      },
+    })
+
+    const customWrapper = ({ children }: { children: React.ReactNode }) => (
+      <Provider store={mockStore}>{children}</Provider>
+    )
+
+    const { result } = renderHook(() => useQuiz(), { wrapper: customWrapper })
+
+    expect(result.current.quizData).toBeUndefined()
+    expect(result.current.getCurrentQuestion()).toBeNull()
+  })
+
+  test("should handle missing question id", () => {
+    const mockStore = configureStore({
+      reducer: {
+        quiz: quizReducer,
+      },
+      preloadedState: {
+        quiz: {
+          quizData: {
+            id: "test",
+            title: "Test Quiz",
+            description: "Test",
+            type: "mcq" as const,
+            difficulty: "medium" as const,
+            questions: [{ question: "Question without ID", type: "mcq" }],
+            slug: "test",
+          },
+          currentQuestion: 0,
+          userAnswers: [],
+          isLoading: false,
+          isSubmitting: false,
+          error: null,
+          results: null,
+          isCompleted: false,
+          quizHistory: [],
+          currentQuizId: "test",
+          timeRemaining: null,
+          timerActive: false,
+        },
+      },
+    })
+
+    const customWrapper = ({ children }: { children: React.ReactNode }) => (
+      <Provider store={mockStore}>{children}</Provider>
+    )
+
+    const { result } = renderHook(() => useQuiz(), { wrapper: customWrapper })
+
+    act(() => {
+      // This should not throw an error even though the question has no ID
+      result.current.saveAnswer("generated-id", "test answer")
+    })
+
+    expect(result.current.userAnswers).toHaveLength(1)
+  })
 })

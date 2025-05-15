@@ -387,3 +387,29 @@ export function formatQuizTime(seconds: number): string {
     return `${hours} hours ${remainingMinutes} minutes`
   }
 }
+export function isTooFastAnswer(timeSpent: number, questionType: number): boolean {
+  const timeLimits: Record<string, number> = {
+    mcq: 5,
+    code: 10,
+    blanks: 15,
+    openended: 20,
+  }
+
+  const limit = timeLimits[questionType] || 10 // Default to 10 seconds if type is unknown
+  return timeSpent < limit
+}
+
+export function getSimilarityLevel(similarity: number): string {
+  if (similarity >= 0.9) return "Very High"
+  if (similarity >= 0.7) return "High"
+  if (similarity >= 0.5) return "Medium"
+  if (similarity >= 0.3) return "Low"
+  return "Very Low"
+}
+
+export function calculatePerformanceLevel(score: number): string {
+  if (score >= 90) return "Excellent"
+  if (score >= 75) return "Good"
+  if (score >= 60) return "Satisfactory"
+  return "Needs Improvement"
+}
