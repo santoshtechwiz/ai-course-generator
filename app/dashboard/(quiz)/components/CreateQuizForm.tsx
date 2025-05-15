@@ -90,12 +90,13 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
       data.userType = subscriptionStatus?.subscriptionPlan
-      const response = await axios.post("/api/game", data)
+      const response = await axios.post("/api/quizzes/game", data)
       return response.data
     },
     onError: (error) => {
       console.error("Error creating quiz:", error)
       toast({
+        title: "Error",
         description: "Failed to create quiz. Please try again.",
         variant: "destructive",
       })

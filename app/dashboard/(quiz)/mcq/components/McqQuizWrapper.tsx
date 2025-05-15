@@ -8,11 +8,12 @@ import McqQuiz from "./McqQuiz"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 
 import { useToast } from "@/hooks"
-import { calculateTotalTime } from "@/lib/utils/quiz-index"
+
 
 import { useQuiz } from "@/hooks/useQuizState"
 import type { McqQuizWrapperProps } from "./types"
-import { EmptyQuestionsDisplay, InitializingDisplay, QuizNotFoundDisplay } from "../../components/QuizStateDisplay"
+import { EmptyQuestionsDisplay, ErrorDisplay, InitializingDisplay, LoadingDisplay, QuizNotFoundDisplay } from "../../components/QuizStateDisplay"
+import { calculateTotalTime } from "@/lib/utils/quiz-utils"
 
 const McqQuizContent = memo(function McqQuizContent({ quizData, slug, userId, quizId }: McqQuizWrapperProps) {
   const router = useRouter()

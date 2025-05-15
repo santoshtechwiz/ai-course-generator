@@ -413,3 +413,25 @@ export function calculatePerformanceLevel(score: number): string {
   if (score >= 60) return "Satisfactory"
   return "Needs Improvement"
 }
+export function isAnswerCorrect(userAnswer: string, correctAnswer: string): boolean {
+  // Normalize both answers to lowercase for case-insensitive comparison
+  const normalizedUserAnswer = userAnswer.trim().toLowerCase()
+  const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase()
+
+  // Check for exact match
+  if (normalizedUserAnswer === normalizedCorrectAnswer) {
+    return true
+  }
+
+  // Check for partial match (e.g., synonyms or similar phrases)
+  const similarityThreshold = 0.8 // Adjust this threshold as needed
+  const similarityScore = calculateStringSimilarity(normalizedUserAnswer, normalizedCorrectAnswer)
+
+  return similarityScore >= similarityThreshold
+}
+export function calculateTotalTime(questions: QuizQuestion[]): number {
+  return questions.reduce((total, question) => {
+    const time = question.time || 0
+    return total + time
+  }, 0)
+}

@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 
-import { shuffleArray, isAnswerCorrect } from "@/lib/utils/quiz-options"
-import { isTooFastAnswer } from "@/lib/utils/quiz-performance"
+
 import { cn } from "@/lib/tailwindUtils"
+import { shuffleArray, isTooFastAnswer, isAnswerCorrect } from "@/lib/utils/quiz-utils"
 
 interface McqQuizProps {
   question: {

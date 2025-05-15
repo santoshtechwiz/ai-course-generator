@@ -1,133 +1,168 @@
-import { getAuthSession } from "@/lib/auth"
-import FlashCardsPageClient from "../components/FlashCardsPageClient"
-import type { Metadata } from "next"
-import { generatePageMetadata } from "@/lib/seo-utils"
-import { getQuiz } from "@/app/actions/getQuiz"
-import { Suspense } from "react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { notFound } from "next/navigation"
-import QuizDetailsPage from "../../components/QuizDetailsPage"
+"use client"
 
-type Params = Promise<{ slug: string }>
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import type { FlashCard } from "@/app/types/types"
+import { useToast } from "@/hooks/use-toast"
+import { Sparkles } from "lucide-react"
+import axios from "axios"
 
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { slug } = await params
-  const quiz = await getQuiz(slug)
+import QuizActions from "../../components/QuizActions"
+import { FlashCardWrapper } from "../components/FlashCardWrapper"
 
-  if (!quiz) {
-    return generatePageMetadata({
-      title: "Flashcards Not Found | CourseAI",
-      description: "The requested flashcards could not be found. Explore our other learning resources and tools.",
-      path: `/dashboard/flashcard/${slug}`,
-      noIndex: true,
-    })
-  }
-
-  // Extract keywords from quiz title
-  const titleWords = quiz.title?.toLowerCase().split(" ")
-  const keyTerms = titleWords.filter((word) => word.length > 3)
-
-  return generatePageMetadata({
-    title: `Free ${quiz.title} Flashcard Generator | Practice Coding with Interactive Flashcards`,
-    description: `Boost your understanding of ${quiz.title?.toLowerCase()} with our free interactive flashcard generator. Ideal for developers and learners, this tool uses spaced repetition and active recall to help you master concepts faster. Includes ${quiz.questions?.length || 0} practice questions tailored to sharpen your coding skills.`,
-    path: `/dashboard/flashcard/${slug}`,
-    keywords: [
-      `free ${quiz.title?.toLowerCase()} flashcard generator`,
-      `create ${quiz.title?.toLowerCase()} flashcards online`,
-      `${quiz.title?.toLowerCase()} practice questions`,
-      `interactive ${quiz.title?.toLowerCase()} quiz`,
-      `learn ${quiz.title?.toLowerCase()} with flashcards`,
-      `online flashcard maker for ${quiz.title?.toLowerCase()}`,
-      "free flashcard generator",
-      "coding flashcards",
-      "programming flashcard maker",
-      "developer learning tools",
-      "interactive coding quizzes",
-      "spaced repetition for programmers",
-      "active recall study method",
-      "tech flashcards",
-      "flashcards for coding interviews",
-      ...keyTerms.map((term) => `free ${term} flashcards`),
-    ],
-    ogType: "article",
-    ogImage: `/api/og?title=${encodeURIComponent(quiz.title)}&description=${encodeURIComponent("Interactive Programming Flashcards")}`,
-  })
+interface FlashCardsPageClientProps {
+  slug: string
+  userId: string
 }
 
-interface FlashCardsPageProps {
-  params: Promise<{ slug: string }>
-}
+export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageClientProps) {
+  const [flashCards, setFlashCards] = useState<FlashCard[]>([])
+  const [savedCardIds, setSavedCardIds] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [ownerId, setOwnerId] = useState<string>("")
+  const [quizId, setQuizId] = useState<string>("")
+  const [error, setError] = useState<string | null>(null)
 
-export default async function FlashCardsPage({ params }: FlashCardsPageProps) {
-  const userId = (await getAuthSession())?.user.id ?? ""
-  const slug = (await params).slug
-  const quiz = await getQuiz(slug)
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+  const { toast } = useToast()
 
-  if (!quiz) {
-    notFound()
+  useEffect(() => {
+    const fetchFlashCards = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const response = await axios.get(`/api/quizzes/flashcard?slug=${slug}`)
+        if (response.data.data.flashCards) {
+          setOwnerId(response.data.data.quiz?.userId)
+          setQuizId(response.data.data.quiz?.id)
+          setFlashCards(response.data.data.flashCards)
+
+          // Extract saved card IDs
+          const savedIds = response.data.data.flashCards
+            .filter((card: FlashCard) => card.isSaved)
+            .map((card: FlashCard) => card.id)
+
+          setSavedCardIds(savedIds)
+        } else {
+          setFlashCards([])
+          setSavedCardIds([])
+        }
+      } catch (error) {
+        console.warn("Error fetching flash cards:", error)
+        setError("Failed to load your flash cards")
+        toast({
+          title: "Error",
+          description: "Failed to load your flash cards. Please try again later.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFlashCards()
+  }, [slug, toast])
+
+  const handleSaveCard = async (card: FlashCard) => {
+    try {
+      // Toggle saved status
+      const isSaved = savedCardIds.includes(card.id || "")
+
+      // Update UI immediately for better UX
+      if (isSaved) {
+        setSavedCardIds(savedCardIds.filter((id) => id !== card.id))
+      } else {
+        setSavedCardIds([...savedCardIds, String(card.id) || ""])
+      }
+
+      // Call API to update saved status
+      await axios.patch(`/api/flashcard`, {
+        id: card.id,
+        isSaved: !isSaved,
+      })
+
+      toast({
+        title: isSaved ? "Card unsaved" : "Card saved",
+        description: isSaved ? "Card removed from your saved collection" : "Card added to your saved collection",
+      })
+    } catch (error) {
+      console.error("Error saving card:", error)
+
+      // Revert the UI change since the API call failed
+      if (savedCardIds.includes(String(card.id))) {
+        setSavedCardIds(savedCardIds.filter((id) => id !== card.id))
+      } else {
+        setSavedCardIds([...savedCardIds, card.id || ""])
+      }
+
+      toast({
+        title: "Error",
+        description: "Failed to save the card. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
-
-  // Create breadcrumb items
-  const breadcrumbItems = [
-    { name: "Dashboard", href: `${baseUrl}/dashboard` },
-    { name: "Flashcards", href: `${baseUrl}/dashboard/quizzes?type=flashcard` },
-    { name: quiz.title, href: `${baseUrl}/dashboard/flashcard/${slug}` },
-  ]
 
   return (
-    <>
-      <QuizDetailsPage
-        title={quiz.title}
-        description={`Study and memorize key ${quiz.title} concepts with these interactive flashcards. Perfect for all level developers looking to strengthen their knowledge through active recall.`}
-        slug={slug}
+    <div className="container mx-auto  max-w-3xl">
+      <QuizActions
+        quizId={quizId}
+        quizSlug={slug}
+        initialIsPublic={false}
+        initialIsFavorite={false}
+        userId={userId}
+        ownerId={ownerId}
         quizType="flashcard"
-        questionCount={quiz.questions?.length || 0}
-        estimatedTime="PT15M"
-        breadcrumbItems={breadcrumbItems}
-      >
-        <Suspense fallback={<FlashcardSkeleton />}>
-          <FlashCardsPageClient slug={slug} userId={userId} />
-        </Suspense>
-      </QuizDetailsPage>
-    </>
-  )
-}
-
-function FlashcardSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full border-b border-border/50 px-4 sm:px-6 py-4">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-5 w-24 mt-2 sm:mt-0" />
-      </div>
-
-      <div className="p-4 sm:p-6 md:p-8 border-b border-border/50">
-        <div className="relative min-h-[300px] w-full">
-          <Skeleton className="absolute inset-0 rounded-xl" />
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-3 sm:gap-0">
-          <Skeleton className="h-10 w-28" />
-          <Skeleton className="h-5 w-36" />
-        </div>
-      </div>
-
-      <div className="p-4 sm:p-6 md:p-8">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-28" />
-          <Skeleton className="h-10 w-28" />
-        </div>
-
-        <div className="mt-6 px-1">
-          <Skeleton className="h-2 w-full rounded-full" />
-          <div className="flex justify-between mt-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-16" />
+        position="left-center"
+      />
+      {loading ? (
+        <Card className="w-full h-80 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your flash cards...</p>
           </div>
-        </div>
-      </div>
+        </Card>
+      ) : error ? (
+        <Card className="w-full mx-auto">
+          <CardHeader>
+            <CardTitle>Error Loading Flash Cards</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      ) : flashCards.length > 0 ? (
+        <FlashCardWrapper
+          cards={flashCards}
+          onSaveCard={handleSaveCard}
+          savedCardIds={savedCardIds}
+          quizId={quizId}
+          slug={slug}
+          title="Flash Cards"
+        />
+      ) : (
+        <Card className="w-full mx-auto">
+          <CardHeader>
+            <CardTitle>No Flash Cards Yet</CardTitle>
+            <CardDescription>
+              You haven't created any flash cards yet. Generate some with AI or create them manually.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/flashcard">
+              <Button className="w-full">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Create Flash Cards
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

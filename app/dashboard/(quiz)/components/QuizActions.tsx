@@ -96,7 +96,7 @@ export function QuizActions({
     const fetchQuizState = async () => {
       try {
         const [quizResponse, ratingResponse] = await Promise.all([
-          fetch(`/api/quiz/${quizSlug}`),
+          fetch(`/api/quizzes/common/${quizSlug}`),
           fetch(`/api/rating?type=quiz&id=${quizId}`),
         ])
 
@@ -170,7 +170,7 @@ export function QuizActions({
       setIsPublicLoading(field === "isPublic" ? true : isPublicLoading)
       setIsFavoriteLoading(field === "isFavorite" ? true : isFavoriteLoading)
 
-      const response = await fetch(`/api/quiz/${quizSlug}`, {
+      const response = await fetch(`/api/quizzes/common/${quizSlug}`, {
         method: "PATCH",
         body: JSON.stringify({ [field]: value }),
       })
@@ -255,7 +255,7 @@ export function QuizActions({
 
     setIsDeleteLoading(true)
     try {
-      const response = await fetch(`/api/quiz/${quizSlug}`, {
+      const response = await fetch(`/api/quizzes/common/${quizSlug}`, {
         method: "DELETE",
       })
 

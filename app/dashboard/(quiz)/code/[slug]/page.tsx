@@ -31,9 +31,9 @@ interface ValidatedQuizData {
 async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || "http://localhost:3000"
-    console.log(`Fetching quiz data from: ${baseUrl}/api/code-quiz/${slug}`)
+    console.log(`Fetching quiz data from: ${baseUrl}/api/quizzes/code/${slug}`)
 
-    const response = await fetch(`${baseUrl}/api/code-quiz/${slug}`, {
+    const response = await fetch(`${baseUrl}/api/quizzes/code/${slug}`, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",

@@ -4,7 +4,7 @@ This directory contains all quiz-related API endpoints, organized by quiz type a
 
 ## Directory Structure
 
-```
+\`\`\`
 /api/quizzes/
   /code/                  # Code quiz specific endpoints
     /[slug]/route.ts      # Get a specific code quiz by slug
@@ -26,7 +26,7 @@ This directory contains all quiz-related API endpoints, organized by quiz type a
     /route.ts             # General quiz operations
   /list/                  # List quizzes with filtering
     /route.ts             # Get a list of quizzes
-```
+\`\`\`
 
 ## API Endpoints
 

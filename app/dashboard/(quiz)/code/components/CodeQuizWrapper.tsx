@@ -1,281 +1,169 @@
 "use client"
 
-import { useEffect, useMemo, useState, useCallback } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { useQuiz } from "@/hooks/useQuizState"
 import { useSession } from "next-auth/react"
+
+import { useQuiz } from "@/hooks/useQuizState"
+import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
 import CodingQuiz from "./CodingQuiz"
 
-import type { CodeQuizWrapperProps, CodeQuizQuestion } from "@/app/types/code-quiz-types"
-import { LoadingDisplay, ErrorDisplay, InitializingDisplay, QuizNotFoundDisplay, EmptyQuestionsDisplay } from "../../components/QuizStateDisplay"
+interface CodeQuizWrapperProps {
+  slug: string
+  quizId: string
+  userId: string | null
+  quizData?: any
+}
 
-export default function CodeQuizWrapper({ quizData: initialQuizData, slug, userId, quizId }: CodeQuizWrapperProps) {
+export default function CodeQuizWrapper({ slug, quizId, userId, quizData: initialQuizData }: CodeQuizWrapperProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const [isInitializing, setIsInitializing] = useState(true)
-  const [hasInitialized, setHasInitialized] = useState(false)
-  const [initError, setInitError] = useState<string | null>(null)
-  const [localQuizData, setLocalQuizData] = useState(initialQuizData)
-  const [localCurrentQuestion, setLocalCurrentQuestion] = useState(0)
-  const [submissionError, setSubmissionError] = useState<string | null>(null)
-  const [localAnswers, setLocalAnswers] = useState<
-    Array<{
-      questionId: string
-      answer: string
-      isCorrect: boolean
-      timeSpent: number
-    }>
-  >([])
+  const [authChecked, setAuthChecked] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // Get quiz state from Redux
   const {
     quizData,
     currentQuestion,
     isCompleted,
-    error: quizError,
-    nextQuestion,
+    error,
+    isLoading,
+    loadQuiz,
     saveAnswer,
     submitQuiz,
-    loadQuiz,
+    nextQuestion,
+    resetQuizState,
   } = useQuiz()
 
-  // Check authentication
+  // Redirect to login if not authenticated
   useEffect(() => {
-    if (status === "loading") return
-
-    if (!session && typeof window !== "undefined") {
-      // Store current path for redirect after login
+    if (status === "unauthenticated") {
+      // Store the current URL to redirect back after login
       sessionStorage.setItem("quizRedirectPath", window.location.pathname)
-      // Redirect to login if not authenticated
       router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
+    } else if (status === "authenticated") {
+      setAuthChecked(true)
     }
-  }, [session, status, router])
+  }, [status, router])
 
-  // Prefer quizData from state, fallback to initialQuizData or localQuizData
-  const validQuizData = useMemo(() => {
-    const data = quizData || localQuizData || initialQuizData
-
-    if (!data) {
-      console.error("No quiz data available")
-      return null
-    }
-
-    if (!Array.isArray(data.questions) || data.questions.length === 0) {
-      console.error("Quiz has no questions:", data)
-      return null
-    }
-
-    return data
-  }, [quizData, localQuizData, initialQuizData])
-
+  // Load quiz data if not provided
   useEffect(() => {
-    if (hasInitialized) return
+    if (authChecked && !quizData && !isLoading && !error) {
+      loadQuiz(slug, "code").catch((err) => {
+        console.error("Error loading quiz:", err)
+        setErrorMessage("Failed to load quiz")
+      })
+    }
+  }, [authChecked, quizData, slug, loadQuiz, isLoading, error])
 
-    const run = async () => {
-      try {
-        setInitError(null)
-        setSubmissionError(null)
+  // Use initial quiz data if provided
+  useEffect(() => {
+    if (initialQuizData && !quizData && !isLoading) {
+      // This would typically happen in a Redux action, but we can simulate it here
+      loadQuiz(slug, "code", initialQuizData)
+    }
+  }, [initialQuizData, quizData, isLoading, loadQuiz, slug])
 
-        // If we already have valid initial data, use it
-        if (initialQuizData && Array.isArray(initialQuizData.questions) && initialQuizData.questions.length > 0) {
-          console.log("Using initial quiz data with", initialQuizData.questions.length, "questions")
-          setLocalQuizData(initialQuizData)
-          setHasInitialized(true)
-          setIsInitializing(false)
-          return
-        }
-
-        // Otherwise load from API
-        console.log("Loading quiz data for slug:", slug)
-        if (!slug) {
-          setInitError("Quiz ID is missing")
-          setHasInitialized(true)
-          setIsInitializing(false)
-          return
-        }
-
-        try {
-          const result = await loadQuiz(slug, "code")
-          if (result) {
-            console.log("Quiz loaded successfully with", result.questions?.length, "questions")
-            setLocalQuizData(result)
-          } else {
-            console.error("Failed to load quiz data")
-            setInitError("Failed to load quiz data. Please try again.")
-          }
-        } catch (error) {
-          console.error("Error loading quiz:", error)
-          setInitError("Failed to load quiz. Please try again.")
-        }
-      } catch (error) {
-        console.error("Error initializing quiz:", error)
-        setInitError("An error occurred while initializing the quiz.")
-      } finally {
-        setHasInitialized(true)
-        setIsInitializing(false)
+  // Clean up on unmount or when navigating away
+  useEffect(() => {
+    return () => {
+      // Only reset if navigating away from the quiz page
+      if (!window.location.pathname.includes(`/dashboard/code/${slug}`)) {
+        resetQuizState()
       }
     }
+  }, [resetQuizState, slug])
 
-    run()
-  }, [hasInitialized, initialQuizData, slug, loadQuiz])
-
+  // Handle answer submission
   const handleAnswer = useCallback(
-    async (answer: string, timeSpent: number, isCorrect: boolean) => {
+    async (answer: string, elapsedTime: number, isCorrect: boolean) => {
       try {
-        setSubmissionError(null)
+        if (!quizData || currentQuestion === undefined) return
 
-        if (!validQuizData) {
-          setInitError("Quiz data is not available")
-          return
-        }
+        const currentQuestionData = quizData.questions[currentQuestion]
 
-        // Use local state for current question
-        const currentQ = validQuizData.questions[localCurrentQuestion] as CodeQuizQuestion
+        // Save the answer to Redux store
+        await saveAnswer(currentQuestionData.id, answer)
 
-        if (!currentQ) {
-          console.error("Current question not found:", { currentQuestion: localCurrentQuestion })
-          setInitError("Current question not found")
-          return
-        }
+        // Check if this is the last question
+        const isLastQuestion = currentQuestion === quizData.questions.length - 1
 
-        console.log("Processing answer for question", localCurrentQuestion + 1, "of", validQuizData.questions.length)
-
-        // Store answer in local state
-        const questionId = currentQ.id || String(localCurrentQuestion)
-        const newAnswer = {
-          questionId,
-          answer,
-          isCorrect,
-          timeSpent,
-        }
-
-        // Update local answers array
-        setLocalAnswers((prev) => {
-          const existingIndex = prev.findIndex((a) => a.questionId === questionId)
-          if (existingIndex >= 0) {
-            // Replace existing answer
-            const updated = [...prev]
-            updated[existingIndex] = newAnswer
-            return updated
-          } else {
-            // Add new answer
-            return [...prev, newAnswer]
-          }
-        })
-
-        // Save answer to Redux store (but don't submit to API yet)
-        saveAnswer(questionId, answer)
-
-        const isLast = localCurrentQuestion + 1 >= validQuizData.questions.length
-
-        if (isLast) {
-          console.log("Last question answered, submitting quiz")
-          try {
-            // Only submit the quiz at the end
-            if (session) {
-              // If user is authenticated, submit to database
-              await submitQuiz()
-            }
-            // Navigate to results page
-            router.replace(`/dashboard/code/${slug}/results`)
-          } catch (error) {
-            console.error("Error submitting quiz:", error)
-            setSubmissionError("Failed to submit quiz. Please try again.")
-          }
+        if (isLastQuestion) {
+          // Submit the entire quiz if this is the last question
+          await submitQuiz(slug)
+          // Redirect to results page
+          router.replace(`/dashboard/code/${slug}/results`)
         } else {
-          console.log("Moving to next question:", localCurrentQuestion + 1)
-          // Just move to the next question without submitting to API
-          setLocalCurrentQuestion((prev) => prev + 1)
+          // Move to the next question
           nextQuestion()
         }
-      } catch (error) {
-        console.error("Error in handleAnswer:", error)
-        setSubmissionError("Failed to process your answer. Please try again.")
+      } catch (err) {
+        console.error("Error handling answer:", err)
+        setErrorMessage("Failed to submit answer")
       }
     },
-    [validQuizData, localCurrentQuestion, saveAnswer, submitQuiz, nextQuestion, router, slug, session],
+    [quizData, currentQuestion, saveAnswer, submitQuiz, router, slug, nextQuestion],
   )
 
-  const handleRetrySubmission = useCallback(() => {
-    setSubmissionError(null)
+  // Handle returning to quizzes page
+  const handleReturn = useCallback(() => {
+    router.push("/dashboard/quizzes")
+  }, [router])
+
+  // Handle retry loading
+  const handleRetry = useCallback(() => {
+    window.location.reload()
   }, [])
 
-  const currentQuestionObj = useMemo(() => {
-    if (!validQuizData) return null
-
-    // Use local state for current question
-    const question = validQuizData.questions[localCurrentQuestion]
-    if (!question) {
-      console.error("Question not found at index:", localCurrentQuestion)
-      return null
-    }
-
-    return question
-  }, [validQuizData, localCurrentQuestion])
-
-  // Handle authentication loading state
-  if (status === "loading") {
-    return <LoadingDisplay message="Checking authentication..." />
-  }
-
-  // Handle authentication errors
+  // If not authenticated, show error message
   if (status === "unauthenticated") {
     return (
       <ErrorDisplay
         error="Please sign in to access this quiz"
         onRetry={() => router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)}
-        onReturn={() => router.push("/dashboard/quizzes")}
+        onReturn={handleReturn}
       />
     )
   }
 
-  if (initError) {
+  // Show loading state
+  if (isLoading || status === "loading" || !authChecked) {
+    return <InitializingDisplay />
+  }
+
+  // Show error state
+  if (error || errorMessage) {
     return (
       <ErrorDisplay
-        error={initError}
-        onRetry={() => window.location.reload()}
-        onReturn={() => router.push("/dashboard/quizzes")}
+        error={error || errorMessage || "An error occurred"}
+        onRetry={handleRetry}
+        onReturn={handleReturn}
       />
     )
   }
 
-  if (isInitializing || !hasInitialized) return <InitializingDisplay />
+  // If we have quiz data but no questions, show empty state
+  if (quizData && (!quizData.questions || quizData.questions.length === 0)) {
+    return <EmptyQuestionsDisplay onReturn={handleReturn} />
+  }
 
-  if (!slug) return <QuizNotFoundDisplay onReturn={() => router.push("/dashboard/quizzes")} />
+  // If we have quiz data and questions, render the quiz
+  if (quizData && quizData.questions && quizData.questions.length > 0) {
+    const currentQuestionData = quizData.questions[currentQuestion]
+    const totalQuestions = quizData.questions.length
+    const isLastQuestion = currentQuestion === totalQuestions - 1
 
-  if (!validQuizData) {
     return (
-      <EmptyQuestionsDisplay
-        message="No Questions Available"
-        description="We couldn't find any questions for this quiz. This could be because the quiz is still being generated or there was an error."
-        onReturn={() => router.push("/dashboard/quizzes")}
+      <CodingQuiz
+        question={currentQuestionData}
+        onAnswer={handleAnswer}
+        questionNumber={currentQuestion + 1}
+        totalQuestions={totalQuestions}
+        isLastQuestion={isLastQuestion}
       />
     )
   }
 
-  if (quizError || submissionError) {
-    return (
-      <ErrorDisplay
-        error={submissionError || quizError}
-        onRetry={submissionError ? handleRetrySubmission : () => window.location.reload()}
-        onReturn={() => router.push("/dashboard/quizzes")}
-      />
-    )
-  }
-
-  if (!currentQuestionObj) {
-    return <InitializingDisplay message="Loading question..." />
-  }
-
-  return (
-    <CodingQuiz
-      question={{
-        ...currentQuestionObj,
-        id: currentQuestionObj.id || `question-${localCurrentQuestion}`,
-      }}
-      onAnswer={handleAnswer}
-      questionNumber={localCurrentQuestion + 1}
-      totalQuestions={validQuizData.questions.length}
-      isLastQuestion={localCurrentQuestion === validQuizData.questions.length - 1}
-    />
-  )
+  // If we get here, we're still loading or initializing
+  return <InitializingDisplay />
 }
