@@ -5,7 +5,7 @@ export interface BaseQuestion {
   id: string
   question: string
   explanation?: string
-  points?: number
+
 }
 
 export interface MCQQuestion extends BaseQuestion {
@@ -18,7 +18,7 @@ export interface CodeQuestion extends BaseQuestion {
   type: "code"
   codeSnippet?: string
   language: string
- 
+
   solutionCode?: string
 }
 
@@ -29,11 +29,14 @@ export interface BlankQuestion extends BaseQuestion {
 }
 
 export interface OpenEndedQuestion extends BaseQuestion {
-  type: "openended"
-  expectedAnswer?: string
-  keywords?: string[] // Keywords that should be present in a good answer
-  minLength?: number
-  maxLength?: number
+  type: "openended",
+  points: null;
+  answer: string;
+  questions: {
+    hints: string[];
+    difficulty: string;
+    tags: string[];
+  };
 }
 
 export type QuizQuestion = MCQQuestion | CodeQuestion | BlankQuestion | OpenEndedQuestion

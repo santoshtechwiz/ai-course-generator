@@ -21,6 +21,7 @@ import type { QuizType } from "@/app/types/quiz-types"
 import { signIn } from "next-auth/react"
 import { loadPersistedQuizState, hasAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
 import { formatTime } from "@/lib/utils/quiz-utils"
+import { getQuizFromApi } from "@/app/actions/getQuizFromApi"
 
 
 export function useQuiz() {
@@ -131,17 +132,27 @@ export function useQuiz() {
   )
 
   // Load quiz data
-  const loadQuiz = useCallback(
-    async (slug: string, type: QuizType = "mcq") => {
-      dispatch(resetQuizState())
+   const loadQuiz = useCallback(
+    async (slug: string, type: QuizType = "mcq", initialData = null) => {
+      if (initialData) {
+        // If we have initial data, use that instead of fetching
+        dispatch(fetchQuiz.fulfilled(initialData, "", { slug, type }))
+        return initialData
+      }
+
       try {
-        return await dispatch(fetchQuiz({ slug, type })).unwrap()
+        // Otherwise fetch from API
+        dispatch(fetchQuiz.pending("", { slug, type }))
+        const data = await getQuizFromApi(slug, type)
+        dispatch(fetchQuiz.fulfilled(data, "", { slug, type }))
+        return data
       } catch (error) {
-        handleApiError(error, `/dashboard/${type}/${slug}`)
+        const errorMessage = error instanceof Error ? error.message : "Failed to load quiz"
+        dispatch(fetchQuiz.rejected(null, "", { slug, type }, errorMessage))
         throw error
       }
     },
-    [dispatch, handleApiError],
+    [dispatch],
   )
 
   // Navigate to next question
@@ -195,29 +206,28 @@ export function useQuiz() {
   )
 
   // Submit entire quiz
-  const handleSubmitQuiz = useCallback(async () => {
-    if (!quizState.quizData) return
+ const submitQuizAction = useCallback(
+    async (slug: string) => {
+      try {
+        if (!quizState.userAnswers.length) {
+          throw new Error("No answers to submit")
+        }
 
-    const timeTaken = quizState.quizData.timeLimit
-      ? quizState.quizData.timeLimit * 60 - (quizState.timeRemaining || 0)
-      : undefined
+        const results = await dispatch(
+          submitQuiz({
+            slug,
+            answers: quizState.userAnswers,
+          }),
+        ).unwrap()
 
-    try {
-      const result = await dispatch(
-        submitQuiz({
-          slug: quizState.quizData.id,
-          answers: quizState.userAnswers,
-          timeTaken,
-        }),
-      ).unwrap()
-
-      return result
-    } catch (error) {
-      handleApiError(error)
-      throw error
-    }
-  }, [dispatch, quizState.quizData, quizState.userAnswers, quizState.timeRemaining, handleApiError])
-
+        return results
+      } catch (error) {
+        console.error("Error submitting quiz:", error)
+        throw error
+      }
+    },
+    [dispatch, quizState.userAnswers],
+  )
   // Start quiz timer
   const startQuizTimer = useCallback(() => {
     dispatch(startTimer())
@@ -311,7 +321,7 @@ export function useQuiz() {
     saveAnswer,
     setUserAnswer: saveAnswer,
     submitAnswer: handleSubmitAnswer,
-    submitQuiz: handleSubmitQuiz,
+    submitQuiz: submitQuizAction,
     startTimer: startQuizTimer,
     pauseTimer: pauseQuizTimer,
     resumeTimer: resumeQuizTimer,

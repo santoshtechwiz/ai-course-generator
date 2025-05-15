@@ -8,14 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useAppDispatch } from "@/store"
-import { resetQuiz } from "@/store/slices/quizSlice"
-import { calculatePerformanceLevel, formatQuizTime } from "@/lib/utils/quiz-performance"
 import { CircularProgress } from "@/components/ui/circular-progress"
 import { StatCard } from "@/components/ui/stat-card"
 import { ResultCard } from "@/components/ui/result-card"
 import { QuizResultHeader } from "@/components/ui/quiz-result-header"
 import { PerformanceChart } from "@/components/ui/performance-chart"
 import { useResponsive } from "@/hooks"
+import { calculatePerformanceLevel } from "@/lib/utils/quiz-utils"
 
 interface McqQuizResultProps {
   result: {

@@ -4,7 +4,7 @@ import type { QuizData, UserAnswer, QuizResult, QuizHistoryItem, QuizType } from
 // Define the API endpoints for different quiz types (can be used in future if needed)
 export const API_ENDPOINTS: Record<QuizType, string> = {
   mcq: "/api/quiz/mcq",
-  code: "/api/code-quiz",
+  code: "/api/quizzes/code",
   blanks: "/api/quiz/blanks",
   openended: "/api/quiz/openended",
 }
@@ -109,7 +109,7 @@ export const submitQuiz = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await fetch(`/api/quiz/submit`, {
+      const response = await fetch(`/api/quizzes/common/${slug}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, answers, timeTaken }),
@@ -131,7 +131,7 @@ export const getQuizResults = createAsyncThunk(
   "quiz/getResults",
   async (slug: string, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/quiz/${slug}/results`)
+      const response = await fetch(`/api/quizzes/results?slug=${slug}`)
 
       if (!response.ok) {
         const errorData = await response.json()

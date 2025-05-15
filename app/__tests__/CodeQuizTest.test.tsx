@@ -6,7 +6,7 @@ import { Provider } from "react-redux"
 import { SessionProvider } from "next-auth/react"
 import { configureStore } from "@reduxjs/toolkit"
 
-import  quizReducer  from "@/store/slices/quizSlice"
+import quizReducer from "@/store/slices/quizSlice"
 import "@testing-library/jest-dom"
 import CodeQuizWrapper from "../dashboard/(quiz)/code/components/CodeQuizWrapper"
 
@@ -29,7 +29,7 @@ jest.mock("@/hooks/useQuizState", () => ({
 }))
 
 // Mock components
-jest.mock("@/components/CodingQuiz", () => {
+jest.mock("./components/CodingQuiz", () => {
   return jest.fn(({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }) => (
     <div data-testid="coding-quiz">
       <h2>
@@ -54,7 +54,7 @@ jest.mock("@/components/CodingQuiz", () => {
 })
 
 // Mock quiz state display components
-jest.mock("@/components/ui/quiz-state-display", () => ({
+jest.mock("@/app/dashboard/(quiz)/components/QuizStateDisplay", () => ({
   InitializingDisplay: () => <div data-testid="initializing-display">Initializing...</div>,
   QuizNotFoundDisplay: ({ onReturn }: any) => (
     <div data-testid="quiz-not-found">
@@ -129,7 +129,6 @@ const mockUseQuiz = {
   saveAnswer: jest.fn(),
   submitQuiz: jest.fn().mockResolvedValue({}),
   getResults: jest.fn(),
-  requireAuthentication: jest.fn(),
 }
 
 // Setup test store
@@ -183,6 +182,9 @@ const renderWithProviders = (
 describe("Code Quiz Integration Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+
+    // Mock window.location.reload
+    window.location.reload = jest.fn()
   })
 
   test("should initialize and load quiz data", async () => {
@@ -319,5 +321,29 @@ describe("Code Quiz Integration Tests", () => {
     // Click return
     fireEvent.click(screen.getByText("Return"))
     expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/quizzes")
+  })
+
+  test("should handle existing answers from Redux state", async () => {
+    // Set quiz data with existing answers
+    const useQuizWithAnswers = {
+      ...mockUseQuiz,
+      quizData: mockQuizData,
+      userAnswers: [{ questionId: "q1", answer: "2" }],
+    }
+
+    renderWithProviders(<CodeQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />, {
+      useQuizMock: useQuizWithAnswers,
+    })
+
+    // Should show the first question
+    await waitFor(() => {
+      expect(screen.getByTestId("coding-quiz")).toBeInTheDocument()
+      expect(screen.getByText("Question 1/2")).toBeInTheDocument()
+    })
+
+    // The existing answer should be passed to the CodingQuiz component
+    // We can't directly test this since we're mocking the component,
+    // but we can verify that the component was rendered with the correct props
+    expect(require("./components/CodingQuiz").mock.calls[0][0].question.id).toBe("q1")
   })
 })

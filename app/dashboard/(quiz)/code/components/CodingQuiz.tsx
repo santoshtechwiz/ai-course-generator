@@ -9,11 +9,11 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
+import { useQuiz } from "@/hooks/useQuizState"
 
 import CodeQuizEditor from "./CodeQuizEditor"
 import { cn } from "@/lib/tailwindUtils"
 import { ErrorDisplay } from "../../components/QuizStateDisplay"
-
 
 // Define types for props
 interface CodingQuizProps {
@@ -48,6 +48,8 @@ function formatQuizTime(seconds: number): string {
 // Update the component props type definition
 function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
+  const { userAnswers, timeRemaining, timerActive } = useQuiz()
+
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>(question?.codeSnippet || "")
   const [elapsedTime, setElapsedTime] = useState<number>(0)
@@ -56,6 +58,18 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [tooFastWarning, setTooFastWarning] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Get existing answer from Redux state if available
+  useEffect(() => {
+    const existingAnswer = userAnswers.find((a) => a.questionId === question.id)
+    if (existingAnswer && typeof existingAnswer.answer === "string") {
+      if (question.options && question.options.includes(existingAnswer.answer)) {
+        setSelectedOption(existingAnswer.answer)
+      } else {
+        setUserCode(existingAnswer.answer)
+      }
+    }
+  }, [question.id, question.options, userAnswers])
 
   // Reset state when question changes
   useEffect(() => {
@@ -67,7 +81,17 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
     setStartTime(Date.now()) // Reset the start time for the new question
     setIsSubmitting(false)
     setError(null)
-  }, [question?.id, question?.codeSnippet])
+
+    // Check for existing answer in Redux state
+    const existingAnswer = userAnswers.find((a) => a.questionId === question.id)
+    if (existingAnswer && typeof existingAnswer.answer === "string") {
+      if (question.options && question.options.includes(existingAnswer.answer)) {
+        setSelectedOption(existingAnswer.answer)
+      } else {
+        setUserCode(existingAnswer.answer)
+      }
+    }
+  }, [question?.id, question?.codeSnippet, userAnswers])
 
   // Update elapsed time
   useEffect(() => {
@@ -300,6 +324,7 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Clock className="h-3.5 w-3.5" />
           <span>{formatQuizTime(elapsedTime)}</span>
+          {timeRemaining !== null && <span className="ml-2">Time remaining: {formatQuizTime(timeRemaining)}</span>}
         </div>
 
         <Button
