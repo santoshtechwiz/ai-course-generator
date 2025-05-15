@@ -32,7 +32,23 @@ const makePersistConfig = (key: string, whitelist: string[]) => ({
 
 const rootReducer = combineReducers({
   auth: persistReducer(makePersistConfig("auth", ["user", "isAuthenticated", "token"]), authReducer),
-  quiz: persistReducer(makePersistConfig("quiz", ["quizzes", "currentQuiz", "results", "progress"]), quizReducer),
+  quiz: persistReducer(
+    makePersistConfig("quiz", [
+      "quizData",
+      "currentQuestion",
+      "userAnswers",
+      "isLoading",
+      "isSubmitting",
+      "error",
+      "results",
+      "isCompleted",
+      "quizHistory",
+      "currentQuizId",
+      "timeRemaining",
+      "timerActive",
+    ]),
+    quizReducer
+  ),
   subscription: persistReducer(
     makePersistConfig("subscription", ["data", "details", "tokenUsage", "lastFetched"]),
     subscriptionReducer

@@ -10,17 +10,24 @@ import type { QuizType } from "@/app/types/quiz-types"
 export async function getQuizFromApi(slug: string, type: QuizType = "mcq") {
   try {
     // Get the appropriate endpoint based on quiz type
-    const endpoint = `${API_ENDPOINTS[type]}/${slug}`
+
+    const baseUrl ="http://localhost:3000";
+    const endpoint = API_ENDPOINTS[type]
+
+    // Always append the slug ONCE
+    const url = `${baseUrl}${endpoint}/${slug}`
 
     // Fetch quiz data from the API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_WEBSITE_URL || ""}${endpoint}/${slug}`)
+    const response = await fetch(url)
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || `Failed to fetch ${type} quiz`)
+      const error = await response.json();
+      throw new Error(error.message || `Failed to fetch ${type} quiz`);
     }
 
-    return await response.json()
+    // Always return a plain object, not the Response instance
+    return await response.json();
+    
   } catch (error) {
     console.error(`Error fetching ${type} quiz with slug ${slug}:`, error)
     throw error

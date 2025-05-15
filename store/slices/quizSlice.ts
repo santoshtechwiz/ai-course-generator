@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import type { QuizData, UserAnswer, QuizResult, QuizHistoryItem, QuizType } from "@/app/types/quiz-types"
+import { getQuizFromApi } from "@/app/actions/getQuizFromApi"
 
 // Define the API endpoints for different quiz types (can be used in future if needed)
 export const API_ENDPOINTS: Record<QuizType, string> = {
   mcq: "/api/quiz/mcq",
-  code: "/api/quizzes/code",
+  code: "/api/quizzes/code", // <-- should NOT include [slug]
   blanks: "/api/quiz/blanks",
   openended: "/api/quiz/openended",
 }
@@ -46,17 +47,18 @@ export const fetchQuiz = createAsyncThunk(
   "quiz/fetchQuiz",
   async ({ slug, type }: { slug: string; type: QuizType }, { rejectWithValue }) => {
     try {
-      const endpoint = API_ENDPOINTS[type] || `/api/quiz/${slug}`
-      const response = await fetch(`${endpoint}/${slug}`)
+      const response=await getQuizFromApi(slug, type);
+
+      console.log("Fetched quiz data:", response);
 
       if (!response.ok) {
-        const errorData = await response.json()
-        return rejectWithValue(errorData.message || `Failed to fetch ${type} quiz`)
+        const errorData = await response.json();
+        return rejectWithValue(errorData.message || `Failed to fetch ${type} quiz`);
       }
 
-      return await response.json()
+      return await response.json();
     } catch {
-      return rejectWithValue("An unexpected error occurred. Please try again.")
+      return rejectWithValue("An unexpected error occurred. Please try again.");
     }
   },
 )
@@ -320,3 +322,6 @@ export const {
 } = quizSlice.actions
 
 export default quizSlice.reducer
+
+// Export types for use in hooks and other modules
+export type { QuizData, UserAnswer, QuizResult, QuizHistoryItem, QuizType }
