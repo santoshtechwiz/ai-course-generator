@@ -1,64 +1,95 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import type { QuizData, UserAnswer, QuizResult, QuizHistoryItem, QuizType } from "@/app/types/quiz-types"
-import { getQuizFromApi } from "@/app/actions/getQuizFromApi"
 
-// Define the API endpoints for different quiz types (can be used in future if needed)
 export const API_ENDPOINTS: Record<QuizType, string> = {
-  mcq: "/api/quiz/mcq",
-  code: "/api/quizzes/code", // <-- should NOT include [slug]
-  blanks: "/api/quiz/blanks",
-  openended: "/api/quiz/openended",
+  mcq: "/api/quizzes/mcq",
+  code: "/api/quizzes/code",
+  blanks: "/api/quizzes/blanks",
+  openended: "/api/quizzes/openended",
 }
 
-// Define the state interface
+// Helpers
+const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => ({
+  id: raw.quizId || raw.id || "",
+  title: raw.quizData?.title || "Quiz",
+  slug,
+  type,
+  questions: Array.isArray(raw.quizData?.questions)
+    ? raw.quizData.questions.map((q, index) => ({
+        id: q.id || `q-${index}-${Math.random().toString(36).substring(2, 8)}`,
+        question: q.question || "",
+        codeSnippet: q.codeSnippet || "",
+        options: Array.isArray(q.options) ? [...q.options] : [],
+        answer: q.answer || q.correctAnswer || "",
+        correctAnswer: q.correctAnswer || q.answer || "",
+        language: q.language || "javascript",
+      }))
+    : [],
+  isPublic: Boolean(raw.isPublic),
+  isFavorite: Boolean(raw.isFavorite),
+  ownerId: raw.ownerId || "",
+  timeLimit: raw.quizData?.timeLimit || null,
+})
+
+// State
 interface QuizState {
   quizData: QuizData | null
   currentQuestion: number
   userAnswers: UserAnswer[]
   isLoading: boolean
   isSubmitting: boolean
-  error: string | null
-  results: QuizResult | null
   isCompleted: boolean
-  quizHistory: QuizHistoryItem[]
-  currentQuizId: string | null
-  timeRemaining: number | null
   timerActive: boolean
+  timeRemaining: number | null
+  currentQuizId: string | null
+  results: QuizResult | null
+  quizHistory: QuizHistoryItem[]
+
+  // Errors
+  quizError: string | null
+  submissionError: string | null
+  resultsError: string | null
+  historyError: string | null
 }
 
-// Initial state
 const initialState: QuizState = {
   quizData: null,
   currentQuestion: 0,
   userAnswers: [],
   isLoading: false,
   isSubmitting: false,
-  error: null,
-  results: null,
   isCompleted: false,
-  quizHistory: [],
-  currentQuizId: null,
-  timeRemaining: null,
   timerActive: false,
+  timeRemaining: null,
+  currentQuizId: null,
+  results: null,
+  quizHistory: [],
+  quizError: null,
+  submissionError: null,
+  resultsError: null,
+  historyError: null,
 }
 
-// Async thunks
+// Async Thunks
+
 export const fetchQuiz = createAsyncThunk(
   "quiz/fetchQuiz",
   async ({ slug, type }: { slug: string; type: QuizType }, { rejectWithValue }) => {
     try {
-      const response=await getQuizFromApi(slug, type);
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
+      const endpoint = API_ENDPOINTS[type] || `/api/quizzes/${type}`
+      const url = new URL(`${endpoint}/${slug}`, baseUrl).toString()
 
-      console.log("Fetched quiz data:", response);
-
+      const response = await fetch(url)
       if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.message || `Failed to fetch ${type} quiz`);
+        const err = await response.json()
+        return rejectWithValue(err.message || `Failed to fetch ${type} quiz`)
       }
 
-      return await response.json();
-    } catch {
-      return rejectWithValue("An unexpected error occurred. Please try again.");
+      const data = await response.json()
+      return normalizeQuizData(data, slug, type)
+    } catch (err) {
+      return rejectWithValue("Failed to load quiz. Please try again.")
     }
   },
 )
@@ -66,128 +97,109 @@ export const fetchQuiz = createAsyncThunk(
 export const submitAnswer = createAsyncThunk(
   "quiz/submitAnswer",
   async (
-    {
-      slug,
-      questionId,
-      answer,
-    }: {
-      slug: string
-      questionId: string
-      answer: string | Record<string, string>
-    },
+    { slug, questionId, answer }: { slug: string; questionId: string; answer: string | Record<string, string> },
     { rejectWithValue },
   ) => {
     try {
-      const response = await fetch(`/api/quiz/${slug}/complete`, {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
+      const res = await fetch(`${baseUrl}/api/quizzes/common/${slug}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, questionId, answer }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
+      if (!res.ok) {
+        const errorData = await res.json()
         return rejectWithValue(errorData.message || "Failed to submit answer")
       }
 
-      return await response.json()
+      return await res.json()
     } catch {
-      return rejectWithValue("An unexpected error occurred. Please try again.")
+      return rejectWithValue("Network error submitting answer.")
     }
   },
 )
 
 export const submitQuiz = createAsyncThunk(
   "quiz/submitQuiz",
-  async (
-    {
-      slug,
-      answers,
-      timeTaken,
-    }: {
-      slug: string
-      answers: UserAnswer[]
-      timeTaken?: number
-    },
-    { rejectWithValue },
-  ) => {
+  async ({ slug, answers, timeTaken }: { slug: string; answers: UserAnswer[]; timeTaken?: number }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/quizzes/common/${slug}/complete`, {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
+      const response = await fetch(`${baseUrl}/api/quizzes/common/${slug}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, answers, timeTaken }),
+        body: JSON.stringify({
+          slug,
+          answers: answers.map((a) => ({
+            questionId: a.questionId,
+            answer: a.answer,
+          })),
+          timeTaken,
+        }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        return rejectWithValue(errorData.message || "Failed to submit quiz")
+        const err = await response.json()
+        return rejectWithValue(err.message || "Failed to submit quiz")
       }
 
       return await response.json()
     } catch {
-      return rejectWithValue("An unexpected error occurred. Please try again.")
+      return rejectWithValue("Unexpected error submitting quiz.")
     }
   },
 )
 
-export const getQuizResults = createAsyncThunk(
-  "quiz/getResults",
-  async (slug: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/quizzes/results?slug=${slug}`)
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        return rejectWithValue(errorData.message || "Failed to get quiz results")
-      }
-
-      return await response.json()
-    } catch {
-      return rejectWithValue("An unexpected error occurred. Please try again.")
+export const getQuizResults = createAsyncThunk("quiz/getResults", async (slug: string, { rejectWithValue }) => {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
+    const response = await fetch(`${baseUrl}/api/quizzes/results?slug=${slug}`)
+    if (!response.ok) {
+      const errorData = await response.json()
+      return rejectWithValue(errorData.message || "Could not retrieve results")
     }
-  },
-)
+    return await response.json()
+  } catch {
+    return rejectWithValue("Unexpected error fetching results.")
+  }
+})
 
-export const fetchQuizHistory = createAsyncThunk(
-  "quiz/fetchQuizHistory",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await fetch("/api/quiz/history")
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        return rejectWithValue(errorData.message || "Failed to fetch quiz history")
-      }
-
-      return await response.json()
-    } catch {
-      return rejectWithValue("An unexpected error occurred. Please try again.")
+export const fetchQuizHistory = createAsyncThunk("quiz/fetchQuizHistory", async (_, { rejectWithValue }) => {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
+    const response = await fetch(`${baseUrl}/api/quiz/history`)
+    if (!response.ok) {
+      const err = await response.json()
+      return rejectWithValue(err.message || "Failed to fetch quiz history")
     }
-  },
-)
+    return await response.json()
+  } catch {
+    return rejectWithValue("Unexpected error fetching history.")
+  }
+})
 
 // Slice
+
 const quizSlice = createSlice({
   name: "quiz",
   initialState,
   reducers: {
-    resetQuizState: (state) => ({
-      ...initialState,
-      quizHistory: state.quizHistory, // Preserve history
-    }),
+    resetQuizState: (state) => {
+      const preservedHistory = state.quizHistory
+      Object.assign(state, { ...initialState, quizHistory: preservedHistory })
+    },
     setCurrentQuestion: (state, action: PayloadAction<number>) => {
       state.currentQuestion = action.payload
     },
     setUserAnswer: (state, action: PayloadAction<UserAnswer>) => {
-      const index = state.userAnswers.findIndex((a) => a.questionId === action.payload.questionId)
-      if (index !== -1) {
-        state.userAnswers[index] = action.payload
-      } else {
-        state.userAnswers.push(action.payload)
-      }
+      const i = state.userAnswers.findIndex((a) => a.questionId === action.payload.questionId)
+      if (i !== -1) state.userAnswers[i] = action.payload
+      else state.userAnswers.push(action.payload)
     },
     startTimer: (state) => {
-      if (state.quizData?.timeLimit) {
-        state.timeRemaining = state.quizData.timeLimit * 60
+      const limit = state.quizData?.timeLimit
+      if (limit) {
+        state.timeRemaining = limit * 60
         state.timerActive = true
       }
     },
@@ -198,114 +210,107 @@ const quizSlice = createSlice({
       state.timerActive = true
     },
     decrementTimer: (state) => {
-      if (state.timeRemaining !== null && state.timeRemaining > 0) {
+      if (state.timeRemaining && state.timeRemaining > 0) {
         state.timeRemaining -= 1
       }
     },
     markQuizCompleted: (state, action: PayloadAction<QuizResult>) => {
-      state.isCompleted = true
       state.results = action.payload
+      state.isCompleted = true
       state.timerActive = false
     },
   },
   extraReducers: (builder) => {
     builder
-      // fetchQuiz
       .addCase(fetchQuiz.pending, (state) => {
         state.isLoading = true
-        state.error = null
+        state.quizError = null
       })
       .addCase(fetchQuiz.fulfilled, (state, action) => {
-        state.isLoading = false
         state.quizData = action.payload
         state.currentQuizId = action.payload.id
         state.userAnswers = []
         state.currentQuestion = 0
-        state.isCompleted = false
+        state.isLoading = false
+        state.quizError = null
         state.results = null
+        state.isCompleted = false
         state.timeRemaining = action.payload.timeLimit ? action.payload.timeLimit * 60 : null
-        state.timerActive = false
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         state.isLoading = false
-        state.error = action.payload as string
+        state.quizError = action.payload as string
       })
 
-      // submitAnswer
       .addCase(submitAnswer.pending, (state) => {
         state.isSubmitting = true
-        state.error = null
+        state.submissionError = null
       })
       .addCase(submitAnswer.fulfilled, (state) => {
         state.isSubmitting = false
       })
       .addCase(submitAnswer.rejected, (state, action) => {
         state.isSubmitting = false
-        state.error = action.payload as string
+        state.submissionError = action.payload as string
       })
 
-      // submitQuiz
       .addCase(submitQuiz.pending, (state) => {
         state.isSubmitting = true
-        state.error = null
+        state.submissionError = null
       })
       .addCase(submitQuiz.fulfilled, (state, action) => {
-        state.isSubmitting = false
         state.results = action.payload
         state.isCompleted = true
+        state.isSubmitting = false
         state.timerActive = false
 
-        if (state.quizData) {
-          const historyItem: QuizHistoryItem = {
-            slug: state.quizData.id,
-            quizTitle: state.quizData.title,
-            quizType: state.quizData.type,
+        const data = state.quizData
+        if (data) {
+          const history: QuizHistoryItem = {
+            id: data.id,
+            quizTitle: data.title,
+            quizType: data.type,
             score: action.payload.score,
             maxScore: action.payload.maxScore,
             completedAt: new Date().toISOString(),
-            slug: state.quizData.slug,
+            slug: data.slug,
           }
 
-          const index = state.quizHistory.findIndex((item) => item.slug === historyItem.slug)
-          if (index !== -1) {
-            state.quizHistory[index] = historyItem
-          } else {
-            state.quizHistory.push(historyItem)
-          }
+          const idx = state.quizHistory.findIndex((q) => q.id === data.id)
+          if (idx >= 0) state.quizHistory[idx] = history
+          else state.quizHistory.push(history)
         }
       })
       .addCase(submitQuiz.rejected, (state, action) => {
         state.isSubmitting = false
-        state.error = action.payload as string
+        state.submissionError = action.payload as string
       })
 
-      // getQuizResults
       .addCase(getQuizResults.pending, (state) => {
         state.isLoading = true
-        state.error = null
+        state.resultsError = null
       })
       .addCase(getQuizResults.fulfilled, (state, action) => {
-        state.isLoading = false
         state.results = action.payload
         state.isCompleted = true
+        state.isLoading = false
       })
       .addCase(getQuizResults.rejected, (state, action) => {
         state.isLoading = false
-        state.error = action.payload as string
+        state.resultsError = action.payload as string
       })
 
-      // fetchQuizHistory
       .addCase(fetchQuizHistory.pending, (state) => {
         state.isLoading = true
-        state.error = null
+        state.historyError = null
       })
       .addCase(fetchQuizHistory.fulfilled, (state, action) => {
-        state.isLoading = false
         state.quizHistory = action.payload
+        state.isLoading = false
       })
       .addCase(fetchQuizHistory.rejected, (state, action) => {
         state.isLoading = false
-        state.error = action.payload as string
+        state.historyError = action.payload as string
       })
   },
 })
@@ -322,6 +327,3 @@ export const {
 } = quizSlice.actions
 
 export default quizSlice.reducer
-
-// Export types for use in hooks and other modules
-export type { QuizData, UserAnswer, QuizResult, QuizHistoryItem, QuizType }

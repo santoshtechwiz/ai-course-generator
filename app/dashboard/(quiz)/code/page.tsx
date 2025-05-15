@@ -3,24 +3,73 @@ import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 
 import { authOptions } from "@/lib/auth"
-import { generateBreadcrumbStructuredData, generatePageMetadata, generateQuizStructuredData } from "@/lib/seo-utils"
+import { generatePageMetadata } from "@/lib/seo-utils"
+import type { CodeQuizApiResponse, CodeQuizQuestion } from "@/app/types/code-quiz-types"
 
-import type { CodingQuizProps, BreadcrumbItem } from "@/app/types/types"
-import { JsonLd } from "@/components/json-ld"
-import QuizDetailsPageWithContext from "../components/QuizDetailsPageWithContext"
-import CodeQuizWrapper from "./components/CodeQuizWrapper"
+import type { BreadcrumbItem } from "@/app/types/types"
+import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
+import CodeQuizWrapper from "../components/CodeQuizWrapper"
 
 interface PageParams {
   params: Promise<{ slug: string }>
 }
 
-async function getQuizData(slug: string): Promise<CodingQuizProps | null> {
+// Improved type safety for quiz data
+interface ValidatedQuizData {
+  id: string
+  quizId: string
+  title: string
+  slug: string
+  isPublic: boolean
+  isFavorite: boolean
+  userId: string
+  ownerId: string
+  difficulty?: string
+  questions: CodeQuizQuestion[]
+}
+
+async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
   try {
-    const response = await fetch(`http://localhost:3000/api/code-quiz/${slug}`)
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || "http://localhost:3000"
+    console.log(`Fetching quiz data from: ${baseUrl}/api/quizzes/code/${slug}`)
+
+    const response = await fetch(`${baseUrl}/api/quizzes/code/${slug}`, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      next: { revalidate: 0 }, // Ensure fresh data
+    })
+
     if (response.status !== 200) {
-      throw new Error(`Failed to fetch quiz data: ${response.statusText}`)
+      console.error(`Failed to fetch quiz data: ${response.status} ${response.statusText}`)
+      return null
     }
-    return await response.json()
+
+    const data = await response.json()
+
+    // Ensure the data structure is serializable
+    return {
+      quizId: data.quizId || "",
+      quizData: {
+        id: data.quizData?.id || data.quizId || "",
+        title: data.quizData?.title || "Code Quiz",
+        slug: slug,
+        questions: Array.isArray(data.quizData?.questions)
+          ? data.quizData.questions.map((q: any) => ({
+              id: q.id || `question-${Math.random().toString(36).substring(2, 9)}`,
+              question: q.question || "",
+              codeSnippet: q.codeSnippet || "",
+              options: Array.isArray(q.options) ? q.options : [],
+              answer: q.answer || q.correctAnswer || "",
+              language: q.language || "javascript",
+            }))
+          : [],
+      },
+      isPublic: !!data.isPublic,
+      isFavorite: !!data.isFavorite,
+      ownerId: data.ownerId || data.userId || "",
+    }
   } catch (error) {
     console.error("Error fetching quiz data:", error)
     return null
@@ -41,36 +90,20 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     })
   }
 
-  const titleWords = quiz.title?.toLowerCase().split(" ") || []
-  const keyTerms = titleWords.filter((word) => word.length > 3)
-  const programmingLanguages = ["JavaScript", "Python", "Java", "C++", "TypeScript", "Ruby", "Go", "PHP"]
-
-  // Extract any programming languages mentioned in the title
-  const mentionedLanguages = programmingLanguages.filter((lang) =>
-    quiz.title?.toLowerCase().includes(lang.toLowerCase()),
-  )
+  const title = quiz.quizData?.title || "Code Challenge"
 
   return generatePageMetadata({
-    title: `${quiz.title} | Interactive Programming Code Challenge`,
-    description: `Improve your coding skills with this ${quiz.title?.toLowerCase()} programming challenge. Write real code, get instant feedback, and enhance your development abilities with hands-on practice. Perfect for interview preparation and skill building.`,
+    title: `${title} | Programming Code Challenge`,
+    description: `Test your coding skills with this ${title.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
     path: `/dashboard/code/${slug}`,
     keywords: [
-      `${quiz.title?.toLowerCase()} challenge`,
-      `${quiz.title?.toLowerCase()} coding exercise`,
-      `${quiz.title?.toLowerCase()} programming practice`,
+      `${title.toLowerCase()} challenge`,
       "programming exercise",
       "coding practice",
       "developer skills test",
       "programming challenge",
-      "interactive code editor",
-      "coding interview preparation",
-      "algorithm practice",
-      "data structure exercise",
-      ...mentionedLanguages.map((lang) => `${lang} programming challenge`),
-      ...keyTerms.map((term) => `${term} coding exercise`),
     ],
     ogType: "article",
-    ogImage: `/api/og?title=${encodeURIComponent(quiz.title)}&description=${encodeURIComponent("Interactive Code Challenge")}`,
   })
 }
 
@@ -79,61 +112,131 @@ const CodePage = async (props: PageParams) => {
   const { slug } = params
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
+  // Get the current user session
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id || ""
 
+  console.log(`Fetching quiz data for slug: ${slug}`)
+
+  // Fetch quiz data
   const result = await getQuizData(slug)
+
+  // Handle missing quiz data
   if (!result) {
+    console.error("Quiz data not found for slug:", slug)
     notFound()
   }
 
+  // Validate quiz data structure with detailed logging
+  if (!result.quizData) {
+    console.error("Invalid quiz data structure: quizData is missing")
+    notFound()
+  }
+
+  // Validate questions array with detailed logging
+  if (!Array.isArray(result.quizData.questions)) {
+    console.error("Invalid quiz data: questions is not an array", {
+      questionsType: typeof result.quizData.questions,
+      quizDataKeys: Object.keys(result.quizData),
+    })
+    notFound()
+  }
+
+  // Check if questions array is empty
+  if (result.quizData.questions.length === 0) {
+    console.error("Invalid quiz data: questions array is empty")
+    notFound()
+  }
+
+  // Validate each question has required properties
+  const invalidQuestions = result.quizData.questions.filter((q) => !q.question)
+  if (invalidQuestions.length > 0) {
+    console.error(`Found ${invalidQuestions.length} invalid questions without 'question' property`)
+    notFound()
+  }
+
+  // Extract data from the nested structure
+  const title = result.quizData.title || "Code Quiz"
+  const questions = result.quizData.questions
+
+  // Log detailed information about the questions
+  console.log("Questions data:", {
+    count: questions.length,
+    hasQuestions: questions.length > 0,
+    firstQuestion: questions.length > 0 ? JSON.stringify(questions[0]).substring(0, 100) + "..." : "No questions",
+  })
+
   // Calculate estimated time based on question count and complexity
-  const questionCount = result.quizData.questions?.length || 3
-  const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M` // 10 minutes per coding question, minimum 15 minutes
+  const questionCount = questions.length
+  const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M`
 
   // Create breadcrumb items
   const breadcrumbItems: BreadcrumbItem[] = [
     { name: "Home", href: baseUrl },
     { name: "Dashboard", href: `${baseUrl}/dashboard` },
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
-    { name: result.quizData.title, href: `${baseUrl}/dashboard/code/${slug}` },
+    { name: title, href: `${baseUrl}/dashboard/code/${slug}` },
   ]
 
-  // Generate structured data for SEO
-  const quizStructuredData = generateQuizStructuredData({
-    title: result.quizData.title,
-    description: `Test your coding skills on ${result.quizData.title} with interactive programming challenges`,
-    url: `${baseUrl}/dashboard/code/${slug}`,
-    questionCount,
-    timeRequired: estimatedTime,
-    author: "CourseAI",
-    // datePublished: result.quizData.createdAt,
-    // dateModified: result.quizData.updatedAt,
-    quizType: "code",
+  // Create a validated quiz data object with strict typing
+  const validatedQuizData: ValidatedQuizData = {
+    id: result.quizData?.id || result.quizId || "",
+    quizId: result.quizId || "",
+    title: title,
+    slug: slug,
+    isPublic: Boolean(result.isPublic),
+    isFavorite: Boolean(result.isFavorite),
+    userId: currentUserId,
+    ownerId: result.ownerId || "",
+    difficulty: result.quizData?.difficulty || "medium",
+    // Ensure questions is a non-empty array of serializable objects
+    questions: questions.map((q, index) => ({
+      id: q.id || `question-${index}-${Math.random().toString(36).substring(2, 9)}`,
+      question: q.question || "",
+      codeSnippet: q.codeSnippet || "",
+      options: Array.isArray(q.options) ? [...q.options] : [],
+      answer: q.answer || "",
+      correctAnswer: q.correctAnswer || q.answer || "",
+      language: q.language || "javascript",
+    })),
+  }
+
+  // Final validation check before rendering
+  if (validatedQuizData.questions.length === 0) {
+    console.error("Validation failed: questions array is still empty after processing")
+    notFound()
+  }
+
+  console.log("Rendering CodeQuizWrapper with validated data:", {
+    title: validatedQuizData.title,
+    questionCount: validatedQuizData.questions.length,
+    firstQuestionId: validatedQuizData.questions[0].id,
   })
 
-  const breadcrumbStructuredData = generateBreadcrumbStructuredData(breadcrumbItems)
-
   return (
-    <>
-      <JsonLd type="quiz" data={quizStructuredData} />
-      <JsonLd type="breadcrumb" data={breadcrumbStructuredData} />
-      <QuizDetailsPageWithContext
-        title={result.quizData.title}
-        description={`Test your coding skills on ${result.quizData.title} with interactive programming challenges`}
+    <QuizDetailsPageWithContext
+      title={title}
+      description={`Test your coding skills on ${title} with interactive programming challenges`}
+      slug={slug}
+      quizType="code"
+      questionCount={questionCount}
+      estimatedTime={estimatedTime}
+      breadcrumbItems={breadcrumbItems}
+      quizId={result.quizId}
+      authorId={result.ownerId}
+      isPublic={Boolean(result.isPublic)}
+      isFavorite={Boolean(result.isFavorite)}
+    >
+      <CodeQuizWrapper
+        quizData={validatedQuizData}
         slug={slug}
-        quizType="code"
-        questionCount={questionCount}
-        estimatedTime={estimatedTime}
-        breadcrumbItems={breadcrumbItems}
-        quizId={result.quizId.toString()}
-        authorId={result.ownerId}
-        isPublic={result.isPublic || false}
-        isFavorite={result.isFavorite || false}
-      >
-        <CodeQuizWrapper quizData={result.quizData} slug={slug} quizId={""} />
-      </QuizDetailsPageWithContext>
-    </>
+        userId={currentUserId}
+        quizId={result.quizId}
+        isPublic={Boolean(result.isPublic)}
+        isFavorite={Boolean(result.isFavorite)}
+        ownerId={result.ownerId}
+      />
+    </QuizDetailsPageWithContext>
   )
 }
 
