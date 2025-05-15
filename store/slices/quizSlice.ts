@@ -76,7 +76,7 @@ export const submitAnswer = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await fetch("/api/quiz/submit-answer", {
+      const response = await fetch(`/api/quiz/${slug}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, questionId, answer }),

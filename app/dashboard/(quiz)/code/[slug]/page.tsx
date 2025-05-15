@@ -31,15 +31,18 @@ interface ValidatedQuizData {
 async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || "http://localhost:3000"
+    console.log(`Fetching quiz data from: ${baseUrl}/api/code-quiz/${slug}`)
+
     const response = await fetch(`${baseUrl}/api/code-quiz/${slug}`, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
       },
+      next: { revalidate: 0 }, // Ensure fresh data
     })
 
     if (response.status !== 200) {
-      console.error(`Failed to fetch quiz data: ${response.statusText}`)
+      console.error(`Failed to fetch quiz data: ${response.status} ${response.statusText}`)
       return null
     }
 
@@ -105,6 +108,8 @@ const CodePage = async (props: PageParams) => {
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id || ""
 
+  console.log(`Fetching quiz data for slug: ${slug}`)
+
   // Fetch quiz data
   const result = await getQuizData(slug)
 
@@ -167,7 +172,7 @@ const CodePage = async (props: PageParams) => {
 
   // Create a validated quiz data object with strict typing
   const validatedQuizData: ValidatedQuizData = {
-    id: result.quizData.id || "",
+    id: result.quizData.id || result.quizId || "",
     quizId: result.quizId || "",
     title: title,
     slug: slug,
@@ -177,8 +182,8 @@ const CodePage = async (props: PageParams) => {
     ownerId: result.ownerId || "",
     difficulty: result.quizData.difficulty,
     // Ensure questions is a non-empty array
-    questions: questions.map((q) => ({
-      id: q.id || `question-${Math.random().toString(36).substring(2, 9)}`,
+    questions: questions.map((q, index) => ({
+      id: q.id || `question-${index}-${Math.random().toString(36).substring(2, 9)}`,
       question: q.question || "",
       codeSnippet: q.codeSnippet || "",
       options: Array.isArray(q.options) ? q.options : [],
@@ -193,6 +198,12 @@ const CodePage = async (props: PageParams) => {
     console.error("Validation failed: questions array is still empty after processing")
     notFound()
   }
+
+  console.log("Rendering CodeQuizWrapper with validated data:", {
+    title: validatedQuizData.title,
+    questionCount: validatedQuizData.questions.length,
+    firstQuestionId: validatedQuizData.questions[0].id,
+  })
 
   return (
     <QuizDetailsPageWithContext

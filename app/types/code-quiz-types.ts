@@ -17,12 +17,9 @@ export interface CodeQuizQuestion {
   answer: string
   language: string
   options?: string[] // Make sure options is explicitly defined
-  testCases?: Array<{
-    input: string
-    expectedOutput: string
-  }>
+  correctAnswer?: string
   hints?: string[]
-  explanation?: string
+
   timeLimit?: number
 }
 

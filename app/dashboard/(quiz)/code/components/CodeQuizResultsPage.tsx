@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { QuizResultsSummary } from "@/components/ui/quiz-results-summary"
 import { AnswerReviewItem } from "@/components/ui/answer-review-item"
 import { QuizConfetti } from "@/components/ui/quiz-confetti"
-import { formatQuizTime } from "@/lib/utils/quiz-performance"
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { CodeQuizResultData } from "@/app/types/code-quiz-types"
+import { formatQuizTime } from "@/lib/utils/quiz-utils"
 
 interface CodeQuizResultsPageProps {
   result: CodeQuizResultData
