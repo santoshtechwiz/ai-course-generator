@@ -170,41 +170,6 @@ const CodePage = async (props: PageParams) => {
     { name: title, href: `${baseUrl}/dashboard/code/${slug}` },
   ]
 
-  // Create a validated quiz data object with strict typing
-  const validatedQuizData: ValidatedQuizData = {
-    id: result.quizData.id || result.quizId || "",
-    quizId: result.quizId || "",
-    title: title,
-    slug: slug,
-    isPublic: Boolean(result.isPublic),
-    isFavorite: Boolean(result.isFavorite),
-    userId: currentUserId,
-    ownerId: result.ownerId || "",
-    difficulty: result.quizData.difficulty,
-    // Ensure questions is a non-empty array
-    questions: questions.map((q, index) => ({
-      id: q.id || `question-${index}-${Math.random().toString(36).substring(2, 9)}`,
-      question: q.question || "",
-      codeSnippet: q.codeSnippet || "",
-      options: Array.isArray(q.options) ? q.options : [],
-      answer: q.answer || "",
-      correctAnswer: q.correctAnswer || q.answer || "",
-      language: q.language || "javascript",
-    })),
-  }
-
-  // Final validation check before rendering
-  if (validatedQuizData.questions.length === 0) {
-    console.error("Validation failed: questions array is still empty after processing")
-    notFound()
-  }
-
-  console.log("Rendering CodeQuizWrapper with validated data:", {
-    title: validatedQuizData.title,
-    questionCount: validatedQuizData.questions.length,
-    firstQuestionId: validatedQuizData.questions[0].id,
-  })
-
   return (
     <QuizDetailsPageWithContext
       title={title}
@@ -220,7 +185,7 @@ const CodePage = async (props: PageParams) => {
       isFavorite={Boolean(result.isFavorite)}
     >
       <CodeQuizWrapper
-        quizData={validatedQuizData}
+        quizData={result}
         slug={slug}
         userId={currentUserId}
         quizId={result.quizId}

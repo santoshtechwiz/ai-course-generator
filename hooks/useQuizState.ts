@@ -17,12 +17,11 @@ import {
   resumeTimer,
   decrementTimer,
 } from "@/store/slices/quizSlice"
-import type { QuizType } from "@/app/types/quiz-types"
+import type { QuizType, QuizData, UserAnswer } from "@/app/types/quiz-types"
 import { signIn } from "next-auth/react"
 import { loadPersistedQuizState, hasAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
 import { formatTime } from "@/lib/utils/quiz-utils"
 import { getQuizFromApi } from "@/app/actions/getQuizFromApi"
-
 
 export function useQuiz() {
   const dispatch = useAppDispatch()
@@ -71,7 +70,7 @@ export function useQuiz() {
   // Auto-submit when timer reaches zero
   useEffect(() => {
     if (quizState.timeRemaining === 0 && quizState.quizData) {
-      handleSubmitQuiz()
+      submitQuizAction(quizState.quizData.slug)
     }
   }, [quizState.timeRemaining])
 
@@ -80,35 +79,29 @@ export function useQuiz() {
     if (isAuthRedirect) {
       const persistedState = loadPersistedQuizState()
       if (persistedState && persistedState.currentQuizId) {
-        // Restore the quiz
-        loadQuiz(persistedState.currentQuizId, (persistedState.quizData?.type as QuizType) || "mcq")
-          .then(() => {
-            // Restore current question
-            if (persistedState.currentQuestion !== undefined) {
-              dispatch(setCurrentQuestion(persistedState.currentQuestion))
+        loadQuiz(
+          persistedState.currentQuizId,
+          (persistedState.quizData?.type as QuizType) || "mcq"
+        ).then(() => {
+          if (persistedState.currentQuestion !== undefined) {
+            dispatch(setCurrentQuestion(persistedState.currentQuestion))
+          }
+          if (persistedState.userAnswers && persistedState.userAnswers.length > 0) {
+            persistedState.userAnswers.forEach((answer: UserAnswer) => {
+              dispatch(setUserAnswer(answer))
+            })
+          }
+          if (persistedState.timeRemaining !== null) {
+            dispatch(startTimer())
+            if (!persistedState.timerActive) {
+              dispatch(pauseTimer())
             }
-
-            // Restore user answers
-            if (persistedState.userAnswers && persistedState.userAnswers.length > 0) {
-              persistedState.userAnswers.forEach((answer) => {
-                dispatch(setUserAnswer(answer))
-              })
-            }
-
-            // Restore timer state
-            if (persistedState.timeRemaining !== null) {
-              dispatch(startTimer())
-              if (!persistedState.timerActive) {
-                dispatch(pauseTimer())
-              }
-            }
-
-            setIsAuthRedirect(false)
-          })
-          .catch((error) => {
-            console.error("Failed to restore quiz after auth redirect:", error)
-            setIsAuthRedirect(false)
-          })
+          }
+          setIsAuthRedirect(false)
+        }).catch((error) => {
+          console.error("Failed to restore quiz after auth redirect:", error)
+          setIsAuthRedirect(false)
+        })
       }
     }
   }, [isAuthRedirect, dispatch])
@@ -117,31 +110,24 @@ export function useQuiz() {
   const handleApiError = useCallback(
     (error: any, redirectPath?: string) => {
       console.error("API Error:", error)
-
-      // Check if it's an authentication error
       if (typeof error === "string" && (error === "Unauthorized" || error.includes("Session"))) {
-        // Redirect to login if path is provided
         if (redirectPath) {
           requireAuthentication(redirectPath)
         }
       }
-
       throw error
     },
     [requireAuthentication],
   )
 
   // Load quiz data
-   const loadQuiz = useCallback(
-    async (slug: string, type: QuizType = "mcq", initialData = null) => {
+  const loadQuiz = useCallback(
+    async (slug: string, type: QuizType = "mcq", initialData: QuizData | null = null) => {
       if (initialData) {
-        // If we have initial data, use that instead of fetching
         dispatch(fetchQuiz.fulfilled(initialData, "", { slug, type }))
         return initialData
       }
-
       try {
-        // Otherwise fetch from API
         dispatch(fetchQuiz.pending("", { slug, type }))
         const data = await getQuizFromApi(slug, type)
         dispatch(fetchQuiz.fulfilled(data, "", { slug, type }))
@@ -179,7 +165,7 @@ export function useQuiz() {
     return quizState.currentQuestion === quizState.quizData.questions.length - 1
   }, [quizState.currentQuestion, quizState.quizData])
 
-  // Save user answer
+  // Save user answer (Redux only)
   const saveAnswer = useCallback(
     (questionId: string, answer: string | Record<string, string>) => {
       dispatch(setUserAnswer({ questionId, answer }))
@@ -206,20 +192,18 @@ export function useQuiz() {
   )
 
   // Submit entire quiz
- const submitQuizAction = useCallback(
+  const submitQuizAction = useCallback(
     async (slug: string) => {
       try {
         if (!quizState.userAnswers.length) {
           throw new Error("No answers to submit")
         }
-
         const results = await dispatch(
           submitQuiz({
             slug,
             answers: quizState.userAnswers,
           }),
         ).unwrap()
-
         return results
       } catch (error) {
         console.error("Error submitting quiz:", error)
@@ -228,6 +212,7 @@ export function useQuiz() {
     },
     [dispatch, quizState.userAnswers],
   )
+
   // Start quiz timer
   const startQuizTimer = useCallback(() => {
     dispatch(startTimer())
@@ -264,10 +249,8 @@ export function useQuiz() {
   // Get current question
   const getCurrentQuestion = useCallback(() => {
     if (!quizState.quizData || !quizState.quizData.questions.length) return null
-
     const index = quizState.currentQuestion
     if (index < 0 || index >= quizState.quizData.questions.length) return null
-
     return quizState.quizData.questions[index]
   }, [quizState.quizData, quizState.currentQuestion])
 
@@ -275,7 +258,6 @@ export function useQuiz() {
   const getCurrentAnswer = useCallback(() => {
     const currentQuestion = getCurrentQuestion()
     if (!currentQuestion) return null
-
     const answer = quizState.userAnswers.find((a) => a.questionId === currentQuestion.id)
     return answer ? answer.answer : null
   }, [getCurrentQuestion, quizState.userAnswers])
@@ -283,7 +265,6 @@ export function useQuiz() {
   // Check if all questions are answered
   const areAllQuestionsAnswered = useCallback(() => {
     if (!quizState.quizData) return false
-
     return quizState.userAnswers.length === quizState.quizData.questions.length
   }, [quizState.quizData, quizState.userAnswers])
 

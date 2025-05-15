@@ -46,9 +46,9 @@ function formatQuizTime(seconds: number): string {
 }
 
 // Update the component props type definition
-function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }: CodingQuizProps) {
+function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion, prevQuestion }: CodingQuizProps & { prevQuestion?: () => void }) {
   const { animationsEnabled } = useAnimation()
-  const { userAnswers, timeRemaining, timerActive } = useQuiz()
+  const { userAnswers, timeRemaining, timerActive, saveAnswer } = useQuiz()
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>(question?.codeSnippet || "")
@@ -142,18 +142,19 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
 
       const timeSpent = Math.floor((Date.now() - startTime) / 1000)
 
-      // Call onAnswer with the selected option or code
+      // Save answer to Redux
+      saveAnswer(question.id, answer)
+      // Call onAnswer for navigation
       onAnswer(answer, timeSpent, isCorrect)
     } catch (err) {
       console.error("Error submitting answer:", err)
       setError("Failed to submit answer. Please try again.")
     } finally {
-      // Reset submission state after a short delay
       setTimeout(() => {
         setIsSubmitting(false)
       }, 300)
     }
-  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption])
+  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption, saveAnswer])
 
   const handleRetry = useCallback(() => {
     setError(null)
