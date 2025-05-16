@@ -17,7 +17,7 @@ import {
   decrementTimer,
 } from "@/store/slices/quizSlice"
 
-import type { QuizData, QuizType, UserAnswer } from "@/app/types/quiz-types"
+import type { QuizData, QuizType } from "@/app/types/quiz-types"
 import { signIn } from "next-auth/react"
 import { loadPersistedQuizState, hasAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
 import { formatTime } from "@/lib/utils/quiz-utils"
@@ -97,29 +97,28 @@ export function useQuiz() {
     signIn(undefined, { callbackUrl })
   }, [])
 
-const loadQuiz = useCallback(
-  async (slug: string, type: QuizType = "mcq", initialData?: QuizData) => {
-    if (initialData && Array.isArray(initialData.questions)) {
-      // 🔐 Check for required fields
-      if (!initialData.id || !initialData.type) {
-        console.warn("initialData missing id or type:", initialData)
+  const loadQuiz = useCallback(
+    async (slug: string, type: QuizType = "mcq", initialData?: QuizData) => {
+      if (initialData && Array.isArray(initialData.questions)) {
+        // 🔐 Check for required fields
+        if (!initialData.id || !initialData.type) {
+          console.warn("initialData missing id or type:", initialData)
+        }
+
+        dispatch(fetchQuiz.fulfilled(initialData, "", { slug, type }))
+        return initialData
       }
 
-      dispatch(fetchQuiz.fulfilled(initialData, "", { slug, type }))
-      return initialData
-    }
-
-    try {
-      const result = await dispatch(fetchQuiz({ slug, type })).unwrap()
-      return result
-    } catch (error) {
-      console.error("Error loading quiz:", error)
-      throw error
-    }
-  },
-  [dispatch],
-)
-
+      try {
+        const result = await dispatch(fetchQuiz({ slug, type })).unwrap()
+        return result
+      } catch (error) {
+        console.error("Error loading quiz:", error)
+        throw error
+      }
+    },
+    [dispatch],
+  )
 
   const nextQuestion = useCallback(() => {
     const questions = quizState.quizData?.questions
@@ -137,10 +136,7 @@ const loadQuiz = useCallback(
   }, [dispatch, quizState.currentQuestion])
 
   const isLastQuestion = useCallback(() => {
-    return (
-      quizState.quizData?.questions &&
-      quizState.currentQuestion === quizState.quizData.questions.length - 1
-    )
+    return quizState.quizData?.questions && quizState.currentQuestion === quizState.quizData.questions.length - 1
   }, [quizState.quizData, quizState.currentQuestion])
 
   const saveAnswer = useCallback(
@@ -150,42 +146,52 @@ const loadQuiz = useCallback(
     [dispatch],
   )
 
-  const handleSubmitQuiz = useCallback(
-    async (slug: string) => {
-      if (!quizState.userAnswers.length) {
-        throw new Error("No answers to submit")
-      }
-      console.log("Submitting quiz with answers:", quizState);
-      const quizMeta = quizState.quizData
+const handleSubmitQuiz = useCallback(
+  async (slug: string) => {
+    if (quizState.isCompleted) {
+      console.warn("Quiz already submitted.")
+      return
+    }
 
-      if (!quizMeta || !quizMeta.id || !quizMeta.type) {
-        throw new Error("Missing quiz metadata for submission")
-      }
+    if (!quizState.userAnswers.length) {
+      throw new Error("No answers to submit")
+    }
 
-      const payload = {
-        slug,
-        quizId: quizMeta.id,
-        type: quizMeta.type,
-        answers: quizState.userAnswers.map((a) => ({
-          questionId: a.questionId,
-          answer: a.answer,
-        })),
-        timeTaken:
-          quizMeta.timeLimit && quizState.timeRemaining != null
-            ? quizMeta.timeLimit * 60 - quizState.timeRemaining
-            : undefined,
-      }
+    const quizMeta = quizState.quizData
 
-      try {
-        const result = await dispatch(submitQuiz(payload)).unwrap()
-        return result
-      } catch (error) {
-        console.error("Error submitting quiz:", error)
-        throw error
-      }
-    },
-    [dispatch, quizState.userAnswers, quizState.quizData, quizState.timeRemaining],
-  )
+    if (!quizMeta || !quizMeta.id || !quizMeta.type) {
+      throw new Error("Missing quiz metadata for submission")
+    }
+
+    const payload = {
+      slug,
+      quizId: quizMeta.id,
+      type: quizMeta.type,
+      answers: quizState.userAnswers.map((a) => ({
+        questionId: a.questionId,
+        answer: a.answer,
+      })),
+      timeTaken:
+        quizMeta.timeLimit && quizState.timeRemaining != null
+          ? quizMeta.timeLimit * 60 - quizState.timeRemaining
+          : undefined,
+    }
+
+    try {
+      const result = await dispatch(submitQuiz(payload)).unwrap()
+      return result
+    } catch (error) {
+      console.error("Error submitting quiz:", error)
+      throw error
+    }
+  },
+  [dispatch, quizState.userAnswers, quizState.quizData, quizState.timeRemaining]
+)
+
+  const isAuthenticated = useCallback(() => {
+    // This is a simple check - in a real app, you might want to use the session state
+    return (typeof window !== "undefined" && !!sessionStorage.getItem("user")) || false
+  }, [])
 
   const startQuizTimer = useCallback(() => dispatch(startTimer()), [dispatch])
   const pauseQuizTimer = useCallback(() => dispatch(pauseTimer()), [dispatch])
@@ -251,6 +257,7 @@ const loadQuiz = useCallback(
     getResults,
     loadQuizHistory,
     requireAuthentication,
+    isAuthenticated,
 
     // Helpers
     formatRemainingTime,

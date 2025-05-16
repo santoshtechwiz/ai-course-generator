@@ -8,6 +8,7 @@ import quizReducer, {
   resumeTimer,
   decrementTimer,
   markQuizCompleted,
+  submitQuiz,
 } from "@/store/slices/quizSlice"
 import type { UserAnswer, QuizResult } from "@/app/types/quiz-types"
 
@@ -263,5 +264,75 @@ describe("quizSlice", () => {
     expect(state.isCompleted).toBe(true)
     expect(state.results).toEqual(result)
     expect(state.timerActive).toBe(false)
+  })
+
+  // Test submitQuiz action
+  test("should handle submitQuiz action", async () => {
+    // Mock API response
+    const mockResult = {
+      quizId: "test",
+      userId: "user1",
+      score: 80,
+      maxScore: 100,
+      percentage: 80,
+      answers: [],
+      submittedAt: new Date().toISOString(),
+    }
+
+    // Mock fetch implementation
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResult,
+    })
+
+    const store = configureStore({
+      reducer: {
+        quiz: quizReducer,
+      },
+      preloadedState: {
+        quiz: {
+          quizData: {
+            id: "test",
+            title: "Test Quiz",
+            description: "Test",
+            type: "code" as const,
+            difficulty: "medium" as const,
+            questions: [],
+            slug: "test-slug",
+          },
+          currentQuestion: 0,
+          userAnswers: [{ questionId: "q1", answer: "test" }],
+          isLoading: false,
+          isSubmitting: false,
+          error: null,
+          results: null,
+          isCompleted: false,
+          quizHistory: [],
+          currentQuizId: "test",
+          timeRemaining: 300,
+          timerActive: true,
+        },
+      },
+    })
+
+    await store.dispatch(
+      submitQuiz({
+        slug: "test-slug",
+        quizId: "test",
+        type: "code",
+        answers: [{ questionId: "q1", answer: "test" }],
+        timeTaken: 300,
+      }),
+    )
+
+    const state = store.getState().quiz
+
+    expect(state.isSubmitting).toBe(false)
+    expect(state.isCompleted).toBe(true)
+    expect(state.results).toEqual(mockResult)
+    expect(state.timerActive).toBe(false)
+    expect(state.quizHistory).toHaveLength(1)
+    expect(state.quizHistory[0].id).toBe("test")
+    expect(state.quizHistory[0].score).toBe(80)
   })
 })

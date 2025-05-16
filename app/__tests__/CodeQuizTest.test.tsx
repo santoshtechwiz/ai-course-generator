@@ -30,28 +30,40 @@ jest.mock("@/hooks/useQuizState", () => ({
 
 // Mock components
 jest.mock("../dashboard/(quiz)/code/components/CodingQuiz", () => {
-  return jest.fn(({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion, existingAnswer }) => (
-    <div data-testid="coding-quiz">
-      <h2>
-        Question {questionNumber}/{totalQuestions}
-      </h2>
-      <div data-testid="question-text">{question.question}</div>
-      {question.codeSnippet && <pre data-testid="code-snippet">{question.codeSnippet}</pre>}
-      {existingAnswer && <div data-testid="existing-answer">{existingAnswer}</div>}
-      {question.options && (
-        <div data-testid="options">
-          {question.options.map((option: string, index: number) => (
-            <button key={index} data-testid={`option-${index}`} onClick={() => onAnswer(option, 10, false)}>
-              {option}
-            </button>
-          ))}
-        </div>
-      )}
-      <button data-testid="submit-answer" onClick={() => onAnswer(question.codeSnippet || "test answer", 10, false)}>
-        {isLastQuestion ? "Submit Quiz" : "Next"}
-      </button>
-    </div>
-  ))
+  return jest.fn(
+    ({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion, existingAnswer, isSubmitting }) => (
+      <div data-testid="coding-quiz">
+        <h2>
+          Question {questionNumber}/{totalQuestions}
+        </h2>
+        <div data-testid="question-text">{question.question}</div>
+        {question.codeSnippet && <pre data-testid="code-snippet">{question.codeSnippet}</pre>}
+        {existingAnswer && <div data-testid="existing-answer">{existingAnswer}</div>}
+        {question.options && (
+          <div data-testid="options">
+            {question.options.map((option: string, index: number) => (
+              <button
+                key={index}
+                data-testid={`option-${index}`}
+                onClick={() => onAnswer(option, 10, false)}
+                disabled={isSubmitting}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          data-testid="submit-answer"
+          onClick={() => onAnswer(question.codeSnippet || "test answer", 10, false)}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Submitting..." : isLastQuestion ? "Submit Quiz" : "Next"}
+        </button>
+        {isSubmitting && <div data-testid="submitting-indicator">Submitting...</div>}
+      </div>
+    ),
+  )
 })
 
 // Mock quiz state display components
@@ -66,8 +78,12 @@ jest.mock("@/app/dashboard/(quiz)/components/QuizStateDisplay", () => ({
   ErrorDisplay: ({ error, onRetry, onReturn }: any) => (
     <div data-testid="error-display">
       {error}
-      <button onClick={onRetry}>Retry</button>
-      <button onClick={onReturn}>Return</button>
+      <button data-testid="retry-button" onClick={onRetry}>
+        Retry
+      </button>
+      <button data-testid="return-button" onClick={onReturn}>
+        Return
+      </button>
     </div>
   ),
   EmptyQuestionsDisplay: ({ onReturn }: any) => (
@@ -78,6 +94,29 @@ jest.mock("@/app/dashboard/(quiz)/components/QuizStateDisplay", () => ({
   ),
   LoadingDisplay: ({ message }: any) => <div data-testid="loading-display">{message || "Loading..."}</div>,
 }))
+
+// Mock the QuizSubmissionLoading component
+jest.mock("@/app/dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
+  QuizSubmissionLoading: ({ quizType }: { quizType: string }) => (
+    <div data-testid="quiz-submission-loading">
+      Submitting {quizType} quiz...
+      <div data-testid="submission-progress">Processing your answers...</div>
+    </div>
+  ),
+}))
+
+// Mock NonAuthenticatedUserSignInPrompt component
+jest.mock("@/app/dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => {
+  return jest.fn(({ quizType, onSignIn, showSaveMessage }) => (
+    <div data-testid="non-authenticated-prompt">
+      <p>Sign in to save your results</p>
+      <button data-testid="sign-in-button" onClick={onSignIn}>
+        Sign In
+      </button>
+      {showSaveMessage && <p data-testid="save-message">Your progress will be saved</p>}
+    </div>
+  ))
+})
 
 // Create test quiz data
 const mockQuizData = {
@@ -183,12 +222,25 @@ const renderWithProviders = (
   }
 }
 
+// Mock window.location.reload
+const mockReload = jest.fn()
+Object.defineProperty(window, "location", {
+  value: {
+    ...window.location,
+    reload: mockReload,
+  },
+  writable: true,
+})
+
 describe("Code Quiz Integration Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.useFakeTimers()
+  })
 
-    // Mock window.location.reload
-    window.location.reload = jest.fn()
+  afterEach(() => {
+    jest.runOnlyPendingTimers()
+    jest.useRealTimers()
   })
 
   test("should initialize and load quiz data", async () => {
@@ -264,10 +316,22 @@ describe("Code Quiz Integration Tests", () => {
     })
 
     // Submit the quiz
-    fireEvent.click(screen.getByText("Submit Quiz"))
+    fireEvent.click(screen.getByTestId("submit-answer"))
 
     // Verify submitQuiz was called
     expect(useQuizSecondQuestion.submitQuiz).toHaveBeenCalled()
+
+    // Should show loading state
+    await waitFor(() => {
+      expect(screen.getByTestId("quiz-submission-loading")).toBeInTheDocument()
+    })
+
+    // Fast-forward timer to trigger redirect
+    act(() => {
+      jest.advanceTimersByTime(5000)
+    })
+
+    // Verify redirect to results page
     expect(mockRouter.replace).toHaveBeenCalledWith("/dashboard/code/test-quiz/results")
   })
 
@@ -284,7 +348,7 @@ describe("Code Quiz Integration Tests", () => {
     expect(screen.getByText("Please sign in to access this quiz")).toBeInTheDocument()
 
     // Click the retry button which should trigger sign in
-    fireEvent.click(screen.getByText("Retry"))
+    fireEvent.click(screen.getByTestId("retry-button"))
     expect(mockRouter.push).toHaveBeenCalledWith(expect.stringContaining("/auth/signin"))
   })
 
@@ -304,8 +368,10 @@ describe("Code Quiz Integration Tests", () => {
     expect(screen.getByText("Failed to load quiz data")).toBeInTheDocument()
 
     // Click retry
-    fireEvent.click(screen.getByText("Retry"))
-    expect(window.location.reload).toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId("retry-button"))
+
+    // Check if window.location.reload was called
+    expect(mockReload).toHaveBeenCalled()
   })
 
   test("should handle empty quiz data", async () => {
@@ -376,5 +442,83 @@ describe("Code Quiz Integration Tests", () => {
 
     // Verify saveQuizState was called
     expect(useQuizWithDataAndAnswer.saveQuizState).toHaveBeenCalled()
+  })
+
+  test("should show sign-in prompt for non-authenticated users after quiz completion", async () => {
+    // Set up quiz data with completed state
+    const useQuizCompleted = {
+      ...mockUseQuiz,
+      quizData: mockQuizData,
+      isCompleted: true,
+    }
+
+    renderWithProviders(<CodeQuizWrapper slug="test-quiz" quizId="test-quiz" userId={null} />, {
+      useQuizMock: useQuizCompleted,
+      session: { data: null, status: "unauthenticated" },
+    })
+
+    // Should show non-authenticated prompt
+    await waitFor(() => {
+      expect(screen.getByTestId("non-authenticated-prompt")).toBeInTheDocument()
+      expect(screen.getByTestId("save-message")).toBeInTheDocument()
+    })
+
+    // Click sign in button
+    fireEvent.click(screen.getByTestId("sign-in-button"))
+
+    // Verify redirect to sign in page with correct callback
+    expect(mockRouter.push).toHaveBeenCalledWith(expect.stringContaining("/auth/signin?callbackUrl="))
+  })
+
+  test("should handle submission loading state", async () => {
+    // Start with quiz data on the last question
+    const useQuizLastQuestion = {
+      ...mockUseQuiz,
+      quizData: mockQuizData,
+      currentQuestion: 1, // Last question (0-indexed)
+    }
+
+    renderWithProviders(<CodeQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />, {
+      useQuizMock: useQuizLastQuestion,
+    })
+
+    // Should show the last question
+    await waitFor(() => {
+      expect(screen.getByTestId("coding-quiz")).toBeInTheDocument()
+      expect(screen.getByText("Question 2/2")).toBeInTheDocument()
+      expect(screen.getByText("Submit Quiz")).toBeInTheDocument()
+    })
+
+    // Submit the quiz
+    fireEvent.click(screen.getByTestId("submit-answer"))
+
+    // Verify submitQuiz was called
+    expect(useQuizLastQuestion.submitQuiz).toHaveBeenCalled()
+
+    // Update mock to show completed state
+    const useQuizSubmitted = {
+      ...useQuizLastQuestion,
+      isCompleted: true,
+    }
+    require("@/hooks/useQuizState").useQuiz.mockReturnValue(useQuizSubmitted)
+
+    // Re-render with completed state
+    renderWithProviders(<CodeQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />, {
+      useQuizMock: useQuizSubmitted,
+    })
+
+    // Should show loading state
+    await waitFor(() => {
+      expect(screen.getByTestId("quiz-submission-loading")).toBeInTheDocument()
+      expect(screen.getByTestId("submission-progress")).toBeInTheDocument()
+    })
+
+    // Fast-forward timer to trigger redirect
+    act(() => {
+      jest.advanceTimersByTime(5000)
+    })
+
+    // Verify redirect to results page
+    expect(mockRouter.replace).toHaveBeenCalledWith("/dashboard/code/test-quiz/results")
   })
 })

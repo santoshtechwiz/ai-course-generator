@@ -29,25 +29,39 @@ interface CodingQuizProps {
   questionNumber: number
   totalQuestions: number
   isLastQuestion: boolean
+  isSubmitting?: boolean
 }
 
 // Update the component props type definition
-function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }: CodingQuizProps) {
+function CodingQuizComponent({
+  question,
+  onAnswer,
+  questionNumber,
+  totalQuestions,
+  isLastQuestion,
+  isSubmitting = false,
+}: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>(question?.codeSnippet || "")
   const [elapsedTime, setElapsedTime] = useState<number>(0)
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [internalSubmitting, setInternalSubmitting] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [startTime] = useState<number>(Date.now())
   const [tooFastWarning, setTooFastWarning] = useState<boolean>(false)
 
+  // Combine internal submitting state with prop
+  const effectivelySubmitting = isSubmitting || internalSubmitting
+
   // Reset state when question changes
   useEffect(() => {
-    setUserCode(question?.codeSnippet || "")
-    setSelectedOption(null)
-    setElapsedTime(0)
-    setTooFastWarning(false)
+    // Only reset if the question ID has changed
+    if (question?.id) {
+      setUserCode(question?.codeSnippet || "")
+      setSelectedOption(null)
+      setElapsedTime(0)
+      setTooFastWarning(false)
+    }
   }, [question?.id, question?.codeSnippet])
 
   // Update elapsed time
@@ -75,7 +89,7 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
   }, [])
 
   const handleSubmit = useCallback(() => {
-    if (isSubmitting) return
+    if (effectivelySubmitting) return
 
     const answerTime = Date.now() - startTime
     if (isTooFastAnswer(startTime, 1)) {
@@ -83,13 +97,17 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
       return
     }
 
-    setIsSubmitting(true)
+    setInternalSubmitting(true)
 
+    // Determine the answer based on quiz type (multiple choice or code)
     const answer = options.length > 0 && selectedOption ? selectedOption : userCode
     let isCorrect = false
 
+    // Validate the answer if possible
     if (question.answer || question.correctAnswer) {
       const correctAnswer = question.answer || question.correctAnswer || ""
+
+      // For multiple choice, exact match; for code, partial match is acceptable
       isCorrect = options.length > 0 ? selectedOption === correctAnswer : answer.includes(correctAnswer)
     }
 
@@ -98,11 +116,13 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
     // Call onAnswer with the selected option or code
     onAnswer(answer, timeSpent, isCorrect)
 
-    // Reset submission state after a short delay
-    setTimeout(() => {
-      setIsSubmitting(false)
-    }, 300)
-  }, [userCode, question, onAnswer, startTime, isSubmitting, options, selectedOption])
+    // Reset submission state after a short delay if not the last question
+    if (!isLastQuestion) {
+      setTimeout(() => {
+        setInternalSubmitting(false)
+      }, 300)
+    }
+  }, [userCode, question, onAnswer, startTime, effectivelySubmitting, options, selectedOption, isLastQuestion])
 
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null
@@ -210,6 +230,7 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
                     onChange={handleCodeChange}
                     height="180px" // Reduced height
                     data-testid="code-editor"
+                    disabled={effectivelySubmitting}
                   />
                 </div>
               </MotionWrapper>
@@ -226,8 +247,9 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
                           className={cn(
                             "border rounded-md p-4 cursor-pointer transition-all",
                             selectedOption === option ? "border-primary bg-primary/5" : "hover:bg-gray-50",
+                            effectivelySubmitting && "opacity-70 pointer-events-none",
                           )}
-                          onClick={() => handleSelectOption(option)}
+                          onClick={() => !effectivelySubmitting && handleSelectOption(option)}
                           data-testid={`option-${index}`}
                         >
                           <div className="flex items-center">
@@ -266,17 +288,17 @@ function CodingQuizComponent({ question, onAnswer, questionNumber, totalQuestion
 
         <Button
           onClick={handleSubmit}
-          disabled={isSubmitting || (options.length > 0 && !selectedOption)}
-          className="px-8"
+          disabled={effectivelySubmitting || (options.length > 0 && !selectedOption)}
+          className={cn("px-8", effectivelySubmitting ? "bg-primary/70" : "")}
           data-testid="submit-answer"
         >
-          {isSubmitting ? (
+          {effectivelySubmitting ? (
             <div className="flex items-center gap-2">
               <div
                 className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"
                 aria-hidden="true"
               />
-              <span>Submitting...</span>
+              <span>{isLastQuestion ? "Submitting Quiz..." : "Submitting..."}</span>
             </div>
           ) : isLastQuestion ? (
             "Submit Quiz"
@@ -296,11 +318,9 @@ function arePropsEqual(prev: CodingQuizProps, next: CodingQuizProps) {
     prev.question.question === next.question.question &&
     prev.questionNumber === next.questionNumber &&
     prev.isLastQuestion === next.isLastQuestion &&
-    prev.totalQuestions === next.totalQuestions
+    prev.totalQuestions === next.totalQuestions &&
+    prev.isSubmitting === next.isSubmitting
   )
 }
 
-export default memo(CodingQuizComponent, arePropsEqual);
-
-
-
+export default memo(CodingQuizComponent, arePropsEqual)
