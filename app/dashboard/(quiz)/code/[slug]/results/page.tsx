@@ -6,14 +6,13 @@ import { useQuiz } from "@/hooks/useQuizState"
 import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import CodeQuizResult from "../../components/CodeQuizResult"
 import { QuizSubmissionLoading } from "../../../components/QuizSubmissionLoading"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "react-hot-toast"
 
 export default function CodeQuizResultsPage() {
   const params = useParams<{ slug: string }>()
   const slug = params?.slug as string
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
   const router = useRouter()
   
   const { 
@@ -57,33 +56,7 @@ export default function CodeQuizResultsPage() {
           
           // If we have quizData and userAnswers, we can show local results
           if (quizData && userAnswers.length > 0) {
-            toast({
-              title: "Could not retrieve saved results",
-              description: "Showing your answers locally instead.",
-              variant: "warning",
-            })
-            
-            // Create local results structure
-            const localResult = {
-              quizId: quizData.id,
-              slug: quizData.slug,
-              title: quizData.title,
-              score: userAnswers.length,
-              total: quizData.questions?.length || userAnswers.length,
-              maxScore: quizData.questions?.length || userAnswers.length,
-              percentage: Math.round((userAnswers.length / quizData.questions.length) * 100),
-              completedAt: new Date().toISOString(),
-              questions: quizData.questions.map(q => {
-                const userAns = userAnswers.find(a => a.questionId === q.id);
-                return {
-                  id: q.id,
-                  question: q.question,
-                  userAnswer: typeof userAns?.answer === 'string' ? userAns.answer : JSON.stringify(userAns?.answer) || "",
-                  correctAnswer: q.correctAnswer || q.answer || "",
-                  isCorrect: true // We don't know, so assume correct for display purposes
-                };
-              })
-            };
+            toast.error("Could not retrieve saved results. Showing your answers locally instead.")
             
             // Wait for minimum loading time
             await minLoadingPromise
@@ -100,7 +73,7 @@ export default function CodeQuizResultsPage() {
     }
 
     fetchResults()
-  }, [slug, getResults, results, quizData, userAnswers, toast])
+  }, [slug, getResults, results, quizData, userAnswers])
 
   const handleRetry = useCallback(() => {
     setIsLoading(true)

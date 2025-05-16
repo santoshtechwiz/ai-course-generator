@@ -76,8 +76,8 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
 
         <div className="space-y-4 mt-6">
           <h3 className="text-xl font-semibold mb-4">Your Answers</h3>
-          {result.questions.map((q, i) => (
-            <div key={i} className="mb-4 p-4 border rounded-md bg-background shadow-sm">
+          {result.questions?.map((q, i) => (
+            <div key={q.id || `question-${i}`} className="mb-4 p-4 border rounded-md bg-background shadow-sm">
               <div className="flex items-start gap-3">
                 <div className={`mt-1 p-1 rounded-full ${q.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
                   {q.isCorrect ? (
