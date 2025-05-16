@@ -130,16 +130,18 @@ describe("useQuiz Hook Authentication Flow", () => {
       currentQuizId: "test-quiz",
       timeRemaining: null,
       timerActive: false,
-    }
+    };
 
     // Mock fetch to simulate session expiration with 401 error
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      statusText: "Unauthorized",
-      json: async () => ({ message: "Session expired" }),
-      text: async () => JSON.stringify({ message: "Session expired" }),
-    })
+    jest.spyOn(global, 'fetch').mockImplementationOnce(() => 
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        json: async () => ({ message: "Session expired" }),
+        text: async () => JSON.stringify({ message: "Session expired" }),
+      } as Response)
+    );
 
     // Create a store with the initial state
     const store = configureStore({
