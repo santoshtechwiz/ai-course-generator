@@ -14,15 +14,19 @@ export function QuizSubmissionLoading({ quizType }: QuizSubmissionLoadingProps) 
   const [message, setMessage] = useState("Processing your answers...")
   
   useEffect(() => {
+    let isMounted = true;
+    
     // Simulate progress for better UX
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval)
-          return 95
-        }
-        return prev + 5
-      })
+      if (isMounted) {
+        setProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(interval)
+            return 95
+          }
+          return prev + 5
+        })
+      }
     }, 300)
 
     // Update messages for a more engaging loading experience
@@ -36,22 +40,25 @@ export function QuizSubmissionLoading({ quizType }: QuizSubmissionLoadingProps) 
     
     let messageIndex = 0
     const messageInterval = setInterval(() => {
-      messageIndex = (messageIndex + 1) % messages.length
-      setMessage(messages[messageIndex])
-      
-      if (messageIndex === messages.length - 1) {
-        clearInterval(messageInterval)
+      if (isMounted) {
+        messageIndex = (messageIndex + 1) % messages.length
+        setMessage(messages[messageIndex])
+        
+        if (messageIndex === messages.length - 1) {
+          clearInterval(messageInterval)
+        }
       }
     }, 2000)
 
     return () => {
+      isMounted = false;
       clearInterval(interval)
       clearInterval(messageInterval)
     }
   }, [])
 
   return (
-    <div className="min-h-[50vh] flex items-center justify-center p-6">
+    <div className="min-h-[50vh] flex items-center justify-center p-6" data-testid="quiz-submission-loading">
       <Card className="w-full max-w-md shadow-lg border-t-4 border-t-primary">
         <CardContent className="p-6 space-y-6">
           <div className="space-y-2 text-center">

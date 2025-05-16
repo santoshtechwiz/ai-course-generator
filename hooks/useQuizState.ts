@@ -148,52 +148,58 @@ export function useQuiz() {
   )
 
 const handleSubmitQuiz = useCallback(
-  async (slug: string) => {
-    if (quizState.isCompleted && quizState.results) {
+  async (payload: { slug: string; quizId?: string; type?: QuizType; answers: UserAnswer[]; timeTaken?: number }) => {
+    // Check if we already have results for this quiz
+    if (quizState.isCompleted && quizState.results && quizState.results.slug === payload.slug) {
       console.log("Quiz already submitted. Returning cached results:", quizState.results)
       return quizState.results
     }
 
-    if (!quizState.userAnswers.length) {
-      throw new Error("No answers to submit")
+    const { slug, quizId, type, answers = [] } = payload;
+    
+    // Additional validation to prevent undefined errors
+    if (!slug) {
+      console.error("Missing slug for quiz submission");
+      throw new Error("Quiz slug is required");
     }
-
-    const quizMeta = quizState.quizData
-
-    if (!quizMeta || !quizMeta.id || !quizMeta.type) {
-      throw new Error("Missing quiz metadata for submission")
+    
+    if (!Array.isArray(answers) || answers.length === 0) {
+      console.error("Invalid or empty answers array:", answers);
+      throw new Error("No answers to submit");
     }
-
-    // Ensure we have valid answers format
-    const answers = quizState.userAnswers.map((a) => ({
-      questionId: a.questionId,
-      answer: a.answer,
-    }))
-
-    if (!answers.length) {
-      throw new Error("No answers available for submission")
-    }
-
-    // Create the payload with all required fields
-    const payload = {
-      slug,
-      quizId: quizMeta.id,
-      type: quizMeta.type,
-      answers,
-      timeTaken:
-        quizMeta.timeLimit && quizState.timeRemaining != null
-          ? quizMeta.timeLimit * 60 - quizState.timeRemaining
-          : undefined,
-    }
-
-    console.log("Submitting quiz with payload:", payload)
 
     try {
+      // Ensure the payload has a valid quiz type
+      const quizType = type || quizState.quizData?.type || "code";
+      
+      // Ensure we have a valid quizId
+      const quizIdToUse = quizId || quizState.quizData?.id;
+      
+      if (!quizIdToUse) {
+        console.warn("Missing quizId for submission, this may cause issues");
+      }
+      
+      // Enhanced debugging
+      console.log("Preparing to dispatch submitQuiz with payload:", {
+        slug,
+        quizId: quizIdToUse,
+        type: quizType,
+        answersCount: answers.length,
+        answersSample: answers.length > 0 ? answers[0] : null,
+        timeTaken: payload.timeTaken
+      });
+      
       // Pause timer to prevent state changes during submission
       dispatch(pauseTimer())
       
       // Submit the quiz and wait for response
-      const result = await dispatch(submitQuiz(payload)).unwrap()
+      const result = await dispatch(submitQuiz({
+        slug,
+        quizId: quizIdToUse,
+        type: quizType,
+        answers,
+        timeTaken: payload.timeTaken
+      })).unwrap()
       
       // Handle case where result doesn't have a score
       if (!result || result.score === undefined) {
@@ -201,16 +207,16 @@ const handleSubmitQuiz = useCallback(
         
         // Create a local result based on available data
         const localResult = {
-          quizId: quizMeta.id,
-          slug: quizMeta.slug,
-          title: quizMeta.title,
+          quizId: quizIdToUse || "unknown",
+          slug,
+          title: quizState.quizData?.title || "Quiz",
           score: answers.length, // Default score is number of answers
-          maxScore: quizMeta.questions.length,
-          total: quizMeta.questions.length,
-          percentage: Math.round((answers.length / quizMeta.questions.length) * 100),
+          maxScore: quizState.quizData?.questions?.length || answers.length,
+          total: quizState.quizData?.questions?.length || answers.length,
+          percentage: Math.round((answers.length / (quizState.quizData?.questions?.length || 1)) * 100),
           completedAt: new Date().toISOString(),
-          questions: quizMeta.questions.map(q => {
-            const userAns = quizState.userAnswers.find(a => a.questionId === q.id);
+          questions: quizState.quizData?.questions?.map(q => {
+            const userAns = answers.find(a => a.questionId === q.id);
             return {
               id: q.id,
               question: q.question,
@@ -218,7 +224,7 @@ const handleSubmitQuiz = useCallback(
               correctAnswer: q.correctAnswer || q.answer || "",
               isCorrect: true // We don't know, so assume correct
             };
-          })
+          }) || []
         };
         
         // Mark quiz as completed with local result
@@ -237,16 +243,16 @@ const handleSubmitQuiz = useCallback(
       
       // Create fallback local result for display
       const localResult = {
-        quizId: quizMeta.id,
-        slug: quizMeta.slug,
-        title: quizMeta.title,
-        score: quizState.userAnswers.length,
-        maxScore: quizMeta.questions.length,
-        total: quizMeta.questions.length,
-        percentage: Math.round((quizState.userAnswers.length / quizMeta.questions.length) * 100),
+        quizId: quizId || quizState.quizData?.id || "unknown",
+        slug,
+        title: quizState.quizData?.title || "Quiz",
+        score: answers.length,
+        maxScore: quizState.quizData?.questions?.length || answers.length,
+        total: quizState.quizData?.questions?.length || answers.length,
+        percentage: Math.round((answers.length / (quizState.quizData?.questions?.length || 1)) * 100),
         completedAt: new Date().toISOString(),
-        questions: quizMeta.questions.map(q => {
-          const userAns = quizState.userAnswers.find(a => a.questionId === q.id);
+        questions: quizState.quizData?.questions?.map(q => {
+          const userAns = answers.find(a => a.questionId === q.id);
           return {
             id: q.id,
             question: q.question,
@@ -254,7 +260,7 @@ const handleSubmitQuiz = useCallback(
             correctAnswer: q.correctAnswer || q.answer || "",
             isCorrect: true // We assume correct for display purposes
           };
-        })
+        }) || []
       };
       
       // Mark as completed even if server submission failed
@@ -268,11 +274,11 @@ const handleSubmitQuiz = useCallback(
       return localResult;
     }
   },
-  [dispatch, quizState.userAnswers, quizState.quizData, quizState.timeRemaining, quizState.isCompleted, quizState.results]
+  [dispatch, quizState]
 )
 
-// Add a new function to directly access results for a specific quiz
-const getQuizResults = useCallback((slug: string) => {
+// Fix the duplicate getQuizResults function
+const fetchQuizResults = useCallback((slug: string) => {
   // If we already have results in the state and they match the slug, return them
   if (quizState.results && quizState.quizData?.slug === slug) {
     return Promise.resolve(quizState.results)
@@ -291,7 +297,6 @@ const getQuizResults = useCallback((slug: string) => {
   const pauseQuizTimer = useCallback(() => dispatch(pauseTimer()), [dispatch])
   const resumeQuizTimer = useCallback(() => dispatch(resumeTimer()), [dispatch])
 
-  const getResults = useCallback((slug: string) => dispatch(getQuizResults(slug)).unwrap(), [dispatch])
   const loadQuizHistory = useCallback(() => dispatch(fetchQuizHistory()).unwrap(), [dispatch])
 
   const formatRemainingTime = useCallback(() => formatTime(quizState.timeRemaining), [quizState.timeRemaining])
@@ -364,7 +369,7 @@ const getQuizResults = useCallback((slug: string) => {
     startTimer: startQuizTimer,
     pauseTimer: pauseQuizTimer,
     resumeTimer: resumeQuizTimer,
-    getResults: getQuizResults,
+    getResults: fetchQuizResults,
     loadQuizHistory,
     requireAuthentication,
     isAuthenticated,

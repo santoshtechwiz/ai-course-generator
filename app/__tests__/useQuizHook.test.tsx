@@ -387,12 +387,12 @@ describe("useQuiz Hook", () => {
     // Mock fetch response for quiz submission
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      text: async () => JSON.stringify({
         score: 80,
         maxScore: 100,
         percentage: 80,
         submittedAt: new Date().toISOString(),
-      }),
+      })
     })
 
     const mockStore = configureStore({
@@ -435,13 +435,18 @@ describe("useQuiz Hook", () => {
       await result.current.submitQuiz("test-slug")
     })
 
+    // Updated expectations to match the current implementation
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/quizzes/common/test-slug/complete"),
       expect.objectContaining({
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: expect.objectContaining({ 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache" 
+        }),
+        credentials: "include",
         body: expect.any(String),
-      }),
+      })
     )
 
     const requestBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
