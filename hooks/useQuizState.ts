@@ -15,6 +15,7 @@ import {
   pauseTimer,
   resumeTimer,
   decrementTimer,
+  markQuizCompleted,
 } from "@/store/slices/quizSlice"
 
 import type { QuizData, QuizType } from "@/app/types/quiz-types"
@@ -178,14 +179,27 @@ const handleSubmitQuiz = useCallback(
     }
 
     try {
+      // Set submitting state first to prevent multiple submissions
+      dispatch(pauseTimer());
+      
       const result = await dispatch(submitQuiz(payload)).unwrap()
+      
+      // Ensure we mark the quiz as completed even if the unwrap doesn't throw
+      if (!quizState.isCompleted) {
+        dispatch(markQuizCompleted(result))
+      }
+      
       return result
-    } catch (error) {
-      console.error("Error submitting quiz:", error)
+    } catch (error: any) {
+      console.error("Error submitting quiz:", error?.message || error)
+      // Re-enable timer if submission fails
+      if (quizState.timeRemaining && quizState.timeRemaining > 0) {
+        dispatch(resumeTimer())
+      }
       throw error
     }
   },
-  [dispatch, quizState.userAnswers, quizState.quizData, quizState.timeRemaining]
+  [dispatch, quizState.userAnswers, quizState.quizData, quizState.timeRemaining, quizState.isCompleted]
 )
 
   const isAuthenticated = useCallback(() => {
