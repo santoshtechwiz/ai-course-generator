@@ -1,5 +1,5 @@
 // store/slices/quizSlice.ts
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import type { QuizData, UserAnswer, QuizResult, QuizHistoryItem, QuizType } from "@/app/types/quiz-types"
 
 export const API_ENDPOINTS: Record<QuizType, string> = {
@@ -101,9 +101,11 @@ export const submitQuiz = createAsyncThunk(
   async (
     {
       slug,
+      quizId,
+      type,
       answers,
       timeTaken,
-    }: { slug: string; answers: UserAnswer[]; timeTaken?: number },
+    }: { slug: string; quizId?: string; type?: QuizType; answers: UserAnswer[]; timeTaken?: number },
     { rejectWithValue },
   ) => {
     try {
@@ -113,6 +115,8 @@ export const submitQuiz = createAsyncThunk(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug,
+          quizId,
+          type,
           answers: answers.map((a) => ({
             questionId: a.questionId,
             answer: a.answer,
@@ -127,7 +131,8 @@ export const submitQuiz = createAsyncThunk(
       }
 
       return await response.json()
-    } catch {
+    } catch (error) {
+      console.error("Error submitting quiz:", error)
       return rejectWithValue("Unexpected error submitting quiz.")
     }
   },
@@ -137,6 +142,7 @@ export const getQuizResults = createAsyncThunk("quiz/getResults", async (slug: s
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
     const response = await fetch(`${baseUrl}/api/quizzes/results?slug=${slug}`)
+    console.log("API response:", response);
     if (!response.ok) {
       const errorData = await response.json()
       return rejectWithValue(errorData.message || "Could not retrieve results")
@@ -202,6 +208,10 @@ const quizSlice = createSlice({
       state.results = action.payload
       state.isCompleted = true
       state.timerActive = false
+      // Ensure timeRemaining is preserved for result calculations
+      if (state.timeRemaining !== null) {
+        state.timeRemaining = 0
+      }
     },
   },
   extraReducers: (builder) => {

@@ -1,40 +1,76 @@
 "use client"
 
-import type React from "react"
-import Editor from "@monaco-editor/react"
-import type { CodeQuizEditorProps } from "@/app/types/code-quiz-types"
+import { useRef, useEffect, useState } from "react"
+import { Editor } from "@monaco-editor/react"
+import { cn } from "@/lib/tailwindUtils"
 
-interface ExtendedCodeQuizEditorProps extends CodeQuizEditorProps {
+interface CodeQuizEditorProps {
+  value: string
+  onChange: (value: string | undefined) => void
+  language?: string
   height?: string
+  placeholder?: string
+  readOnly?: boolean
+  disabled?: boolean
+  className?: string
+  [key: string]: any // For data-testid and other props
 }
 
-const CodeQuizEditor: React.FC<ExtendedCodeQuizEditorProps> = ({
+export default function CodeQuizEditor({
   value,
-  language,
-  readOnly = false,
   onChange,
-  height = "180px", // Default to a smaller height
-}) => {
+  language = "javascript",
+  height = "300px",
+  placeholder = "// Write your code here",
+  readOnly = false,
+  disabled = false,
+  className,
+  ...rest
+}: CodeQuizEditorProps) {
+  const editorRef = useRef(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) {
+    return (
+      <div
+        className={cn(
+          "border rounded-md bg-muted/50 w-full p-4 font-mono text-sm overflow-auto whitespace-pre",
+          disabled && "opacity-70 pointer-events-none",
+          className,
+        )}
+        style={{ height }}
+      >
+        {value || placeholder}
+      </div>
+    )
+  }
+
   return (
-    <div className="border rounded-md overflow-hidden" style={{ height }}>
+    <div className={cn("border rounded-md overflow-hidden", disabled && "opacity-80 pointer-events-none", className)}>
       <Editor
-        height="100%"
+        height={height}
         language={language}
         value={value}
+        onChange={onChange}
         theme="vs-dark"
         options={{
-          readOnly,
           minimap: { enabled: false },
-          scrollBeyondLastLine: false,
           fontSize: 14,
-          lineNumbers: "on",
+          scrollBeyondLastLine: false,
           folding: true,
-          automaticLayout: true,
+          lineNumbers: "on",
+          wordWrap: "on",
+          readOnly: readOnly || disabled,
+          domReadOnly: readOnly || disabled,
+          contextmenu: !readOnly && !disabled,
+          cursorStyle: readOnly || disabled ? "line-thin" : "line",
         }}
-        onChange={onChange}
+        {...rest}
       />
     </div>
   )
 }
-
-export default CodeQuizEditor

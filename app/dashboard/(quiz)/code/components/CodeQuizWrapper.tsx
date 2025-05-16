@@ -3,9 +3,11 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { toast } from "react-hot-toast"
 
 import { useQuiz } from "@/hooks/useQuizState"
 import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
+import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
 import CodingQuiz from "./CodingQuiz"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 
@@ -32,6 +34,8 @@ export default function CodeQuizWrapper({
   const { data: session, status } = useSession()
   const [authChecked, setAuthChecked] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showResultsLoader, setShowResultsLoader] = useState(false)
 
   const {
     quizData: quizState,
@@ -54,7 +58,6 @@ export default function CodeQuizWrapper({
     }
   }, [status])
 
-  // ✅ Fix: Ensure proper normalized quizData shape
   useEffect(() => {
     if (authChecked && !quizState && !isLoading && !error) {
       if (quizData && Array.isArray(quizData?.questions)) {
@@ -71,20 +74,7 @@ export default function CodeQuizWrapper({
         })
       }
     }
-
-    }, [
-      authChecked,
-      slug,
-      quizId,
-      quizData,
-      isPublic,
-      isFavorite,
-      ownerId,
-      quizState,
-      isLoading,
-      error,
-      loadQuiz,
-    ])
+  }, [authChecked, slug, quizId, quizData, isPublic, isFavorite, ownerId, quizState, isLoading, error, loadQuiz])
 
   useEffect(() => {
     return () => {
@@ -111,10 +101,27 @@ export default function CodeQuizWrapper({
         await saveAnswer(question.id, answer)
 
         if (isLastQuestion) {
-          await submitQuiz(slug)
-
+          // Transition immediately to results
           if (userId) {
             router.replace(`/dashboard/code/${slug}/results`)
+          } else {
+            setShowResultsLoader(true)
+          }
+
+          // Prevent resubmission by checking localStorage
+          const key = `quiz-submitted-${slug}`
+          if (!localStorage.getItem(key)) {
+            toast.promise(
+              submitQuiz(slug),
+              {
+                loading: "Saving your quiz...",
+                success: "Quiz saved successfully!",
+                error: "Failed to save quiz",
+              },
+              { position: "bottom-center" }
+            ).then(() => {
+              localStorage.setItem(key, "true")
+            })
           }
         } else {
           nextQuestion()
@@ -124,7 +131,7 @@ export default function CodeQuizWrapper({
         setErrorMessage("Failed to submit answer")
       }
     },
-    [questions, currentQuestion, saveAnswer, submitQuiz, router, slug, isLastQuestion, nextQuestion, userId]
+    [questions, currentQuestion, saveAnswer, submitQuiz, slug, isLastQuestion, nextQuestion, userId, router]
   )
 
   const handleReturn = useCallback(() => {
@@ -132,8 +139,13 @@ export default function CodeQuizWrapper({
   }, [router])
 
   const handleRetry = useCallback(() => {
-    window.location.reload()
-  }, [])
+    if (!userId || session?.status !== "authenticated") {
+      const returnUrl = `/dashboard/code/${slug}`
+      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(returnUrl)}`)
+    } else {
+      window.location.reload()
+    }
+  }, [userId, slug, router, session?.status])
 
   const handleSignIn = useCallback(() => {
     sessionStorage.setItem("quizRedirectPath", `/dashboard/code/${slug}/results`)
@@ -141,13 +153,7 @@ export default function CodeQuizWrapper({
   }, [router, slug])
 
   if (status === "unauthenticated" && !authChecked) {
-    return (
-      <ErrorDisplay
-        error="Please sign in to access this quiz"
-        onRetry={handleSignIn}
-        onReturn={handleReturn}
-      />
-    )
+    return <ErrorDisplay error="Please sign in to access this quiz" onRetry={handleSignIn} onReturn={handleReturn} />
   }
 
   if (isLoading || status === "loading" || !authChecked) {
@@ -168,19 +174,12 @@ export default function CodeQuizWrapper({
     return <EmptyQuestionsDisplay onReturn={handleReturn} />
   }
 
-  if (isCompleted) {
-    if (userId) {
-      router.replace(`/dashboard/code/${slug}/results`)
-      return null
-    }
+  if (showResultsLoader) {
+    return <QuizSubmissionLoading quizType="code" />
+  }
 
-    return (
-      <NonAuthenticatedUserSignInPrompt
-        quizType="code"
-        onSignIn={handleSignIn}
-        showSaveMessage
-      />
-    )
+  if (isCompleted && !userId) {
+    return <NonAuthenticatedUserSignInPrompt quizType="code" onSignIn={handleSignIn} showSaveMessage />
   }
 
   if (currentQuestionData) {
@@ -191,6 +190,7 @@ export default function CodeQuizWrapper({
         questionNumber={currentQuestion + 1}
         totalQuestions={totalQuestions}
         isLastQuestion={isLastQuestion}
+        isSubmitting={isSubmitting}
       />
     )
   }

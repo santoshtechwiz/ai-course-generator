@@ -382,4 +382,72 @@ describe("useQuiz Hook", () => {
 
     expect(result.current.userAnswers).toHaveLength(1)
   })
+
+  test("should handle quiz submission", async () => {
+    // Mock fetch response for quiz submission
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        score: 80,
+        maxScore: 100,
+        percentage: 80,
+        submittedAt: new Date().toISOString(),
+      }),
+    })
+
+    const mockStore = configureStore({
+      reducer: {
+        quiz: quizReducer,
+      },
+      preloadedState: {
+        quiz: {
+          quizData: {
+            id: "test-quiz",
+            title: "Test Quiz",
+            description: "Test",
+            type: "code" as const,
+            difficulty: "medium" as const,
+            questions: [{ id: "q1" }],
+            slug: "test-slug",
+          },
+          currentQuestion: 0,
+          userAnswers: [{ questionId: "q1", answer: "test answer" }],
+          isLoading: false,
+          isSubmitting: false,
+          error: null,
+          results: null,
+          isCompleted: false,
+          quizHistory: [],
+          currentQuizId: "test-quiz",
+          timeRemaining: 300,
+          timerActive: true,
+        },
+      },
+    })
+
+    const customWrapper = ({ children }: { children: React.ReactNode }) => (
+      <Provider store={mockStore}>{children}</Provider>
+    )
+
+    const { result } = renderHook(() => useQuiz(), { wrapper: customWrapper })
+
+    await act(async () => {
+      await result.current.submitQuiz("test-slug")
+    })
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/quizzes/common/test-slug/complete"),
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: expect.any(String),
+      }),
+    )
+
+    const requestBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+    expect(requestBody).toHaveProperty("quizId", "test-quiz")
+    expect(requestBody).toHaveProperty("type", "code")
+    expect(requestBody.answers).toHaveLength(1)
+    expect(requestBody.answers[0]).toEqual({ questionId: "q1", answer: "test answer" })
+  })
 })
