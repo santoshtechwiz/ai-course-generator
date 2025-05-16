@@ -32,10 +32,11 @@ export default function CodeQuizWrapper({
 }: CodeQuizWrapperProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const [authChecked, setAuthChecked] = useState(false)
+  const [authChecked, setAuthChecked] = useState(true) // Changed to default true to allow non-auth users
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showResultsLoader, setShowResultsLoader] = useState(false)
+  const [needsSignIn, setNeedsSignIn] = useState(false)
 
   const {
     quizData: quizState,
@@ -52,14 +53,14 @@ export default function CodeQuizWrapper({
 
   useEffect(() => {
     if (status === "unauthenticated") {
+      // Store path for redirection after auth, but continue with the quiz
       sessionStorage.setItem("quizRedirectPath", window.location.pathname)
-    } else if (status === "authenticated") {
-      setAuthChecked(true)
     }
   }, [status])
 
   useEffect(() => {
-    if (authChecked && !quizState && !isLoading && !error) {
+    // Always attempt to load the quiz, regardless of auth status
+    if (!quizState && !isLoading && !error) {
       if (quizData && Array.isArray(quizData?.questions)) {
         loadQuiz(slug, "code", {
           id: quizId,
@@ -74,7 +75,7 @@ export default function CodeQuizWrapper({
         })
       }
     }
-  }, [authChecked, slug, quizId, quizData, isPublic, isFavorite, ownerId, quizState, isLoading, error, loadQuiz])
+  }, [slug, quizId, quizData, isPublic, isFavorite, ownerId, quizState, isLoading, error, loadQuiz])
 
   useEffect(() => {
     return () => {
@@ -98,43 +99,73 @@ export default function CodeQuizWrapper({
           return
         }
 
+        // Save the answer to Redux state
         await saveAnswer(question.id, answer)
 
         if (isLastQuestion) {
-          // Save quiz submission in progress status to local storage to prevent duplicate submissions
+          // Save quiz submission in progress status
           const key = `quiz-submission-${slug}`
           localStorage.setItem(key, "in-progress")
+          setIsSubmitting(true)
+          setShowResultsLoader(true)
           
-          // Transition immediately to results page
-          if (userId) {
-            router.replace(`/dashboard/code/${slug}/results`)
-          } else {
-            setShowResultsLoader(true)
-          }
-
-          // Submit quiz exactly once - check localStorage to prevent duplicates
-          const submittedKey = `quiz-submitted-${slug}`
-          if (!localStorage.getItem(submittedKey)) {
-            try {
-              await toast.promise(
-                submitQuiz(slug),
-                {
-                  loading: "Saving your quiz...",
-                  success: "Quiz saved successfully!",
-                  error: "Failed to save quiz",
-                },
-                { position: "bottom-center" }
-              )
-              localStorage.setItem(submittedKey, "true")
-              localStorage.removeItem(key) // Clear in-progress flag
-            } catch (error) {
-              console.error("Failed to submit quiz:", error)
-              // If submission fails, allow retry
-              localStorage.removeItem(key)
-              setErrorMessage("Failed to submit quiz. Please try again.")
+          try {
+            // Try up to 3 times to submit the quiz
+            let result = null;
+            let attempts = 0;
+            let error = null;
+            
+            while (attempts < 3 && !result) {
+              try {
+                attempts++;
+                if (attempts > 1) {
+                  console.log(`Attempt ${attempts} to submit quiz...`);
+                }
+                
+                // Submit the quiz
+                result = await submitQuiz(slug);
+              } catch (err) {
+                error = err;
+                // Wait a bit before retrying
+                if (attempts < 3) {
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+              }
             }
+            
+            if (!result) {
+              throw error || new Error("Failed to submit quiz after multiple attempts");
+            }
+            
+            console.log("Quiz submission successful:", result)
+            
+            // Check authentication status to determine next steps
+            if (userId) {
+              // Short delay for better UX
+              setTimeout(() => {
+                // Use replace instead of push to prevent back navigation to the quiz
+                router.replace(`/dashboard/code/${slug}/results`)
+              }, 1500)
+            } else {
+              // Non-authenticated user: show sign-in prompt
+              setNeedsSignIn(true)
+              setTimeout(() => {
+                setShowResultsLoader(false)
+              }, 1000)
+            }
+          } catch (error) {
+            console.error("Error submitting quiz in handleAnswer:", error)
+            
+            // Handle the error more gracefully
+            setShowResultsLoader(false)
+            setIsSubmitting(false)
+            
+            // Show error with retry option
+            setErrorMessage("Failed to submit quiz. Please try again.")
+            localStorage.removeItem(key)
           }
         } else {
+          // Move to next question if not the last
           nextQuestion()
         }
       } catch (err) {
@@ -142,8 +173,47 @@ export default function CodeQuizWrapper({
         setErrorMessage("Failed to submit answer")
       }
     },
-    [questions, currentQuestion, saveAnswer, submitQuiz, slug, isLastQuestion, nextQuestion, userId, router, toast]
+    [questions, currentQuestion, saveAnswer, submitQuiz, slug, isLastQuestion, nextQuestion, userId, router]
   )
+
+  // Add a retry submission handler
+  const handleRetrySubmission = useCallback(async () => {
+    if (!quizState || questions.length === 0) {
+      setErrorMessage("Quiz data is missing. Please reload the page.")
+      return
+    }
+    
+    setErrorMessage(null)
+    setIsSubmitting(true)
+    setShowResultsLoader(true)
+    
+    try {
+      // Try to submit one more time
+      const result = await submitQuiz(slug)
+      
+      if (result) {
+        console.log("Quiz submission successful on retry:", result)
+        
+        if (userId) {
+          setTimeout(() => {
+            router.replace(`/dashboard/code/${slug}/results`)
+          }, 1000)
+        } else {
+          setNeedsSignIn(true)
+          setTimeout(() => {
+            setShowResultsLoader(false)
+          }, 1000)
+        }
+      } else {
+        throw new Error("No result returned from submission")
+      }
+    } catch (error) {
+      console.error("Error during submission retry:", error)
+      setShowResultsLoader(false)
+      setIsSubmitting(false)
+      setErrorMessage("Still unable to submit quiz. Please try again later.")
+    }
+  }, [quizState, questions, submitQuiz, slug, userId, router])
 
   const handleReturn = useCallback(() => {
     router.push("/dashboard/quizzes")
@@ -163,11 +233,7 @@ export default function CodeQuizWrapper({
     router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/code/${slug}/results`)}`)
   }, [router, slug])
 
-  if (status === "unauthenticated" && !authChecked) {
-    return <ErrorDisplay error="Please sign in to access this quiz" onRetry={handleSignIn} onReturn={handleReturn} />
-  }
-
-  if (isLoading || status === "loading" || !authChecked) {
+  if (isLoading || status === "loading") {
     return <InitializingDisplay />
   }
 
@@ -175,7 +241,7 @@ export default function CodeQuizWrapper({
     return (
       <ErrorDisplay
         error={errorMessage || error || "An error occurred"}
-        onRetry={handleRetry}
+        onRetry={errorMessage === "Failed to submit quiz. Please try again." ? handleRetrySubmission : handleRetry}
         onReturn={handleReturn}
       />
     )
@@ -185,14 +251,17 @@ export default function CodeQuizWrapper({
     return <EmptyQuestionsDisplay onReturn={handleReturn} />
   }
 
+  // Show the loading screen while submitting the quiz
   if (showResultsLoader) {
     return <QuizSubmissionLoading quizType="code" />
   }
 
-  if (isCompleted && !userId) {
+  // Only show sign-in prompt when needed
+  if (needsSignIn || (isCompleted && !userId)) {
     return <NonAuthenticatedUserSignInPrompt quizType="code" onSignIn={handleSignIn} showSaveMessage />
   }
 
+  // Show current question if available
   if (currentQuestionData) {
     return (
       <CodingQuiz
