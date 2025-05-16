@@ -47,7 +47,7 @@ function CodingQuizComponent({
   const [elapsedTime, setElapsedTime] = useState<number>(0)
   const [internalSubmitting, setInternalSubmitting] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [startTime] = useState<number>(Date.now())
+  const [startTime, setStartTime] = useState<number>(Date.now())
   const [tooFastWarning, setTooFastWarning] = useState<boolean>(false)
 
   // Combine internal submitting state with prop
@@ -55,14 +55,18 @@ function CodingQuizComponent({
 
   // Reset state when question changes
   useEffect(() => {
-    // Only reset if the question ID has changed
+    // Only reset if the question has changed - more exact dependency check
     if (question?.id) {
-      setUserCode(question?.codeSnippet || "")
+      setUserCode(question.codeSnippet || "")
       setSelectedOption(null)
-      setElapsedTime(0)
       setTooFastWarning(false)
+      // Reset the start time when switching questions
+      const newStartTime = Date.now()
+      setElapsedTime(0)
+      // This is a better approach to update startTime value without resetting the entire component
+      setStartTime(newStartTime) 
     }
-  }, [question?.id, question?.codeSnippet])
+  }, [question?.id])
 
   // Update elapsed time
   useEffect(() => {
@@ -91,8 +95,10 @@ function CodingQuizComponent({
   const handleSubmit = useCallback(() => {
     if (effectivelySubmitting) return
 
-    const answerTime = Date.now() - startTime
-    if (isTooFastAnswer(startTime, 1)) {
+    const answerTime = Math.floor((Date.now() - startTime) / 1000)
+    
+    // Better validation for minimum answer time (1 second)
+    if (answerTime < 1) {
       setTooFastWarning(true)
       return
     }
@@ -103,18 +109,25 @@ function CodingQuizComponent({
     const answer = options.length > 0 && selectedOption ? selectedOption : userCode
     let isCorrect = false
 
-    // Validate the answer if possible
+    // Validate the answer if possible - improved logic
     if (question.answer || question.correctAnswer) {
       const correctAnswer = question.answer || question.correctAnswer || ""
 
-      // For multiple choice, exact match; for code, partial match is acceptable
-      isCorrect = options.length > 0 ? selectedOption === correctAnswer : answer.includes(correctAnswer)
+      // For multiple choice, exact match; for code, we now use more advanced validation
+      if (options.length > 0) {
+        // Multiple choice - exact match
+        isCorrect = selectedOption === correctAnswer
+      } else {
+        // Code answer - might need to clean up both answers for comparison
+        const normalizedUserCode = userCode.trim()
+        const normalizedCorrectCode = correctAnswer.trim()
+        // Check if the user's code includes the key elements from the correct answer
+        isCorrect = normalizedUserCode.includes(normalizedCorrectCode)
+      }
     }
 
-    const timeSpent = Math.floor((Date.now() - startTime) / 1000)
-
     // Call onAnswer with the selected option or code
-    onAnswer(answer, timeSpent, isCorrect)
+    onAnswer(answer, Math.floor((Date.now() - startTime) / 1000), isCorrect)
 
     // Reset submission state after a short delay if not the last question
     if (!isLastQuestion) {

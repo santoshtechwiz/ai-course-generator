@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
 import type { CodeQuizResultData } from "@/app/types/code-quiz-types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Check, X, RefreshCw, Home } from "lucide-react"
 
 interface CodeQuizResultProps {
   result: CodeQuizResultData
@@ -39,6 +42,8 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
   }
 
   const slug = result.slug || ""
+  const title = result.title || "Code Quiz" // Add fallback title
+  const scorePercentage = result.total > 0 ? Math.round((result.score / result.total) * 100) : 0
 
   const handleRestart = () => {
     router.push(`/dashboard/code/${slug}`)
@@ -49,42 +54,76 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Quiz Results</h1>
-      <p className="text-gray-700 mb-2">Quiz: {result.title}</p>
-      <p className="text-gray-700 mb-2">Score: {result.score} / {result.total}</p>
-      <p className="text-gray-700 mb-6">Completed at: {new Date(result.completedAt).toLocaleString()}</p>
-
-      <div className="flex gap-4">
-        <button
-          onClick={handleRestart}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Retry Quiz
-        </button>
-        <button
-          onClick={handleReturn}
-          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-        >
-          Return to Dashboard
-        </button>
-      </div>
-
-      {/* Optional: Detailed questions & answers */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Your Answers</h2>
-        {result.questions.map((q, i) => (
-          <div key={i} className="mb-4 p-4 border rounded-md bg-gray-50">
-            <p className="font-medium">Q{i + 1}: {q.question}</p>
-            <p className="text-sm text-gray-600">
-              Your answer: {q.userAnswer} {q.isCorrect ? "✅" : "❌"}
-            </p>
-            {!q.isCorrect && (
-              <p className="text-sm text-green-700">Correct answer: {q.correctAnswer}</p>
-            )}
+    <Card className="max-w-3xl mx-auto p-6 shadow-md border-t-4 border-t-primary">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl font-bold">Quiz Results</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <div>
+            <h2 className="text-xl font-semibold">{title}</h2>
+            <p className="text-muted-foreground">Completed on {new Date(result.completedAt).toLocaleDateString()}</p>
           </div>
-        ))}
-      </div>
-    </div>
+          <div className="mt-4 sm:mt-0 text-center">
+            <div className={`text-3xl font-bold ${scorePercentage >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
+              {result.score} / {result.total}
+            </div>
+            <div className={`text-sm font-medium ${scorePercentage >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
+              {scorePercentage}% Score
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 mt-6">
+          <h3 className="text-xl font-semibold mb-4">Your Answers</h3>
+          {result.questions.map((q, i) => (
+            <div key={i} className="mb-4 p-4 border rounded-md bg-background shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className={`mt-1 p-1 rounded-full ${q.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
+                  {q.isCorrect ? (
+                    <Check className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <X className="w-5 h-5 text-red-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Q{i + 1}: {q.question}</p>
+                  <div className="text-sm mt-2 space-y-1">
+                    <p className="text-muted-foreground">
+                      Your answer: <span className={q.isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                        {q.userAnswer}
+                      </span>
+                    </p>
+                    {!q.isCorrect && (
+                      <p className="text-green-700 font-medium">
+                        Correct answer: {q.correctAnswer}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 mt-6 border-t">
+          <Button
+            onClick={handleRestart}
+            className="flex items-center gap-2 bg-primary"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Retry Quiz</span>
+          </Button>
+          <Button
+            onClick={handleReturn}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Home className="w-4 h-4" />
+            <span>Return to Dashboard</span>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

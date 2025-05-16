@@ -142,13 +142,39 @@ export const getQuizResults = createAsyncThunk("quiz/getResults", async (slug: s
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
     const response = await fetch(`${baseUrl}/api/quizzes/results?slug=${slug}`)
-    console.log("API response:", response);
+    
     if (!response.ok) {
-      const errorData = await response.json()
+      const errorData = await response.json().catch(() => ({ message: "Failed to retrieve results" }))
       return rejectWithValue(errorData.message || "Could not retrieve results")
     }
-    return await response.json()
-  } catch {
+    
+    const data = await response.json()
+    
+    // Validate that we received proper results data
+    if (!data || typeof data !== 'object') {
+      return rejectWithValue("Invalid results data received")
+    }
+    
+    // Ensure we have the necessary fields for the quiz results
+    const processedData = {
+      ...data,
+      title: data.title || "Quiz",
+      slug: data.slug || slug,
+      score: typeof data.score === 'number' ? data.score : 0,
+      maxScore: typeof data.maxScore === 'number' ? data.maxScore : 0,
+      completedAt: data.completedAt || new Date().toISOString(),
+      questions: Array.isArray(data.questions) ? data.questions.map(q => ({
+        ...q,
+        question: q.question || "Question",
+        userAnswer: q.userAnswer || "",
+        correctAnswer: q.correctAnswer || "",
+        isCorrect: !!q.isCorrect
+      })) : []
+    }
+    
+    return processedData
+  } catch (error) {
+    console.error("Error fetching quiz results:", error)
     return rejectWithValue("Unexpected error fetching results.")
   }
 })
