@@ -141,55 +141,49 @@ describe("useQuiz Hook Authentication Flow", () => {
       text: async () => JSON.stringify({ message: "Session expired" }),
     })
 
-    // Mock the setError action
-    const mockError = jest.fn()
-    
-    // Create a store with a mock dispatch function
+    // Create a store with the initial state
     const store = configureStore({
-      reducer: { 
-        quiz: (state = initialState, action) => {
-          if (action.type === 'quiz/setError') {
-            mockError(action.payload)
-            return { ...state, error: action.payload }
-          }
-          return state
-        }
-      },
-    })
+      reducer: { quiz: quizReducer },
+      preloadedState: { quiz: initialState }
+    });
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <Provider store={store}>{children}</Provider>
-    )
+    );
 
-    // Import the setError action
-    jest.mock("@/store/slices/quizSlice", () => ({
-      ...jest.requireActual("@/store/slices/quizSlice"),
-      setError: (payload: string) => ({ type: 'quiz/setError', payload }),
-    }))
+    const { result } = renderHook(() => useQuiz(), { wrapper });
 
-    const { result } = renderHook(() => useQuiz(), { wrapper })
+    // Clear any existing mock calls
+    (signIn as jest.Mock).mockClear();
 
-    await act(async () => {
-      try {
+    try {
+      await act(async () => {
+        // This should trigger the session expired error path
         await result.current.submitQuiz({
           slug: "test-quiz",
           quizId: "test-quiz",
           type: "mcq",
           answers: [{ questionId: "q1", answer: "test" }]
-        })
-      } catch (error) {
-        // Expected error
-        console.log("Caught expected error:", error)
-      }
-    })
+        });
+      });
+    } catch (error) {
+      // Expected to throw an error, we can safely ignore it
+    }
 
-    // Allow state updates to complete
+    // Check if the error was properly set
     await waitFor(() => {
-      expect(mockError).toHaveBeenCalledWith("Session expired")
-    })
+      expect(store.getState().quiz.quizError).toBe("Session expired");
+    });
 
-    // Verify error was set correctly
-    expect(store.getState().quiz.error).toBe("Session expired")
+    // Verify signIn is called after a short delay
+    jest.advanceTimersByTime(500);
+    
+    await waitFor(() => {
+      expect(signIn).toHaveBeenCalledWith(
+        undefined, 
+        { callbackUrl: "/dashboard/mcq/test-quiz" }
+      );
+    });
   })
 
   test("resumes quiz from persisted state after authentication", async () => {
