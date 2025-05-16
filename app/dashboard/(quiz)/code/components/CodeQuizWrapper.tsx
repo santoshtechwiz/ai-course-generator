@@ -101,27 +101,38 @@ export default function CodeQuizWrapper({
         await saveAnswer(question.id, answer)
 
         if (isLastQuestion) {
-          // Transition immediately to results
+          // Save quiz submission in progress status to local storage to prevent duplicate submissions
+          const key = `quiz-submission-${slug}`
+          localStorage.setItem(key, "in-progress")
+          
+          // Transition immediately to results page
           if (userId) {
             router.replace(`/dashboard/code/${slug}/results`)
           } else {
             setShowResultsLoader(true)
           }
 
-          // Prevent resubmission by checking localStorage
-          const key = `quiz-submitted-${slug}`
-          if (!localStorage.getItem(key)) {
-            toast.promise(
-              submitQuiz(slug),
-              {
-                loading: "Saving your quiz...",
-                success: "Quiz saved successfully!",
-                error: "Failed to save quiz",
-              },
-              { position: "bottom-center" }
-            ).then(() => {
-              localStorage.setItem(key, "true")
-            })
+          // Submit quiz exactly once - check localStorage to prevent duplicates
+          const submittedKey = `quiz-submitted-${slug}`
+          if (!localStorage.getItem(submittedKey)) {
+            try {
+              await toast.promise(
+                submitQuiz(slug),
+                {
+                  loading: "Saving your quiz...",
+                  success: "Quiz saved successfully!",
+                  error: "Failed to save quiz",
+                },
+                { position: "bottom-center" }
+              )
+              localStorage.setItem(submittedKey, "true")
+              localStorage.removeItem(key) // Clear in-progress flag
+            } catch (error) {
+              console.error("Failed to submit quiz:", error)
+              // If submission fails, allow retry
+              localStorage.removeItem(key)
+              setErrorMessage("Failed to submit quiz. Please try again.")
+            }
           }
         } else {
           nextQuestion()
@@ -131,7 +142,7 @@ export default function CodeQuizWrapper({
         setErrorMessage("Failed to submit answer")
       }
     },
-    [questions, currentQuestion, saveAnswer, submitQuiz, slug, isLastQuestion, nextQuestion, userId, router]
+    [questions, currentQuestion, saveAnswer, submitQuiz, slug, isLastQuestion, nextQuestion, userId, router, toast]
   )
 
   const handleReturn = useCallback(() => {

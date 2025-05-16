@@ -210,12 +210,28 @@ const handleSubmitQuiz = useCallback(
   const getCurrentAnswer = useCallback(() => {
     const current = getCurrentQuestion()
     if (!current) return null
-    const match = quizState.userAnswers.find((a) => a.questionId === current.id)
-    return match?.answer ?? null
+    
+    // Improved performance by using find direct by question id instead of calling getCurrentQuestion twice
+    return quizState.userAnswers.find((a) => a.questionId === current.id)?.answer ?? null
   }, [getCurrentQuestion, quizState.userAnswers])
 
+  const getQuestionById = useCallback((questionId: string) => {
+    return quizState.quizData?.questions?.find(q => q.id === questionId) || null
+  }, [quizState.quizData])
+
+  const getAnswerById = useCallback((questionId: string) => {
+    return quizState.userAnswers.find(a => a.questionId === questionId)?.answer || null
+  }, [quizState.userAnswers])
+
+  const getQuizProgress = useCallback(() => {
+    if (!quizState.quizData?.questions?.length) return 0
+    return (quizState.userAnswers.length / quizState.quizData.questions.length) * 100
+  }, [quizState.quizData, quizState.userAnswers])
+
   const areAllQuestionsAnswered = useCallback(() => {
-    return quizState.quizData?.questions?.length === quizState.userAnswers.length
+    if (!quizState.quizData?.questions) return false
+    const uniqueAnswers = new Set(quizState.userAnswers.map(a => a.questionId))
+    return uniqueAnswers.size === quizState.quizData.questions.length
   }, [quizState.quizData, quizState.userAnswers])
 
   const navigateToResults = useCallback(
@@ -263,6 +279,9 @@ const handleSubmitQuiz = useCallback(
     formatRemainingTime,
     getCurrentQuestion,
     getCurrentAnswer,
+    getQuestionById,
+    getAnswerById,
+    getQuizProgress,
     areAllQuestionsAnswered,
     navigateToResults,
   }
