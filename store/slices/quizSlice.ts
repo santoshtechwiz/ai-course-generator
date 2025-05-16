@@ -102,155 +102,41 @@ export const fetchQuiz = createAsyncThunk(
 
 export const submitQuiz = createAsyncThunk(
   "quiz/submitQuiz",
-  async (
-    {
-      slug,
-      quizId,
-      type,
-      answers,
-      timeTaken,
-    }: { slug: string; quizId?: string; type?: QuizType; answers: UserAnswer[]; timeTaken?: number },
-    { rejectWithValue, getState }
-  ) => {
+  async (payload: { 
+    slug: string; 
+    quizId?: string; 
+    type: QuizType; 
+    answers: UserAnswer[];
+    timeTaken?: number;
+  }, { rejectWithValue }) => {
     try {
-      // Validate required parameters
-      if (!slug) {
-        return rejectWithValue("Quiz slug is required");
-      }
-      
-      if (!answers || !Array.isArray(answers) || answers.length === 0) {
-        return rejectWithValue("Quiz answers are required");
-      }
-      
-      // Enhanced logging to diagnose the issue
-      console.log("Submit quiz params:", { 
-        slug, 
-        quizId, 
-        type, 
-        answersCount: answers.length, 
-        answerSample: answers[0],
-        timeTaken 
-      });
-      
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
-      const endpoint = `${baseUrl}/api/quizzes/common/${slug}/complete`;
-      
-      // Normalize the answers to ensure they're in the expected format
-      const normalizedAnswers = answers.map((a) => ({
-        questionId: a.questionId,
-        answer: typeof a.answer === 'object' ? JSON.stringify(a.answer) : a.answer,
-      }));
-      
-      const payload = {
-        slug,
-        quizId,
-        type,
-        answers: normalizedAnswers,
-        timeTaken,
-      };
-      
-      console.log("Submitting quiz to API:", {
-        endpoint,
-        payload: JSON.stringify(payload)
-      });
-      
-      const response = await fetch(endpoint, {
+      // Use the correct API endpoint for quiz submission
+      const response = await fetch(`/api/quizzes/common/${payload.slug}/complete`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "no-cache"
+          "Cache-Control": "no-cache",
         },
-        body: JSON.stringify(payload),
         credentials: "include",
+        body: JSON.stringify({
+          quizId: payload.quizId,
+          answers: payload.answers,
+          type: payload.type,
+          timeTaken: payload.timeTaken
+        }),
       });
 
-      // Log raw response before processing
-      const responseText = await response.text();
-      console.log(`Raw API response (${response.status}):`, responseText);
-      
-      let data;
-      try {
-        // Try to parse JSON response
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error("Failed to parse response:", e);
-        
-        if (!response.ok) {
-          return rejectWithValue(`Server returned ${response.status}: ${responseText}`);
-        }
-        
-        // Create default result if response isn't valid JSON but status is OK
-        data = {
-          score: answers.length,
-          maxScore: answers.length,
-          percentage: 100,
-          submittedAt: new Date().toISOString(),
-        };
-      }
-      
       if (!response.ok) {
-        console.error("Error response from server:", {
-          status: response.status,
-          statusText: response.statusText,
-          data
-        });
-        
-        return rejectWithValue(data.message || `Failed to submit quiz (${response.status})`);
+        const errorData = await response.json().catch(() => null);
+        return rejectWithValue(errorData || response.statusText);
       }
 
-      // Generate default result if server doesn't return proper data
-      if (!data || typeof data !== 'object' || data.score === undefined) {
-        console.warn("Server returned invalid response for quiz submission:", data);
-        
-        // Create a fallback result based on state
-        const state = getState() as any;
-        const quizData = state.quiz.quizData;
-        const userAnswers = state.quiz.userAnswers;
-        
-        if (quizData && userAnswers) {
-          const fallbackResult = {
-            quizId: quizData.id,
-            slug: quizData.slug,
-            title: quizData.title,
-            score: userAnswers.length,
-            maxScore: quizData.questions?.length || userAnswers.length,
-            total: quizData.questions?.length || userAnswers.length,
-            percentage: 100,
-            completedAt: new Date().toISOString(),
-            questions: quizData.questions?.map((q: any) => {
-              const userAns = userAnswers.find((a: any) => a.questionId === q.id);
-              return {
-                id: q.id,
-                question: q.question,
-                userAnswer: typeof userAns?.answer === 'string' ? userAns.answer : JSON.stringify(userAns?.answer) || "",
-                correctAnswer: q.correctAnswer || q.answer || "",
-                isCorrect: true
-              };
-            }) || []
-          };
-          console.log("Using fallback result:", fallbackResult);
-          return fallbackResult;
-        }
-        
-        return rejectWithValue("Server returned invalid data");
-      }
-      
-      // Ensure data has all required fields
-      data = {
-        ...data,
-        completedAt: data.completedAt || new Date().toISOString(),
-        total: data.maxScore || answers.length,
-        questions: Array.isArray(data.questions) ? data.questions : []
-      };
-      
-      console.log("Processed quiz submission result:", data);
-      return data;
+      return await response.json();
     } catch (error: any) {
-      console.error("Error submitting quiz:", error);
-      return rejectWithValue(error.message || "Unexpected error submitting quiz.");
+      return rejectWithValue(error.message);
     }
-  },
-)
+  }
+);
 
 export const getQuizResults = createAsyncThunk("quiz/getResults", async (slug: string, { rejectWithValue }) => {
   try {
