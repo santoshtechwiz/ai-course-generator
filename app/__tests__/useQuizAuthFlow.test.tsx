@@ -1,5 +1,5 @@
 import type React from "react"
-import { renderHook, act } from "@testing-library/react"
+import { renderHook, act, waitFor } from "@testing-library/react"
 import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import { useQuiz } from "@/hooks/useQuizState"
@@ -87,19 +87,24 @@ describe("useQuiz Hook Authentication Flow", () => {
       json: async () => ({ message: "Unauthorized" }),
     })
 
+    // Mock the signIn function
+    const signInMock = jest.fn();
+    require("next-auth/react").signIn = signInMock;
+
     const { result } = renderHook(() => useQuiz(), { wrapper: createWrapper() })
 
     await act(async () => {
       try {
         await result.current.loadQuiz("test-quiz", "mcq")
       } catch (error) {
-        // Expected error
-        // The signIn call is now handled inside loadQuiz
+        // Expected error, it's ok
       }
     })
 
-    // Verify signIn was called
-    expect(signIn).toHaveBeenCalledWith(undefined, { callbackUrl: "/dashboard/mcq/test-quiz" })
+    // Wait for signIn to be called - using a proper waitFor
+    await waitFor(() => {
+      expect(signInMock).toHaveBeenCalledWith(undefined, { callbackUrl: "/dashboard/mcq/test-quiz" })
+    });
   })
 
   test("handles session expiration during quiz submission", async () => {
@@ -127,25 +132,64 @@ describe("useQuiz Hook Authentication Flow", () => {
       timerActive: false,
     }
 
-    // Mock fetch to simulate session expiration
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+    // Mock fetch to simulate session expiration with 401 error
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
       status: 401,
+      statusText: "Unauthorized",
       json: async () => ({ message: "Session expired" }),
+      text: async () => JSON.stringify({ message: "Session expired" }),
     })
 
-    const { result } = renderHook(() => useQuiz(), { wrapper: createWrapper(initialState) })
+    // Mock the setError action
+    const mockError = jest.fn()
+    
+    // Create a store with a mock dispatch function
+    const store = configureStore({
+      reducer: { 
+        quiz: (state = initialState, action) => {
+          if (action.type === 'quiz/setError') {
+            mockError(action.payload)
+            return { ...state, error: action.payload }
+          }
+          return state
+        }
+      },
+    })
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <Provider store={store}>{children}</Provider>
+    )
+
+    // Import the setError action
+    jest.mock("@/store/slices/quizSlice", () => ({
+      ...jest.requireActual("@/store/slices/quizSlice"),
+      setError: (payload: string) => ({ type: 'quiz/setError', payload }),
+    }))
+
+    const { result } = renderHook(() => useQuiz(), { wrapper })
 
     await act(async () => {
       try {
-        await result.current.submitQuiz()
+        await result.current.submitQuiz({
+          slug: "test-quiz",
+          quizId: "test-quiz",
+          type: "mcq",
+          answers: [{ questionId: "q1", answer: "test" }]
+        })
       } catch (error) {
         // Expected error
+        console.log("Caught expected error:", error)
       }
     })
 
-    // Verify error was handled
-    expect(result.current.error).toBe("Session expired")
+    // Allow state updates to complete
+    await waitFor(() => {
+      expect(mockError).toHaveBeenCalledWith("Session expired")
+    })
+
+    // Verify error was set correctly
+    expect(store.getState().quiz.error).toBe("Session expired")
   })
 
   test("resumes quiz from persisted state after authentication", async () => {
