@@ -10,6 +10,13 @@ const createJestConfig = nextJest({
 const config: Config = {
   coverageProvider: "v8",
   testEnvironment: "jest-environment-jsdom",
+reporters: [
+    'default',
+    ['jest-stare', {
+      resultDir: 'jest-stare',
+      reportTitle: 'Test Report',
+    }]
+  ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
     "^.+\\.(svg)$": "<rootDir>/__mocks__/svgMock.js",

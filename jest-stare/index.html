@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>jest-stare!</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="css/diff2html.min.css" rel="stylesheet" type="text/css">
+    <link href="css/jest-stare.css" rel="stylesheet" type="text/css">
+    <script src="js/jquery.min.js"></script>
+    <script src="js/holder.js"></script>
+    <script src="js/diff2html.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/view.js"></script>
+</head>
+
+<body>
+    <header>
+        <!-- Fixed navbar -->
+        <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+            <a class="navbar-brand" id="navbar-title" href="#">jest-stare</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse"
+                aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">Home
+                            <span class="sr-only">(current)</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="coverage-link" class="nav-link disabled" href="#">Coverage</a>
+                    </li>
+                    <li class="nav-item">
+                        <div class="onoff-switch mr-sm-2 ml-sm-2">
+                            <input type="checkbox" name="off-switch" class="off-switch-checkbox" id="lab-passoff-switch" checked>
+                            <label class="onoff-switch-label" for="lab-passoff-switch">
+                                <span class="pass off-switch-inner"></span>
+                                <span class="off-switch-switch"></span>
+                            </label>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <div class="onoff-switch mr-sm-2 ml-sm-2">
+                            <input type="checkbox" name="off-switch" class="off-switch-checkbox" id="lab-failoff-switch" checked>
+                            <label class="onoff-switch-label" for="lab-failoff-switch">
+                                <span class="fail off-switch-inner"></span>
+                                <span class="off-switch-switch"></span>
+                            </label>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <div class="onoff-switch mr-sm-2 ml-sm-2">
+                            <input type="checkbox" name="off-switch" class="off-switch-checkbox" id="lab-pendingoff-switch" checked>
+                            <label class="onoff-switch-label" for="lab-pendingoff-switch">
+                                <span class="pending off-switch-inner"></span>
+                                <span class="off-switch-switch"></span>
+                            </label>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <div class="onoff-switch mr-sm-2 ml-sm-2">
+                            <input type="checkbox" name="off-switch" class="off-switch-checkbox" id="lab-todooff-switch" checked>
+                            <label class="onoff-switch-label" for="lab-todooff-switch">
+                                <span class="todo off-switch-inner"></span>
+                                <span class="off-switch-switch"></span>
+                            </label>
+                        </div>
+                    </li>
+                </ul>
+                <!-- <form class="form-inline mt-2 mt-md-0">
+                    <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search" disabled>
+                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit" disabled>Search</button>
+                </form> -->
+            </div>
+        </nav>
+    </header>
+
+    <!-- Begin page content -->
+    <main role="main" class="container">
+
+        <h1 class="mt-5"></h1>
+
+        <!-- Three columns of text below the carousel -->
+        <div class="row">
+            <div class="col-lg-4">
+                <canvas id="test-suites-canvas" width="100" height="100"></canvas>
+                <h2>Test Suites</h2>
+                <div class="list-group">
+                    <p id="test-suites-results" class="list-group-item list-group-item-action">5 passed, 8 total</p>
+                </div>
+            </div>
+            <!-- /.col-lg-4 -->
+            <div class="col-lg-4">
+                <canvas id="tests-canvas" width="100" height="100"></canvas>
+                <h2>Tests</h2>
+                <div class="list-group">
+                    <p id="tests-results" class="list-group-item list-group-item-action">79 passed, 84 total</p>
+                </div>
+            </div>
+            <!-- /.col-lg-4 -->
+            <div class="col-lg-4" id="snapshots-group">
+                <canvas id="snapshots-canvas" width="100" height="100"></canvas>
+                <h2>Snapshots</h2>
+                <div class="list-group">
+                    <p id="snapshots-results" class="list-group-item list-group-item-action">0 passed, 0 total</p>
+                </div>
+            </div>
+            <!-- /.col-lg-4 -->
+        </div>
+
+        <div id="loading-info" class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100" aria-valuemin="0"
+                aria-valuemax="100" style="width: 100%"></div>
+        </div>
+
+        <div class="d-none" id="test-summary"></div>
+        <div class="d-none" id="test-config">{
+  &quot;resultDir&quot;: &quot;jest-stare&#x2F;&quot;,
+  &quot;reportTitle&quot;: &quot;Test Report&quot;,
+  &quot;additionalResultsProcessors&quot;: [],
+  &quot;resultHtml&quot;: &quot;index.html&quot;,
+  &quot;resultJson&quot;: &quot;jest-results.json&quot;
+}</div>
+        <div id="accordion">
+            <div class="d-none" id="test-results">{
+  &quot;numFailedTestSuites&quot;: 3,
+  &quot;numFailedTests&quot;: 5,
+  &quot;numPassedTestSuites&quot;: 5,
+  &quot;numPassedTests&quot;: 79,
+  &quot;numPendingTestSuites&quot;: 0,
+  &quot;numPendingTests&quot;: 0,
+  &quot;numRuntimeErrorTestSuites&quot;: 0,
+  &quot;numTodoTests&quot;: 0,
+  &quot;numTotalTestSuites&quot;: 8,
+  &quot;numTotalTests&quot;: 84,
+  &quot;openHandles&quot;: [],
+  &quot;snapshot&quot;: {
+    &quot;added&quot;: 0,
+    &quot;didUpdate&quot;: false,
+    &quot;failure&quot;: false,
+    &quot;filesAdded&quot;: 0,
+    &quot;filesRemoved&quot;: 0,
+    &quot;filesRemovedList&quot;: [],
+    &quot;filesUnmatched&quot;: 0,
+    &quot;filesUpdated&quot;: 0,
+    &quot;matched&quot;: 0,
+    &quot;total&quot;: 0,
+    &quot;unchecked&quot;: 0,
+    &quot;uncheckedKeysByFile&quot;: [],
+    &quot;unmatched&quot;: 0,
+    &quot;updated&quot;: 0
+  },
+  &quot;startTime&quot;: 1747472124523,
+  &quot;success&quot;: false,
+  &quot;testResults&quot;: [
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 3,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747472151811,
+        &quot;runtime&quot;: 6995,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747472144816
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\codeQuizAuthFlow.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Results Authentication Flow&quot;
+          ],
+          &quot;duration&quot;: 157,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Results Authentication Flow should redirect to sign-in if not authenticated&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should redirect to sign-in if not authenticated&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Results Authentication Flow&quot;
+          ],
+          &quot;duration&quot;: 22,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Results Authentication Flow should show results if authenticated&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should show results if authenticated&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Results Authentication Flow&quot;
+          ],
+          &quot;duration&quot;: 10,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Results Authentication Flow should clear results after they are saved&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should clear results after they are saved&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 2,
+      &quot;numPassingTests&quot;: 8,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747472151204,
+        &quot;runtime&quot;: 6380,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747472144824
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\hooks\\__tests__\\useAuth.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useAuth hook&quot;
+          ],
+          &quot;duration&quot;: 417,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;matcherResult&quot;: {
+                &quot;actual&quot;: false,
+                &quot;expected&quot;: true,
+                &quot;message&quot;: &quot;\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) &#x2F;&#x2F; Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m&quot;,
+                &quot;name&quot;: &quot;toBe&quot;,
+                &quot;pass&quot;: false
+              }
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) &#x2F;&#x2F; Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at Object.toBe (C:\\Work\\Projects\\ai-learning\\hooks\\__tests__\\useAuth.test.tsx:75:44)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;useAuth hook should return authenticated status when session exists&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 0,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should return authenticated status when session exists&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useAuth hook&quot;
+          ],
+          &quot;duration&quot;: 25,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useAuth hook should return unauthenticated status when session is missing&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should return unauthenticated status when session is missing&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useAuth hook&quot;
+          ],
+          &quot;duration&quot;: 20,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useAuth hook should detect fromAuth parameter in URL&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should detect fromAuth parameter in URL&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useAuth hook&quot;
+          ],
+          &quot;duration&quot;: 16,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useAuth hook should not detect fromAuth when parameter is missing&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should not detect fromAuth when parameter is missing&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useAuth hook&quot;
+          ],
+          &quot;duration&quot;: 23,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useAuth hook should call signIn when requireAuth is called and user is unauthenticated&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should call signIn when requireAuth is called and user is unauthenticated&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useAuth hook&quot;
+          ],
+          &quot;duration&quot;: 17,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useAuth hook should not call signIn when requireAuth is called but user is authenticated&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should not call signIn when requireAuth is called but user is authenticated&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useAuth hook&quot;
+          ],
+          &quot;duration&quot;: 25,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;matcherResult&quot;: {
+                &quot;actual&quot;: null,
+                &quot;expected&quot;: {
+                  &quot;path&quot;: &quot;&#x2F;dashboard&#x2F;quizzes&quot;
+                },
+                &quot;message&quot;: &quot;\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) &#x2F;&#x2F; deep equality\u001b[22m\n\nExpected: \u001b[32m{\&quot;path\&quot;: \&quot;&#x2F;dashboard&#x2F;quizzes\&quot;}\u001b[39m\nReceived: \u001b[31mnull\u001b[39m&quot;,
+                &quot;name&quot;: &quot;toEqual&quot;,
+                &quot;pass&quot;: false
+              }
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) &#x2F;&#x2F; deep equality\u001b[22m\n\nExpected: \u001b[32m{\&quot;path\&quot;: \&quot;&#x2F;dashboard&#x2F;quizzes\&quot;}\u001b[39m\nReceived: \u001b[31mnull\u001b[39m\n    at Object.toEqual (C:\\Work\\Projects\\ai-learning\\hooks\\__tests__\\useAuth.test.tsx:153:50)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;useAuth hook should parse redirect info from URL&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 0,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should parse redirect info from URL&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useAuth hook&quot;
+          ],
+          &quot;duration&quot;: 44,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useAuth hook should handle missing redirect info&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle missing redirect info&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;_createMockUseAuth&quot;
+          ],
+          &quot;duration&quot;: 4,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;_createMockUseAuth should create default mock&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 8,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should create default mock&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;_createMockUseAuth&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;_createMockUseAuth should override defaults&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should override defaults&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: &quot;\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1museAuth hook › should return authenticated status when session exists\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) &#x2F;&#x2F; Object.is equality\u001b[22m\n\n    Expected: \u001b[32mtrue\u001b[39m\n    Received: \u001b[31mfalse\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 73 |\u001b[39m     \u001b[36mconst\u001b[39m wrapper \u001b[33m&#x3D;\u001b[39m createWrapper()\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 74 |\u001b[39m     \u001b[36mconst\u001b[39m { result } \u001b[33m&#x3D;\u001b[39m renderHook(() \u001b[33m&#x3D;&gt;\u001b[39m useAuth()\u001b[33m,\u001b[39m { wrapper })\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 75 |\u001b[39m     expect(result\u001b[33m.\u001b[39mcurrent\u001b[33m.\u001b[39misAuthenticated)\u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 76 |\u001b[39m     expect(result\u001b[33m.\u001b[39mcurrent\u001b[33m.\u001b[39muserId)\u001b[33m.\u001b[39mtoBe(\u001b[32m&#39;test-user-id&#39;\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 77 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 78 |\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toBe (\u001b[22m\u001b[2m\u001b[0m\u001b[36mhooks&#x2F;__tests__&#x2F;useAuth.test.tsx\u001b[39m\u001b[0m\u001b[2m:75:44)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1museAuth hook › should parse redirect info from URL\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) &#x2F;&#x2F; deep equality\u001b[22m\n\n    Expected: \u001b[32m{\&quot;path\&quot;: \&quot;&#x2F;dashboard&#x2F;quizzes\&quot;}\u001b[39m\n    Received: \u001b[31mnull\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 151 |\u001b[39m     \u001b[36mconst\u001b[39m { result } \u001b[33m&#x3D;\u001b[39m renderHook(() \u001b[33m&#x3D;&gt;\u001b[39m useAuth()\u001b[33m,\u001b[39m { wrapper })\u001b[22m\n\u001b[2m     \u001b[90m 152 |\u001b[39m     \u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 153 |\u001b[39m     expect(result\u001b[33m.\u001b[39mcurrent\u001b[33m.\u001b[39mgetAuthRedirectInfo())\u001b[33m.\u001b[39mtoEqual({ \u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 154 |\u001b[39m       path\u001b[33m:\u001b[39m \u001b[32m&#39;&#x2F;dashboard&#x2F;quizzes&#39;\u001b[39m \u001b[22m\n\u001b[2m     \u001b[90m 155 |\u001b[39m     })\u001b[22m\n\u001b[2m     \u001b[90m 156 |\u001b[39m   })\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toEqual (\u001b[22m\u001b[2m\u001b[0m\u001b[36mhooks&#x2F;__tests__&#x2F;useAuth.test.tsx\u001b[39m\u001b[0m\u001b[2m:153:50)\u001b[22m\u001b[2m\u001b[22m\n&quot;
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 12,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747472151610,
+        &quot;runtime&quot;: 7024,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747472144586
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\useQuizHook.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 92,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should return initial state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 16,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should return initial state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 23,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should reset quiz state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should reset quiz state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 16,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should navigate to next question&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should navigate to next question&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 9,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should navigate to previous question&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should navigate to previous question&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 9,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should save user answer&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should save user answer&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 6,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should format remaining time correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should format remaining time correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 6,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should get current question&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should get current question&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 5,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should check if current question is last&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should check if current question is last&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 13,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should handle authentication requirement&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle authentication requirement&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 8,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should handle undefined quiz data&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle undefined quiz data&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 8,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should handle missing question id&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle missing question id&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 25,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should handle quiz submission&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 5,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle quiz submission&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 36,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747472154771,
+        &quot;runtime&quot;: 9450,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747472145321
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\quiz-utils.test.ts&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;formatTime&quot;
+          ],
+          &quot;duration&quot;: 43,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities formatTime formats seconds correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;formats seconds correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;formatTime&quot;
+          ],
+          &quot;duration&quot;: 2,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities formatTime handles null or undefined&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles null or undefined&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;formatDuration&quot;
+          ],
+          &quot;duration&quot;: 3,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities formatDuration formats duration correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;formats duration correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;formatDate&quot;
+          ],
+          &quot;duration&quot;: 61,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities formatDate formats date correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;formats date correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;formatDate&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities formatDate handles empty input&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles empty input&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;truncateString&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities truncateString truncates string correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;truncates string correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;calculatePercentage&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities calculatePercentage calculates percentage correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;calculates percentage correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;calculatePercentage&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities calculatePercentage handles zero or negative maxScore&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles zero or negative maxScore&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;isPassed&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities isPassed determines if score passes threshold&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;determines if score passes threshold&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;isPassed&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities isPassed works with custom threshold&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;works with custom threshold&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;generateFeedback&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities generateFeedback generates appropriate feedback based on percentage&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 5,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;generates appropriate feedback based on percentage&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;calculateStringSimilarity&quot;
+          ],
+          &quot;duration&quot;: 3,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities calculateStringSimilarity calculates string similarity correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;calculates string similarity correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;calculateStringSimilarity&quot;
+          ],
+          &quot;duration&quot;: 2,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities calculateStringSimilarity handles empty strings&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles empty strings&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;calculateStringSimilarity&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities calculateStringSimilarity is case insensitive&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;is case insensitive&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;evaluateOpenEndedAnswer&quot;
+          ],
+          &quot;duration&quot;: 3,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities evaluateOpenEndedAnswer evaluates open-ended answers based on keywords&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;evaluates open-ended answers based on keywords&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;evaluateOpenEndedAnswer&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities evaluateOpenEndedAnswer handles empty inputs&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles empty inputs&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;evaluateOpenEndedAnswer&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities evaluateOpenEndedAnswer matches similar words&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;matches similar words&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;evaluateCode&quot;
+          ],
+          &quot;duration&quot;: 7,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities evaluateCode evaluates code against test cases&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;evaluates code against test cases&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;evaluateCode&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities evaluateCode handles empty test cases&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles empty test cases&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;getDifficultyColor&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities getDifficultyColor returns correct color classes for different difficulty levels&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;returns correct color classes for different difficulty levels&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;getDifficultyColor&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities getDifficultyColor handles unknown difficulty and undefined&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles unknown difficulty and undefined&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;getDifficultyColor&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities getDifficultyColor is case insensitive&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;is case insensitive&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;calculateEstimatedTime&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities calculateEstimatedTime calculates estimated time based on question types&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;calculates estimated time based on question types&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;calculateEstimatedTime&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities calculateEstimatedTime handles empty questions array&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles empty questions array&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;calculateEstimatedTime&quot;
+          ],
+          &quot;duration&quot;: 5,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities calculateEstimatedTime handles unknown question types&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles unknown question types&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;areAllRequiredQuestionsAnswered&quot;
+          ],
+          &quot;duration&quot;: 2,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities areAllRequiredQuestionsAnswered checks if all required questions are answered&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;checks if all required questions are answered&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;areAllRequiredQuestionsAnswered&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities areAllRequiredQuestionsAnswered detects missing answers&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;detects missing answers&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;areAllRequiredQuestionsAnswered&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities areAllRequiredQuestionsAnswered skips optional questions&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;skips optional questions&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;areAllRequiredQuestionsAnswered&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities areAllRequiredQuestionsAnswered validates fill-in-the-blanks answers&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;validates fill-in-the-blanks answers&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;areAllRequiredQuestionsAnswered&quot;
+          ],
+          &quot;duration&quot;: 9,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities areAllRequiredQuestionsAnswered validates open-ended answers with minimum length&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;validates open-ended answers with minimum length&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;generateId&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities generateId generates unique IDs&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;generates unique IDs&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;shuffleArray&quot;
+          ],
+          &quot;duration&quot;: 3,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities shuffleArray shuffles array elements&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;shuffles array elements&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;shuffleArray&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities shuffleArray handles empty arrays&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles empty arrays&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;capitalizeFirstLetter&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities capitalizeFirstLetter capitalizes first letter&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;capitalizes first letter&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;capitalizeFirstLetter&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities capitalizeFirstLetter handles empty strings&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles empty strings&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Quiz Utilities&quot;,
+            &quot;debounce&quot;
+          ],
+          &quot;duration&quot;: 12,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Quiz Utilities debounce debounces function calls&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;debounces function calls&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 8,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747472155066,
+        &quot;runtime&quot;: 9594,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747472145472
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 50,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should return the initial state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should return the initial state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 6,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle resetQuizState&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle resetQuizState&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle setCurrentQuestion&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle setCurrentQuestion&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 3,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle setUserAnswer for new answer&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle setUserAnswer for new answer&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 4,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle setUserAnswer for existing answer&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle setUserAnswer for existing answer&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 7,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle timer actions&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 5,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle timer actions&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 2,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle markQuizCompleted&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle markQuizCompleted&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 30,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle submitQuiz action&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle submitQuiz action&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 4,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747472160385,
+        &quot;runtime&quot;: 6688,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747472153697
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\persistQuizMiddleware.test.ts&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;persistQuizMiddleware&quot;
+          ],
+          &quot;duration&quot;: 62,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;persistQuizMiddleware should persist quiz state when actions are dispatched&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should persist quiz state when actions are dispatched&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;persistQuizMiddleware&quot;
+          ],
+          &quot;duration&quot;: 6,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;persistQuizMiddleware should remove quiz state from localStorage when quiz is completed&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should remove quiz state from localStorage when quiz is completed&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;persistQuizMiddleware&quot;
+          ],
+          &quot;duration&quot;: 2,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;persistQuizMiddleware loadPersistedQuizState should return persisted state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;loadPersistedQuizState should return persisted state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;persistQuizMiddleware&quot;
+          ],
+          &quot;duration&quot;: 1,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;persistQuizMiddleware clearPersistedQuizState should remove state from localStorage&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;clearPersistedQuizState should remove state from localStorage&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 1,
+      &quot;numPassingTests&quot;: 1,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747472163195,
+        &quot;runtime&quot;: 8571,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747472154624
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\useQuizAuthFlow.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz hook auth flow&quot;
+          ],
+          &quot;duration&quot;: 156,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz hook auth flow should redirect to sign-in on authentication error&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should redirect to sign-in on authentication error&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz hook auth flow&quot;
+          ],
+          &quot;duration&quot;: 4,
+          &quot;failureDetails&quot;: [
+            {}
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;TypeError: require(...).useQuiz.mockReturnValue is not a function\n    at Object.mockReturnValue (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\useQuizAuthFlow.test.tsx:207:45)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;useQuiz hook auth flow should redirect to sign-in on auth error during submission&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 0,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should redirect to sign-in on auth error during submission&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: &quot;\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1museQuiz hook auth flow › should redirect to sign-in on auth error during submission\u001b[39m\u001b[22m\n\n    TypeError: require(...).useQuiz.mockReturnValue is not a function\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 205 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 206 |\u001b[39m     \u001b[90m&#x2F;&#x2F; Mock the useQuiz hook to include our mocked functions\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 207 |\u001b[39m     require(\u001b[32m\&quot;@&#x2F;hooks&#x2F;useQuizState\&quot;\u001b[39m)\u001b[33m.\u001b[39museQuiz\u001b[33m.\u001b[39mmockReturnValue({\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                                             \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 208 |\u001b[39m       quizData\u001b[33m:\u001b[39m mockQuizData\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 209 |\u001b[39m       currentQuestion\u001b[33m:\u001b[39m \u001b[35m0\u001b[39m\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 210 |\u001b[39m       userAnswers\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.mockReturnValue (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp&#x2F;__tests__&#x2F;useQuizAuthFlow.test.tsx\u001b[39m\u001b[0m\u001b[2m:207:45)\u001b[22m\u001b[2m\u001b[22m\n&quot;
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 2,
+      &quot;numPassingTests&quot;: 7,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747472167048,
+        &quot;runtime&quot;: 22584,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747472144464
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 198,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should initialize and load quiz data&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should initialize and load quiz data&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 10032,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;message&quot;: &quot;thrown: \&quot;Exceeded timeout of 10000 ms for a test.\nAdd a timeout value to this test to increase the timeout, if this is a long-running test. See https:&#x2F;&#x2F;jestjs.io&#x2F;docs&#x2F;api#testname-fn-timeout.\&quot;&quot;
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;Error: thrown: \&quot;Exceeded timeout of 10000 ms for a test.\nAdd a timeout value to this test to increase the timeout, if this is a long-running test. See https:&#x2F;&#x2F;jestjs.io&#x2F;docs&#x2F;api#testname-fn-timeout.\&quot;\n    at test (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:550:3)\n    at _dispatchDescribe (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\index.js:91:26)\n    at describe (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\index.js:55:5)\n    at Object.describe (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:490:1)\n    at Runtime._execModule (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runtime\\build\\index.js:1439:24)\n    at Runtime._loadModule (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runtime\\build\\index.js:1022:12)\n    at Runtime.requireModule (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runtime\\build\\index.js:882:12)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:77:13)\n    at processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)\n    at runTestInternal (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should handle quiz navigation and submission&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 7,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should handle quiz navigation and submission&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 40,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should handle authentication requirements&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle authentication requirements&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 32,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should handle quiz errors&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle quiz errors&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 29,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should handle existing answers from Redux state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle existing answers from Redux state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 18,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should handle state persistence between sessions&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle state persistence between sessions&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 23,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should show sign-in prompt for non-authenticated users after quiz completion&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should show sign-in prompt for non-authenticated users after quiz completion&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 5011,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;message&quot;: &quot;thrown: \&quot;Exceeded timeout of 5000 ms for a test.\nAdd a timeout value to this test to increase the timeout, if this is a long-running test. See https:&#x2F;&#x2F;jestjs.io&#x2F;docs&#x2F;api#testname-fn-timeout.\&quot;&quot;
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;Error: thrown: \&quot;Exceeded timeout of 5000 ms for a test.\nAdd a timeout value to this test to increase the timeout, if this is a long-running test. See https:&#x2F;&#x2F;jestjs.io&#x2F;docs&#x2F;api#testname-fn-timeout.\&quot;\n    at test (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:885:3)\n    at _dispatchDescribe (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\index.js:91:26)\n    at describe (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\index.js:55:5)\n    at Object.describe (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:490:1)\n    at Runtime._execModule (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runtime\\build\\index.js:1439:24)\n    at Runtime._loadModule (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runtime\\build\\index.js:1022:12)\n    at Runtime.requireModule (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runtime\\build\\index.js:882:12)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:77:13)\n    at processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)\n    at runTestInternal (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (c:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should handle submission loading state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should handle submission loading state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Integration Tests&quot;
+          ],
+          &quot;duration&quot;: 14,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Integration Tests should show fallback error if unexpected error occurs&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should show fallback error if unexpected error occurs&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: &quot;\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Integration Tests › should handle quiz navigation and submission\u001b[39m\u001b[22m\n\n    thrown: \&quot;Exceeded timeout of 10000 ms for a test.\n    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https:&#x2F;&#x2F;jestjs.io&#x2F;docs&#x2F;api#testname-fn-timeout.\&quot;\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 548 |\u001b[39m   })\u001b[22m\n\u001b[2m     \u001b[90m 549 |\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 550 |\u001b[39m   test(\u001b[32m\&quot;should handle quiz navigation and submission\&quot;\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m&#x3D;&gt;\u001b[39m {\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 551 |\u001b[39m     \u001b[90m&#x2F;&#x2F; Enable auto-answer for this test\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 552 |\u001b[39m     global\u001b[33m.\u001b[39m_SIMULATE_ANSWER_ \u001b[33m&#x3D;\u001b[39m \u001b[36mtrue\u001b[39m\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 553 |\u001b[39m     \u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat test (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp&#x2F;__tests__&#x2F;CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:550:3)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.describe (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp&#x2F;__tests__&#x2F;CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:490:1)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Integration Tests › should handle submission loading state\u001b[39m\u001b[22m\n\n    thrown: \&quot;Exceeded timeout of 5000 ms for a test.\n    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https:&#x2F;&#x2F;jestjs.io&#x2F;docs&#x2F;api#testname-fn-timeout.\&quot;\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 883 |\u001b[39m   })\u001b[22m\n\u001b[2m     \u001b[90m 884 |\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 885 |\u001b[39m   test(\u001b[32m\&quot;should handle submission loading state\&quot;\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m&#x3D;&gt;\u001b[39m {\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 886 |\u001b[39m     \u001b[90m&#x2F;&#x2F; Enable auto-answer for this test\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 887 |\u001b[39m     global\u001b[33m.\u001b[39m_SIMULATE_ANSWER_ \u001b[33m&#x3D;\u001b[39m \u001b[36mtrue\u001b[39m\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 888 |\u001b[39m     \u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat test (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp&#x2F;__tests__&#x2F;CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:885:3)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.describe (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp&#x2F;__tests__&#x2F;CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:490:1)\u001b[22m\u001b[2m\u001b[22m\n&quot;
+    }
+  ],
+  &quot;wasInterrupted&quot;: false
+}</div>
+        </div>
+        <div class="d-none" id="test-global-config">{
+  &quot;bail&quot;: 0,
+  &quot;changedFilesWithAncestor&quot;: false,
+  &quot;ci&quot;: false,
+  &quot;collectCoverage&quot;: false,
+  &quot;collectCoverageFrom&quot;: [
+    &quot;**&#x2F;*.{js,jsx,ts,tsx}&quot;,
+    &quot;!**&#x2F;*.d.ts&quot;,
+    &quot;!**&#x2F;node_modules&#x2F;**&quot;,
+    &quot;!**&#x2F;.next&#x2F;**&quot;,
+    &quot;!**&#x2F;coverage&#x2F;**&quot;
+  ],
+  &quot;coverageDirectory&quot;: &quot;C:\\Work\\Projects\\ai-learning\\coverage&quot;,
+  &quot;coverageProvider&quot;: &quot;v8&quot;,
+  &quot;coverageReporters&quot;: [
+    &quot;json&quot;,
+    &quot;text&quot;,
+    &quot;lcov&quot;,
+    &quot;clover&quot;
+  ],
+  &quot;detectLeaks&quot;: false,
+  &quot;detectOpenHandles&quot;: false,
+  &quot;errorOnDeprecated&quot;: false,
+  &quot;expand&quot;: false,
+  &quot;findRelatedTests&quot;: false,
+  &quot;forceExit&quot;: false,
+  &quot;json&quot;: false,
+  &quot;lastCommit&quot;: false,
+  &quot;listTests&quot;: false,
+  &quot;logHeapUsage&quot;: false,
+  &quot;maxConcurrency&quot;: 5,
+  &quot;maxWorkers&quot;: 11,
+  &quot;noStackTrace&quot;: false,
+  &quot;nonFlagArgs&quot;: [],
+  &quot;notify&quot;: false,
+  &quot;notifyMode&quot;: &quot;failure-change&quot;,
+  &quot;onlyChanged&quot;: false,
+  &quot;onlyFailures&quot;: false,
+  &quot;openHandlesTimeout&quot;: 1000,
+  &quot;passWithNoTests&quot;: false,
+  &quot;projects&quot;: [],
+  &quot;reporters&quot;: [
+    [
+      &quot;default&quot;,
+      {}
+    ],
+    [
+      &quot;C:\\Work\\Projects\\ai-learning\\node_modules\\jest-stare\\lib\\index.js&quot;,
+      {
+        &quot;resultDir&quot;: &quot;jest-stare&#x2F;&quot;,
+        &quot;reportTitle&quot;: &quot;Test Report&quot;,
+        &quot;additionalResultsProcessors&quot;: [],
+        &quot;resultHtml&quot;: &quot;index.html&quot;,
+        &quot;resultJson&quot;: &quot;jest-results.json&quot;
+      }
+    ]
+  ],
+  &quot;rootDir&quot;: &quot;C:\\Work\\Projects\\ai-learning&quot;,
+  &quot;runTestsByPath&quot;: false,
+  &quot;seed&quot;: -887076107,
+  &quot;skipFilter&quot;: false,
+  &quot;snapshotFormat&quot;: {
+    &quot;escapeString&quot;: false,
+    &quot;printBasicPrototype&quot;: false
+  },
+  &quot;testFailureExitCode&quot;: 1,
+  &quot;testPathPattern&quot;: &quot;&quot;,
+  &quot;testSequencer&quot;: &quot;C:\\Work\\Projects\\ai-learning\\node_modules\\@jest\\test-sequencer\\build\\index.js&quot;,
+  &quot;testTimeout&quot;: 10000,
+  &quot;updateSnapshot&quot;: &quot;new&quot;,
+  &quot;useStderr&quot;: false,
+  &quot;verbose&quot;: true,
+  &quot;watch&quot;: false,
+  &quot;watchAll&quot;: false,
+  &quot;watchman&quot;: true,
+  &quot;workerThreads&quot;: false
+}</div>
+
+    </main>
+    <hr>
+    <footer class="footer">
+        <div class="container">
+            <span class="text-muted">jest-stare 2022</span>
+        </div>
+    </footer>
+</body>
+
+</html>
+

@@ -1,6 +1,8 @@
 import { renderHook, act } from '@testing-library/react-hooks'
 import { useAuth, _createMockUseAuth } from '../useAuth'
-import { useSession } from 'next-auth/react'
+import { useSession, signIn } from 'next-auth/react'
+import { Provider } from 'react-redux'
+import { configureStore } from '@reduxjs/toolkit'
 
 // Mock next-auth
 jest.mock('next-auth/react', () => ({
@@ -20,10 +22,33 @@ const mockWindowLocation = {
   pathname: '/',
 };
 
+// Create a mock Redux store
+const createTestStore = () => configureStore({
+  reducer: {
+    auth: (state = { userRedirectState: null, hasRedirectState: false }, action) => {
+      if (action.type === 'auth/setUserRedirectState') {
+        return { ...state, userRedirectState: action.payload, hasRedirectState: true };
+      }
+      if (action.type === 'auth/clearUserRedirectState') {
+        return { ...state, userRedirectState: null, hasRedirectState: false };
+      }
+      return state;
+    }
+  }
+});
+
+// Create a wrapper component that provides the Redux store
+const createWrapper = () => {
+  const store = createTestStore();
+  return ({ children }) => (
+    <Provider store={store}>{children}</Provider>
+  );
+}
+
 describe('useAuth hook', () => {
   beforeEach(() => {
     // Reset mocks
-    jest.clearAllMocks();
+    jest.resetAllMocks(); // Use resetAllMocks instead of clearAllMocks
     
     // Mock window.location
     Object.defineProperty(window, 'location', {
@@ -45,7 +70,8 @@ describe('useAuth hook', () => {
   })
   
   test('should return authenticated status when session exists', () => {
-    const { result } = renderHook(() => useAuth());
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper });
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.userId).toBe('test-user-id');
   });
@@ -56,31 +82,36 @@ describe('useAuth hook', () => {
       status: 'unauthenticated'
     });
     
-    const { result } = renderHook(() => useAuth());
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper });
     expect(result.current.isAuthenticated).toBe(false);
   });
 
   test('should detect fromAuth parameter in URL', () => {
     window.location.search = '?fromAuth=true';
-    const { result } = renderHook(() => useAuth());
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper });
     expect(result.current.fromAuth).toBe(true);
   });
 
   test('should not detect fromAuth when parameter is missing', () => {
     window.location.search = '?otherParam=value'
-    const { result } = renderHook(() => useAuth())
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper })
     
     expect(result.current.fromAuth).toBe(false)
   })
   
   test('should call signIn when requireAuth is called and user is unauthenticated', async () => {
     const signInMock = jest.fn();
+    (signIn as jest.Mock).mockImplementation(signInMock);
     (useSession as jest.Mock).mockReturnValue({
       data: null,
       status: 'unauthenticated'
     });
     
-    const { result } = renderHook(() => useAuth());
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     await act(async () => {
       result.current.requireAuth('/test-callback');
@@ -99,20 +130,25 @@ describe('useAuth hook', () => {
       status: 'authenticated'
     })
     
-    const { result } = renderHook(() => useAuth())
+    const signInMock = jest.fn();
+    (signIn as jest.Mock).mockImplementation(signInMock);
+    
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper })
     
     act(() => {
       result.current.requireAuth('/callback')
     })
     
-    expect(result.current.signIn).not.toHaveBeenCalled()
+    expect(signInMock).not.toHaveBeenCalled()
   })
   
   test('should parse redirect info from URL', () => {
     // Set URL with redirect parameter
     window.location.search = '?redirect=/dashboard/quizzes'
     
-    const { result } = renderHook(() => useAuth())
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper })
     
     expect(result.current.getAuthRedirectInfo()).toEqual({ 
       path: '/dashboard/quizzes' 
@@ -123,7 +159,8 @@ describe('useAuth hook', () => {
     // Set URL without redirect parameter
     window.location.search = ''
     
-    const { result } = renderHook(() => useAuth())
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper })
     
     expect(result.current.getAuthRedirectInfo()).toBeNull()
   })

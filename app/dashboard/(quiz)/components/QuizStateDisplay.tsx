@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, Loader2, RefreshCw, ChevronLeft } from "lucide-react"
+import { AlertCircle, Loader2, RefreshCw, ChevronLeft, AlertTriangle } from "lucide-react"
 
 interface DisplayProps {
   className?: string
@@ -64,32 +64,33 @@ export function QuizNotFoundDisplay({ onReturn, className }: DisplayProps) {
   )
 }
 
-export function ErrorDisplay({ error, onRetry, onReturn, className }: ErrorDisplayProps) {
+export function ErrorDisplay({ 
+  error, 
+  onRetry, 
+  onReturn,
+  ...props
+}) {
   return (
-    <Card className={`w-full max-w-xl mx-auto ${className || ""}`}>
-      <CardHeader>
-        <CardTitle className="text-xl text-center flex items-center justify-center">
-          <AlertCircle className="mr-2 h-5 w-5 text-destructive" />
-          Error Loading Quiz
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="py-6">
-        <p className="text-center text-muted-foreground mb-6">{error}</p>
-        <div className="flex justify-center gap-4">
-          <Button onClick={onRetry} variant="default">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Retry
-          </Button>
-          {onReturn && (
-            <Button onClick={onReturn} variant="outline">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Return
-            </Button>
-          )}
+    <div className="container max-w-3xl py-8" data-testid="error-display" {...props}>
+      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-6 text-center">
+        <div className="flex justify-center mb-4">
+          <div className="p-3 bg-destructive/20 rounded-full">
+            <AlertTriangle className="w-8 h-8 text-destructive" />
+          </div>
         </div>
-      </CardContent>
-    </Card>
-  )
+        <h2 className="text-2xl font-bold mb-3">Error</h2>
+        <p className="text-muted-foreground mb-6">{error}</p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button onClick={onRetry} variant="default" data-testid="retry-button">
+            Try Again
+          </Button>
+          <Button onClick={onReturn} variant="outline" data-testid="return-button">
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function EmptyQuestionsDisplay({ onReturn, className }: DisplayProps) {
