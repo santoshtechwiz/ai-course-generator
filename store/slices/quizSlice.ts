@@ -15,7 +15,7 @@ const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => 
   slug,
   type,
   questions: Array.isArray(raw.quizData?.questions)
-    ? raw.quizData.questions.map((q, index) => ({
+    ? raw.quizData.questions.map((q: any, index: number) => ({
         id: q.id || `q-${index}-${Math.random().toString(36).substring(2, 8)}`,
         question: q.question || "",
         codeSnippet: q.codeSnippet || "",
@@ -23,6 +23,7 @@ const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => 
         answer: q.answer || q.correctAnswer || "",
         correctAnswer: q.correctAnswer || q.answer || "",
         language: q.language || "javascript",
+        type // Add the type property to ensure compatibility
       }))
     : [],
   isPublic: !!raw.isPublic,
@@ -54,6 +55,8 @@ interface QuizState {
 
   // For legacy/test compatibility
   error?: string | null
+
+  submissionStateInProgress: boolean
 }
 
 const initialState: QuizState = {
@@ -73,6 +76,7 @@ const initialState: QuizState = {
   resultsError: null,
   historyError: null,
   error: null, // legacy/test compatibility
+  submissionStateInProgress: false,
 }
 
 // -----------------------------------------
@@ -193,6 +197,57 @@ export const fetchQuizHistory = createAsyncThunk("quiz/fetchQuizHistory", async 
   }
 })
 
+// Add new action for saving quiz submission state
+export const saveQuizSubmissionState = createAsyncThunk(
+  "quiz/saveQuizSubmissionState",
+  async ({ slug, state }: { slug: string; state: string }, { rejectWithValue }) => {
+    try {
+      if (typeof window !== 'undefined') {
+        const key = `quiz-submission-${slug}`;
+        localStorage.setItem(key, state);
+        return { slug, state };
+      }
+      return null;
+    } catch (error) {
+      return rejectWithValue("Failed to save quiz state to local storage");
+    }
+  }
+);
+
+// Add action to clear quiz submission state
+export const clearQuizSubmissionState = createAsyncThunk(
+  "quiz/clearQuizSubmissionState",
+  async (slug: string, { rejectWithValue }) => {
+    try {
+      if (typeof window !== 'undefined') {
+        const key = `quiz-submission-${slug}`;
+        localStorage.removeItem(key);
+        return slug;
+      }
+      return null;
+    } catch (error) {
+      return rejectWithValue("Failed to clear quiz state from local storage");
+    }
+  }
+);
+
+// Add action to get quiz submission state
+export const getQuizSubmissionState = createAsyncThunk(
+  "quiz/getQuizSubmissionState",
+  async (slug: string, { rejectWithValue }) => {
+    try {
+      if (typeof window !== 'undefined') {
+        const key = `quiz-submission-${slug}`;
+        const state = localStorage.getItem(key);
+        return { slug, state };
+      }
+      return { slug, state: null };
+    } catch (error) {
+      return rejectWithValue("Failed to get quiz state from local storage");
+    }
+  }
+);
+
 // -----------------------------------------
 // Slice
 // -----------------------------------------
@@ -243,6 +298,10 @@ const quizSlice = createSlice({
     setError: (state, action: PayloadAction<string>) => {
       state.quizError = action.payload;
       state.error = action.payload; // For backward compatibility
+    },
+    // Add a reducer to track submission state
+    setSubmissionInProgress: (state, action: PayloadAction<boolean>) => {
+      state.submissionStateInProgress = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -382,6 +441,25 @@ const quizSlice = createSlice({
         state.isLoading = false
         state.historyError = action.payload as string
       })
+
+      // Handle submission state persistence
+      builder.addCase(saveQuizSubmissionState.fulfilled, (state, action) => {
+        if (action.payload?.slug === state.quizData?.slug) {
+          state.submissionStateInProgress = action.payload.state === "in-progress";
+        }
+      });
+      
+      builder.addCase(clearQuizSubmissionState.fulfilled, (state, action) => {
+        if (action.payload === state.quizData?.slug) {
+          state.submissionStateInProgress = false;
+        }
+      });
+      
+      builder.addCase(getQuizSubmissionState.fulfilled, (state, action) => {
+        if (action.payload?.slug === state.quizData?.slug) {
+          state.submissionStateInProgress = action.payload.state === "in-progress";
+        }
+      });
   },
 })
 
@@ -395,6 +473,7 @@ export const {
   decrementTimer,
   markQuizCompleted,
   setError,
+  setSubmissionInProgress,
 } = quizSlice.actions
 
 export default quizSlice.reducer

@@ -14,7 +14,7 @@ interface NonAuthenticatedUserPromptProps {
     maxScore: number
     percentage: number
     title: string
-  }
+  } | null
 }
 
 export default function NonAuthenticatedUserSignInPrompt({
