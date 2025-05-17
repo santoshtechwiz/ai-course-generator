@@ -6,6 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Check, X, Send, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
+import { UserAnswer } from "@/app/types/quiz-types"
+
+interface QuestionResult {
+  id: string
+  question: string
+  userAnswer: string
+  correctAnswer: string
+  isCorrect: boolean
+}
 
 interface QuizResultPreviewProps {
   result: {
@@ -13,18 +22,12 @@ interface QuizResultPreviewProps {
     score: number
     maxScore: number
     percentage: number
-    questions: Array<{
-      id: string
-      question: string
-      userAnswer: string
-      correctAnswer: string
-      isCorrect: boolean
-    }>
+    questions: QuestionResult[]
     slug: string
   }
-  onSubmit: (answers: any[], elapsedTime: number) => void
+  onSubmit: (answers: UserAnswer[], elapsedTime: number) => void
   onCancel: () => void
-  userAnswers: any[]
+  userAnswers: UserAnswer[]
 }
 
 export default function QuizResultPreview({ 

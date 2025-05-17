@@ -1,100 +1,124 @@
-// Common types for all quiz formats
-export type QuizType = "mcq" | "code" | "blanks" | "openended"
+// Unify the quiz types to ensure consistency across the application
 
+export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended';
+
+// Base question interface that all question types should implement
 export interface BaseQuestion {
-  id: string
-  question: string
-  explanation?: string
-
+  id: string;
+  question: string;
+  type: QuizType;
 }
 
+// Multiple choice question
 export interface MCQQuestion extends BaseQuestion {
-  type: "mcq"
-  options: string[]
-  correctAnswer: string
+  type: 'mcq';
+  options: string[];
+  correctAnswer: string;
 }
 
+// Code question
 export interface CodeQuestion extends BaseQuestion {
-  type: "code"
-  codeSnippet?: string
-  language: string
-
-  solutionCode?: string
+  type: 'code';
+  codeSnippet?: string;
+  options?: string[];
+  answer?: string;
+  correctAnswer?: string;
+  language?: string;
 }
 
+// Fill in the blanks question
 export interface BlankQuestion extends BaseQuestion {
-  type: "blanks"
-  text: string // Text with placeholders like [[blank1]], [[blank2]]
-  answers: Record<string, string> // Map of placeholder to correct answer
+  type: 'blanks';
+  text: string;
+  blanks: Record<string, string>;
 }
 
+// Open ended question
 export interface OpenEndedQuestion extends BaseQuestion {
-  type: "openended",
-  points: null;
-  answer: string;
-  questions: {
-    hints: string[];
-    difficulty: string;
-    tags: string[];
-  };
+  type: 'openended';
+  answer?: string;
+  keywords?: string[];
+  maxScore?: number;
 }
 
-export type QuizQuestion = MCQQuestion | CodeQuestion | BlankQuestion | OpenEndedQuestion
+// Union of all question types
+export type QuizQuestion = MCQQuestion | CodeQuestion | BlankQuestion | OpenEndedQuestion;
 
-export interface TestCase {
-  id: string
-  input: string
-  expectedOutput: string
-  isHidden?: boolean
-}
-
-export interface QuizData {
-  id: string
-  title: string
-  description: string
-  type: QuizType
-  difficulty: "easy" | "medium" | "hard" | "expert"
-  timeLimit?: number // in minutes
-  passingScore?: number // percentage
-  questions: QuizQuestion[]
-  tags?: string[]
-  createdBy?: string
-  createdAt?: string
-  updatedAt?: string
-  isPublic?: boolean
-  slug: string
-  ownerId?: string
-}
-
+// Answer data structure
 export interface UserAnswer {
-  questionId: string
-  answer: string | Record<string, string>
-  isCorrect?: boolean
-  points?: number
-  feedback?: string
+  questionId: string;
+  answer: string | Record<string, string>;
 }
 
+// Quiz data structure
+export interface QuizData {
+  id: string;
+  title: string;
+  slug: string;
+  type: QuizType;
+  questions: QuizQuestion[];
+  isPublic?: boolean;
+  isFavorite?: boolean;
+  ownerId?: string;
+  userId?: string;
+  timeLimit?: number | null;
+  description?: string;
+}
+
+// Quiz result
 export interface QuizResult {
-  quizId: string
-  userId: string
-  score: number
-  maxScore: number
-  percentage: number
-  timeTaken?: number // in seconds
-  answers: UserAnswer[]
-  feedback?: string
-  passedTestCases?: number
-  totalTestCases?: number
-  submittedAt: string
-
+  quizId: string;
+  userId?: string;
+  slug: string;
+  title: string;
+  score: number;
+  maxScore: number;
+  percentage?: number;
+  submittedAt?: string;
+  completedAt?: string;
+  questions: Array<{
+    id: string;
+    question: string;
+    userAnswer: string | Record<string, string>;
+    correctAnswer: string | Record<string, string>;
+    isCorrect: boolean;
+  }>;
+  answers?: UserAnswer[];
 }
 
+// Quiz history item
 export interface QuizHistoryItem {
-  quizId: string
-  quizTitle: string
-  quizType: QuizType
-  score: number
-  maxScore: number
-  completedAt: string
-  slug: string
+  id?: string;
+  quizId?: string;
+  quizTitle: string;
+  quizType: QuizType;
+  score: number;
+  maxScore: number;
+  percentage?: number;
+  completedAt: string;
+  slug: string;
+}
+
+// Quiz state interface
+export interface QuizState {
+  quizData: QuizData | null;
+  currentQuestion: number;
+  userAnswers: UserAnswer[];
+  isLoading: boolean;
+  isSubmitting: boolean;
+  isCompleted: boolean;
+  timerActive: boolean;
+  timeRemaining: number | null;
+  currentQuizId: string | null;
+  results: QuizResult | null;
+  quizHistory: QuizHistoryItem[];
+  submissionStateInProgress: boolean;
+
+  quizError: string | null;
+  submissionError: string | null;
+  resultsError: string | null;
+  historyError: string | null;
+
+  // For legacy/test compatibility
+  error?: string | null;
 }

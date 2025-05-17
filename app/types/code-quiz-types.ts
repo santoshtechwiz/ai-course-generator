@@ -1,4 +1,5 @@
 import type React from "react"
+import { QuizQuestion, QuizData } from "./quiz-types";
 
 // API response structure from code-quiz endpoint
 export interface CodeQuizApiResponse {
@@ -11,29 +12,30 @@ export interface CodeQuizApiResponse {
 
 // Structure for a code quiz question
 export interface CodeQuizQuestion {
-  id: string
-  question: string
-  codeSnippet: string
-  answer: string
-  language: string
-  options?: string[] // Make sure options is explicitly defined
-  correctAnswer?: string
-  hints?: string[]
-
-  timeLimit?: number
+  id: string;
+  question: string;
+  codeSnippet?: string;
+  options?: string[];
+  answer?: string;
+  correctAnswer?: string;
+  language?: string;
+  type: 'code'; // Add the missing type property
 }
 
 // Structure for code quiz data
 export interface CodeQuizData {
   id: string
   title: string
+  description?: string
   slug: string
-  isPublic: boolean
-  isFavorite: boolean
-  userId: string
-  ownerId: string
+  type: 'code';
+  questions: CodeQuizQuestion[];
+  timeLimit?: number | null;
+  isPublic?: boolean;
+  isFavorite?: boolean;
+  userId?: string;
+  ownerId?: string;
   difficulty?: string
-  questions: CodeQuizQuestion[]
 }
 
 // Props for the CodeQuizWrapper component
