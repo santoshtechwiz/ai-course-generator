@@ -26,9 +26,157 @@
     "unmatched": 0,
     "updated": 0
   },
-  "startTime": 1747489419006,
+  "startTime": 1747491810339,
   "success": false,
   "testResults": [
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 8,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747491833933,
+        "runtime": 5002,
+        "slow": true,
+        "start": 1747491828931
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 74,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should return the initial state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should return the initial state"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle resetQuizState",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle resetQuizState"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setCurrentQuestion",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setCurrentQuestion"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setUserAnswer for new answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setUserAnswer for new answer"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setUserAnswer for existing answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setUserAnswer for existing answer"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 7,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle timer actions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle timer actions"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle markQuizCompleted",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle markQuizCompleted"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 25,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle submitQuiz action",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle submitQuiz action"
+        }
+      ],
+      "failureMessage": null
+    },
     {
       "leaks": false,
       "numFailingTests": 0,
@@ -37,10 +185,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747489445808,
-        "runtime": 7861,
+        "end": 1747491833962,
+        "runtime": 5215,
         "slow": true,
-        "start": 1747489437947
+        "start": 1747491828747
       },
       "skipped": false,
       "snapshot": {
@@ -59,7 +207,7 @@
             "Quiz Utilities",
             "formatTime"
           ],
-          "duration": 28,
+          "duration": 76,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities formatTime formats seconds correctly",
@@ -75,7 +223,7 @@
             "Quiz Utilities",
             "formatTime"
           ],
-          "duration": 2,
+          "duration": 4,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities formatTime handles null or undefined",
@@ -91,7 +239,7 @@
             "Quiz Utilities",
             "formatDuration"
           ],
-          "duration": 3,
+          "duration": 5,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities formatDuration formats duration correctly",
@@ -107,7 +255,7 @@
             "Quiz Utilities",
             "formatDate"
           ],
-          "duration": 55,
+          "duration": 62,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities formatDate formats date correctly",
@@ -123,7 +271,7 @@
             "Quiz Utilities",
             "formatDate"
           ],
-          "duration": 3,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities formatDate handles empty input",
@@ -139,7 +287,7 @@
             "Quiz Utilities",
             "truncateString"
           ],
-          "duration": 2,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities truncateString truncates string correctly",
@@ -155,7 +303,7 @@
             "Quiz Utilities",
             "calculatePercentage"
           ],
-          "duration": 1,
+          "duration": 2,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities calculatePercentage calculates percentage correctly",
@@ -171,7 +319,7 @@
             "Quiz Utilities",
             "calculatePercentage"
           ],
-          "duration": 2,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities calculatePercentage handles zero or negative maxScore",
@@ -187,7 +335,7 @@
             "Quiz Utilities",
             "isPassed"
           ],
-          "duration": 1,
+          "duration": 2,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities isPassed determines if score passes threshold",
@@ -219,7 +367,7 @@
             "Quiz Utilities",
             "generateFeedback"
           ],
-          "duration": 2,
+          "duration": 3,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities generateFeedback generates appropriate feedback based on percentage",
@@ -251,7 +399,7 @@
             "Quiz Utilities",
             "calculateStringSimilarity"
           ],
-          "duration": 1,
+          "duration": 7,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities calculateStringSimilarity handles empty strings",
@@ -283,7 +431,7 @@
             "Quiz Utilities",
             "evaluateOpenEndedAnswer"
           ],
-          "duration": 12,
+          "duration": 3,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities evaluateOpenEndedAnswer evaluates open-ended answers based on keywords",
@@ -363,7 +511,7 @@
             "Quiz Utilities",
             "getDifficultyColor"
           ],
-          "duration": 2,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities getDifficultyColor returns correct color classes for different difficulty levels",
@@ -379,7 +527,7 @@
             "Quiz Utilities",
             "getDifficultyColor"
           ],
-          "duration": 1,
+          "duration": 0,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities getDifficultyColor handles unknown difficulty and undefined",
@@ -411,7 +559,7 @@
             "Quiz Utilities",
             "calculateEstimatedTime"
           ],
-          "duration": 1,
+          "duration": 0,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities calculateEstimatedTime calculates estimated time based on question types",
@@ -443,7 +591,7 @@
             "Quiz Utilities",
             "calculateEstimatedTime"
           ],
-          "duration": 0,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities calculateEstimatedTime handles unknown question types",
@@ -491,7 +639,7 @@
             "Quiz Utilities",
             "areAllRequiredQuestionsAnswered"
           ],
-          "duration": 0,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities areAllRequiredQuestionsAnswered skips optional questions",
@@ -507,7 +655,7 @@
             "Quiz Utilities",
             "areAllRequiredQuestionsAnswered"
           ],
-          "duration": 2,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities areAllRequiredQuestionsAnswered validates fill-in-the-blanks answers",
@@ -523,7 +671,7 @@
             "Quiz Utilities",
             "areAllRequiredQuestionsAnswered"
           ],
-          "duration": 1,
+          "duration": 6,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities areAllRequiredQuestionsAnswered validates open-ended answers with minimum length",
@@ -539,7 +687,7 @@
             "Quiz Utilities",
             "generateId"
           ],
-          "duration": 2,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities generateId generates unique IDs",
@@ -555,7 +703,7 @@
             "Quiz Utilities",
             "shuffleArray"
           ],
-          "duration": 4,
+          "duration": 7,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities shuffleArray shuffles array elements",
@@ -587,7 +735,7 @@
             "Quiz Utilities",
             "capitalizeFirstLetter"
           ],
-          "duration": 2,
+          "duration": 3,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities capitalizeFirstLetter capitalizes first letter",
@@ -619,7 +767,7 @@
             "Quiz Utilities",
             "debounce"
           ],
-          "duration": 22,
+          "duration": 12,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Utilities debounce debounces function calls",
@@ -636,163 +784,15 @@
     {
       "leaks": false,
       "numFailingTests": 0,
-      "numPassingTests": 8,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747489446121,
-        "runtime": 7888,
-        "slow": true,
-        "start": 1747489438233
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 51,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should return the initial state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should return the initial state"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 5,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle resetQuizState",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle resetQuizState"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setCurrentQuestion",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setCurrentQuestion"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 4,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setUserAnswer for new answer",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setUserAnswer for new answer"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 4,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setUserAnswer for existing answer",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setUserAnswer for existing answer"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 10,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle timer actions",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle timer actions"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle markQuizCompleted",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle markQuizCompleted"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 27,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle submitQuiz action",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 4,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle submitQuiz action"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
       "numPassingTests": 4,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747489446262,
-        "runtime": 7762,
-        "slow": true,
-        "start": 1747489438500
+        "end": 1747491834108,
+        "runtime": 4870,
+        "slow": false,
+        "start": 1747491829238
       },
       "skipped": false,
       "snapshot": {
@@ -810,7 +810,7 @@
           "ancestorTitles": [
             "persistQuizMiddleware"
           ],
-          "duration": 90,
+          "duration": 133,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "persistQuizMiddleware should persist quiz state when actions are dispatched",
@@ -825,7 +825,7 @@
           "ancestorTitles": [
             "persistQuizMiddleware"
           ],
-          "duration": 6,
+          "duration": 13,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "persistQuizMiddleware should remove quiz state from localStorage when quiz is completed",
@@ -840,7 +840,7 @@
           "ancestorTitles": [
             "persistQuizMiddleware"
           ],
-          "duration": 3,
+          "duration": 5,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "persistQuizMiddleware loadPersistedQuizState should return persisted state",
@@ -855,7 +855,7 @@
           "ancestorTitles": [
             "persistQuizMiddleware"
           ],
-          "duration": 1,
+          "duration": 3,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "persistQuizMiddleware clearPersistedQuizState should remove state from localStorage",
@@ -872,341 +872,15 @@
     {
       "leaks": false,
       "numFailingTests": 0,
-      "numPassingTests": 6,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747489447763,
-        "runtime": 9850,
-        "slow": true,
-        "start": 1747489437913
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\components\\__tests__\\NonAuthenticatedUserSignInPrompt.test.tsx",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "NonAuthenticatedUserSignInPrompt"
-          ],
-          "duration": 169,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "NonAuthenticatedUserSignInPrompt renders with default props",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "renders with default props"
-        },
-        {
-          "ancestorTitles": [
-            "NonAuthenticatedUserSignInPrompt"
-          ],
-          "duration": 32,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "NonAuthenticatedUserSignInPrompt calls onSignIn when sign-in button is clicked",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "calls onSignIn when sign-in button is clicked"
-        },
-        {
-          "ancestorTitles": [
-            "NonAuthenticatedUserSignInPrompt"
-          ],
-          "duration": 17,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "NonAuthenticatedUserSignInPrompt displays save message when showSaveMessage is true",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "displays save message when showSaveMessage is true"
-        },
-        {
-          "ancestorTitles": [
-            "NonAuthenticatedUserSignInPrompt"
-          ],
-          "duration": 11,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "NonAuthenticatedUserSignInPrompt does not display save message when showSaveMessage is false",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "does not display save message when showSaveMessage is false"
-        },
-        {
-          "ancestorTitles": [
-            "NonAuthenticatedUserSignInPrompt"
-          ],
-          "duration": 30,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "NonAuthenticatedUserSignInPrompt displays custom message when provided",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "displays custom message when provided"
-        },
-        {
-          "ancestorTitles": [
-            "NonAuthenticatedUserSignInPrompt"
-          ],
-          "duration": 25,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "NonAuthenticatedUserSignInPrompt redirects to default route when onSignIn not provided",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "redirects to default route when onSignIn not provided"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 12,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747489447879,
-        "runtime": 9714,
-        "slow": true,
-        "start": 1747489438165
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\__tests__\\useQuizHook.test.tsx",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 114,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should return initial state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 16,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should return initial state"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 27,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should reset quiz state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should reset quiz state"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 17,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should navigate to next question",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should navigate to next question"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 21,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should navigate to previous question",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should navigate to previous question"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 11,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should save user answer",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should save user answer"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 5,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should format remaining time correctly",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should format remaining time correctly"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 6,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should get current question",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should get current question"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 4,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should check if current question is last",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should check if current question is last"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 8,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should handle authentication requirement",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle authentication requirement"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 6,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should handle undefined quiz data",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle undefined quiz data"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 7,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should handle missing question id",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle missing question id"
-        },
-        {
-          "ancestorTitles": [
-            "useQuiz Hook"
-          ],
-          "duration": 17,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useQuiz Hook should handle quiz submission",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz submission"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
       "numPassingTests": 10,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747489447969,
-        "runtime": 9437,
+        "end": 1747491835969,
+        "runtime": 6596,
         "slow": true,
-        "start": 1747489438532
+        "start": 1747491829373
       },
       "skipped": false,
       "snapshot": {
@@ -1224,7 +898,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 82,
+          "duration": 80,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should return authenticated status when session exists",
@@ -1239,7 +913,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 9,
+          "duration": 10,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should return unauthenticated status when session is missing",
@@ -1254,7 +928,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 9,
+          "duration": 12,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should detect fromAuth parameter in URL",
@@ -1269,7 +943,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 12,
+          "duration": 7,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should not detect fromAuth when parameter is missing",
@@ -1284,7 +958,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 23,
+          "duration": 16,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should call signIn when requireAuth is called and user is unauthenticated",
@@ -1299,7 +973,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 9,
+          "duration": 8,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should not call signIn when requireAuth is called but user is authenticated",
@@ -1314,7 +988,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 12,
+          "duration": 6,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should parse redirect info from URL",
@@ -1329,7 +1003,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 9,
+          "duration": 8,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should handle missing redirect info",
@@ -1344,7 +1018,7 @@
           "ancestorTitles": [
             "_createMockUseAuth"
           ],
-          "duration": 12,
+          "duration": 10,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "_createMockUseAuth should create default mock",
@@ -1375,16 +1049,342 @@
     },
     {
       "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 12,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747491836225,
+        "runtime": 7025,
+        "slow": true,
+        "start": 1747491829200
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\__tests__\\useQuizHook.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 164,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should return initial state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 16,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should return initial state"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 26,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should reset quiz state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should reset quiz state"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 20,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should navigate to next question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should navigate to next question"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 23,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should navigate to previous question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should navigate to previous question"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 14,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should save user answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should save user answer"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 8,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should format remaining time correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should format remaining time correctly"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 7,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should get current question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should get current question"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 7,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should check if current question is last",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should check if current question is last"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 14,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should handle authentication requirement",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle authentication requirement"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should handle undefined quiz data",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle undefined quiz data"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 7,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should handle missing question id",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle missing question id"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 18,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should handle quiz submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz submission"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 6,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747491836483,
+        "runtime": 6741,
+        "slow": true,
+        "start": 1747491829742
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\components\\__tests__\\NonAuthenticatedUserSignInPrompt.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 215,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt renders with default props",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "renders with default props"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 39,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt calls onSignIn when sign-in button is clicked",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "calls onSignIn when sign-in button is clicked"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 24,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt displays save message when showSaveMessage is true",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "displays save message when showSaveMessage is true"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 22,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt does not display save message when showSaveMessage is false",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "does not display save message when showSaveMessage is false"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 35,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt displays custom message when provided",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "displays custom message when provided"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 18,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt redirects to default route when onSignIn not provided",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "redirects to default route when onSignIn not provided"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
       "numFailingTests": 3,
       "numPassingTests": 0,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747489448095,
-        "runtime": 10016,
+        "end": 1747491836575,
+        "runtime": 7502,
         "slow": true,
-        "start": 1747489438079
+        "start": 1747491829073
       },
       "skipped": false,
       "snapshot": {
@@ -1402,7 +1402,7 @@
           "ancestorTitles": [
             "Code Quiz Submission Flow"
           ],
-          "duration": 240,
+          "duration": 268,
           "failureDetails": [
             {
               "matcherResult": {
@@ -1426,7 +1426,7 @@
           "ancestorTitles": [
             "Code Quiz Submission Flow"
           ],
-          "duration": 35,
+          "duration": 41,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1447,7 +1447,7 @@
           "ancestorTitles": [
             "Code Quiz Submission Flow"
           ],
-          "duration": 16,
+          "duration": 17,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1475,10 +1475,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747489448535,
-        "runtime": 10284,
+        "end": 1747491836885,
+        "runtime": 7558,
         "slow": true,
-        "start": 1747489438251
+        "start": 1747491829327
       },
       "skipped": false,
       "snapshot": {
@@ -1496,7 +1496,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 147,
+          "duration": 181,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component should display loading state initially",
@@ -1511,7 +1511,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 64,
+          "duration": 73,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component should display quiz questions when loaded",
@@ -1526,7 +1526,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 21,
+          "duration": 40,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component should navigate to next question when answering",
@@ -1541,7 +1541,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 47,
+          "duration": 54,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component should show results preview on last question",
@@ -1556,7 +1556,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 51,
+          "duration": 33,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1577,7 +1577,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 33,
+          "duration": 31,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component should show sign-in prompt for non-authenticated users",
@@ -1592,7 +1592,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 11,
+          "duration": 10,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component should handle errors properly",
@@ -1607,7 +1607,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 16,
+          "duration": 12,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component should handle empty questions state",
@@ -1622,7 +1622,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 13,
+          "duration": 14,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1643,7 +1643,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 14,
+          "duration": 29,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1664,7 +1664,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 12,
+          "duration": 13,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1685,7 +1685,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 10,
+          "duration": 13,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1706,7 +1706,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 10,
+          "duration": 11,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1727,7 +1727,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 12,
+          "duration": 10,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1748,7 +1748,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 8,
+          "duration": 9,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component handles invalid or missing quiz data",
@@ -1763,7 +1763,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 33,
+          "duration": 36,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component displays quiz result from state after sign-in",
@@ -1778,7 +1778,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 9,
+          "duration": 13,
           "failureDetails": [
             {
               "name": "TestingLibraryElementError"
@@ -1799,7 +1799,7 @@
           "ancestorTitles": [
             "Code Quiz Component"
           ],
-          "duration": 14,
+          "duration": 13,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Component does not expose auth token in client state or DOM",
