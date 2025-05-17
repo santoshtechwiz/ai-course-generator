@@ -66,24 +66,24 @@ export interface QuizData {
 }
 
 // Quiz result
+/**
+ * Interface for quiz result details
+ */
 export interface QuizResult {
   quizId: string;
-  userId?: string;
   slug: string;
   title: string;
   score: number;
   maxScore: number;
   percentage?: number;
-  submittedAt?: string;
   completedAt?: string;
   questions: Array<{
     id: string;
     question: string;
-    userAnswer: string | Record<string, string>;
-    correctAnswer: string | Record<string, string>;
+    userAnswer: string;
+    correctAnswer: string;
     isCorrect: boolean;
   }>;
-  answers?: UserAnswer[];
 }
 
 // Quiz history item
@@ -112,6 +112,7 @@ export interface QuizState {
   currentQuizId: string | null;
   results: QuizResult | null;
   quizHistory: QuizHistoryItem[];
+
   submissionStateInProgress: boolean;
 
   quizError: string | null;

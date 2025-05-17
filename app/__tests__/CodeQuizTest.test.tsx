@@ -233,6 +233,74 @@ jest.mock("@/store/slices/quizSlice", () => {
   };
 });
 
+// Mock the quizSlice module
+jest.mock("@/store/slices/quizSlice", () => {
+  // Create a simple mock reducer that handles basic actions
+  const mockReducer = (state = {
+    quizData: null,
+    currentQuestion: 0,
+    userAnswers: [],
+    isLoading: false,
+    isSubmitting: false,
+    error: null,
+    results: null,
+    isCompleted: false,
+    timeRemaining: null,
+    timerActive: false,
+    submissionError: null,
+    quizHistory: [],
+    submissionStateInProgress: false,
+  }, action) => {
+    switch (action.type) {
+      case "quiz/resetQuizState":
+        return {
+          ...state,
+          quizData: null,
+          currentQuestion: 0,
+          userAnswers: [],
+          isLoading: false,
+          isSubmitting: false,
+          error: null,
+          results: null,
+          isCompleted: false,
+        };
+      case "quiz/fetchQuiz/pending":
+        return { ...state, isLoading: true, error: null };
+      case "quiz/fetchQuiz/fulfilled":
+        return { 
+          ...state, 
+          isLoading: false, 
+          quizData: action.payload,
+          error: null
+        };
+      case "quiz/fetchQuiz/rejected":
+        return { ...state, isLoading: false, error: action.payload };
+      default:
+        return state;
+    }
+  };
+
+  return {
+    __esModule: true,
+    default: mockReducer,
+    saveQuizSubmissionState: jest.fn().mockReturnValue({
+      type: "quiz/saveQuizSubmissionState/fulfilled",
+      payload: { slug: "test-quiz", state: "in-progress" }
+    }),
+    clearQuizSubmissionState: jest.fn().mockReturnValue({
+      type: "quiz/clearQuizSubmissionState/fulfilled",
+      payload: "test-quiz"
+    }),
+    getQuizSubmissionState: jest.fn().mockReturnValue({
+      type: "quiz/getQuizSubmissionState/fulfilled",
+      payload: { slug: "test-quiz", state: null }
+    }),
+    setSubmissionInProgress: jest.fn(),
+    resetQuizState: jest.fn().mockReturnValue({ type: "quiz/resetQuizState" }),
+    // Add other action creators as needed
+  };
+});
+
 // Create test quiz data
 const mockQuizData = {
   id: "test-quiz",
@@ -322,7 +390,7 @@ const createMockUseQuiz = (overrides = {}) => ({
 const setupStore = (initialState = {}) => {
   return configureStore({
     reducer: {
-      quiz: quizReducer,
+      quiz: require("@/store/slices/quizSlice").default,
     },
     preloadedState: {
       quiz: {
@@ -334,9 +402,19 @@ const setupStore = (initialState = {}) => {
         error: null,
         results: null,
         isCompleted: false,
+        timeRemaining: null,
+        timerActive: false,
+        submissionError: null,
+        quizHistory: [],
+        submissionStateInProgress: false,
         ...initialState,
       },
     },
+    // Disable middleware for tests to avoid further complications
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+      serializableCheck: false,
+      thunk: false,
+    }),
   })
 }
 
