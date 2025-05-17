@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit"
-import quizReducer, { setCurrentQuestion } from "@/store/slices/quizSlice"
+import quizReducer, { setCurrentQuestion, submitQuiz } from "@/store/slices/quizSlice"
 import persistQuizMiddleware, {
   loadPersistedQuizState,
   clearPersistedQuizState,
@@ -38,65 +38,83 @@ describe("persistQuizMiddleware", () => {
     localStorageMock.clear()
   })
 
-  test("should persist quiz state when actions are dispatched", () => {
+  test("should persist quiz state when actions are dispatched", async () => {
     // Create store with middleware
     const store = configureStore({
       reducer: {
         quiz: quizReducer,
       },
-      middleware: (getDefaultMiddleware) => getDefaultMiddleware().prepend(persistQuizMiddleware.middleware),
+      middleware: (getDefaultMiddleware) => 
+        getDefaultMiddleware().prepend(persistQuizMiddleware.middleware),
     })
 
-    // Set up initial quiz state
-    store.dispatch({
+    // Set up initial quiz state with proper action
+    await store.dispatch({
       type: "quiz/fetchQuiz/fulfilled",
       payload: {
         id: "test-quiz",
         title: "Test Quiz",
         type: "mcq",
         slug: "test-quiz",
-        questions: [{ id: "q1", question: "Question 1", type: "mcq", options: ["A", "B", "C"], correctAnswer: "A" }],
+        questions: [
+          { 
+            id: "q1", 
+            question: "Question 1", 
+            type: "mcq", 
+            options: ["A", "B", "C"], 
+            correctAnswer: "A" 
+          }
+        ],
       },
     })
 
-    // Dispatch an action that should trigger persistence
+    // Force middleware to run by dispatching synchronously
     store.dispatch(setCurrentQuestion(0))
 
-    // Check if localStorage.setItem was called
+    // Add small delay to allow middleware to complete
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Verify localStorage operations
     expect(localStorageMock.setItem).toHaveBeenCalled()
 
-    // Get the stored value and parse it
-    const key = "quiz_state"
+    // Verify stored data
     const storedValue = JSON.parse(localStorageMock.setItem.mock.calls[0][1])
-
-    // Verify the stored data
-    expect(storedValue.currentQuestion).toBe(0)
-    expect(storedValue.currentQuizId).toBe("test-quiz")
+    expect(storedValue).toHaveProperty("currentQuestion", 0)
+    expect(storedValue).toHaveProperty("currentQuizId", "test-quiz")
   })
 
-  test("should remove quiz state from localStorage when quiz is completed", () => {
+  test("should remove quiz state from localStorage when quiz is completed", async () => {
     // Create store with middleware
     const store = configureStore({
       reducer: {
         quiz: quizReducer,
       },
-      middleware: (getDefaultMiddleware) => getDefaultMiddleware().prepend(persistQuizMiddleware.middleware),
+      middleware: (getDefaultMiddleware) => 
+        getDefaultMiddleware().prepend(persistQuizMiddleware.middleware),
     })
 
-    // Set up initial quiz state
-    store.dispatch({
+    // Set initial state
+    await store.dispatch({
       type: "quiz/fetchQuiz/fulfilled",
       payload: {
         id: "test-quiz",
         title: "Test Quiz",
         type: "mcq",
         slug: "test-quiz",
-        questions: [{ id: "q1", question: "Question 1", type: "mcq", options: ["A", "B", "C"], correctAnswer: "A" }],
+        questions: [
+          { 
+            id: "q1", 
+            question: "Question 1", 
+            type: "mcq",
+            options: ["A", "B", "C"], 
+            correctAnswer: "A" 
+          }
+        ],
       },
     })
 
-    // Mark quiz as completed
-    store.dispatch({
+    // Mock submission response
+    await store.dispatch({
       type: "quiz/submitQuiz/fulfilled",
       payload: {
         quizId: "test-quiz",
@@ -108,8 +126,12 @@ describe("persistQuizMiddleware", () => {
       },
     })
 
-    // Check if localStorage.removeItem was called
+    // Add small delay to allow middleware to complete
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Verify localStorage operations
     expect(localStorageMock.removeItem).toHaveBeenCalled()
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith("quiz_state")
   })
 
   test("loadPersistedQuizState should return persisted state", () => {

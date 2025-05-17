@@ -40,6 +40,32 @@ The authentication flow is handled in the `CodeQuizWrapper.tsx` component:
 3. After authentication, the user is redirected back to the quiz page
 4. The quiz state is restored from Redux or initialized with the provided quiz data
 
+## Authentication Handling
+
+The quiz functionality handles authentication in multiple ways:
+
+1. Initial Authentication Check:
+   - When loading a quiz, the component checks if the user is authenticated
+   - If not, the user is redirected to the sign-in page with a callback URL
+
+2. Submission Authentication:
+   - When submitting a quiz, if a 401 error is received, the system:
+     - Stores the current quiz state
+     - Redirects to the sign-in page
+     - Returns the user to the quiz after authentication
+     - Recovers their previous answers
+
+3. Results Authentication:
+   - Results page requires authentication
+   - Unauthenticated users are prompted to sign in
+   - After signing in, they are returned to view their results
+
+4. Error Handling:
+   - Authentication errors are detected and handled gracefully
+   - The user's session state is preserved during the authentication flow
+
+This approach ensures a seamless experience even when authentication is required mid-quiz.
+
 ## API Integration
 
 The code quiz components interact with the following API endpoints:
