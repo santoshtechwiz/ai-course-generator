@@ -58,7 +58,7 @@ export function createResultsPreview({
   const maxScore = questions.length;
   const percentage = Math.round((correctAnswers / maxScore) * 100);
 
-  // Construct and return preview data
+  // Return formatted results
   return {
     score: correctAnswers,
     maxScore,
@@ -70,54 +70,33 @@ export function createResultsPreview({
 }
 
 /**
- * Security check to validate submission data for tests
+ * Prepares submission payload to ensure all required fields are properly included
  */
-export function validateSecureSubmission(answers: UserAnswer[]): boolean {
-  if (!Array.isArray(answers) || answers.length === 0) {
-    return false;
-  }
-
-  // Check for any suspicious patterns in answers
-  const suspicious = answers.some(a => {
-    const answer = a.answer;
-    if (typeof answer === 'string') {
-      const lowerAnswer = answer.toLowerCase();
-      
-      // Check for script injection attempts
-      if (lowerAnswer.includes('<script') || lowerAnswer.includes('javascript:')) {
-        return true;
-      }
-      
-      // Check for SQL injection patterns
-      if (lowerAnswer.includes('union select') || lowerAnswer.includes('drop table')) {
-        return true;
-      }
-    }
-    return false;
-  });
-
-  return !suspicious;
-}
-
-/**
- * Formats validation results from server for display
- */
-export function formatServerValidation(result: any) {
-  if (!result) return null;
+export function prepareSubmissionPayload({
+  answers,
+  quizId,
+  slug,
+  timeTaken = 600
+}: {
+  answers: UserAnswer[],
+  quizId?: string,
+  slug: string,
+  timeTaken?: number
+}) {
+  // Ensure answers are properly formatted
+  const formattedAnswers = answers.map(answer => ({
+    questionId: answer.questionId,
+    answer: typeof answer.answer === 'string' 
+      ? answer.answer 
+      : JSON.stringify(answer.answer)
+  }));
   
-  // For server-side validation test
-  if (result.validationError) {
-    return { 
-      error: result.validationError,
-      passed: false,
-      score: result.score,
-      maxScore: result.maxScore
-    };
-  }
-  
+  // Build complete payload with all required fields
   return {
-    passed: true,
-    score: result.score,
-    maxScore: result.maxScore
+    quizId: quizId || slug, // Use slug as fallback if no quizId
+    slug, // Include slug for routing
+    type: "code" as const,
+    answers: formattedAnswers,
+    timeTaken: timeTaken || 600 // Default to 10 minutes if not provided
   };
 }

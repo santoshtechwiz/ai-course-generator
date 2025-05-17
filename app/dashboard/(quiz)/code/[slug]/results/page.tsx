@@ -16,9 +16,7 @@ interface ResultsPageProps {
 
 export default function ResultsPage({ params }: ResultsPageProps) {
   // Use direct destructuring to avoid use() which causes issues in tests
-  const slug = typeof params === 'object' && 'slug' in params
-    ? (params as any).slug
-    : (params as any)?.slug || '';
+ const slug=use(params);
   const router = useRouter()
   const { userId, isAuthenticated, status, requireAuth } = useAuth()
   

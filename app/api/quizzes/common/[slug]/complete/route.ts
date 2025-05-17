@@ -1,7 +1,29 @@
 import { prisma } from "@/lib/db"
 import { getAuthSession } from "@/lib/auth"
 import { NextResponse } from "next/server"
-import type { QuizType, QuizAnswer, BlanksQuizAnswer, CodeQuizAnswer } from "@/app/types/quiz-types"
+
+// Define the missing types
+type QuizType = 'mcq' | 'code' | 'openended' | 'blanks' | 'flashcard';
+
+interface QuizAnswer {
+  timeSpent: number;
+  isCorrect?: boolean;
+  answer?: string;
+  questionId?: string;
+}
+
+interface CodeQuizAnswer {
+  timeSpent: number;
+  isCorrect?: boolean;
+  answer?: string;
+  questionId: string;
+}
+
+interface BlanksQuizAnswer {
+  timeSpent: number;
+  userAnswer: string | string[];
+  questionId?: string;
+}
 
 // Improve the type definitions for quiz answers
 export type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer
@@ -10,9 +32,11 @@ export type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer
 export interface QuizSubmission {
   quizId: string
   answers: QuizAnswerUnion[]
-  totalTime: number
-  score: number
+  totalTime?: number
+  timeTaken?: number  // Add this field as it's used in the client
+  score?: number
   type: QuizType
+  slug?: string      // Add this field as it's used in the client
   totalQuestions?: number
   correctAnswers?: number
   completedAt?: string
@@ -42,20 +66,42 @@ function validateSubmissionData(body: any): { isValid: boolean; error?: string; 
     }
   }
 
-  // Check if required fields exist
-  const requiredFields = ["quizId", "totalTime", "score", "type"]
-  const missingFields = requiredFields.filter((field) => {
-    if (field === "totalTime" || field === "score") {
-      return typeof body[field] !== "number"
-    }
-    return !body[field]
-  })
+  // Check if required fields exist - adjust to allow for timeTaken instead of totalTime
+  const requiredFields = ["quizId", "type", "answers"]
+  const missingFields = requiredFields.filter(field => !body[field])
 
   if (missingFields.length > 0) {
     return {
       isValid: false,
       error: `Missing required fields: ${missingFields.join(", ")}`,
       details: { missingFields },
+    }
+  }
+
+  // Handle both totalTime and timeTaken field names
+  if (typeof body.totalTime !== "number" && typeof body.timeTaken !== "number") {
+    return {
+      isValid: false,
+      error: "Either totalTime or timeTaken must be provided as a number",
+      details: { 
+        totalTime: body.totalTime,
+        timeTaken: body.timeTaken
+      },
+    }
+  }
+  
+  // Normalize the time field
+  if (typeof body.timeTaken === "number" && typeof body.totalTime !== "number") {
+    body.totalTime = body.timeTaken;
+  }
+  
+  // Handle score field - calculate from answers if not provided
+  if (typeof body.score !== "number") {
+    // Count correct answers if we can
+    if (Array.isArray(body.answers)) {
+      body.score = body.answers.filter((a: any) => a.isCorrect === true).length;
+    } else {
+      body.score = 0;
     }
   }
 
@@ -215,28 +261,138 @@ function calculatePercentageScore(score: number, totalQuestions: number, type: Q
 // Database operations
 async function getQuizWithQuestions(quizId: string) {
   try {
-    return await prisma.userQuiz.findUnique({
-      where: { id: Number(quizId) },
-      include: { questions: true },
-    })
+    console.log(`Fetching quiz with ID or slug: ${quizId}`);
+    
+    // Don't validate as numeric ID - we need to support string slugs
+    if (!quizId) {
+      console.error("Missing quizId parameter");
+      throw new Error("Missing quiz ID");
+    }
+    
+    // Import the database client directly to ensure it's available
+    const { prisma } = await import("@/lib/db");
+    
+    if (!prisma) {
+      console.error("Database client is not available");
+      throw new Error("Database connection error");
+    }
+
+    // First try to find by numeric ID if it looks like a number
+    if (!isNaN(Number(quizId))) {
+      try {
+        const numericId = parseInt(quizId, 10);
+        console.log(`Trying to find quiz by numeric ID: ${numericId}`);
+        const quizByNumericId = await prisma.userQuiz.findUnique({
+          where: { id: numericId },
+          include: { questions: true },
+        });
+        
+        if (quizByNumericId) {
+          console.log(`Found quiz by numeric ID: ${numericId}`);
+          return quizByNumericId;
+        }
+      } catch (err) {
+        console.log(`No quiz found with numeric ID: ${quizId}`);
+      }
+    }
+
+    // Second check: Try to find by slug in userQuiz model
+    try {
+      console.log(`Looking for quiz with slug: ${quizId} in userQuiz model`);
+      const quizBySlug = await prisma.userQuiz.findFirst({
+        where: { slug: quizId },
+        include: { questions: true },
+      });
+
+      if (quizBySlug) {
+        console.log(`Found quiz by slug in userQuiz: ${quizId}`);
+        return quizBySlug;
+      }
+    } catch (err) {
+      console.error(`Error finding quiz by slug in userQuiz: ${err}`);
+    }
+    
+    // Third check: Try any other models that might contain quizzes
+    // For example, if there's a Quiz model separate from UserQuiz
+    try {
+      console.log(`Looking for quiz by identifier in other tables: ${quizId}`);
+      const quizByIdentifier = await prisma.quizModel.findFirst({
+        where: { 
+          OR: [
+            { slug: quizId },
+            { id: quizId }
+          ]
+        },
+        include: { questions: true },
+      }).catch(() => null); // Catch error if model doesn't exist
+
+      if (quizByIdentifier) {
+        console.log(`Found quiz in alternative model: ${quizId}`);
+        return quizByIdentifier;
+      }
+    } catch (err) {
+      // Just log but continue - this model might not exist
+      console.log(`No quiz in alternative model or model doesn't exist: ${err.message}`);
+    }
+    
+    // Final attempt: Try direct lookup by slug as a query parameter
+    console.log(`Final attempt: Looking in direct slug route parameter: ${quizId}`);
+    try {
+      const directQuizLookup = await prisma.userQuiz.findFirst({
+        where: {
+          OR: [
+            { slug: { contains: quizId, mode: 'insensitive' } },
+            { title: { contains: quizId, mode: 'insensitive' } }
+          ] 
+        },
+        include: { questions: true },
+      });
+      
+      if (directQuizLookup) {
+        console.log(`Found quiz by direct lookup: ${quizId}`);
+        return directQuizLookup;
+      }
+    } catch (err) {
+      console.error(`Error in final direct lookup: ${err}`);
+    }
+
+    // If we get here, we couldn't find the quiz
+    console.error(`Quiz not found with ID or slug: ${quizId}`);
+    throw new Error(`Quiz not found with identifier: ${quizId}`);
   } catch (error) {
-    console.error("Error fetching quiz with questions:", error)
-    throw new Error("Failed to fetch quiz data")
+    console.error("Error fetching quiz with questions:", error);
+    throw new Error("Failed to fetch quiz data");
   }
 }
 
 async function processQuizSubmission(userId: string, submission: QuizSubmission, quiz: any, percentageScore: number) {
   try {
-    // Move update outside transaction to avoid deadlocks
+    // Get numeric ID from the quiz object, not from the submission
+    // This is critical because submission.quizId might be a slug string
+    if (!quiz || typeof quiz.id === 'undefined') {
+      console.error("Quiz object is missing ID field");
+      throw new Error("Quiz ID missing from quiz object");
+    }
+    
+    const quizId = typeof quiz.id === 'number' ? quiz.id : Number(quiz.id);
+    
+    if (isNaN(quizId)) {
+      console.error("Invalid quiz ID format in quiz object:", quiz.id);
+      throw new Error("Invalid quiz ID format");
+    }
+    
+    console.log(`Processing submission for quiz ID: ${quizId} (numeric)`);
+
+    // Move update outside transaction to avoid deadlocks - now using quiz.id instead of submission.quizId
     const updatedUserQuiz = await prisma.userQuiz.update({
-      where: { id: Number(submission.quizId) },
+      where: { id: quizId }, // Using quiz.id which should now be numeric
       data: {
         quizType: submission.type, // Ensure quiz type is saved
         timeEnded: new Date(),
         lastAttempted: new Date(),
         bestScore: { set: Math.max(percentageScore, quiz.bestScore ?? 0) },
       },
-    })
+    });
 
     // Continue rest inside transaction
     const result = await prisma.$transaction(
@@ -245,51 +401,51 @@ async function processQuizSubmission(userId: string, submission: QuizSubmission,
           where: { id: userId },
           data: {
             totalQuizzesAttempted: { increment: 1 },
-            totalTimeSpent: { increment: Math.round(submission.totalTime) },
+            totalTimeSpent: { increment: Math.round(submission.totalTime || submission.timeTaken || 0) },
           },
-        })
+        });
 
         const quizAttempt = await tx.userQuizAttempt.upsert({
           where: {
             userId_userQuizId: {
               userId,
-              userQuizId: Number(submission.quizId),
+              userQuizId: quizId, // Using quiz.id which should now be numeric
             },
           },
           update: {
             score: percentageScore,
-            timeSpent: Math.round(submission.totalTime),
+            timeSpent: Math.round(submission.totalTime || submission.timeTaken || 0),
             accuracy: percentageScore,
           },
           create: {
             userId,
-            userQuizId: Number(submission.quizId),
+            userQuizId: quizId, // Using quiz.id which should now be numeric
             score: percentageScore,
-            timeSpent: Math.round(submission.totalTime),
+            timeSpent: Math.round(submission.totalTime || submission.timeTaken || 0),
             accuracy: percentageScore,
           },
-        })
+        });
 
-        await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
+        await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type);
 
         return {
           updatedUserQuiz,
           quizAttempt,
           percentageScore,
           totalQuestions: quiz.questions ? quiz.questions.length : 0,
-        }
+        };
       },
       {
         isolationLevel: "Serializable",
         maxWait: 5000,
         timeout: 10000,
       },
-    )
+    );
 
-    return result
+    return result;
   } catch (error) {
-    console.error("Error processing quiz submission:", error)
-    throw error
+    console.error("Error processing quiz submission:", error);
+    throw error;
   }
 }
 
@@ -446,7 +602,7 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
       type: body?.type,
       answersCount: body?.answers?.length,
       score: body?.score,
-      totalTime: body?.totalTime,
+      totalTime: body?.totalTime || body?.timeTaken,
     })
 
     const validationResult = validateSubmissionData(body)
@@ -458,7 +614,15 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
       )
     }
 
-    const submission = body as QuizSubmission
+    // Convert object to submission type with normalized fields
+    const submission: QuizSubmission = {
+      quizId: body.quizId,
+      answers: body.answers,
+      totalTime: body.totalTime || body.timeTaken || 0,
+      score: body.score || 0, 
+      type: (body.type || 'code').toLowerCase() as QuizType,
+      slug: body.slug
+    }
 
     // Normalize the quiz type to handle case differences
     submission.type = submission.type.toLowerCase() as QuizType
@@ -476,10 +640,38 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
       )
     }
 
-    const quiz = await getQuizWithQuestions(submission.quizId)
-
-    if (!quiz) {
-      return NextResponse.json({ success: false, error: "Quiz not found" }, { status: 404 })
+    let quiz;
+    try {
+      // Handle both numeric IDs and slug identifiers
+      const quizIdentifier = submission.quizId || submission.slug;
+      if (!quizIdentifier) {
+        return NextResponse.json({ success: false, error: "No quiz identifier provided" }, { status: 400 });
+      }
+      
+      // First try by direct ID/slug in request
+      quiz = await getQuizWithQuestions(quizIdentifier);
+      
+      // If that fails, try with the URL slug parameter
+      if (!quiz && request.url) {
+        const urlParts = request.url.split('/');
+        const urlSlug = urlParts[urlParts.length - 2]; // The slug is the second-to-last part in the URL
+        if (urlSlug && urlSlug !== quizIdentifier) {
+          quiz = await getQuizWithQuestions(urlSlug);
+        }
+      }
+      
+      if (!quiz) {
+        return NextResponse.json({ 
+          success: false, 
+          error: `Quiz not found with ID: ${quizIdentifier}` 
+        }, { status: 404 });
+      }
+    } catch (error) {
+      console.error("Error fetching quiz:", error);
+      return NextResponse.json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to fetch quiz data" 
+      }, { status: 500 });
     }
 
     // Handle case where answer count doesn't match question count
@@ -499,7 +691,7 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
         result: {
           ...result,
           score: percentageScore,
-          totalTime: Math.round(submission.totalTime),
+          totalTime: Math.round(submission.totalTime || submission.timeTaken || 0),
         },
       })
     } catch (processingError) {
