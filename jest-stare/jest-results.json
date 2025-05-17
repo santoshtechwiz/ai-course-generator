@@ -1,14 +1,14 @@
 {
-  "numFailedTestSuites": 0,
-  "numFailedTests": 0,
-  "numPassedTestSuites": 0,
-  "numPassedTests": 0,
+  "numFailedTestSuites": 2,
+  "numFailedTests": 11,
+  "numPassedTestSuites": 6,
+  "numPassedTests": 86,
   "numPendingTestSuites": 0,
   "numPendingTests": 0,
   "numRuntimeErrorTestSuites": 0,
   "numTodoTests": 0,
   "numTotalTestSuites": 8,
-  "numTotalTests": 0,
+  "numTotalTests": 97,
   "openHandles": [],
   "snapshot": {
     "added": 0,
@@ -28,6 +28,1791 @@
   },
   "startTime": 1747489419006,
   "success": false,
-  "testResults": [],
+  "testResults": [
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 36,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747489445808,
+        "runtime": 7861,
+        "slow": true,
+        "start": 1747489437947
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\__tests__\\quiz-utils.test.ts",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "formatTime"
+          ],
+          "duration": 28,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities formatTime formats seconds correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "formats seconds correctly"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "formatTime"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities formatTime handles null or undefined",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles null or undefined"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "formatDuration"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities formatDuration formats duration correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "formats duration correctly"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "formatDate"
+          ],
+          "duration": 55,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities formatDate formats date correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "formats date correctly"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "formatDate"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities formatDate handles empty input",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles empty input"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "truncateString"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities truncateString truncates string correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "truncates string correctly"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "calculatePercentage"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities calculatePercentage calculates percentage correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "calculates percentage correctly"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "calculatePercentage"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities calculatePercentage handles zero or negative maxScore",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles zero or negative maxScore"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "isPassed"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities isPassed determines if score passes threshold",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "determines if score passes threshold"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "isPassed"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities isPassed works with custom threshold",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "works with custom threshold"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "generateFeedback"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities generateFeedback generates appropriate feedback based on percentage",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "generates appropriate feedback based on percentage"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "calculateStringSimilarity"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities calculateStringSimilarity calculates string similarity correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "calculates string similarity correctly"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "calculateStringSimilarity"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities calculateStringSimilarity handles empty strings",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles empty strings"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "calculateStringSimilarity"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities calculateStringSimilarity is case insensitive",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "is case insensitive"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "evaluateOpenEndedAnswer"
+          ],
+          "duration": 12,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities evaluateOpenEndedAnswer evaluates open-ended answers based on keywords",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "evaluates open-ended answers based on keywords"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "evaluateOpenEndedAnswer"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities evaluateOpenEndedAnswer handles empty inputs",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles empty inputs"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "evaluateOpenEndedAnswer"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities evaluateOpenEndedAnswer matches similar words",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "matches similar words"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "evaluateCode"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities evaluateCode evaluates code against test cases",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "evaluates code against test cases"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "evaluateCode"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities evaluateCode handles empty test cases",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles empty test cases"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "getDifficultyColor"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities getDifficultyColor returns correct color classes for different difficulty levels",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "returns correct color classes for different difficulty levels"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "getDifficultyColor"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities getDifficultyColor handles unknown difficulty and undefined",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles unknown difficulty and undefined"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "getDifficultyColor"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities getDifficultyColor is case insensitive",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "is case insensitive"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "calculateEstimatedTime"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities calculateEstimatedTime calculates estimated time based on question types",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "calculates estimated time based on question types"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "calculateEstimatedTime"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities calculateEstimatedTime handles empty questions array",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles empty questions array"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "calculateEstimatedTime"
+          ],
+          "duration": 0,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities calculateEstimatedTime handles unknown question types",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles unknown question types"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "areAllRequiredQuestionsAnswered"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities areAllRequiredQuestionsAnswered checks if all required questions are answered",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "checks if all required questions are answered"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "areAllRequiredQuestionsAnswered"
+          ],
+          "duration": 0,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities areAllRequiredQuestionsAnswered detects missing answers",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "detects missing answers"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "areAllRequiredQuestionsAnswered"
+          ],
+          "duration": 0,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities areAllRequiredQuestionsAnswered skips optional questions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "skips optional questions"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "areAllRequiredQuestionsAnswered"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities areAllRequiredQuestionsAnswered validates fill-in-the-blanks answers",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "validates fill-in-the-blanks answers"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "areAllRequiredQuestionsAnswered"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities areAllRequiredQuestionsAnswered validates open-ended answers with minimum length",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "validates open-ended answers with minimum length"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "generateId"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities generateId generates unique IDs",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "generates unique IDs"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "shuffleArray"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities shuffleArray shuffles array elements",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "shuffles array elements"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "shuffleArray"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities shuffleArray handles empty arrays",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles empty arrays"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "capitalizeFirstLetter"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities capitalizeFirstLetter capitalizes first letter",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "capitalizes first letter"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "capitalizeFirstLetter"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities capitalizeFirstLetter handles empty strings",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles empty strings"
+        },
+        {
+          "ancestorTitles": [
+            "Quiz Utilities",
+            "debounce"
+          ],
+          "duration": 22,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz Utilities debounce debounces function calls",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "debounces function calls"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 8,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747489446121,
+        "runtime": 7888,
+        "slow": true,
+        "start": 1747489438233
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 51,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should return the initial state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should return the initial state"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 5,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle resetQuizState",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle resetQuizState"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setCurrentQuestion",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setCurrentQuestion"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setUserAnswer for new answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setUserAnswer for new answer"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setUserAnswer for existing answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setUserAnswer for existing answer"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 10,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle timer actions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle timer actions"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle markQuizCompleted",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle markQuizCompleted"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 27,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle submitQuiz action",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle submitQuiz action"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 4,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747489446262,
+        "runtime": 7762,
+        "slow": true,
+        "start": 1747489438500
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\__tests__\\persistQuizMiddleware.test.ts",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "persistQuizMiddleware"
+          ],
+          "duration": 90,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "persistQuizMiddleware should persist quiz state when actions are dispatched",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should persist quiz state when actions are dispatched"
+        },
+        {
+          "ancestorTitles": [
+            "persistQuizMiddleware"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "persistQuizMiddleware should remove quiz state from localStorage when quiz is completed",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should remove quiz state from localStorage when quiz is completed"
+        },
+        {
+          "ancestorTitles": [
+            "persistQuizMiddleware"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "persistQuizMiddleware loadPersistedQuizState should return persisted state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "loadPersistedQuizState should return persisted state"
+        },
+        {
+          "ancestorTitles": [
+            "persistQuizMiddleware"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "persistQuizMiddleware clearPersistedQuizState should remove state from localStorage",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "clearPersistedQuizState should remove state from localStorage"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 6,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747489447763,
+        "runtime": 9850,
+        "slow": true,
+        "start": 1747489437913
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\components\\__tests__\\NonAuthenticatedUserSignInPrompt.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 169,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt renders with default props",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "renders with default props"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 32,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt calls onSignIn when sign-in button is clicked",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "calls onSignIn when sign-in button is clicked"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 17,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt displays save message when showSaveMessage is true",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "displays save message when showSaveMessage is true"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 11,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt does not display save message when showSaveMessage is false",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "does not display save message when showSaveMessage is false"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 30,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt displays custom message when provided",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "displays custom message when provided"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 25,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt redirects to default route when onSignIn not provided",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "redirects to default route when onSignIn not provided"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 12,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747489447879,
+        "runtime": 9714,
+        "slow": true,
+        "start": 1747489438165
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\__tests__\\useQuizHook.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 114,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should return initial state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 16,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should return initial state"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 27,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should reset quiz state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should reset quiz state"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 17,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should navigate to next question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should navigate to next question"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 21,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should navigate to previous question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should navigate to previous question"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 11,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should save user answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should save user answer"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 5,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should format remaining time correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should format remaining time correctly"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should get current question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should get current question"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should check if current question is last",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should check if current question is last"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 8,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should handle authentication requirement",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle authentication requirement"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should handle undefined quiz data",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle undefined quiz data"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 7,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should handle missing question id",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle missing question id"
+        },
+        {
+          "ancestorTitles": [
+            "useQuiz Hook"
+          ],
+          "duration": 17,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useQuiz Hook should handle quiz submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz submission"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 10,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747489447969,
+        "runtime": 9437,
+        "slow": true,
+        "start": 1747489438532
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\hooks\\__tests__\\useAuth.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 82,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should return authenticated status when session exists",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should return authenticated status when session exists"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should return unauthenticated status when session is missing",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should return unauthenticated status when session is missing"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should detect fromAuth parameter in URL",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should detect fromAuth parameter in URL"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 12,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should not detect fromAuth when parameter is missing",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should not detect fromAuth when parameter is missing"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 23,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should call signIn when requireAuth is called and user is unauthenticated",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should call signIn when requireAuth is called and user is unauthenticated"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should not call signIn when requireAuth is called but user is authenticated",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should not call signIn when requireAuth is called but user is authenticated"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 12,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should parse redirect info from URL",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should parse redirect info from URL"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should handle missing redirect info",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle missing redirect info"
+        },
+        {
+          "ancestorTitles": [
+            "_createMockUseAuth"
+          ],
+          "duration": 12,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "_createMockUseAuth should create default mock",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 8,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should create default mock"
+        },
+        {
+          "ancestorTitles": [
+            "_createMockUseAuth"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "_createMockUseAuth should override defaults",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should override defaults"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 3,
+      "numPassingTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747489448095,
+        "runtime": 10016,
+        "slow": true,
+        "start": 1747489438079
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizSubmission.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "Code Quiz Submission Flow"
+          ],
+          "duration": 240,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\"/dashboard/code/test-quiz/results\"\u001b[39m\n\nNumber of calls: \u001b[31m0\u001b[39m",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\"/dashboard/code/test-quiz/results\"\u001b[39m\n\nNumber of calls: \u001b[31m0\u001b[39m\n    at Object.toHaveBeenCalledWith (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizSubmission.test.tsx:317:25)"
+          ],
+          "fullName": "Code Quiz Submission Flow handles submission payload correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "handles submission payload correctly"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Submission Flow"
+          ],
+          "duration": 35,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-answer\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"quiz-result-preview\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[0mScore: \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-results\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Results\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizSubmission.test.tsx:370:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Submission Flow handles server-side validation errors",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "handles server-side validation errors"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Submission Flow"
+          ],
+          "duration": 16,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-answer\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"quiz-result-preview\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[0mScore: \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-results\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Results\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizSubmission.test.tsx:477:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Submission Flow handles missing quiz ID in payload",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "handles missing quiz ID in payload"
+        }
+      ],
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Submission Flow › handles submission payload correctly\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\n    Expected: \u001b[32m\"/dashboard/code/test-quiz/results\"\u001b[39m\n\n    Number of calls: \u001b[31m0\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 315 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 316 |\u001b[39m     \u001b[90m// Verify redirect to results page\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 317 |\u001b[39m     expect(mockReplace)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(\u001b[32m\"/dashboard/code/test-quiz/results\"\u001b[39m)\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                         \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 318 |\u001b[39m     jest\u001b[33m.\u001b[39museRealTimers()\u001b[22m\n\u001b[2m     \u001b[90m 319 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 320 |\u001b[39m     \u001b[90m// Verify toast success was called\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toHaveBeenCalledWith (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizSubmission.test.tsx\u001b[39m\u001b[0m\u001b[2m:317:25)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Submission Flow › handles server-side validation errors\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-answer\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"quiz-result-preview\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div>\u001b[39m\n              \u001b[0mScore: \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-results\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Results\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 368 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 369 |\u001b[39m     \u001b[90m// First, let's click the submit button for the last question\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 370 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-answer\"\u001b[39m))\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 371 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 372 |\u001b[39m     \u001b[90m// Update the state to show the results preview\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 373 |\u001b[39m     require(\u001b[32m\"@/hooks/useQuizState\"\u001b[39m)\u001b[33m.\u001b[39museQuiz\u001b[33m.\u001b[39mmockReturnValue(\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizSubmission.test.tsx\u001b[39m\u001b[0m\u001b[2m:370:28)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Submission Flow › handles missing quiz ID in payload\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-answer\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"quiz-result-preview\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div>\u001b[39m\n              \u001b[0mScore: \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-results\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Results\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 475 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 476 |\u001b[39m     \u001b[90m// First, click submit to trigger the flow\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 477 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-answer\"\u001b[39m))\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 478 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 479 |\u001b[39m     \u001b[90m// Update the state to show the results preview\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 480 |\u001b[39m     require(\u001b[32m\"@/hooks/useQuizState\"\u001b[39m)\u001b[33m.\u001b[39museQuiz\u001b[33m.\u001b[39mmockReturnValue(\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizSubmission.test.tsx\u001b[39m\u001b[0m\u001b[2m:477:28)\u001b[22m\u001b[2m\u001b[22m\n"
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 8,
+      "numPassingTests": 10,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747489448535,
+        "runtime": 10284,
+        "slow": true,
+        "start": 1747489438251
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 147,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component should display loading state initially",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should display loading state initially"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 64,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component should display quiz questions when loaded",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should display quiz questions when loaded"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 21,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component should navigate to next question when answering",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should navigate to next question when answering"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 47,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component should show results preview on last question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should show results preview on last question"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 51,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<pre\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mfunction add(a, b) {\n  return\n}\u001b[0m\n        \u001b[36m</pre>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:520:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Component should submit quiz and redirect to results page",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should submit quiz and redirect to results page"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 33,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component should show sign-in prompt for non-authenticated users",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should show sign-in prompt for non-authenticated users"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 11,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component should handle errors properly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle errors properly"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 16,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component should handle empty questions state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle empty questions state"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 13,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<pre\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mfunction add(a, b) {\n  return\n}\u001b[0m\n        \u001b[36m</pre>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:678:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Component redirects unauthenticated user to login page",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "redirects unauthenticated user to login page"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 14,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<pre\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mfunction add(a, b) {\n  return\n}\u001b[0m\n        \u001b[36m</pre>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:735:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Component sends correct payload on submit",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "sends correct payload on submit"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 12,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<pre\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mfunction add(a, b) {\n  return\n}\u001b[0m\n        \u001b[36m</pre>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:793:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Component saves result in state after successful API response",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "saves result in state after successful API response"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 10,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<pre\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mfunction add(a, b) {\n  return\n}\u001b[0m\n        \u001b[36m</pre>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:835:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Component shows success toast on result save",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "shows success toast on result save"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 10,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<pre\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mfunction add(a, b) {\n  return\n}\u001b[0m\n        \u001b[36m</pre>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:872:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Component shows error toast on API error",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "shows error toast on API error"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 12,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<pre\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mfunction add(a, b) {\n  return\n}\u001b[0m\n        \u001b[36m</pre>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:914:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Component handles network failure gracefully",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "handles network failure gracefully"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 8,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component handles invalid or missing quiz data",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles invalid or missing quiz data"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 33,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component displays quiz result from state after sign-in",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "displays quiz result from state after sign-in"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 9,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m/\u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<pre\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mfunction add(a, b) {\n  return\n}\u001b[0m\n        \u001b[36m</pre>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mSubmit Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizTest.test.tsx:1070:28)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "Code Quiz Component prevents tampering by validating submission server-side",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "prevents tampering by validating submission server-side"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Component"
+          ],
+          "duration": 14,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Component does not expose auth token in client state or DOM",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 6,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "does not expose auth token in client state or DOM"
+        }
+      ],
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Component › should submit quiz and redirect to results page\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<pre\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mfunction add(a, b) {\n      return\n    }\u001b[0m\n            \u001b[36m</pre>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 518 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 519 |\u001b[39m     \u001b[90m// Click submit on results preview\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 520 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-results\"\u001b[39m))\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 521 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 522 |\u001b[39m     \u001b[90m// Verify submission happened\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 523 |\u001b[39m     expect(mockSubmitQuiz)\u001b[33m.\u001b[39mtoHaveBeenCalled()\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:520:28)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Component › redirects unauthenticated user to login page\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<pre\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mfunction add(a, b) {\n      return\n    }\u001b[0m\n            \u001b[36m</pre>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 676 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 677 |\u001b[39m     \u001b[90m// Click submit button\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 678 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-results\"\u001b[39m))\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 679 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 680 |\u001b[39m     \u001b[90m// Verify sign-in was called\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 681 |\u001b[39m     \u001b[36mawait\u001b[39m waitFor(() \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:678:28)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Component › sends correct payload on submit\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<pre\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mfunction add(a, b) {\n      return\n    }\u001b[0m\n            \u001b[36m</pre>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 733 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 734 |\u001b[39m     \u001b[90m// Submit the quiz\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 735 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-results\"\u001b[39m))\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 736 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 737 |\u001b[39m     \u001b[90m// Verify the payload\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 738 |\u001b[39m     expect(mockSubmitQuiz)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:735:28)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Component › saves result in state after successful API response\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<pre\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mfunction add(a, b) {\n      return\n    }\u001b[0m\n            \u001b[36m</pre>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 791 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 792 |\u001b[39m     \u001b[90m// Submit the quiz\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 793 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-results\"\u001b[39m))\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 794 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 795 |\u001b[39m     \u001b[90m// Verify the result was saved\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 796 |\u001b[39m     \u001b[36mawait\u001b[39m waitFor(() \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:793:28)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Component › shows success toast on result save\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<pre\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mfunction add(a, b) {\n      return\n    }\u001b[0m\n            \u001b[36m</pre>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 833 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 834 |\u001b[39m     \u001b[90m// Submit the quiz\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 835 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-results\"\u001b[39m))\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 836 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 837 |\u001b[39m     \u001b[90m// Verify toast was triggered\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 838 |\u001b[39m     \u001b[36mawait\u001b[39m waitFor(() \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:835:28)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Component › shows error toast on API error\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<pre\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mfunction add(a, b) {\n      return\n    }\u001b[0m\n            \u001b[36m</pre>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 870 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 871 |\u001b[39m     \u001b[90m// Submit the quiz\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 872 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-results\"\u001b[39m))\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 873 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 874 |\u001b[39m     \u001b[90m// Verify error is shown\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 875 |\u001b[39m     \u001b[36mawait\u001b[39m waitFor(() \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:872:28)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Component › handles network failure gracefully\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<pre\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mfunction add(a, b) {\n      return\n    }\u001b[0m\n            \u001b[36m</pre>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 912 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 913 |\u001b[39m     \u001b[90m// Submit the quiz\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 914 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-results\"\u001b[39m))\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 915 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 916 |\u001b[39m     \u001b[90m// Wait for the error to be handled\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 917 |\u001b[39m     \u001b[36mawait\u001b[39m waitFor(() \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:914:28)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mCode Quiz Component › prevents tampering by validating submission server-side\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid=\"submit-results\"]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"coding-quiz\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m/\u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFix this code to return the sum of two numbers\u001b[0m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<pre\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"code-snippet\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mfunction add(a, b) {\n      return\n    }\u001b[0m\n            \u001b[36m</pre>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"options\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-answer\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mSubmit Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</body>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 1068 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 1069 |\u001b[39m     \u001b[90m// Submit quiz\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 1070 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"submit-results\"\u001b[39m))\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m      |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 1071 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 1072 |\u001b[39m     \u001b[90m// Verify server was called with the client answers for validation\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 1073 |\u001b[39m     expect(mockSubmitQuiz)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(expect\u001b[33m.\u001b[39mobjectContaining({\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36mapp/__tests__/CodeQuizTest.test.tsx\u001b[39m\u001b[0m\u001b[2m:1070:28)\u001b[22m\u001b[2m\u001b[22m\n"
+    }
+  ],
   "wasInterrupted": false
 }
