@@ -23,10 +23,17 @@ export default function NonAuthenticatedUserSignInPrompt({
   const router = useRouter()
 
   const handleSignIn = () => {
-    if (onSignIn) {
-      onSignIn()
-    } else {
-      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}`)}`)
+    // Guard against potential errors
+    try {
+      if (typeof onSignIn === 'function') {
+        onSignIn()
+      } else {
+        router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}`)}`);
+      }
+    } catch (err) {
+      console.error("Error during sign in:", err);
+      // Fallback to basic redirect
+      window.location.href = `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}`)}`;
     }
   }
 

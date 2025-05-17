@@ -174,6 +174,13 @@ export function useQuiz() {
       }
       
       setIsAuthRedirect(false)
+
+      // After handling the state, always clear it to avoid reusing stale data
+      try {
+        clearAuthRedirectState()
+      } catch (err) {
+        console.error("Error clearing auth redirect state:", err)
+      }
     }
   }, [dispatch])
 
@@ -234,8 +241,9 @@ export function useQuiz() {
 
   // Check if current question is the last one
   const isLastQuestion = useCallback(() => {
-    if (!quizState.quizData?.questions) return false
-    return quizState.currentQuestion === quizState.quizData.questions.length - 1
+    const questions = quizState.quizData?.questions
+    if (!questions?.length) return false
+    return quizState.currentQuestion === questions.length - 1
   }, [quizState.quizData, quizState.currentQuestion])
 
   // Answer saving
@@ -278,6 +286,17 @@ export function useQuiz() {
           slug: submissionPayload.slug,
           state: "in-progress"
         })).unwrap()
+
+        // Ensure all questions have an answer by adding empty answers for unanswered questions
+        if (submissionPayload.answers.length < (quizState.quizData?.questions?.length || 0)) {
+          const answeredQuestionIds = new Set(submissionPayload.answers.map(a => a.questionId))
+          
+          quizState.quizData?.questions?.forEach(q => {
+            if (!answeredQuestionIds.has(q.id)) {
+              submissionPayload.answers.push({ questionId: q.id, answer: "" })
+            }
+          })
+        }
         
         try {
           // Submit the quiz
