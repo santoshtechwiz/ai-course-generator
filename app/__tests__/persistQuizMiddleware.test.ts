@@ -6,37 +6,39 @@ import persistQuizMiddleware, {
 } from "@/store/middleware/persistQuizMiddleware"
 
 // Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {}
-  return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
-      store[key] = value.toString()
-    }),
-    removeItem: jest.fn((key: string) => {
-      delete store[key]
-    }),
-    clear: jest.fn(() => {
-      store = {}
-    }),
-  }
-})()
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
 
+// Set up localStorage mock before tests
 Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
-})
+  writable: true
+});
 
-// Mock requestIdleCallback
-window.requestIdleCallback = jest.fn((callback) => {
-  callback({} as IdleDeadline)
-  return 0
-})
+// Create direct mock function for requestIdleCallback
+const mockRequestIdleCallbackFn = jest.fn((callback) => {
+  callback({ timeRemaining: () => 50 });
+  return 123; // return a number as the ID
+});
+
+// Directly attach the mock to window
+Object.defineProperty(window, 'requestIdleCallback', {
+  value: mockRequestIdleCallbackFn,
+  writable: true,
+  configurable: true
+});
 
 describe("persistQuizMiddleware", () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-    localStorageMock.clear()
-  })
+    jest.clearAllMocks();
+    localStorageMock.setItem.mockClear();
+    localStorageMock.removeItem.mockClear();
+    mockRequestIdleCallbackFn.mockClear();
+  });
 
   test("should persist quiz state when actions are dispatched", async () => {
     // Create store with middleware
@@ -44,11 +46,12 @@ describe("persistQuizMiddleware", () => {
       reducer: {
         quiz: quizReducer,
       },
-      middleware: (getDefaultMiddleware) => 
-        getDefaultMiddleware().prepend(persistQuizMiddleware.middleware),
-    })
+      middleware: (getDefaultMiddleware) => {
+        return getDefaultMiddleware().concat(persistQuizMiddleware.middleware);
+      },
+    });
 
-    // Set up initial quiz state with proper action
+    // Set up initial quiz state
     await store.dispatch({
       type: "quiz/fetchQuiz/fulfilled",
       payload: {
@@ -57,31 +60,24 @@ describe("persistQuizMiddleware", () => {
         type: "mcq",
         slug: "test-quiz",
         questions: [
-          { 
-            id: "q1", 
-            question: "Question 1", 
-            type: "mcq", 
-            options: ["A", "B", "C"], 
-            correctAnswer: "A" 
-          }
+          { id: "q1", question: "Question 1", type: "mcq" }
         ],
       },
-    })
+    });
 
-    // Force middleware to run by dispatching synchronously
-    store.dispatch(setCurrentQuestion(0))
+    // Force middleware to run
+    store.dispatch(setCurrentQuestion(0));
+    
+    // Check if localStorage.setItem was called directly
+    // Skip requestIdleCallback since it's not reliable in test environment
+    expect(localStorageMock.setItem).toHaveBeenCalled();
+    expect(localStorageMock.setItem).toHaveBeenCalledWith("quiz_state", expect.any(String));
 
-    // Add small delay to allow middleware to complete
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    // Verify localStorage operations
-    expect(localStorageMock.setItem).toHaveBeenCalled()
-
-    // Verify stored data
-    const storedValue = JSON.parse(localStorageMock.setItem.mock.calls[0][1])
-    expect(storedValue).toHaveProperty("currentQuestion", 0)
-    expect(storedValue).toHaveProperty("currentQuizId", "test-quiz")
-  })
+    // Parse the saved data to verify content
+    const savedData = JSON.parse(localStorageMock.setItem.mock.calls[0][1]);
+    expect(savedData.currentQuestion).toBe(0);
+    expect(savedData.currentQuizId).toBe("test-quiz");
+  });
 
   test("should remove quiz state from localStorage when quiz is completed", async () => {
     // Create store with middleware
@@ -89,50 +85,36 @@ describe("persistQuizMiddleware", () => {
       reducer: {
         quiz: quizReducer,
       },
-      middleware: (getDefaultMiddleware) => 
-        getDefaultMiddleware().prepend(persistQuizMiddleware.middleware),
-    })
+      middleware: (getDefaultMiddleware) => {
+        return getDefaultMiddleware().concat(persistQuizMiddleware.middleware);
+      },
+    });
 
-    // Set initial state
+    // Set up quiz data
     await store.dispatch({
       type: "quiz/fetchQuiz/fulfilled",
       payload: {
         id: "test-quiz",
         title: "Test Quiz",
-        type: "mcq",
         slug: "test-quiz",
-        questions: [
-          { 
-            id: "q1", 
-            question: "Question 1", 
-            type: "mcq",
-            options: ["A", "B", "C"], 
-            correctAnswer: "A" 
-          }
-        ],
+        questions: [{ id: "q1" }]
       },
-    })
+    });
 
-    // Mock submission response
+    // Complete the quiz - should trigger removal
     await store.dispatch({
       type: "quiz/submitQuiz/fulfilled",
       payload: {
         quizId: "test-quiz",
-        userId: "user1",
         score: 10,
         maxScore: 10,
-        percentage: 100,
-        submittedAt: new Date().toISOString(),
       },
-    })
+    });
 
-    // Add small delay to allow middleware to complete
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    // Verify localStorage operations
-    expect(localStorageMock.removeItem).toHaveBeenCalled()
-    expect(localStorageMock.removeItem).toHaveBeenCalledWith("quiz_state")
-  })
+    // Check if localStorage.removeItem was called - directly testing the effect
+    expect(localStorageMock.removeItem).toHaveBeenCalled();
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith("quiz_state");
+  });
 
   test("loadPersistedQuizState should return persisted state", () => {
     const mockState = {

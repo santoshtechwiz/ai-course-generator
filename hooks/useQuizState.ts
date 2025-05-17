@@ -487,7 +487,7 @@ export function useQuiz() {
     
     // Auth redirect state - handle null authState case
     setUserRedirectState: saveRedirectState,
-    hasUserRedirectState: authState?.hasRedirectState || false, // Handle null authState case
+    hasUserRedirectState: authState?.hasRedirectState || false, // Handle null authState safely
     loadUserRedirectState: () => {
       // Get the state then clear it
       const state = authState?.userRedirectState || null

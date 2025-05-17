@@ -46,7 +46,7 @@ The quiz functionality handles authentication in multiple ways:
 
 1. Initial Authentication Check:
    - When loading a quiz, the component checks if the user is authenticated
-   - If not, the user is redirected to the sign-in page with a callback URL
+   - If not,lets user to play the quiz. URL
 
 2. Submission Authentication:
    - When submitting a quiz, if a 401 error is received, the system:
