@@ -6,15 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
-
 import { useAnimation } from "@/providers/animation-provider"
 import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
-
 import CodeQuizEditor from "./CodeQuizEditor"
 import { cn } from "@/lib/tailwindUtils"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
 
-// Define types for props
 interface CodingQuizProps {
   question: {
     id: string
@@ -24,16 +21,16 @@ interface CodingQuizProps {
     answer?: string
     correctAnswer?: string
     language?: string
+    type: 'code'
   }
   onAnswer: (answer: string, elapsedTime: number, isCorrect: boolean) => void
   questionNumber: number
   totalQuestions: number
   isLastQuestion: boolean
   isSubmitting?: boolean
-  existingAnswer?: string // Add this prop to match the test expectations
+  existingAnswer?: string
 }
 
-// Update the component props type definition
 function CodingQuizComponent({
   question,
   onAnswer,
@@ -44,48 +41,28 @@ function CodingQuizComponent({
   existingAnswer,
 }: CodingQuizProps) {
   const { animationsEnabled } = useAnimation()
-  // Initialize userCode with existingAnswer when available
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>("")
   const [elapsedTime, setElapsedTime] = useState<number>(0)
   const [internalSubmitting, setInternalSubmitting] = useState<boolean>(false)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [tooFastWarning, setTooFastWarning] = useState<boolean>(false)
-  const [hasInteracted, setHasInteracted] = useState<boolean>(false)
 
-  // Combine internal submitting state with prop
+  // Combined submitting state
   const effectivelySubmitting = isSubmitting || internalSubmitting
 
-  // Reset state when question changes
+  // Initialize state when question changes
   useEffect(() => {
-    // Only reset if the question has changed - more exact dependency check
     if (question?.id) {
-      // Initialize with existingAnswer if available, otherwise use codeSnippet
-      if (existingAnswer && typeof existingAnswer === 'string') {
-        setUserCode(existingAnswer)
-      } else {
-        setUserCode(question.codeSnippet || "")
-      }
-      
-      // Initialize selected option if it exists in the question options
-      if (existingAnswer && Array.isArray(question.options) && question.options.includes(existingAnswer)) {
-        setSelectedOption(existingAnswer)
-      } else {
-        setSelectedOption(null)
-      }
-      
+      setUserCode(existingAnswer || question.codeSnippet || "")
+      setSelectedOption(existingAnswer && question.options?.includes(existingAnswer) ? existingAnswer : null)
       setTooFastWarning(false)
-      setHasInteracted(false)
-      // Reset the start time when switching questions
-      const newStartTime = Date.now()
+      setStartTime(Date.now())
       setElapsedTime(0)
-      // This is a better approach to update startTime value without resetting the entire component
-      setStartTime(newStartTime)
     }
   }, [question?.id, question.codeSnippet, question.options, existingAnswer])
 
-  // Update elapsed time
+  // Track elapsed time
   useEffect(() => {
     const timer = setInterval(() => {
       setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
@@ -93,20 +70,18 @@ function CodingQuizComponent({
     return () => clearInterval(timer)
   }, [startTime])
 
-  const options = useMemo(() => {
-    return Array.isArray(question?.options) ? question.options : []
-  }, [question?.options])
+  // Memoized options
+  const options = useMemo(() => question?.options || [], [question?.options])
 
+  // Handler functions
   const handleSelectOption = useCallback((option: string) => {
     setSelectedOption(option)
-    setHasInteracted(true)
     setTooFastWarning(false)
   }, [])
 
   const handleCodeChange = useCallback((code: string | undefined) => {
     if (code !== undefined) {
       setUserCode(code)
-      setHasInteracted(true)
       setTooFastWarning(false)
     }
   }, [])
@@ -116,65 +91,49 @@ function CodingQuizComponent({
 
     const answerTime = Math.floor((Date.now() - startTime) / 1000)
 
-    // Skip time check in test environment to ensure tests pass
-    if (process.env.NODE_ENV !== 'test' && answerTime < 1) {
-      setTooFastWarning(true)
-      return
-    }
-
-    setInternalSubmitting(true)
-
-    // Determine the answer based on quiz type (multiple choice or code)
-    const answer = options.length > 0 ? selectedOption || "" : userCode
-    let isCorrect = false
-
-    // Validate the answer if possible - improved logic
-    if (question.answer || question.correctAnswer) {
-      const correctAnswer = question.answer || question.correctAnswer || ""
-
-      // For multiple choice, exact match; for code, we now use more advanced validation
-      if (options.length > 0) {
-        // Multiple choice - exact match
-        isCorrect = selectedOption === correctAnswer
-      } else {
-        // Code answer - better validation approach
-        // First clean up answers by removing whitespace and normalizing
-        const normalizeCode = (code: string) => code
-          .trim()
-          .replace(/\s+/g, ' ')
-          .replace(/[\r\n\t]+/g, '')
-          .toLowerCase();
-        
-        const normalizedUserCode = normalizeCode(userCode);
-        const normalizedCorrectCode = normalizeCode(correctAnswer);
-        
-        // Check if the user's code includes the key elements from the correct answer
-        isCorrect = normalizedUserCode.includes(normalizedCorrectCode) || 
-                    correctAnswer.includes(userCode.trim());
-      }
-    }
-
-    // In test environment, skip validation to ensure tests pass
+    // Validate input (skip in tests)
     if (process.env.NODE_ENV !== 'test') {
-      // Only validate answers in production/development
+      if (answerTime < 1) {
+        setTooFastWarning(true)
+        return
+      }
+      
       if ((options.length > 0 && !selectedOption) || (!options.length && !userCode.trim())) {
         setTooFastWarning(true)
-        setInternalSubmitting(false)
         return
       }
     }
 
-    // Call onAnswer with the selected option or code
-    onAnswer(answer, Math.floor((Date.now() - startTime) / 1000), isCorrect)
+    setInternalSubmitting(true)
 
-    // Reset submission state after a short delay if not the last question
+    // Determine answer and correctness
+    const answer = options.length > 0 ? selectedOption || "" : userCode
+    let isCorrect = false
+
+    if (question.answer || question.correctAnswer) {
+      const correctAnswer = question.answer || question.correctAnswer || ""
+      
+      if (options.length > 0) {
+        // Multiple choice matching
+        isCorrect = selectedOption === correctAnswer
+      } else {
+        // Code answer matching
+        const normalizeCode = (code: string) => code.trim().replace(/\s+/g, ' ').toLowerCase()
+        isCorrect = normalizeCode(userCode).includes(normalizeCode(correctAnswer)) || 
+                   correctAnswer.includes(userCode.trim())
+      }
+    }
+
+    // Submit answer
+    onAnswer(answer, answerTime, isCorrect)
+
+    // Reset submission state if not the last question
     if (!isLastQuestion) {
-      setTimeout(() => {
-        setInternalSubmitting(false)
-      }, 300)
+      setTimeout(() => setInternalSubmitting(false), 300)
     }
   }, [userCode, question, onAnswer, startTime, effectivelySubmitting, options, selectedOption, isLastQuestion])
 
+  // Render code with syntax highlighting
   const renderCode = useCallback((code: string, language = "javascript") => {
     if (!code) return null
 
@@ -199,6 +158,7 @@ function CodingQuizComponent({
     )
   }, [])
 
+  // Format question text with inline code
   const renderQuestionText = useCallback((text: string) => {
     if (!text) return null
 
@@ -226,25 +186,12 @@ function CodingQuizComponent({
     )
   }, [])
 
-  // If no question is available
+  // Error state
   if (!question) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="pt-6 text-center">
           <p className="text-muted-foreground mb-4">This question is not available.</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="pt-6 text-center">
-          <div className="flex flex-col items-center justify-center py-8">
-            <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-            <p className="text-muted-foreground">Loading code challenge...</p>
-          </div>
         </CardContent>
       </Card>
     )
@@ -259,6 +206,7 @@ function CodingQuizComponent({
           </h2>
           <span className="text-gray-500">Code Challenge</span>
         </div>
+        {/* Progress bar */}
         <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-300 ease-in-out"
@@ -267,10 +215,11 @@ function CodingQuizComponent({
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        <MotionTransition key={question.id} motionKey={String(question.id || questionNumber)}>
+        <MotionTransition key={question.id} motionKey={question.id}>
           <div className="space-y-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium mb-6">{renderQuestionText(question?.question || "")}</h3>
+              {/* Question text */}
+              <h3 className="text-lg font-medium mb-6">{renderQuestionText(question.question)}</h3>
 
               {/* Code Editor */}
               <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
@@ -279,14 +228,14 @@ function CodingQuizComponent({
                     value={userCode}
                     language={question.language || "javascript"}
                     onChange={handleCodeChange}
-                    height="180px" // Reduced height
+                    height="180px"
                     data-testid="code-editor"
                     disabled={effectivelySubmitting}
                   />
                 </div>
               </MotionWrapper>
 
-              {/* Multiple choice options if available */}
+              {/* Multiple choice options */}
               {options.length > 0 && (
                 <MotionWrapper animate={animationsEnabled} variant="fade" duration={0.5} delay={0.2}>
                   <div className="mt-6">
@@ -325,6 +274,7 @@ function CodingQuizComponent({
         </MotionTransition>
       </CardContent>
 
+      {/* Warning message */}
       {tooFastWarning && (
         <div className="mb-4 p-2 mx-6 bg-amber-50 border border-amber-200 rounded text-amber-600 text-sm">
           {options.length > 0 && !selectedOption 
@@ -335,6 +285,7 @@ function CodingQuizComponent({
         </div>
       )}
 
+      {/* Footer with timer and submit button */}
       <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 p-6">
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Clock className="h-3.5 w-3.5" />
@@ -353,10 +304,7 @@ function CodingQuizComponent({
         >
           {effectivelySubmitting ? (
             <div className="flex items-center gap-2">
-              <div
-                className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"
-                aria-hidden="true"
-              />
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               <span>{isLastQuestion ? "Submitting Quiz..." : "Submitting..."}</span>
             </div>
           ) : isLastQuestion ? (
@@ -370,7 +318,6 @@ function CodingQuizComponent({
   )
 }
 
-// Replace the arePropsEqual function with this updated version:
 function arePropsEqual(prev: CodingQuizProps, next: CodingQuizProps) {
   return (
     prev.question.id === next.question.id &&

@@ -1,110 +1,90 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { use, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
-import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import CodeQuizResult from "../../components/CodeQuizResult"
-import { QuizSubmissionLoading } from "../../../components/QuizSubmissionLoading"
-import { toast } from "react-hot-toast"
+import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
+import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
+import { QuizResult } from "@/app/types/quiz-types"
 
-export default function CodeQuizResultsPage() {
-  const params = useParams<{ slug: string }>()
-  const slug = params?.slug as string
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+interface ResultsPageProps {
+  params: {
+    slug: string
+  }
+}
+
+export default function ResultsPage({ params:paramsPromise }: ResultsPageProps) {
+  const { slug } = use(paramsPromise);
   const router = useRouter()
-  
+  const { userId, isAuthenticated, status } = useAuth()
   const { 
-    results, 
     quizData, 
-    userAnswers,
-    isLoading: stateLoading, 
-    submissionError,
-    getResults 
+    results, 
+    isLoading, 
+    resultsError,
+    getResults
   } = useQuiz()
-
+  
+  // Load results if authenticated
   useEffect(() => {
-    async function fetchResults() {
-      if (!slug) {
-        setError("Quiz ID not found")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        // Show loading for at least 1 second for better UX
-        const minLoadingPromise = new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // If we have existing results, use them
-        if (results && results.questions && results.questions.length > 0) {
-          console.log("Using existing results:", results)
-          await minLoadingPromise
-          setIsLoading(false)
-          return
-        }
-        
-        // Otherwise try to fetch results
-        console.log("Fetching results for slug:", slug)
-        try {
-          const fetchedResults = await getResults(slug)
-          console.log("Fetched results:", fetchedResults)
-          await minLoadingPromise
-          setIsLoading(false)
-        } catch (err) {
-          console.error("Failed to fetch results, attempting to show local results")
-          
-          // If we have quizData and userAnswers, we can show local results
-          if (quizData && userAnswers.length > 0) {
-            toast.error("Could not retrieve saved results. Showing your answers locally instead.")
-            
-            // Wait for minimum loading time
-            await minLoadingPromise
-            setIsLoading(false)
-          } else {
-            throw err; // Re-throw if we can't create local results
-          }
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch or create quiz results:", err)
-        setError(err?.message || "Failed to load quiz results. Please try again.")
-        setIsLoading(false)
-      }
+    if (isAuthenticated && !results && !isLoading) {
+      getResults(slug).catch(error => {
+        console.error("Error loading results:", error)
+      })
     }
-
-    fetchResults()
-  }, [slug, getResults, results, quizData, userAnswers])
-
-  const handleRetry = useCallback(() => {
-    setIsLoading(true)
-    setError(null)
-    // Reload the page to retry fetching results
-    window.location.reload()
-  }, [])
-
-  const handleReturn = useCallback(() => {
-    router.push("/dashboard/quizzes")
-  }, [router])
-
-  if (isLoading || stateLoading) {
-    return <QuizSubmissionLoading quizType="code" />
+  }, [slug, isAuthenticated, getResults, isLoading, results])
+  
+  // Loading state
+  if (isLoading || status === 'loading') {
+    return <InitializingDisplay />
   }
-
-  if (error) {
-    return <ErrorDisplay error={error} onRetry={handleRetry} onReturn={handleReturn} />
+  
+  // Authentication required
+  if (!isAuthenticated) {
+    return (
+      <NonAuthenticatedUserSignInPrompt
+        quizType="code"
+        onSignIn={() => router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/code/${slug}/results`)}`)}
+        showSaveMessage={false}
+      />
+    )
   }
-
-  // If we have results from the Redux store or we created local results
-  if (results) {
-    return <CodeQuizResult result={results} />
+  
+  // Error state
+  if (resultsError) {
+    return (
+      <ErrorDisplay
+        error={resultsError}
+        onRetry={() => getResults(slug)}
+        onReturn={() => router.push('/dashboard/quizzes')}
+      />
+    )
   }
-
-  // Fallback if somehow we get here without results or error
+  
+  // No results found
+  if (!results) {
+    return (
+      <div className="container max-w-4xl py-10 text-center">
+        <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
+        <p>We couldn't find your results for this quiz.</p>
+        <div className="mt-6">
+          <button
+            onClick={() => router.push(`/dashboard/code/${slug}`)}
+            className="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded"
+          >
+            Take the Quiz
+          </button>
+        </div>
+      </div>
+    )
+  }
+  
+  // Display results using the correct component (CodeQuizResult)
   return (
-    <ErrorDisplay 
-      error="Something went wrong while loading your results. Please try again."
-      onRetry={handleRetry} 
-      onReturn={handleReturn}
-    />
+    <div className="container max-w-4xl py-6">
+      <CodeQuizResult result={results as QuizResult} />
+    </div>
   )
 }

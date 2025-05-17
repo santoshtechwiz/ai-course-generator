@@ -1,188 +1,91 @@
-import { notFound } from "next/navigation"
-import { getServerSession } from "next-auth"
-import type { Metadata } from "next"
+"use client"
 
-import { authOptions } from "@/lib/auth"
-import { generatePageMetadata } from "@/lib/seo-utils"
-import type { CodeQuizApiResponse, CodeQuizQuestion } from "@/app/types/code-quiz-types"
-
-import type { BreadcrumbItem } from "@/app/types/types"
-import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
+import { useEffect } from "react"
+import { use } from "react" // Import use from React
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
+import { useQuiz } from "@/hooks/useQuizState"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
 
-interface PageParams {
-  params: Promise<{ slug: string }>
+interface CodeQuizPageProps {
+  params: {
+    slug: string
+  }
 }
 
-// Improved type safety for quiz data
-interface ValidatedQuizData {
-  id: string
-  quizId: string
-  title: string
-  slug: string
-  isPublic: boolean
-  isFavorite: boolean
-  userId: string
-  ownerId: string
-  difficulty?: string
-  questions: CodeQuizQuestion[]
-}
-
-async function getQuizData(slug: string): Promise<CodeQuizApiResponse | null> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || "http://localhost:3000"
-    console.log(`Fetching quiz data from: ${baseUrl}/api/quizzes/code/${slug}`)
-
-    const response = await fetch(`${baseUrl}/api/quizzes/code/${slug}`, {
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      next: { revalidate: 0 }, // Ensure fresh data
-    })
-
-    if (response.status !== 200) {
-      console.error(`Failed to fetch quiz data: ${response.status} ${response.statusText}`)
-      return null
+export default function CodeQuizPage({ params: paramsPromise }: CodeQuizPageProps) {
+  // Unwrap params with React.use()
+  const params = use(paramsPromise)
+  const slug = params.slug
+  
+  const router = useRouter()
+  const { userId, isAuthenticated, status } = useAuth()
+  const { loadQuiz, quizData, isLoading, quizError } = useQuiz()
+  
+  // Load quiz from Redux state
+  useEffect(() => {
+    if (!isLoading && !quizData && slug) {
+      loadQuiz(slug, "code")
+        .catch(error => {
+          console.error("Error loading quiz:", error)
+        })
     }
+  }, [slug, loadQuiz, isLoading, quizData])
 
-    const data = await response.json()
- 
-    return data
-  } catch (error) {
-    console.error("Error fetching quiz data:", error)
-    return null
+  // Loading state
+  if (isLoading || status === 'loading') {
+    return (
+      <div className="container max-w-4xl py-10">
+        <div className="flex flex-col items-center justify-center p-8">
+          <div className="w-16 h-16 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
+          <p className="mt-4 text-muted-foreground">Loading quiz...</p>
+        </div>
+      </div>
+    )
   }
-}
-
-export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
-  const { slug } = await params
-  const quiz = await getQuizData(slug)
-
-  if (!quiz) {
-    return generatePageMetadata({
-      title: "Code Challenge Not Found | CourseAI",
-      description:
-        "The requested programming challenge could not be found. Explore our other coding challenges and assessments.",
-      path: `/dashboard/code/${slug}`,
-      noIndex: true,
-    })
+  
+  // Error state
+  if (quizError) {
+    return (
+      <div className="container max-w-4xl py-10 text-center">
+        <h1 className="text-2xl font-bold mb-4">Error Loading Quiz</h1>
+        <p>{quizError}</p>
+        <p className="mt-4">
+          <button 
+            onClick={() => router.push("/dashboard/quizzes")}
+            className="text-primary underline"
+          >
+            Return to quizzes
+          </button>
+        </p>
+      </div>
+    )
   }
-
-  const title = quiz.quizData?.title || "Code Challenge"
-
-  return generatePageMetadata({
-    title: `${title} | Programming Code Challenge`,
-    description: `Test your coding skills with this ${title.toLowerCase()} programming challenge. Practice writing real code and improve your development abilities.`,
-    path: `/dashboard/code/${slug}`,
-    keywords: [
-      `${title.toLowerCase()} challenge`,
-      "programming exercise",
-      "coding practice",
-      "developer skills test",
-      "programming challenge",
-    ],
-    ogType: "article",
-  })
-}
-
-const CodePage = async (props: PageParams) => {
-  const params = await props.params
-  const { slug } = params
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
-
-  // Get the current user session
-  const session = await getServerSession(authOptions)
-  const currentUserId = session?.user?.id || ""
-
-  console.log(`Fetching quiz data for slug: ${slug}`)
-
-  // Fetch quiz data
-  const result = await getQuizData(slug)
-  console.log("Fetched quiz data:", result);
-
-  // Handle missing quiz data
-  if (!result) {
-    console.error("Quiz data not found for slug:", slug)
-    notFound()
+  
+  // Quiz found - render the wrapper
+  if (quizData) {
+    return (
+      <div className="container max-w-4xl py-6">
+        <CodeQuizWrapper 
+          slug={slug} 
+          quizId={quizData.id} 
+          userId={userId} 
+          quizData={quizData}
+          isPublic={quizData.isPublic}
+          isFavorite={quizData.isFavorite}
+          ownerId={quizData.ownerId}
+        />
+      </div>
+    )
   }
-
-  // Validate quiz data structure with detailed logging
-  if (!result.quizData) {
-    console.error("Invalid quiz data structure: quizData is missing")
-    notFound()
-  }
-
-  // Validate questions array with detailed logging
-  if (!Array.isArray(result.quizData.questions)) {
-    console.error("Invalid quiz data: questions is not an array", {
-      questionsType: typeof result.quizData.questions,
-      quizDataKeys: Object.keys(result.quizData),
-    })
-    notFound()
-  }
-
-  // Check if questions array is empty
-  if (result.quizData.questions.length === 0) {
-    console.error("Invalid quiz data: questions array is empty")
-    notFound()
-  }
-
-  // Validate each question has required properties
-  const invalidQuestions = result.quizData.questions.filter((q) => !q.question)
-  if (invalidQuestions.length > 0) {
-    console.error(`Found ${invalidQuestions.length} invalid questions without 'question' property`)
-    notFound()
-  }
-
-  // Extract data from the nested structure
-  const title = result.quizData.title || "Code Quiz"
-  const questions = result.quizData.questions
-
-  // Log detailed information about the questions
-  console.log("Questions data:", {
-    count: questions.length,
-    hasQuestions: questions.length > 0,
-    firstQuestion: questions.length > 0 ? JSON.stringify(questions[0]).substring(0, 100) + "..." : "No questions",
-  })
-
-  // Calculate estimated time based on question count and complexity
-  const questionCount = questions.length
-  const estimatedTime = `PT${Math.max(15, Math.ceil(questionCount * 10))}M`
-
-  // Create breadcrumb items
-  const breadcrumbItems: BreadcrumbItem[] = [
-    { name: "Home", href: baseUrl },
-    { name: "Dashboard", href: `${baseUrl}/dashboard` },
-    { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
-    { name: title, href: `${baseUrl}/dashboard/code/${slug}` },
-  ]
-
+  
+  // Default loading state
   return (
-    <QuizDetailsPageWithContext
-      title={title}
-      description={`Test your coding skills on ${title} with interactive programming challenges`}
-      slug={slug}
-      quizType="code"
-      questionCount={questionCount}
-      estimatedTime={estimatedTime}
-      breadcrumbItems={breadcrumbItems}
-      quizId={result.quizId}
-      authorId={result.ownerId}
-      isPublic={Boolean(result.isPublic)}
-      isFavorite={Boolean(result.isFavorite)}
-    >
-    <CodeQuizWrapper
-  quizData={result.quizData} // ✅ This now contains `questions`, `title`, etc.
-  slug={slug}
-  userId={currentUserId}
-  quizId={result.quizId}
-  isPublic={Boolean(result.isPublic)}
-  isFavorite={Boolean(result.isFavorite)}
-  ownerId={result.ownerId}
-/>
-    </QuizDetailsPageWithContext>
+    <div className="container max-w-4xl py-10">
+      <div className="flex flex-col items-center justify-center p-8">
+        <div className="w-16 h-16 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
+        <p className="mt-4 text-muted-foreground">Loading quiz...</p>
+      </div>
+    </div>
   )
 }
-
-export default CodePage
