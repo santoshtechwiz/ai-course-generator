@@ -32,7 +32,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
       typeof result.maxScore !== 'number' ||
       !Array.isArray(result.questions)) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12" data-testid="results-error">
         <h2 className="text-2xl font-bold mb-4">Results Not Available</h2>
         <p className="mb-6">We couldn't load your quiz results.</p>
         <Button onClick={() => router.push("/dashboard/quizzes")}>
@@ -49,7 +49,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
     : 0
 
   return (
-    <Card className="max-w-3xl mx-auto p-6 shadow-md border-t-4 border-t-primary">
+    <Card className="max-w-3xl mx-auto p-6 shadow-md border-t-4 border-t-primary" data-testid="code-quiz-result">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Quiz Results</CardTitle>
       </CardHeader>
@@ -66,7 +66,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
             <div className={`text-3xl font-bold ${scorePercentage >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
               {result.score} / {result.maxScore}
             </div>
-            <div className={`text-sm font-medium ${scorePercentage >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
+            <div className={`text-sm font-medium ${scorePercentage >= 70 ? 'text-green-600' : 'text-amber-600'}`} data-testid="score-percentage">
               {scorePercentage}% Score
             </div>
           </div>
@@ -75,34 +75,37 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
         {/* Question details */}
         <div className="space-y-4 mt-6">
           <h3 className="text-xl font-semibold mb-4">Your Answers</h3>
-          {result.questions?.map((q, i) => (
-            <div key={q.id || i} className="mb-4 p-4 border rounded-md bg-background shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className={`mt-1 p-1 rounded-full ${q.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-                  {q.isCorrect ? (
-                    <Check className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <X className="w-5 h-5 text-red-600" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">Q{i + 1}: {q.question}</p>
-                  <div className="text-sm mt-2 space-y-1">
-                    <p className="text-muted-foreground">
-                      Your answer: <span className={q.isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                        {String(q.userAnswer)}
-                      </span>
-                    </p>
-                    {!q.isCorrect && (
-                      <p className="text-green-700 font-medium">
-                        Correct answer: {String(q.correctAnswer)}
-                      </p>
+          {Array.isArray(result.questions) && result.questions.map((q, i) => {
+            if (!q) return null;
+            return (
+              <div key={q.id || i} className="mb-4 p-4 border rounded-md bg-background shadow-sm" data-testid={`question-result-${i}`}>
+                <div className="flex items-start gap-3">
+                  <div className={`mt-1 p-1 rounded-full ${q.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
+                    {q.isCorrect ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
                     )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Q{i + 1}: {q.question || 'Unknown question'}</p>
+                    <div className="text-sm mt-2 space-y-1">
+                      <p className="text-muted-foreground">
+                        Your answer: <span className={q.isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                          {typeof q.userAnswer === 'string' ? q.userAnswer : 'No answer provided'}
+                        </span>
+                      </p>
+                      {!q.isCorrect && (
+                        <p className="text-green-700 font-medium">
+                          Correct answer: {typeof q.correctAnswer === 'string' ? q.correctAnswer : 'Unknown'}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Action buttons */}
@@ -110,6 +113,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
           <Button
             onClick={() => router.push(`/dashboard/code/${slug}`)}
             className="flex items-center gap-2 bg-primary"
+            data-testid="retry-quiz-button"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Retry Quiz</span>
@@ -118,6 +122,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
             onClick={() => router.push("/dashboard/quizzes")}
             variant="outline"
             className="flex items-center gap-2"
+            data-testid="return-dashboard-button"
           >
             <Home className="w-4 h-4" />
             <span>Return to Dashboard</span>
