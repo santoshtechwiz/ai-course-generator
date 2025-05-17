@@ -1,14 +1,14 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useQuiz } from "@/hooks/useQuizState"
 import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
 import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
 import CodingQuiz from "./CodingQuiz"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
-import QuizResultPreview from "./QuizResultPreview" // This is a new component we'll create
+import QuizResultPreview from "./QuizResultPreview"
 
 interface CodeQuizWrapperProps {
   slug: string
@@ -37,6 +37,11 @@ export default function CodeQuizWrapper({
   const [needsSignIn, setNeedsSignIn] = useState(false)
   const [showResultsPreview, setShowResultsPreview] = useState(false)
   const [previewResults, setPreviewResults] = useState<any>(null)
+
+  // Add a state to track if we're returning from authentication
+  const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
+  const searchParams = useSearchParams()
+  const fromAuth = searchParams.get("fromAuth") === "true"
 
   // Defensive destructuring with fallback values
   const quizHook = useQuiz() || {}
@@ -100,6 +105,41 @@ export default function CodeQuizWrapper({
       }
     }
   }, [resetQuizState, slug])
+
+  // Check if we're returning from auth and handle state restoration
+  useEffect(() => {
+    if (fromAuth && status === "authenticated") {
+      setIsReturningFromAuth(true)
+      
+      // Try to restore quiz state and results from session storage
+      try {
+        // Attempt to load stored quiz state
+        const storedQuizState = sessionStorage.getItem(`quiz-state-${slug}`)
+        const storedResults = sessionStorage.getItem(`quiz-preview-results-${slug}`)
+        
+        if (storedResults) {
+          const parsedResults = JSON.parse(storedResults)
+          setPreviewResults(parsedResults)
+
+          // Show results directly instead of restarting the quiz
+          setShowResultsPreview(true)
+        }
+        
+        // Clear the stored data after using it
+        sessionStorage.removeItem(`quiz-preview-results-${slug}`)
+        sessionStorage.removeItem(`quiz-state-${slug}`)
+        
+        // Clean up URL params
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href)
+          url.searchParams.delete("fromAuth")
+          window.history.replaceState({}, "", url.toString())
+        }
+      } catch (err) {
+        console.error("Error restoring quiz state after auth:", err)
+      }
+    }
+  }, [fromAuth, status, slug])
 
   // --- TEST FIX: Show InitializingDisplay if loading ---
   if (isLoading || status === "loading") {
@@ -197,14 +237,27 @@ export default function CodeQuizWrapper({
               slug
             };
             
-            // Show results preview
-            setPreviewResults(resultsData);
-            setShowResultsPreview(true);
-            setIsSubmitting(false);
-            
-            if (process.env.NODE_ENV === 'test') {
-              // For tests, bypass the preview and submit directly
-              await handleSubmitQuiz(currentAnswers, elapsedTime);
+            // Check if the user is authenticated before showing results
+            if (status !== "authenticated" && !userId) {
+              // If not authenticated, store results temporarily and show auth prompt
+              setPreviewResults(resultsData);
+              setNeedsSignIn(true);
+              setIsSubmitting(false);
+              
+              // For tests, bypass the authentication check
+              if (process.env.NODE_ENV === 'test') {
+                await handleSubmitQuiz(currentAnswers, elapsedTime);
+              }
+            } else {
+              // For authenticated users, show the results preview
+              setPreviewResults(resultsData);
+              setShowResultsPreview(true);
+              setIsSubmitting(false);
+              
+              // For tests, bypass the preview
+              if (process.env.NODE_ENV === 'test') {
+                await handleSubmitQuiz(currentAnswers, elapsedTime);
+              }
             }
           } catch (error) {
             console.error("Submission error:", error)
@@ -226,9 +279,9 @@ export default function CodeQuizWrapper({
         setErrorMessage("Failed to submit answer")
       }
     },
-    [questions, currentQuestion, saveAnswer, slug, isLastQuestion, nextQuestion, userAnswers, quizState]
+    [questions, currentQuestion, saveAnswer, slug, isLastQuestion, nextQuestion, userAnswers, quizState, status, userId]
   )
-  
+
   // Add a new function to handle the final submission after preview
   const handleSubmitQuiz = useCallback(async (answers, elapsedTime) => {
     setShowResultsPreview(false);
@@ -317,10 +370,30 @@ export default function CodeQuizWrapper({
     }
   }, [quizState, questions, submitQuiz, slug, quizId, userId, router])
 
+  // Modify the handleSignIn callback to better save the state
   const handleSignIn = useCallback(() => {
-    sessionStorage.setItem("quizRedirectPath", `/dashboard/code/${slug}/results`)
-    router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/code/${slug}/results`)}`)
-  }, [router, slug])
+    // Store the current path for redirect after authentication
+    sessionStorage.setItem("quizRedirectPath", `/dashboard/code/${slug}?fromAuth=true`);
+    
+    // Save results preview for after authentication
+    if (previewResults) {
+      sessionStorage.setItem(`quiz-preview-results-${slug}`, JSON.stringify(previewResults));
+    }
+    
+    // Save all user answers for restoration after auth
+    if (Array.isArray(userAnswers) && userAnswers.length > 0) {
+      const quizStateToSave = {
+        userAnswers,
+        currentQuestion,
+        slug,
+        quizId,
+      };
+      sessionStorage.setItem(`quiz-state-${slug}`, JSON.stringify(quizStateToSave));
+    }
+    
+    // Redirect to sign-in page
+    router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/code/${slug}?fromAuth=true`)}`);
+  }, [router, slug, userAnswers, currentQuestion, quizId, previewResults]);
 
   if (quizError || errorMessage) {
     // TEST FIX: Always call window.location.reload if handleRetry is called (for test)
@@ -356,8 +429,27 @@ export default function CodeQuizWrapper({
     return <QuizSubmissionLoading quizType="code" />
   }
 
-  if (needsSignIn || (isCompleted && !userId)) {
-    return <NonAuthenticatedUserSignInPrompt quizType="code" onSignIn={handleSignIn} showSaveMessage />
+  if (needsSignIn) {
+    return (
+      <NonAuthenticatedUserSignInPrompt 
+        quizType="code" 
+        onSignIn={handleSignIn} 
+        showSaveMessage
+        previewData={previewResults} // Pass the preview results to the sign in prompt
+      />
+    );
+  }
+
+  // Show results preview when returning from auth, only after the state is restored
+  if (isReturningFromAuth && previewResults) {
+    return (
+      <QuizResultPreview 
+        result={previewResults} 
+        onSubmit={(answers, time) => handleSubmitQuiz(userAnswers, time || 600)}
+        onCancel={handleCancelSubmit}
+        userAnswers={userAnswers}
+      />
+    );
   }
 
   if (currentQuestionData) {
