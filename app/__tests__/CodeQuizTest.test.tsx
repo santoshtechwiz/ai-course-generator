@@ -8,7 +8,7 @@ import quizReducer from "@/store/slices/quizSlice"
 import "@testing-library/jest-dom"
 import CodeQuizWrapper from "../dashboard/(quiz)/code/components/CodeQuizWrapper"
 import toast from "react-hot-toast"
-import { MockAnimationProvider } from "./mocks/mockAnimationProvider"
+import { MockAnimationProvider } from "./mocks/mockAnimationProvider.test"
 
 // Mock next/navigation
 jest.mock("next/navigation", () => ({
