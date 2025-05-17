@@ -47,7 +47,7 @@ export default function QuizResultPreview({
   }
   
   return (
-    <Card className="max-w-3xl mx-auto">
+    <Card className="max-w-3xl mx-auto" data-testid="quiz-result-preview">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           <span>Quiz Results Preview</span>
@@ -135,6 +135,7 @@ export default function QuizResultPreview({
           onClick={onCancel}
           disabled={isSubmitting}
           className="flex items-center gap-2"
+          data-testid="cancel-submit"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Go Back</span>
@@ -143,6 +144,7 @@ export default function QuizResultPreview({
           onClick={handleSubmit}
           disabled={isSubmitting}
           className="flex items-center gap-2"
+          data-testid="submit-results"
         >
           {isSubmitting ? (
             <>
