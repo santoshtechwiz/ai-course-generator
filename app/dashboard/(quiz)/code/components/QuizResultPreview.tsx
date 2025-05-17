@@ -65,7 +65,6 @@ export default function QuizResultPreview({
           <Progress 
             value={result.percentage} 
             className="h-2"
-            color={result.percentage >= 70 ? "bg-green-600" : "bg-amber-600"}
           />
           
           <p className="mt-3 text-sm text-muted-foreground">
