@@ -271,11 +271,10 @@ export function useQuiz() {
         
         // Prepare submission with default values where needed
         const submissionPayload = {
-          slug: payload.slug,
-          quizId: payload.quizId || quizState.quizData?.id,
-          type: payload.type || quizState.quizData?.type || "mcq",
+          quizId: payload.quizId || quizState.quizData?.id || payload.slug,
+          type: payload.type || quizState.quizData?.type || "code",
           answers: payload.answers,
-          timeTaken: payload.timeTaken
+          timeTaken: payload.timeTaken || quizState.timeRemaining || 600
         }
         
         // Pause the timer
@@ -283,29 +282,42 @@ export function useQuiz() {
         
         // Track submission in progress
         await dispatch(saveQuizSubmissionState({
-          slug: submissionPayload.slug,
+          slug: payload.slug,
           state: "in-progress"
         })).unwrap()
 
-        // Ensure all questions have an answer by adding empty answers for unanswered questions
-        if (submissionPayload.answers.length < (quizState.quizData?.questions?.length || 0)) {
-          const answeredQuestionIds = new Set(submissionPayload.answers.map(a => a.questionId))
-          
-          quizState.quizData?.questions?.forEach(q => {
-            if (!answeredQuestionIds.has(q.id)) {
-              submissionPayload.answers.push({ questionId: q.id, answer: "" })
-            }
-          })
-        }
+        // Add a specific API path that includes the slug for better routing
+        const apiPath = `/api/quizzes/common/${payload.slug}/complete`;
         
         try {
-          // Submit the quiz
-          const result = await dispatch(submitQuiz(submissionPayload)).unwrap()
+          // Submit the quiz with the complete path
+          const response = await fetch(apiPath, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(submissionPayload)
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            
+            if (response.status === 401) {
+              throw { status: 401, message: "Unauthorized" };
+            }
+            
+            throw new Error(errorData.message || "Failed to submit quiz");
+          }
+
+          const result = await response.json();
+          
+          // Store the result in Redux
+          dispatch(markQuizCompleted(result));
           
           // Clear submission state
-          await dispatch(clearQuizSubmissionState(submissionPayload.slug)).unwrap()
+          await dispatch(clearQuizSubmissionState(payload.slug)).unwrap()
           
-          return result
+          return result;
         } catch (error: any) {
           // Check for auth errors and handle them specially
           if (error?.status === 401 || error?.message === "Unauthorized") {
@@ -326,7 +338,7 @@ export function useQuiz() {
           }
           
           // Clear submission state and re-throw
-          await dispatch(clearQuizSubmissionState(submissionPayload.slug)).unwrap()
+          await dispatch(clearQuizSubmissionState(payload.slug)).unwrap()
           throw error
         }
       } catch (error: any) {
@@ -334,7 +346,7 @@ export function useQuiz() {
         throw error
       }
     },
-    [dispatch, quizState.quizData]
+    [dispatch, quizState.quizData, quizState.timeRemaining]
   )
 
   // Fetch quiz results

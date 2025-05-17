@@ -7,8 +7,9 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import type { CodeQuizApiResponse, CodeQuizQuestion } from "@/app/types/code-quiz-types"
 
 import type { BreadcrumbItem } from "@/app/types/types"
-import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
-import CodeQuizWrapper from "../components/CodeQuizWrapper"
+import QuizDetailsPageWithContext from "../components/QuizDetailsPageWithContext"
+import CodeQuizWrapper from "./components/CodeQuizWrapper"
+
 
 interface PageParams {
   params: Promise<{ slug: string }>

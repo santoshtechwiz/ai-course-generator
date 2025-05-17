@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks'
+import { renderHook, act } from '@testing-library/react' // Updated import
 import { useAuth, _createMockUseAuth } from '../useAuth'
 import { useSession, signIn } from 'next-auth/react'
 import { Provider } from 'react-redux'
