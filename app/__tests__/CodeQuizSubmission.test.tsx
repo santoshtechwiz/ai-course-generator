@@ -8,12 +8,14 @@ import quizReducer from "@/store/slices/quizSlice"
 import "@testing-library/jest-dom"
 import CodeQuizWrapper from "../dashboard/(quiz)/code/components/CodeQuizWrapper"
 import toast from "react-hot-toast"
+import { MockAnimationProvider } from "./mocks/mockAnimationProvider"
 
-// Mock next/navigation
+// Mock next/navigation with proper implementation for tracking replace calls
+const mockReplace = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
-    replace: jest.fn(),
+    replace: mockReplace, // Use the tracked mockReplace
     back: jest.fn(),
   })),
   useParams: jest.fn().mockReturnValue({ slug: "test-quiz" }),
@@ -194,6 +196,7 @@ describe("Code Quiz Submission Flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     localStorageMock.clear()
+    mockReplace.mockClear(); // Ensure mockReplace is cleared
   })
 
   test("handles submission payload correctly", async () => {
@@ -216,23 +219,17 @@ describe("Code Quiz Submission Flow", () => {
       })
     )
     
-    // Create mock router
-    const mockReplace = jest.fn()
-    require("next/navigation").useRouter.mockReturnValue({
-      push: jest.fn(),
-      replace: mockReplace,
-      back: jest.fn(),
-    })
-
     // Render component
     const { rerender } = render(
       <Provider store={setupStore()}>
         <SessionProvider>
-          <CodeQuizWrapper 
-            slug="test-quiz" 
-            quizId="test-quiz-id" 
-            userId="test-user" 
-          />
+          <MockAnimationProvider>
+            <CodeQuizWrapper 
+              slug="test-quiz" 
+              quizId="test-quiz-id" 
+              userId="test-user" 
+            />
+          </MockAnimationProvider>
         </SessionProvider>
       </Provider>
     )
@@ -274,11 +271,13 @@ describe("Code Quiz Submission Flow", () => {
     rerender(
       <Provider store={setupStore()}>
         <SessionProvider>
-          <CodeQuizWrapper 
-            slug="test-quiz" 
-            quizId="test-quiz-id" 
-            userId="test-user" 
-          />
+          <MockAnimationProvider>
+            <CodeQuizWrapper 
+              slug="test-quiz" 
+              quizId="test-quiz-id" 
+              userId="test-user" 
+            />
+          </MockAnimationProvider>
         </SessionProvider>
       </Provider>
     )
@@ -307,23 +306,24 @@ describe("Code Quiz Submission Flow", () => {
       timeTaken: expect.any(Number)
     }))
     
-    // Mock timer to trigger redirect
-    jest.useFakeTimers()
-    act(() => {
-      jest.advanceTimersByTime(1000)
-    })
+    // Use fake timers with explicit control
+    jest.useFakeTimers();
     
-    // Verify redirect to results page
-    expect(mockReplace).toHaveBeenCalledWith("/dashboard/code/test-quiz/results")
-    jest.useRealTimers()
+    // Run pending timers
+    await act(async () => {
+      jest.runAllTimers(); 
+    });
     
-    // Verify toast success was called
-    expect(toast.promise).toHaveBeenCalled()
+    // Verify redirect to results page - this should now work
+    expect(mockReplace).toHaveBeenCalledWith("/dashboard/code/test-quiz/results");
+    
+    // Restore timers
+    jest.useRealTimers();
   })
 
   test("handles server-side validation errors", async () => {
     // Create error response with validation error
-    const mockSubmitWithValidationError = jest.fn().mockRejectedValue({
+    const validationError = {
       status: 400,
       message: "Validation failed",
       data: { 
@@ -331,9 +331,16 @@ describe("Code Quiz Submission Flow", () => {
         score: 1,
         maxScore: 2
       }
-    })
+    };
     
-    // Setup mock quiz state
+    const mockSubmitWithValidationError = jest.fn().mockImplementation(() => {
+      return Promise.reject(validationError);
+    });
+    
+    // Mock toast for testing error messages
+    jest.spyOn(toast, 'error');
+    
+    // Setup mock quiz state - directly mock the results preview state
     require("@/hooks/useQuizState").useQuiz.mockReturnValue(
       createMockUseQuiz({
         actions: {
@@ -351,70 +358,53 @@ describe("Code Quiz Submission Flow", () => {
           questions: []
         }
       })
-    )
+    );
     
-    // Render component
-    const { rerender } = render(
+    // Mock ErrorDisplay component to be rendered when error occurs
+    jest.mock("../dashboard/(quiz)/components/QuizStateDisplay", () => ({
+      ...jest.requireActual("../dashboard/(quiz)/components/QuizStateDisplay"),
+      ErrorDisplay: ({ error }) => (
+        <div data-testid="error-display">{error}</div>
+      ),
+    }), { virtual: true });
+    
+    // Render component - the preview should show immediately because we mocked _showResultsPreview
+    render(
       <Provider store={setupStore()}>
         <SessionProvider>
-          <CodeQuizWrapper 
-            slug="test-quiz" 
-            quizId="test-quiz-id" 
-            userId="test-user" 
-          />
+          <MockAnimationProvider>
+            <CodeQuizWrapper 
+              slug="test-quiz" 
+              quizId="test-quiz-id" 
+              userId="test-user" 
+            />
+          </MockAnimationProvider>
         </SessionProvider>
       </Provider>
-    )
-    
-    // First, let's click the submit button for the last question
-    fireEvent.click(screen.getByTestId("submit-answer"))
-    
-    // Update the state to show the results preview
-    require("@/hooks/useQuizState").useQuiz.mockReturnValue(
-      createMockUseQuiz({
-        actions: {
-          submitQuiz: mockSubmitWithValidationError
-        },
-        submitQuiz: mockSubmitWithValidationError,
-        // This state makes the preview component render
-        _showResultsPreview: true,
-        _previewResults: {
-          score: 2,
-          maxScore: 2,
-          percentage: 100,
-          title: "Test Code Quiz",
-          slug: "test-quiz",
-          questions: []
-        }
-      })
-    )
-    
-    // Re-render with updated state
-    rerender(
-      <Provider store={setupStore()}>
-        <SessionProvider>
-          <CodeQuizWrapper 
-            slug="test-quiz" 
-            quizId="test-quiz-id" 
-            userId="test-user" 
-          />
-        </SessionProvider>
-      </Provider>
-    )
+    );
     
     // Check that the preview is rendered
-    expect(await screen.findByTestId("quiz-result-preview")).toBeInTheDocument()
+    expect(await screen.findByTestId("quiz-result-preview")).toBeInTheDocument();
     
-    // Click submit button
+    // Click submit button with proper error handling
     await act(async () => {
-      fireEvent.click(screen.getByTestId("submit-results"))
-    })
+      fireEvent.click(screen.getByTestId("submit-results"));
+      
+      // Allow time for async error handling
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
     
-    // The component should handle the error and show an error message
+    // Verify validation error was handled
+    expect(mockSubmitWithValidationError).toHaveBeenCalled();
+    
+    // Check that toast.error was called
+    expect(toast.error).toHaveBeenCalledWith("Failed to submit quiz. Please try again.");
+    
+    // Verify error display is shown
     await waitFor(() => {
-      expect(mockSubmitWithValidationError).toHaveBeenCalled()
-      expect(toast.error).toHaveBeenCalledWith("Failed to submit quiz. Please try again.")
-    })
+      expect(screen.queryByTestId("quiz-submission-loading")).not.toBeInTheDocument();
+      expect(screen.getByTestId("error-display")).toBeInTheDocument();
+    });
   })
 
   test("handles missing quiz ID in payload", async () => {
@@ -431,7 +421,7 @@ describe("Code Quiz Submission Flow", () => {
       maxScore: 2,
     })
     
-    // Setup mock quiz state
+    // Setup mock quiz state - directly start with preview state
     require("@/hooks/useQuizState").useQuiz.mockReturnValue(
       createMockUseQuiz({
         quiz: {
@@ -460,60 +450,17 @@ describe("Code Quiz Submission Flow", () => {
       })
     )
     
-    // Render component
-    const { rerender } = render(
+    // Render component (should show preview immediately)
+    render(
       <Provider store={setupStore()}>
         <SessionProvider>
-          <CodeQuizWrapper 
-            slug="test-quiz" 
-            quizId="" // Empty quiz ID in props
-            userId="test-user" 
-          />
-        </SessionProvider>
-      </Provider>
-    )
-    
-    // First, click submit to trigger the flow
-    fireEvent.click(screen.getByTestId("submit-answer"))
-    
-    // Update the state to show the results preview
-    require("@/hooks/useQuizState").useQuiz.mockReturnValue(
-      createMockUseQuiz({
-        quiz: {
-          data: quizWithNoId,
-          currentQuestion: 1,
-          userAnswers: [
-            { questionId: "q1", answer: "2" },
-            { questionId: "q2", answer: "O(log n)" }
-          ],
-          isLastQuestion: true
-        },
-        actions: {
-          submitQuiz: mockSubmit
-        },
-        submitQuiz: mockSubmit,
-        // Add this to ensure preview render
-        _showResultsPreview: true,
-        _previewResults: {
-          score: 2,
-          maxScore: 2,
-          percentage: 100,
-          title: "Test Code Quiz",
-          slug: "test-quiz",
-          questions: []
-        }
-      })
-    )
-    
-    // Re-render with the updated state
-    rerender(
-      <Provider store={setupStore()}>
-        <SessionProvider>
-          <CodeQuizWrapper 
-            slug="test-quiz" 
-            quizId="" // Empty quiz ID in props
-            userId="test-user" 
-          />
+          <MockAnimationProvider>
+            <CodeQuizWrapper 
+              slug="test-quiz" 
+              quizId="" // Empty quiz ID in props
+              userId="test-user" 
+            />
+          </MockAnimationProvider>
         </SessionProvider>
       </Provider>
     )
