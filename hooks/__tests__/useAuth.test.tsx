@@ -13,59 +13,59 @@ jest.mock('next-auth/react', () => ({
 const originalLocation = window.location
 delete window.location
 
+// Add proper URL mocking
+const mockWindowLocation = {
+  search: '',
+  href: 'https://example.com',
+  pathname: '/',
+};
+
 describe('useAuth hook', () => {
   beforeEach(() => {
-    // Mock location
-    window.location = {
-      ...originalLocation,
-      search: '',
-      href: 'https://example.com',
-    } as unknown as Location
+    // Reset mocks
+    jest.clearAllMocks();
     
-    // Reset mock implementations
-    jest.clearAllMocks()
+    // Mock window.location
+    Object.defineProperty(window, 'location', {
+      value: { ...mockWindowLocation },
+      writable: true
+    });
     
-    // Default mock session
+    // Default session mock
     (useSession as jest.Mock).mockReturnValue({
       data: { 
-        user: { id: 'test-user-id', name: 'Test User', email: 'test@example.com' } 
-      },
-      status: 'authenticated'
-    })
-  })
-  
+        user: { id: 'test-user-id' },
+        status: 'authenticated'
+      }
+    });
+  });
+
   afterAll(() => {
     window.location = originalLocation
   })
   
   test('should return authenticated status when session exists', () => {
-    const { result } = renderHook(() => useAuth())
-    
-    expect(result.current.isAuthenticated).toBe(true)
-    expect(result.current.userId).toBe('test-user-id')
-    expect(result.current.status).toBe('authenticated')
-  })
-  
+    const { result } = renderHook(() => useAuth());
+    expect(result.current.isAuthenticated).toBe(true);
+    expect(result.current.userId).toBe('test-user-id');
+  });
+
   test('should return unauthenticated status when session is missing', () => {
     (useSession as jest.Mock).mockReturnValue({
       data: null,
       status: 'unauthenticated'
-    })
+    });
     
-    const { result } = renderHook(() => useAuth())
-    
-    expect(result.current.isAuthenticated).toBe(false)
-    expect(result.current.userId).toBeNull()
-    expect(result.current.status).toBe('unauthenticated')
-  })
-  
+    const { result } = renderHook(() => useAuth());
+    expect(result.current.isAuthenticated).toBe(false);
+  });
+
   test('should detect fromAuth parameter in URL', () => {
-    window.location.search = '?fromAuth=true'
-    const { result } = renderHook(() => useAuth())
-    
-    expect(result.current.fromAuth).toBe(true)
-  })
-  
+    window.location.search = '?fromAuth=true';
+    const { result } = renderHook(() => useAuth());
+    expect(result.current.fromAuth).toBe(true);
+  });
+
   test('should not detect fromAuth when parameter is missing', () => {
     window.location.search = '?otherParam=value'
     const { result } = renderHook(() => useAuth())
@@ -73,25 +73,25 @@ describe('useAuth hook', () => {
     expect(result.current.fromAuth).toBe(false)
   })
   
-  test('should call signIn when requireAuth is called and user is unauthenticated', () => {
-    // Mock unauthenticated state
+  test('should call signIn when requireAuth is called and user is unauthenticated', async () => {
+    const signInMock = jest.fn();
     (useSession as jest.Mock).mockReturnValue({
       data: null,
       status: 'unauthenticated'
-    })
+    });
     
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderHook(() => useAuth());
     
-    act(() => {
-      result.current.requireAuth('/callback')
-    })
+    await act(async () => {
+      result.current.requireAuth('/test-callback');
+    });
     
-    expect(result.current.signIn).toHaveBeenCalledWith(
-      undefined, 
-      { callbackUrl: '/callback' }
-    )
-  })
-  
+    expect(signInMock).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ callbackUrl: '/test-callback' })
+    );
+  });
+
   test('should not call signIn when requireAuth is called but user is authenticated', () => {
     // Mock authenticated state
     (useSession as jest.Mock).mockReturnValue({

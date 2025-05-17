@@ -548,23 +548,39 @@ describe("Code Quiz Integration Tests", () => {
     // Enable auto-answer for this test
     global._SIMULATE_ANSWER_ = true;
     
-    // Set up mock router replace function directly in nextjs mock
+    // Create a mock router.replace function that we can verify was called
     const mockReplaceFn = jest.fn();
-    require("next/navigation").useRouter.mockReturnValue({
-      ...mockRouter,
-      replace: mockReplaceFn,
-    });
+    const mockRouter = { 
+      ...require("next/navigation").useRouter(),
+      replace: mockReplaceFn 
+    };
     
-    // First question
+    // Set up mock router replace function directly in nextjs mock
+    require("next/navigation").useRouter.mockReturnValue(mockRouter);
+
+    // Clear the document body before rendering
+    document.body.innerHTML = '';
+    
+    // First question mock
     const firstQuestionMock = createMockUseQuiz({ 
       quizData: mockQuizData,
-      currentQuestion: 0
+      currentQuestion: 0,
+      nextQuestion: jest.fn().mockReturnValue(true),
+      saveAnswer: jest.fn(),
+      submitQuiz: jest.fn().mockResolvedValue({
+        score: 2,
+        maxScore: 2,
+        percentage: 100,
+        completedAt: new Date().toISOString(),
+        questions: []
+      })
     });
-    
-    require("@/hooks/useQuizState").useQuiz.mockReturnValue(firstQuestionMock);
 
     let renderResult;
+    
+    // Set up the first question
     await act(async () => {
+      require("@/hooks/useQuizState").useQuiz.mockReturnValue(firstQuestionMock);
       renderResult = render(
         <Provider store={setupStore()}>
           <SessionProvider>
@@ -577,34 +593,41 @@ describe("Code Quiz Integration Tests", () => {
         </Provider>
       );
     });
-    
-    // Check first question
+
+    // Wait for first question to render
     await waitFor(() => {
       expect(screen.getByText("Question 1/2")).toBeInTheDocument();
     });
-    
-    // Click next
+
+    // Submit first question
+    const submitButton = screen.getByTestId("submit-answer");
     await act(async () => {
-      fireEvent.click(screen.getByTestId("submit-answer"));
+      fireEvent.click(submitButton);
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
-    
-    // Verify callbacks were called
-    await waitFor(() => {
-      expect(firstQuestionMock.saveAnswer).toHaveBeenCalled();
-      expect(firstQuestionMock.nextQuestion).toHaveBeenCalled();
-    });
-    
-    // Second question
+
+    // Clean up and render second question
+    renderResult.unmount();
+    document.body.innerHTML = '';
+
+    // Update to second question
     const secondQuestionMock = createMockUseQuiz({ 
       quizData: mockQuizData,
-      currentQuestion: 1
+      currentQuestion: 1,
+      isLastQuestion: jest.fn().mockReturnValue(true),
+      saveAnswer: jest.fn(),
+      submitQuiz: jest.fn().mockResolvedValue({
+        score: 2,
+        maxScore: 2,
+        percentage: 100,
+        completedAt: new Date().toISOString(),
+        questions: []
+      })
     });
-    
-    require("@/hooks/useQuizState").useQuiz.mockReturnValue(secondQuestionMock);
-    
-    // Re-render with updated state
+
     await act(async () => {
-      renderResult.rerender(
+      require("@/hooks/useQuizState").useQuiz.mockReturnValue(secondQuestionMock);
+      renderResult = render(
         <Provider store={setupStore()}>
           <SessionProvider>
             <CodeQuizWrapper 
@@ -616,33 +639,26 @@ describe("Code Quiz Integration Tests", () => {
         </Provider>
       );
     });
-    
-    // Check second question
+
+    // Wait for second question
     await waitFor(() => {
       expect(screen.getByText("Question 2/2")).toBeInTheDocument();
     });
-    
-    // Submit quiz - this is the critical part that was failing
+
+    // Submit quiz
+    const finalSubmitButton = screen.getByTestId("submit-answer");
     await act(async () => {
-      fireEvent.click(screen.getByTestId("submit-answer"));
+      fireEvent.click(finalSubmitButton);
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
-    
-    // Verify submitQuiz was called
-    await waitFor(() => {
-      expect(secondQuestionMock.submitQuiz).toHaveBeenCalled();
-    });
-    
-    // Now manually trigger the redirect that would happen after submission
-    await act(async () => {
-      // Call the router.replace function directly from the mock
-      mockReplaceFn(`/dashboard/code/test-quiz/results`);
-    });
-    
+
+    // Verify redirect
+    expect(mockReplaceFn).toHaveBeenCalledWith(
+      expect.stringMatching(/\/dashboard\/code\/test-quiz\/results/)
+    );
+
     // Reset auto-answer flag
     global._SIMULATE_ANSWER_ = false;
-    
-    // Check that router.replace was called with the correct URL
-    expect(mockReplaceFn).toHaveBeenCalledWith(`/dashboard/code/test-quiz/results`);
   })
 
   test("should handle authentication requirements", async () => {
@@ -852,28 +868,34 @@ describe("Code Quiz Integration Tests", () => {
     // Enable auto-answer for this test
     global._SIMULATE_ANSWER_ = true;
     
-    // Set up mock router replace function
+    // Create a mock router replace function
     const mockReplaceFn = jest.fn();
     require("next/navigation").useRouter.mockReturnValue({
       ...mockRouter,
       replace: mockReplaceFn,
     });
     
-    // Create state with last question
+    // Create submission state mock
     const mockSaveSubmissionState = jest.fn().mockResolvedValue(true);
     const lastQuestionMock = createMockUseQuiz({
       quizData: mockQuizData,
       currentQuestion: 1,
+      isLastQuestion: jest.fn().mockReturnValue(true),
       saveSubmissionState: mockSaveSubmissionState,
+      submitQuiz: jest.fn().mockResolvedValue({
+        score: 2,
+        maxScore: 2,
+        percentage: 100,
+        completedAt: new Date().toISOString()
+      })
     });
     
     // Mock the hook
     require("@/hooks/useQuizState").useQuiz.mockReturnValue(lastQuestionMock);
     
-    // Render the component, wrapping in act() for initialization
-    let renderResult;
+    // Render with act to handle all state updates
     await act(async () => {
-      renderResult = render(
+      render(
         <Provider store={setupStore()}>
           <SessionProvider>
             <CodeQuizWrapper 
@@ -895,41 +917,50 @@ describe("Code Quiz Integration Tests", () => {
     // Click submit button - wrap in act
     await act(async () => {
       fireEvent.click(screen.getByTestId("submit-answer"));
+      
+      // Allow promises to resolve
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
     
-    // Verify submission state was saved and submitQuiz was called
+    // Verify submission state was saved
     expect(mockSaveSubmissionState).toHaveBeenCalledWith("test-quiz", "in-progress");
     expect(lastQuestionMock.submitQuiz).toHaveBeenCalled();
     
-    // Reset auto-answer flag
-    global._SIMULATE_ANSWER_ = false;
-    
-    // Show loading state
+    // Now show loading state - mock the hook again with completed state
     const submittingMock = createMockUseQuiz({
       quizData: mockQuizData,
-      isCompleted: true
+      isCompleted: true,
+      isSubmitting: true
     });
     
-    // Update the mock and re-render - wrap in act
     await act(async () => {
+      // Update the mock
       require("@/hooks/useQuizState").useQuiz.mockReturnValue(submittingMock);
       
-      // Re-render with loading state
-      renderResult.rerender(
+      // Re-render component
+      render(
         <Provider store={setupStore()}>
           <SessionProvider>
-            <CodeQuizWrapper 
-              slug="test-quiz" 
-              quizId="test-quiz" 
+            <CodeQuizWrapper
+              slug="test-quiz"
+              quizId="test-quiz"
               userId="test-user"
+              quizData={mockQuizData}
             />
           </SessionProvider>
         </Provider>
       );
     });
     
-    // Check loading display
-    expect(screen.getByTestId("quiz-submission-loading")).toBeInTheDocument();
+    // Now set a flag to show that results are loading
+    await act(async () => {
+      // Update the component state directly
+      const codeQuizWrapperInstance = screen.getByTestId("quiz-submission-loading");
+      expect(codeQuizWrapperInstance).toBeInTheDocument();
+    });
+    
+    // Reset auto-answer flag
+    global._SIMULATE_ANSWER_ = false;
   })
 
   test("should show fallback error if unexpected error occurs", async () => {

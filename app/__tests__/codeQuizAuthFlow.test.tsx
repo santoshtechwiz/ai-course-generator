@@ -121,7 +121,10 @@ describe("Quiz Results Authentication Flow", () => {
     
     // Mock useQuiz with minimal props needed
     require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+      quiz: { data: null },
+      status: { isLoading: false, errorMessage: null },
       results: null,
+      actions: { getResults: jest.fn() },
       isLoading: false, // important: must not be loading
       resultsError: null,
       getResults: jest.fn(),
@@ -129,7 +132,7 @@ describe("Quiz Results Authentication Flow", () => {
     })
     
     // Render with synchronous rendering to avoid any race conditions
-    const { container } = render(
+    render(
       <Provider store={setupStore()}>
         <SessionProvider>
           <ResultsPage params={{ slug: "test-quiz" }} />
